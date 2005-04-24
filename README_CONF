@@ -1,0 +1,35 @@
+README pour le fichier de configuration de mumudvb
+
+mumudvb utilise obligatoirement un fichier de configuration pour lui indiquer les différents paramètres de réception et la répartition des pids sur les ips de multicast (ces ips peuvent aussi bien être de l'unicast). Vous trouverez un exemple dans le fichier conf.example joint aux sources de mumudvb.
+
+mumudvb est insensible à l'ordre des paramètres sauf pour les chaînes où les pids doivent être mis après l'ip et le port
+
+Des commentaires peuvent êtres fait n'importe ou dans le fichier de configuration, ce sont les lignes qui commencent par un #
+
+Tous les paramètres sont de la forme suivante : nom=valeur
+
+-------------------------------------------------------------------------
+|Liste des paramètres et leur description ( (f) : paramètre facultatif )|
+-------------------------------------------------------------------------
+|Nom :				|valeur:											|
+-------------------------------------------------------------------------
+|freq				|la fréquence du transpondeur en MHz
+|pol				|la polarisation (un caractère) v ou h (insensible à la casse)
+|srate				|le srate du transpondeur
+|card (f)			|le numéro de la carte (défaut : 0)
+|timeout_accord (f)		|temps que l'on laisse à la carte pour s'accorder sur la fréquence (en secondes) (défaut : 300 (5min))
+|timeout_no_diff (f)		|si le programme ne diffuse aucune chaise, il se tuera au bout de ce temps (en secondes) (défaut : 900 (15min))
+| Pour la TNT			|
+|qam				|la modulation en quadrature, valeurs possibles : qpsk,16,32,64,128,256,auto
+|trans_mode			|le mode de transmission, valeurs possibles : 2k,8k,auto
+|bandwidth			|la largeur de bande, valeurs possibles : 8MHz,7MHz,6MHz,auto
+|guardinterval			|l'intervalle de garde, valeurs possibles : 1/32,1/16,1/8,1/4,auto
+|coderate			|le taux de code, valeurs possibles : none,1/2,2/3,3/4,4/5,5/6,6/7,7/8,8/9,auto
+|
+--------------------------------------------------------------------------
+|Pour chaque chaise
+|ip				|l'ip de multicast sur laquelle cette chaise sera diffusée
+|port				|le port
+|pids				|une liste de pids séparés par des espaces (en nombre quelconque, le pid 0 (pid PAT) étant automatiquement diffusé pour chacune des chaînes)
+|name (f)			|le nom donné à la chaîne dans les fichiers qui indique les chaînes diffusées actuellement (utilisé par les scripts en exemple pour générer les annonces SAP), il est conseillé pour le moment de remplacer les espaces par des "_" dans le nom de la chaîne
+--------------------------------------------------------------------------

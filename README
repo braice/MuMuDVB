@@ -1,0 +1,90 @@
+mumudvb - README
+
+Description :
+mumudvb est une modification de dvbstream pour le cr@ns (http://www.crans.org) pour lui ajouter des fonctionnalités qui nous manquaient, la quantité de modifications étant importante nous avons décidé de redistribuer le projet (dans l'esprit du logiciel libre).
+
+Auteur principal:
+Brice DUBOST (gnu-braice@crans.ens-cachan.fr)
+
+Contributeur:
+Manuel SABBAN (manu@crans.ens-cachan.fr) (implémentation du getopt)
+
+Remerciements:
+Dave CHAPMAN pour avoir écrit dvbstream.
+
+Nouvelles fonctionnalités par rapport à la version 0.6 de dvbstream:
+-Pouvoir afficher la puissance du signal pendant l'utilisation
+-Avoir une liste mise a jour en temps réel des chaînes diffusées
+-Avoir un programme qui tourne en tache de fond (en cas d'exécution en tache de fond les logs sont écrit via syslog)
+-Ce programme devait pouvoir écrire un fichier contenant son pid
+-Pouvoir utiliser des fichiers de configuration
+-le programme est capable de se tuer tout seul si la carte ne diffuse plus rien au bout d'un temps paramétrable
+-le programme arrête de tenter d'accorder la carte au bout d'un temps paramétrable
+-Surtout pouvoir diffuser plusieurs chaînes d'un même transpondeur sur des ips différentes
+-Support fonctionnel du DVB-T
+
+Ce programme n'est pas un patch pour dvbstream à cause de certaines restrictions:
+-obligation d'utiliser un fichier de configuration
+-paramètres en ligne de commande incompatibles
+-les paquets MPEG2 sont envoyés sans modification sur le réseau au lieu d'être envoyés avec les en-têtes RTP (pour une plus grande compatibilité)
+-l'option permettant d'avoir du MPEG2-ps en sortie a été retirée
+-l'interface telnet a été retirée (elle ne nous était pas utile et l'adapter aurait été assez long)
+
+D'autres programmes sont joint dans les sources de mumudvb:
+-relay : permet de relayer un flux (récupérer un flux en multicast et l'unicaster ou l'envoyer vers une autre ip de multicast) il peut être utiliser pour traverser des routeurs ou des firewalls interdisant le multicast
+-dumpudp : permet de récupérer le flux et de l'envoyer sur la sortie standard (utile pour les programmes n'ayant pas de greffon d'entrée en udp comme mplayer ou pour enregistrer le flux)
+-dumpudp_limited : idem que dumpudp mais récupère un nombre limité de paquets (utilisé pour générer des vignettes (voir les scripts d'exemple joints))
+-recup_sap : mini client sap, récupère les annonces sap sur le réseau pendant 60 secondes et les envoie sur la sortie standard (non triées)
+-Des scripts d'exemple d'utilisation de mumudvb sont inclus dans le répertoire scripts, ils sont écrits en python, mais aucune documentation n'est fournie, pour savoir ce qu'ils font, il faut lire le code source, nous répondront aux questions concernant ces scripts que si on a le temps...
+
+Installation :
+
+Pour installer mumudvb taper:
+
+make
+make install (en root)
+
+C'est tout!
+
+Si la compilation ne marche pas ne pas oublier de changer la ligne include du Makefile.
+
+
+Utilisation : 
+
+Pour connaître la syntaxe des fichiers de configuration, se référer au fichier README_CONF
+
+Syntaxe :
+	mumudvb [options] -c fichier_de_configuration
+	mumudvb [options] --config fichier_de_configuration
+Les différents options possible sont : 
+
+-d, --debug
+	ne se lance pas en démon et affiche les messages sur la sortie standard et d'erreur
+
+-s, --signal
+	Affiche la force du signal pendant que la carte s'accorde et une fois que la carte est accordé, toutes les 5 secondes
+
+-h, --help
+	affiche l'aide
+
+Signaux : (voir la page de man de kill)
+    SIGUSR1 : change l'affichage de la puissance une fois la carte tunée, s'il était absent il devient présent et inversement
+
+Détails techniques (en vrac):
+-mumudvb permet de recevoir un signal satellite (DVB-s) ou Terrestre (DVB-t), il ne gère pas les DisEq (si il y a un besoin ce ne devrait pas être trop dur à implémenter)
+
+-Le pid 0 est envoyé automatiquement avec toutes les chaînes, il permet au client compatible de distinguer les différents flux présents (indispensable pour vlc, incapable d'identifier par lui même les différents flux)
+
+-Pour Vlc, il faut indiquer le pid PMT en plus des pids audio et vidéo (sinon, il est aussi incapable de voir ce qui est présent dans le flux)
+
+-Performances: mumudvb consomme 15% du processeur d'un celeron 2.6GHz avec une carte Hauppauge et un noyau Linux 2.6.9 pour un transpondeur plein (mumudvb a été développé à l'origine dans ce but, après des tests avec VLC qui offrait de piteuses performances, une instabilité chronique et avec des fonctionnalités manquantes pour notre utilisation)
+
+-A éviter : les chipset via non récents ou nforce, ces chipset sont des chipsets grand public, incapable de gérer correctement une grande quantité de donnée sur le bus PCI
+
+-mumudvb est capable de diffuser de la TNT (télévision numérique terrestre)
+
+-mumudvb n'est pas capable de diffuser du dvb-c
+
+-Lors de l'exécution le programme écrit la liste des chaînes diffusées dans le fichier /var/run/tv/chaines_diffusees_carte%d le %d est remplacé par le numéro de carte, le chemin n'est pas paramétrable mais cela est facile à implémenter, envoyez moi un mail si vous en avez besoin. Ce fichier contient la liste des chaînes diffusées (actualisée toute les 5 secondes) de la forme suivante (pour chaque ligne) : "nom:ip:port"
+
+-mumudvb supporte au maximum 6 cartes (à l'heure ou j'écris (04/2005), les possibilités sont d'utiliser un noyau 2.4.* avec devfs :-( ou d'utiliser un noyau > 2.6.11 avec udev compilé statiquement avec klibc en attendant la mise a jour de la glibc ), cette limite peut être augmentée facilement si quelqu'un a une carte avec plus de 6 slots PCI (on est intéressé dans ce cas)
