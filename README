@@ -82,6 +82,7 @@ Détails techniques (en vrac):
 -A éviter : les chipset via non récents ou nforce, ces chipset sont des chipsets grand public, incapable de gérer correctement une grande quantité de donnée sur le bus PCI
 
 -mumudvb est capable de diffuser de la TNT (télévision numérique terrestre)
+N'oubliez pas de spécifier les paramètre de réception.
 
 -mumudvb n'est pas capable de diffuser du dvb-c
 
