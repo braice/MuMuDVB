@@ -56,7 +56,7 @@ Pour connaître la syntaxe des fichiers de configuration, se référer au fichier R
 Syntaxe :
 	mumudvb [options] -c fichier_de_configuration
 	mumudvb [options] --config fichier_de_configuration
-Les différents options possible sont : 
+Les différentes options possibles sont : 
 
 -d, --debug
 	ne se lance pas en démon et affiche les messages sur la sortie standard et d'erreur
