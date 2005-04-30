@@ -60,6 +60,19 @@
 
 #endif
 
+#ifdef FRANCE
+
+/* FINLAND settings 1 */
+#define DVB_T_LOCATION		    "France excepté R1"
+#define BANDWIDTH_DEFAULT           BANDWIDTH_8_MHZ
+#define HP_CODERATE_DEFAULT         FEC_2_3
+#define CONSTELLATION_DEFAULT       QAM_64
+#define TRANSMISSION_MODE_DEFAULT   TRANSMISSION_MODE_8K
+#define GUARD_INTERVAL_DEFAULT	    GUARD_INTERVAL_1_32
+#define HIERARCHY_DEFAULT           HIERARCHY_NONE
+
+#endif
+
 #ifdef FINLAND2
 
 /* FINLAND settings 2 (someone verify there is such environment) */

@@ -23,12 +23,12 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
     
 */
   /* ATTENTION
-     Version modifiee par braice (sigfault@netcourrier.com) pour le Crans (www.crans.org)
+     Version modifiee par braice (dubost@crans.org) pour le Crans (www.crans.org)
      me demander pour toute documentation)
    */
 
 
-#define _GNU_SOURCE		// pour utiliser le program_invocation_short_name (extention gnu)
+#define _GNU_SOURCE		// pour utiliser le program_invocation_short_name (extension gnu)
 
 // Linux includes:
 #include <stdio.h>
@@ -45,20 +45,21 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include <string.h>
 #include <syslog.h>
 #include <getopt.h>
-#include <errno.h>		// pour utiliser le program_invocation_short_name (extention gnu)
+#include <errno.h>		// pour utiliser le program_invocation_short_name (extension gnu)
 
 #include "mumudvb.h"
 #include "tune.h"
 #include "udp.h"
 #include "dvb.h"
+#include "errors.h"
 
-#define VERSION "1.0.20050421"
+#define VERSION "1.0.20050430"
 
 
 /* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
    - see http://www.cadsoft.de/people/kls/vdr/index.htm */
 
-//global variable user by SignalHandler
+// global variable user by SignalHandler
 long now;
 long time_no_diff;
 long real_start_time;
@@ -76,14 +77,14 @@ char nom_fich_chaines_diff[256];
 int card = 0;
 
 
-//file descriptors
-fds_t fds;			//defined in dvb.h
+// file descriptors
+fds_t fds; // defined in dvb.h
 
 
-//prototypes
+// prototypes
 static void SignalHandler (int signum);
 void gen_chaines_diff (int no_daemon, int *chaines_diffuses);
-//fin des prototypes
+
 
 void
 usage (char *name)
@@ -100,8 +101,8 @@ usage (char *name)
 	   "Based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
 	   "Released under the GPL.\n"
 	   "Latest version available from http://www.crans.org/\n"
-	   "Version modifiee pour le CRANS (www.crans.org)\n"
-	   "par Brice DUBOST (brice.dubost@crans.org)\n", name, name);
+	   "Version modifiée pour le CRANS (www.crans.org)\n"
+	   "par Brice DUBOST (dubost@crans.org)\n", name, name);
 }
 
 
@@ -110,31 +111,31 @@ main (int argc, char **argv)
 {
   int i, j;
   unsigned char buf[MAX_FLUX][MTU];
-  struct pollfd pfds[2];	/*  DVR device and Telnet connection */
+  struct pollfd pfds[2];	//  DVR device
 
 
-  //reception
+  // réception
   unsigned long freq = 0;
   unsigned long srate = 0;
   char pol = 0;
 
-  //DVB reception and sort
-  int pid;			//pid of the current mpeg2 packet
-  int bytes_read;		//nuber of bytes actually read
+  // DVB reception and sort
+  int pid;			// pid of the current mpeg2 packet
+  int bytes_read;		// number of bytes actually read
   unsigned char temp_buf[MTU];
   int nb_bytes[MAX_CHAINES];
 
   struct timeval tv;
 
-  //files
+  // fichers
   char *conf_filename = NULL;
   FILE *conf_file;
   char nom_fich_pid[256];
-  //cf fin
+  // lock et chaines diffusées
   FILE *chaines_diff;
   FILE *pidfile;
 
-  //configuration file parsing
+  // configuration file parsing
   int curr_chaine = 0;
   int curr_pid = 0;
   int port_ok = 0;
@@ -146,14 +147,14 @@ main (int argc, char **argv)
 
   fe_spectral_inversion_t specInv = INVERSION_AUTO;
   int tone = -1;
-  //debut des parametres TNT a changer
+  //parametres TNT a changer
   fe_modulation_t modulation = CONSTELLATION_DEFAULT;
   fe_transmit_mode_t TransmissionMode = TRANSMISSION_MODE_DEFAULT;
   fe_bandwidth_t bandWidth = BANDWIDTH_DEFAULT;
   fe_guard_interval_t guardInterval = GUARD_INTERVAL_DEFAULT;
   fe_code_rate_t HP_CodeRate = HP_CODERATE_DEFAULT, LP_CodeRate =
     LP_CODERATE_DEFAULT;
-  //fin des params TNT
+
   fe_hierarchy_t hier = HIERARCHY_DEFAULT;
   unsigned char diseqc = 0;
   unsigned char hi_mappids[8192];
@@ -173,7 +174,7 @@ main (int argc, char **argv)
     {0, 0, 0, 0}
   };
   int c, option_index = 0;
-  /* Initialise PID map */
+  // Initialise PID map
   for (i = 0; i < 8192; i++)
     {
       hi_mappids[i] = (i >> 8);
@@ -183,7 +184,7 @@ main (int argc, char **argv)
   if (argc == 1)
     {
       usage (argv[0]);
-      exit (1);
+      exit(ERROR_ARGS);
     }
   while (1)
     {
@@ -208,17 +209,17 @@ main (int argc, char **argv)
 	  break;
 	case 'h':
 	  usage (program_invocation_short_name);
-	  exit (1);
+	  exit(ERROR_ARGS);
 	  break;
 	}
     }
   if (optind < argc)
     {
       usage (program_invocation_short_name);
-      exit (1);
+      exit(ERROR_ARGS);
     }
 
-  //DO NOT REMOVE
+  // DO NOT REMOVE
   if(!no_daemon)
     {
       daemon(42,0);
@@ -227,52 +228,53 @@ main (int argc, char **argv)
   if (!no_daemon)
     openlog ("MUMUDVB", LOG_PID, 0);
 
-  /* on ouvre le fichier de conf */
+  // fichier de conf
   conf_file = fopen (conf_filename, "r");
   if (conf_file == NULL)
     {
       if (!no_daemon)
-	syslog (LOG_USER, "N'as pas pu ouvrir le fichier de config %s\n",
+	syslog (LOG_USER, "Ne peut pas ouvrir %s\n",
 		conf_filename);
       else
 	fprintf (stderr,
 		 "N'as pas pu ouvrir le fichier de config %s\n",
 		 conf_filename);
-      exit (2);
+      exit(ERROR_CONF_FILE);
     }
 
-  memset (pids, 0, sizeof (pids));	//init du tableau de pids
+  memset (pids, 0, sizeof (pids));
 
 
 
-  //on scanne le fichier de conf
+  // on scanne le fichier de conf
   // la syntaxe de celui ci est dans syntaxe_conf.txt
   while (fgets (ligne_courante, CONF_LINELEN, conf_file)
 	 && strlen (ligne_courante) > 1)
     {
-      sous_chaine = strtok (ligne_courante, delimiteurs);	//on extrait la sous chaine avant le =
+      sous_chaine = strtok (ligne_courante, delimiteurs);
+      //commentaires
       if (sous_chaine[0] == '#')
 	continue; 
+      
       if (!strcmp (sous_chaine, "timeout_accord"))
 	{
-	  sous_chaine = strtok (NULL, delimiteurs);	//on extrait la sous chaine
+	  sous_chaine = strtok (NULL, delimiteurs);	// on extrait la sous chaine
 	  timeout_accord = atoi (sous_chaine);
 	}
       else if (!strcmp (sous_chaine, "timeout_no_diff"))
 	{
-	  sous_chaine = strtok (NULL, delimiteurs);	//on extrait la sous chaine
+	  sous_chaine = strtok (NULL, delimiteurs);
 	  timeout_no_diff= atoi (sous_chaine);
 	}
       else if (!strcmp (sous_chaine, "freq"))
 	{
-	  sous_chaine = strtok (NULL, delimiteurs);	//on extrait la sous chaine
+	  sous_chaine = strtok (NULL, delimiteurs);
 	  freq = atol (sous_chaine);
 	  freq *= 1000UL;
-	  /*insérer un controle de validité de la fréquence */
 	}
       else if (!strcmp (sous_chaine, "pol"))
 	{
-	  sous_chaine = strtok (NULL, delimiteurs);	//on extrait la sous chaine
+	  sous_chaine = strtok (NULL, delimiteurs);
 	  if (tolower (sous_chaine[0]) == 'v')
 	    {
 	      pol = 'V';
@@ -285,27 +287,26 @@ main (int argc, char **argv)
 	    {
 	      if (!no_daemon)
 		syslog (LOG_USER,
-			"Probleme avec le fichier de configuration %s au niveau de la polarisation\n",
+			"Pb configuration %s polarisation\n",
 			conf_filename);
 	      else
 		fprintf (stderr,
-			 "Pb configuration %s polarisation\n",
+			 "Probleme, fichier de configuration : configuration %s polarisation\n",
 			 conf_filename);
-	      exit (3);
+	      exit(ERROR_CONF);
 	    }
 	}
       else if (!strcmp (sous_chaine, "srate"))
 	{
-	  sous_chaine = strtok (NULL, delimiteurs);	//on extrait la sous chaine
+	  sous_chaine = strtok (NULL, delimiteurs);
 	  srate = atol (sous_chaine);
 	  srate *= 1000UL;
-	  /*insérer un controle de validité du srate */
 	}
       else if (!strcmp (sous_chaine, "card"))
 	{
-	  sous_chaine = strtok (NULL, delimiteurs);	//on extrait la sous chaine
+	  sous_chaine = strtok (NULL, delimiteurs);
 	  card = atoi (sous_chaine);
-	  if (card > 5)		//on verifie la validité du numero de carte
+	  if (card > 5)
 	    {
 	      if (!no_daemon)
 		syslog (LOG_USER,
@@ -313,18 +314,18 @@ main (int argc, char **argv)
 	      else
 		fprintf (stderr,
 			 "6 cartes Maximum\n");
-	      exit (30);
+	      exit(ERROR_CONF);
 	    }
 	}
       else if (!strcmp (sous_chaine, "ip"))
 	{
-	  sous_chaine = strtok (NULL, delimiteurs);	//on extrait la sous chaine
-	  sscanf (sous_chaine, "%s\n", ipOut[curr_chaine]);	//pour enlever le \n a la fin et les espaces
+	  sous_chaine = strtok (NULL, delimiteurs);
+	  sscanf (sous_chaine, "%s\n", ipOut[curr_chaine]);
 	  ip_ok = 1;
 	}
       else if (!strcmp (sous_chaine, "port"))
 	{
-	  sous_chaine = strtok (NULL, delimiteurs);	//on extrait la sous chaine
+	  sous_chaine = strtok (NULL, delimiteurs);
 	  portOut[curr_chaine] = atoi (sous_chaine);
 	  port_ok = 1;
 	}
@@ -338,63 +339,57 @@ main (int argc, char **argv)
 	      else
 		fprintf (stderr,
 			 "Il faut préciser le port et l'ip avant les pids\n");
-	      exit (100);
+	      exit(ERROR_CONF);
 	    }
-	  while ((sous_chaine = strtok (NULL, delimiteurs)) != NULL)	//on extrait la sous chaine
+	  while ((sous_chaine = strtok (NULL, delimiteurs)) != NULL)
 	    {
 	      pids[curr_chaine][curr_pid] = atoi (sous_chaine);
-	      if (pids[curr_chaine][curr_pid] < 10 || pids[curr_chaine][curr_pid] > 8191)	//on verifie la validité du pid donné
+	      // on verifie la validité du pid donné
+	      if (pids[curr_chaine][curr_pid] < 10 || pids[curr_chaine][curr_pid] > 8191)
 		{
 		  if (!no_daemon)
 		    syslog (LOG_USER,
-			    "Probleme avec le fichier de configuration %s au niveau des pids, le pid donné etait %d\n",
+			    "Pb configuration %s pids, pid donné : %d\n",
 			    conf_filename, pids[curr_chaine][curr_pid]);
 		  else
 		    fprintf (stderr,
-			     "Pb configuration %s pids, pid donné : %d\n",
+			    "Probleme avec le fichier de configuration %s au niveau des pids, le pid donné etait %d\n",
 			     conf_filename, pids[curr_chaine][curr_pid]);
-		  exit (20);
+		  exit(ERROR_CONF);
 		}
 	      curr_pid++;
 	      if (curr_pid >= MAX_PIDS_PAR_CHAINE)
 		{
 		  if (!no_daemon)
 		    syslog (LOG_USER,
-			    "Trop de pids :  %d pour la chaine %d\n",
+			    "Trop de pids : %d pour la chaine %d\n",
 			    curr_pid, curr_chaine);
 		  else
-		    fprintf (stderr, "Trop de pids :  %d chaine %d\n",
+		    fprintf (stderr, "Trop de pids : %d chaine %d\n",
 			     curr_pid, curr_chaine);
-		  exit (10);
+		  exit(ERROR_CONF);
 		}
 	    }
 	  num_pids[curr_chaine] = curr_pid;
 	  curr_pid = 0;
-	  curr_chaine++;	//chaine suivante
+	  curr_chaine++;
 	  port_ok = 0;
 	  ip_ok = 0;
 	}
       else if (!strcmp (sous_chaine, "name"))
 	{
-	  //      sous_chaine=strtok(NULL,delimiteurs);//on extrait la sous chaine
+	  // changement de méthode d'extraction pour garder les espaces
 	  sous_chaine = strtok (NULL, "=");
 	  if (!(strlen (sous_chaine) >= MAX_LEN_NOM - 1))
-	    strcpy(noms[curr_chaine],strtok(sous_chaine,"\n"));	//pour enlever le \n a la fin
+	    strcpy(noms[curr_chaine],strtok(sous_chaine,"\n"));	
 	  else
 	    fprintf (stderr, "Nom de chaine trop long\n");
 	}
       else if (!strcmp (sous_chaine, "qam"))
 	{
-	  //modulation
-	  sous_chaine = strtok (NULL, delimiteurs);	//on extrait la sous chaine
-	  sscanf (sous_chaine, "%s\n", sous_chaine);	//pour enlever le \n a la fin et les espaces
-/* 	  QPSK, */
-/* 	    QAM_16, */
-/* 	    QAM_32, */
-/* 	    QAM_64, */
-/* 	    QAM_128, */
-/* 	    QAM_256, */
-/* 	    QAM_AUTO */
+	  // TNT
+	  sous_chaine = strtok (NULL, delimiteurs);
+	  sscanf (sous_chaine, "%s\n", sous_chaine);
 	  if (!strcmp (sous_chaine, "qpsk"))
 	    modulation=QPSK;
 	  else if (!strcmp (sous_chaine, "16"))
@@ -415,17 +410,14 @@ main (int argc, char **argv)
 		syslog (LOG_USER, "Probleme de configuration champ QAM\n");
 	      else
 		fprintf (stderr, "Probleme au niveau du fichier de configuration champ qam invalide\n");
-	      exit (20);
+	      exit(ERROR_CONF);
 	    }
 	}
       else if (!strcmp (sous_chaine, "trans_mode"))
 	{
-	  //TransmissionMode
-	  sous_chaine = strtok (NULL, delimiteurs);	//on extrait la sous chaine
-	  sscanf (sous_chaine, "%s\n", sous_chaine);	//pour enlever le \n a la fin et les espaces
-/* 	  TRANSMISSION_MODE_2K, */
-/* 	    TRANSMISSION_MODE_8K, */
-/* 	    TRANSMISSION_MODE_AUTO */
+	  // TNT
+	  sous_chaine = strtok (NULL, delimiteurs);
+	  sscanf (sous_chaine, "%s\n", sous_chaine);
 	  if (!strcmp (sous_chaine, "2k"))
 	    TransmissionMode=TRANSMISSION_MODE_2K;
 	  else if (!strcmp (sous_chaine, "8k"))
@@ -438,18 +430,14 @@ main (int argc, char **argv)
 		syslog (LOG_USER, "Probleme de configuration champ trans_mode\n");
 	      else
 		fprintf (stderr, "Probleme au niveau du fichier de configuration champ trans_mode invalide\n");
-	      exit (20);
+	      exit(ERROR_CONF);
 	    }
 	}
       else if (!strcmp (sous_chaine, "bandwidth"))
 	{
-	  //bandWidth
-	  sous_chaine = strtok (NULL, delimiteurs);	//on extrait la sous chaine
-	  sscanf (sous_chaine, "%s\n", sous_chaine);	//pour enlever le \n a la fin et les espaces
-/* 	  BANDWIDTH_8_MHZ, */
-/* 	    BANDWIDTH_7_MHZ, */
-/* 	    BANDWIDTH_6_MHZ, */
-/* 	    BANDWIDTH_AUTO */
+	  // TNT
+	  sous_chaine = strtok (NULL, delimiteurs);
+	  sscanf (sous_chaine, "%s\n", sous_chaine);
 	  if (!strcmp (sous_chaine, "8MHz"))
 	    bandWidth=BANDWIDTH_8_MHZ;
 	  else if (!strcmp (sous_chaine, "7MHz"))
@@ -464,19 +452,14 @@ main (int argc, char **argv)
 		syslog (LOG_USER, "Probleme de configuration champ bandwidth\n");
 	      else
 		fprintf (stderr, "Probleme au niveau du fichier de configuration champ bandwidth invalide\n");
-	      exit (20);
+	      exit(ERROR_CONF);
 	    }
 	}
       else if (!strcmp (sous_chaine, "guardinterval"))
 	{
-	  //guardInterval
-	  sous_chaine = strtok (NULL, delimiteurs);	//on extrait la sous chaine
-	  sscanf (sous_chaine, "%s\n", sous_chaine);	//pour enlever le \n a la fin et les espaces
-/* 	  GUARD_INTERVAL_1_32, */
-/* 	    GUARD_INTERVAL_1_16, */
-/* 	    GUARD_INTERVAL_1_8, */
-/* 	    GUARD_INTERVAL_1_4, */
-/*         GUARD_INTERVAL_AUTO */
+	  // TNT
+	  sous_chaine = strtok (NULL, delimiteurs);
+	  sscanf (sous_chaine, "%s\n", sous_chaine);
 	  if (!strcmp (sous_chaine, "1/32"))
 	    guardInterval=GUARD_INTERVAL_1_32;
 	  else if (!strcmp (sous_chaine, "1/16"))
@@ -493,24 +476,14 @@ main (int argc, char **argv)
 		syslog (LOG_USER, "Probleme de configuration champ guardinterval\n");
 	      else
 		fprintf (stderr, "Probleme au niveau du fichier de configuration champ guardinterval invalide\n");
-	      exit (20);
+	      exit(ERROR_CONF);
 	    }
 	}
       else if (!strcmp (sous_chaine, "coderate"))
 	{
-	  //HP_CodeRate ou LP_CodeRate
-	  sous_chaine = strtok (NULL, delimiteurs);	//on extrait la sous chaine
-	  sscanf (sous_chaine, "%s\n", sous_chaine);	//pour enlever le \n a la fin et les espaces
-/* 	  FEC_NONE = 0, */
-/* 	    FEC_1_2, */
-/* 	    FEC_2_3, */
-/* 	    FEC_3_4, */
-/* 	    FEC_4_5, */
-/* 	    FEC_5_6, */
-/* 	    FEC_6_7, */
-/* 	    FEC_7_8, */
-/* 	    FEC_8_9, */
-/*         FEC_AUTO */
+	  // TNT
+	  sous_chaine = strtok (NULL, delimiteurs);
+	  sscanf (sous_chaine, "%s\n", sous_chaine);
 	  if (!strcmp (sous_chaine, "none"))
 	    HP_CodeRate=FEC_NONE;
 	  else if (!strcmp (sous_chaine, "1/2"))
@@ -537,9 +510,9 @@ main (int argc, char **argv)
 		syslog (LOG_USER, "Probleme de configuration champ coderate\n");
 	      else
 		fprintf (stderr, "Probleme au niveau du fichier de configuration champ coderate invalide\n");
-	      exit (20);
+	      exit(ERROR_CONF);
 	    }
-	  LP_CodeRate=HP_CodeRate; //je ne sais pas tres bien ce que cela change mais je les met egales
+	  LP_CodeRate=HP_CodeRate; // je ne sais pas tres bien ce que cela change mais je les met egales
 	}
       else
 	{
@@ -551,15 +524,15 @@ main (int argc, char **argv)
   if (curr_chaine > MAX_CHAINES)
     {
       if (!no_daemon)
-	syslog (LOG_USER, "Trop de chaines : %d la limite est : %d\n",
+	syslog (LOG_USER, "Trop de chaines : %d limite : %d\n",
 		curr_chaine, MAX_CHAINES);
       else
-	fprintf (stderr, "Trop de chaines : %d limite : %d\n",
+	fprintf (stderr, "Trop de chaines : %d la limite est : %d\n",
 		 curr_chaine, MAX_CHAINES);
-      exit (21);
+      exit(ERROR_TOO_CHANNELS);
     }
 
-  /*on le vide */
+  // on le vide, précaution
   sprintf (nom_fich_chaines_diff, "/var/run/tv/chaines_diffusees_carte%d",
 	   card);
   chaines_diff = fopen (nom_fich_chaines_diff, "w");
@@ -567,13 +540,13 @@ main (int argc, char **argv)
     {
       if (!no_daemon)
 	syslog (LOG_USER,
-		"N'as pas pu creer le fichier des chaines diffusees %s\n",
+		"N'as pas pu creer le fichier %s\n",
 		nom_fich_chaines_diff);
       else
 	fprintf (stderr,
-		 "N'as pas pu creer le fichier %s\n",
+		 "N'as pas pu creer le fichier des chaines diffusees %s\n",
 		 nom_fich_chaines_diff);
-      exit (2);
+      exit(ERROR_CREATE_FILE);
     }
 
   fclose (chaines_diff);
@@ -582,17 +555,14 @@ main (int argc, char **argv)
     syslog (LOG_USER, "Diffusion. Frequence %lu polarisation %c srate %lu\n",
 	    freq, pol, srate);
 
-  //alarm for tuning timeout
+  // alarme pour le délai d'accord
   if (signal (SIGALRM, SignalHandler) == SIG_IGN)
     signal (SIGALRM, SIG_IGN);
   if (signal (SIGUSR1, SignalHandler) == SIG_IGN)
     signal (SIGUSR1, SIG_IGN);
   alarm (timeout_accord);
 
-
-
-
-  //we tune the card
+  // on accord la carte
   if ((freq > 100000000))
     {
       if (open_fe (&fds.fd_frontend, card))
@@ -618,15 +588,15 @@ main (int argc, char **argv)
   if (i < 0)
     {
       if (!no_daemon)
-	syslog (LOG_USER, "Probleme pour accorder la carte %d\n", card);
+	syslog (LOG_USER, "Problème d'accord, carte %d\n", card);
       else
-	fprintf (stderr, "Probleme pour accorder la carte %d\n", card);
+	fprintf (stderr, "Problème pour accorder la carte %d\n", card);
 
-      exit (111);
+      exit(ERROR_TUNE);
     }
 
   carte_accordee = 1;
-  //the card is tuned, so we can catch signals in order to leave cleanly
+  // la carte est accordée, on intercepte les signaux pour fermer proprement
   if (signal (SIGHUP, SignalHandler) == SIG_IGN)
     signal (SIGHUP, SIG_IGN);
   if (signal (SIGINT, SignalHandler) == SIG_IGN)
@@ -635,8 +605,7 @@ main (int argc, char **argv)
     signal (SIGTERM, SIG_IGN);
   alarm (ALARM_TIME);
 
-
-
+  //On écrit son PID dans un fichier
   if (!no_daemon)
     {
       sprintf (nom_fich_pid, "/var/run/tv/mumudvb_carte%d.pid", card);
@@ -645,27 +614,26 @@ main (int argc, char **argv)
 	{
 	  syslog (LOG_USER, "N'as pas pu creer le fichier %s\n",
 		  nom_fich_pid);
-	  exit (2);
+	  exit(ERROR_CREATE_FILE);
 	}
       fprintf (pidfile, "%d\n", getpid ());
       fclose (pidfile);
     }
 
-  //we open the file descriptors
+  // we open the file descriptors
   if (create_card_fd (card, nb_flux, num_pids, &fds) < 0)
     return -1;
 
 
-  //init of the list of diffused streams
+  // init de la liste des chaines diffusees
   for (i = 0; i < nb_flux; i++)
     {
       chaines_diffuses[i] = 0;
       chaines_diffuses_old[i] = 1;
     }
 
-  //Now we set the filters
-  set_ts_filt (fds.fd_zero, 0, DMX_PES_OTHER);	//le pid PAT
-
+  set_ts_filt (fds.fd_zero, 0, DMX_PES_OTHER);	// PID 0 : Program Association Table (PAT)
+  set_ts_filt (fds.fd_zero, 18, DMX_PES_OTHER);	// PID 18 : Event Information Table (EIT)
   for (i = 0; i < nb_flux; i++)
     {
       for (j = 0; j < num_pids[i]; j++)
@@ -682,14 +650,16 @@ main (int argc, char **argv)
   else
     fprintf (stderr, "Carte %d accordée\n", card);
 
-  /* Init udp */
+  // Init udp
   for (i = 0; i < nb_flux; i++)
     {
-      socketOut[i] = makeclientsocket (ipOut[i], portOut[i], ttl, &sOut[i], no_daemon);	//le makeclientsocket est pour joindre automatiquement le flux
+      // le makeclientsocket est pour joindre automatiquement l'ip de multicast créée
+      // les swiths HP broadcastent les ip de multicast sans clients
+      socketOut[i] = makeclientsocket (ipOut[i], portOut[i], ttl, &sOut[i], no_daemon);
     }
 
   if (!no_daemon)
-    syslog (LOG_USER, "Diffusion de %d chaine%s\n", nb_flux,
+    syslog (LOG_USER, "Diffusion %d chaine%s\n", nb_flux,
 	    (nb_flux == 1 ? "" : "s"));
   else
     fprintf (stderr, "Diffusion de %d chaine%s\n", nb_flux,
@@ -699,7 +669,7 @@ main (int argc, char **argv)
     {
       if (!no_daemon)
 	{
-	  syslog (LOG_USER, "Chaine %s %d  ip %s, port %d\n",
+	  syslog (LOG_USER, "Chaine \"%s\" n %d ip %s:%d\n",
 		  noms[i], i, ipOut[i], portOut[i]);
 	}
       else
@@ -715,7 +685,7 @@ main (int argc, char **argv)
     }
 
 
-  /* Read packets */
+  // Lecture du flux
 
   pfds[0].fd = fds.fd_dvr;
   pfds[0].events = POLLIN | POLLPRI;
@@ -744,18 +714,23 @@ main (int argc, char **argv)
 	      {
 		for (j = 0; j < num_pids[i]; j++)
 		  {
-		    if ((pids[i][j] == pid) || pid == 0)
+		    // PID 0 : Program Association Table (PAT)
+		    // PID 18 : Event Information Table (EIT)
+		    if ((pids[i][j] == pid) || pid == 0 || pid == 18)
 		      {
-			if (pid != 0)	//si  c pas le pid 0
+			// on considere le paquet comme faisant partie d'une chaine
+			// uniquement si ce n'est pas le PID 0 ou 18
+			if (pid != 0 && pid != 18)
 			  chaines_diffuses[i]++;
-
+			
+			// remplissage des buffers
 			for (j = 0; j < bytes_read; j++)
 			  buf[i][nb_bytes[i] + j] = temp_buf[j];
 			buf[i][nb_bytes[i] + 1] =
 			  (buf[i][nb_bytes[i] + 1] & 0xe0) | hi_mappids[pid];
 			buf[i][nb_bytes[i] + 2] = lo_mappids[pid];
 			nb_bytes[i] += bytes_read;
-			// If there isn't enough room for 1 more packet, then send it.
+			// Buffer plein, on envoie
 			if ((nb_bytes[i] + PACKET_SIZE) > MAX_UDP_SIZE)
 			  {
 			    sendudp (socketOut[i], &sOut[i], buf[i],
@@ -803,7 +778,7 @@ main (int argc, char **argv)
   for (i = 0; i < nb_flux; i++)
     close (socketOut[i]);
 
-  //we close the file descriptors
+  // we close the file descriptors
   close_card_fd (card, nb_flux, num_pids, fds);
   close (fds.fd_frontend);
 
@@ -817,15 +792,18 @@ main (int argc, char **argv)
 	fprintf (stderr,
 		 "N'as pas pu supprimer le fichier des chaines diffusees %s\n",
 		 nom_fich_chaines_diff);
-      exit (2);
+      exit(ERROR_DEL_FILE);
     }
 
 
   if (!no_daemon)
     {
       if (remove (nom_fich_pid))
-	syslog (LOG_USER, "N'as pas pu supprimer le fichier %s\n",
-		nom_fich_pid);
+	{
+	  syslog (LOG_USER, "N'as pas pu supprimer le fichier %s\n",
+		  nom_fich_pid);
+	  exit(ERROR_DEL_FILE);
+	}
     }
 
   return (0);
@@ -849,66 +827,71 @@ SignalHandler (int signum)
 	{
 	  if (!no_daemon)
 	    syslog (LOG_USER,
-		    "Carte non accordée apres %d s, on stoppe\n",
+		    "Carte non accordée apres %ds, on stoppe\n",
 		    timeout_accord);
 	  else
 	    fprintf (stderr,
 		     "La carte n'a pas été accordée au bout de %d secondes, on arrête de s'obstiner\n",
 		     timeout_accord);
-	  exit (100);
+	  exit(ERROR_TUNE);
 	}	
       for (i = 0; i < nb_flux; i++)
 	if ((chaines_diffuses[i] >= 100) && (!chaines_diffuses_old[i]))
 	  {
 	    if (!no_daemon)
 	      syslog (LOG_USER,
-		      "Reprise de la diffusion de la chaine %s %d.\n",
-		      noms[i], i);
+		      "Reprise diffusion chaine \"%s\".Carte %d\n",
+		      noms[i], card);
 	    else
 	      fprintf (stderr,
-		       "Reprise de la diffusion de la chaine %s %d. Il est (en secondes depuis le jour 0) %ld\n\tOn diffuse Depuis %ld secondes\n",
+		       "Reprise de la diffusion de la chaine %s %d. Il est %ld\n\tOn diffuse Depuis %ld secondes\n",
 		       noms[i], i, tv.tv_sec, now);
-	    chaines_diffuses_old[i] = 1;	//mise à jour
+	    chaines_diffuses_old[i] = 1;	// mise à jour
 	  }
 	else if ((chaines_diffuses_old[i]) && (chaines_diffuses[i] < 100))
 	  {
 	    if (!no_daemon)
 	      syslog (LOG_USER,
-		      "Arrêt de la diffusion de la chaine %s %d.On diffuse depuis %ld secondes\n",
-		      noms[i], i, now);
+		      "Arrêt diffusion chaine \"%s\".Carte %d\n",
+		      noms[i], card);
 	    else
 	      fprintf (stderr,
-		       "Arrêt de la diffusion de la chaine %s %d. Il est (en secondes depuis le jour 0) %ld\n\tOn diffuse Depuis %ld secondes\n",
+		       "Arrêt de la diffusion de la chaine %s %d. Il est %ld\n\tOn diffuse Depuis %ld secondes\n",
 		       noms[i], i, tv.tv_sec, now);
-	    chaines_diffuses_old[i] = 0;	//mise à jour
+	    chaines_diffuses_old[i] = 0;	// mise à jour
 	  }
 
-      for (i = 0; i < nb_flux; i++)// on compte les chaines diffuses
+      // on compte les chaines diffuses
+      for (i = 0; i < nb_flux; i++)
 	if (chaines_diffuses_old[i])
 	  compteur_chaines_diff++;
 
-      if(compteur_chaines_diff)//reinit si on diffuse
+      // reinit si on diffuse
+      if(compteur_chaines_diff)
 	time_no_diff=0;
-      else if(!time_no_diff)//sinon si c le moment ou on arrete on stoque l'heure
+      // sinon si c le moment ou on arrete on stoque l'heure
+      else if(!time_no_diff)
 	time_no_diff=now;
 
-      if(time_no_diff&&((now-time_no_diff)>timeout_no_diff))//on ne diffuse plus depuis trop longtemps
+      // on ne diffuse plus depuis trop longtemps
+      if(time_no_diff&&((now-time_no_diff)>timeout_no_diff))
 	{
 	  if (!no_daemon)
 	    syslog (LOG_USER,
-		    "Carte %d ne diffuse rien depuis %d s, on quitte.On a commencé a diffuser il y a %ld secondes\n",
-		      card, timeout_no_diff, now);
+		    "Carte %d ne diffuse rien depuis %ds, on quitte.\n",
+		      card, timeout_no_diff);
 	    else
 	      fprintf (stderr,
-		    "Carte %d On ne diffuse rien depuis %d secondes, on quitte. Il est (en secondes depuis le jour 0) %ld\n\tOna commencer a diffuser il y a %ld secondes\n",
+		    "Carte %d On ne diffuse rien depuis %d secondes, on quitte. Il est %ld\n\tOna commencer a diffuser il y a %ld secondes\n",
 		      card, timeout_no_diff, tv.tv_sec, now);
-	  Interrupted=100;
+	  Interrupted=ERROR_NO_DIFF;
 	}
-			
 
-      gen_chaines_diff (no_daemon, chaines_diffuses_old);//on envoie le old pour pas annoncer une chaine qui diffuse troi paquets
+      // on envoie le old pour annoncer que les chaines
+      // qui diffusent au dessus du quota de pauqets
+      gen_chaines_diff (no_daemon, chaines_diffuses_old);
 
-      //reinit
+      // reinit
       for (i = 0; i < nb_flux; i++)
 	chaines_diffuses[i] = 0;
       alarm (ALARM_TIME);
@@ -942,7 +925,7 @@ gen_chaines_diff (int no_daemon, int *chaines_diffuses)
 	fprintf (stderr,
 		 "N'as pas pu creer le fichier des chaines diffusees %s\n",
 		 nom_fich_chaines_diff);
-      exit (2);
+      exit(ERROR_CREATE_FILE);
     }
 
   for (i = 0; i < nb_flux; i++)
