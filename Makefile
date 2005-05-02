@@ -36,3 +36,6 @@ dvb.o: dvb.c dvb.h
 
 clean:
 	rm -f  *.o *~ $(OBJS)
+
+clean_objs:
+	rm -f  *.o *~

@@ -107,6 +107,13 @@ create_card_fd(int card, int nb_flux, int *num_pids, fds_t *fds)
       return -1;
     }
 
+  if ((fds->fd_EIT = open (demuxdev[card], O_RDWR)) < 0)	//fd_EIT is the file descriptor usd to get te EIT (the number 18) pid
+    {
+      fprintf (stderr, "FD %i: ", i);
+      perror ("DEMUX DEVICE: ");
+      return -1;
+    }
+
   for (i = 0; i < nb_flux; i++)
     {
       for(j=0;j<num_pids[i];j++)
@@ -138,6 +145,7 @@ close_card_fd(int card, int nb_flux, int *num_pids, fds_t fds)
   int j=0;
 
   close (fds.fd_zero);
+  close (fds.fd_EIT);
   for (i = 0; i < nb_flux; i++)
     {
       for(j=0;j<num_pids[i];j++)

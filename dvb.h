@@ -18,6 +18,7 @@
 
 typedef struct {
   int fd_zero;
+  int fd_EIT;
   int fd_dvr;
   int fd_frontend;
   int fd[MAX_CHAINES][MAX_PIDS_PAR_CHAINE];

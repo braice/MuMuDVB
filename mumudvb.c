@@ -633,7 +633,7 @@ main (int argc, char **argv)
     }
 
   set_ts_filt (fds.fd_zero, 0, DMX_PES_OTHER);	// PID 0 : Program Association Table (PAT)
-  set_ts_filt (fds.fd_zero, 18, DMX_PES_OTHER);	// PID 18 : Event Information Table (EIT)
+  set_ts_filt (fds.fd_EIT, 18, DMX_PES_OTHER);	// PID 18 : Event Information Table (EIT)
   for (i = 0; i < nb_flux; i++)
     {
       for (j = 0; j < num_pids[i]; j++)
