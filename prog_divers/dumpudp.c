@@ -51,6 +51,11 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #define MAX_UDP_SIZE 188*7
 #define MTU MAX_UDP_SIZE 
 
+
+/* Todo */
+/* Ce programme contient beaucoup de code sale a laver */
+/* C'est un petit programme ecrit rapidement */
+
   int Interrupted=0;
 
 int sendudp(int fd, struct sockaddr_in *sSockAddr, char *data, int len) {
@@ -129,12 +134,16 @@ int makeclientsocket(char *szAddr,unsigned short port,int TTL,struct sockaddr_in
 void
 Usage ()
 {
-  fprintf (stderr, "Usage: relay source portsource dest portdest \n\n");
+  fprintf (stderr, "Usage: dumpudp source portsource [duree]\n\n");
 }
 
 static void
 SignalHandler (int signum)
 {
+  if (signum == SIGALRM)
+    {
+      fprintf (stderr, "\nFin\n");
+    }
   if (signum != SIGPIPE)
     {
       Interrupted = signum;
@@ -157,33 +166,48 @@ main (int argc, char **argv)
   int num=0;
   int num80=0;
   int signaux=0;
+  int duree=0;
 
   unsigned char temp_buf[MTU];
 
-  fprintf (stderr, "relay\n Program used to Relay an UDP multicast stream to an UDP unicast stream\n");
+  fprintf (stderr, "dumpudp\n Program used to dump an UDP multicast stream to stdout\n");
   fprintf (stderr, "Released under the GPL.\n");
   fprintf (stderr,
 	   "Latest version available from http://www.crans.org/\n");
   fprintf (stderr,
 	   "By Brice DUBOST (brice.dubost@crans.org)\n");
 
-  if (argc != 3)
+  if (argc != 3 &&argc != 4)
     {
       Usage ();
       exit (1);
     }
-  else
+  else 
     {
       strncpy (ipIn, argv[1],MAX_IP_LENGTH);
       portIn = atoi(argv[2]);
+      if(argc==4)
+	duree = atoi(argv[3]);
     }
 
 
   ttl = 2;
-  fprintf (stderr, "Diffusion sur le reseau\nUn point est affiché tous les 500 paquets\n");
+  fprintf (stderr, "Debut du dump\nUn point est affiché tous les 500 paquets\n");
   
   /* Init udp */
   socketIn = makeclientsocket (ipIn, portIn, ttl, &sIn); //le makeclientsocket est pour joindre automatiquement le flux
+
+
+  //pour la possibilite de programmer
+  if(duree)
+    {
+      fprintf (stderr, "On va dumper pendant %ds\n",duree);
+      // alarme pour la fin
+      if (signal (SIGALRM, SignalHandler) == SIG_IGN)
+	signal (SIGALRM, SIG_IGN);
+      alarm (duree);
+    }
+
 
   /* Read packets */
 
