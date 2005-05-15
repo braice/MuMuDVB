@@ -53,7 +53,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "dvb.h"
 #include "errors.h"
 
-#define VERSION "1.0.20050430"
+#define VERSION "1.0.20050515"
 
 
 /* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
@@ -198,7 +198,7 @@ main (int argc, char **argv)
       switch (c)
 	{
 	case 'c':
-	  conf_filename = malloc (strlen (optarg) + 1);
+	  conf_filename = (char *) malloc (strlen (optarg) + 1);
 	  if (!conf_filename)
 	    {
 	      fprintf(stderr, "malloc() failed: %s\n", strerror(errno));
