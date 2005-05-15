@@ -199,6 +199,11 @@ main (int argc, char **argv)
 	{
 	case 'c':
 	  conf_filename = malloc (strlen (optarg) + 1);
+	  if (!conf_filename)
+	    {
+	      fprintf(stderr, "malloc() failed: %s\n", strerror(errno));
+	      exit(errno);
+	    }
 	  strncpy (conf_filename, optarg, strlen (optarg) + 1);
 	  break;
 	case 's':
@@ -233,12 +238,12 @@ main (int argc, char **argv)
   if (conf_file == NULL)
     {
       if (!no_daemon)
-	syslog (LOG_USER, "Ne peut pas ouvrir %s\n",
-		conf_filename);
+	syslog (LOG_USER, "%s: %s\n",
+		conf_filename, strerror (errno));
       else
 	fprintf (stderr,
-		 "N'as pas pu ouvrir le fichier de config %s\n",
-		 conf_filename);
+		 "%s: %s\n",
+		 conf_filename, strerror (errno));
       exit(ERROR_CONF_FILE);
     }
 
@@ -540,12 +545,12 @@ main (int argc, char **argv)
     {
       if (!no_daemon)
 	syslog (LOG_USER,
-		"N'as pas pu creer le fichier %s\n",
-		nom_fich_chaines_diff);
+		"%s: %s\n",
+		nom_fich_chaines_diff, strerror (errno));
       else
 	fprintf (stderr,
-		 "N'as pas pu creer le fichier des chaines diffusees %s\n",
-		 nom_fich_chaines_diff);
+		 "%s: %s\n",
+		 nom_fich_chaines_diff, strerror (errno));
       exit(ERROR_CREATE_FILE);
     }
 
@@ -612,8 +617,8 @@ main (int argc, char **argv)
       pidfile = fopen (nom_fich_pid, "w");
       if (pidfile == NULL)
 	{
-	  syslog (LOG_USER, "N'as pas pu creer le fichier %s\n",
-		  nom_fich_pid);
+	  syslog (LOG_USER, "%s: %s\n",
+		  nom_fich_pid, strerror (errno));
 	  exit(ERROR_CREATE_FILE);
 	}
       fprintf (pidfile, "%d\n", getpid ());
@@ -786,12 +791,12 @@ main (int argc, char **argv)
     {
       if (!no_daemon)
 	syslog (LOG_USER,
-		"N'as pas pu supprimer le fichier %s\n",
-		nom_fich_chaines_diff);
+		"%s: %s\n",
+		nom_fich_chaines_diff, strerror (errno));
       else
 	fprintf (stderr,
-		 "N'as pas pu supprimer le fichier des chaines diffusees %s\n",
-		 nom_fich_chaines_diff);
+		 "%s: %s\n",
+		 nom_fich_chaines_diff, strerror (errno));
       exit(ERROR_DEL_FILE);
     }
 
@@ -800,8 +805,8 @@ main (int argc, char **argv)
     {
       if (remove (nom_fich_pid))
 	{
-	  syslog (LOG_USER, "N'as pas pu supprimer le fichier %s\n",
-		  nom_fich_pid);
+	  syslog (LOG_USER, "%s: %s\n",
+		  nom_fich_pid, strerror (errno));
 	  exit(ERROR_DEL_FILE);
 	}
     }
@@ -919,12 +924,12 @@ gen_chaines_diff (int no_daemon, int *chaines_diffuses)
     {
       if (!no_daemon)
 	syslog (LOG_USER,
-		"N'as pas pu creer le fichier %s\n",
-		nom_fich_chaines_diff);
+		"%s: %s\n",
+		nom_fich_chaines_diff, strerror (errno));
       else
 	fprintf (stderr,
-		 "N'as pas pu creer le fichier des chaines diffusees %s\n",
-		 nom_fich_chaines_diff);
+		 "%s: %s\n",
+		 nom_fich_chaines_diff, strerror (errno));
       exit(ERROR_CREATE_FILE);
     }
 
