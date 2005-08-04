@@ -57,6 +57,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 /* C'est un petit programme ecrit rapidement */
 
   int Interrupted=0;
+int fini=0;
 
 int sendudp(int fd, struct sockaddr_in *sSockAddr, char *data, int len) {
   return sendto(fd,data,len,0,(struct sockaddr *)sSockAddr,sizeof(*sSockAddr));
@@ -142,7 +143,16 @@ SignalHandler (int signum)
 {
   if (signum == SIGALRM)
     {
-      fprintf (stderr, "\nFin\n");
+      if(!fini)
+	{
+	  fprintf (stderr, "\nFin\n");
+	  fini=1;
+	}
+      else
+	{
+	  exit(1);
+	}
+      alarm (1);
     }
   if (signum != SIGPIPE)
     {
