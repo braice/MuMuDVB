@@ -100,9 +100,9 @@ usage (char *name)
 	   "\n"
 	   "Based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
 	   "Released under the GPL.\n"
-	   "Latest version available from http://www.crans.org/\n"
-	   "Version modifiée pour le CRANS (www.crans.org)\n"
-	   "par Brice DUBOST (dubost@crans.org)\n", name, name);
+	   "Latest version available from http://mumudvb.braice.net/\n"
+	   "Modified for the cr@ns (www.crans.org)\n"
+	   "by Brice DUBOST (dubost@crans.org)\n", name, name);
 }
 
 
@@ -292,11 +292,11 @@ main (int argc, char **argv)
 	    {
 	      if (!no_daemon)
 		syslog (LOG_USER,
-			"Pb configuration %s polarisation\n",
+			"Config issue : %s polarisation\n",
 			conf_filename);
 	      else
 		fprintf (stderr,
-			 "Probleme, fichier de configuration : configuration %s polarisation\n",
+			 "Config issue : %s polarisation\n",
 			 conf_filename);
 	      exit(ERROR_CONF);
 	    }
@@ -315,10 +315,10 @@ main (int argc, char **argv)
 	    {
 	      if (!no_daemon)
 		syslog (LOG_USER,
-			"il n'y a que 6 cartes au maximum sur une machine !!!!\n");
+			"Six cards MAX\n");
 	      else
 		fprintf (stderr,
-			 "6 cartes Maximum\n");
+			"Six cards MAX\n");
 	      exit(ERROR_CONF);
 	    }
 	}
@@ -340,10 +340,10 @@ main (int argc, char **argv)
 	    {
 	      if (!no_daemon)
 		syslog (LOG_USER,
-			"Il faut préciser le port et l'ip avant les pids\n");
+			"You must precise ip and port before PIDs\n");
 	      else
 		fprintf (stderr,
-			 "Il faut préciser le port et l'ip avant les pids\n");
+			"You must precise ip and port before PIDs\n");
 	      exit(ERROR_CONF);
 	    }
 	  while ((sous_chaine = strtok (NULL, delimiteurs)) != NULL)
@@ -354,11 +354,11 @@ main (int argc, char **argv)
 		{
 		  if (!no_daemon)
 		    syslog (LOG_USER,
-			    "Pb configuration %s pids, pid donné : %d\n",
+			    "Config issue : %s in pids, given pid : %d\n",
 			    conf_filename, pids[curr_chaine][curr_pid]);
 		  else
 		    fprintf (stderr,
-			    "Probleme avec le fichier de configuration %s au niveau des pids, le pid donné etait %d\n",
+			    "Config issue : %s in pids, given pid : %d\n",
 			     conf_filename, pids[curr_chaine][curr_pid]);
 		  exit(ERROR_CONF);
 		}
@@ -367,10 +367,11 @@ main (int argc, char **argv)
 		{
 		  if (!no_daemon)
 		    syslog (LOG_USER,
-			    "Trop de pids : %d pour la chaine %d\n",
+			    "Too many pids : %d channel : %d\n",
 			    curr_pid, curr_chaine);
 		  else
-		    fprintf (stderr, "Trop de pids : %d chaine %d\n",
+		    fprintf (stderr,
+			    "Too many pids : %d channel : %d\n",
 			     curr_pid, curr_chaine);
 		  exit(ERROR_CONF);
 		}
@@ -388,7 +389,7 @@ main (int argc, char **argv)
 	  if (!(strlen (sous_chaine) >= MAX_LEN_NOM - 1))
 	    strcpy(noms[curr_chaine],strtok(sous_chaine,"\n"));	
 	  else
-	    fprintf (stderr, "Nom de chaine trop long\n");
+	    fprintf (stderr, "Channel name too long\n");
 	}
       else if (!strcmp (sous_chaine, "qam"))
 	{
@@ -412,9 +413,11 @@ main (int argc, char **argv)
 	  else
 	    {
 	      if (!no_daemon)
-		syslog (LOG_USER, "Probleme de configuration champ QAM\n");
+		syslog (LOG_USER,
+			"Config issue : QAM\n");
 	      else
-		fprintf (stderr, "Probleme au niveau du fichier de configuration champ qam invalide\n");
+		fprintf (stderr,
+			"Config issue : QAM\n");
 	      exit(ERROR_CONF);
 	    }
 	}
@@ -432,9 +435,11 @@ main (int argc, char **argv)
 	  else
 	    {
 	      if (!no_daemon)
-		syslog (LOG_USER, "Probleme de configuration champ trans_mode\n");
+		syslog (LOG_USER,
+			"Config issue : trans_mode\n");
 	      else
-		fprintf (stderr, "Probleme au niveau du fichier de configuration champ trans_mode invalide\n");
+		fprintf (stderr,
+			"Config issue : trans_mode\n");
 	      exit(ERROR_CONF);
 	    }
 	}
@@ -454,9 +459,11 @@ main (int argc, char **argv)
 	  else
 	    {
 	      if (!no_daemon)
-		syslog (LOG_USER, "Probleme de configuration champ bandwidth\n");
+		syslog (LOG_USER,
+			"Config issue : bandwidth\n");
 	      else
-		fprintf (stderr, "Probleme au niveau du fichier de configuration champ bandwidth invalide\n");
+		fprintf (stderr,
+			"Config issue : bandwidth\n");
 	      exit(ERROR_CONF);
 	    }
 	}
@@ -478,9 +485,11 @@ main (int argc, char **argv)
 	  else
 	    {
 	      if (!no_daemon)
-		syslog (LOG_USER, "Probleme de configuration champ guardinterval\n");
+		syslog (LOG_USER,
+			"Config issue : guardinterval\n");
 	      else
-		fprintf (stderr, "Probleme au niveau du fichier de configuration champ guardinterval invalide\n");
+		fprintf (stderr,
+			 "Config issue : guardinterval\n");
 	      exit(ERROR_CONF);
 	    }
 	}
@@ -512,9 +521,11 @@ main (int argc, char **argv)
 	  else
 	    {
 	      if (!no_daemon)
-		syslog (LOG_USER, "Probleme de configuration champ coderate\n");
+		syslog (LOG_USER,
+			"Config issue : coderate\n");
 	      else
-		fprintf (stderr, "Probleme au niveau du fichier de configuration champ coderate invalide\n");
+		fprintf (stderr,
+			"Config issue : coderate\n");
 	      exit(ERROR_CONF);
 	    }
 	  LP_CodeRate=HP_CodeRate; // je ne sais pas tres bien ce que cela change mais je les met egales
@@ -529,10 +540,10 @@ main (int argc, char **argv)
   if (curr_chaine > MAX_CHAINES)
     {
       if (!no_daemon)
-	syslog (LOG_USER, "Trop de chaines : %d limite : %d\n",
+	syslog (LOG_USER, "Too many channels : %d limit : %d\n",
 		curr_chaine, MAX_CHAINES);
       else
-	fprintf (stderr, "Trop de chaines : %d la limite est : %d\n",
+	fprintf (stderr, "Too many channels : %d limit : %d\n",
 		 curr_chaine, MAX_CHAINES);
       exit(ERROR_TOO_CHANNELS);
     }
@@ -557,7 +568,7 @@ main (int argc, char **argv)
   fclose (chaines_diff);
 
   if (!no_daemon)
-    syslog (LOG_USER, "Diffusion. Frequence %lu polarisation %c srate %lu\n",
+    syslog (LOG_USER, "Diffusion. Freq %lu pol %c srate %lu\n",
 	    freq, pol, srate);
 
   // alarme pour le délai d'accord
@@ -593,9 +604,9 @@ main (int argc, char **argv)
   if (i < 0)
     {
       if (!no_daemon)
-	syslog (LOG_USER, "Problème d'accord, carte %d\n", card);
+	syslog (LOG_USER, "Tunning issue, card %d\n", card);
       else
-	fprintf (stderr, "Problème pour accorder la carte %d\n", card);
+	fprintf (stderr, "Tunning issue, card %d\n", card);
 
       exit(ERROR_TUNE);
     }
@@ -651,9 +662,9 @@ main (int argc, char **argv)
 
   ttl = 2;
   if (!no_daemon)
-    syslog (LOG_USER, "Carte %d accordée\n", card);
+    syslog (LOG_USER, "Card %d tuned\n", card);
   else
-    fprintf (stderr, "Carte %d accordée\n", card);
+    fprintf (stderr, "Card %d tuned\n", card);
 
   // Init udp
   for (i = 0; i < nb_flux; i++)
@@ -664,23 +675,23 @@ main (int argc, char **argv)
     }
 
   if (!no_daemon)
-    syslog (LOG_USER, "Diffusion %d chaine%s\n", nb_flux,
+    syslog (LOG_USER, "Diffusion %d channel%s\n", nb_flux,
 	    (nb_flux == 1 ? "" : "s"));
   else
-    fprintf (stderr, "Diffusion de %d chaine%s\n", nb_flux,
+    fprintf (stderr, "Diffusion %d channel%s\n", nb_flux,
 	     (nb_flux == 1 ? "" : "s"));
 
   for (i = 0; i < nb_flux; i++)
     {
       if (!no_daemon)
 	{
-	  syslog (LOG_USER, "Chaine \"%s\" n %d ip %s:%d\n",
+	  syslog (LOG_USER, "Channel \"%s\" num %d ip %s:%d\n",
 		  noms[i], i, ipOut[i], portOut[i]);
 	}
       else
 	{
 	  fprintf (stderr,
-		   "Chaine %s %d\n        L'ip est %s, le port est %d\n",
+		   "Channel \"%s\" num %d ip %s:%d\n",
 		   noms[i], i, ipOut[i], portOut[i]);
 	  fprintf (stderr, "        pids : ");
 	  for (j = 0; j < num_pids[i]; j++)
@@ -749,7 +760,7 @@ main (int argc, char **argv)
 		  {
 		    alarm_count = 0;
 		    fprintf (stderr,
-			     "Retour a la normale, on retransmet des paquets\n");
+			     "Good, we receive back significant data\n");
 		  }
 	      }
 	    count_non_transmis++;
@@ -757,11 +768,11 @@ main (int argc, char **argv)
 	      {
 		if (!no_daemon)
 		  syslog (LOG_USER,
-			  "Probleme : Moins d'un paquet sur %d a été transmis\n",
+			  "Error : less than one paquet on %d sent\n",
 			  ALARM_COUNT_LIMIT);
 		else
 		  fprintf (stderr,
-			   "Probleme : Moins d'un paquet sur %d a été transmis\n",
+			  "Error : less than one paquet on %d sent\n",
 			   ALARM_COUNT_LIMIT);
 		alarm_count = 1;
 	      }
@@ -832,11 +843,11 @@ SignalHandler (int signum)
 	{
 	  if (!no_daemon)
 	    syslog (LOG_USER,
-		    "Carte non accordée apres %ds, on stoppe\n",
+		    "Card not tuned after %ds - exiting\n",
 		    timeout_accord);
 	  else
 	    fprintf (stderr,
-		     "La carte n'a pas été accordée au bout de %d secondes, on arrête de s'obstiner\n",
+		    "Card not tuned after %ds - exiting\n",
 		     timeout_accord);
 	  exit(ERROR_TUNE);
 	}	
@@ -845,24 +856,24 @@ SignalHandler (int signum)
 	  {
 	    if (!no_daemon)
 	      syslog (LOG_USER,
-		      "Reprise diffusion chaine \"%s\".Carte %d\n",
+		      "Channel \"%s\" back.Card %d\n",
 		      noms[i], card);
 	    else
 	      fprintf (stderr,
-		       "Reprise de la diffusion de la chaine %s %d. Il est %ld\n\tOn diffuse Depuis %ld secondes\n",
-		       noms[i], i, tv.tv_sec, now);
+		      "Channel \"%s\" back.Card %d\n",
+		       noms[i], card);
 	    chaines_diffuses_old[i] = 1;	// mise à jour
 	  }
 	else if ((chaines_diffuses_old[i]) && (chaines_diffuses[i] < 100))
 	  {
 	    if (!no_daemon)
 	      syslog (LOG_USER,
-		      "Arrêt diffusion chaine \"%s\".Carte %d\n",
+		      "Channel \"%s\" down.Card %d\n",
 		      noms[i], card);
 	    else
 	      fprintf (stderr,
-		       "Arrêt de la diffusion de la chaine %s %d. Il est %ld\n\tOn diffuse Depuis %ld secondes\n",
-		       noms[i], i, tv.tv_sec, now);
+		      "Channel \"%s\" down.Card %d\n",
+		      noms[i], card);
 	    chaines_diffuses_old[i] = 0;	// mise à jour
 	  }
 
@@ -883,12 +894,12 @@ SignalHandler (int signum)
 	{
 	  if (!no_daemon)
 	    syslog (LOG_USER,
-		    "Carte %d ne diffuse rien depuis %ds, on quitte.\n",
+		    "No data from card %d in %ds, exiting.\n",
 		      card, timeout_no_diff);
 	    else
 	      fprintf (stderr,
-		    "Carte %d On ne diffuse rien depuis %d secondes, on quitte. Il est %ld\n\tOna commencer a diffuser il y a %ld secondes\n",
-		      card, timeout_no_diff, tv.tv_sec, now);
+		    "No data from card %d in %ds, exiting.\n",
+		      card, timeout_no_diff);
 	  Interrupted=ERROR_NO_DIFF;
 	}
 

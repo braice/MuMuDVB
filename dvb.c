@@ -4,7 +4,7 @@ mumudvb - UDP-ize a DVB transport stream.
 (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
 Modified By Brice DUBOST
  * 
-The latest version can be found at http://www.crans.org
+The latest version can be found at http://mumudvb.braice.net
 
 Copyright notice:
 
