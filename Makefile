@@ -38,11 +38,15 @@ dumpudp: prog_divers/dumpudp.c
 	$(CC) $(INCS) $(CFLAGS) -o prog_divers/dumpudp prog_divers/dumpudp.c
 
 clean:
-	rm -f  *.o *~ $(OBJS)
+	rm -f  *.o *~ $(OBJS) prog_divers/dumpudp
 
 clean_objs:
 	rm -f  *.o *~
 
 install:
-	cp mumudvb /usr/local/bin
-	cp prog_divers /usr/local/bin
+	cp mumudvb /usr/bin
+	cp prog_divers/dumpudp /usr/bin
+
+uninstall:
+	rm /usr/bin/mumudvb
+	rm /usr/bin/dumpudp
