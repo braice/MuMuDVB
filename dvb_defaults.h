@@ -92,10 +92,6 @@
 
 #ifndef DVB_T_LOCATION
 
-#ifndef UK
-#warning No DVB-T country defined in dvb_defaults.h defaulting to UK ignore this if using Satellite or Cable
-#endif
-
 /* UNITED KINGDOM settings */
 #define DVB_T_LOCATION		    "in United Kingdom"
 #define BANDWIDTH_DEFAULT           BANDWIDTH_8_MHZ

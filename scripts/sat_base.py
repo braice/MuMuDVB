@@ -1,15 +1,17 @@
 #! /usr/bin/env python
 # -*- coding: iso8859-15 -*-
 
+""" Configuration de base des différents transpondeurs disponibles """
+
 #Auteur : Frédéric Pauget
 #Maintenance et adaptations : DUBOST Brice
 #Licence : GPLv2
 
 from commands import getoutput
 from time import sleep
-import os
-    
-IP = getoutput("host $(hostname)").split()[2]
+import os, socket
+
+IP = socket.gethostbyaddr(socket.gethostname())[-1][0]
 
 class CarteOqp(Exception) :
     """ La carte est déja utilisée """
@@ -21,7 +23,7 @@ class carte :
     """ Classe parent de toute classe de transpondeur """
     # Niveux de verbosite :
         # 0 : ne dit rien
-        # 1 : messages à caractères inforamtifs
+        # 1 : messages à caractères informatifs
         # 2 : messages de debug
         # 3 : ne permet pas à mumudvb de daemonizer
     verbose = 3
@@ -29,7 +31,7 @@ class carte :
     CONF_FILE = "/etc/sat/carte%i.conf" # %i : numero de la carte
     
     timeout_accord=20 #en secondes
-    timeout_no_diff=300 #en secondes
+    timeout_no_diff=60 #en secondes
     
     entete_conf = """### Fichier généré, NE PAS EDITER
 freq=%(freq)i
@@ -60,6 +62,12 @@ pids=%(pids)s
 
     pid_file = "/var/run/tv/mumudvb_carte%i.pid" # % num carte
     mumudvb = "/usr/local/bin/mumudvb "
+    
+    def __cmp__(a,b) :
+        for attr in ( 'card', 'freq', 'chaines' ) :
+            if getattr(a,attr) != getattr(b,attr) :
+                return -2
+        return 0
     
     def __init__(self,card) :
         """ Initalisation card est le numéro (entier) de la carte 
@@ -216,24 +224,27 @@ class Hotbird_10873(carte) :
        '3108 3138' : 'rad fra Cherie FM',
        '3111 3141' : 'rad fra HITWEST',
        '3202 3232' : 'rad fra Rires et chansons',
-       '3210 3240' : 'rad fra Nostalgie' }
+       '3210 3240' : 'rad fra Nostalgie',
+       '4100 4130' : 'rad fra GUIDE' }
 
 class Hotbird_10911(carte) :
     pol='v'
     srate=27500
     chaines = {
        '3207 3237' : 'rad fra RFI',
-       '3211 3241' : 'rad fra Radio courtoisie',
        '3301 3331' : 'rad fra Beur FM',
        '3501 3531' : 'rad fra France Musiques',
        '3503 3533' : 'rad fra FIP',
        '3506 3536' : 'rad fra France Culture',
-       '3508 3538' : 'rad fra Le Mouv' }
+       '3508 3538' : 'rad fra Le Mouv',
+       '5801 5831' : 'rad fra Meteo Express',
+       '7500 7530' : 'rad fra PLAYIN TV' }
 
 class Hotbird_11137(carte) :
     pol='h'
     srate=27500
     chaines = {
+       '524 644 260' : 'fra Beur TV',
        '3521 3641 717 3601' : 'fra TV5 FBS',
        '3522 3642 719 3602' : 'fra TV5 Europe',
        '3523 3643 265' : 'ita Roma uno',
@@ -262,23 +273,23 @@ class Hotbird_11242(carte) :
     pol='v'
     srate=27500
     chaines = {
-       '169 116 1033 58' : 'ger MTV Germany' }
+       '121 122 123' : 'ita TV7 Lombardia',
+       '3011 3012 3010' : 'fra TV8 Mont Blanc',
+       '33 36 35 500' : 'fra HD Forum',
+       '308 256 257' : 'fra World Fashion Channel' }
 
 class Hotbird_11304(carte) :
     pol='h'
     srate=27500
     chaines = {
-       '3011 3012 209' : 'fra TV8 mont blanc',
        '1060 1020 210' : 'esp venevision continental',
        '310 256 211' : 'esp TV Chile',
-       '513 514 212' : 'esp TV Colombia',
-       '101 201 214' : 'esp Cubavision international'}
+       '513 514 212' : 'esp TV Colombia'}
 
 class Hotbird_11604(carte) :
     pol='h'
     srate=27500
     chaines = {
-       '111 112 300 114' : 'ger TV NRW',
        '172 173 600 174' : 'ger Das Erste',
        '1000 1001 700' : 'ger DW TV',
        '175 176 900 177' : 'ger RTL2 Schweiz',
@@ -289,10 +300,10 @@ class Hotbird_11623(carte) :
     pol='v'
     srate=27500
     chaines = {
-       '223 233 243 203' : 'fra ger Arte',
        '230 250 210 297' : 'fra 123 sat',
        '225 245 205' : 'fra Best Of Shopping',
        '221 241 201' : 'x-ero Videosexy TV',
+       '231 251 32' : 'x-ero SexySat 3',
        '227 247 207 287' : 'rom TV romania'}
 
 class Hotbird_11642(carte) :
@@ -308,7 +319,7 @@ class Hotbird_11727(carte) :
     srate=27500
     chaines = {
        '2711 2712 257' : 'fra la locale',
-#       '2731 2732 264' : 'ara Al Maghribiyah',
+       '2730 2731 2732 264' : 'ara Al Maghribiyah',
        '2741 2742 265' : 'ita Sicilia International (SET)',
        '2751 2752 266' : 'ita Sardegna Uno Sat'}
        
@@ -326,14 +337,14 @@ class Hotbird_12245(carte) :
     chaines = {
        '127 137 117' : 'fra TELIF',
        '128 138 32' : 'x-ero sexysat',
-       '200 201 119' : 'ita made in Italy' }
+       '1023 1033 1014' : 'fra astro center TV' }
 
 class Hotbird_12476(carte) :
     pol='h'
     srate=27500
     chaines = {
-       '101 201 202 203 204 205 206 207 208 209 210 211 212 100' : 'fra autres  EBS',
-#       '700 701 702' : 'kur CTV Kurdistan',
+       '101 201 202 203 204 205 206 207 208 209 210 211 212 100' : 'vo autres  EBS',
+       '101 203 100' : 'fra EBS',
        '601 602 257' : 'ara 2M',
        '551 552 550' : 'x-ero X Stream'}
 
@@ -350,6 +361,8 @@ class Hotbird_12577(carte) :
     chaines = {
        '1204 1304 1104' : 'fra telesud',
        '1206 1306 1106' : 'fra F men',
+       '1218 1313 33 34' : 'x-ero sexysat1',
+       '1206 1306 1106' : 'x-ero Full X 4 free',
        '1209 1309 1109' : 'fra liberty TV',
        '1239 1339 1139' : 'ned liberty TV' }
 
@@ -357,62 +370,50 @@ class Hotbird_12597(carte) :
     pol='v'
     srate=27500
     chaines = {
-       '160 80 1024 32' : 'ara Al Arabiya',
-       '161 84 1025' : 'fra KTO',
-       '163 92 1027 41' : 'eng BBC World',
+       '80 81 1024' : 'rus sport planeta',
+       '163 92 1027' : 'eng BBC World',
        '167 108 1031' : 'rus ORT International',
-       '2221 2231 2232 2233 2234 2235 2236 2237 2238 1034 768' : 'fra autres Euronews' }
+       '2221 2231 2232 2233 2234 2235 2236 2237 2238 1034 768' : 'fra autres Euronews',
+       '2221 2232 1034 768' : 'eng Euronews' }
 
-class TNT_R1_586000(carte) :
-    qam="64"
-    trans_mode="8k"
+class TNT_base(carte) :
+    qam="auto"
+    trans_mode="auto"
+    guardinterval="auto"
+    coderate="auto"
     bandwidth="8MHz"
-    guardinterval="1/8"
-    coderate="3/4"
+    
+class TNT_R1_586000(TNT_base) :
     chaines = {
-       '120 130 110' : 'fra France 2',
-       '210 220 230' : 'fra France 3',
-       '410 420 430' : 'fra France 4',
-       '310 320 330' : 'fra France 5',
-       '510 520 530' : 'fra Arte',
-       '610 620 630' : 'fra LCP Public Senat' }
+       '120 130 110' : 'fra TNT02 France 2',
+       '210 220 230' : 'fra TNT03 France 3',
+       '410 420 430' : 'fra TNT14 France 4',
+       '310 320 330' : 'fra TNT05 France 5',
+       '510 520 530' : 'fra TNT07 Arte',
+       '510 520 531' : 'ger Arte',
+       '610 620 630' : 'fra TNT13 LCP Public Senat' }
 
-class TNT_R2_474000(carte) :
-    qam="64"
-    trans_mode="8k"
-    bandwidth="8MHz"
-    guardinterval="1/32"
-    coderate="2/3"
+class TNT_R2_474000(TNT_base) :
     chaines = {
-       '160 80 513'  : 'fra Direct 8',
-       '161 84 514' : 'fra TMC'}
+       '160 80 1280' : 'fra TNT08 Direct 8',
+       '161 84 1281' : 'fra TNT10 TMC',
+       '162 88 1282' : 'fra TNT15 BFM TV',
+       '163 92 1283' : 'fra TNT16 i tele',
+       '164 96 1284' : 'fra TNT17 europe2 TV',
+       '165 100 1285' : 'fra TNT18 Gulli'}
 
-class TNT_R3_522000(carte) :
-    qam="64"
-    trans_mode="8k"
-    bandwidth="8MHz"
-    guardinterval="1/32"
-    coderate="2/3"
+class TNT_R3_522000(TNT_base) :
     chaines = {
-       '160 80 769' : 'fra Canal +'}
+       '160 170 120 1280' : 'fra TNT04 Canal'}
 
-class TNT_R4_498000(carte) :
-    qam="64"
-    trans_mode="8k"
-    bandwidth="8MHz"
-    guardinterval="1/32"
-    coderate="2/3"
+class TNT_R4_498000(TNT_base) :
     chaines = {
-       '120 130 1025'  : 'fra M6',
-       '220 230 1026'  : 'fra W9',
-       '320 330 1027' : 'fra NT1'}
+       '120 130 110'  : 'fra TNT06 M6',
+       '220 230 210'  : 'fra TNT09 W9',
+       '320 330 310' : 'fra TNT11 NT1'}
 
-class TNT_R6_562000(carte) :
-    qam="64"
-    trans_mode="8k"
-    bandwidth="8MHz"
-    guardinterval="1/32"
-    coderate="2/3"
+class TNT_R6_562000(TNT_base) :
     chaines = {
-       '120 130 1537'  : 'fra TF1',
-       '220 230 1538'  : 'fra NRJ12'}
+       '120 130 100'  : 'fra TNT01 TF1',
+       '220 230 231 200'  : 'fra TNT12 NRJ12'}
+
