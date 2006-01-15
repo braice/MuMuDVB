@@ -23,7 +23,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
     
 */
   /* ATTENTION
-     Version modifiee par braice (dubost@crans.org) pour le Crans (www.crans.org)
+     Version modifiee par braice (mumudvb@braice.net) pour le Crans (www.crans.org)
      me demander pour toute documentation)
    */
 

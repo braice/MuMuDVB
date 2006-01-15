@@ -183,9 +183,9 @@ main (int argc, char **argv)
   fprintf (stderr, "dumpudp\n Program used to dump an UDP multicast stream to stdout\n");
   fprintf (stderr, "Released under the GPL.\n");
   fprintf (stderr,
-	   "Latest version available from http://www.crans.org/\n");
+	   "Latest version available from http://mumudvb.braice.net/\n");
   fprintf (stderr,
-	   "By Brice DUBOST (brice.dubost@crans.org)\n");
+	   "By Brice DUBOST (mumudvb@braice.net)\n");
 
   if (argc != 3 &&argc != 4)
     {
