@@ -1,0 +1,51 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH MUMUDVB 1 "12 janvier 2006"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.SH NAME
+mumudvb \- multicast DVB streaming
+
+.SH SYNOPSIS
+.B mumudvb
+.RI [ options ]
+-c
+conf_file
+.br
+.B mumudvb
+.RI [ options ]
+--config
+conf_file
+
+.SH DESCRIPTION
+\fBmumudvb\fP is a fork from dvbstream adapted for the CR@NS
+(http://www.crans.org). We added features we missed. There were so
+many changes that we decided to redistribute the project in the
+free software way.
+
+.SH SEE ALSO
+The program is documented (in French for now) fully in README-fr.
+
+.SH AUTHOR
+Upstream author:
+Brice DUBOST <mumudvb@braice.net>
+.br
+Contributor:
+Manuel SABBAN <manu@crans.ens-cachan.fr> (use of getopt)
+.br
+Acknowledgements:
+Dave CHAPMAN (for writing dvbstream)
+.PP
+This manual page was written by Stephane Glondu <stephane.glondu@crans.org>.

@@ -95,6 +95,6 @@ N'oubliez pas de spécifier les paramètres de réception si vous n'avez pas spécif
 
 -mumudvb n'est pas capable de diffuser du dvb-c
 
--Lors de l'exécution le programme écrit la liste des chaînes diffusées dans le fichier /var/run/tv/chaines_diffusees_carte%d le %d est remplacé par le numéro de carte, le chemin n'est pas paramétrable mais cela est facile à implémenter, envoyez moi un mail si vous en avez besoin. Ce fichier contient la liste des chaînes diffusées (actualisée toute les 5 secondes) de la forme suivante (pour chaque ligne) : "nom:ip:port"
+-Lors de l'exécution le programme écrit la liste des chaînes diffusées dans le fichier /var/run/mumudvb/chaines_diffusees_carte%d le %d est remplacé par le numéro de carte, le chemin n'est pas paramétrable mais cela est facile à implémenter, envoyez moi un mail si vous en avez besoin. Ce fichier contient la liste des chaînes diffusées (actualisée toute les 5 secondes) de la forme suivante (pour chaque ligne) : "nom:ip:port"
 
 -mumudvb supporte au maximum 6 cartes (à l'heure ou j'écris (04/2005), les possibilités sont d'utiliser un noyau 2.4.* avec devfs :-( ou d'utiliser un noyau > 2.6.11 ( ou 2.6.10 avec un backport du patch )  avec udev compilé statiquement avec klibc en attendant la mise a jour de la glibc ), cette limite peut être augmentée facilement si quelqu'un a une carte avec plus de 6 slots PCI (on est intéressé dans ce cas)

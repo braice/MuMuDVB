@@ -549,7 +549,7 @@ main (int argc, char **argv)
     }
 
   // on le vide, précaution
-  sprintf (nom_fich_chaines_diff, "/var/run/tv/chaines_diffusees_carte%d",
+  sprintf (nom_fich_chaines_diff, "/var/run/mumudvb/chaines_diffusees_carte%d",
 	   card);
   chaines_diff = fopen (nom_fich_chaines_diff, "w");
   if (chaines_diff == NULL)
@@ -624,7 +624,7 @@ main (int argc, char **argv)
   //On écrit son PID dans un fichier
   if (!no_daemon)
     {
-      sprintf (nom_fich_pid, "/var/run/tv/mumudvb_carte%d.pid", card);
+      sprintf (nom_fich_pid, "/var/run/mumudvb/mumudvb_carte%d.pid", card);
       pidfile = fopen (nom_fich_pid, "w");
       if (pidfile == NULL)
 	{
