@@ -60,7 +60,7 @@ name=%(name)s
 pids=%(pids)s
 """
 
-    pid_file = "/var/run/tv/mumudvb_carte%i.pid" # % num carte
+    pid_file = "/var/run/mumudvb/mumudvb_carte%i.pid" # % num carte
     mumudvb = "/usr/local/bin/mumudvb "
     
     def __cmp__(a,b) :

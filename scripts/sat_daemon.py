@@ -15,7 +15,7 @@ sys.path.append('/usr/scripts/python-lib')
 import lock
 from daemon import daemonize
 
-LOCK='/var/run/tv/tv'
+LOCK='/var/run/mumudvb/tv'
 
 def usage(erreur=None) :
     if erreur : print erreur

@@ -18,8 +18,8 @@ from daemon import daemonize
 ################CONFIG
 
 SAP_CONF = '/etc/sap.cfg'
-LOCK='/var/run/tv/sap'
-CHAINES_DIFFUSES = '/var/run/tv/chaines_diffusees_carte%d'
+LOCK='/var/run/mumudvb/sap'
+CHAINES_DIFFUSES = '/var/run/mumudvb/chaines_diffusees_carte%d'
 base_conf = """##################################
 # Fichier généré automatiquement #
 # NE PAS EDITER                  #
