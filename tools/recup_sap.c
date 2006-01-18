@@ -164,7 +164,8 @@ main (int argc, char **argv)
   int lengthPacket;
   int signaux=0;
    char caract;
-   int i,j;
+   int i;
+   int j=0;
    int print_line=0;
    char chaine_ip[256];
    char chaine_nom[256];
