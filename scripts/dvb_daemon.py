@@ -7,9 +7,9 @@ Auteur : Frédéric Pauget
 Licence : GPLv2
 """
 import sys, getopt, os, time, copy, signal
-from sat_base import NotRunning, CarteOqp
+from dvb_base import NotRunning, CarteOqp
 
-import sat_conf
+import dvb_conf
 
 sys.path.append('/usr/scripts/python-lib')
 import lock
@@ -75,7 +75,7 @@ def term(a=None,b=None) :
     
 def stop(liste) :
     """ Coupe la diffusion des cartes dont le numéro est dans la liste """
-    from sat_base import carte
+    from dvb_base import carte
     for i in liste :
         print "stop %i" % carte(i).card
         #carte(i).stop()
@@ -102,14 +102,14 @@ def hup(sig,frame) :
     
 def config(verbose,timeout_accord) :
     """ Retourne une liste d'instance de carte """
-    reload(sat_conf)
+    reload(dvb_conf)
     
     # Config des cartes
-    for carte in sat_conf.conf :
+    for carte in dvb_conf.conf :
         carte.verbose = verbose
         carte.timeout_accord = timeout_accord
         
-    return sat_conf.conf
+    return dvb_conf.conf
         
 if __name__ == '__main__' :
     ## Lancement par l'utilisateur tv

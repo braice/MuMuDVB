@@ -7,7 +7,7 @@ Auteur : Frédéric Pauget
 Licence : GPLv2
 """
 import sys, getopt, os
-from sat_base import NotRunning, CarteOqp
+from dvb_base import NotRunning, CarteOqp
 
 if os.getuid() != 101 :
     print "Ce programme doit être lancé par l'utilisateur tv (uid=101)"
@@ -81,11 +81,11 @@ except :
 
 if args[0] == 'start' :
     if cartes == range(5) :
-        from sat_conf import conf
+        from dvb_conf import conf
         cartes = conf
     else :
         transpondeur = args[2].capitalize()
-        from sat_base import *
+        from dvb_base import *
         try :
             carte = eval(transpondeur)
             cartes = [ carte(cartes[0]) ] 
@@ -94,7 +94,7 @@ if args[0] == 'start' :
     
     
 elif args[0] == 'stop' :
-    from sat_base import carte
+    from dvb_base import carte
     cartes = map(carte,cartes)
     
 # On effectue l'opération demandée

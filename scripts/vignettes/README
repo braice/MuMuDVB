@@ -1,6 +1,6 @@
 vignettes.py
 
-With this script you can generate thunbails of all channels on your lan.
+With this script you can generate thumbnails of all channels on your lan.
 
 It needs recup_sap, dumpudp (in progs_divers), mencoder and convert.
 

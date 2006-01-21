@@ -3,7 +3,7 @@
 
 """ Défini les transpondeurs à associer à chacune des cartes """
 
-from sat_base import *
+from dvb_base import *
 from socket import gethostname
 
 host = gethostname()
