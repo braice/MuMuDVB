@@ -102,7 +102,7 @@ usage (char *name)
 	   "Released under the GPL.\n"
 	   "Latest version available from http://mumudvb.braice.net/\n"
 	   "Modified for the cr@ns (www.crans.org)\n"
-	   "by Brice DUBOST (dubost@crans.org)\n", name, name);
+	   "by Brice DUBOST (mumudvb@braice.net)\n", name, name);
 }
 
 

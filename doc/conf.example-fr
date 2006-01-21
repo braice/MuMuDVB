@@ -1,15 +1,15 @@
-#Frequency
+#La frequence
 freq=12476
 #Polarisation
 pol=h
 #Srate
 srate=27500
-#Card number
+#Le numero de la carte a utiliser
 card=0
-#tuning timeout
+#Le temps d'attente pour que la carte accorde
 timeout_accord=20
-#Channel list
-#The number of pids must be less than 16
+#La liste des chaines
+#Le nombre de pid est quelconque (inferieur a 16)
 ip=239.200.200.200
 port=1234
 name=fra_autres__EBS

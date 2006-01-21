@@ -1,0 +1,32 @@
+README for config file of mumudvb
+
+mumudvb must use a file de configuration to give him all the different reception parameters and the pid repartition aver the different channels. You will find an example in the file conf.example attached with mumudvb sources in the doc directory.
+
+mumudvb is not sensible to the parameter's order except for chanels where pids must be put after the ip and the port
+
+comments can be done anywhere in the configuration file : just start the line with #
+
+All parameters are like: name=value
+
+
+'''List of parameters and their description ( (f) : optionnal parameter )'''
+----
+||'''Nom :'''                          ||'''valeur:'''                                ||
+||freq                           ||transponder's frequency in MHz ||
+||pol                            ||transponder's polarisation (a char) v or h (not case sensitive) ||
+||srate                          ||transponder's strate ||
+||card (f)                       ||card number (défaut : 0) ||
+||timeout_accord (f)             ||tuning timeout (in seconds) (default : 300 (5min)) ||
+||timeout_no_diff (f)            ||if the program doesn't stream any chanels, he will kill himself at the end of this time (in seconds) (default : 600 (10min)) ||
+|| Pour la TNT                   ||
+||qam                            ||quadrature amplitude modulation, possible values : qpsk,16,32,64,128,256,auto ||
+||trans_mode                     ||transmission mode, possible values : 2k,8k,auto ||
+||bandwidth                      ||bandwith, possible values : 8MHz,7MHz,6MHz,auto ||
+||guardinterval                  ||guard interval, possible values : 1/32,1/16,1/8,1/4,auto ||
+||coderate                       ||coderate, possible values : none,1/2,2/3,3/4,4/5,5/6,6/7,7/8,8/9,auto ||
+||'''For each channel '''||
+||ip                             ||multicast (can also be unicast) ip where the chanel will be diffused ||
+||port                           ||port ||
+||pids                           ||a pid list space separeted (any number, the pid 0 (pid PAT) is always sent) ||
+||name (f)                       ||the name given to the chanel in /var/run/mumudvb/chaines_diffusees%d (used to generate  SAP announces) ||
+

@@ -3,4 +3,119 @@ mumudvb v1.2 - README
 Website :
 http://mumudvb.braice.net
 
-TODO : Translate it ...
+= Presentation =
+
+Description : mumudvb is a modification of dvbstream that cr@ns (http://www.crans.org) made. We have decided to redistribute it.
+
+Mumudvb is a program which can redistribute stream from DVB on a network, in multicast. It's main feature is to take a whole transponder and put each channel on a different multicast IP.
+
+= Authors =
+
+Main author : 
+Brice DUBOST (mumudvb@braice.net)
+
+Contributions :
+Manuel SABBAN (manu@crans.ens-cachan.fr) (getopt)
+Stephane GLONDU (glondu@crans.ens-cachan.fr) (makefile cleaning, man page)
+
+Special thanks to Dave CHAPMAN (dvbstream author)
+
+= Contents and features =
+
+New features comparing to dvbstream v0.6 : 
+
+ * Can show reception level when streaming
+ * To make a list of channels in real time (can be used to make SAP announces)
+ * Can deamonize and write his own pid in a file
+ * To use config file
+ * The program can kill himself if he receives no data from the card
+ * The program stops trying tuning after a configurable timeout
+ * The main fonctionality : stream channels from a transponder on different multicast IPs
+ * Can stream the same pid on different channels (multicast Ip)
+ * Functionnal support of DVB-T
+ * Always send Pid 0 (PAT) and 18 (0x12 aka EPG or EIT)
+ * mumudvb automatically suscribe to all multicast groups (IGMP membership request) in order to avoid some switches to broadcast all channels.
+
+This isn't a patch for dvbstream due to the following reasons :
+ * You MUST use a config file
+ * The command line parameters are not compatible
+ * mumudvb uses raw udp and no RTP for a best compatibility
+ * The option to get MPEG2-PS has been removed as the telnet interface
+
+Others programs are joined with mumudvb :
+ * relay : this program takes a stream and sends it again on a different ip. It can be used to unicaast a stream over a network that doesn't support multicast, and multicast it again at the other end.
+ * dumpudp : this program takes a stream from the network and puts it on the standard output. you can set an optionnal timeout ( Can be useful to record a TV program )
+ * dumpudp_limited : same as dumpudp but for a limited number of packets (used to generate thunbails)
+ * recup_sap : tiny sap client, get sap announces during 60 seconds and put them on the standard output (unsorted)
+ * Example scripts are joind in the script directory. They are undocumented for the moment. They are used to genreate sap announces, automtically launch and generate configuration for mumudvb on multiple cards and multiple servers, and generate thundbails. See the source code for more explanations.
+
+
+= Installation =
+
+In order to install mumudvb type :
+
+make
+make install (with root user)
+
+If you want use defalts values for DVB-T tuning (optionnal, fore more details see src/dvb_defaults.h) type
+"make FRANCE=1" instead of "make"
+
+= Usage =
+
+The documentation for configuration file syntax is in doc/README_CONF
+
+Usage : 
+	mumudvb [options] -c config_file
+	mumudvb [options] --config config_file
+
+Possible options are : 
+
+-d, --debug
+	Don't deamonize and print messages on the standard output.
+
+-s, --signal
+	Print signal strenght every 5 seconds
+
+-h, --help
+	Show help
+
+Signal : (see thi kill's man page)
+    SIGUSR1 : switch the signal strenght printing
+
+= Technical details (not sorted) =
+
+ * mumudvb can receive DVB-s (sattellite) or DVB-T (terrestrial). It doesn't support DisEq.
+
+ * The pid 0 is automatically sent with all channels. It is useful for the client in order to know what channels are present (vlc NEED it).
+
+ * The pid 0 is automatically sent with all channels. It is useful for the client in order to know the TV guide.
+
+ * CPU consuming : mumudvb takes 15% CPU of a celeron 2.6GHz with an Hauppauge card and 2.6.9 when streaming a full transponder (about 30MBit/s)
+
+ * Don't use old via or nForce chipsets. They can't deal with a lot of datas on the PCI bus.
+
+ * Using mumudvb for DVB-T streaming, don't forget to specify tuning parameters they are a little more complicated than satellite.
+
+ * mumudvb hasn't been tried with DVB-C so it mights not work.
+
+ * When the program starts, he writes the channel list on /var/run/mumudvb/chaines_diffusees_carte%d (where %d is the card number). This file contains streamed channels (updated every 5 seconds) in the form : "name:ip:port"
+
+ * mumudvb can deal with 6 cards. You must use a kernel >= 2.6.11 and udev statically compiled witch klibc (04/2005) waiting for glibc update...
+
+= Know issues =
+
+== Vlc can read the stream but not xine or mplayer ==
+
+ * For Vlc, you must specify the PMT pid besides audio and video pids. It's a frequent issue, indeed scan doesn't give this pid but his number. To resolve this issue you can use {{{vlc -v}}} and you'll see a ligne like : {{{[00000269] ts demuxer debug:   * number=1025 pid=110}}} you'll have the pid associated with your number, or you can also use dvbsnoop.
+
+== mumudvb can't deamonize ==
+
+ * In order to deamonize mumudvb needs the directory /var/run/mumudvb/ to be writable, in order to write his pid and the channel list.
+
+== The system crashes ==
+
+ * old via chipset or nForce chipset are not professional chipsets. They can't deal with a lot of datas on PCI. But you can try to tune your BIOS.
+
+== Tuning issues with DVB-T ==
+
+ * You must check tuning settings, knowing that auto bandwidth does'nt work.
