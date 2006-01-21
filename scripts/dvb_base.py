@@ -28,7 +28,7 @@ class carte :
         # 3 : ne permet pas à mumudvb de daemonizer
     verbose = 3
     
-    CONF_FILE = "/etc/sat/carte%i.conf" # %i : numero de la carte
+    CONF_FILE = "/etc/mumudvb/carte%i.conf" # %i : numero de la carte
     
     timeout_accord=20 #en secondes
     timeout_no_diff=60 #en secondes
