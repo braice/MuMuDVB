@@ -11,11 +11,11 @@
 #define ALARM_TIME_TIMEOUT 60
 #define ALARM_TIME_TIMEOUT_NO_DIFF 600
 
-#define MAX_UDP_SIZE 188*7
-#define MTU MAX_UDP_SIZE
+// seven dvb paquets in one UDP
+#define MAX_UDP_SIZE (PACKET_SIZE*7)
+
 
   //Crans defines
-#define MAX_FLUX 	        128
 #define CONF_LINELEN 	        512
 #define ALARM_COUNT_LIMIT	1024
 #define MAX_LEN_NOM		256

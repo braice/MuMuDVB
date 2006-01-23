@@ -109,8 +109,9 @@ usage (char *name)
 int
 main (int argc, char **argv)
 {
-  int i, j;
-  unsigned char buf[MAX_FLUX][MTU];
+  int k;
+  int buf_pos;
+  unsigned char buf[MAX_CHAINES][MAX_UDP_SIZE];
   struct pollfd pfds[2];	//  DVR device
 
 
@@ -122,7 +123,7 @@ main (int argc, char **argv)
   // DVB reception and sort
   int pid;			// pid of the current mpeg2 packet
   int bytes_read;		// number of bytes actually read
-  unsigned char temp_buf[MTU];
+  unsigned char temp_buf[MAX_UDP_SIZE];
   int nb_bytes[MAX_CHAINES];
 
   struct timeval tv;
@@ -136,7 +137,7 @@ main (int argc, char **argv)
   FILE *pidfile;
 
   // configuration file parsing
-  int curr_chaine = 0;
+  int curr_channel = 0;
   int curr_pid = 0;
   int port_ok = 0;
   int ip_ok = 0;
@@ -163,7 +164,7 @@ main (int argc, char **argv)
   int num_pids[MAX_CHAINES];
   int alarm_count = 0;
   int count_non_transmis = 0;
-
+  int tune_retval=0;
 
   const char short_options[] = "c:sdh";
   const struct option long_options[] = {
@@ -175,10 +176,10 @@ main (int argc, char **argv)
   };
   int c, option_index = 0;
   // Initialise PID map
-  for (i = 0; i < 8192; i++)
+  for (k = 0; k < 8192; k++)
     {
-      hi_mappids[i] = (i >> 8);
-      lo_mappids[i] = (i & 0xff);
+      hi_mappids[k] = (k >> 8);
+      lo_mappids[k] = (k & 0xff);
     }
 
   if (argc == 1)
@@ -325,13 +326,13 @@ main (int argc, char **argv)
       else if (!strcmp (sous_chaine, "ip"))
 	{
 	  sous_chaine = strtok (NULL, delimiteurs);
-	  sscanf (sous_chaine, "%s\n", ipOut[curr_chaine]);
+	  sscanf (sous_chaine, "%s\n", ipOut[curr_channel]);
 	  ip_ok = 1;
 	}
       else if (!strcmp (sous_chaine, "port"))
 	{
 	  sous_chaine = strtok (NULL, delimiteurs);
-	  portOut[curr_chaine] = atoi (sous_chaine);
+	  portOut[curr_channel] = atoi (sous_chaine);
 	  port_ok = 1;
 	}
       else if (!strcmp (sous_chaine, "pids"))
@@ -348,18 +349,18 @@ main (int argc, char **argv)
 	    }
 	  while ((sous_chaine = strtok (NULL, delimiteurs)) != NULL)
 	    {
-	      pids[curr_chaine][curr_pid] = atoi (sous_chaine);
+	      pids[curr_channel][curr_pid] = atoi (sous_chaine);
 	      // on verifie la validité du pid donné
-	      if (pids[curr_chaine][curr_pid] < 10 || pids[curr_chaine][curr_pid] > 8191)
+	      if (pids[curr_channel][curr_pid] < 10 || pids[curr_channel][curr_pid] > 8191)
 		{
 		  if (!no_daemon)
 		    syslog (LOG_USER,
 			    "Config issue : %s in pids, given pid : %d\n",
-			    conf_filename, pids[curr_chaine][curr_pid]);
+			    conf_filename, pids[curr_channel][curr_pid]);
 		  else
 		    fprintf (stderr,
 			    "Config issue : %s in pids, given pid : %d\n",
-			     conf_filename, pids[curr_chaine][curr_pid]);
+			     conf_filename, pids[curr_channel][curr_pid]);
 		  exit(ERROR_CONF);
 		}
 	      curr_pid++;
@@ -368,17 +369,17 @@ main (int argc, char **argv)
 		  if (!no_daemon)
 		    syslog (LOG_USER,
 			    "Too many pids : %d channel : %d\n",
-			    curr_pid, curr_chaine);
+			    curr_pid, curr_channel);
 		  else
 		    fprintf (stderr,
 			    "Too many pids : %d channel : %d\n",
-			     curr_pid, curr_chaine);
+			     curr_pid, curr_channel);
 		  exit(ERROR_CONF);
 		}
 	    }
-	  num_pids[curr_chaine] = curr_pid;
+	  num_pids[curr_channel] = curr_pid;
 	  curr_pid = 0;
-	  curr_chaine++;
+	  curr_channel++;
 	  port_ok = 0;
 	  ip_ok = 0;
 	}
@@ -387,7 +388,7 @@ main (int argc, char **argv)
 	  // changement de méthode d'extraction pour garder les espaces
 	  sous_chaine = strtok (NULL, "=");
 	  if (!(strlen (sous_chaine) >= MAX_LEN_NOM - 1))
-	    strcpy(noms[curr_chaine],strtok(sous_chaine,"\n"));	
+	    strcpy(noms[curr_channel],strtok(sous_chaine,"\n"));	
 	  else
 	    fprintf (stderr, "Channel name too long\n");
 	}
@@ -536,15 +537,15 @@ main (int argc, char **argv)
 	  continue;
 	}
     }
-  nb_flux = curr_chaine;
-  if (curr_chaine > MAX_CHAINES)
+  nb_flux = curr_channel;
+  if (curr_channel > MAX_CHAINES)
     {
       if (!no_daemon)
 	syslog (LOG_USER, "Too many channels : %d limit : %d\n",
-		curr_chaine, MAX_CHAINES);
+		curr_channel, MAX_CHAINES);
       else
 	fprintf (stderr, "Too many channels : %d limit : %d\n",
-		 curr_chaine, MAX_CHAINES);
+		 curr_channel, MAX_CHAINES);
       exit(ERROR_TOO_CHANNELS);
     }
 
@@ -583,7 +584,7 @@ main (int argc, char **argv)
     {
       if (open_fe (&fds.fd_frontend, card))
 	{
-	  i =
+	  tune_retval =
 	    tune_it (fds.fd_frontend, freq, srate, 0, tone, specInv, diseqc,
 		     modulation, HP_CodeRate, TransmissionMode, guardInterval,
 		     bandWidth, LP_CodeRate, hier, aff_force_signal);
@@ -594,14 +595,14 @@ main (int argc, char **argv)
       if (open_fe (&fds.fd_frontend, card))
 	{
 	  fprintf (stderr, "Tuning to %ld Hz\n", freq);
-	  i =
+	  tune_retval =
 	    tune_it (fds.fd_frontend, freq, srate, pol, tone, specInv, diseqc,
 		     modulation, HP_CodeRate, TransmissionMode, guardInterval,
 		     bandWidth, LP_CodeRate, hier, aff_force_signal);
 	}
     }
 
-  if (i < 0)
+  if (tune_retval < 0)
     {
       if (!no_daemon)
 	syslog (LOG_USER, "Tunning issue, card %d\n", card);
@@ -642,18 +643,18 @@ main (int argc, char **argv)
 
 
   // init de la liste des chaines diffusees
-  for (i = 0; i < nb_flux; i++)
+  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
     {
-      chaines_diffuses[i] = 0;
-      chaines_diffuses_old[i] = 1;
+      chaines_diffuses[curr_channel] = 0;
+      chaines_diffuses_old[curr_channel] = 1;
     }
 
   set_ts_filt (fds.fd_zero, 0, DMX_PES_OTHER);	// PID 0 : Program Association Table (PAT)
   set_ts_filt (fds.fd_EIT, 18, DMX_PES_OTHER);	// PID 18 : Event Information Table (EIT)
-  for (i = 0; i < nb_flux; i++)
+  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
     {
-      for (j = 0; j < num_pids[i]; j++)
-	set_ts_filt (fds.fd[i][j], pids[i][j], DMX_PES_OTHER);
+      for (curr_pid = 0; curr_pid < num_pids[curr_channel]; curr_pid++)
+	set_ts_filt (fds.fd[curr_channel][curr_pid], pids[curr_channel][curr_pid], DMX_PES_OTHER);
     }
 
   gettimeofday (&tv, (struct timezone *) NULL);
@@ -667,11 +668,11 @@ main (int argc, char **argv)
     fprintf (stderr, "Card %d tuned\n", card);
 
   // Init udp
-  for (i = 0; i < nb_flux; i++)
+  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
     {
       // le makeclientsocket est pour joindre automatiquement l'ip de multicast créée
       // les swiths HP broadcastent les ip de multicast sans clients
-      socketOut[i] = makeclientsocket (ipOut[i], portOut[i], ttl, &sOut[i], no_daemon);
+      socketOut[curr_channel] = makeclientsocket (ipOut[curr_channel], portOut[curr_channel], ttl, &sOut[curr_channel], no_daemon);
     }
 
   if (!no_daemon)
@@ -681,21 +682,21 @@ main (int argc, char **argv)
     fprintf (stderr, "Diffusion %d channel%s\n", nb_flux,
 	     (nb_flux == 1 ? "" : "s"));
 
-  for (i = 0; i < nb_flux; i++)
+  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
     {
       if (!no_daemon)
 	{
 	  syslog (LOG_USER, "Channel \"%s\" num %d ip %s:%d\n",
-		  noms[i], i, ipOut[i], portOut[i]);
+		  noms[curr_channel], curr_channel, ipOut[curr_channel], portOut[curr_channel]);
 	}
       else
 	{
 	  fprintf (stderr,
 		   "Channel \"%s\" num %d ip %s:%d\n",
-		   noms[i], i, ipOut[i], portOut[i]);
+		   noms[curr_channel], curr_channel, ipOut[curr_channel], portOut[curr_channel]);
 	  fprintf (stderr, "        pids : ");
-	  for (j = 0; j < num_pids[i]; j++)
-	    fprintf (stderr, "%d ", pids[i][j]);
+	  for (curr_pid = 0; curr_pid < num_pids[curr_channel]; curr_pid++)
+	    fprintf (stderr, "%d ", pids[curr_channel][curr_pid]);
 	  fprintf (stderr, "\n");
 	}
     }
@@ -726,32 +727,32 @@ main (int argc, char **argv)
 	      }
 
 	    pid = ((temp_buf[1] & 0x1f) << 8) | (temp_buf[2]);
-	    for (i = 0; i < nb_flux; i++)
+	    for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
 	      {
-		for (j = 0; j < num_pids[i]; j++)
+		for (curr_pid = 0; curr_pid < num_pids[curr_channel]; curr_pid++)
 		  {
 		    // PID 0 : Program Association Table (PAT)
 		    // PID 18 : Event Information Table (EIT)
-		    if ((pids[i][j] == pid) || pid == 0 || pid == 18)
+		    if ((pids[curr_channel][curr_pid] == pid) || pid == 0 || pid == 18)
 		      {
 			// on considere le paquet comme faisant partie d'une chaine
 			// uniquement si ce n'est pas le PID 0 ou 18
 			if (pid != 0 && pid != 18)
-			  chaines_diffuses[i]++;
+			  chaines_diffuses[curr_channel]++;
 			
 			// remplissage des buffers
-			for (j = 0; j < bytes_read; j++)
-			  buf[i][nb_bytes[i] + j] = temp_buf[j];
-			buf[i][nb_bytes[i] + 1] =
-			  (buf[i][nb_bytes[i] + 1] & 0xe0) | hi_mappids[pid];
-			buf[i][nb_bytes[i] + 2] = lo_mappids[pid];
-			nb_bytes[i] += bytes_read;
+			for (buf_pos = 0; buf_pos < bytes_read; buf_pos++)
+			  buf[curr_channel][nb_bytes[curr_channel] + buf_pos] = temp_buf[buf_pos];
+			buf[curr_channel][nb_bytes[curr_channel] + 1] =
+			  (buf[curr_channel][nb_bytes[curr_channel] + 1] & 0xe0) | hi_mappids[pid];
+			buf[curr_channel][nb_bytes[curr_channel] + 2] = lo_mappids[pid];
+			nb_bytes[curr_channel] += bytes_read;
 			// Buffer plein, on envoie
-			if ((nb_bytes[i] + PACKET_SIZE) > MAX_UDP_SIZE)
+			if ((nb_bytes[curr_channel] + PACKET_SIZE) > MAX_UDP_SIZE)
 			  {
-			    sendudp (socketOut[i], &sOut[i], buf[i],
-				     nb_bytes[i]);
-			    nb_bytes[i] = 0;
+			    sendudp (socketOut[curr_channel], &sOut[curr_channel], buf[curr_channel],
+				     nb_bytes[curr_channel]);
+			    nb_bytes[curr_channel] = 0;
 			  }
 		      }
 		  }
@@ -791,8 +792,8 @@ main (int argc, char **argv)
 		 Interrupted);
     }
 
-  for (i = 0; i < nb_flux; i++)
-    close (socketOut[i]);
+  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+    close (socketOut[curr_channel]);
 
   // we close the file descriptors
   close_card_fd (card, nb_flux, num_pids, fds);
@@ -830,7 +831,7 @@ static void
 SignalHandler (int signum)
 {
   struct timeval tv;
-  int i = 0;
+  int curr_channel = 0;
   int compteur_chaines_diff=0;
 
   if (signum == SIGALRM)
@@ -851,35 +852,35 @@ SignalHandler (int signum)
 		     timeout_accord);
 	  exit(ERROR_TUNE);
 	}	
-      for (i = 0; i < nb_flux; i++)
-	if ((chaines_diffuses[i] >= 100) && (!chaines_diffuses_old[i]))
+      for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+	if ((chaines_diffuses[curr_channel] >= 100) && (!chaines_diffuses_old[curr_channel]))
 	  {
 	    if (!no_daemon)
 	      syslog (LOG_USER,
 		      "Channel \"%s\" back.Card %d\n",
-		      noms[i], card);
+		      noms[curr_channel], card);
 	    else
 	      fprintf (stderr,
 		      "Channel \"%s\" back.Card %d\n",
-		       noms[i], card);
-	    chaines_diffuses_old[i] = 1;	// mise à jour
+		       noms[curr_channel], card);
+	    chaines_diffuses_old[curr_channel] = 1;	// update
 	  }
-	else if ((chaines_diffuses_old[i]) && (chaines_diffuses[i] < 100))
+	else if ((chaines_diffuses_old[curr_channel]) && (chaines_diffuses[curr_channel] < 100))
 	  {
 	    if (!no_daemon)
 	      syslog (LOG_USER,
 		      "Channel \"%s\" down.Card %d\n",
-		      noms[i], card);
+		      noms[curr_channel], card);
 	    else
 	      fprintf (stderr,
 		      "Channel \"%s\" down.Card %d\n",
-		      noms[i], card);
-	    chaines_diffuses_old[i] = 0;	// mise à jour
+		      noms[curr_channel], card);
+	    chaines_diffuses_old[curr_channel] = 0;	// update
 	  }
 
       // on compte les chaines diffuses
-      for (i = 0; i < nb_flux; i++)
-	if (chaines_diffuses_old[i])
+      for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+	if (chaines_diffuses_old[curr_channel])
 	  compteur_chaines_diff++;
 
       // reinit si on diffuse
@@ -908,8 +909,8 @@ SignalHandler (int signum)
       gen_chaines_diff (no_daemon, chaines_diffuses_old);
 
       // reinit
-      for (i = 0; i < nb_flux; i++)
-	chaines_diffuses[i] = 0;
+      for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+	chaines_diffuses[curr_channel] = 0;
       alarm (ALARM_TIME);
     }
   else if (signum == SIGUSR1)
@@ -928,7 +929,7 @@ void
 gen_chaines_diff (int no_daemon, int *chaines_diffuses)
 {
   FILE *chaines_diff;
-  int i;
+  int curr_channel;
 
   chaines_diff = fopen (nom_fich_chaines_diff, "w");
   if (chaines_diff == NULL)
@@ -944,9 +945,9 @@ gen_chaines_diff (int no_daemon, int *chaines_diffuses)
       exit(ERROR_CREATE_FILE);
     }
 
-  for (i = 0; i < nb_flux; i++)
-    if (chaines_diffuses[i])
-      fprintf (chaines_diff, "%s:%d:%s\n", ipOut[i], portOut[i], noms[i]);
+  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+    if (chaines_diffuses[curr_channel])
+      fprintf (chaines_diff, "%s:%d:%s\n", ipOut[curr_channel], portOut[curr_channel], noms[curr_channel]);
   fclose (chaines_diff);
 
 }
