@@ -708,6 +708,9 @@ main (int argc, char **argv)
   pfds[0].events = POLLIN | POLLPRI;
   pfds[1].events = POLLIN | POLLPRI;
 
+  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+    nb_bytes[curr_channel]=0;
+
   while (!Interrupted)
     {
       /* Poll the open file descriptors */
@@ -727,8 +730,6 @@ main (int argc, char **argv)
 	      }
 
 	    pid = ((temp_buf[1] & 0x1f) << 8) | (temp_buf[2]);
-	    for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
-	      nb_bytes[curr_channel]=0;
 	    for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
 	      {
 		for (curr_pid = 0; curr_pid < num_pids[curr_channel]; curr_pid++)
