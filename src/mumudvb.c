@@ -53,7 +53,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "dvb.h"
 #include "errors.h"
 
-#define VERSION "1.0.20050515"
+#define VERSION "1.2"
 
 
 /* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
