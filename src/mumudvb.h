@@ -2,7 +2,7 @@
 #define _MUMUDVB_H
 
 #define MAX_PIDS_PAR_CHAINE     18
-#define MAX_CHAINES		32
+#define MAX_CHAINES		128
 
 #define PACKET_SIZE 188
 
