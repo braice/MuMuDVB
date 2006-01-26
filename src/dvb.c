@@ -100,16 +100,12 @@ create_card_fd(int card, int nb_flux, int *num_pids, fds_t *fds)
 
   int i=0;
   int j=0;
-  if ((fds->fd_zero = open (demuxdev[card], O_RDWR)) < 0)	//fd_zero is the file descriptor usd to get te PMT (the number 0) pid
-    {
-      fprintf (stderr, "FD %i: ", i);
-      perror ("DEMUX DEVICE: ");
-      return -1;
-    }
+  int curr_pid_mandatory = 0;
 
-  if ((fds->fd_EIT = open (demuxdev[card], O_RDWR)) < 0)	//fd_EIT is the file descriptor usd to get te EIT (the number 18) pid
+  for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY;curr_pid_mandatory++)
+    if ((fds->fd_mandatory[curr_pid_mandatory] = open (demuxdev[card], O_RDWR)) < 0)	//file descriptors for the mandatory pids
     {
-      fprintf (stderr, "FD %i: ", i);
+      fprintf (stderr, "FD Mandatory %i: ", curr_pid_mandatory);
       perror ("DEMUX DEVICE: ");
       return -1;
     }
@@ -143,9 +139,11 @@ close_card_fd(int card, int nb_flux, int *num_pids, fds_t fds)
 {
   int i=0;
   int j=0;
+  int curr_pid_mandatory = 0;
 
-  close (fds.fd_zero);
-  close (fds.fd_EIT);
+  for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY;curr_pid_mandatory++)
+    close(fds.fd_mandatory[curr_pid_mandatory]);
+
   for (i = 0; i < nb_flux; i++)
     {
       for(j=0;j<num_pids[i];j++)

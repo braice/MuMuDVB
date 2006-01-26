@@ -43,7 +43,7 @@ Ce programme n'est pas un patch pour dvbstream à cause de certaines restrictions
  * l'interface telnet a été retirée (elle ne nous était pas utile et l'adapter aurait été assez long)
 
 D'autres programmes sont joint dans les sources de mumudvb:
- * relay : permet de relayer un flux (récupérer un flux en multicast et l'unicaster ou l'envoyer vers une autre ip de multicast) il peut être utiliser pour traverser des routeurs ou des firewalls interdisant le multicast
+ * relay : permet de relayer un flux (récupérer un flux en multicast et l'unicaster ou l'envoyer vers une autre ip de multicast) il peut être utilisé pour traverser des routeurs ou des firewalls interdisant le multicast.
  * dumpudp : permet de récupérer le flux et de l'envoyer sur la sortie standard (utile pour les programmes n'ayant pas de greffon d'entrée en udp comme mplayer ou pour enregistrer le flux)
  * dumpudp_limited : idem que dumpudp mais récupère un nombre limité de paquets (utilisé pour générer des vignettes (voir les scripts d'exemple joints))
  * recup_sap : mini client sap, récupère les annonces sap sur le réseau pendant 60 secondes et les envoie sur la sortie standard (non triées)

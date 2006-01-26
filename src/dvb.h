@@ -17,11 +17,10 @@
 #include "mumudvb.h"
 
 typedef struct {
-  int fd_zero;
-  int fd_EIT;
   int fd_dvr;
   int fd_frontend;
   int fd[MAX_CHAINES][MAX_PIDS_PAR_CHAINE];
+  int fd_mandatory[MAX_MANDATORY];
 }fds_t;
 
 

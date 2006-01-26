@@ -125,6 +125,8 @@ main (int argc, char **argv)
   int bytes_read;		// number of bytes actually read
   unsigned char temp_buf[MAX_UDP_SIZE];
   int nb_bytes[MAX_CHAINES];
+  //Mandatory pids
+  int mandatory_pid[MAX_MANDATORY];
 
   struct timeval tv;
 
@@ -139,6 +141,8 @@ main (int argc, char **argv)
   // configuration file parsing
   int curr_channel = 0;
   int curr_pid = 0;
+  int curr_pid_mandatory = 0;
+  int send_packet=0;
   int port_ok = 0;
   int ip_ok = 0;
   char ligne_courante[CONF_LINELEN];
@@ -649,8 +653,33 @@ main (int argc, char **argv)
       chaines_diffuses_old[curr_channel] = 1;
     }
 
-  set_ts_filt (fds.fd_zero, 0, DMX_PES_OTHER);	// PID 0 : Program Association Table (PAT)
-  set_ts_filt (fds.fd_EIT, 18, DMX_PES_OTHER);	// PID 18 : Event Information Table (EIT)
+  //We initialise mantadory table
+  for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY;curr_pid_mandatory++)
+    {
+      mandatory_pid[curr_pid_mandatory]=0;
+    }
+
+  //mandatory pids (alwoys sent with all channels)
+  //PAT : Program Association Table
+  mandatory_pid[0]=1;
+  //NIT : Network Information Table
+  //It is intended to provide information about the physical network.
+  mandatory_pid[16]=1;
+  //SDT : Service Description Table
+  //the SDT contains data describing the services in the system e.g. names of services, the service provider, etc.
+  mandatory_pid[17]=1;
+  //EIT : Event Information Table
+  //the EIT contains data concerning events or programmes such as event name, start time, duration, etc.
+  mandatory_pid[18]=1;
+  //TDT : Time and Date Table
+  //the TDT gives information relating to the present time and date.
+  //This information is given in a separate table due to the frequent updating of this information.
+  mandatory_pid[20]=1;
+
+  for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY;curr_pid_mandatory++)
+    if(mandatory_pid[curr_pid_mandatory]==1)
+      set_ts_filt (fds.fd_mandatory[curr_pid_mandatory], curr_pid_mandatory, DMX_PES_OTHER);
+
   for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
     {
       for (curr_pid = 0; curr_pid < num_pids[curr_channel]; curr_pid++)
@@ -716,73 +745,80 @@ main (int argc, char **argv)
       /* Poll the open file descriptors */
       poll (pfds, 1, 500);
 
-      {
-	/* Attempt to read 188 bytes from /dev/ost/dvr */
-	if ((bytes_read = read (fds.fd_dvr, temp_buf, PACKET_SIZE)) > 0)
-	  {
-	    if (bytes_read != PACKET_SIZE)
-	      {
+      /* Attempt to read 188 bytes from /dev/ost/dvr */
+      if ((bytes_read = read (fds.fd_dvr, temp_buf, PACKET_SIZE)) > 0)
+	{
+	  if (bytes_read != PACKET_SIZE)
+	    {
 		if (!no_daemon)
 		  syslog (LOG_USER, "No bytes left to read - aborting\n");
 		else
 		  fprintf (stderr, "No bytes left to read - aborting\n");
 		break;
-	      }
+	    }
 
-	    pid = ((temp_buf[1] & 0x1f) << 8) | (temp_buf[2]);
-	    for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
-	      {
-		for (curr_pid = 0; curr_pid < num_pids[curr_channel]; curr_pid++)
-		  {
-		    // PID 0 : Program Association Table (PAT)
-		    // PID 18 : Event Information Table (EIT)
-		    if ((pids[curr_channel][curr_pid] == pid) || pid == 0 || pid == 18)
-		      {
-			// on considere le paquet comme faisant partie d'une chaine
-			// uniquement si ce n'est pas le PID 0 ou 18
-			if (pid != 0 && pid != 18)
-			  chaines_diffuses[curr_channel]++;
-			
-			// remplissage des buffers
-			for (buf_pos = 0; buf_pos < bytes_read; buf_pos++)
-			  buf[curr_channel][nb_bytes[curr_channel] + buf_pos] = temp_buf[buf_pos];
-			buf[curr_channel][nb_bytes[curr_channel] + 1] =
-			  (buf[curr_channel][nb_bytes[curr_channel] + 1] & 0xe0) | hi_mappids[pid];
-			buf[curr_channel][nb_bytes[curr_channel] + 2] = lo_mappids[pid];
-			nb_bytes[curr_channel] += bytes_read;
-			// Buffer plein, on envoie
-			if ((nb_bytes[curr_channel] + PACKET_SIZE) > MAX_UDP_SIZE)
-			  {
-			    sendudp (socketOut[curr_channel], &sOut[curr_channel], buf[curr_channel],
-				     nb_bytes[curr_channel]);
-			    nb_bytes[curr_channel] = 0;
-			  }
-		      }
-		  }
-		count_non_transmis = 0;
-		if (alarm_count == 1)
-		  {
-		    alarm_count = 0;
-		    fprintf (stderr,
-			     "Good, we receive back significant data\n");
-		  }
-	      }
-	    count_non_transmis++;
-	    if (count_non_transmis > ALARM_COUNT_LIMIT)
-	      {
-		if (!no_daemon)
-		  syslog (LOG_USER,
-			  "Error : less than one paquet on %d sent\n",
-			  ALARM_COUNT_LIMIT);
-		else
+	  pid = ((temp_buf[1] & 0x1f) << 8) | (temp_buf[2]);
+	  
+	  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+	    {
+	      //we'll see if we must send this pid for this channel
+	      send_packet=0;
+	      
+	      //If it's a mandatory pid we send it
+	      if(mandatory_pid[pid]==1)
+		send_packet=1;
+	      
+	      //if it isn't mandatory wee see if it is in the channel list
+	      for (curr_pid = 0; curr_pid < num_pids[curr_channel]; curr_pid++)
+		if ((pids[curr_channel][curr_pid] == pid)) {
+		  send_packet=1;
+		  chaines_diffuses[curr_channel]++;
+		}
+
+	      //Ok we must send it
+	      if(send_packet==1)
+		{
+		  // we fill the channel buffer
+		  for (buf_pos = 0; buf_pos < bytes_read; buf_pos++)
+		    buf[curr_channel][nb_bytes[curr_channel] + buf_pos] = temp_buf[buf_pos];
+		  
+		  buf[curr_channel][nb_bytes[curr_channel] + 1] =
+		    (buf[curr_channel][nb_bytes[curr_channel] + 1] & 0xe0) | hi_mappids[pid];
+		  buf[curr_channel][nb_bytes[curr_channel] + 2] = lo_mappids[pid];
+		  
+		  nb_bytes[curr_channel] += bytes_read;
+		  //The buffer is full, we send it
+		  if ((nb_bytes[curr_channel] + PACKET_SIZE) > MAX_UDP_SIZE)
+		    {
+		      sendudp (socketOut[curr_channel], &sOut[curr_channel], buf[curr_channel],
+			       nb_bytes[curr_channel]);
+		      nb_bytes[curr_channel] = 0;
+		    }
+		}
+
+
+	      count_non_transmis = 0;
+	      if (alarm_count == 1)
+		{
+		  alarm_count = 0;
 		  fprintf (stderr,
-			  "Error : less than one paquet on %d sent\n",
-			   ALARM_COUNT_LIMIT);
-		alarm_count = 1;
-	      }
-	  }
-
-      }
+			   "Good, we receive back significant data\n");
+		}
+	    }
+	  count_non_transmis++;
+	  if (count_non_transmis > ALARM_COUNT_LIMIT)
+	    {
+	      if (!no_daemon)
+		syslog (LOG_USER,
+			"Error : less than one paquet on %d sent\n",
+			ALARM_COUNT_LIMIT);
+	      else
+		fprintf (stderr,
+			 "Error : less than one paquet on %d sent\n",
+			 ALARM_COUNT_LIMIT);
+	      alarm_count = 1;
+	    }
+	}
     }
 
   if (Interrupted)
