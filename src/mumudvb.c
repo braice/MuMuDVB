@@ -1,9 +1,10 @@
 /* 
 mumudvb - UDP-ize a DVB transport stream.
-(C) Dave Chapman <dave@dchapman.com> 2001, 2002.
+Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
+
 Modified By Brice DUBOST
- * 
-The latest version can be found at http://www.crans.org
+
+The latest version can be found at http://mumudvb.braice.net
 
 Copyright notice:
 
@@ -115,10 +116,23 @@ main (int argc, char **argv)
   struct pollfd pfds[2];	//  DVR device
 
 
-  // réception
+  // Tuning parapmeters
   unsigned long freq = 0;
   unsigned long srate = 0;
   char pol = 0;
+  fe_spectral_inversion_t specInv = INVERSION_AUTO;
+  int tone = -1;
+
+  //DVB-T parameters
+  fe_modulation_t modulation = CONSTELLATION_DEFAULT;
+  fe_transmit_mode_t TransmissionMode = TRANSMISSION_MODE_DEFAULT;
+  fe_bandwidth_t bandWidth = BANDWIDTH_DEFAULT;
+  fe_guard_interval_t guardInterval = GUARD_INTERVAL_DEFAULT;
+  fe_code_rate_t HP_CodeRate = HP_CODERATE_DEFAULT, LP_CodeRate =
+    LP_CODERATE_DEFAULT;
+
+  fe_hierarchy_t hier = HIERARCHY_DEFAULT;
+  unsigned char diseqc = 0;
 
   // DVB reception and sort
   int pid;			// pid of the current mpeg2 packet
@@ -130,11 +144,10 @@ main (int argc, char **argv)
 
   struct timeval tv;
 
-  // fichers
+  //files
   char *conf_filename = NULL;
   FILE *conf_file;
   char nom_fich_pid[256];
-  // lock et chaines diffusées
   FILE *chaines_diff;
   FILE *pidfile;
 
@@ -150,18 +163,6 @@ main (int argc, char **argv)
   char delimiteurs[] = " =";
 
 
-  fe_spectral_inversion_t specInv = INVERSION_AUTO;
-  int tone = -1;
-  //parametres TNT a changer
-  fe_modulation_t modulation = CONSTELLATION_DEFAULT;
-  fe_transmit_mode_t TransmissionMode = TRANSMISSION_MODE_DEFAULT;
-  fe_bandwidth_t bandWidth = BANDWIDTH_DEFAULT;
-  fe_guard_interval_t guardInterval = GUARD_INTERVAL_DEFAULT;
-  fe_code_rate_t HP_CodeRate = HP_CODERATE_DEFAULT, LP_CodeRate =
-    LP_CODERATE_DEFAULT;
-
-  fe_hierarchy_t hier = HIERARCHY_DEFAULT;
-  unsigned char diseqc = 0;
   unsigned char hi_mappids[8192];
   unsigned char lo_mappids[8192];
   int pids[MAX_CHAINES][MAX_PIDS_PAR_CHAINE];
@@ -206,7 +207,10 @@ main (int argc, char **argv)
 	  conf_filename = (char *) malloc (strlen (optarg) + 1);
 	  if (!conf_filename)
 	    {
-	      fprintf(stderr, "malloc() failed: %s\n", strerror(errno));
+	      if (!no_daemon)
+		syslog (LOG_USER, "malloc() failed: %s\n", strerror(errno));
+	      else
+		fprintf(stderr, "malloc() failed: %s\n", strerror(errno));
 	      exit(errno);
 	    }
 	  strncpy (conf_filename, optarg, strlen (optarg) + 1);
@@ -238,7 +242,7 @@ main (int argc, char **argv)
   if (!no_daemon)
     openlog ("MUMUDVB", LOG_PID, 0);
 
-  // fichier de conf
+  // config file
   conf_file = fopen (conf_filename, "r");
   if (conf_file == NULL)
     {
@@ -256,13 +260,13 @@ main (int argc, char **argv)
 
 
 
-  // on scanne le fichier de conf
-  // la syntaxe de celui ci est dans syntaxe_conf.txt
+  // we scan config file
+  // see doc/README-conf for further information
   while (fgets (ligne_courante, CONF_LINELEN, conf_file)
 	 && strlen (ligne_courante) > 1)
     {
       sous_chaine = strtok (ligne_courante, delimiteurs);
-      //commentaires
+      //commentary
       if (sous_chaine[0] == '#')
 	continue; 
       
@@ -354,7 +358,7 @@ main (int argc, char **argv)
 	  while ((sous_chaine = strtok (NULL, delimiteurs)) != NULL)
 	    {
 	      pids[curr_channel][curr_pid] = atoi (sous_chaine);
-	      // on verifie la validité du pid donné
+	      // we see if the given pid is good
 	      if (pids[curr_channel][curr_pid] < 10 || pids[curr_channel][curr_pid] > 8191)
 		{
 		  if (!no_daemon)
@@ -389,12 +393,17 @@ main (int argc, char **argv)
 	}
       else if (!strcmp (sous_chaine, "name"))
 	{
-	  // changement de méthode d'extraction pour garder les espaces
+	  // other substring extraction method in order to keep spaces
 	  sous_chaine = strtok (NULL, "=");
 	  if (!(strlen (sous_chaine) >= MAX_LEN_NOM - 1))
 	    strcpy(noms[curr_channel],strtok(sous_chaine,"\n"));	
 	  else
-	    fprintf (stderr, "Channel name too long\n");
+	    {
+	      if (!no_daemon)
+		syslog (LOG_USER,"Channel name too long\n");
+	      else
+		fprintf (stderr, "Channel name too long\n");
+	    }
 	}
       else if (!strcmp (sous_chaine, "qam"))
 	{
@@ -553,7 +562,7 @@ main (int argc, char **argv)
       exit(ERROR_TOO_CHANNELS);
     }
 
-  // on le vide, précaution
+  // we clear it by precaution
   sprintf (nom_fich_chaines_diff, "/var/run/mumudvb/chaines_diffusees_carte%d",
 	   card);
   chaines_diff = fopen (nom_fich_chaines_diff, "w");
@@ -576,14 +585,14 @@ main (int argc, char **argv)
     syslog (LOG_USER, "Diffusion. Freq %lu pol %c srate %lu\n",
 	    freq, pol, srate);
 
-  // alarme pour le délai d'accord
+  // alarm for tuning timeout
   if (signal (SIGALRM, SignalHandler) == SIG_IGN)
     signal (SIGALRM, SIG_IGN);
   if (signal (SIGUSR1, SignalHandler) == SIG_IGN)
     signal (SIGUSR1, SIG_IGN);
   alarm (timeout_accord);
 
-  // on accord la carte
+  // We tune the card
   if ((freq > 100000000))
     {
       if (open_fe (&fds.fd_frontend, card))
@@ -598,7 +607,10 @@ main (int argc, char **argv)
     {
       if (open_fe (&fds.fd_frontend, card))
 	{
-	  fprintf (stderr, "Tuning to %ld Hz\n", freq);
+	  if (!no_daemon)
+	    syslog (LOG_USER, "Tuning to %ld Hz\n", freq);
+	  else
+	    fprintf (stderr, "Tuning to %ld Hz\n", freq);
 	  tune_retval =
 	    tune_it (fds.fd_frontend, freq, srate, pol, tone, specInv, diseqc,
 		     modulation, HP_CodeRate, TransmissionMode, guardInterval,
@@ -613,11 +625,13 @@ main (int argc, char **argv)
       else
 	fprintf (stderr, "Tunning issue, card %d\n", card);
 
+      // we close the file descriptors
+      close_card_fd (card, nb_flux, num_pids, fds);
       exit(ERROR_TUNE);
     }
 
   carte_accordee = 1;
-  // la carte est accordée, on intercepte les signaux pour fermer proprement
+  // the card is tuned, we catch signals to close cleanly
   if (signal (SIGHUP, SignalHandler) == SIG_IGN)
     signal (SIGHUP, SIG_IGN);
   if (signal (SIGINT, SignalHandler) == SIG_IGN)
@@ -626,7 +640,7 @@ main (int argc, char **argv)
     signal (SIGTERM, SIG_IGN);
   alarm (ALARM_TIME);
 
-  //On écrit son PID dans un fichier
+  // We write our pid in a file if deamon
   if (!no_daemon)
     {
       sprintf (nom_fich_pid, "/var/run/mumudvb/mumudvb_carte%d.pid", card);
@@ -646,7 +660,7 @@ main (int argc, char **argv)
     return -1;
 
 
-  // init de la liste des chaines diffusees
+  // init of active channels list
   for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
     {
       chaines_diffuses[curr_channel] = 0;
@@ -659,7 +673,7 @@ main (int argc, char **argv)
       mandatory_pid[curr_pid_mandatory]=0;
     }
 
-  //mandatory pids (alwoys sent with all channels)
+  //mandatory pids (always sent with all channels)
   //PAT : Program Association Table
   mandatory_pid[0]=1;
   //NIT : Network Information Table
@@ -731,7 +745,7 @@ main (int argc, char **argv)
     }
 
 
-  // Lecture du flux
+  // Stream reading and sending
 
   pfds[0].fd = fds.fd_dvr;
   pfds[0].events = POLLIN | POLLPRI;
@@ -759,6 +773,7 @@ main (int argc, char **argv)
 
 	  pid = ((temp_buf[1] & 0x1f) << 8) | (temp_buf[2]);
 	  
+	  //for each channel we'll look if we must send this PID
 	  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
 	    {
 	      //we'll see if we must send this pid for this channel
@@ -769,11 +784,12 @@ main (int argc, char **argv)
 		send_packet=1;
 	      
 	      //if it isn't mandatory wee see if it is in the channel list
-	      for (curr_pid = 0; curr_pid < num_pids[curr_channel]; curr_pid++)
-		if ((pids[curr_channel][curr_pid] == pid)) {
-		  send_packet=1;
-		  chaines_diffuses[curr_channel]++;
-		}
+	      if(!send_packet)
+		for (curr_pid = 0; (curr_pid < num_pids[curr_channel])&& !send_packet; curr_pid++)
+		  if ((pids[curr_channel][curr_pid] == pid)) {
+		    send_packet=1;
+		    chaines_diffuses[curr_channel]++;
+		  }
 
 	      //Ok we must send it
 	      if(send_packet==1)
@@ -801,7 +817,11 @@ main (int argc, char **argv)
 	      if (alarm_count == 1)
 		{
 		  alarm_count = 0;
-		  fprintf (stderr,
+		  if (!no_daemon)
+		    syslog (LOG_USER,
+			   "Good, we receive back significant data\n");
+		  else
+		    fprintf (stderr,
 			   "Good, we receive back significant data\n");
 		}
 	    }
@@ -824,11 +844,22 @@ main (int argc, char **argv)
   if (Interrupted)
     {
       if (!no_daemon)
-	syslog (LOG_USER, "\nCaught signal %d - closing cleanly.\n",
-		Interrupted);
+	{
+	  if(Interrupted< (1<<8)) //we check if it's a signal or a mumudvb error
+	    syslog (LOG_USER, "\nCaught signal %d - closing cleanly.\n",
+		    Interrupted);
+	  else
+	    syslog (LOG_USER, "\nclosing cleanly.\n");
+	}
       else
-	fprintf (stderr, "\nCaught signal %d - closing cleanly.\n",
-		 Interrupted);
+	{
+	  if(Interrupted< (1<<8)) //we check if it's a signal or a mumudvb error
+	    fprintf (stderr, "\nCaught signal %d - closing cleanly.\n",
+		     Interrupted);
+	  else
+	    fprintf (stderr, "\nclosing cleanly.\n");
+
+	}
     }
 
   for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
@@ -836,7 +867,6 @@ main (int argc, char **argv)
 
   // we close the file descriptors
   close_card_fd (card, nb_flux, num_pids, fds);
-  close (fds.fd_frontend);
 
   if (remove (nom_fich_chaines_diff))
     {
@@ -862,7 +892,10 @@ main (int argc, char **argv)
 	}
     }
 
-  return (0);
+  if(Interrupted<(1<<8))
+    return (0);
+  else
+    return(Interrupted>>8);
 }
 
 
@@ -917,7 +950,7 @@ SignalHandler (int signum)
 	    chaines_diffuses_old[curr_channel] = 0;	// update
 	  }
 
-      // on compte les chaines diffuses
+      // we count active channels
       for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
 	if (chaines_diffuses_old[curr_channel])
 	  compteur_chaines_diff++;
@@ -940,7 +973,7 @@ SignalHandler (int signum)
 	      fprintf (stderr,
 		    "No data from card %d in %ds, exiting.\n",
 		      card, timeout_no_diff);
-	  Interrupted=ERROR_NO_DIFF;
+	  Interrupted=ERROR_NO_DIFF<<8; //the <<8 is to make difference beetween signals and errors
 	}
 
       // on envoie le old pour annoncer que les chaines

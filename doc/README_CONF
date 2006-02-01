@@ -1,8 +1,10 @@
 README for config file of mumudvb
 
+= General config =
+
 mumudvb must use a file de configuration to give him all the different reception parameters and the pid repartition aver the different channels. You will find an example in the file conf.example attached with mumudvb sources in the doc directory.
 
-mumudvb is not sensible to the parameter's order except for chanels where pids must be put after the ip and the port
+mumudvb does not worry to the parameter's order except for chanels where pids must be put after the ip and the port
 
 comments can be done anywhere in the configuration file : just start the line with #
 
@@ -27,6 +29,41 @@ All parameters are like: name=value
 ||'''For each channel '''||
 ||ip                             ||multicast (can also be unicast) ip where the chanel will be diffused ||
 ||port                           ||port ||
-||pids                           ||a pid list space separeted (any number, the pid 0 (pid PAT) is always sent) ||
+||pids                           ||a pid list space separeted (any number, some pids are always sent (PAD EIT SDT TDT NIT) see mumudvb.c for more details) ||
 ||name (f)                       ||the name given to the chanel in /var/run/mumudvb/chaines_diffusees%d (used to generate  SAP announces) ||
 
+
+== Note ==
+You must specify : 
+ * audio pid
+ * video pid
+ * PMT pid
+It's advised to set the PCR pid (usually the same as audio or video pid)
+
+= Get the PID numbers =
+
+In order to get the pids numbers, the easier way is to use linuxtv-dvb-apps.
+You tune the card on the wanted frequency (with """tune""" for example).
+
+After you use the scan utility : 
+{{{scan -c -a """Card number"""}}}
+
+And you'll get a result like  : 
+
+{{{
+using '/dev/dvb/adapter2/frontend0' and '/dev/dvb/adapter2/demux0'
+0x0000 0x0101: pmt_pid 0x006e GR1 -- France 2 (running)
+0x0000 0x0103: pmt_pid 0x019a GR1 -- France 4 (running)
+0x0000 0x0104: pmt_pid 0x0136 GR1 -- France 5 (running)
+0x0000 0x0105: pmt_pid 0x01fe GR1 -- ARTE (running)
+0x0000 0x0106: pmt_pid 0x0262 GR1 -- LCP (running)
+0x0000 0x0111: pmt_pid 0x00d2 Reg -- France 3 (running)
+dumping lists (6 services)
+France 2                 (0x0101) 01: PCR == V   V 0x0078 A 0x0082 (fra) SUB 0x008c
+France 4                 (0x0103) 01: PCR == V   V 0x01a4 A 0x01ae (fra) SUB 0x01b8
+France 5                 (0x0104) 01: PCR == V   V 0x0140 A 0x014a (fra) SUB 0x0154
+ARTE                     (0x0105) 01: PCR == V   V 0x0208 A 0x0212 (fra) 0x0213 (deu) SUB 0x021e
+LCP                      (0x0106) 01: PCR == V   V 0x026c A 0x0276 (fra) SUB 0x0280
+France 3                 (0x0111) 01: PCR == V   V 0x00dc A 0x00e6 (fra) SUB 0x00f0
+Done.
+}}}

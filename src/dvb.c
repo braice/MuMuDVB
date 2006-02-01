@@ -150,5 +150,6 @@ close_card_fd(int card, int nb_flux, int *num_pids, fds_t fds)
 	close (fds.fd[i][j]);
     }
   close (fds.fd_dvr);
+  close (fds.fd_frontend);
 
 }
