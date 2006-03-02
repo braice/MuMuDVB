@@ -1,8 +1,6 @@
 /* 
-
-crans_dvbstream - UDP-ize a DVB transport stream.
-(C) Dave Chapman <dave@dchapman.com> 2001, 2002.
-Modified By Brice DUBOST
+Dumpudp : dump a raw udp multicast stream
+By Brice DUBOST
  * 
 The latest version can be found at http://www.crans.org
 
@@ -23,6 +21,9 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
     
 */
+
+#define _GNU_SOURCE             // pour utiliser le program_invocation_short_name (extension gnu)
+
 // Linux includes:
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,27 +43,27 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include <netdb.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
+#include <getopt.h>
+#include <errno.h>              // pour utiliser le program_invocation_short_name (extension gnu)
+
 
 #define MAX_IP_LENGTH 18
 
 #define PACKET_SIZE 188
 
+//the cache size in UDP packet numbers
+#define CACHE_SIZE 10
 
 #define MAX_UDP_SIZE 188*7
+
+  //same MTU as mumudvb (no sync errors)
 #define MTU MAX_UDP_SIZE 
 
+#define ERROR_ARGS 8
+#define ERROR_FILE 9
 
-/* Todo */
-/* Ce programme contient beaucoup de code sale a laver */
-/* C'est un petit programme ecrit rapidement */
-
-  int Interrupted=0;
+int Interrupted=0;
 int fini=0;
-
-int sendudp(int fd, struct sockaddr_in *sSockAddr, char *data, int len) {
-  return sendto(fd,data,len,0,(struct sockaddr *)sSockAddr,sizeof(*sSockAddr));
-}
-
 
 
 // create a sender socket.
@@ -133,10 +134,23 @@ int makeclientsocket(char *szAddr,unsigned short port,int TTL,struct sockaddr_in
 
 
 void
-Usage ()
+usage (char *name)
 {
-  fprintf (stderr, "Usage: dumpudp source portsource [duree]\n\n");
+  fprintf (stderr, "%s \n"
+	   "Program used to dump an UDP multicast stream to a file\n"
+           "\n"
+	   "Usage: %s [options] \n"
+           "-i, --ip       : Multicast Ip\n"
+           "-p, --port     : Port\n"
+           "-o, --out      : Output file\n"
+           "-d, --duration : Dump duration\n"
+           "-h, --help     : Help\n"
+           "\n"
+           "Released under the GPL.\n"
+           "Latest version available from http://mumudvb.braice.net/\n"
+           "by Brice DUBOST (mumudvb@braice.net)\n", name, name);
 }
+
 
 static void
 SignalHandler (int signum)
@@ -169,7 +183,7 @@ main (int argc, char **argv)
   /* sockets */
   int ttl;
   char ipIn[MAX_IP_LENGTH];
-  int portIn;
+  int portIn=0;
   struct sockaddr_in sIn;
   int socketIn;
   int lengthPacket;
@@ -177,41 +191,100 @@ main (int argc, char **argv)
   int num80=0;
   int signaux=0;
   int duree=0;
+  int cache_pos=0;
+  char *out_filename=NULL;
+  FILE *out_file;
 
-  unsigned char temp_buf[MTU];
+  unsigned char cache[MTU*CACHE_SIZE];
 
-  fprintf (stderr, "dumpudp\n Program used to dump an UDP multicast stream to stdout\n");
-  fprintf (stderr, "Released under the GPL.\n");
-  fprintf (stderr,
-	   "Latest version available from http://mumudvb.braice.net/\n");
-  fprintf (stderr,
-	   "By Brice DUBOST (mumudvb@braice.net)\n");
+  const char short_options[] = "i:p:o:d:h";
+  const struct option long_options[] = {
+    {"ip", required_argument, NULL, 'i'},
+    {"port", required_argument, NULL, 'p'},
+    {"out", required_argument, NULL, 'o'},
+    {"duration", no_argument, NULL, 'd'},
+    {"help", no_argument, NULL, 'h'},
+    {0, 0, 0, 0}
+  };
 
-  if (argc != 3 &&argc != 4)
+  int c, option_index = 0;
+
+  while (1)
     {
-      Usage ();
-      exit (1);
+      c = getopt_long (argc, argv, short_options,
+                       long_options, &option_index);
+
+      if (c == -1)
+        {
+          break;
+        }
+      switch (c)
+        {
+        case 'i':
+	  if(strlen (optarg)>MAX_IP_LENGTH){
+	      fprintf(stderr, "Ip too long\n"); 
+	  }
+	  else{
+	    strncpy (ipIn, optarg,MAX_IP_LENGTH);
+	  }
+
+          break;
+        case 'p':
+	  portIn=strtol(optarg,NULL,10);
+          break;
+        case 'o':
+          out_filename = (char *) malloc (strlen (optarg) + 1);
+          if (!out_filename)
+            {
+	      fprintf(stderr, "malloc() failed: %s\n", strerror(errno));
+              exit(errno);
+            }
+          strncpy (out_filename, optarg, strlen (optarg) + 1);
+          break;
+        case 'd':
+	  duree=atoi(optarg);
+          break;
+        case 'h':
+          usage (program_invocation_short_name);
+          exit(ERROR_ARGS);
+          break;
+        }
     }
-  else 
+  if (optind < argc)
     {
-      strncpy (ipIn, argv[1],MAX_IP_LENGTH);
-      portIn = atoi(argv[2]);
-      if(argc==4)
-	duree = atoi(argv[3]);
+      usage (program_invocation_short_name);
+      exit(ERROR_ARGS);
+    }
+
+
+
+  // output file
+  out_file = fopen (out_filename, "w");
+  if (out_file == NULL)
+    {
+      fprintf (stderr,
+	       "%s: %s\n",
+	       out_filename, strerror (errno));
+      exit(ERROR_FILE);
     }
 
 
   ttl = 2;
-  fprintf (stderr, "Debut du dump\nUn point est affiché tous les 500 paquets\n");
+  fprintf (stderr, "Dump start\n");
+  fprintf (stderr, "Ip \"%s\", Port \"%d\", Output file : \"%s\", ",ipIn,portIn,out_filename);
+  if(duree)
+    fprintf (stderr, "Duration \"%d\" \n",duree);
+  else
+    fprintf (stderr, "\n");
+  fprintf (stderr, "A dot is printed every 500 packets\n");
   
   /* Init udp */
   socketIn = makeclientsocket (ipIn, portIn, ttl, &sIn); //le makeclientsocket est pour joindre automatiquement le flux
 
 
-  //pour la possibilite de programmer
+  //In order to program records
   if(duree)
     {
-      fprintf (stderr, "On va dumper pendant %ds\n",duree);
       // alarme pour la fin
       if (signal (SIGALRM, SignalHandler) == SIG_IGN)
 	signal (SIGALRM, SIG_IGN);
@@ -224,9 +297,10 @@ main (int argc, char **argv)
 
   while (!Interrupted)
     {
-      lengthPacket=recv(socketIn,temp_buf,MTU,0);
+      lengthPacket=recv(socketIn,cache+cache_pos,MTU,0);
+      cache_pos+=MTU;
       num++;
-      // mis ici pour pouvoir le tuer s'il n'y a pas de flux (aytomatiser ça à l'avenir)
+      // mis ici pour pouvoir le tuer s'il n'y a pas de flux (automatiser ça à l'avenir)
       if(signaux==0)
 	{
 	  if (signal (SIGHUP, SignalHandler) == SIG_IGN)
@@ -242,8 +316,10 @@ main (int argc, char **argv)
 	  fprintf (stderr, "No bytes left to read - aborting\n");
 	  break;
 	}
-	  
-      write(STDOUT_FILENO, temp_buf, MTU);
+      if(cache_pos==MTU*CACHE_SIZE){
+	fwrite(cache, sizeof(unsigned char), cache_pos,out_file);
+	cache_pos=0;
+      }
       if(num%500==0)
 	{
 	  num=0;
@@ -255,16 +331,20 @@ main (int argc, char **argv)
 	    }
 	  else
 	      fprintf (stderr,".");
-	  fflush(stdout);
+	  fflush(stderr);
 	}
 	  
       if (Interrupted)
 	{
-	  fprintf (stderr, "Caught signal %d - closing cleanly.\n", Interrupted);
+	  //if some data need to be written
+	  if(cache_pos)
+	    fwrite(cache, sizeof(unsigned char), cache_pos,out_file);
+	  fprintf (stderr, "\nCaught signal %d - closing cleanly.\n", Interrupted);
 	}
     }
 
   close (socketIn);
+  close (out_file);
    
 
   return (0);
