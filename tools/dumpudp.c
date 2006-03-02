@@ -344,7 +344,7 @@ main (int argc, char **argv)
     }
 
   close (socketIn);
-  close (out_file);
+  fclose (out_file);
    
 
   return (0);
