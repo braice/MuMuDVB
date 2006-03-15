@@ -626,7 +626,7 @@ main (int argc, char **argv)
 	fprintf (stderr, "Tunning issue, card %d\n", card);
 
       // we close the file descriptors
-      close_card_fd (card, nb_flux, num_pids, fds);
+      close_card_fd (card, nb_flux, num_pids, mandatory_pid, fds);
       exit(ERROR_TUNE);
     }
 
@@ -654,10 +654,6 @@ main (int argc, char **argv)
       fprintf (pidfile, "%d\n", getpid ());
       fclose (pidfile);
     }
-
-  // we open the file descriptors
-  if (create_card_fd (card, nb_flux, num_pids, &fds) < 0)
-    return -1;
 
 
   // init of active channels list
@@ -689,6 +685,10 @@ main (int argc, char **argv)
   //the TDT gives information relating to the present time and date.
   //This information is given in a separate table due to the frequent updating of this information.
   mandatory_pid[20]=1;
+
+  // we open the file descriptors
+  if (create_card_fd (card, nb_flux, num_pids, mandatory_pid, &fds) < 0)
+    return -1;
 
   for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY;curr_pid_mandatory++)
     if(mandatory_pid[curr_pid_mandatory]==1)
@@ -866,7 +866,7 @@ main (int argc, char **argv)
     close (socketOut[curr_channel]);
 
   // we close the file descriptors
-  close_card_fd (card, nb_flux, num_pids, fds);
+  close_card_fd (card, nb_flux, num_pids, mandatory_pid, fds);
 
   if (remove (nom_fich_chaines_diff))
     {

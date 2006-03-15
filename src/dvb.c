@@ -95,7 +95,7 @@ affiche_puissance (fds_t fds, int no_daemon)
 }
 
 int
-create_card_fd(int card, int nb_flux, int *num_pids, fds_t *fds)
+create_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t *fds)
 {
 
   int i=0;
@@ -103,12 +103,14 @@ create_card_fd(int card, int nb_flux, int *num_pids, fds_t *fds)
   int curr_pid_mandatory = 0;
 
   for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY;curr_pid_mandatory++)
-    if ((fds->fd_mandatory[curr_pid_mandatory] = open (demuxdev[card], O_RDWR)) < 0)	//file descriptors for the mandatory pids
-    {
-      fprintf (stderr, "FD Mandatory %i: ", curr_pid_mandatory);
-      perror ("DEMUX DEVICE: ");
-      return -1;
-    }
+    //file descriptors for the mandatory pids
+    //we check if we need to open the file descriptor (some cards are limited)
+    if ((mandatory_pid[curr_pid_mandatory] != 0)&& ((fds->fd_mandatory[curr_pid_mandatory] = open (demuxdev[card], O_RDWR)) < 0) )	
+      {
+	fprintf (stderr, "FD Mandatory %i: ", curr_pid_mandatory);
+	perror ("DEMUX DEVICE: ");
+	return -1;
+      }
 
   for (i = 0; i < nb_flux; i++)
     {
@@ -135,14 +137,17 @@ create_card_fd(int card, int nb_flux, int *num_pids, fds_t *fds)
 
 
 void
-close_card_fd(int card, int nb_flux, int *num_pids, fds_t fds)
+close_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t fds)
 {
   int i=0;
   int j=0;
   int curr_pid_mandatory = 0;
 
   for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY;curr_pid_mandatory++)
-    close(fds.fd_mandatory[curr_pid_mandatory]);
+    {
+      //      if(mandatory_pid[curr_pid_mandatory] != 0)
+	close(fds.fd_mandatory[curr_pid_mandatory]);
+    }
 
   for (i = 0; i < nb_flux; i++)
     {
