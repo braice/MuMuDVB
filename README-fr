@@ -31,9 +31,16 @@ Nouvelles fonctionnalités par rapport à la version 0.6 de dvbstream:
  * Surtout pouvoir diffuser plusieurs chaînes d'un même transpondeur sur des ips différentes
  * Permet de diffuser le meme pid sur plusieurs chaines (permet de creer des chaines avec plusieurs langues)
  * Support fonctionnel du DVB-T
- * Diffusion du pid 0 et 18 systématiques
+ * Diffusion des pids obligatoires systématique
+  * Les pids obligatoires sont les suivants :
+   * PAT (0): Program Association Table
+   * NIT (16) : Network Information Table : Fournit des informations à propos du réseau physique.
+   * SDT (17) : Service Description Table : Le pid SDT contient des données décrivant les différents services ex : nom des services, fournisseur du service, etc.
+   * EIT (18) : Event Information Table : Le pid EIT contient des données concernant les programmes comme : le nom du programme, l'heure de début, la durée, une description etc ...
+   * TDT (20): Time and Date Table : Le pid TDT contient l'heure et la date. Cette information est dans un pid à part car sa mise à jour est fréquente.
  * Le programme s'inscrit lui même au flux (IGMP membership request) pour éviter que certains switchs braodcastent les flux
-
+ * Le programme est capable de réécrire à la volée le pid PAT pour n'annoncer que les flux réelement présents (utile pour les set-top boxes).
+  * Cette fonctionalité est expérimentale (03/2006) et ne permet pas de réécrire des Pids PAT plus gros que 188 bytes
 
 Ce programme n'est pas un patch pour dvbstream à cause de certaines restrictions:
  * obligation d'utiliser un fichier de configuration
@@ -88,9 +95,12 @@ Signaux : (voir la page de man de kill)
 
  * mumudvb permet de recevoir un signal satellite (DVB-s) ou Terrestre (DVB-t), il ne gère pas les DisEq (si il y a un besoin ce ne devrait pas être trop dur à implémenter)
 
- * Le pid 0 est envoyé automatiquement avec toutes les chaînes, il permet au client compatible de distinguer les différents flux présents (indispensable pour vlc, incapable d'identifier par lui même les différents flux)
-
- * Le pid 18 est envoyé automatiquement avec toutes les chaînes, il permet au client compatible de savoir le programme TV
+ * mumudvb diffuse les Pids suivants avec toutes les chaînes (conformément à la norme MPEG2-TS)
+   * PAT (0): Program Association Table
+   * NIT (16) : Network Information Table : Fournit des informations à propos du réseau physique.
+   * SDT (17) : Service Description Table : Le pid SDT contient des données décrivant les différents services ex : nom des services, fournisseur du service,\ etc.
+   * EIT (18) : Event Information Table : Le pid EIT contient des données concernant les programmes comme : le nom du programme, l'heure de début, la durée,\ une description etc ...
+   * TDT (20): Time and Date Table : Le pid TDT contient l'heure et la date. Cette information est dans un pid à part car sa mise à jour est fréquente.
 
  * Performances: mumudvb consomme 15% du processeur d'un celeron 2.6GHz avec une carte Hauppauge et un noyau Linux 2.6.9 pour un transpondeur plein (mumudvb a été développé à l'origine dans ce but, après des tests avec VLC qui offrait de piteuses performances, une instabilité chronique et avec des fonctionnalités manquantes pour notre utilisation)
 

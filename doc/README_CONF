@@ -13,7 +13,8 @@ All parameters are like: name=value
 
 '''List of parameters and their description ( (f) : optionnal parameter )'''
 ----
-||'''Nom :'''                          ||'''valeur:'''                                ||
+||'''Name :'''                          ||'''value:'''                                ||
+||rewrite_pat                    ||specify if we wants the PAT rewriting feature ||
 ||freq                           ||transponder's frequency in MHz ||
 ||pol                            ||transponder's polarisation (a char) v or h (not case sensitive) ||
 ||srate                          ||transponder's strate ||

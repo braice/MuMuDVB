@@ -23,10 +23,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
     
 */
-  /* ATTENTION
-     Version modifiee par braice (mumudvb@braice.net) pour le Crans (www.crans.org)
-     me demander pour toute documentation)
-   */
 
 
 #define _GNU_SOURCE		// pour utiliser le program_invocation_short_name (extension gnu)
@@ -82,9 +78,14 @@ int card = 0;
 fds_t fds; // defined in dvb.h
 
 
+//Global for the moment
+// CRC table for PAT rebuilding
+unsigned long       crc32_table[256];
+
 // prototypes
 static void SignalHandler (int signum);
 void gen_chaines_diff (int no_daemon, int *chaines_diffuses);
+int pat_rewrite(unsigned char *buf,int num_pids, int *pids);
 
 
 void
@@ -137,7 +138,8 @@ main (int argc, char **argv)
   // DVB reception and sort
   int pid;			// pid of the current mpeg2 packet
   int bytes_read;		// number of bytes actually read
-  unsigned char temp_buf[MAX_UDP_SIZE];
+  unsigned char temp_buf[TS_PACKET_SIZE];
+  unsigned char temp_buf2[TS_PACKET_SIZE];
   int nb_bytes[MAX_CHAINES];
   //Mandatory pids
   int mandatory_pid[MAX_MANDATORY];
@@ -170,6 +172,11 @@ main (int argc, char **argv)
   int alarm_count = 0;
   int count_non_transmis = 0;
   int tune_retval=0;
+
+
+  //does we rewrite the pat pid ?
+  int rewrite_pat = 0;
+  unsigned long crc32_table_temp_var[3];
 
   const char short_options[] = "c:sdh";
   const struct option long_options[] = {
@@ -279,6 +286,30 @@ main (int argc, char **argv)
 	{
 	  sous_chaine = strtok (NULL, delimiteurs);
 	  timeout_no_diff= atoi (sous_chaine);
+	}
+      else if (!strcmp (sous_chaine, "rewrite_pat"))
+	{
+	  sous_chaine = strtok (NULL, delimiteurs);
+	  rewrite_pat = atoi (sous_chaine);
+	  if(rewrite_pat)
+	    {
+	      if (!no_daemon)
+		syslog (LOG_USER,
+			"!!! You have enabled the Pat Rewriting, this is an experimental feature, you have been warned\n");
+	      else
+		fprintf (stderr,
+			"!!! You have enabled the Pat Rewriting, this is an experimental feature, you have been warned\n");
+
+	      //we compute the crc32 tables
+	      //CRC32 table initialisation (taken from the xine project)
+	      for( crc32_table_temp_var[0] = 0 ; crc32_table_temp_var[0] < 256 ; crc32_table_temp_var[0]++ ) {
+		crc32_table_temp_var[2] = 0;
+		for (crc32_table_temp_var[1] = (crc32_table_temp_var[0] << 24) | 0x800000 ; crc32_table_temp_var[1] != 0x80000000 ; crc32_table_temp_var[1] <<= 1) {
+		  crc32_table_temp_var[2] = (crc32_table_temp_var[2] << 1) ^ (((crc32_table_temp_var[2] ^ crc32_table_temp_var[1]) & 0x80000000) ? 0x04c11db7 : 0);
+		}
+		crc32_table[crc32_table_temp_var[0]] = crc32_table_temp_var[2];
+	      }
+	    }
 	}
       else if (!strcmp (sous_chaine, "freq"))
 	{
@@ -547,6 +578,12 @@ main (int argc, char **argv)
       else
 	{
 	  /*probleme */
+	  if (!no_daemon)
+	    syslog (LOG_USER,
+		    "Config issue : unknow symbol : %s\n\n", sous_chaine);
+	  else
+	    fprintf (stderr,
+		    "Config issue : unknow symbol : %s\n\n", sous_chaine);
 	  continue;
 	}
     }
@@ -760,9 +797,9 @@ main (int argc, char **argv)
       poll (pfds, 1, 500);
 
       /* Attempt to read 188 bytes from /dev/ost/dvr */
-      if ((bytes_read = read (fds.fd_dvr, temp_buf, PACKET_SIZE)) > 0)
+      if ((bytes_read = read (fds.fd_dvr, temp_buf, TS_PACKET_SIZE)) > 0)
 	{
-	  if (bytes_read != PACKET_SIZE)
+	  if (bytes_read != TS_PACKET_SIZE)
 	    {
 		if (!no_daemon)
 		  syslog (LOG_USER, "No bytes left to read - aborting\n");
@@ -772,7 +809,15 @@ main (int argc, char **argv)
 	    }
 
 	  pid = ((temp_buf[1] & 0x1f) << 8) | (temp_buf[2]);
+
+	  //Pat rewrite only
+	  //we save the full pat before otherwise only the first channel will be rewritten with a full PAT
+	  if( (pid == 0) && //This is a PAT PID
+	      rewrite_pat ) //AND we asked for rewrite
+	    for(buf_pos=0;buf_pos<TS_PACKET_SIZE;buf_pos++)
+	      temp_buf2[buf_pos]=temp_buf[buf_pos]; //We save the full pat
 	  
+
 	  //for each channel we'll look if we must send this PID
 	  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
 	    {
@@ -791,20 +836,32 @@ main (int argc, char **argv)
 		    chaines_diffuses[curr_channel]++;
 		  }
 
+	      //Rewrite PAT checking
+	      if(send_packet==1)
+		if( (pid == 0) && //This is a PAT PID
+		     rewrite_pat ) //AND we asked for rewrite
+		  {
+		    for(buf_pos=0;buf_pos<TS_PACKET_SIZE;buf_pos++)
+		      temp_buf[buf_pos]=temp_buf2[buf_pos]; //We restore the full PAT
+		    //and we try to rewrite it
+		    if(pat_rewrite(temp_buf,num_pids[curr_channel],pids[curr_channel])) //We try rewrite and if there's an error...
+		      send_packet=0;//... we don't send it anyway
+		  }
+
 	      //Ok we must send it
 	      if(send_packet==1)
 		{
 		  // we fill the channel buffer
 		  for (buf_pos = 0; buf_pos < bytes_read; buf_pos++)
 		    buf[curr_channel][nb_bytes[curr_channel] + buf_pos] = temp_buf[buf_pos];
-		  
+
 		  buf[curr_channel][nb_bytes[curr_channel] + 1] =
 		    (buf[curr_channel][nb_bytes[curr_channel] + 1] & 0xe0) | hi_mappids[pid];
 		  buf[curr_channel][nb_bytes[curr_channel] + 2] = lo_mappids[pid];
-		  
+
 		  nb_bytes[curr_channel] += bytes_read;
 		  //The buffer is full, we send it
-		  if ((nb_bytes[curr_channel] + PACKET_SIZE) > MAX_UDP_SIZE)
+		  if ((nb_bytes[curr_channel] + TS_PACKET_SIZE) > MAX_UDP_SIZE)
 		    {
 		      sendudp (socketOut[curr_channel], &sOut[curr_channel], buf[curr_channel],
 			       nb_bytes[curr_channel]);
@@ -1023,3 +1080,153 @@ gen_chaines_diff (int no_daemon, int *chaines_diffuses)
   fclose (chaines_diff);
 
 }
+
+int
+pat_rewrite(unsigned char *buf,int num_pids, int *pids)
+{
+  int i,pos_buf,buf_pos;
+  
+
+  //destination buffer
+  unsigned char buf_dest[188];
+  int buf_dest_pos=0;
+
+  pat_t       *pat=(pat_t*)(buf+TS_HEADER_LEN);
+  pat_prog_t  *prog;
+  int delta=PAT_LEN+TS_HEADER_LEN;
+  int section_length=0;
+  int new_section_length;
+  unsigned long crc32;
+  unsigned long calc_crc32;
+
+
+  //PAT reading
+  section_length=HILO(pat->section_length);
+  if((section_length>(TS_PACKET_SIZE-TS_HEADER_LEN)) && section_length)
+    {
+      if (section_length)
+	{
+	  if (!no_daemon)
+	    syslog (LOG_USER,"PAT too big : %d, don't know how rewrite, sent as is\n", section_length);
+	  else
+	    fprintf (stderr, "PAT too big : %d, don't know how rewrite, sent as is\n", section_length);
+	}
+      else //empty PAT
+	{
+	  return 1;
+	}
+      return 0; //we sent as is
+    }
+  //CRC32
+  //CRC32 calculation taken from the xine project
+  //Test of the crc32
+  calc_crc32=0xffffffff;
+  //we compute the CRC32
+  for(i = 0; i < section_length-1; i++) {
+    calc_crc32 = (calc_crc32 << 8) ^ crc32_table[(calc_crc32 >> 24) ^ buf[i+TS_HEADER_LEN]];
+  }
+ 
+  crc32=0x00000000;
+
+  crc32|=buf[TS_HEADER_LEN+section_length+3-4]<<24;
+  crc32|=buf[TS_HEADER_LEN+section_length+3-4+1]<<16;
+  crc32|=buf[TS_HEADER_LEN+section_length+3-4+2]<<8;
+  crc32|=buf[TS_HEADER_LEN+section_length+3-4+3];
+  
+  if((calc_crc32-crc32)!=0)
+    {
+      //Bad CRC32
+      return 1; //We don't send this PAT
+    }
+
+/*   fprintf (stderr, "table_id %x ",pat->table_id); */
+/*   fprintf (stderr, "dummy %x ",pat->dummy); */
+/*   fprintf (stderr, "ts_id 0x%04x ",HILO(pat->transport_stream_id)); */
+/*   fprintf (stderr, "section_length %d ",HILO(pat->section_length)); */
+/*   fprintf (stderr, "version %i ",pat->version_number); */
+/*   fprintf (stderr, "last_section_number %x ",pat->last_section_number); */
+/*   fprintf (stderr, "\n"); */
+
+
+  //sounds good, lets start the copy
+  //we copy the ts header
+  for(i=0;i<TS_HEADER_LEN;i++)
+    buf_dest[i]=buf[i];
+  //we copy the PAT header
+  for(i=TS_HEADER_LEN;i<TS_HEADER_LEN+PAT_LEN;i++)
+    buf_dest[i]=buf[i];
+
+  buf_dest_pos=TS_HEADER_LEN+PAT_LEN;
+
+  //We copy what we need : EIT announce and present PMT announce
+  //strict comparaison due to the calc of section len cf down
+  while((delta+PAT_PROG_LEN)<(section_length+TS_HEADER_LEN))
+    {
+      prog=(pat_prog_t*)((char*)buf+delta);
+      if(HILO(prog->program_number)==0)
+	{
+	  //we found the announce for the EIT pid
+	  for(pos_buf=0;pos_buf<PAT_PROG_LEN;pos_buf++)
+	    buf_dest[buf_dest_pos+pos_buf]=buf[pos_buf+delta];
+	  buf_dest_pos+=PAT_PROG_LEN;
+	}
+      else
+	{
+	  for(i=0;i<num_pids;i++)
+	    if(pids[i]==HILO(prog->network_pid))
+	      {
+		//we found a announce for a PMT pid in our stream, we keep it
+		for(pos_buf=0;pos_buf<PAT_PROG_LEN;pos_buf++)
+		  buf_dest[buf_dest_pos+pos_buf]=buf[pos_buf+delta];
+		buf_dest_pos+=PAT_PROG_LEN;
+	      }
+	}
+      delta+=PAT_PROG_LEN;
+    }
+
+
+
+  //we compute the new section length
+  //section lenght is the size of the section after section_length (crc32 included : 4 bytes)
+  //so it's size of the crc32 + size of the pat prog + size of the pat header - 3 first bytes (the pat header until section length included)
+  //Finally it's total_pat_data_size + 1
+  new_section_length=buf_dest_pos-TS_HEADER_LEN + 1;
+
+  //We write the new section length
+  buf_dest[1+TS_HEADER_LEN]=(((new_section_length)&0x0f00)>>8)  | (0xf0 & buf_dest[1+TS_HEADER_LEN]);
+  buf_dest[2+TS_HEADER_LEN]=new_section_length & 0xff;
+
+
+  //CRC32 calculation taken from the xine project
+  //Now we must adjust the CRC32
+  //we compute the CRC32
+  crc32=0xffffffff;
+  for(i = 0; i < new_section_length-1; i++) {
+    crc32 = (crc32 << 8) ^ crc32_table[(crc32 >> 24) ^ buf_dest[i+TS_HEADER_LEN]];
+  }
+
+
+  //We write the CRC32 to the buffer
+  buf_dest[buf_dest_pos]=(crc32>>24) & 0xff;
+  buf_dest_pos+=1;
+  buf_dest[buf_dest_pos]=(crc32>>16) & 0xff;
+  buf_dest_pos+=1;
+  buf_dest[buf_dest_pos]=(crc32>>8) & 0xff;
+  buf_dest_pos+=1;
+  buf_dest[buf_dest_pos]=crc32 & 0xff;
+  buf_dest_pos+=1;
+
+
+  //Padding with 0xFF 
+  memset(buf_dest+buf_dest_pos,0xFF,TS_PACKET_SIZE-buf_dest_pos);
+
+
+  //We copy the result to the original buffer
+  for(buf_pos=0;buf_pos<TS_PACKET_SIZE;buf_pos++)
+    buf[buf_pos]=buf_dest[buf_pos];
+
+  //All is Ok ....
+  return 0;
+
+}
+
