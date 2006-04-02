@@ -825,7 +825,7 @@ main (int argc, char **argv)
 	      send_packet=0;
 	      
 	      //If it's a mandatory pid we send it
-	      if(mandatory_pid[pid]==1)
+	      if((pid<MAX_MANDATORY) && (mandatory_pid[pid]==1))
 		send_packet=1;
 	      
 	      //if it isn't mandatory wee see if it is in the channel list
