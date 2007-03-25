@@ -71,6 +71,7 @@ int timeout_accord = ALARM_TIME_TIMEOUT;
 int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
 int Interrupted = 0;
 char nom_fich_chaines_diff[256];
+char nom_fich_chaines_non_diff[256];
 int card = 0;
 
 
@@ -602,6 +603,8 @@ main (int argc, char **argv)
   // we clear it by precaution
   sprintf (nom_fich_chaines_diff, "/var/run/mumudvb/chaines_diffusees_carte%d",
 	   card);
+  sprintf (nom_fich_chaines_non_diff, "/var/run/mumudvb/chaines_non_diffusees_carte%d",
+	   card);
   chaines_diff = fopen (nom_fich_chaines_diff, "w");
   if (chaines_diff == NULL)
     {
@@ -617,6 +620,22 @@ main (int argc, char **argv)
     }
 
   fclose (chaines_diff);
+
+  chaines_non_diff = fopen (nom_fich_chaines_non_diff, "w");
+  if (chaines_diff == NULL)
+    {
+      if (!no_daemon)
+	syslog (LOG_USER,
+		"%s: %s\n",
+		nom_fich_chaines_non_diff, strerror (errno));
+      else
+	fprintf (stderr,
+		 "%s: %s\n",
+		 nom_fich_chaines_non_diff, strerror (errno));
+      exit(ERROR_CREATE_FILE);
+    }
+
+  fclose (chaines_non_diff);
 
   if (!no_daemon)
     syslog (LOG_USER, "Diffusion. Freq %lu pol %c srate %lu\n",
@@ -938,6 +957,19 @@ main (int argc, char **argv)
       exit(ERROR_DEL_FILE);
     }
 
+  if (remove (nom_fich_chaines_non_diff))
+    {
+      if (!no_daemon)
+	syslog (LOG_USER,
+		"%s: %s\n",
+		nom_fich_chaines_non_diff, strerror (errno));
+      else
+	fprintf (stderr,
+		 "%s: %s\n",
+		 nom_fich_chaines_non_diff, strerror (errno));
+      exit(ERROR_DEL_FILE);
+    }
+
 
   if (!no_daemon)
     {
@@ -1058,6 +1090,7 @@ void
 gen_chaines_diff (int no_daemon, int *chaines_diffuses)
 {
   FILE *chaines_diff;
+  FILE *chaines_non_diff;
   int curr_channel;
 
   chaines_diff = fopen (nom_fich_chaines_diff, "w");
@@ -1074,10 +1107,27 @@ gen_chaines_diff (int no_daemon, int *chaines_diffuses)
       exit(ERROR_CREATE_FILE);
     }
 
+  chaines_non_diff = fopen (nom_fich_chaines_non_diff, "w");
+  if (chaines_non_diff == NULL)
+    {
+      if (!no_daemon)
+	syslog (LOG_USER,
+		"%s: %s\n",
+		nom_fich_chaines_non_diff, strerror (errno));
+      else
+	fprintf (stderr,
+		 "%s: %s\n",
+		 nom_fich_chaines_non_diff, strerror (errno));
+      exit(ERROR_CREATE_FILE);
+    }
+
   for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
     if (chaines_diffuses[curr_channel])
       fprintf (chaines_diff, "%s:%d:%s\n", ipOut[curr_channel], portOut[curr_channel], noms[curr_channel]);
+    else
+      fprintf (chaines_non_diff, "%s:%d:%s\n", ipOut[curr_channel], portOut[curr_channel], noms[curr_channel]);
   fclose (chaines_diff);
+  fclose (chaines_non_diff);
 
 }
 
