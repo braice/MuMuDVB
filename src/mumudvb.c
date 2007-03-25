@@ -152,6 +152,7 @@ main (int argc, char **argv)
   FILE *conf_file;
   char nom_fich_pid[256];
   FILE *chaines_diff;
+  FILE *chaines_non_diff;
   FILE *pidfile;
 
   // configuration file parsing
