@@ -217,7 +217,7 @@ main (int argc, char **argv)
 	  if (!conf_filename)
 	    {
 	      if (!no_daemon)
-		syslog (LOG_USER, "malloc() failed: %s\n", strerror(errno));
+		syslog (LOG_USER|LOG_INFO, "malloc() failed: %s\n", strerror(errno));
 	      else
 		fprintf(stderr, "malloc() failed: %s\n", strerror(errno));
 	      exit(errno);
@@ -256,7 +256,7 @@ main (int argc, char **argv)
   if (conf_file == NULL)
     {
       if (!no_daemon)
-	syslog (LOG_USER, "%s: %s\n",
+	syslog (LOG_USER|LOG_INFO, "%s: %s\n",
 		conf_filename, strerror (errno));
       else
 	fprintf (stderr,
@@ -296,7 +296,7 @@ main (int argc, char **argv)
 	  if(rewrite_pat)
 	    {
 	      if (!no_daemon)
-		syslog (LOG_USER,
+		syslog (LOG_USER|LOG_INFO,
 			"!!! You have enabled the Pat Rewriting, this is an experimental feature, you have been warned\n");
 	      else
 		fprintf (stderr,
@@ -333,7 +333,7 @@ main (int argc, char **argv)
 	  else
 	    {
 	      if (!no_daemon)
-		syslog (LOG_USER,
+		syslog (LOG_USER|LOG_INFO,
 			"Config issue : %s polarisation\n",
 			conf_filename);
 	      else
@@ -356,7 +356,7 @@ main (int argc, char **argv)
 	  if (card > 5)
 	    {
 	      if (!no_daemon)
-		syslog (LOG_USER,
+		syslog (LOG_USER|LOG_INFO,
 			"Six cards MAX\n");
 	      else
 		fprintf (stderr,
@@ -381,7 +381,7 @@ main (int argc, char **argv)
 	  if (port_ok == 0 || ip_ok == 0)
 	    {
 	      if (!no_daemon)
-		syslog (LOG_USER,
+		syslog (LOG_USER|LOG_INFO,
 			"You must precise ip and port before PIDs\n");
 	      else
 		fprintf (stderr,
@@ -395,7 +395,7 @@ main (int argc, char **argv)
 	      if (pids[curr_channel][curr_pid] < 10 || pids[curr_channel][curr_pid] > 8191)
 		{
 		  if (!no_daemon)
-		    syslog (LOG_USER,
+		    syslog (LOG_USER|LOG_INFO,
 			    "Config issue : %s in pids, given pid : %d\n",
 			    conf_filename, pids[curr_channel][curr_pid]);
 		  else
@@ -408,7 +408,7 @@ main (int argc, char **argv)
 	      if (curr_pid >= MAX_PIDS_PAR_CHAINE)
 		{
 		  if (!no_daemon)
-		    syslog (LOG_USER,
+		    syslog (LOG_USER|LOG_INFO,
 			    "Too many pids : %d channel : %d\n",
 			    curr_pid, curr_channel);
 		  else
@@ -433,7 +433,7 @@ main (int argc, char **argv)
 	  else
 	    {
 	      if (!no_daemon)
-		syslog (LOG_USER,"Channel name too long\n");
+		syslog (LOG_USER|LOG_INFO,"Channel name too long\n");
 	      else
 		fprintf (stderr, "Channel name too long\n");
 	    }
@@ -460,7 +460,7 @@ main (int argc, char **argv)
 	  else
 	    {
 	      if (!no_daemon)
-		syslog (LOG_USER,
+		syslog (LOG_USER|LOG_INFO,
 			"Config issue : QAM\n");
 	      else
 		fprintf (stderr,
@@ -482,7 +482,7 @@ main (int argc, char **argv)
 	  else
 	    {
 	      if (!no_daemon)
-		syslog (LOG_USER,
+		syslog (LOG_USER|LOG_INFO,
 			"Config issue : trans_mode\n");
 	      else
 		fprintf (stderr,
@@ -506,7 +506,7 @@ main (int argc, char **argv)
 	  else
 	    {
 	      if (!no_daemon)
-		syslog (LOG_USER,
+		syslog (LOG_USER|LOG_INFO,
 			"Config issue : bandwidth\n");
 	      else
 		fprintf (stderr,
@@ -532,7 +532,7 @@ main (int argc, char **argv)
 	  else
 	    {
 	      if (!no_daemon)
-		syslog (LOG_USER,
+		syslog (LOG_USER|LOG_INFO,
 			"Config issue : guardinterval\n");
 	      else
 		fprintf (stderr,
@@ -568,7 +568,7 @@ main (int argc, char **argv)
 	  else
 	    {
 	      if (!no_daemon)
-		syslog (LOG_USER,
+		syslog (LOG_USER|LOG_INFO,
 			"Config issue : coderate\n");
 	      else
 		fprintf (stderr,
@@ -581,7 +581,7 @@ main (int argc, char **argv)
 	{
 	  /*probleme */
 	  if (!no_daemon)
-	    syslog (LOG_USER,
+	    syslog (LOG_USER|LOG_INFO,
 		    "Config issue : unknow symbol : %s\n\n", sous_chaine);
 	  else
 	    fprintf (stderr,
@@ -593,7 +593,7 @@ main (int argc, char **argv)
   if (curr_channel > MAX_CHAINES)
     {
       if (!no_daemon)
-	syslog (LOG_USER, "Too many channels : %d limit : %d\n",
+	syslog (LOG_USER|LOG_INFO, "Too many channels : %d limit : %d\n",
 		curr_channel, MAX_CHAINES);
       else
 	fprintf (stderr, "Too many channels : %d limit : %d\n",
@@ -610,7 +610,7 @@ main (int argc, char **argv)
   if (chaines_diff == NULL)
     {
       if (!no_daemon)
-	syslog (LOG_USER,
+	syslog (LOG_USER|LOG_INFO,
 		"%s: %s\n",
 		nom_fich_chaines_diff, strerror (errno));
       else
@@ -626,7 +626,7 @@ main (int argc, char **argv)
   if (chaines_diff == NULL)
     {
       if (!no_daemon)
-	syslog (LOG_USER,
+	syslog (LOG_USER|LOG_INFO,
 		"%s: %s\n",
 		nom_fich_chaines_non_diff, strerror (errno));
       else
@@ -639,7 +639,7 @@ main (int argc, char **argv)
   fclose (chaines_non_diff);
 
   if (!no_daemon)
-    syslog (LOG_USER, "Diffusion. Freq %lu pol %c srate %lu\n",
+    syslog (LOG_USER|LOG_INFO, "Diffusion. Freq %lu pol %c srate %lu\n",
 	    freq, pol, srate);
 
   // alarm for tuning timeout
@@ -665,7 +665,7 @@ main (int argc, char **argv)
       if (open_fe (&fds.fd_frontend, card))
 	{
 	  if (!no_daemon)
-	    syslog (LOG_USER, "Tuning to %ld Hz\n", freq);
+	    syslog (LOG_USER|LOG_INFO, "Tuning to %ld Hz\n", freq);
 	  else
 	    fprintf (stderr, "Tuning to %ld Hz\n", freq);
 	  tune_retval =
@@ -678,7 +678,7 @@ main (int argc, char **argv)
   if (tune_retval < 0)
     {
       if (!no_daemon)
-	syslog (LOG_USER, "Tunning issue, card %d\n", card);
+	syslog (LOG_USER|LOG_INFO, "Tunning issue, card %d\n", card);
       else
 	fprintf (stderr, "Tunning issue, card %d\n", card);
 
@@ -704,7 +704,7 @@ main (int argc, char **argv)
       pidfile = fopen (nom_fich_pid, "w");
       if (pidfile == NULL)
 	{
-	  syslog (LOG_USER, "%s: %s\n",
+	  syslog (LOG_USER|LOG_INFO, "%s: %s\n",
 		  nom_fich_pid, strerror (errno));
 	  exit(ERROR_CREATE_FILE);
 	}
@@ -763,7 +763,7 @@ main (int argc, char **argv)
 
   ttl = 2;
   if (!no_daemon)
-    syslog (LOG_USER, "Card %d tuned\n", card);
+    syslog (LOG_USER|LOG_INFO, "Card %d tuned\n", card);
   else
     fprintf (stderr, "Card %d tuned\n", card);
 
@@ -776,7 +776,7 @@ main (int argc, char **argv)
     }
 
   if (!no_daemon)
-    syslog (LOG_USER, "Diffusion %d channel%s\n", nb_flux,
+    syslog (LOG_USER|LOG_INFO, "Diffusion %d channel%s\n", nb_flux,
 	    (nb_flux == 1 ? "" : "s"));
   else
     fprintf (stderr, "Diffusion %d channel%s\n", nb_flux,
@@ -786,7 +786,7 @@ main (int argc, char **argv)
     {
       if (!no_daemon)
 	{
-	  syslog (LOG_USER, "Channel \"%s\" num %d ip %s:%d\n",
+	  syslog (LOG_USER|LOG_INFO, "Channel \"%s\" num %d ip %s:%d\n",
 		  noms[curr_channel], curr_channel, ipOut[curr_channel], portOut[curr_channel]);
 	}
       else
@@ -822,7 +822,7 @@ main (int argc, char **argv)
 	  if (bytes_read != TS_PACKET_SIZE)
 	    {
 		if (!no_daemon)
-		  syslog (LOG_USER, "No bytes left to read - aborting\n");
+		  syslog (LOG_USER|LOG_INFO, "No bytes left to read - aborting\n");
 		else
 		  fprintf (stderr, "No bytes left to read - aborting\n");
 		break;
@@ -895,7 +895,7 @@ main (int argc, char **argv)
 		{
 		  alarm_count = 0;
 		  if (!no_daemon)
-		    syslog (LOG_USER,
+		    syslog (LOG_USER|LOG_INFO,
 			   "Good, we receive back significant data\n");
 		  else
 		    fprintf (stderr,
@@ -906,7 +906,7 @@ main (int argc, char **argv)
 	  if (count_non_transmis > ALARM_COUNT_LIMIT)
 	    {
 	      if (!no_daemon)
-		syslog (LOG_USER,
+		syslog (LOG_USER|LOG_INFO,
 			"Error : less than one paquet on %d sent\n",
 			ALARM_COUNT_LIMIT);
 	      else
@@ -923,10 +923,10 @@ main (int argc, char **argv)
       if (!no_daemon)
 	{
 	  if(Interrupted< (1<<8)) //we check if it's a signal or a mumudvb error
-	    syslog (LOG_USER, "\nCaught signal %d - closing cleanly.\n",
+	    syslog (LOG_USER|LOG_INFO, "\nCaught signal %d - closing cleanly.\n",
 		    Interrupted);
 	  else
-	    syslog (LOG_USER, "\nclosing cleanly.\n");
+	    syslog (LOG_USER|LOG_INFO, "\nclosing cleanly.\n");
 	}
       else
 	{
@@ -948,7 +948,7 @@ main (int argc, char **argv)
   if (remove (nom_fich_chaines_diff))
     {
       if (!no_daemon)
-	syslog (LOG_USER,
+	syslog (LOG_USER|LOG_INFO,
 		"%s: %s\n",
 		nom_fich_chaines_diff, strerror (errno));
       else
@@ -961,7 +961,7 @@ main (int argc, char **argv)
   if (remove (nom_fich_chaines_non_diff))
     {
       if (!no_daemon)
-	syslog (LOG_USER,
+	syslog (LOG_USER|LOG_INFO,
 		"%s: %s\n",
 		nom_fich_chaines_non_diff, strerror (errno));
       else
@@ -976,7 +976,7 @@ main (int argc, char **argv)
     {
       if (remove (nom_fich_pid))
 	{
-	  syslog (LOG_USER, "%s: %s\n",
+	  syslog (LOG_USER|LOG_INFO, "%s: %s\n",
 		  nom_fich_pid, strerror (errno));
 	  exit(ERROR_DEL_FILE);
 	}
@@ -1005,7 +1005,7 @@ SignalHandler (int signum)
       if (!carte_accordee)
 	{
 	  if (!no_daemon)
-	    syslog (LOG_USER,
+	    syslog (LOG_USER|LOG_INFO,
 		    "Card not tuned after %ds - exiting\n",
 		    timeout_accord);
 	  else
@@ -1018,7 +1018,7 @@ SignalHandler (int signum)
 	if ((chaines_diffuses[curr_channel] >= 100) && (!chaines_diffuses_old[curr_channel]))
 	  {
 	    if (!no_daemon)
-	      syslog (LOG_USER,
+	      syslog (LOG_USER|LOG_INFO,
 		      "Channel \"%s\" back.Card %d\n",
 		      noms[curr_channel], card);
 	    else
@@ -1030,7 +1030,7 @@ SignalHandler (int signum)
 	else if ((chaines_diffuses_old[curr_channel]) && (chaines_diffuses[curr_channel] < 100))
 	  {
 	    if (!no_daemon)
-	      syslog (LOG_USER,
+	      syslog (LOG_USER|LOG_INFO,
 		      "Channel \"%s\" down.Card %d\n",
 		      noms[curr_channel], card);
 	    else
@@ -1056,7 +1056,7 @@ SignalHandler (int signum)
       if(time_no_diff&&((now-time_no_diff)>timeout_no_diff))
 	{
 	  if (!no_daemon)
-	    syslog (LOG_USER,
+	    syslog (LOG_USER|LOG_INFO,
 		    "No data from card %d in %ds, exiting.\n",
 		      card, timeout_no_diff);
 	    else
@@ -1098,7 +1098,7 @@ gen_chaines_diff (int no_daemon, int *chaines_diffuses)
   if (chaines_diff == NULL)
     {
       if (!no_daemon)
-	syslog (LOG_USER,
+	syslog (LOG_USER|LOG_INFO,
 		"%s: %s\n",
 		nom_fich_chaines_diff, strerror (errno));
       else
@@ -1112,7 +1112,7 @@ gen_chaines_diff (int no_daemon, int *chaines_diffuses)
   if (chaines_non_diff == NULL)
     {
       if (!no_daemon)
-	syslog (LOG_USER,
+	syslog (LOG_USER|LOG_INFO,
 		"%s: %s\n",
 		nom_fich_chaines_non_diff, strerror (errno));
       else
@@ -1158,7 +1158,7 @@ pat_rewrite(unsigned char *buf,int num_pids, int *pids)
       if (section_length)
 	{
 	  if (!no_daemon)
-	    syslog (LOG_USER,"PAT too big : %d, don't know how rewrite, sent as is\n", section_length);
+	    syslog (LOG_USER|LOG_INFO,"PAT too big : %d, don't know how rewrite, sent as is\n", section_length);
 	  else
 	    fprintf (stderr, "PAT too big : %d, don't know how rewrite, sent as is\n", section_length);
 	}
