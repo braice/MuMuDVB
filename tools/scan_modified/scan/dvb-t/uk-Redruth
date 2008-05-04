@@ -1,0 +1,3 @@
+# Redruth, Cornwall
+# T freq bw fec_hi fec_lo mod transmission-mode guard-interval hierarchy
+T 618000000 8MHz 3/4 NONE QAM16 2k 1/32 NONE

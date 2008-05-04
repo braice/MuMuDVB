@@ -1,0 +1,5 @@
+# T freq bw fec_hi fec_lo mod transmission-mode guard-interval hierarchy
+T 543625000 7MHz 3/4 NONE QAM64 8k 1/16 NONE
+T 550500000 7MHz 2/3 NONE QAM64 8k 1/8 NONE
+T 536625000 7MHz 2/3 NONE QAM64 8k 1/8 NONE
+T 557625000 7MHz 2/3 NONE QAM64 8k 1/8 NONE

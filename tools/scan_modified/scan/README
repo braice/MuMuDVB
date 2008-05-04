@@ -1,0 +1,18 @@
+Hi,
+
+this is a little channel scan utility to generate szap/tzap/czap compatible 
+channel lists. Scan does not do a frequency scan, however, so you must
+manually provide the data for tuning to one or more start transponders.
+A number of initial-tuning-data files are provided for various dvb-c, dvb-s
+and dvb-t networks around the world. If you make a new one feel free to
+submit it to the linux-dvb mailing list http://linuxtv.org/mailinglists.xml.
+
+Basic usage: ./scan dvb-s/Astra-19.2E | tee mychannels.conf
+
+If you want it to check a specific frequency, tune to that frequency 
+(e.g. using szap/tzap/czap) and then use './scan -c'.
+
+For more scan options see ./scan -h.
+
+Good luck,
+Holger + Johannes

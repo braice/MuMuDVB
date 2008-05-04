@@ -1,0 +1,6 @@
+# DVB-T Collserola (Barcelona)
+# T freq bw fec_hi fec_lo mod transmission-mode guard-interval hierarchy
+T 650000000 8MHz 2/3 2/3 QAM64 8k 1/32 NONE     # C43: tvc
+T 794000000 8MHz 2/3 NONE QAM64 8k 1/4 NONE     # C61: tve, t5, a3, c+
+T 834000000 8MHz 2/3 NONE QAM64 8k 1/4 NONE     # C66: veotv, nettv
+

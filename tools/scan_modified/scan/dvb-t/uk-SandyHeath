@@ -1,0 +1,3 @@
+# Sandy Heath
+# T freq bw fec_hi fec_lo mod transmission-mode guard-interval hierarchy
+T 641833334 8MHz 2/3 NONE QAM64 2k 1/32 NONE
