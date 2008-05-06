@@ -758,12 +758,15 @@ static void parse_pmt (const unsigned char *buf, int section_length, int service
 		switch (buf[0]) {
 		case 0x01:
 		case 0x02:
+		case 0x1b: /* H.264 video stream */
 			moreverbose("  VIDEO     : PID 0x%04x\n", elementary_pid);
 			if (s->video_pid == 0)
 				s->video_pid = elementary_pid;
 			break;
 		case 0x03:
 		case 0x81: /* Audio per ATSC A/53B [2] Annex B */
+		case 0x0f: /* ADTS Audio Stream - usually AAC */
+		case 0x11: /* ISO/IEC 14496-3 Audio with LATM transport */ 
 		case 0x04:
 			moreverbose("  AUDIO     : PID 0x%04x\n", elementary_pid);
 			if (s->audio_num < AUDIO_CHAN_MAX) {

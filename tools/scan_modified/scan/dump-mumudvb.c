@@ -153,7 +153,7 @@ void mumudvb_dump_service_parameter_set (FILE *f,
 
 	if (channel_num_mumudvb == 0)
 	  {
-	    fprintf (f, "#This is an automatically generated config file for mumudvb\n#Check if the ip adresses are good for youÂ\n#You might also have to ad the card=n parameter with n the number of your DVB adapter\n\n");
+	    fprintf (f, "#This is an automatically generated config file for mumudvb\n#Check if the ip adresses are good for you\n#You might also have to ad the card=n parameter with n the number of your DVB adapter\n\n");
 	    mumudvb_dump_dvb_parameters (f, type, p, polarity, orbital_pos, we_flag);
 	  }
 	if ((video_pid || audio_pid[0]) && ((ca_select > 0) || ((ca_select == 0) && (scrambled == 0)))) {

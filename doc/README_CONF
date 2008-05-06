@@ -47,7 +47,7 @@ In order to get the pids numbers, the easier way is to use linuxtv-dvb-apps.
 You tune the card on the wanted frequency (with """tune""" for example).
 
 After you use the scan utility : 
-{{{scan -c -a """Card number"""}}}
+{{{scan -c -a """Card number"""}}} ( This exemple is for the case of an already tuned card. You can tune your card with szap or tzap for example. Refer to the scan' documentation for more details )
 
 And you'll get a result like  : 
 
@@ -68,3 +68,13 @@ LCP                      (0x0106) 01: PCR == V   V 0x026c A 0x0276 (fra) SUB 0x0
 France 3                 (0x0111) 01: PCR == V   V 0x00dc A 0x00e6 (fra) SUB 0x00f0
 Done.
 }}}
+
+You can also use the modified version of scan wich is able to make a config file for mumudvb.
+In order to do that you have to compile the modified version in the tools directory (with the make command) and use scan the following way : 
+{{{./scan -c -a """card number""" -o mumudvb}}}
+
+You can also get the configuration directly in a file
+
+{{{./scan -c -a """card number""" -o mumudvb > mumudvb.conf}}}
+
+Warning : you have to manually add the card number in the generated configuration file.

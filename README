@@ -57,6 +57,7 @@ Others programs are joined with mumudvb :
  * dumpudp : this program takes a stream from the network and puts it on the standard output. you can set an optionnal timeout ( Can be useful to record a TV program )
  * dumpudp_limited : same as dumpudp but for a limited number of packets (used to generate thunbails)
  * recup_sap : tiny sap client, get sap announces during 60 seconds and put them on the standard output (unsorted)
+ * scan_modified : it's a modified version of the scan utility from dvb-apps. It is able to generate mumudvb configuration files.
  * Example scripts are joind in the script directory. They are undocumented for the moment. They are used to genreate sap announces, automtically launch and generate configuration for mumudvb on multiple cards and multiple servers, and generate thundbails. See the source code for more explanations.
 
 
@@ -120,7 +121,7 @@ Signal : (see thi kill's man page)
 
 == Vlc can read the stream but not xine or mplayer ==
 
- * For Vlc, you must specify the PMT pid besides audio and video pids. It's a frequent issue, indeed scan doesn't give this pid but his number. To resolve this issue you can use {{{vlc -v}}} and you'll see a ligne like : {{{[00000269] ts demuxer debug:   * number=1025 pid=110}}} you'll have the pid associated with your number, or you can also use dvbsnoop.
+ * For Vlc, you must specify the PMT pid besides audio and video pids. It's a frequent issue, indeed scan doesn't give this pid but his number. To resolve this issue you can use {{{vlc -v}}} and you'll see a ligne like : {{{[00000269] ts demuxer debug:   * number=1025 pid=110}}} you'll have the pid associated with your number, or you can also use dvbsnoop. Another solution is to use the modified scan utility (joinned with mumudvb) to generate the config file with the  PMT pidd included.
 
 == mumudvb can't deamonize ==
 

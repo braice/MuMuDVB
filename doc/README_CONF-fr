@@ -4,7 +4,7 @@ README pour le fichier de configuration de mumudvb
 
 mumudvb utilise obligatoirement un fichier de configuration pour lui indiquer les différents paramètres de réception et la répartition des pids sur les ips de multicast (ces ips peuvent aussi bien être de l'unicast). Vous trouverez un exemple dans le fichier conf.example joint aux sources de mumudvb.
 
-mumudvb est insensible à l'ordre des paramètres sauf pour les chaînes où les pids doivent être mis après l'ip et le port
+mumudvb est insensible à l'ordre des paramètres sauf pour les chaînes où les pids doivent être mis après l'ip et le port.
 
 Des commentaires peuvent êtres fait n'importe ou dans le fichier de configuration, ce sont les lignes qui commencent par un #
 
@@ -48,7 +48,7 @@ Pour obtenir les différents pids, le plus simple est d'utiliser les linuxtv-dvb-
 Vous accordez la carte sur la fréquence voulue.
 
 Ensuite il suffit d'utiliser l'utilitaire scan : 
-{{{scan -c -a """numero carte"""}}}
+{{{scan -c -a """numero carte"""}}} (Note : cet exemple est pour le cas d'une carte déjà accordée avec szap ou tzap par exemple. Se référer à la documentation de scan pour plus de détails)
 
 Et vous aurez un résultat du genre : 
 
@@ -69,3 +69,14 @@ LCP                      (0x0106) 01: PCR == V   V 0x026c A 0x0276 (fra) SUB 0x0
 France 3                 (0x0111) 01: PCR == V   V 0x00dc A 0x00e6 (fra) SUB 0x00f0
 Done.
 }}}
+
+Vous pouvez aussi utiliser la version modifiée de scan qui permet de créer un fichier de configuration directement au format mumudvb
+Pour cela compilez la version de scan jointe dans le répertoire tools (avec la commande make) et utilisez scan de la manière suivante : 
+{{{./scan -c -a """numero carte""" -o mumudvb}}}
+
+Vous pouvez aussi récupérer la configuration directement dans un fichier
+
+{{{./scan -c -a """numero carte""" -o mumudvb > mumudvb.conf}}}
+
+Attention le numéro de carte est à rajouter manuellement dans le fichier de configuration.
+
