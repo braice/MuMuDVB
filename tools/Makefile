@@ -8,14 +8,14 @@ OUT		= $(SRC_FILES:.c=)
 ifdef DESTDIR
   BINDIR = $(DESTDIR)/usr/bin
 else
-  BINDIR = /usr/local/bin
+  BINDIR = /usr/bin
 endif
 
 ifdef DEBUG
   CFLAGS += -g
 endif
 
-.PHONY: all clean clean_objs install uninstall
+.PHONY: all clean clean_objs 
 
 all: $(OUT)
 
@@ -28,12 +28,12 @@ clean: clean_objs
 clean_objs:
 	-rm -f *.o *~ .depend
 
-install: $(OUT)
-	install $(IFLAGS) -d $(BINDIR)
-	install $(IFLAGS) -m 755 $(OUT) $(BINDIR)
+#install: $(OUT)
+#	install $(IFLAGS) -d $(BINDIR)
+#	install $(IFLAGS) -m 755 $(OUT) $(BINDIR)
 
-uninstall:
-	-rm $(foreach file,$(OUT),$(BINDIR)/$(file))
+#uninstall:
+#	-rm $(foreach file,$(OUT),$(BINDIR)/$(file))
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $<

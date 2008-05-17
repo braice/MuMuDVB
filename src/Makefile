@@ -9,7 +9,7 @@ SRC_FILES	= $(OBJ_FILES:.o=.c)
 ifdef DESTDIR
   BINDIR = $(DESTDIR)/usr/bin
 else
-  BINDIR = /usr/local/bin
+  BINDIR = /usr/bin
 endif
 
 ifdef DEBUG

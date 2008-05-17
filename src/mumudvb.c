@@ -50,7 +50,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "dvb.h"
 #include "errors.h"
 
-#define VERSION "1.2"
+#define VERSION "1.2.5"
 
 
 /* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
@@ -92,7 +92,8 @@ int pat_rewrite(unsigned char *buf,int num_pids, int *pids);
 void
 usage (char *name)
 {
-  fprintf (stderr, "Usage: %s [options] \n"
+  fprintf (stderr, "mumudvb is a program who can redistribute stream from DVB on a network, in multicast. It's main feature is to take a whole transponder and put each channel on a different multicast IP.\n\n"
+	   "Usage: %s [options] \n"
 	   "-c, --config : Config file\n"
 	   "-s, --signal : Display signal power\n"
 	   "-d, --debug  : Don't deamonize\n"
