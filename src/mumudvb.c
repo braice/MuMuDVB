@@ -49,8 +49,9 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "udp.h"
 #include "dvb.h"
 #include "errors.h"
+#include "cam.h"
 
-#define VERSION "1.2.5"
+#define VERSION "1.2.5-devel"
 
 
 /* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
@@ -180,6 +181,16 @@ main (int argc, char **argv)
   //does we rewrite the pat pid ?
   int rewrite_pat = 0;
   unsigned long crc32_table_temp_var[3];
+
+  //do we support conditionnal access modules ?
+  int cam_support = 0;
+  char cam_devname[80];
+  int cafd;
+  ca_caps_t caps;
+  ca_slot_info_t cam_slot_info;
+  ca_descr_info_t cam_descr_info;
+  int num_cams=0;
+  int i;
 
   const char short_options[] = "c:sdh";
   const struct option long_options[] = {
@@ -312,6 +323,20 @@ main (int argc, char **argv)
 		}
 		crc32_table[crc32_table_temp_var[0]] = crc32_table_temp_var[2];
 	      }
+	    }
+	}
+      else if (!strcmp (sous_chaine, "cam_support"))
+	{
+	  sous_chaine = strtok (NULL, delimiteurs);
+	  cam_support = atoi (sous_chaine);
+	  if(cam_support)
+	    {
+	      if (!no_daemon)
+		syslog (LOG_USER|LOG_INFO,
+			"!!! You have enabled the support for conditionnal acces modules, this is an experimental feature, you have been warned\n");
+	      else
+		fprintf (stderr,
+			"!!! You have enabled the support for conditionnal acces modules, this is an experimental feature, you have been warned\n");
 	    }
 	}
       else if (!strcmp (sous_chaine, "freq"))
@@ -697,6 +722,73 @@ main (int argc, char **argv)
   if (signal (SIGTERM, SignalHandler) == SIG_IGN)
     signal (SIGTERM, SIG_IGN);
   alarm (ALARM_TIME);
+
+  //cam_support
+  if(cam_support){
+    sprintf(cam_devname,CA_DEV,card,0);
+    if ((cafd = open(cam_devname,O_RDONLY))<0){
+      perror("ca device");
+      exit(1);
+    }
+
+    //On recupere les infos sur les capacites de la CAM
+    ioctl(cafd, CA_GET_CAP, &caps);
+    if (caps.slot_num < 1){
+      fprintf (stderr, "No CI slots found\n");
+      exit(1);
+    }
+
+    if (!no_daemon)
+      syslog (LOG_USER|LOG_INFO, "CAM : Found %d CI slots\n", caps.slot_num);
+    else
+      fprintf (stderr, "CAM : Found %d CI slots\n", caps.slot_num);
+
+    if (!no_daemon)
+      syslog (LOG_USER|LOG_INFO, "CAM : Found %d descrambler slots (keys)\n", caps.descr_num);
+    else
+      fprintf (stderr, "CAM : Found %d descrambler slots (keys)\n", caps.descr_num);
+
+    //on recupere les infos sur les slots
+    for (i=0; i<caps.slot_num; i++){
+      cam_slot_info.num = i; 
+      if (ioctl(cafd, CA_GET_SLOT_INFO, &cam_slot_info) <0){
+	perror("CAM : slot info");
+	exit(1);
+      } 
+      if (cam_slot_info.flags & CA_CI_MODULE_PRESENT) num_cams++;
+
+      fprintf (stderr, "CAM : DEBUG : slot %d type 0x%x\n", i, cam_slot_info.type);
+      if (cam_slot_info.flags & CA_CI_MODULE_PRESENT){
+    	if (!no_daemon)
+	  syslog (LOG_USER|LOG_INFO, "CAM : Slot %d MODULE_PRESENT\n", i);
+	else
+	  fprintf (stderr, "CAM : Slot %d MODULE_PRESENT\n", i);
+      }
+      if (cam_slot_info.flags & CA_CI_MODULE_READY){
+	if (!no_daemon)
+	  syslog (LOG_USER|LOG_INFO, "CAM : Slot %d MODULE_READY\n", i);
+	else
+	  fprintf (stderr, "CAM : Slot %d MODULE_READY\n", i);
+      }
+    }
+
+    //On recupere les infos sur les descramblers
+    for (i=0; i<caps.descr_num; i++){
+      cam_descr_info.num=i;
+      if (ioctl(cafd, CA_GET_DESCR_INFO, &cam_descr_info) <0){
+	perror("CAM : descr info");
+	exit(1);
+      }
+    }
+
+    if (!no_daemon)
+      syslog (LOG_USER|LOG_INFO, "CAM : Found %d CAM%s\n", num_cams, (num_cams == 1 ? "" : "s"));
+    else
+      fprintf (stderr, "CAM : Found %d CAM%s\n", num_cams, (num_cams == 1 ? "" : "s"));
+
+
+  }
+  
 
   // We write our pid in a file if deamon
   if (!no_daemon)
