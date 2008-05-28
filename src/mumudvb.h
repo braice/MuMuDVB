@@ -11,7 +11,7 @@
 #define TS_PACKET_SIZE 188
 
 // How often (in seconds) to update the "now" variable
-#define ALARM_TIME 5
+#define ALARM_TIME 2 //Temporary change for CAM support, value before : 5
 #define ALARM_TIME_TIMEOUT 60
 #define ALARM_TIME_TIMEOUT_NO_DIFF 600
 

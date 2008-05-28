@@ -50,6 +50,8 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "dvb.h"
 #include "errors.h"
 #include "cam.h"
+#include "vlc_dvb.h"
+
 
 #define VERSION "1.2.5-devel"
 
@@ -74,6 +76,10 @@ int Interrupted = 0;
 char nom_fich_chaines_diff[256];
 char nom_fich_chaines_non_diff[256];
 int card = 0;
+
+//CAM
+int cam_support = 0;
+access_t vlc_access;
 
 
 // file descriptors
@@ -183,7 +189,6 @@ main (int argc, char **argv)
   unsigned long crc32_table_temp_var[3];
 
   //do we support conditionnal access modules ?
-  int cam_support = 0;
   char cam_devname[80];
   int cafd;
   ca_caps_t caps;
@@ -191,6 +196,10 @@ main (int argc, char **argv)
   ca_descr_info_t cam_descr_info;
   int num_cams=0;
   int i;
+  struct ca_info cam_info;
+  int cam_pmt_pid[MAX_CHAINES];
+  cam_pmt_pid[0] = 0; //paranoya
+
 
   const char short_options[] = "c:sdh";
   const struct option long_options[] = {
@@ -402,6 +411,32 @@ main (int argc, char **argv)
 	  portOut[curr_channel] = atoi (sous_chaine);
 	  port_ok = 1;
 	}
+      else if (!strcmp (sous_chaine, "cam_pmt_pid"))
+	{
+	  if (port_ok == 0 || ip_ok == 0)
+	    {
+	      if (!no_daemon)
+		syslog (LOG_USER|LOG_INFO,
+			"You must precise ip and port before PIDs\n");
+	      else
+		fprintf (stderr,
+			"You must precise ip and port before PIDs\n");
+	      exit(ERROR_CONF);
+	    }
+	  sous_chaine = strtok (NULL, delimiteurs);
+      	  cam_pmt_pid[curr_channel] = atoi (sous_chaine);
+	  if (cam_pmt_pid[curr_channel] < 10 || cam_pmt_pid[curr_channel] > 8191){
+	    if (!no_daemon)
+	      syslog (LOG_USER|LOG_INFO,
+		      "Config issue : %s in pids, given pid : %d\n",
+		      conf_filename, pids[curr_channel][curr_pid]);
+	    else
+	      fprintf (stderr,
+		       "Config issue : %s in pids, given pid : %d\n",
+		       conf_filename, pids[curr_channel][curr_pid]);
+	    exit(ERROR_CONF);
+	  }
+	}
       else if (!strcmp (sous_chaine, "pids"))
 	{
 	  if (port_ok == 0 || ip_ok == 0)
@@ -447,6 +482,7 @@ main (int argc, char **argv)
 	  num_pids[curr_channel] = curr_pid;
 	  curr_pid = 0;
 	  curr_channel++;
+      	  cam_pmt_pid[curr_channel] = 0; //paranoya
 	  port_ok = 0;
 	  ip_ok = 0;
 	}
@@ -724,67 +760,98 @@ main (int argc, char **argv)
   alarm (ALARM_TIME);
 
   //cam_support
+
   if(cam_support){
-    sprintf(cam_devname,CA_DEV,card,0);
-    if ((cafd = open(cam_devname,O_RDONLY))<0){
-      perror("ca device");
-      exit(1);
-    }
 
-    //On recupere les infos sur les capacites de la CAM
-    ioctl(cafd, CA_GET_CAP, &caps);
-    if (caps.slot_num < 1){
-      fprintf (stderr, "No CI slots found\n");
-      exit(1);
-    }
+    fprintf (stderr, "VLC code\n");
+    vlc_access.p_sys=malloc(sizeof(access_sys_t));
+    //menage
+    for ( i = 0; i < MAX_PROGRAMS; i++ )
+      vlc_access.p_sys->pp_selected_programs[i]=NULL;
+    CAMOpen(&vlc_access, card);
+    CAMPoll(&vlc_access);
+    //CAMClose(&vlc_access);
+    fprintf (stderr, "END VLC code\n");
 
-    if (!no_daemon)
-      syslog (LOG_USER|LOG_INFO, "CAM : Found %d CI slots\n", caps.slot_num);
-    else
-      fprintf (stderr, "CAM : Found %d CI slots\n", caps.slot_num);
 
-    if (!no_daemon)
-      syslog (LOG_USER|LOG_INFO, "CAM : Found %d descrambler slots (keys)\n", caps.descr_num);
-    else
-      fprintf (stderr, "CAM : Found %d descrambler slots (keys)\n", caps.descr_num);
+/*     sprintf(cam_devname,CA_DEV,card,0); */
+/*     if ((cafd = open(cam_devname,O_RDONLY))<0){ */
+/*       perror("ca device"); */
+/*       exit(1); */
+/*     } */
 
-    //on recupere les infos sur les slots
-    for (i=0; i<caps.slot_num; i++){
-      cam_slot_info.num = i; 
-      if (ioctl(cafd, CA_GET_SLOT_INFO, &cam_slot_info) <0){
-	perror("CAM : slot info");
-	exit(1);
-      } 
-      if (cam_slot_info.flags & CA_CI_MODULE_PRESENT) num_cams++;
+/*     //On recupere les infos sur les capacites de la CAM */
+/*     ioctl(cafd, CA_GET_CAP, &caps); */
+/*     if (caps.slot_num < 1){ */
+/*       fprintf (stderr, "No CI slots found\n"); */
+/*       exit(1); */
+/*     } */
 
-      fprintf (stderr, "CAM : DEBUG : slot %d type 0x%x\n", i, cam_slot_info.type);
-      if (cam_slot_info.flags & CA_CI_MODULE_PRESENT){
-    	if (!no_daemon)
-	  syslog (LOG_USER|LOG_INFO, "CAM : Slot %d MODULE_PRESENT\n", i);
-	else
-	  fprintf (stderr, "CAM : Slot %d MODULE_PRESENT\n", i);
-      }
-      if (cam_slot_info.flags & CA_CI_MODULE_READY){
-	if (!no_daemon)
-	  syslog (LOG_USER|LOG_INFO, "CAM : Slot %d MODULE_READY\n", i);
-	else
-	  fprintf (stderr, "CAM : Slot %d MODULE_READY\n", i);
-      }
-    }
+/*     if (!no_daemon) */
+/*       syslog (LOG_USER|LOG_INFO, "CAM : Found %d CI slots\n", caps.slot_num); */
+/*     else */
+/*       fprintf (stderr, "CAM : Found %d CI slots\n", caps.slot_num); */
 
-    //On recupere les infos sur les descramblers
-    for (i=0; i<caps.descr_num; i++){
-      cam_descr_info.num=i;
-      if (ioctl(cafd, CA_GET_DESCR_INFO, &cam_descr_info) <0){
-	perror("CAM : descr info");
-	exit(1);
-      }
-    }
+/*     if (!no_daemon) */
+/*       syslog (LOG_USER|LOG_INFO, "CAM : Found %d descrambler slots (keys)\n", caps.descr_num); */
+/*     else */
+/*       fprintf (stderr, "CAM : Found %d descrambler slots (keys)\n", caps.descr_num); */
 
-    if (!no_daemon)
-      syslog (LOG_USER|LOG_INFO, "CAM : Found %d CAM%s\n", num_cams, (num_cams == 1 ? "" : "s"));
-    else
-      fprintf (stderr, "CAM : Found %d CAM%s\n", num_cams, (num_cams == 1 ? "" : "s"));
+/*     //on recupere les infos sur les slots */
+/*     for (i=0; i<caps.slot_num; i++){ */
+/*       cam_slot_info.num = i;  */
+/*       if (ioctl(cafd, CA_GET_SLOT_INFO, &cam_slot_info) <0){ */
+/* 	perror("CAM : slot info"); */
+/* 	exit(1); */
+/*       }  */
+/*       if (cam_slot_info.flags & CA_CI_MODULE_PRESENT) num_cams++; */
+
+/*       fprintf (stderr, "CAM : DEBUG : slot %d type 0x%x\n", i, cam_slot_info.type); */
+/*       if (cam_slot_info.flags & CA_CI_MODULE_PRESENT){ */
+/*     	if (!no_daemon) */
+/* 	  syslog (LOG_USER|LOG_INFO, "CAM : Slot %d MODULE_PRESENT\n", i); */
+/* 	else */
+/* 	  fprintf (stderr, "CAM : Slot %d MODULE_PRESENT\n", i); */
+/*       } */
+/*       if (cam_slot_info.flags & CA_CI_MODULE_READY){ */
+/* 	if (!no_daemon) */
+/* 	  syslog (LOG_USER|LOG_INFO, "CAM : Slot %d MODULE_READY\n", i); */
+/* 	else */
+/* 	  fprintf (stderr, "CAM : Slot %d MODULE_READY\n", i); */
+/*       } */
+/*       if (cam_slot_info.type & CA_CI){ */
+/* 	if (!no_daemon) */
+/* 	  syslog (LOG_USER|LOG_INFO, "CAM : Slot %d High level interface\n", i); */
+/* 	else */
+/* 	  fprintf (stderr, "CAM : Slot %d High level interface\n", i); */
+/*       } */
+/*       else if (cam_slot_info.type & CA_CI_LINK){ */
+/* 	if (!no_daemon) */
+/* 	  syslog (LOG_USER|LOG_INFO, "CAM : Slot %d link layer level interface\n", i); */
+/* 	else */
+/* 	  fprintf (stderr, "CAM : Slot %d link layer level interface\n", i); */
+/*       } */
+/*       else { */
+/* 	if (!no_daemon) */
+/* 	  syslog (LOG_USER|LOG_INFO, "CAM : Slot %d other kind of level interface\n", i); */
+/* 	else */
+/* 	  fprintf (stderr, "CAM : Slot %d other kind of level interface\n", i); */
+/*       } */
+/*     } */
+
+/*     //On recupere les infos sur les descramblers */
+/*     for (i=0; i<caps.descr_num; i++){ */
+/*       cam_descr_info.num=i; */
+/*       if (ioctl(cafd, CA_GET_DESCR_INFO, &cam_descr_info) <0){ */
+/* 	perror("CAM : descr info"); */
+/* 	exit(1); */
+/*       } */
+/*     } */
+
+/*     if (!no_daemon) */
+/*       syslog (LOG_USER|LOG_INFO, "CAM : Found %d CAM%s\n", num_cams, (num_cams == 1 ? "" : "s")); */
+/*     else */
+/*       fprintf (stderr, "CAM : Found %d CAM%s\n", num_cams, (num_cams == 1 ? "" : "s")); */
 
 
   }
@@ -949,8 +1016,21 @@ main (int argc, char **argv)
 		    chaines_diffuses[curr_channel]++;
 		  }
 
+	      //cam support
+	      if(cam_support && send_packet==1)  //no need to check paquets we don't send
+		{
+		  //TODO : check before if the cam is ready (we can also check if the PMT_send succeeded)
+		  if ((cam_pmt_pid[curr_channel])&& (cam_pmt_pid[curr_channel] == pid))
+		    {
+		      printf("Pid PMT %d channel %d\n", cam_pmt_pid[curr_channel], curr_channel);
+		      //TODO : insert a function to transform the pid in ca_pmt_message
+		      //once we have asked the CAM for this PID, we clear it not to ask it again
+		      cam_pmt_pid[curr_channel]=0;
+		    }
+		}
+
 	      //Rewrite PAT checking
-	      if(send_packet==1)
+	      if(send_packet==1)  //no need to check paquets we don't send
 		if( (pid == 0) && //This is a PAT PID
 		     rewrite_pat ) //AND we asked for rewrite
 		  {
@@ -1037,6 +1117,9 @@ main (int argc, char **argv)
 
   // we close the file descriptors
   close_card_fd (card, nb_flux, num_pids, mandatory_pid, fds);
+
+  if(cam_support)
+    CAMClose(&vlc_access);
 
   if (remove (nom_fich_chaines_diff))
     {
@@ -1166,6 +1249,11 @@ SignalHandler (int signum)
       // reinit
       for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
 	chaines_diffuses[curr_channel] = 0;
+      
+      if(cam_support)
+	CAMPoll(&vlc_access);
+
+
       alarm (ALARM_TIME);
     }
   else if (signum == SIGUSR1)

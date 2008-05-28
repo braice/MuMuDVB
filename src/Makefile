@@ -1,9 +1,9 @@
 CC	= gcc
-CFLAGS	= -Wall -O2
+CFLAGS	= -Wall -O2 -ldvbpsi -g
 IFLAGS	= -g root -o root
 
 OUT		= mumudvb
-OBJ_FILES	= mumudvb.o tune.o udp.o dvb.o
+OBJ_FILES	= mumudvb.o tune.o udp.o dvb.o cam.o vlc_en50221.o vlc_linux_dvb.o
 SRC_FILES	= $(OBJ_FILES:.o=.c)
 
 ifdef DESTDIR
