@@ -190,13 +190,13 @@ int CAMPoll( access_t * p_access )
 /*****************************************************************************
  * CAMSet :
  *****************************************************************************/
-int CAMSet( access_t * p_access, dvbpsi_pmt_t *p_pmt )
+int CAMSet( access_t * p_access, mumudvb_pmt_t *p_pmt )
 {
     access_sys_t *p_sys = p_access->p_sys;
 
     if( p_sys->i_ca_handle == 0 )
     {
-        dvbpsi_DeletePMT( p_pmt );
+      //dvbpsi_DeletePMT( p_pmt );
         return -666;
     }
 

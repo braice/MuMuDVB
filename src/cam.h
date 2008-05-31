@@ -23,6 +23,7 @@ typedef struct {
   int pid;   //The PID of the packet
   int continuity_counter; //the countinuity counter, incremented in each packet
   int len;
+  int i_program_number; //VLC COMPAT, a virer plus tard
   unsigned char packet[4096]; //the buffer
 }mumudvb_pmt_t;
 

@@ -37,8 +37,10 @@
 #include <dvbpsi/pmt.h>
 #include <dvbpsi/dr.h>
 #include <dvbpsi/psi.h>
-#include <sys/time.h>
 
+
+#include <sys/time.h>
+#include "cam.h"
 
 /*****************************************************************************
  * Devices location
@@ -187,7 +189,8 @@ struct access_sys_t
     int pb_slot_mmi_undisplayed[MAX_CI_SLOTS];
     en50221_session_t p_sessions[MAX_SESSIONS];
     mtime_t i_ca_timeout, i_ca_next_event, i_frontend_timeout;
-    dvbpsi_pmt_t *pp_selected_programs[MAX_PROGRAMS];
+  //dvbpsi_pmt_t *pp_selected_programs[MAX_PROGRAMS];
+  mumudvb_pmt_t *pp_selected_programs[MAX_PROGRAMS]; //braice
     int i_selected_programs;
 
     /* */
@@ -208,12 +211,12 @@ struct access_sys_t
  *****************************************************************************/
 int  CAMOpen( access_t * , int);
 int  CAMPoll( access_t * );
-int  CAMSet( access_t *, dvbpsi_pmt_t * );
+int  CAMSet( access_t *, mumudvb_pmt_t * );
 void CAMClose( access_t * );
 
 int en50221_Init( access_t * );
 int en50221_Poll( access_t * );
-int en50221_SetCAPMT( access_t *, dvbpsi_pmt_t * );
+int en50221_SetCAPMT( access_t *, mumudvb_pmt_t * );
 int en50221_OpenMMI( access_t * p_access, int i_slot );
 int en50221_CloseMMI( access_t * p_access, int i_slot );
 en50221_mmi_object_t *en50221_GetMMIObject( access_t * p_access,

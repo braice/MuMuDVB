@@ -1483,7 +1483,7 @@ int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt)
   
   header=(ts_header_t *)buf;
   pid=HILO(header->pid);
-  printf("#Nouveau paquet, TS_Header : PID : %d payload_start %x\n",HILO(header->pid), header->payload_unit_start_indicator);
+  //printf("#Nouveau paquet, TS_Header : PID : %d payload_start %x\n",HILO(header->pid), header->payload_unit_start_indicator);
   //if(header->payload_unit_start_indicator) //Cet entete indique que c'est un nouveau paquet
   //{
   delta = TS_HEADER_LEN-1; //ce delta permet de virer l'en tete et de ne récupérer que les données
@@ -1526,6 +1526,7 @@ int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt)
 	    else
 	      {
 		//printf("###########ON Parse le pid %d act_len : %d\n",pmt->pid,pmt->len);
+#if 0
 		if(pmt->len>188)
 		  {
 		    printf("Voici la tete du paquet : \n");                                                                                        
@@ -1539,7 +1540,8 @@ int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt)
 		    //printf("%c",pmt->packet[k]);
 		    //printf("\n\n");
 		  }
-		parsed=cam_send_ca_pmt(pmt); //ICI on regarde le paquet//TTTTTTTTTOOOOOOOOOOOODDDDDDDDDDDOOOOOOOOoo c'est ici qu'on se rapelle qu'on retourne 1
+#endif
+		parsed=cam_send_ca_pmt(pmt); //ICI on regarde le paquet
 	      }
 	  }
 	  pmt->empty=0;
@@ -1619,7 +1621,7 @@ int cam_send_ca_pmt( mumudvb_pmt_t *pmt)
 
   pmt_struct=(pmt_t *)pmt->packet;
 
-  printf("\tPMT header  len %d byte len+2+1 0x%02x byte len+2 0x%02x\n", HILO(pmt_struct->section_length), pmt->packet[HILO(pmt_struct->section_length)+2+1], pmt->packet[HILO(pmt_struct->section_length)+2]);
+  printf("\tPMT header  section_len %d \n", HILO(pmt_struct->section_length));
 
   //the real lenght
   pmt->len=HILO(pmt_struct->section_length)+3; //+3 pour les trois bits du début (compris le section_lenght)
@@ -1646,7 +1648,7 @@ int cam_send_ca_pmt( mumudvb_pmt_t *pmt)
 
 
 
-  //on retourne 0 pour le moment
+  //on retourne 0 pour le moment (on ne retourne 1 que quand on sera sur que c'est ok)
   return 0;
 
 }

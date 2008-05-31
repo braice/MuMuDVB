@@ -1031,6 +1031,7 @@ typedef struct
     uint16_t pi_system_ids[MAX_CASYSTEM_IDS + 1];
 } system_ids_t;
 
+#if 0
 static int CheckSystemID( system_ids_t *p_ids, uint16_t i_id )
 {
     int i = 0;
@@ -1045,12 +1046,14 @@ static int CheckSystemID( system_ids_t *p_ids, uint16_t i_id )
 
     return 0;
 }
+#endif
 
 /*****************************************************************************
  * CAPMTNeedsDescrambling
  *****************************************************************************/
-static int CAPMTNeedsDescrambling( dvbpsi_pmt_t *p_pmt )
+static int CAPMTNeedsDescrambling( mumudvb_pmt_t *p_pmt )
 {
+#if 0
     dvbpsi_descriptor_t *p_dr;
     dvbpsi_pmt_es_t *p_es;
 
@@ -1073,13 +1076,15 @@ static int CAPMTNeedsDescrambling( dvbpsi_pmt_t *p_pmt )
             }
         }
     }
-
     return 0;
+#endif
+    return 1;
 }
 
 /*****************************************************************************
  * CAPMTBuild
  *****************************************************************************/
+#if 0
 static int GetCADSize( system_ids_t *p_ids, dvbpsi_descriptor_t *p_dr )
 {
     int i_cad_size = 0;
@@ -1098,7 +1103,9 @@ static int GetCADSize( system_ids_t *p_ids, dvbpsi_descriptor_t *p_dr )
 
     return i_cad_size;
 }
+#endif
 
+#if 0
 static uint8_t *CAPMTHeader( system_ids_t *p_ids, uint8_t i_list_mgt,
                              uint16_t i_program_number, uint8_t i_version,
                              int i_size, dvbpsi_descriptor_t *p_dr,
@@ -1151,7 +1158,9 @@ static uint8_t *CAPMTHeader( system_ids_t *p_ids, uint8_t i_list_mgt,
 
     return p_data;
 }
+#endif
 
+#if 0
 static uint8_t *CAPMTES( system_ids_t *p_ids, uint8_t *p_capmt,
                          int i_capmt_size, uint8_t i_type, uint16_t i_pid,
                          int i_size, dvbpsi_descriptor_t *p_dr,
@@ -1203,11 +1212,14 @@ static uint8_t *CAPMTES( system_ids_t *p_ids, uint8_t *p_capmt,
 
     return p_data;
 }
+#endif
 
 static uint8_t *CAPMTBuild( access_t * p_access, int i_session_id,
-                            dvbpsi_pmt_t *p_pmt, uint8_t i_list_mgt,
+                            mumudvb_pmt_t *p_pmt, uint8_t i_list_mgt,
                             uint8_t i_cmd, int *pi_capmt_size )
 {
+
+#if 0
     access_sys_t *p_sys = p_access->p_sys;
     system_ids_t *p_ids =
         (system_ids_t *)p_sys->p_sessions[i_session_id - 1].p_sys;
@@ -1257,13 +1269,15 @@ static uint8_t *CAPMTBuild( access_t * p_access, int i_session_id,
     }
 
     return p_capmt;
+#endif
+    return 0;
 }
 
 /*****************************************************************************
  * CAPMTFirst
  *****************************************************************************/
 static void CAPMTFirst( access_t * p_access, int i_session_id,
-                        dvbpsi_pmt_t *p_pmt )
+                        mumudvb_pmt_t *p_pmt )//braice
 {
     uint8_t *p_capmt;
     int i_capmt_size;
@@ -1283,7 +1297,7 @@ static void CAPMTFirst( access_t * p_access, int i_session_id,
  * CAPMTAdd
  *****************************************************************************/
 static void CAPMTAdd( access_t * p_access, int i_session_id,
-                      dvbpsi_pmt_t *p_pmt )
+                      mumudvb_pmt_t *p_pmt )//braice
 {
     uint8_t *p_capmt;
     int i_capmt_size;
@@ -1317,7 +1331,7 @@ static void CAPMTAdd( access_t * p_access, int i_session_id,
  * CAPMTUpdate
  *****************************************************************************/
 static void CAPMTUpdate( access_t * p_access, int i_session_id,
-                         dvbpsi_pmt_t *p_pmt )
+                         mumudvb_pmt_t *p_pmt )//braice
 {
     uint8_t *p_capmt;
     int i_capmt_size;
@@ -1337,7 +1351,7 @@ static void CAPMTUpdate( access_t * p_access, int i_session_id,
  * CAPMTDelete
  *****************************************************************************/
 static void CAPMTDelete( access_t * p_access, int i_session_id,
-                         dvbpsi_pmt_t *p_pmt )
+                         mumudvb_pmt_t *p_pmt )//braice
 {
     uint8_t *p_capmt;
     int i_capmt_size;
@@ -2165,7 +2179,7 @@ int en50221_Poll( access_t * p_access )
 /*****************************************************************************
  * en50221_SetCAPMT :
  *****************************************************************************/
-int en50221_SetCAPMT( access_t * p_access, dvbpsi_pmt_t *p_pmt )
+int en50221_SetCAPMT( access_t * p_access, mumudvb_pmt_t *p_pmt ) //braice
 {
     access_sys_t *p_sys = p_access->p_sys;
     int i, i_session_id;
@@ -2182,13 +2196,13 @@ int en50221_SetCAPMT( access_t * p_access, dvbpsi_pmt_t *p_pmt )
 
             if ( !b_needs_descrambling )
             {
-                dvbpsi_DeletePMT( p_pmt );
+	      //dvbpsi_DeletePMT( p_pmt );//braice
                 p_pmt = p_sys->pp_selected_programs[i];
                 p_sys->pp_selected_programs[i] = NULL;
             }
             else if( p_pmt != p_sys->pp_selected_programs[i] )
             {
-                dvbpsi_DeletePMT( p_sys->pp_selected_programs[i] );
+	      //dvbpsi_DeletePMT( p_sys->pp_selected_programs[i] );//braice
                 p_sys->pp_selected_programs[i] = p_pmt;
             }
 
@@ -2227,7 +2241,7 @@ int en50221_SetCAPMT( access_t * p_access, dvbpsi_pmt_t *p_pmt )
 
     if ( !b_needs_descrambling )
     {
-        dvbpsi_DeletePMT( p_pmt );
+      //dvbpsi_DeletePMT( p_pmt );//braice
     }
 
     return 0;
@@ -2370,7 +2384,7 @@ void en50221_End( access_t * p_access )
     {
         if ( p_sys->pp_selected_programs[i] != NULL )
         {
-            dvbpsi_DeletePMT( p_sys->pp_selected_programs[i] );
+	  //dvbpsi_DeletePMT( p_sys->pp_selected_programs[i] );
         }
     }
 
