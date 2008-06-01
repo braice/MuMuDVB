@@ -87,17 +87,13 @@ fds_t fds; // defined in dvb.h
 
 
 //Global for the moment
-// CRC table for PAT rebuilding
+// CRC table for PAT rebuilding and cam support
 unsigned long       crc32_table[256];
 
 // prototypes
 static void SignalHandler (int signum);
 void gen_chaines_diff (int no_daemon, int *chaines_diffuses);
 int pat_rewrite(unsigned char *buf,int num_pids, int *pids);
-int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt);
-int cam_send_ca_pmt( mumudvb_pmt_t *pmt);
-int AddPacketStart (unsigned char *packet, unsigned char *buf, unsigned int len);
-int AddPacketContinue  (unsigned char *packet, unsigned char *buf, unsigned int len, unsigned int act_len);
 
 
 void
@@ -200,7 +196,7 @@ main (int argc, char **argv)
   //ca_descr_info_t cam_descr_info;
   //int num_cams=0;
   int i;
-  //struct ca_info cam_info;
+  struct ca_info cam_info;
   int cam_pmt_pid[MAX_CHAINES];
   cam_pmt_pid[0] = 0; //paranoya
   mumudvb_pmt_t cam_pmt;
@@ -778,6 +774,8 @@ main (int argc, char **argv)
     for ( i = 0; i < MAX_PROGRAMS; i++ )
       vlc_access.p_sys->pp_selected_programs[i]=NULL;
     CAMOpen(&vlc_access, card);
+    //    ci_get_ca_info(card, 0, &cam_info);
+    vlc_access.p_sys->cai->initialized=0;
     CAMPoll(&vlc_access);
     //CAMClose(&vlc_access);
     fprintf (stderr, "END VLC code\n");
@@ -1034,7 +1032,7 @@ main (int argc, char **argv)
 		      //printf("Pid PMT %d channel %d\n", cam_pmt_pid[curr_channel], curr_channel);
 		      //TODO : insert a function to transform the pid in ca_pmt_message
 		      //once we have asked the CAM for this PID, we clear it not to ask it again
-		      if(cam_parse_pmt(temp_buf,&cam_pmt))
+		      if(cam_parse_pmt(temp_buf,&cam_pmt,vlc_access.p_sys->cai))
 			cam_pmt_pid[curr_channel]=0;
 		    }
 		}
@@ -1261,7 +1259,9 @@ SignalHandler (int signum)
 	chaines_diffuses[curr_channel] = 0;
       
       if(cam_support)
-	CAMPoll(&vlc_access);
+	{
+	  CAMPoll(&vlc_access);
+	}
 
 
       alarm (ALARM_TIME);
@@ -1471,184 +1471,3 @@ pat_rewrite(unsigned char *buf,int num_pids, int *pids)
 
 }
 
-
-int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt)
-{
-
-  //NOTE IMPORTANTE : normalement quand un paquet est découpé il n'y a pas d'autres pids entre donc on stoque un seul mumudvb_pmt
-  ts_header_t *header;
-  int ok=0;
-  int parsed=0;
-  int delta,pid,k,l;
-  
-  header=(ts_header_t *)buf;
-  pid=HILO(header->pid);
-  //printf("#Nouveau paquet, TS_Header : PID : %d payload_start %x\n",HILO(header->pid), header->payload_unit_start_indicator);
-  //if(header->payload_unit_start_indicator) //Cet entete indique que c'est un nouveau paquet
-  //{
-  delta = TS_HEADER_LEN-1; //ce delta permet de virer l'en tete et de ne récupérer que les données
-  
-  //Le adaptation field est un champ en plus, s'il est présent il faut le sauter pour accéder aux vraies données
-  if (header->adaptation_field_control & 0x2)
-    {
-      printf("\t#####Adaptation field \n");
-      delta += buf[delta] ;        // add adapt.field.len
-    }
-  else if (header->adaptation_field_control & 0x1) {
-    //printf("\t#No adaptation field \n");
-    if (buf[delta]==0x00 && buf[delta+1]==0x00 && buf[delta+2]==0x01) {
-      // -- PES/PS                                                                                                                               
-      //tspid->id   = buf[j+3];                                                                                                                  
-      printf("\t#PES/PS ----- We ignore \n");
-      ok=0;
-    } else {
-      //if(buf[delta]){                                                                                                                          
-      //J'ai pas trop compris ce qu'il faut faire dans ce cas --> on se casse (ps : il arrive quasiment jamais)                                
-      //printf("\t#probleme tag : abebueb\n");                                                                                                 
-      //ok=0;                                                                                                                                  
-      //}else{                                                                                                                                   
-      //Tout va bien, on skippe le zéro en tro
-      //delta += 1;                                                                                                                            
-      ok=1;
-      //}                                                                                                                                        
-    }
-  }
-  if (header->adaptation_field_control == 3) { ok=0; }
-  if(header->payload_unit_start_indicator) //Cet entete indique que c'est un nouveau paquet
-    {
-      if(ok)
-	{
-	  //On regarde si on a déja un paquet en stoc
-	  //Si oui, on le traite
-	  if(! pmt->empty){
-	    if(pmt->pid==pid && pmt->continuity_counter==header->continuity_counter)
-	      printf("###########DOUBLON\n\n\n");
-	    else
-	      {
-		//printf("###########ON Parse le pid %d act_len : %d\n",pmt->pid,pmt->len);
-#if 0
-		if(pmt->len>188)
-		  {
-		    printf("Voici la tete du paquet : \n");                                                                                        
-		    for(l=0;(20*l)<pmt->len;l++){
-		      for(k=0;(k<20)&&(k+20*l)<pmt->len;k++)
-			printf("%02x.",pmt->packet[k+20*l]);
-		      printf("\n");
-		    }
-		    printf("\n\n");                                                                                                                
-		    //for(k=0;k<pmt->len;k++)
-		    //printf("%c",pmt->packet[k]);
-		    //printf("\n\n");
-		  }
-#endif
-		parsed=cam_send_ca_pmt(pmt); //ICI on regarde le paquet
-	      }
-	  }
-	  pmt->empty=0;
-	  pmt->continuity_counter=header->continuity_counter;
-	  pmt->pid=pid;
-	  pmt->len=AddPacketStart(pmt->packet,buf+delta+1,188-delta-1); //on ajoute le paquet //NOTE len                                                   
-	}
-    }
-  else if(header->payload_unit_start_indicator==0)
-    {
-      //c'est pas un premier paquet                                                                                                                  
-      // -- pid change in stream? (without packet start)                                                                                             
-      // -- This is currently not supported   $$$ TODO                                                                                               
-      if (pmt->pid != pid) {
-	printf("ERRREUR : CHANGEMENT DE PID\n");
-	pmt->empty=1;
-      }
-      // -- discontinuity error in packet ?                                                                                                          
-      if  ((pmt->continuity_counter+1)%16 != header->continuity_counter) {
-	printf("ERRREUR : Erreur de discontinuité\n\n");
-	pmt->empty=1;
-      }
-      pmt->continuity_counter=header->continuity_counter;
-      // -- duplicate packet?  (this would be ok, due to ISO13818-1)                                                                                 
-      //if ((pid == tsd.pid) && (cc == tsd.continuity_counter)) {                                                                                    
-      //return 1;                                                                                                                                    
-      //}
-      //AAAAAATTTTTTTTTTTTTTEEEEEEEEEEEEEENNNNNNNNNNNNNTTTTTTTTTTTTTIIIIIIIIIIIIOOOOOOOOOOOOONNNNNNNNNNNNNNNN
-      //Le delta n'est pas initialisé ici, regarder l'autre code, j'ai du zapper un }
-      //COrrigé, ca devrait marcher
-      pmt->len=AddPacketContinue(pmt->packet,buf+delta,188-delta,pmt->len); //on ajoute le paquet //NOTE len                                                
-    }
-
-  return parsed;
-
-}
-
-
-//Les fonctions qui permettent de coller les paquets les uns aux autres
-
-//
-// -- add TS data
-// -- return: 0 = fail
-//
-
-
-int AddPacketStart (unsigned char *packet, unsigned char *buf, unsigned int len)
-{
-
-
-  memset(packet,0,4096);
-  //  printf("actuellement %d, on rajoute %d\n",act_len,len);
-  //printf("on rajoute %d\n",len);
-  memcpy(packet,buf,len);
-
-  return len;
-}
-
-int AddPacketContinue  (unsigned char *packet, unsigned char *buf, unsigned int len, unsigned int act_len)
-{
-
-  //printf("actuellement %d, on rajoute %d\n",act_len,len);
-  memcpy(packet+act_len,buf,len);
-
-  return len+act_len;
-
-}
-
-
-int cam_send_ca_pmt( mumudvb_pmt_t *pmt)
-{
-  pmt_t *pmt_struct;
-  unsigned long crc32;
-  int i;
-
-  printf("paquet PMT PID %d len %d\n",pmt->pid, pmt->len);
-
-  pmt_struct=(pmt_t *)pmt->packet;
-
-  printf("\tPMT header  section_len %d \n", HILO(pmt_struct->section_length));
-
-  //the real lenght
-  pmt->len=HILO(pmt_struct->section_length)+3; //+3 pour les trois bits du début (compris le section_lenght)
-
-
-  //CRC32
-  //CRC32 calculation taken from the xine project
-  //Test of the crc32
-  crc32=0xffffffff;
-  //we compute the CRC32
-  //we have two ways: either we compute untill the end and it should be 0
-  //either we exclude the 4 last bits and in should be equal to the 4 last bits
-  for(i = 0; i < pmt->len; i++) {
-    crc32 = (crc32 << 8) ^ crc32_table[(crc32 >> 24) ^ pmt->packet[i]];
-  }
-  
-  if(crc32!=0)
-    {
-      //Bad CRC32
-      printf("paquet PMT BAD CRC32\n");
-      return 0; //We don't send this PMT
-    }
-
-
-
-
-  //on retourne 0 pour le moment (on ne retourne 1 que quand on sera sur que c'est ok)
-  return 0;
-
-}

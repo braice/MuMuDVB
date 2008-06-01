@@ -11,11 +11,17 @@
 
 #define CA_DEV "/dev/dvb/adapter%d/ca%d"
 
+
+
+
+
 struct ca_info {
+  int initialized; //are the cai complete ?
   int sys_num;
   uint16_t sys_id[256];
   char app_name[256];
 };
+
 
 //structur for the build of the pmt packet
 typedef struct {
@@ -25,7 +31,18 @@ typedef struct {
   int len;
   int i_program_number; //VLC COMPAT, a virer plus tard
   unsigned char packet[4096]; //the buffer
+  unsigned char converted_packet[4096]; //the buffer for the cam
 }mumudvb_pmt_t;
+
+
+int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai);
+int cam_send_ca_pmt( mumudvb_pmt_t *pmt, struct ca_info *cai);
+int AddPacketStart (unsigned char *packet, unsigned char *buf, unsigned int len);
+int AddPacketContinue  (unsigned char *packet, unsigned char *buf, unsigned int len, unsigned int act_len);
+int convert_desc(struct ca_info *cai, uint8_t *out, uint8_t *buf, int dslen, uint8_t cmd);
+int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt, uint8_t list, uint8_t cmd);
+int ci_get_ca_info(int fd, int slot, struct ca_info *cai);
+
 
 //Used to generate the CA_PMT message
 
@@ -133,7 +150,7 @@ typedef struct {
    u_char                                        :4;
 #endif
    u_char ES_info_length_lo                      :8;
-   // descriptors
+     // descriptors
 } pmt_info_t;
 
 

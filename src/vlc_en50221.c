@@ -932,7 +932,7 @@ static void ResourceManagerHandle( access_t * p_access, int i_session_id,
         break;
 
     default:
-        fprintf(stderr, "unexpected tag in ResourceManagerHandle (0x%x)",
+        fprintf(stderr, "******************unexpected tag in ResourceManagerHandle (0x%x)",
                  i_tag );
     }
 }
@@ -1001,7 +1001,7 @@ static void ApplicationInformationHandle( access_t * p_access, int i_session_id,
     }
     default:
         fprintf(stderr,
-                 "unexpected tag in ApplicationInformationHandle (0x%x)",
+                 "*************************unexpected tag in ApplicationInformationHandle (0x%x)",
                  i_tag );
     }
 }
@@ -1388,6 +1388,14 @@ static void ConditionalAccessHandle( access_t * p_access, int i_session_id,
         uint8_t *d = APDUGetLength( p_apdu, &l );
         fprintf(stderr, "CA system IDs supported by the application :\n" );
 
+	//on rempli notre structure pour les Ids
+	p_sys->cai->sys_num=l/2;
+        for ( i = 0; i < l / 2; i++ )
+	  {
+	    p_sys->cai->sys_id[i]=(d[i*2]<<8)|d[1+i*2];
+	  }
+	p_sys->cai->initialized=1;
+	//fin du remplissage retour au code de VLC
         for ( i = 0; i < l / 2; i++ )
         {
             p_ids->pi_system_ids[i] = ((uint16_t)d[0] << 8) | d[1];
@@ -1407,9 +1415,9 @@ static void ConditionalAccessHandle( access_t * p_access, int i_session_id,
         break;
     }
 
-    default:
+    default: //probably here we have to add AOT_CA_PMT_REPLY //and we have to ask the query in AOT_CA_PMT
         fprintf(stderr,
-                 "unexpected tag in ConditionalAccessHandle (0x%x)",
+                 "************************unexpected tag in ConditionalAccessHandle (0x%x)",
                  i_tag );
     }
 }

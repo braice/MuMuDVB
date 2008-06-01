@@ -195,6 +195,7 @@ struct access_sys_t
 
     /* */
     int i_read_once;
+  struct ca_info cai[1];
 
 };
 
