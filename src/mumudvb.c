@@ -1032,8 +1032,15 @@ main (int argc, char **argv)
 		      //printf("Pid PMT %d channel %d\n", cam_pmt_pid[curr_channel], curr_channel);
 		      //TODO : insert a function to transform the pid in ca_pmt_message
 		      //once we have asked the CAM for this PID, we clear it not to ask it again
-		      if(cam_parse_pmt(temp_buf,&cam_pmt,vlc_access.p_sys->cai))
-			cam_pmt_pid[curr_channel]=0;
+		      if(cam_parse_pmt(temp_buf,&cam_pmt,vlc_access.p_sys->cai)) //note : utiliser le cam_pmt de la structure vlc
+			//on peut a la fin du cam_parse, quan cela a marche ajouter le truc
+			//en attendant hack
+			{
+			  cam_pmt_pid[curr_channel]=0;
+			  vlc_access.p_sys->pp_selected_programs[0]=NULL;
+			  cam_pmt.i_program_number=curr_channel;
+			  en50221_SetCAPMT(&vlc_access, &cam_pmt);
+			}
 		    }
 		}
 

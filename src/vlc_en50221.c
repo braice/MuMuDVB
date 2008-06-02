@@ -137,10 +137,6 @@ void msleep( mtime_t delay )
 }
 
 
-
-#define STRINGIFY( z )   UGLY_KLUDGE( z )
-#define UGLY_KLUDGE( z ) #z
-
 #define TAB_APPEND( count, tab, p )             \
     if( (count) > 0 )                           \
     {                                           \
@@ -487,6 +483,7 @@ static void SessionOpen( access_t * p_access, uint8_t i_slot,
     int i_status = SS_NOT_ALLOCATED;
     uint8_t i_tag;
 
+    //on cherche la premiere session vide
     for ( i_session_id = 1; i_session_id <= MAX_SESSIONS; i_session_id++ )
     {
         if ( !p_sys->p_sessions[i_session_id - 1].i_resource_id )
@@ -1048,38 +1045,6 @@ static int CheckSystemID( system_ids_t *p_ids, uint16_t i_id )
 }
 #endif
 
-/*****************************************************************************
- * CAPMTNeedsDescrambling
- *****************************************************************************/
-static int CAPMTNeedsDescrambling( mumudvb_pmt_t *p_pmt )
-{
-#if 0
-    dvbpsi_descriptor_t *p_dr;
-    dvbpsi_pmt_es_t *p_es;
-
-    for( p_dr = p_pmt->p_first_descriptor; p_dr != NULL; p_dr = p_dr->p_next )
-    {
-        if( p_dr->i_tag == 0x9 )
-        {
-            return 1;
-        }
-    }
-    
-    for( p_es = p_pmt->p_first_es; p_es != NULL; p_es = p_es->p_next )
-    {
-        for( p_dr = p_es->p_first_descriptor; p_dr != NULL;
-             p_dr = p_dr->p_next )
-        {
-            if( p_dr->i_tag == 0x9 )
-            {
-                return 1;
-            }
-        }
-    }
-    return 0;
-#endif
-    return 1;
-}
 
 /*****************************************************************************
  * CAPMTBuild
@@ -1282,15 +1247,17 @@ static void CAPMTFirst( access_t * p_access, int i_session_id,
     uint8_t *p_capmt;
     int i_capmt_size;
 
-    fprintf(stderr, "adding first CAPMT for SID %d on session %d",
+    fprintf(stderr, "adding first CAPMT for channel %d on session %d\n",
              p_pmt->i_program_number, i_session_id );
-
+#if 0
     p_capmt = CAPMTBuild( p_access, i_session_id, p_pmt,
                           0x3 /* only */, 0x1 /* ok_descrambling */,
                           &i_capmt_size );
 
     if ( i_capmt_size )
         APDUSend( p_access, i_session_id, AOT_CA_PMT, p_capmt, i_capmt_size );
+#endif
+    APDUSend( p_access, i_session_id, AOT_CA_PMT, p_pmt->converted_packet, p_pmt->len );
 }
 
 /*****************************************************************************
@@ -1310,21 +1277,24 @@ static void CAPMTAdd( access_t * p_access, int i_session_id,
     }
     p_access->p_sys->i_selected_programs++;
     if( p_access->p_sys->i_selected_programs == 1 )
-    {
+      {
+	fprintf(stderr,"CAPMTFirst\n");
         CAPMTFirst( p_access, i_session_id, p_pmt );
         return;
     }
         
+    fprintf(stderr,"CAPMT(pas)First\n");
     
     fprintf(stderr, "adding CAPMT for SID %d on session %d",
              p_pmt->i_program_number, i_session_id );
-
+#if 0
     p_capmt = CAPMTBuild( p_access, i_session_id, p_pmt,
                           0x4 /* add */, 0x1 /* ok_descrambling */,
                           &i_capmt_size );
 
     if ( i_capmt_size )
         APDUSend( p_access, i_session_id, AOT_CA_PMT, p_capmt, i_capmt_size );
+#endif
 }
 
 /*****************************************************************************
@@ -1773,7 +1743,7 @@ static void MMIHandleMenu( access_t *p_access, int i_session_id, int i_tag,
         {                                                                   \
             p_mmi->last_object.u.menu.psz_##x                               \
                             = MMIGetText( p_access, &d, &l );               \
-            fprintf(stderr, "MMI " STRINGIFY( x ) ": %s",                \
+            fprintf(stderr, "MMI " #x  ": %s",                \
                      p_mmi->last_object.u.menu.psz_##x );                   \
         }
 
@@ -2192,7 +2162,7 @@ int en50221_SetCAPMT( access_t * p_access, mumudvb_pmt_t *p_pmt ) //braice
     access_sys_t *p_sys = p_access->p_sys;
     int i, i_session_id;
     int b_update = 0;
-    int b_needs_descrambling = CAPMTNeedsDescrambling( p_pmt );
+    int b_needs_descrambling = p_pmt->need_descr;
 
     for ( i = 0; i < MAX_PROGRAMS; i++ )
     {
@@ -2238,11 +2208,20 @@ int en50221_SetCAPMT( access_t * p_access, mumudvb_pmt_t *p_pmt ) //braice
                     == RI_CONDITIONAL_ACCESS_SUPPORT )
             {
                 if ( b_update && b_needs_descrambling )
-                    CAPMTUpdate( p_access, i_session_id, p_pmt );
+		  {
+		    fprintf(stderr,"CAPMTUpdate\n");
+                    //CAPMTUpdate( p_access, i_session_id, p_pmt );
+		  }
                 else if ( b_update )
-                    CAPMTDelete( p_access, i_session_id, p_pmt );
+		  {
+		    fprintf(stderr,"CAPMTDelete\n");
+                    //CAPMTDelete( p_access, i_session_id, p_pmt );
+		  }
                 else
+		  {
+		    fprintf(stderr,"CAPMTAdd %d selected programs\n", p_access->p_sys->i_selected_programs);
                     CAPMTAdd( p_access, i_session_id, p_pmt );
+		  }
             }
         }
     }

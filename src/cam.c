@@ -152,12 +152,12 @@ int cam_send_ca_pmt( mumudvb_pmt_t *pmt, struct ca_info *cai)
   if(!cai->initialized)
     return 0;
 
-  printf("paquet PMT PID %d len %d\n",pmt->pid, pmt->len);
+  fprintf(stderr,"paquet PMT PID %d len %d\n",pmt->pid, pmt->len);
 
 
   pmt_struct=(pmt_t *)pmt->packet;
 
-  printf("\tPMT header  section_len %d \n", HILO(pmt_struct->section_length));
+  fprintf(stderr,"\tPMT header  section_len %d \n", HILO(pmt_struct->section_length));
 
   //the real lenght
   pmt->len=HILO(pmt_struct->section_length)+3; //+3 pour les trois bits du début (compris le section_lenght)
@@ -177,11 +177,11 @@ int cam_send_ca_pmt( mumudvb_pmt_t *pmt, struct ca_info *cai)
   if(crc32!=0)
     {
       //Bad CRC32
-      printf("paquet PMT BAD CRC32\n");
+      fprintf(stderr,"\tBAD CRC32\n");
       return 0; //We don't send this PMT
     }
 
-  convert_pmt(cai, pmt, 3, 1);
+  convert_pmt(cai, pmt, 3, 1); //3=single 1=ok_descrambling
 
     //TODO : regarder le tampon de sortie
 
@@ -206,13 +206,11 @@ int convert_desc(struct ca_info *cai,
     dlen=buf[i+1]+2;                     //ca_descriptor len
     if ((buf[i]==9)&&(dlen>2)&&(dlen+i<=dslen)) { //here buf[i]=descriptor_tag (9=ca_descriptor)
       id=(buf[i+2]<<8)|buf[i+3];
-      printf("New CA descriptor id 0x%x %d\n",id,id);
       for (j=0; j<cai->sys_num; j++)
 	if (cai->sys_id[j]==((buf[i+2]<<8)|buf[i+3])) //does the system id supported by the cam ?
 	  break; //yes --> we leave the loop
       if (j==cai->sys_num) // do we leaved the loop just because we reached the end ?
 	continue;          //yes, so we dont record this descriptor
-      printf("\tOK CA descriptor\n");
       memcpy(out+olen+3, buf+i, dlen); //good descriptor supported by the cam, we copy it
       olen+=dlen; //output let
     }
@@ -220,6 +218,7 @@ int convert_desc(struct ca_info *cai,
   olen=olen?olen+1:0; //if not empty we add one
   out[0]=(olen>>8);   //we write the program info_len
   out[1]=(olen&0xff);
+  printf("\tOK CA descriptors len %d\n",olen);
   return olen+2;      //we return the total written len
 }
 
@@ -229,6 +228,9 @@ int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt,
 	int slen, dslen, o, i;
 	uint8_t *buf;
 	uint8_t *out;
+	int ds_convlen;
+
+	pmt->need_descr=0;
 	
 	buf=pmt->packet;
 	out=pmt->converted_packet;
@@ -239,7 +241,10 @@ int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt,
 	out[2]=buf[4]; //program number and version number
 	out[3]=buf[5]; //program number and version number
 	dslen=((buf[10]&0x0f)<<8)|buf[11]; //program_info_length
-	o=4+convert_desc(cai, out+4, buf+12, dslen, cmd); //new index : 4 + the descriptor size
+	ds_convlen=convert_desc(cai, out+4, buf+12, dslen, cmd); //new index : 4 + the descriptor size
+	o=4+ds_convlen;
+	if(ds_convlen>2)
+	  pmt->need_descr=1;
 	for (i=dslen+12; i<slen-9; i+=dslen+5) {      //we parse the part after the descriptors
 	  dslen=((buf[i+3]&0x0f)<<8)|buf[i+4];        //ES_info_length
 	  if ((buf[i]==0)||(buf[i]>4))                //stream_type
@@ -247,7 +252,10 @@ int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt,
 	  out[o++]=buf[i];                            //stream_type
 	  out[o++]=buf[i+1];                          //reserved and elementary_pid
 	  out[o++]=buf[i+2];                          //reserved and elementary_pid
-	  o+=convert_desc(cai, out+o, buf+i+5, dslen, cmd);//we look to the descriptors associated to this stream
+	  ds_convlen=convert_desc(cai, out+o, buf+i+5, dslen, cmd);//we look to the descriptors associated to this stream
+	  o+=ds_convlen;
+	  if(ds_convlen>2)
+	    pmt->need_descr=1;
 	}
 	return o;
 }
