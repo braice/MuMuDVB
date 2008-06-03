@@ -181,7 +181,8 @@ int cam_send_ca_pmt( mumudvb_pmt_t *pmt, struct ca_info *cai)
       return 0; //We don't send this PMT
     }
 
-  convert_pmt(cai, pmt, 3, 1); //3=single 1=ok_descrambling
+  //convert_pmt(cai, pmt, 3, 1); //3=single 1=ok_descrambling
+  convert_pmt(cai, pmt, 3, 3); //3=single 3=query
 
     //TODO : regarder le tampon de sortie
 

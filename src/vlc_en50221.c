@@ -1350,42 +1350,133 @@ static void ConditionalAccessHandle( access_t * p_access, int i_session_id,
     int i_tag = APDUGetTag( p_apdu, i_size );
 
     switch ( i_tag )
-    {
-    case AOT_CA_INFO:
-    {
-        int i;
-        int l = 0;
-        uint8_t *d = APDUGetLength( p_apdu, &l );
-        fprintf(stderr, "CA system IDs supported by the application :\n" );
+      {
+      case AOT_CA_INFO:
+	{
+	  int i;
+	  int l = 0;
+	  uint8_t *d = APDUGetLength( p_apdu, &l );
+	  fprintf(stderr, "CA system IDs supported by the application :\n" );
+	  
+	  //on rempli notre structure pour les Ids
+	  p_sys->cai->sys_num=l/2;
+	  for ( i = 0; i < l / 2; i++ )
+	    {
+	      p_sys->cai->sys_id[i]=(d[i*2]<<8)|d[1+i*2];
+	    }
+	  p_sys->cai->initialized=1;
+	  //fin du remplissage retour au code de VLC
+	  for ( i = 0; i < l / 2; i++ )
+	    {
+	      p_ids->pi_system_ids[i] = ((uint16_t)d[0] << 8) | d[1];
+	      d += 2;
+	      fprintf(stderr, "- 0x%x %d\n", p_ids->pi_system_ids[i], p_ids->pi_system_ids[i] );
+	    }
+	  p_ids->pi_system_ids[i] = 0;
+	  
+	  for ( i = 0; i < MAX_PROGRAMS; i++ )
+	    {
+	      if ( p_sys->pp_selected_programs[i] != NULL )
+		{
+		  CAPMTAdd( p_access, i_session_id,
+			    p_sys->pp_selected_programs[i] );
+		}
+	    }
+	  break;
+	}
+      case AOT_CA_PMT_REPLY: //code mostly taken from VDR
+      {
+	fprintf(stderr," Ca Pmt Reply\n");
+	int l = 0;
+	uint8_t *d = APDUGetLength( p_apdu, &l );
+	if (l > 1) {
+	  uint16_t pnr = ((uint16_t)(*d) << 8) | *(d + 1);
+	  fprintf(stderr, "  program number %d\n", pnr);
+	  d += 2;
+	  l -= 2;
+	  if (l > 0) {
+	    fprintf(stderr, "\t version number and currnexind 0x%02X\n", *d);
+	    d += 1;
+	    l -= 1;
+	    if (l > 0) {
+	      if (l % 3 == 0 && l > 1) {
+		// The EN50221 standard defines that the next byte is supposed
+		// to be the CA_enable value at programme level. However, there are
+		// CAMs (for instance the AlphaCrypt with firmware <= 3.05) that
+		// insert a two byte length field here.
+		// This is a workaround to skip this length field:
+		uint16_t len = ((uint16_t)(*d) << 8) | *(d + 1);
+		if (len == l - 2) {
+		  d += 2;
+		  l -= 2;
+		}
+	      }
+	      unsigned char caepl = *d;
+	      if ((caepl & 0x80)>>7)
+		{
+		  fprintf(stderr,"\t CA_Enable : ");
+		  switch (caepl & 0x7f)
+		    {
+		    case 0x01:
+		      fprintf(stderr," Descrambling possible");
+		      break;
+		    case 0x02:
+		      fprintf(stderr," Descrambling possible under conditions (purchase dialogue)");
+		      break;
+		    case 0x03:
+		      fprintf(stderr," Descrambling possible under conditions (technical dialogue)");
+		      break;
+		    case 0x71:
+		      fprintf(stderr," Descrambling not possible (because no entitlement)");
+		      break;
+		    case 0x73:
+		      fprintf(stderr," Descrambling not possible (for technical reasons)");
+		      break;
+		    default:
+		      fprintf(stderr," RFU");
 
-	//on rempli notre structure pour les Ids
-	p_sys->cai->sys_num=l/2;
-        for ( i = 0; i < l / 2; i++ )
-	  {
-	    p_sys->cai->sys_id[i]=(d[i*2]<<8)|d[1+i*2];
+		    }
+		}
+	      d += 1;
+	      l -= 1;
+	      while (l > 2) {
+		uint16_t pid = (((uint16_t)(*d) << 8)&0x1f) | *(d + 1);
+		unsigned char caees = *(d + 2);
+	      if ((caees & 0x80)>>7)
+		{
+		  fprintf(stderr,"\n\t CA_Enable pid %d : ", pid);
+		  switch (caees & 0x7f)
+		    {
+		    case 0x01:
+		      fprintf(stderr," Descrambling possible");
+		      break;
+		    case 0x02:
+		      fprintf(stderr," Descrambling possible under conditions (purchase dialogue)");
+		      break;
+		    case 0x03:
+		      fprintf(stderr," Descrambling possible under conditions (technical dialogue)");
+		      break;
+		    case 0x71:
+		      fprintf(stderr," Descrambling not possible (because no entitlement)");
+		      break;
+		    case 0x73:
+		      fprintf(stderr," Descrambling not possible (for technical reasons)");
+		      break;
+		    default:
+		      fprintf(stderr," RFU");
+
+		    }
+		}
+		d += 3;
+		l -= 3;
+	      }
+	    }
 	  }
-	p_sys->cai->initialized=1;
-	//fin du remplissage retour au code de VLC
-        for ( i = 0; i < l / 2; i++ )
-        {
-            p_ids->pi_system_ids[i] = ((uint16_t)d[0] << 8) | d[1];
-            d += 2;
-            fprintf(stderr, "- 0x%x %d\n", p_ids->pi_system_ids[i], p_ids->pi_system_ids[i] );
-        }
-        p_ids->pi_system_ids[i] = 0;
-
-        for ( i = 0; i < MAX_PROGRAMS; i++ )
-        {
-            if ( p_sys->pp_selected_programs[i] != NULL )
-            {
-                CAPMTAdd( p_access, i_session_id,
-                          p_sys->pp_selected_programs[i] );
-            }
-        }
-        break;
-    }
-
-    default: //probably here we have to add AOT_CA_PMT_REPLY //and we have to ask the query in AOT_CA_PMT
+	}
+	fprintf(stderr, "\n");
+	break;
+      }
+    default: 
         fprintf(stderr,
                  "************************unexpected tag in ConditionalAccessHandle (0x%x)",
                  i_tag );
