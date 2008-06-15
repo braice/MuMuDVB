@@ -200,6 +200,7 @@ main (int argc, char **argv)
   int cam_pmt_pid[MAX_CHAINES];
   cam_pmt_pid[0] = 0; //paranoya
   mumudvb_pmt_t cam_pmt;
+  int parse_retour;
 
   const char short_options[] = "c:sdh";
   const struct option long_options[] = {
@@ -1030,13 +1031,14 @@ main (int argc, char **argv)
 		  if ((cam_pmt_pid[curr_channel])&& (cam_pmt_pid[curr_channel] == pid))
 		    {
 		      //printf("Pid PMT %d channel %d\n", cam_pmt_pid[curr_channel], curr_channel);
-		      //TODO : insert a function to transform the pid in ca_pmt_message
 		      //once we have asked the CAM for this PID, we clear it not to ask it again
-		      if(cam_parse_pmt(temp_buf,&cam_pmt,vlc_access.p_sys->cai)) //note : utiliser le cam_pmt de la structure vlc
+              parse_retour=cam_parse_pmt(temp_buf,&cam_pmt,vlc_access.p_sys->cai);
+		      if(parse_retour) //note : utiliser le cam_pmt de la structure vlc car pour le moment on ne gere qu'une chaine
 			//on peut a la fin du cam_parse, quan cela a marche ajouter le truc
 			//en attendant hack
 			{
-			  cam_pmt_pid[curr_channel]=0;
+              if(parse_retour==1)
+     			  cam_pmt_pid[curr_channel]=0;
 			  vlc_access.p_sys->pp_selected_programs[0]=NULL;
 			  cam_pmt.i_program_number=curr_channel;
 			  en50221_SetCAPMT(&vlc_access, &cam_pmt);
