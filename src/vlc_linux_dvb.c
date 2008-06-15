@@ -24,9 +24,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA    02111, USA.
  *****************************************************************************/
 
-//#include <vlc/vlc.h>
-//#include <vlc/input.h>
-
 #include <sys/ioctl.h>
 #include <errno.h>
 #include <stdint.h>
@@ -45,16 +42,6 @@
 #include <linux/dvb/dmx.h>
 #include <linux/dvb/frontend.h>
 #include <linux/dvb/ca.h>
-
-#if 0
-/* Include dvbpsi headers */
-#include <dvbpsi/dvbpsi.h>
-#include <dvbpsi/descriptor.h>
-#include <dvbpsi/pat.h>
-#include <dvbpsi/pmt.h>
-#include <dvbpsi/dr.h>
-#include <dvbpsi/psi.h>
-#endif
 
 #include "vlc_dvb.h"
 

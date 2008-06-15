@@ -22,9 +22,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA    02111, USA.
  *****************************************************************************/
 
-//#include <vlc/vlc.h>
-//#include <vlc/input.h>
-
 #include <sys/ioctl.h>
 #include <errno.h>
 
@@ -43,21 +40,7 @@
 #include <linux/dvb/frontend.h>
 #include <linux/dvb/ca.h>
 
-/* Include dvbpsi headers */
-#if 0
-#include <dvbpsi/dvbpsi.h>
-#include <dvbpsi/descriptor.h>
-#include <dvbpsi/pat.h>
-#include <dvbpsi/pmt.h>
-#include <dvbpsi/dr.h>
-#include <dvbpsi/psi.h>
-#include <sys/time.h>
-#endif
-
-
 #include "vlc_dvb.h"
-
-//#include "charset.h"
 
 #undef DEBUG_TPDU
 #define HLCI_WAIT_CAM_READY 0
@@ -68,7 +51,6 @@ static void ApplicationInformationOpen( access_t * p_access, int i_session_id );
 static void ConditionalAccessOpen( access_t * p_access, int i_session_id );
 static void DateTimeOpen( access_t * p_access, int i_session_id );
 static void MMIOpen( access_t * p_access, int i_session_id );
-//static char *dvbsi_to_utf8( char *psz_instring, size_t i_length );
 
 /*****************************************************************************
  * Fonctions importés pour eviter d'inclure tout vlc
@@ -109,9 +91,6 @@ void msleep( mtime_t delay )
 
 #elif defined( ST_INIT_IN_ST_H )
   st_usleep( delay );
-
-#elif defined( WIN32 ) || defined( UNDER_CE )
-  Sleep( (int) (delay / 1000) );
 
 #elif defined( HAVE_NANOSLEEP )
   struct timespec ts_delay;
@@ -552,59 +531,6 @@ static void SessionOpen( access_t * p_access, uint8_t i_slot,
     }
 }
 
-#if 0
-/* unused code for the moment - commented out to keep gcc happy */
-/*****************************************************************************
- * SessionCreate
- *****************************************************************************/
-static void SessionCreate( access_t * p_access, int i_slot, int i_resource_id )
-{
-    access_sys_t *p_sys = p_access->p_sys;
-    uint8_t p_response[16];
-    uint8_t i_tag;
-    int i_session_id;
-
-    for ( i_session_id = 1; i_session_id <= MAX_SESSIONS; i_session_id++ )
-    {
-        if ( !p_sys->p_sessions[i_session_id - 1].i_resource_id )
-            break;
-    }
-    if ( i_session_id == MAX_SESSIONS )
-    {
-        fprintf (stderr, "too many sessions !" );
-        return;
-    }
-    p_sys->p_sessions[i_session_id - 1].i_slot = i_slot;
-    p_sys->p_sessions[i_session_id - 1].i_resource_id = i_resource_id;
-    p_sys->p_sessions[i_session_id - 1].pf_close = NULL;
-    p_sys->p_sessions[i_session_id - 1].pf_manage = NULL;
-    p_sys->p_sessions[i_session_id - 1].p_sys = NULL;
-
-    p_response[0] = ST_CREATE_SESSION;
-    p_response[1] = 0x6;
-    p_response[2] = i_resource_id >> 24;
-    p_response[3] = (i_resource_id >> 16) & 0xff;
-    p_response[4] = (i_resource_id >> 8) & 0xff;
-    p_response[5] = i_resource_id & 0xff;
-    p_response[6] = i_session_id >> 8;
-    p_response[7] = i_session_id & 0xff;
-
-    if ( TPDUSend( p_access, i_slot, T_DATA_LAST, p_response, 4 ) !=
-            0 )
-    {
-        fprintf (stderr,
-                 "SessionCreate: couldn't send TPDU on slot %d", i_slot );
-        return;
-    }
-    if ( TPDURecv( p_access, i_slot, &i_tag, NULL, NULL ) != 0 )
-    {
-        fprintf (stderr,
-                 "SessionCreate: couldn't recv TPDU on slot %d", i_slot );
-        return;
-    }
-}
-#endif
-
 /*****************************************************************************
  * SessionCreateResponse
  *****************************************************************************/
@@ -1028,213 +954,14 @@ typedef struct
     uint16_t pi_system_ids[MAX_CASYSTEM_IDS + 1];
 } system_ids_t;
 
-#if 0
-static int CheckSystemID( system_ids_t *p_ids, uint16_t i_id )
-{
-    int i = 0;
-    if( !p_ids ) return 1;
-
-    while ( p_ids->pi_system_ids[i] )
-    {
-        if ( p_ids->pi_system_ids[i] == i_id )
-            return 1;
-        i++;
-    }
-
-    return 0;
-}
-#endif
-
-
 /*****************************************************************************
  * CAPMTBuild
  *****************************************************************************/
-#if 0
-static int GetCADSize( system_ids_t *p_ids, dvbpsi_descriptor_t *p_dr )
-{
-    int i_cad_size = 0;
-
-    while ( p_dr != NULL )
-    {
-        if( p_dr->i_tag == 0x9 )
-        {
-            uint16_t i_sysid = ((uint16_t)p_dr->p_data[0] << 8)
-                                    | p_dr->p_data[1];
-            if ( CheckSystemID( p_ids, i_sysid ) )
-                i_cad_size += p_dr->i_length + 2;
-        }
-        p_dr = p_dr->p_next;
-    }
-
-    return i_cad_size;
-}
-#endif
-
-#if 0
-static uint8_t *CAPMTHeader( system_ids_t *p_ids, uint8_t i_list_mgt,
-                             uint16_t i_program_number, uint8_t i_version,
-                             int i_size, dvbpsi_descriptor_t *p_dr,
-                             uint8_t i_cmd )
-{
-    uint8_t *p_data;
-
-    if ( i_size )
-        p_data = malloc( 7 + i_size );
-    else
-        p_data = malloc( 6 );
-
-    p_data[0] = i_list_mgt;
-    p_data[1] = i_program_number >> 8;
-    p_data[2] = i_program_number & 0xff;
-    p_data[3] = ((i_version & 0x1f) << 1) | 0x1;
-
-    if ( i_size )
-    {
-        int i;
-
-        p_data[4] = (i_size + 1) >> 8;
-        p_data[5] = (i_size + 1) & 0xff;
-        p_data[6] = i_cmd;
-        i = 7;
-
-        while ( p_dr != NULL )
-        {
-            if( p_dr->i_tag == 0x9 )
-            {
-                uint16_t i_sysid = ((uint16_t)p_dr->p_data[0] << 8)
-                                    | p_dr->p_data[1];
-                if ( CheckSystemID( p_ids, i_sysid ) )
-                {
-                    p_data[i] = 0x9;
-                    p_data[i + 1] = p_dr->i_length;
-                    memcpy( &p_data[i + 2], p_dr->p_data, p_dr->i_length );
-//                    p_data[i+4] &= 0x1f;
-                    i += p_dr->i_length + 2;
-                }
-            }
-            p_dr = p_dr->p_next;
-        }
-    }
-    else
-    {
-        p_data[4] = 0;
-        p_data[5] = 0;
-    }
-
-    return p_data;
-}
-#endif
-
-#if 0
-static uint8_t *CAPMTES( system_ids_t *p_ids, uint8_t *p_capmt,
-                         int i_capmt_size, uint8_t i_type, uint16_t i_pid,
-                         int i_size, dvbpsi_descriptor_t *p_dr,
-                         uint8_t i_cmd )
-{
-    uint8_t *p_data;
-    int i;
-    
-    if ( i_size )
-        p_data = realloc( p_capmt, i_capmt_size + 6 + i_size );
-    else
-        p_data = realloc( p_capmt, i_capmt_size + 5 );
-
-    i = i_capmt_size;
-
-    p_data[i] = i_type;
-    p_data[i + 1] = i_pid >> 8;
-    p_data[i + 2] = i_pid & 0xff;
-
-    if ( i_size )
-    {
-        p_data[i + 3] = (i_size + 1) >> 8;
-        p_data[i + 4] = (i_size + 1) & 0xff;
-        p_data[i + 5] = i_cmd;
-        i += 6;
-
-        while ( p_dr != NULL )
-        {
-            if( p_dr->i_tag == 0x9 )
-            {
-                uint16_t i_sysid = ((uint16_t)p_dr->p_data[0] << 8)
-                                    | p_dr->p_data[1];
-                if ( CheckSystemID( p_ids, i_sysid ) )
-                {
-                    p_data[i] = 0x9;
-                    p_data[i + 1] = p_dr->i_length;
-                    memcpy( &p_data[i + 2], p_dr->p_data, p_dr->i_length );
-                    i += p_dr->i_length + 2;
-                }
-            }
-            p_dr = p_dr->p_next;
-        }
-    }
-    else
-    {
-        p_data[i + 3] = 0;
-        p_data[i + 4] = 0;
-    }
-
-    return p_data;
-}
-#endif
-
 static uint8_t *CAPMTBuild( access_t * p_access, int i_session_id,
                             mumudvb_pmt_t *p_pmt, uint8_t i_list_mgt,
                             uint8_t i_cmd, int *pi_capmt_size )
 {
 
-#if 0
-    access_sys_t *p_sys = p_access->p_sys;
-    system_ids_t *p_ids =
-        (system_ids_t *)p_sys->p_sessions[i_session_id - 1].p_sys;
-    dvbpsi_pmt_es_t *p_es;
-    int i_cad_size, i_cad_program_size;
-    uint8_t *p_capmt;
-
-    i_cad_size = i_cad_program_size =
-            GetCADSize( p_ids, p_pmt->p_first_descriptor );
-    for( p_es = p_pmt->p_first_es; p_es != NULL; p_es = p_es->p_next )
-    {
-        i_cad_size += GetCADSize( p_ids, p_es->p_first_descriptor );
-    }
-
-    if ( !i_cad_size )
-    {
-        fprintf(stderr,
-                  "no compatible scrambling system for SID %d on session %d",
-                  p_pmt->i_program_number, i_session_id );
-        *pi_capmt_size = 0;
-        return NULL;
-    }
-
-    p_capmt = CAPMTHeader( p_ids, i_list_mgt, p_pmt->i_program_number,
-                           p_pmt->i_version, i_cad_program_size,
-                           p_pmt->p_first_descriptor, i_cmd );
-
-    if ( i_cad_program_size )
-        *pi_capmt_size = 7 + i_cad_program_size;
-    else
-        *pi_capmt_size = 6;
-
-    for( p_es = p_pmt->p_first_es; p_es != NULL; p_es = p_es->p_next )
-    {
-        i_cad_size = GetCADSize( p_ids, p_es->p_first_descriptor );
-
-        if ( i_cad_size || i_cad_program_size )
-        {
-            p_capmt = CAPMTES( p_ids, p_capmt, *pi_capmt_size, p_es->i_type,
-                               p_es->i_pid, i_cad_size,
-                               p_es->p_first_descriptor, i_cmd );
-            if ( i_cad_size )
-                *pi_capmt_size += 6 + i_cad_size;
-            else
-                *pi_capmt_size += 5;
-        }
-    }
-
-    return p_capmt;
-#endif
     return 0;
 }
 
@@ -1249,14 +976,6 @@ static void CAPMTFirst( access_t * p_access, int i_session_id,
 
     fprintf(stderr, "adding first CAPMT for channel %d on session %d\n",
              p_pmt->i_program_number, i_session_id );
-#if 0
-    p_capmt = CAPMTBuild( p_access, i_session_id, p_pmt,
-                          0x3 /* only */, 0x1 /* ok_descrambling */,
-                          &i_capmt_size );
-
-    if ( i_capmt_size )
-        APDUSend( p_access, i_session_id, AOT_CA_PMT, p_capmt, i_capmt_size );
-#endif
     APDUSend( p_access, i_session_id, AOT_CA_PMT, p_pmt->converted_packet, p_pmt->len );
 }
 
@@ -2480,100 +2199,3 @@ void en50221_End( access_t * p_access )
      * program. */
 }
 
-/* static char *dvbsi_to_utf8( char *psz_instring, size_t i_length ) */
-/* { */
-/*     char *psz_encoding, *psz_stringstart, *psz_outstring, *psz_tmp; */
-/*     char psz_encbuf[12]; */
-/*     size_t i_in, i_out; */
-/*     vlc_iconv_t iconv_handle; */
-/*     if( i_length < 1 ) return NULL; */
-/*     if( psz_instring[0] >= 0x20 ) */
-/*     { */
-/*         psz_stringstart = psz_instring; */
-/*         psz_encoding = "ISO_8859-1"; /\* should be ISO6937 according to spec, but this seems to be the one used *\/ */
-/*     } else switch( psz_instring[0] ) */
-/*     { */
-/*     case 0x01: */
-/*         psz_stringstart = &psz_instring[1]; */
-/*         psz_encoding = "ISO_8859-5"; */
-/*         break; */
-/*     case 0x02: */
-/*         psz_stringstart = &psz_instring[1]; */
-/*         psz_encoding = "ISO_8859-6"; */
-/*         break; */
-/*     case 0x03: */
-/*         psz_stringstart = &psz_instring[1]; */
-/*         psz_encoding = "ISO_8859-7"; */
-/*         break; */
-/*     case 0x04: */
-/*         psz_stringstart = &psz_instring[1]; */
-/*         psz_encoding = "ISO_8859-8"; */
-/*         break; */
-/*     case 0x05: */
-/*         psz_stringstart = &psz_instring[1]; */
-/*         psz_encoding = "ISO_8859-9"; */
-/*         break; */
-/*     case 0x06: */
-/*         psz_stringstart = &psz_instring[1]; */
-/*         psz_encoding = "ISO_8859-10"; */
-/*         break; */
-/*     case 0x07: */
-/*         psz_stringstart = &psz_instring[1]; */
-/*         psz_encoding = "ISO_8859-11"; */
-/*         break; */
-/*     case 0x08: */
-/*         psz_stringstart = &psz_instring[1]; /\*possibly reserved?*\/ */
-/*         psz_encoding = "ISO_8859-12"; */
-/*         break; */
-/*     case 0x09: */
-/*         psz_stringstart = &psz_instring[1]; */
-/*         psz_encoding = "ISO_8859-13"; */
-/*         break; */
-/*     case 0x0a: */
-/*         psz_stringstart = &psz_instring[1]; */
-/*         psz_encoding = "ISO_8859-14"; */
-/*         break; */
-/*     case 0x0b: */
-/*         psz_stringstart = &psz_instring[1]; */
-/*         psz_encoding = "ISO_8859-15"; */
-/*         break; */
-/*     case 0x10: */
-/*         if( i_length < 3 || psz_instring[1] != '\0' || psz_instring[2] > 0x0f */
-/*             || psz_instring[2] == 0 ) */
-/*             return EnsureUTF8(strndup(psz_instring,i_length)); */
-/*         sprintf( psz_encbuf, "ISO_8859-%d", psz_instring[2] ); */
-/*         psz_stringstart = &psz_instring[3]; */
-/*         psz_encoding = psz_encbuf; */
-/*         break; */
-/*     case 0x11: */
-/*         psz_stringstart = &psz_instring[1]; */
-/*         psz_encoding = "UTF-16"; */
-/*         break; */
-/*     case 0x12: */
-/*         psz_stringstart = &psz_instring[1]; */
-/*         psz_encoding = "KSC5601-1987"; */
-/*         break; */
-/*     case 0x13: */
-/*         psz_stringstart = &psz_instring[1]; */
-/*         psz_encoding = "GB2312";/\*GB-2312-1980 *\/ */
-/*         break; */
-/*     case 0x14: */
-/*         psz_stringstart = &psz_instring[1]; */
-/*         psz_encoding = "BIG-5"; */
-/*         break; */
-/*     case 0x15: */
-/*         return EnsureUTF8(strndup(&psz_instring[1],i_length-1)); */
-/*         break; */
-/*     default: */
-/*         /\* invalid *\/ */
-/*         return EnsureUTF8(strndup(psz_instring,i_length)); */
-/*     } */
-/*     iconv_handle = vlc_iconv_open( "UTF-8", psz_encoding ); */
-/*     i_in = i_length - (psz_stringstart - psz_instring ); */
-/*     i_out = i_in * 6; */
-/*     psz_outstring = psz_tmp = (char*)malloc( i_out * sizeof(char) + 1 ); */
-/*     vlc_iconv( iconv_handle, &psz_stringstart, &i_in, &psz_tmp, &i_out ); */
-/*     vlc_iconv_close( iconv_handle ); */
-/*     *psz_tmp = '\0'; */
-/*     return psz_outstring; */
-/* } */

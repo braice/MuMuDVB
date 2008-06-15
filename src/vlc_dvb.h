@@ -30,14 +30,6 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <inttypes.h>
-/* Include dvbpsi headers */
-#include <dvbpsi/dvbpsi.h>
-#include <dvbpsi/descriptor.h>
-#include <dvbpsi/pat.h>
-#include <dvbpsi/pmt.h>
-#include <dvbpsi/dr.h>
-#include <dvbpsi/psi.h>
-
 
 #include <sys/time.h>
 #include "cam.h"

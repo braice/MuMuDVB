@@ -31,6 +31,7 @@ typedef struct {
   int len;
   int i_program_number; //VLC COMPAT, a virer plus tard
   int need_descr;
+  int query_done;
   unsigned char packet[4096]; //the buffer
   unsigned char converted_packet[4096]; //the buffer for the cam
 }mumudvb_pmt_t;
