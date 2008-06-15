@@ -199,7 +199,8 @@ main (int argc, char **argv)
   struct ca_info cam_info;
   int cam_pmt_pid[MAX_CHAINES];
   cam_pmt_pid[0] = 0; //paranoya
-  mumudvb_pmt_t cam_pmt;
+  //mumudvb_pmt_t cam_pmt;
+  mumudvb_pmt_t *cam_pmt_ptr;
   int parse_retour;
 
   const char short_options[] = "c:sdh";
@@ -770,6 +771,7 @@ main (int argc, char **argv)
   if(cam_support){
 
     fprintf (stderr, "VLC code\n");
+    cam_pmt_ptr=malloc(sizeof(mumudvb_pmt_t));
     vlc_access.p_sys=malloc(sizeof(access_sys_t));
     //menage
     for ( i = 0; i < MAX_PROGRAMS; i++ )
@@ -1025,23 +1027,23 @@ main (int argc, char **argv)
 		  }
 
 	      //cam support
-	      if(cam_support && send_packet==1)  //no need to check paquets we don't send
+	      if(cam_support && send_packet==1 &&vlc_access.p_sys->cai->initialized)  //no need to check paquets we don't send
 		{
-		  //TODO : check before if the cam is ready (we can also check if the PMT_send succeeded)
 		  if ((cam_pmt_pid[curr_channel])&& (cam_pmt_pid[curr_channel] == pid))
 		    {
 		      //printf("Pid PMT %d channel %d\n", cam_pmt_pid[curr_channel], curr_channel);
 		      //once we have asked the CAM for this PID, we clear it not to ask it again
-              parse_retour=cam_parse_pmt(temp_buf,&cam_pmt,vlc_access.p_sys->cai);
-		      if(parse_retour) //note : utiliser le cam_pmt de la structure vlc car pour le moment on ne gere qu'une chaine
+		      if(cam_parse_pmt(temp_buf,cam_pmt_ptr,vlc_access.p_sys->cai)) 
 			//on peut a la fin du cam_parse, quan cela a marche ajouter le truc
 			//en attendant hack
 			{
-              if(parse_retour==1)
+			  //fprintf(stderr,"HOP\n");
      			  cam_pmt_pid[curr_channel]=0;
-			  vlc_access.p_sys->pp_selected_programs[0]=NULL;
-			  cam_pmt.i_program_number=curr_channel;
-			  en50221_SetCAPMT(&vlc_access, &cam_pmt);
+			  cam_pmt_ptr->i_program_number=curr_channel;
+			  en50221_SetCAPMT(&vlc_access, cam_pmt_ptr);
+			  cam_pmt_ptr=malloc(sizeof(mumudvb_pmt_t)); //on alloue un nouveau
+			  //TODO check if we have enough memory
+			  memset (cam_pmt_ptr, 0, sizeof( mumudvb_pmt_t));
 			}
 		    }
 		}

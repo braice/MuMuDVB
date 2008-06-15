@@ -21,6 +21,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA    02111, USA.
  *****************************************************************************/
+#include "vlc_dvb.h"
 
 #include <sys/ioctl.h>
 #include <errno.h>
@@ -40,7 +41,6 @@
 #include <linux/dvb/frontend.h>
 #include <linux/dvb/ca.h>
 
-#include "vlc_dvb.h"
 
 #undef DEBUG_TPDU
 #define HLCI_WAIT_CAM_READY 0
@@ -997,15 +997,24 @@ static void CAPMTAdd( access_t * p_access, int i_session_id,
     p_access->p_sys->i_selected_programs++;
     if( p_access->p_sys->i_selected_programs == 1 )
       {
-	fprintf(stderr,"CAPMTFirst\n");
-        CAPMTFirst( p_access, i_session_id, p_pmt );
+	convert_pmt(p_access->p_sys->cai, p_pmt, 1, 1); //1=first 1=ok_descrambling 
+	if ( p_pmt->len )//TODO check if it's ok to test p_pmt->len
+	  {
+	    fprintf(stderr, "adding first CAPMT for channel %d on session %d\n",
+		    p_pmt->i_program_number, i_session_id );
+	    APDUSend( p_access, i_session_id, AOT_CA_PMT, p_pmt->converted_packet, p_pmt->len );
+	    //CAPMTFirst( p_access, i_session_id, p_pmt );
+	  }
         return;
     }
         
-    fprintf(stderr,"CAPMT(pas)First\n");
-    
-    fprintf(stderr, "adding CAPMT for SID %d on session %d",
+    fprintf(stderr, "adding CAPMT for channel %d on session %d\n",
              p_pmt->i_program_number, i_session_id );
+    convert_pmt(p_access->p_sys->cai, p_pmt, 4, 1); //4=add 1=ok_descrambling  
+
+    if ( p_pmt->len )//TODO check if it's ok to test p_pmt->len
+      APDUSend( p_access, i_session_id, AOT_CA_PMT, p_pmt->converted_packet, p_pmt->len );
+
 #if 0
     p_capmt = CAPMTBuild( p_access, i_session_id, p_pmt,
                           0x4 /* add */, 0x1 /* ok_descrambling */,
@@ -1961,6 +1970,13 @@ int en50221_Poll( access_t * p_access )
     }
 
     return 0;
+
+    //ADD HERE CHANNEL SENDING
+    //if program selected and not query or descrambl
+      //if not query asked
+         //ask query, queryasked=1
+      // else if query ok
+         //ask descrambling, descrambl=1
 }
 
 
@@ -1972,7 +1988,11 @@ int en50221_SetCAPMT( access_t * p_access, mumudvb_pmt_t *p_pmt ) //braice
     access_sys_t *p_sys = p_access->p_sys;
     int i, i_session_id;
     int b_update = 0;
-    int b_needs_descrambling = p_pmt->need_descr;
+    int b_needs_descrambling;
+
+    convert_pmt(p_access->p_sys->cai, p_pmt, 1, 1); //just for filling need_descr
+
+    b_needs_descrambling = p_pmt->need_descr;
 
     for ( i = 0; i < MAX_PROGRAMS; i++ )
     {
@@ -2004,8 +2024,9 @@ int en50221_SetCAPMT( access_t * p_access, mumudvb_pmt_t *p_pmt ) //braice
         {
             if ( p_sys->pp_selected_programs[i] == NULL )
             {
-                p_sys->pp_selected_programs[i] = p_pmt;
-                break;
+	      fprintf(stderr,"Nouveau PMT %d\n",i);
+	      p_sys->pp_selected_programs[i] = p_pmt;
+	      break;
             }
         }
     }

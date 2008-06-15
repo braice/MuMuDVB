@@ -31,12 +31,11 @@ typedef struct {
   int len;
   int i_program_number; //VLC COMPAT, a virer plus tard
   int need_descr;
-  int query_done;
   unsigned char packet[4096]; //the buffer
   unsigned char converted_packet[4096]; //the buffer for the cam
 }mumudvb_pmt_t;
 
-
+int cam_ca_pmt_check_CRC( mumudvb_pmt_t *pmt);
 int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai);
 int cam_send_ca_pmt( mumudvb_pmt_t *pmt, struct ca_info *cai);
 int AddPacketStart (unsigned char *packet, unsigned char *buf, unsigned int len);
