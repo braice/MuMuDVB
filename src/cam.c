@@ -14,7 +14,7 @@ int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai)
   
   header=(ts_header_t *)buf;
   pid=HILO(header->pid);
-  //printf("#Nouveau paquet, TS_Header : PID : %d payload_start %x\n",HILO(header->pid), header->payload_unit_start_indicator);
+  //fprintf(stderr,"#Nouveau paquet,  PID : %d pmt_pid %d\n",pid);
   //if(header->payload_unit_start_indicator) //Cet entete indique que c'est un nouveau paquet
   //{
   delta = TS_HEADER_LEN-1; //ce delta permet de virer l'en tete et de ne récupérer que les données
@@ -49,6 +49,7 @@ int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai)
     {
       if(ok)
 	{
+#if 0
 	  //On regarde si on a déja un paquet en stoc
 	  //Si oui, on le traite
 	  if(! pmt->empty){
@@ -57,7 +58,6 @@ int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai)
 	    else
 	      {
 		//printf("###########ON Parse le pid %d act_len : %d\n",pmt->pid,pmt->len);
-#if 0
 		if(pmt->len>188)
 		  {
 		    printf("Voici la tete du paquet : \n");                                                                                        
@@ -71,22 +71,23 @@ int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai)
 		    //printf("%c",pmt->packet[k]);
 		    //printf("\n\n");
 		  }
-#endif
 		//		parsed=cam_send_ca_pmt(pmt,cai); //ICI on regarde le paquet
-		parsed=cam_ca_pmt_check_CRC(pmt); //TEST CRC32
 	      }
 	  }
+#endif
+	  //fprintf(stderr,"\t#payload_unit_start_indicator %d\n",pid);
 	  pmt->empty=0;
 	  pmt->continuity_counter=header->continuity_counter;
 	  pmt->pid=pid;
-	  pmt->len=AddPacketStart(pmt->packet,buf+delta+1,188-delta-1); //on ajoute le paquet //NOTE len                                                   
+	  pmt->len=AddPacketStart(pmt->packet,buf+delta+1,188-delta-1); //on ajoute le paquet //NOTE len
 	}
     }
   else if(header->payload_unit_start_indicator==0)
     {
+      //fprintf(stderr,"\t#NOT payload_unit_start_indicator pid %d pmt_pid %d len %d\n",pid,pmt->pid,pmt->len);
       //c'est pas un premier paquet                                                                                                                  
       // -- pid change in stream? (without packet start)                                                                                             
-      // -- This is currently not supported   $$$ TODO                                                                                               
+      // -- This is currently not supported   $$$ TODO 
       if (pmt->pid != pid) {
 	printf("ERRREUR : CHANGEMENT DE PID\n");
 	pmt->empty=1;
@@ -104,7 +105,13 @@ int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai)
       //AAAAAATTTTTTTTTTTTTTEEEEEEEEEEEEEENNNNNNNNNNNNNTTTTTTTTTTTTTIIIIIIIIIIIIOOOOOOOOOOOOONNNNNNNNNNNNNNNN
       //Le delta n'est pas initialisé ici, regarder l'autre code, j'ai du zapper un }
       //COrrigé, ca devrait marcher
-      pmt->len=AddPacketContinue(pmt->packet,buf+delta,188-delta,pmt->len); //on ajoute le paquet //NOTE len                                                
+      pmt->len=AddPacketContinue(pmt->packet,buf+delta,188-delta,pmt->len); //on ajoute le paquet //NOTE len
+      fprintf(stderr,"\t\t Len %d PMT_len %d\n",pmt->len,HILO(((pmt_t *)pmt->packet)->section_length));
+      if (pmt->len > (HILO(((pmt_t *)pmt->packet)->section_length))) //TODO : add some bytes for the header
+      {
+	fprintf(stderr,"\t#On parse pid %d pmt_pid %d len %d\n",pid,pmt->pid,pmt->len);
+	parsed=cam_ca_pmt_check_CRC(pmt); //TEST CRC32
+      }
     }
 
   return parsed;
@@ -171,7 +178,7 @@ int cam_send_ca_pmt( mumudvb_pmt_t *pmt, struct ca_info *cai)
 /*      return 2;  */
 /*    }  */
 /*    else if(!pmt->query_done){ */
-     convert_pmt(cai, pmt, 3, 1); //3=single 1=ok_descrambling
+     convert_pmt(cai, pmt, 3, 1,0); //3=single 1=ok_descrambling
 /*    } */
 
     //TODO : regarder le tampon de sortie
@@ -207,7 +214,7 @@ int cam_ca_pmt_check_CRC( mumudvb_pmt_t *pmt)
   if(crc32!=0)
     {
       //Bad CRC32
-      fprintf(stderr,"\tBAD CRC32\n");
+      fprintf(stderr,"\tBAD CRC32 PID : %d\n", pmt->pid);
       return 0; //We don't send this PMT
     }
   
@@ -219,34 +226,43 @@ int cam_ca_pmt_check_CRC( mumudvb_pmt_t *pmt)
 //Code from libdvb
 
 int convert_desc(struct ca_info *cai, 
-		 uint8_t *out, uint8_t *buf, int dslen, uint8_t cmd)
+		 uint8_t *out, uint8_t *buf, int dslen, uint8_t cmd,int quiet)
 {
   int i, j, dlen, olen=0;
   int id;
 
   out[2]=cmd;                            //ca_pmt_cmd_id 01 ok_descrambling 02 ok_mmi 03 query 04 not_selected
-  for (i=0; i<dslen; i+=dlen) {          //loop on all the descriptors (for each descriptor we add its length)
-    dlen=buf[i+1]+2;                     //ca_descriptor len
-    if ((buf[i]==9)&&(dlen>2)&&(dlen+i<=dslen)) { //here buf[i]=descriptor_tag (9=ca_descriptor)
-      id=(buf[i+2]<<8)|buf[i+3];
-      for (j=0; j<cai->sys_num; j++)
-	if (cai->sys_id[j]==((buf[i+2]<<8)|buf[i+3])) //does the system id supported by the cam ?
-	  break; //yes --> we leave the loop
-      if (j==cai->sys_num) // do we leaved the loop just because we reached the end ?
-	continue;          //yes, so we dont record this descriptor
-      memcpy(out+olen+3, buf+i, dlen); //good descriptor supported by the cam, we copy it
-      olen+=dlen; //output let
+  for (i=0; i<dslen; i+=dlen)           //loop on all the descriptors (for each descriptor we add its length)
+    {
+      dlen=buf[i+1]+2;                     //ca_descriptor len
+      //if(!quiet)
+      //fprintf(stderr,"\tDescriptor tag %d\n",buf[i]);
+      if ((buf[i]==9)&&(dlen>2)&&(dlen+i<=dslen)) //here buf[i]=descriptor_tag (9=ca_descriptor)
+	{
+	  id=(buf[i+2]<<8)|buf[i+3];
+	  for (j=0; j<cai->sys_num; j++)
+	    if (cai->sys_id[j]==id) //does the system id supported by the cam ?
+	      break; //yes --> we leave the loop
+	  if (j==cai->sys_num) // do we leaved the loop just because we reached the end ?
+	    {
+	      if(!quiet)
+		fprintf(stderr,"\tdropped system id %d 0x%x\n", id, id);
+	      continue;          //yes, so we dont record this descriptor
+	    }
+	  memcpy(out+olen+3, buf+i, dlen); //good descriptor supported by the cam, we copy it
+	  olen+=dlen; //output let
+	}
     }
-  }
   olen=olen?olen+1:0; //if not empty we add one
   out[0]=(olen>>8);   //we write the program info_len
   out[1]=(olen&0xff);
-  printf("\tOK CA descriptors len %d\n",olen);
+  if(!quiet)
+    fprintf(stderr,"\tOK CA descriptors len %d\n",olen);
   return olen+2;      //we return the total written len
 }
 
 int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt, 
-		       uint8_t list, uint8_t cmd)
+		       uint8_t list, uint8_t cmd, int quiet)
 {
 	int slen, dslen, o, i;
 	uint8_t *buf;
@@ -264,18 +280,24 @@ int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt,
 	out[2]=buf[4]; //program number and version number
 	out[3]=buf[5]; //program number and version number
 	dslen=((buf[10]&0x0f)<<8)|buf[11]; //program_info_length
-	ds_convlen=convert_desc(cai, out+4, buf+12, dslen, cmd); //new index : 4 + the descriptor size
+	ds_convlen=convert_desc(cai, out+4, buf+12, dslen, cmd, quiet); //new index : 4 + the descriptor size
 	o=4+ds_convlen;
 	if(ds_convlen>2)
 	  pmt->need_descr=1;
 	for (i=dslen+12; i<slen-9; i+=dslen+5) {      //we parse the part after the descriptors
 	  dslen=((buf[i+3]&0x0f)<<8)|buf[i+4];        //ES_info_length
 	  if ((buf[i]==0)||(buf[i]>4))                //stream_type
-	    continue;
+	    {
+	      if(!quiet)
+		fprintf(stderr, "\t=====Stream tyhe throwed away : %d\n",buf[i]);
+	      continue;
+	    }
+	  if(!quiet)
+	    fprintf(stderr, "\t=====Stream type : %d\n",buf[i]);
 	  out[o++]=buf[i];                            //stream_type
 	  out[o++]=buf[i+1];                          //reserved and elementary_pid
 	  out[o++]=buf[i+2];                          //reserved and elementary_pid
-	  ds_convlen=convert_desc(cai, out+o, buf+i+5, dslen, cmd);//we look to the descriptors associated to this stream
+	  ds_convlen=convert_desc(cai, out+o, buf+i+5, dslen, cmd,quiet);//we look to the descriptors associated to this stream
 	  o+=ds_convlen;
 	  if(ds_convlen>2)
 	    pmt->need_descr=1;

@@ -1031,13 +1031,14 @@ main (int argc, char **argv)
 		{
 		  if ((cam_pmt_pid[curr_channel])&& (cam_pmt_pid[curr_channel] == pid))
 		    {
-		      //printf("Pid PMT %d channel %d\n", cam_pmt_pid[curr_channel], curr_channel);
+		      //cam_pmt_ptr->pid=pid;
 		      //once we have asked the CAM for this PID, we clear it not to ask it again
 		      if(cam_parse_pmt(temp_buf,cam_pmt_ptr,vlc_access.p_sys->cai)) 
 			//on peut a la fin du cam_parse, quan cela a marche ajouter le truc
 			//en attendant hack
 			{
 			  //fprintf(stderr,"HOP\n");
+			  printf("Pid PMT %d channel %d\n", cam_pmt_pid[curr_channel], curr_channel);
      			  cam_pmt_pid[curr_channel]=0;
 			  cam_pmt_ptr->i_program_number=curr_channel;
 			  en50221_SetCAPMT(&vlc_access, cam_pmt_ptr);

@@ -997,7 +997,7 @@ static void CAPMTAdd( access_t * p_access, int i_session_id,
     p_access->p_sys->i_selected_programs++;
     if( p_access->p_sys->i_selected_programs == 1 )
       {
-	convert_pmt(p_access->p_sys->cai, p_pmt, 1, 1); //1=first 1=ok_descrambling 
+	convert_pmt(p_access->p_sys->cai, p_pmt, 1, 1, 0); //1=first 1=ok_descrambling 
 	if ( p_pmt->len )//TODO check if it's ok to test p_pmt->len
 	  {
 	    fprintf(stderr, "adding first CAPMT for channel %d on session %d\n",
@@ -1010,7 +1010,7 @@ static void CAPMTAdd( access_t * p_access, int i_session_id,
         
     fprintf(stderr, "adding CAPMT for channel %d on session %d\n",
              p_pmt->i_program_number, i_session_id );
-    convert_pmt(p_access->p_sys->cai, p_pmt, 4, 1); //4=add 1=ok_descrambling  
+    convert_pmt(p_access->p_sys->cai, p_pmt, 4, 1, 0); //4=add 1=ok_descrambling  
 
     if ( p_pmt->len )//TODO check if it's ok to test p_pmt->len
       APDUSend( p_access, i_session_id, AOT_CA_PMT, p_pmt->converted_packet, p_pmt->len );
@@ -1990,7 +1990,7 @@ int en50221_SetCAPMT( access_t * p_access, mumudvb_pmt_t *p_pmt ) //braice
     int b_update = 0;
     int b_needs_descrambling;
 
-    convert_pmt(p_access->p_sys->cai, p_pmt, 1, 1); //just for filling need_descr
+    convert_pmt(p_access->p_sys->cai, p_pmt, 1, 1,1); //just for filling need_descr
 
     b_needs_descrambling = p_pmt->need_descr;
 
@@ -2024,7 +2024,7 @@ int en50221_SetCAPMT( access_t * p_access, mumudvb_pmt_t *p_pmt ) //braice
         {
             if ( p_sys->pp_selected_programs[i] == NULL )
             {
-	      fprintf(stderr,"Nouveau PMT %d\n",i);
+	      fprintf(stderr,"Nouveau PMT %d len %d\n",i, p_pmt->len);
 	      p_sys->pp_selected_programs[i] = p_pmt;
 	      break;
             }
