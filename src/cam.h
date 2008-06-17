@@ -29,7 +29,7 @@ typedef struct {
   int pid;   //The PID of the packet
   int continuity_counter; //the countinuity counter, incremented in each packet
   int len;
-  int i_program_number; //VLC COMPAT, a virer plus tard
+  int i_program_number; 
   int need_descr;
   unsigned char packet[4096]; //the buffer
   unsigned char converted_packet[4096]; //the buffer for the cam
@@ -42,7 +42,6 @@ int AddPacketStart (unsigned char *packet, unsigned char *buf, unsigned int len)
 int AddPacketContinue  (unsigned char *packet, unsigned char *buf, unsigned int len, unsigned int act_len);
 int convert_desc(struct ca_info *cai, uint8_t *out, uint8_t *buf, int dslen, uint8_t cmd, int quiet);
 int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt, uint8_t list, uint8_t cmd,int quiet);
-int ci_get_ca_info(int fd, int slot, struct ca_info *cai);
 
 
 //Used to generate the CA_PMT message

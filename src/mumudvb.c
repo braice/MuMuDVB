@@ -196,12 +196,11 @@ main (int argc, char **argv)
   //ca_descr_info_t cam_descr_info;
   //int num_cams=0;
   int i;
-  struct ca_info cam_info;
+  //struct ca_info cam_info;
   int cam_pmt_pid[MAX_CHAINES];
   cam_pmt_pid[0] = 0; //paranoya
   //mumudvb_pmt_t cam_pmt;
   mumudvb_pmt_t *cam_pmt_ptr;
-  int parse_retour;
 
   const char short_options[] = "c:sdh";
   const struct option long_options[] = {
@@ -770,99 +769,15 @@ main (int argc, char **argv)
 
   if(cam_support){
 
-    fprintf (stderr, "VLC code\n");
     cam_pmt_ptr=malloc(sizeof(mumudvb_pmt_t));
     vlc_access.p_sys=malloc(sizeof(access_sys_t));
     //menage
     for ( i = 0; i < MAX_PROGRAMS; i++ )
       vlc_access.p_sys->pp_selected_programs[i]=NULL;
     CAMOpen(&vlc_access, card);
-    //    ci_get_ca_info(card, 0, &cam_info);
     vlc_access.p_sys->cai->initialized=0;
     CAMPoll(&vlc_access);
     //CAMClose(&vlc_access);
-    fprintf (stderr, "END VLC code\n");
-
-
-/*     sprintf(cam_devname,CA_DEV,card,0); */
-/*     if ((cafd = open(cam_devname,O_RDONLY))<0){ */
-/*       perror("ca device"); */
-/*       exit(1); */
-/*     } */
-
-/*     //On recupere les infos sur les capacites de la CAM */
-/*     ioctl(cafd, CA_GET_CAP, &caps); */
-/*     if (caps.slot_num < 1){ */
-/*       fprintf (stderr, "No CI slots found\n"); */
-/*       exit(1); */
-/*     } */
-
-/*     if (!no_daemon) */
-/*       syslog (LOG_USER|LOG_INFO, "CAM : Found %d CI slots\n", caps.slot_num); */
-/*     else */
-/*       fprintf (stderr, "CAM : Found %d CI slots\n", caps.slot_num); */
-
-/*     if (!no_daemon) */
-/*       syslog (LOG_USER|LOG_INFO, "CAM : Found %d descrambler slots (keys)\n", caps.descr_num); */
-/*     else */
-/*       fprintf (stderr, "CAM : Found %d descrambler slots (keys)\n", caps.descr_num); */
-
-/*     //on recupere les infos sur les slots */
-/*     for (i=0; i<caps.slot_num; i++){ */
-/*       cam_slot_info.num = i;  */
-/*       if (ioctl(cafd, CA_GET_SLOT_INFO, &cam_slot_info) <0){ */
-/* 	perror("CAM : slot info"); */
-/* 	exit(1); */
-/*       }  */
-/*       if (cam_slot_info.flags & CA_CI_MODULE_PRESENT) num_cams++; */
-
-/*       fprintf (stderr, "CAM : DEBUG : slot %d type 0x%x\n", i, cam_slot_info.type); */
-/*       if (cam_slot_info.flags & CA_CI_MODULE_PRESENT){ */
-/*     	if (!no_daemon) */
-/* 	  syslog (LOG_USER|LOG_INFO, "CAM : Slot %d MODULE_PRESENT\n", i); */
-/* 	else */
-/* 	  fprintf (stderr, "CAM : Slot %d MODULE_PRESENT\n", i); */
-/*       } */
-/*       if (cam_slot_info.flags & CA_CI_MODULE_READY){ */
-/* 	if (!no_daemon) */
-/* 	  syslog (LOG_USER|LOG_INFO, "CAM : Slot %d MODULE_READY\n", i); */
-/* 	else */
-/* 	  fprintf (stderr, "CAM : Slot %d MODULE_READY\n", i); */
-/*       } */
-/*       if (cam_slot_info.type & CA_CI){ */
-/* 	if (!no_daemon) */
-/* 	  syslog (LOG_USER|LOG_INFO, "CAM : Slot %d High level interface\n", i); */
-/* 	else */
-/* 	  fprintf (stderr, "CAM : Slot %d High level interface\n", i); */
-/*       } */
-/*       else if (cam_slot_info.type & CA_CI_LINK){ */
-/* 	if (!no_daemon) */
-/* 	  syslog (LOG_USER|LOG_INFO, "CAM : Slot %d link layer level interface\n", i); */
-/* 	else */
-/* 	  fprintf (stderr, "CAM : Slot %d link layer level interface\n", i); */
-/*       } */
-/*       else { */
-/* 	if (!no_daemon) */
-/* 	  syslog (LOG_USER|LOG_INFO, "CAM : Slot %d other kind of level interface\n", i); */
-/* 	else */
-/* 	  fprintf (stderr, "CAM : Slot %d other kind of level interface\n", i); */
-/*       } */
-/*     } */
-
-/*     //On recupere les infos sur les descramblers */
-/*     for (i=0; i<caps.descr_num; i++){ */
-/*       cam_descr_info.num=i; */
-/*       if (ioctl(cafd, CA_GET_DESCR_INFO, &cam_descr_info) <0){ */
-/* 	perror("CAM : descr info"); */
-/* 	exit(1); */
-/*       } */
-/*     } */
-
-/*     if (!no_daemon) */
-/*       syslog (LOG_USER|LOG_INFO, "CAM : Found %d CAM%s\n", num_cams, (num_cams == 1 ? "" : "s")); */
-/*     else */
-/*       fprintf (stderr, "CAM : Found %d CAM%s\n", num_cams, (num_cams == 1 ? "" : "s")); */
-
 
   }
   

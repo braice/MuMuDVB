@@ -6,17 +6,16 @@ extern unsigned long       crc32_table[256];
 int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai)
 {
 
-  //NOTE IMPORTANTE : normalement quand un paquet est découpé il n'y a pas d'autres pids entre donc on stoque un seul mumudvb_pmt
+  //NOTE IMPORTANTE : normalement quand un paquet est découpé il n'y a pas d'autres pids entre
   ts_header_t *header;
   int ok=0;
   int parsed=0;
-  int delta,pid,k,l;
+  int delta,pid;
+  //int k,l;
   
   header=(ts_header_t *)buf;
   pid=HILO(header->pid);
-  //fprintf(stderr,"#Nouveau paquet,  PID : %d pmt_pid %d\n",pid);
-  //if(header->payload_unit_start_indicator) //Cet entete indique que c'est un nouveau paquet
-  //{
+  //fprintf(stderr,"CAM : #Nouveau paquet,  PID : %d pmt_pid %d\n",pid);
   delta = TS_HEADER_LEN-1; //ce delta permet de virer l'en tete et de ne récupérer que les données
   
   //Le adaptation field est un champ en plus, s'il est présent il faut le sauter pour accéder aux vraies données
@@ -71,11 +70,9 @@ int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai)
 		    //printf("%c",pmt->packet[k]);
 		    //printf("\n\n");
 		  }
-		//		parsed=cam_send_ca_pmt(pmt,cai); //ICI on regarde le paquet
 	      }
 	  }
 #endif
-	  //fprintf(stderr,"\t#payload_unit_start_indicator %d\n",pid);
 	  pmt->empty=0;
 	  pmt->continuity_counter=header->continuity_counter;
 	  pmt->pid=pid;
@@ -84,7 +81,7 @@ int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai)
     }
   else if(header->payload_unit_start_indicator==0)
     {
-      //fprintf(stderr,"\t#NOT payload_unit_start_indicator pid %d pmt_pid %d len %d\n",pid,pmt->pid,pmt->len);
+      //fprintf(stderr,"CAM : \t#NOT payload_unit_start_indicator pid %d pmt_pid %d len %d\n",pid,pmt->pid,pmt->len);
       //c'est pas un premier paquet                                                                                                                  
       // -- pid change in stream? (without packet start)                                                                                             
       // -- This is currently not supported   $$$ TODO 
@@ -102,14 +99,11 @@ int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai)
       //if ((pid == tsd.pid) && (cc == tsd.continuity_counter)) {                                                                                    
       //return 1;                                                                                                                                    
       //}
-      //AAAAAATTTTTTTTTTTTTTEEEEEEEEEEEEEENNNNNNNNNNNNNTTTTTTTTTTTTTIIIIIIIIIIIIOOOOOOOOOOOOONNNNNNNNNNNNNNNN
-      //Le delta n'est pas initialisé ici, regarder l'autre code, j'ai du zapper un }
-      //COrrigé, ca devrait marcher
       pmt->len=AddPacketContinue(pmt->packet,buf+delta,188-delta,pmt->len); //on ajoute le paquet //NOTE len
-      fprintf(stderr,"\t\t Len %d PMT_len %d\n",pmt->len,HILO(((pmt_t *)pmt->packet)->section_length));
-      if (pmt->len > (HILO(((pmt_t *)pmt->packet)->section_length))) //TODO : add some bytes for the header
+      fprintf(stderr,"CAM : \t\t Len %d PMT_len %d\n",pmt->len,HILO(((pmt_t *)pmt->packet)->section_length));
+      if (pmt->len > ((HILO(((pmt_t *)pmt->packet)->section_length))+3)) //+3 is for the header
       {
-	fprintf(stderr,"\t#On parse pid %d pmt_pid %d len %d\n",pid,pmt->pid,pmt->len);
+	fprintf(stderr,"CAM : \t#On parse pid %d pmt_pid %d len %d\n",pid,pmt->pid,pmt->len);
 	parsed=cam_ca_pmt_check_CRC(pmt); //TEST CRC32
       }
     }
@@ -150,45 +144,6 @@ int AddPacketContinue  (unsigned char *packet, unsigned char *buf, unsigned int 
 }
 
 
-
-int cam_send_ca_pmt( mumudvb_pmt_t *pmt, struct ca_info *cai)
-{
-  //DEAD CODE
-
-  pmt_t *pmt_struct;
-  int i;
-
-  if(!cai->initialized)
-    return 0;
-
-  fprintf(stderr,"paquet PMT PID %d len %d\n",pmt->pid, pmt->len);
-
-
-  pmt_struct=(pmt_t *)pmt->packet;
-
-  fprintf(stderr,"\tPMT header  section_len %d \n", HILO(pmt_struct->section_length));
-
-  //the real lenght
-  pmt->len=HILO(pmt_struct->section_length)+3; //+3 pour les trois bits du début (compris le section_lenght)
-
-
-/*    if(!pmt->query_asked){ */
-/*      convert_pmt(cai, pmt, 3, 3); //3=single 3=query  */
-/*      pmt->query_asked=1;  */
-/*      return 2;  */
-/*    }  */
-/*    else if(!pmt->query_done){ */
-     convert_pmt(cai, pmt, 3, 1,0); //3=single 1=ok_descrambling
-/*    } */
-
-    //TODO : regarder le tampon de sortie
-
-    //TODO l'envoyer et envoyer le query pour tester
-
-  return 1;
-
-}
-
 int cam_ca_pmt_check_CRC( mumudvb_pmt_t *pmt)
 {
   pmt_t *pmt_struct;
@@ -214,7 +169,7 @@ int cam_ca_pmt_check_CRC( mumudvb_pmt_t *pmt)
   if(crc32!=0)
     {
       //Bad CRC32
-      fprintf(stderr,"\tBAD CRC32 PID : %d\n", pmt->pid);
+      fprintf(stderr,"CAM : \tBAD CRC32 PID : %d\n", pmt->pid);
       return 0; //We don't send this PMT
     }
   
@@ -236,7 +191,7 @@ int convert_desc(struct ca_info *cai,
     {
       dlen=buf[i+1]+2;                     //ca_descriptor len
       //if(!quiet)
-      //fprintf(stderr,"\tDescriptor tag %d\n",buf[i]);
+      //fprintf(stderr,"CAM : \tDescriptor tag %d\n",buf[i]);
       if ((buf[i]==9)&&(dlen>2)&&(dlen+i<=dslen)) //here buf[i]=descriptor_tag (9=ca_descriptor)
 	{
 	  id=(buf[i+2]<<8)|buf[i+3];
@@ -245,8 +200,8 @@ int convert_desc(struct ca_info *cai,
 	      break; //yes --> we leave the loop
 	  if (j==cai->sys_num) // do we leaved the loop just because we reached the end ?
 	    {
-	      if(!quiet)
-		fprintf(stderr,"\tdropped system id %d 0x%x\n", id, id);
+	      //if(!quiet)
+	      //fprintf(stderr,"CAM : \tdropped system id %d 0x%x\n", id, id);
 	      continue;          //yes, so we dont record this descriptor
 	    }
 	  memcpy(out+olen+3, buf+i, dlen); //good descriptor supported by the cam, we copy it
@@ -256,8 +211,8 @@ int convert_desc(struct ca_info *cai,
   olen=olen?olen+1:0; //if not empty we add one
   out[0]=(olen>>8);   //we write the program info_len
   out[1]=(olen&0xff);
-  if(!quiet)
-    fprintf(stderr,"\tOK CA descriptors len %d\n",olen);
+  //if(!quiet)
+  //fprintf(stderr,"CAM : \tOK CA descriptors len %d\n",olen);
   return olen+2;      //we return the total written len
 }
 
@@ -268,6 +223,10 @@ int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt,
 	uint8_t *buf;
 	uint8_t *out;
 	int ds_convlen;
+
+	if(!quiet)
+	  fprintf(stderr,"CAM : \t===PMT convert into CA_PMT\n");
+
 
 	pmt->need_descr=0;
 	
@@ -289,11 +248,25 @@ int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt,
 	  if ((buf[i]==0)||(buf[i]>4))                //stream_type
 	    {
 	      if(!quiet)
-		fprintf(stderr, "\t=====Stream tyhe throwed away : %d\n",buf[i]);
+		fprintf(stderr,"CAM : \t=====Stream type throwed away : %d\n",buf[i]);
 	      continue;
 	    }
 	  if(!quiet)
-	    fprintf(stderr, "\t=====Stream type : %d\n",buf[i]);
+	    {
+	      switch(buf[i]){
+	      case 1:
+	      case 2:
+		fprintf(stderr,"CAM : \t=====Stream type : video\n");
+		break;
+	      case 3:
+	      case 4:
+		fprintf(stderr,"CAM : \t=====Stream type : audio\n");
+		break;
+	      default:
+		fprintf(stderr,"CAM : \t=====Stream type : %d\n",buf[i]);
+	      }
+	    }
+
 	  out[o++]=buf[i];                            //stream_type
 	  out[o++]=buf[i+1];                          //reserved and elementary_pid
 	  out[o++]=buf[i+2];                          //reserved and elementary_pid
@@ -303,26 +276,4 @@ int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt,
 	    pmt->need_descr=1;
 	}
 	return o;
-}
-
-int ci_get_ca_info(int fd, int slot, struct ca_info *cai)
-{
-  cai->sys_num=0;
-#if 0
-	uint8_t buf[256], *p=buf+3;
-	int len, i;
-
-	ci_send_obj(fd, AOT_CA_INFO_ENQ, NULL, 0);
-	if ((len=ci_getmsg(fd, slot, buf))<=8)
-		return -1;
-	printf("CA systems : ");
-	len=ci_read_length(&p);
-	cai->sys_num=p[0];
-	for (i=0; i<cai->sys_num; i++) {
-		cai->sys_id[i]=(p[1+i*2]<<8)|p[2+i*2];
-		printf("%04x ", cai->sys_id[i]);
-	}
-	printf("\n");
-#endif
-	return 0;
 }

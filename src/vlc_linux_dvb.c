@@ -28,7 +28,6 @@
 #include <errno.h>
 #include <stdint.h>
 
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -67,15 +66,15 @@ int CAMOpen( access_t *p_access , int card)
 
     if( snprintf( ca, sizeof(ca), CA, i_adapter, i_device ) >= (int)sizeof(ca) )
     {
-        fprintf( stderr, "snprintf() truncated string for CA" );
+        fprintf(stderr,"CAM : snprintf() truncated string for CA" );
         ca[sizeof(ca) - 1] = '\0';
     }
     memset( &caps, 0, sizeof( ca_caps_t ));
 
-    fprintf( stderr, "Opening device %s\n", ca );
+    fprintf(stderr,"CAM : Opening device %s\n", ca );
     if( (p_sys->i_ca_handle = open(ca, O_RDWR | O_NONBLOCK)) < 0 )
     {
-        fprintf( stderr, "CAMInit: opening CAM device failed (%s)\n",
+        fprintf(stderr, "CAMInit: opening CAM device failed (%s)\n",
                   strerror(errno) );
         p_sys->i_ca_handle = 0;
         return -666;
@@ -83,38 +82,38 @@ int CAMOpen( access_t *p_access , int card)
 
     if ( ioctl( p_sys->i_ca_handle, CA_GET_CAP, &caps ) != 0 )
     {
-        fprintf( stderr, "CAMInit: ioctl() error getting CAM capabilities\n" );
+        fprintf(stderr, "CAMInit: ioctl() error getting CAM capabilities\n" );
         close( p_sys->i_ca_handle );
         p_sys->i_ca_handle = 0;
         return -666;
     }
 
     /* Output CA capabilities */
-    fprintf( stderr, "CAMInit: CA interface with %d %s\n", caps.slot_num, 
+    fprintf(stderr, "CAMInit: CA interface with %d %s\n", caps.slot_num, 
         caps.slot_num == 1 ? "slot" : "slots" );
     if ( caps.slot_type & CA_CI )
-        fprintf( stderr, "CAMInit: CI high level interface type\n" );
+        fprintf(stderr, "CAMInit: CI high level interface type\n" );
     if ( caps.slot_type & CA_CI_LINK )
-        fprintf( stderr, "CAMInit: CI link layer level interface type\n" );
+        fprintf(stderr, "CAMInit: CI link layer level interface type\n" );
     if ( caps.slot_type & CA_CI_PHYS )
-        fprintf( stderr, "CAMInit: CI physical layer level interface type (not supported) \n" );
+        fprintf(stderr, "CAMInit: CI physical layer level interface type (not supported) \n" );
     if ( caps.slot_type & CA_DESCR )
-        fprintf( stderr, "CAMInit: built-in descrambler detected\n" );
+        fprintf(stderr, "CAMInit: built-in descrambler detected\n" );
     if ( caps.slot_type & CA_SC )
-        fprintf( stderr, "CAMInit: simple smart card interface\n" );
+        fprintf(stderr, "CAMInit: simple smart card interface\n" );
 
-    fprintf( stderr, "CAMInit: %d available %s\n", caps.descr_num,
+    fprintf(stderr, "CAMInit: %d available %s\n", caps.descr_num,
         caps.descr_num == 1 ? "descrambler (key)" : "descramblers (keys)" );
     if ( caps.descr_type & CA_ECD )
-        fprintf( stderr, "CAMInit: ECD scrambling system supported\n" );
+        fprintf(stderr, "CAMInit: ECD scrambling system supported\n" );
     if ( caps.descr_type & CA_NDS )
-        fprintf( stderr, "CAMInit: NDS scrambling system supported\n" );
+        fprintf(stderr, "CAMInit: NDS scrambling system supported\n" );
     if ( caps.descr_type & CA_DSS )
-        fprintf( stderr, "CAMInit: DSS scrambling system supported\n" );
+        fprintf(stderr, "CAMInit: DSS scrambling system supported\n" );
 
     if ( caps.slot_num == 0 )
     {
-        fprintf( stderr, "CAMInit: CAM module with no slots\n" );
+        fprintf(stderr, "CAMInit: CAM module with no slots\n" );
         close( p_sys->i_ca_handle );
         p_sys->i_ca_handle = 0;
         return -666;
@@ -130,7 +129,7 @@ int CAMOpen( access_t *p_access , int card)
     }
     else {
         p_sys->i_ca_type = -1;
-        fprintf( stderr, "CAMInit: incompatible CAM interface\n" );
+        fprintf(stderr, "CAMInit: incompatible CAM interface\n" );
         close( p_sys->i_ca_handle );
         p_sys->i_ca_handle = 0;
         return -666;
@@ -167,7 +166,7 @@ int CAMPoll( access_t * p_access )
         i_ret = 0;
         break;
     default:
-        fprintf( stderr, "CAMPoll: This should not happen" );
+        fprintf(stderr, "CAMPoll: This should not happen" );
         break;
     }
 
