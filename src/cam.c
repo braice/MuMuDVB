@@ -13,7 +13,11 @@
  *                          Christopher Ross <chris@tebibyte.org>
  *                          Christophe Massiot <massiot@via.ecp.fr>
  * 
+ * Parts of this code come from libdvbpsi, modified for mumudvb
+ * by Brice DUBOST 
+ * Libdvb part : Copyright (C) 2000 Klaus Schmidinger
  * 
+ *  
  * The latest version can be found at http://mumudvb.braice.net
  * 
  * Copyright notice:
@@ -51,8 +55,6 @@
 #include <linux/dvb/frontend.h>
 #include <linux/dvb/ca.h>
 
-#include "vlc_dvb.h"
-
 #include "cam.h"
 #include "mumudvb.h"
 
@@ -60,142 +62,115 @@ extern unsigned long       crc32_table[256];
 
 int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai)
 {
+  //This function will join the 188 bytes packet until the PMT is full
+  //Once it's full we check the CRC32 and say if it's ok or not
+  //
+  //There is two important mpeg2-ts fields to do that
+  // * the continuity counter wich is incremented for each packet
+  // * The payload_unit_start_indicator wich says if it's the first packet
+  //
+  //When a packet is cutted in 188 bytes packets, there should be no other pid between two sub packets
+  //
+  //Return 1 when the packet is full and OK
 
-  //NOTE IMPORTANTE : normalement quand un paquet est découpé il n'y a pas d'autres pids entre
+
   ts_header_t *header;
   int ok=0;
   int parsed=0;
   int delta,pid;
-  //int k,l;
-  
+
+  //mapping of the buffer onto the TS header
   header=(ts_header_t *)buf;
   pid=HILO(header->pid);
-  //fprintf(stderr,"CAM : #Nouveau paquet,  PID : %d pmt_pid %d\n",pid);
-  delta = TS_HEADER_LEN-1; //ce delta permet de virer l'en tete et de ne récupérer que les données
-  
-  //Le adaptation field est un champ en plus, s'il est présent il faut le sauter pour accéder aux vraies données
+
+  //delta used to remove TS HEADER
+  delta = TS_HEADER_LEN-1; 
+
+  //Sometimes there is some more data in the header, the adaptation field say it
   if (header->adaptation_field_control & 0x2)
     {
-      printf("\t#####Adaptation field \n");
+      fprintf(stderr, "CAM : parse PMT : Adaptation field \n");
       delta += buf[delta] ;        // add adapt.field.len
     }
-  else if (header->adaptation_field_control & 0x1) {
-    //printf("\t#No adaptation field \n");
-    if (buf[delta]==0x00 && buf[delta+1]==0x00 && buf[delta+2]==0x01) {
-      // -- PES/PS                                                                                                                               
-      //tspid->id   = buf[j+3];                                                                                                                  
-      printf("\t#PES/PS ----- We ignore \n");
-      ok=0;
-    } else {
-      //if(buf[delta]){                                                                                                                          
-      //J'ai pas trop compris ce qu'il faut faire dans ce cas --> on se casse (ps : il arrive quasiment jamais)                                
-      //printf("\t#probleme tag : abebueb\n");                                                                                                 
-      //ok=0;                                                                                                                                  
-      //}else{                                                                                                                                   
-      //Tout va bien, on skippe le zéro en tro
-      //delta += 1;                                                                                                                            
-      ok=1;
-      //}                                                                                                                                        
+  else if (header->adaptation_field_control & 0x1)
+    {
+      if (buf[delta]==0x00 && buf[delta+1]==0x00 && buf[delta+2]==0x01) 
+	{
+	  // -- PES/PS                                                                                                                               
+	  //tspid->id   = buf[j+3];                                                                                                                  
+	  printf("\t#PES/PS ----- We ignore \n");
+	  ok=0;
+	}
+      else
+	{
+	  ok=1;
+	}
     }
-  }
+
   if (header->adaptation_field_control == 3) { ok=0; }
-  if(header->payload_unit_start_indicator) //Cet entete indique que c'est un nouveau paquet
+
+  if(header->payload_unit_start_indicator) //It's the beginning of a new packet
     {
       if(ok)
 	{
-#if 0
-	  //On regarde si on a déja un paquet en stoc
-	  //Si oui, on le traite
-	  if(! pmt->empty){
-	    if(pmt->pid==pid && pmt->continuity_counter==header->continuity_counter)
-	      printf("###########DOUBLON\n\n\n");
-	    else
-	      {
-		//printf("###########ON Parse le pid %d act_len : %d\n",pmt->pid,pmt->len);
-		if(pmt->len>188)
-		  {
-		    printf("Voici la tete du paquet : \n");                                                                                        
-		    for(l=0;(20*l)<pmt->len;l++){
-		      for(k=0;(k<20)&&(k+20*l)<pmt->len;k++)
-			printf("%02x.",pmt->packet[k+20*l]);
-		      printf("\n");
-		    }
-		    printf("\n\n");                                                                                                                
-		    //for(k=0;k<pmt->len;k++)
-		    //printf("%c",pmt->packet[k]);
-		    //printf("\n\n");
-		  }
-	      }
-	  }
-#endif
 	  pmt->empty=0;
 	  pmt->continuity_counter=header->continuity_counter;
 	  pmt->pid=pid;
 	  pmt->len=AddPacketStart(pmt->packet,buf+delta+1,188-delta-1); //on ajoute le paquet //NOTE len
 	}
     }
-  else if(header->payload_unit_start_indicator==0)
+  else if(header->payload_unit_start_indicator==0) //Not the first, we check if che already registered packet corresponds
     {
-      //fprintf(stderr,"CAM : \t#NOT payload_unit_start_indicator pid %d pmt_pid %d len %d\n",pid,pmt->pid,pmt->len);
-      //c'est pas un premier paquet                                                                                                                  
-      // -- pid change in stream? (without packet start)                                                                                             
-      // -- This is currently not supported   $$$ TODO 
-      if (pmt->pid != pid) {
-	printf("ERRREUR : CHANGEMENT DE PID\n");
-	pmt->empty=1;
-      }
+      // -- pid change in stream? (without packet start). This is not supported
+      if (pmt->pid != pid)
+	{
+	  //fprintf(stderr,"CAM : PMT parse. ERROR : PID change\n");
+	  pmt->empty=1;
+	}
       // -- discontinuity error in packet ?                                                                                                          
-      if  ((pmt->continuity_counter+1)%16 != header->continuity_counter) {
-	printf("ERRREUR : Erreur de discontinuité\n\n");
-	pmt->empty=1;
-      }
+      if  ((pmt->continuity_counter+1)%16 != header->continuity_counter) 
+	{
+	  fprintf(stderr,"CAM : PMT parse : Continuity ERROR\n\n");
+	  pmt->empty=1;
+	}
       pmt->continuity_counter=header->continuity_counter;
       // -- duplicate packet?  (this would be ok, due to ISO13818-1)                                                                                 
       //if ((pid == tsd.pid) && (cc == tsd.continuity_counter)) {                                                                                    
       //return 1;                                                                                                                                    
       //}
-      pmt->len=AddPacketContinue(pmt->packet,buf+delta,188-delta,pmt->len); //on ajoute le paquet //NOTE len
+      pmt->len=AddPacketContinue(pmt->packet,buf+delta,188-delta,pmt->len); //on ajoute le paquet 
       //fprintf(stderr,"CAM : \t\t Len %d PMT_len %d\n",pmt->len,HILO(((pmt_t *)pmt->packet)->section_length));
+      
+      //We check if the PMT is full
       if (pmt->len > ((HILO(((pmt_t *)pmt->packet)->section_length))+3)) //+3 is for the header
       {
-	//fprintf(stderr,"CAM : \t#On parse pid %d pmt_pid %d len %d\n",pid,pmt->pid,pmt->len);
+	//Yes, it's full, I check the CRC32 to say it's valid
 	parsed=cam_ca_pmt_check_CRC(pmt); //TEST CRC32
       }
     }
-
   return parsed;
-
 }
 
 
-//Les fonctions qui permettent de coller les paquets les uns aux autres
 
-//
+//Les fonctions qui permettent de coller les paquets les uns aux autres
 // -- add TS data
 // -- return: 0 = fail
-//
 
 
 int AddPacketStart (unsigned char *packet, unsigned char *buf, unsigned int len)
 {
 
-
   memset(packet,0,4096);
-  //  printf("actuellement %d, on rajoute %d\n",act_len,len);
-  //printf("on rajoute %d\n",len);
   memcpy(packet,buf,len);
-
   return len;
 }
 
 int AddPacketContinue  (unsigned char *packet, unsigned char *buf, unsigned int len, unsigned int act_len)
 {
 
-  //printf("actuellement %d, on rajoute %d\n",act_len,len);
   memcpy(packet+act_len,buf,len);
-
   return len+act_len;
-
 }
 
 
@@ -211,7 +186,7 @@ int cam_ca_pmt_check_CRC( mumudvb_pmt_t *pmt)
   pmt->len=HILO(pmt_struct->section_length)+3; //+3 pour les trois bits du début (compris le section_lenght)
 
   //CRC32
-  //CRC32 calculation taken from the xine project
+  //CRC32 calculation mostly taken from the xine project
   //Test of the crc32
   crc32=0xffffffff;
   //we compute the CRC32
@@ -233,7 +208,9 @@ int cam_ca_pmt_check_CRC( mumudvb_pmt_t *pmt)
 }
 
 
-//Code from libdvb
+/****************************************************************************/
+//Code from libdvb with commentaries added
+/****************************************************************************/
 
 int convert_desc(struct ca_info *cai, 
 		 uint8_t *out, uint8_t *buf, int dslen, uint8_t cmd,int quiet)
@@ -333,7 +310,9 @@ int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt,
 	return o;
 }
 
+/****************************************************************************/
 /* VLC part */
+/****************************************************************************/
 
 
 /*

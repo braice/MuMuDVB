@@ -1,4 +1,13 @@
-/*****************************************************************************
+/* 
+ * mumudvb - UDP-ize a DVB transport stream.
+ * File for Conditionnal Access Modules support
+ * 
+ * (C) Brice DUBOST <mumudvb@braice.net>
+ *
+ * Most of this code is from the VLC project, modified  for mumudvb
+ * by Brice DUBOST 
+ * 
+ *****************************************************************************
  * en50221.c : implementation of the transport, session and applications
  * layers of EN 50 221
  *****************************************************************************
@@ -23,7 +32,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA    02111, USA.
  *****************************************************************************/
-#include "vlc_dvb.h"
+#include "cam.h"
 
 #include <sys/ioctl.h>
 #include <errno.h>
@@ -45,7 +54,6 @@
 
 
 #undef DEBUG_TPDU
-#define HLCI_WAIT_CAM_READY 0
 #define CAM_PROG_MAX MAX_PROGRAMS
 
 static void ResourceManagerOpen( access_sys_t * p_sys, int i_session_id );
@@ -55,7 +63,7 @@ static void DateTimeOpen( access_sys_t * p_sys, int i_session_id );
 static void MMIOpen( access_sys_t * p_sys, int i_session_id );
 
 /*****************************************************************************
- * Fonctions importés pour eviter d'inclure tout vlc
+ * Useful function from other parts of VLC, cleaned (no need WIN32)
  *****************************************************************************/
 
 /**
@@ -1753,32 +1761,11 @@ int en50221_Init( access_sys_t * p_sys )
             return -666;
         }
 
-#if HLCI_WAIT_CAM_READY
-        while( ca_msg.msg[8] == 0xff && ca_msg.msg[9] == 0xff )
-        {
-            if( p_access->b_die ) return -666;
-            msleep(1);
-            fprintf(stderr, "CAM : please wait" );
-            APDUSend( p_sys, 1, AOT_APPLICATION_INFO_ENQ, NULL, 0 );
-            ca_msg.length=3;
-            ca_msg.msg[0] = ( AOT_APPLICATION_INFO & 0xFF0000 ) >> 16;
-            ca_msg.msg[1] = ( AOT_APPLICATION_INFO & 0x00FF00 ) >> 8;
-            ca_msg.msg[2] = ( AOT_APPLICATION_INFO & 0x0000FF ) >> 0;
-            memset( &ca_msg.msg[3], 0, 253 );
-            if ( ioctl( p_sys->i_ca_handle, CA_GET_MSG, &ca_msg ) < 0 )
-            {
-                fprintf(stderr,"CAM : en50221_Init: failed getting message" );
-                return -666;
-            }
-            fprintf(stderr,"CAM : en50221_Init: Got length: %d, tag: 0x%x", ca_msg.length, APDUGetTag( ca_msg.msg, ca_msg.length ) );
-        }
-#else
         if( ca_msg.msg[8] == 0xff && ca_msg.msg[9] == 0xff )
         {
             fprintf(stderr,"CAM : CAM returns garbage as application info!" );
             return -666;
         }
-#endif
         fprintf(stderr,"CAM : found CAM %s using id 0x%x", &ca_msg.msg[12],
                  (ca_msg.msg[8]<<8)|ca_msg.msg[9] );
         return 0;

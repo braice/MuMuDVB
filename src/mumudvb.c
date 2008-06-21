@@ -50,7 +50,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "dvb.h"
 #include "errors.h"
 #include "cam.h"
-#include "vlc_dvb.h"
+  //#include "vlc_dvb.h"
 
 
 #define VERSION "1.2.5-devel"
