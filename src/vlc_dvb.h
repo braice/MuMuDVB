@@ -3,6 +3,8 @@
  *****************************************************************************
  * Copyright (C) 1998-2005 the VideoLAN team
  *
+ * Modified for mumudvb by Brice DUBOST <mumudvb@braice.net>
+ * 
  * Authors: Johan Bilien <jobi@via.ecp.fr>
  *          Jean-Paul Saman <jpsaman _at_ videolan _dot_ org>
  *          Christopher Ross <chris@tebibyte.org>
@@ -37,47 +39,24 @@
 /*****************************************************************************
  * Devices location
  *****************************************************************************/
-#define DMX      "/dev/dvb/adapter%d/demux%d"
-#define FRONTEND "/dev/dvb/adapter%d/frontend%d"
-#define DVR      "/dev/dvb/adapter%d/dvr%d"
 #define CA       "/dev/dvb/adapter%d/ca%d"
 
-
-/*****************************************************************************
- * Made by Braice
- *****************************************************************************/
 
 typedef int64_t mtime_t;
 
 typedef struct access_sys_t access_sys_t;
 
-//Access_t minimal
-typedef struct access_t
-{
-  char        *name;
-  access_sys_t *p_sys;
-}access_t;
-
-
 /*****************************************************************************
  * Local structures
  *****************************************************************************/
-typedef struct demux_handle_t
-{
-    int i_pid;
-    int i_handle;
-    int i_type;
-} demux_handle_t;
-
-typedef struct frontend_t frontend_t;
 
 typedef struct en50221_session_t
 {
     int i_slot;
     int i_resource_id;
-    void (* pf_handle)( access_t *, int, uint8_t *, int );
-    void (* pf_close)( access_t *, int );
-    void (* pf_manage)( access_t *, int );
+    void (* pf_handle)( access_sys_t *, int, uint8_t *, int );
+    void (* pf_close)( access_sys_t *, int );
+    void (* pf_manage)( access_sys_t *, int );
     void *p_sys;
 } en50221_session_t;
 
@@ -166,11 +145,6 @@ static __inline__ void en50221_MMIFree( en50221_mmi_object_t *p_object )
 
 struct access_sys_t
 {
-    int i_handle, i_frontend_handle;
-    demux_handle_t p_demux_handles[MAX_DEMUX];
-    frontend_t *p_frontend;
-    int b_budget_mode;
-
     /* CA management */
     int i_ca_handle;
     int i_ca_type;
@@ -181,7 +155,6 @@ struct access_sys_t
     int pb_slot_mmi_undisplayed[MAX_CI_SLOTS];
     en50221_session_t p_sessions[MAX_SESSIONS];
     mtime_t i_ca_timeout, i_ca_next_event, i_frontend_timeout;
-  //dvbpsi_pmt_t *pp_selected_programs[MAX_PROGRAMS];
   mumudvb_pmt_t *pp_selected_programs[MAX_PROGRAMS]; //braice
     int i_selected_programs;
 
@@ -191,31 +164,23 @@ struct access_sys_t
 
 };
 
-#define VIDEO0_TYPE     1
-#define AUDIO0_TYPE     2
-#define TELETEXT0_TYPE  3
-#define SUBTITLE0_TYPE  4
-#define PCR0_TYPE       5
-#define TYPE_INTERVAL   5
-#define OTHER_TYPE     21
-
 /*****************************************************************************
  * Prototypes
  *****************************************************************************/
-int  CAMOpen( access_t * , int);
-int  CAMPoll( access_t * );
-int  CAMSet( access_t *, mumudvb_pmt_t * );
-void CAMClose( access_t * );
+int  CAMOpen( access_sys_t * , int, int);
+int  CAMPoll( access_sys_t * );
+int  CAMSet( access_sys_t *, mumudvb_pmt_t * );
+void CAMClose( access_sys_t * );
 
-int en50221_Init( access_t * );
-int en50221_Poll( access_t * );
-int en50221_SetCAPMT( access_t *, mumudvb_pmt_t * );
-int en50221_OpenMMI( access_t * p_access, int i_slot );
-int en50221_CloseMMI( access_t * p_access, int i_slot );
-en50221_mmi_object_t *en50221_GetMMIObject( access_t * p_access,
+int en50221_Init( access_sys_t * );
+int en50221_Poll( access_sys_t * );
+int en50221_SetCAPMT( access_sys_t *, mumudvb_pmt_t * );
+int en50221_OpenMMI( access_sys_t * p_sys, int i_slot );
+int en50221_CloseMMI( access_sys_t * p_sys, int i_slot );
+en50221_mmi_object_t *en50221_GetMMIObject( access_sys_t * p_sys,
                                                 int i_slot );
-void en50221_SendMMIObject( access_t * p_access, int i_slot,
+void en50221_SendMMIObject( access_sys_t * p_sys, int i_slot,
                                 en50221_mmi_object_t *p_object );
-void en50221_End( access_t * );
+void en50221_End( access_sys_t * );
 
 

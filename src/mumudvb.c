@@ -79,7 +79,7 @@ int card = 0;
 
 //CAM
 int cam_support = 0;
-access_t vlc_access;
+access_sys_t *vlc_sys_access;
 
 
 // file descriptors
@@ -189,18 +189,11 @@ main (int argc, char **argv)
   unsigned long crc32_table_temp_var[3];
 
   //do we support conditionnal access modules ?
-  //char cam_devname[80];
-  //int cafd;
-  //ca_caps_t caps;
-  //ca_slot_info_t cam_slot_info;
-  //ca_descr_info_t cam_descr_info;
-  //int num_cams=0;
   int i;
-  //struct ca_info cam_info;
   int cam_pmt_pid[MAX_CHAINES];
   cam_pmt_pid[0] = 0; //paranoya
-  //mumudvb_pmt_t cam_pmt;
   mumudvb_pmt_t *cam_pmt_ptr;
+  int cam_number=0;
 
   const char short_options[] = "c:sdh";
   const struct option long_options[] = {
@@ -389,6 +382,11 @@ main (int argc, char **argv)
 			"Six cards MAX\n");
 	      exit(ERROR_CONF);
 	    }
+	}
+      else if (!strcmp (sous_chaine, "cam_number"))
+	{
+	  sous_chaine = strtok (NULL, delimiteurs);
+	  cam_number = atoi (sous_chaine);
 	}
       else if (!strcmp (sous_chaine, "ip"))
 	{
@@ -770,14 +768,13 @@ main (int argc, char **argv)
   if(cam_support){
 
     cam_pmt_ptr=malloc(sizeof(mumudvb_pmt_t));
-    vlc_access.p_sys=malloc(sizeof(access_sys_t));
+    vlc_sys_access=malloc(sizeof(access_sys_t));
     //menage
     for ( i = 0; i < MAX_PROGRAMS; i++ )
-      vlc_access.p_sys->pp_selected_programs[i]=NULL;
-    CAMOpen(&vlc_access, card);
-    vlc_access.p_sys->cai->initialized=0;
-    CAMPoll(&vlc_access);
-    //CAMClose(&vlc_access);
+      vlc_sys_access->pp_selected_programs[i]=NULL;
+    CAMOpen(vlc_sys_access, card, cam_number);
+    vlc_sys_access->cai->initialized=0;
+    CAMPoll(vlc_sys_access);
 
   }
   
@@ -942,21 +939,17 @@ main (int argc, char **argv)
 		  }
 
 	      //cam support
-	      if(cam_support && send_packet==1 &&vlc_access.p_sys->cai->initialized)  //no need to check paquets we don't send
+	      if(cam_support && send_packet==1 &&vlc_sys_access->cai->initialized)  //no need to check paquets we don't send
 		{
 		  if ((cam_pmt_pid[curr_channel])&& (cam_pmt_pid[curr_channel] == pid))
 		    {
-		      //cam_pmt_ptr->pid=pid;
-		      //once we have asked the CAM for this PID, we clear it not to ask it again
-		      if(cam_parse_pmt(temp_buf,cam_pmt_ptr,vlc_access.p_sys->cai)) 
-			//on peut a la fin du cam_parse, quan cela a marche ajouter le truc
-			//en attendant hack
+		      if(cam_parse_pmt(temp_buf,cam_pmt_ptr,vlc_sys_access->cai)) 
 			{
 			  //fprintf(stderr,"HOP\n");
-			  printf("Pid PMT %d channel %d\n", cam_pmt_pid[curr_channel], curr_channel);
-     			  cam_pmt_pid[curr_channel]=0;
+			  printf("CAM : New PMT packet, Pid %d channel %d\n", cam_pmt_pid[curr_channel], curr_channel);
+     			  cam_pmt_pid[curr_channel]=0; //once we have asked the CAM for this PID, we clear it not to ask it again
 			  cam_pmt_ptr->i_program_number=curr_channel;
-			  en50221_SetCAPMT(&vlc_access, cam_pmt_ptr);
+			  en50221_SetCAPMT(vlc_sys_access, cam_pmt_ptr);
 			  cam_pmt_ptr=malloc(sizeof(mumudvb_pmt_t)); //on alloue un nouveau
 			  //TODO check if we have enough memory
 			  memset (cam_pmt_ptr, 0, sizeof( mumudvb_pmt_t));
@@ -1054,7 +1047,7 @@ main (int argc, char **argv)
   close_card_fd (card, nb_flux, num_pids, mandatory_pid, fds);
 
   if(cam_support)
-    CAMClose(&vlc_access);
+    CAMClose(vlc_sys_access);
 
   if (remove (nom_fich_chaines_diff))
     {
@@ -1187,7 +1180,7 @@ SignalHandler (int signum)
       
       if(cam_support)
 	{
-	  CAMPoll(&vlc_access);
+	  CAMPoll(vlc_sys_access);
 	}
 
 

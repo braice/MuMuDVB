@@ -4,6 +4,8 @@
  *****************************************************************************
  * Copyright (C) 2004-2005 the VideoLAN team
  *
+ * Modified for mumudvb by Brice DUBOST <mumudvb@braice.net>
+ * 
  * Authors: Christophe Massiot <massiot@via.ecp.fr>
  * Based on code from libdvbci Copyright (C) 2000 Klaus Schmidinger
  *
@@ -46,11 +48,11 @@
 #define HLCI_WAIT_CAM_READY 0
 #define CAM_PROG_MAX MAX_PROGRAMS
 
-static void ResourceManagerOpen( access_t * p_access, int i_session_id );
-static void ApplicationInformationOpen( access_t * p_access, int i_session_id );
-static void ConditionalAccessOpen( access_t * p_access, int i_session_id );
-static void DateTimeOpen( access_t * p_access, int i_session_id );
-static void MMIOpen( access_t * p_access, int i_session_id );
+static void ResourceManagerOpen( access_sys_t * p_sys, int i_session_id );
+static void ApplicationInformationOpen( access_sys_t * p_sys, int i_session_id );
+static void ConditionalAccessOpen( access_sys_t * p_sys, int i_session_id );
+static void DateTimeOpen( access_sys_t * p_sys, int i_session_id );
+static void MMIOpen( access_sys_t * p_sys, int i_session_id );
 
 /*****************************************************************************
  * Fonctions importés pour eviter d'inclure tout vlc
@@ -227,10 +229,9 @@ static void Dump( int b_outgoing, uint8_t *p_data, int i_size )
 /*****************************************************************************
  * TPDUSend
  *****************************************************************************/
-static int TPDUSend( access_t * p_access, uint8_t i_slot, uint8_t i_tag,
+static int TPDUSend( access_sys_t * p_sys, uint8_t i_slot, uint8_t i_tag,
                      const uint8_t *p_content, int i_length )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     uint8_t i_tcid = i_slot + 1;
     uint8_t p_data[MAX_TPDU_SIZE];
     int i_size;
@@ -296,10 +297,9 @@ static int TPDUSend( access_t * p_access, uint8_t i_slot, uint8_t i_tag,
  *****************************************************************************/
 #define CAM_READ_TIMEOUT  3500 // ms
 
-static int TPDURecv( access_t * p_access, uint8_t i_slot, uint8_t *pi_tag,
+static int TPDURecv( access_sys_t * p_sys, uint8_t i_slot, uint8_t *pi_tag,
                      uint8_t *p_data, int *pi_size )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     uint8_t i_tcid = i_slot + 1;
     int i_size;
     struct pollfd pfd[1];
@@ -388,10 +388,9 @@ static int ResourceIdToInt( uint8_t *p_data )
 /*****************************************************************************
  * SPDUSend
  *****************************************************************************/
-static int SPDUSend( access_t * p_access, int i_session_id,
+static int SPDUSend( access_sys_t * p_sys, int i_session_id,
                      uint8_t *p_data, int i_size )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     uint8_t *p_spdu = malloc( i_size + 4 );
     uint8_t *p = p_spdu;
     uint8_t i_tag;
@@ -411,7 +410,7 @@ static int SPDUSend( access_t * p_access, int i_session_id,
     {
         if ( i_size > MAX_TPDU_DATA )
         {
-            if ( TPDUSend( p_access, i_slot, T_DATA_MORE, p,
+            if ( TPDUSend( p_sys, i_slot, T_DATA_MORE, p,
                            MAX_TPDU_DATA ) != 0 )
             {
                 fprintf (stderr, "couldn't send TPDU on session %d",
@@ -424,7 +423,7 @@ static int SPDUSend( access_t * p_access, int i_session_id,
         }
         else
         {
-            if ( TPDUSend( p_access, i_slot, T_DATA_LAST, p, i_size )
+            if ( TPDUSend( p_sys, i_slot, T_DATA_LAST, p, i_size )
                     != 0 )
             {
                 fprintf (stderr, "couldn't send TPDU on session %d",
@@ -435,7 +434,7 @@ static int SPDUSend( access_t * p_access, int i_session_id,
             i_size = 0;
         }
 
-        if ( TPDURecv( p_access, i_slot, &i_tag, NULL, NULL ) != 0
+        if ( TPDURecv( p_sys, i_slot, &i_tag, NULL, NULL ) != 0
                || i_tag != T_SB )
         {
 	  fprintf (stderr,  "couldn't recv TPDU on session %d",
@@ -452,10 +451,9 @@ static int SPDUSend( access_t * p_access, int i_session_id,
 /*****************************************************************************
  * SessionOpen
  *****************************************************************************/
-static void SessionOpen( access_t * p_access, uint8_t i_slot,
+static void SessionOpen( access_sys_t * p_sys, uint8_t i_slot,
                          uint8_t *p_spdu, int i_size )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     int i_session_id;
     int i_resource_id = ResourceIdToInt( &p_spdu[2] );
     uint8_t p_response[16];
@@ -497,14 +495,14 @@ static void SessionOpen( access_t * p_access, uint8_t i_slot,
     p_response[7] = i_session_id >> 8;
     p_response[8] = i_session_id & 0xff;
 
-    if ( TPDUSend( p_access, i_slot, T_DATA_LAST, p_response, 9 ) !=
+    if ( TPDUSend( p_sys, i_slot, T_DATA_LAST, p_response, 9 ) !=
             0 )
     {
         fprintf (stderr, 
                  "SessionOpen: couldn't send TPDU on slot %d", i_slot );
         return;
     }
-    if ( TPDURecv( p_access, i_slot, &i_tag, NULL, NULL ) != 0 )
+    if ( TPDURecv( p_sys, i_slot, &i_tag, NULL, NULL ) != 0 )
     {
         fprintf (stderr, 
                  "SessionOpen: couldn't recv TPDU on slot %d", i_slot );
@@ -514,15 +512,15 @@ static void SessionOpen( access_t * p_access, uint8_t i_slot,
     switch ( i_resource_id )
     {
     case RI_RESOURCE_MANAGER:
-        ResourceManagerOpen( p_access, i_session_id ); break; 
+        ResourceManagerOpen( p_sys, i_session_id ); break; 
     case RI_APPLICATION_INFORMATION:
-        ApplicationInformationOpen( p_access, i_session_id ); break; 
+        ApplicationInformationOpen( p_sys, i_session_id ); break; 
     case RI_CONDITIONAL_ACCESS_SUPPORT:
-        ConditionalAccessOpen( p_access, i_session_id ); break; 
+        ConditionalAccessOpen( p_sys, i_session_id ); break; 
     case RI_DATE_TIME:
-        DateTimeOpen( p_access, i_session_id ); break; 
+        DateTimeOpen( p_sys, i_session_id ); break; 
     case RI_MMI:
-        MMIOpen( p_access, i_session_id ); break; 
+        MMIOpen( p_sys, i_session_id ); break; 
 
     case RI_HOST_CONTROL:
     default:
@@ -534,10 +532,9 @@ static void SessionOpen( access_t * p_access, uint8_t i_slot,
 /*****************************************************************************
  * SessionCreateResponse
  *****************************************************************************/
-static void SessionCreateResponse( access_t * p_access, uint8_t i_slot,
+static void SessionCreateResponse( access_sys_t * p_sys, uint8_t i_slot,
                                    uint8_t *p_spdu, int i_size )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     int i_status = p_spdu[2];
     int i_resource_id = ResourceIdToInt( &p_spdu[3] );
     int i_session_id = ((int)p_spdu[7] << 8) | p_spdu[8];
@@ -554,15 +551,15 @@ static void SessionCreateResponse( access_t * p_access, uint8_t i_slot,
     switch ( i_resource_id )
     {
     case RI_RESOURCE_MANAGER:
-        ResourceManagerOpen( p_access, i_session_id ); break; 
+        ResourceManagerOpen( p_sys, i_session_id ); break; 
     case RI_APPLICATION_INFORMATION:
-        ApplicationInformationOpen( p_access, i_session_id ); break; 
+        ApplicationInformationOpen( p_sys, i_session_id ); break; 
     case RI_CONDITIONAL_ACCESS_SUPPORT:
-        ConditionalAccessOpen( p_access, i_session_id ); break; 
+        ConditionalAccessOpen( p_sys, i_session_id ); break; 
     case RI_DATE_TIME:
-        DateTimeOpen( p_access, i_session_id ); break; 
+        DateTimeOpen( p_sys, i_session_id ); break; 
     case RI_MMI:
-        MMIOpen( p_access, i_session_id ); break; 
+        MMIOpen( p_sys, i_session_id ); break; 
 
     case RI_HOST_CONTROL:
     default:
@@ -574,9 +571,8 @@ static void SessionCreateResponse( access_t * p_access, uint8_t i_slot,
 /*****************************************************************************
  * SessionSendClose
  *****************************************************************************/
-static void SessionSendClose( access_t * p_access, int i_session_id )
+static void SessionSendClose( access_sys_t * p_sys, int i_session_id )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     uint8_t p_response[16];
     uint8_t i_tag;
     uint8_t i_slot = p_sys->p_sessions[i_session_id - 1].i_slot;
@@ -586,14 +582,14 @@ static void SessionSendClose( access_t * p_access, int i_session_id )
     p_response[2] = i_session_id >> 8;
     p_response[3] = i_session_id & 0xff;
 
-    if ( TPDUSend( p_access, i_slot, T_DATA_LAST, p_response, 4 ) !=
+    if ( TPDUSend( p_sys, i_slot, T_DATA_LAST, p_response, 4 ) !=
             0 )
     {
         fprintf(stderr,
                  "SessionSendClose: couldn't send TPDU on slot %d", i_slot );
         return;
     }
-    if ( TPDURecv( p_access, i_slot, &i_tag, NULL, NULL ) != 0 )
+    if ( TPDURecv( p_sys, i_slot, &i_tag, NULL, NULL ) != 0 )
     {
         fprintf(stderr,
                  "SessionSendClose: couldn't recv TPDU on slot %d", i_slot );
@@ -604,15 +600,14 @@ static void SessionSendClose( access_t * p_access, int i_session_id )
 /*****************************************************************************
  * SessionClose
  *****************************************************************************/
-static void SessionClose( access_t * p_access, int i_session_id )
+static void SessionClose( access_sys_t * p_sys, int i_session_id )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     uint8_t p_response[16];
     uint8_t i_tag;
     uint8_t i_slot = p_sys->p_sessions[i_session_id - 1].i_slot;
 
     if ( p_sys->p_sessions[i_session_id - 1].pf_close != NULL )
-        p_sys->p_sessions[i_session_id - 1].pf_close( p_access, i_session_id );
+        p_sys->p_sessions[i_session_id - 1].pf_close( p_sys, i_session_id );
     p_sys->p_sessions[i_session_id - 1].i_resource_id = 0;
 
     p_response[0] = ST_CLOSE_SESSION_RESPONSE;
@@ -621,14 +616,14 @@ static void SessionClose( access_t * p_access, int i_session_id )
     p_response[3] = i_session_id >> 8;
     p_response[4] = i_session_id & 0xff;
 
-    if ( TPDUSend( p_access, i_slot, T_DATA_LAST, p_response, 5 ) !=
+    if ( TPDUSend( p_sys, i_slot, T_DATA_LAST, p_response, 5 ) !=
             0 )
     {
         fprintf(stderr,
                  "SessionClose: couldn't send TPDU on slot %d", i_slot );
         return;
     }
-    if ( TPDURecv( p_access, i_slot, &i_tag, NULL, NULL ) != 0 )
+    if ( TPDURecv( p_sys, i_slot, &i_tag, NULL, NULL ) != 0 )
     {
         fprintf(stderr,
                  "SessionClose: couldn't recv TPDU on slot %d", i_slot );
@@ -639,10 +634,9 @@ static void SessionClose( access_t * p_access, int i_session_id )
 /*****************************************************************************
  * SPDUHandle
  *****************************************************************************/
-static void SPDUHandle( access_t * p_access, uint8_t i_slot,
+static void SPDUHandle( access_sys_t * p_sys, uint8_t i_slot,
                         uint8_t *p_spdu, int i_size )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     int i_session_id;
 
     switch ( p_spdu[0] )
@@ -651,27 +645,27 @@ static void SPDUHandle( access_t * p_access, uint8_t i_slot,
         if ( i_size <= 4 )
             return;
         i_session_id = ((int)p_spdu[2] << 8) | p_spdu[3];
-        p_sys->p_sessions[i_session_id - 1].pf_handle( p_access, i_session_id,
+        p_sys->p_sessions[i_session_id - 1].pf_handle( p_sys, i_session_id,
                                                        p_spdu + 4, i_size - 4 );
         break;
 
     case ST_OPEN_SESSION_REQUEST:
         if ( i_size != 6 || p_spdu[1] != 0x4 )
             return;
-        SessionOpen( p_access, i_slot, p_spdu, i_size );
+        SessionOpen( p_sys, i_slot, p_spdu, i_size );
         break;
 
     case ST_CREATE_SESSION_RESPONSE:
         if ( i_size != 9 || p_spdu[1] != 0x7 )
             return;
-        SessionCreateResponse( p_access, i_slot, p_spdu, i_size );
+        SessionCreateResponse( p_sys, i_slot, p_spdu, i_size );
         break;
 
     case ST_CLOSE_SESSION_REQUEST:
         if ( i_size != 4 || p_spdu[1] != 0x2 )
             return;
         i_session_id = ((int)p_spdu[2] << 8) | p_spdu[3];
-        SessionClose( p_access, i_session_id );
+        SessionClose( p_sys, i_session_id );
         break;
 
     case ST_CLOSE_SESSION_RESPONSE:
@@ -686,7 +680,7 @@ static void SPDUHandle( access_t * p_access, uint8_t i_slot,
         else
         {
             if ( p_sys->p_sessions[i_session_id - 1].pf_close != NULL )
-                p_sys->p_sessions[i_session_id - 1].pf_close( p_access,
+                p_sys->p_sessions[i_session_id - 1].pf_close( p_sys,
                                                               i_session_id );
             p_sys->p_sessions[i_session_id - 1].i_resource_id = 0;
         }
@@ -779,10 +773,9 @@ static uint8_t *APDUGetLength( uint8_t *p_apdu, int *pi_size )
 /*****************************************************************************
  * APDUSend
  *****************************************************************************/
-static int APDUSend( access_t * p_access, int i_session_id, int i_tag,
+static int APDUSend( access_sys_t * p_sys, int i_session_id, int i_tag,
                      uint8_t *p_data, int i_size )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     uint8_t *p_apdu = malloc( i_size + 12 );
     uint8_t *p = p_apdu;
     ca_msg_t ca_msg;
@@ -796,13 +789,13 @@ static int APDUSend( access_t * p_access, int i_session_id, int i_tag,
         memcpy( p, p_data, i_size );
     if ( p_sys->i_ca_type == CA_CI_LINK )
     {
-        i_ret = SPDUSend( p_access, i_session_id, p_apdu, i_size + p - p_apdu );
+        i_ret = SPDUSend( p_sys, i_session_id, p_apdu, i_size + p - p_apdu );
     }
     else
     {
         if ( i_size + p - p_apdu > 256 )
         {
-            fprintf(stderr, "CAM: apdu overflow" );
+            fprintf(stderr, "CAM : apdu overflow" );
             i_ret = -666;
         }
         else
@@ -831,7 +824,7 @@ static int APDUSend( access_t * p_access, int i_session_id, int i_tag,
 /*****************************************************************************
  * ResourceManagerHandle
  *****************************************************************************/
-static void ResourceManagerHandle( access_t * p_access, int i_session_id,
+static void ResourceManagerHandle( access_sys_t * p_sys, int i_session_id,
                                    uint8_t *p_apdu, int i_size )
 {
     int i_tag = APDUGetTag( p_apdu, i_size );
@@ -846,12 +839,12 @@ static void ResourceManagerHandle( access_t * p_access, int i_session_id,
                             htonl(RI_DATE_TIME),
                             htonl(RI_MMI)
                           };
-        APDUSend( p_access, i_session_id, AOT_PROFILE, (uint8_t*)resources,
+        APDUSend( p_sys, i_session_id, AOT_PROFILE, (uint8_t*)resources,
                   sizeof(resources) );
         break;
     }
     case AOT_PROFILE:
-        APDUSend( p_access, i_session_id, AOT_PROFILE_CHANGE, NULL, 0 );
+        APDUSend( p_sys, i_session_id, AOT_PROFILE_CHANGE, NULL, 0 );
         break;
 
     default:
@@ -863,15 +856,14 @@ static void ResourceManagerHandle( access_t * p_access, int i_session_id,
 /*****************************************************************************
  * ResourceManagerOpen
  *****************************************************************************/
-static void ResourceManagerOpen( access_t * p_access, int i_session_id )
+static void ResourceManagerOpen( access_sys_t * p_sys, int i_session_id )
 {
-    access_sys_t *p_sys = p_access->p_sys;
 
     fprintf(stderr,"CAM : opening ResourceManager session (%d)\n", i_session_id );
 
     p_sys->p_sessions[i_session_id - 1].pf_handle = ResourceManagerHandle;
 
-    APDUSend( p_access, i_session_id, AOT_PROFILE_ENQ, NULL, 0 );
+    APDUSend( p_sys, i_session_id, AOT_PROFILE_ENQ, NULL, 0 );
 }
 
 /*
@@ -881,21 +873,20 @@ static void ResourceManagerOpen( access_t * p_access, int i_session_id )
 /*****************************************************************************
  * ApplicationInformationEnterMenu
  *****************************************************************************/
-static void ApplicationInformationEnterMenu( access_t * p_access,
+static void ApplicationInformationEnterMenu( access_sys_t * p_sys,
                                              int i_session_id )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     int i_slot = p_sys->p_sessions[i_session_id - 1].i_slot;
 
     fprintf(stderr,"CAM : entering MMI menus on session %d", i_session_id );
-    APDUSend( p_access, i_session_id, AOT_ENTER_MENU, NULL, 0 );
+    APDUSend( p_sys, i_session_id, AOT_ENTER_MENU, NULL, 0 );
     p_sys->pb_slot_mmi_expected[i_slot] = 1;
 }
 
 /*****************************************************************************
  * ApplicationInformationHandle
  *****************************************************************************/
-static void ApplicationInformationHandle( access_t * p_access, int i_session_id,
+static void ApplicationInformationHandle( access_sys_t * p_sys, int i_session_id,
                                           uint8_t *p_apdu, int i_size )
 {
     int i_tag = APDUGetTag( p_apdu, i_size );
@@ -918,7 +909,7 @@ static void ApplicationInformationHandle( access_t * p_access, int i_session_id,
         d += 2;
         d = GetLength( d, &l );
         d[l] = '\0';
-        fprintf(stderr, "CAM: %s, %02X, %04X, %04X\n",
+        fprintf(stderr, "CAM : Name \"%s\", type %02X, manufacturer %04X, code %04X\n",
                   d, i_type, i_manufacturer, i_code );
         break;
     }
@@ -932,15 +923,14 @@ static void ApplicationInformationHandle( access_t * p_access, int i_session_id,
 /*****************************************************************************
  * ApplicationInformationOpen
  *****************************************************************************/
-static void ApplicationInformationOpen( access_t * p_access, int i_session_id )
+static void ApplicationInformationOpen( access_sys_t * p_sys, int i_session_id )
 {
-    access_sys_t *p_sys = p_access->p_sys;
 
     fprintf(stderr,"CAM : opening ApplicationInformation session (%d)\n", i_session_id );
 
     p_sys->p_sessions[i_session_id - 1].pf_handle = ApplicationInformationHandle;
 
-    APDUSend( p_access, i_session_id, AOT_APPLICATION_INFO_ENQ, NULL, 0 );
+    APDUSend( p_sys, i_session_id, AOT_APPLICATION_INFO_ENQ, NULL, 0 );
 }
 
 /*
@@ -957,7 +947,7 @@ typedef struct
 /*****************************************************************************
  * CAPMTBuild
  *****************************************************************************/
-static uint8_t *CAPMTBuild( access_t * p_access, int i_session_id,
+static uint8_t *CAPMTBuild( access_sys_t * p_sys, int i_session_id,
                             mumudvb_pmt_t *p_pmt, uint8_t i_list_mgt,
                             uint8_t i_cmd, int *pi_capmt_size )
 {
@@ -968,52 +958,52 @@ static uint8_t *CAPMTBuild( access_t * p_access, int i_session_id,
 /*****************************************************************************
  * CAPMTAdd
  *****************************************************************************/
-static void CAPMTAdd( access_t * p_access, int i_session_id,
+static void CAPMTAdd( access_sys_t * p_sys, int i_session_id,
                       mumudvb_pmt_t *p_pmt )//braice
 {
   //uint8_t *p_capmt;
   //int i_capmt_size;
 
-    if( p_access->p_sys->i_selected_programs >= CAM_PROG_MAX )
+    if( p_sys->i_selected_programs >= CAM_PROG_MAX )
     {
         fprintf(stderr,"CAM : Not adding CAPMT for SID %d, too many programs",
                   p_pmt->i_program_number );
         return;
     }
-    p_access->p_sys->i_selected_programs++;
-    if( p_access->p_sys->i_selected_programs == 1 )
+    p_sys->i_selected_programs++;
+    if( p_sys->i_selected_programs == 1 )
       {
-	convert_pmt(p_access->p_sys->cai, p_pmt, 1, 1, 0); //1=first 1=ok_descrambling 
+	convert_pmt(p_sys->cai, p_pmt, 1, 1, 0); //1=first 1=ok_descrambling 
 	if ( p_pmt->len )//TODO check if it's ok to test p_pmt->len
 	  {
 	    fprintf(stderr,"CAM : adding first CAPMT for channel %d on session %d\n",
 		    p_pmt->i_program_number, i_session_id );
-	    APDUSend( p_access, i_session_id, AOT_CA_PMT, p_pmt->converted_packet, p_pmt->len );
+	    APDUSend( p_sys, i_session_id, AOT_CA_PMT, p_pmt->converted_packet, p_pmt->len );
 	  }
         return;
     }
         
     fprintf(stderr,"CAM : adding CAPMT for channel %d on session %d\n",
              p_pmt->i_program_number, i_session_id );
-    convert_pmt(p_access->p_sys->cai, p_pmt, 4, 1, 0); //4=add 1=ok_descrambling  
+    convert_pmt(p_sys->cai, p_pmt, 4, 1, 0); //4=add 1=ok_descrambling  
 
     if ( p_pmt->len )//TODO check if it's ok to test p_pmt->len
-      APDUSend( p_access, i_session_id, AOT_CA_PMT, p_pmt->converted_packet, p_pmt->len );
+      APDUSend( p_sys, i_session_id, AOT_CA_PMT, p_pmt->converted_packet, p_pmt->len );
 
 #if 0
-    p_capmt = CAPMTBuild( p_access, i_session_id, p_pmt,
+    p_capmt = CAPMTBuild( p_sys, i_session_id, p_pmt,
                           0x4 /* add */, 0x1 /* ok_descrambling */,
                           &i_capmt_size );
 
     if ( i_capmt_size )
-        APDUSend( p_access, i_session_id, AOT_CA_PMT, p_capmt, i_capmt_size );
+        APDUSend( p_sys, i_session_id, AOT_CA_PMT, p_capmt, i_capmt_size );
 #endif
 }
 
 /*****************************************************************************
  * CAPMTUpdate
  *****************************************************************************/
-static void CAPMTUpdate( access_t * p_access, int i_session_id,
+static void CAPMTUpdate( access_sys_t * p_sys, int i_session_id,
                          mumudvb_pmt_t *p_pmt )//braice
 {
     uint8_t *p_capmt;
@@ -1022,42 +1012,41 @@ static void CAPMTUpdate( access_t * p_access, int i_session_id,
     fprintf(stderr,"CAM : updating CAPMT for SID %d on session %d",
              p_pmt->i_program_number, i_session_id );
 
-    p_capmt = CAPMTBuild( p_access, i_session_id, p_pmt,
+    p_capmt = CAPMTBuild( p_sys, i_session_id, p_pmt,
                           0x5 /* update */, 0x1 /* ok_descrambling */,
                           &i_capmt_size );
 
     if ( i_capmt_size )
-        APDUSend( p_access, i_session_id, AOT_CA_PMT, p_capmt, i_capmt_size );
+        APDUSend( p_sys, i_session_id, AOT_CA_PMT, p_capmt, i_capmt_size );
 }
 
 /*****************************************************************************
  * CAPMTDelete
  *****************************************************************************/
-static void CAPMTDelete( access_t * p_access, int i_session_id,
+static void CAPMTDelete( access_sys_t * p_sys, int i_session_id,
                          mumudvb_pmt_t *p_pmt )//braice
 {
     uint8_t *p_capmt;
     int i_capmt_size;
 
-    p_access->p_sys->i_selected_programs--;
+    p_sys->i_selected_programs--;
     fprintf(stderr,"CAM : deleting CAPMT for SID %d on session %d",
              p_pmt->i_program_number, i_session_id );
 
-    p_capmt = CAPMTBuild( p_access, i_session_id, p_pmt,
+    p_capmt = CAPMTBuild( p_sys, i_session_id, p_pmt,
                           0x5 /* update */, 0x4 /* not selected */,
                           &i_capmt_size );
 
     if ( i_capmt_size )
-        APDUSend( p_access, i_session_id, AOT_CA_PMT, p_capmt, i_capmt_size );
+        APDUSend( p_sys, i_session_id, AOT_CA_PMT, p_capmt, i_capmt_size );
 }
 
 /*****************************************************************************
  * ConditionalAccessHandle
  *****************************************************************************/
-static void ConditionalAccessHandle( access_t * p_access, int i_session_id,
+static void ConditionalAccessHandle( access_sys_t * p_sys, int i_session_id,
                                      uint8_t *p_apdu, int i_size )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     system_ids_t *p_ids =
         (system_ids_t *)p_sys->p_sessions[i_session_id - 1].p_sys;
     int i_tag = APDUGetTag( p_apdu, i_size );
@@ -1083,7 +1072,7 @@ static void ConditionalAccessHandle( access_t * p_access, int i_session_id,
 	    {
 	      p_ids->pi_system_ids[i] = ((uint16_t)d[0] << 8) | d[1];
 	      d += 2;
-	      fprintf(stderr, "- 0x%x %d\n", p_ids->pi_system_ids[i], p_ids->pi_system_ids[i] );
+	      fprintf(stderr, "CAM : - 0x%x %d\n", p_ids->pi_system_ids[i], p_ids->pi_system_ids[i] );
 	    }
 	  p_ids->pi_system_ids[i] = 0;
 	  
@@ -1091,7 +1080,7 @@ static void ConditionalAccessHandle( access_t * p_access, int i_session_id,
 	    {
 	      if ( p_sys->pp_selected_programs[i] != NULL )
 		{
-		  CAPMTAdd( p_access, i_session_id,
+		  CAPMTAdd( p_sys, i_session_id,
 			    p_sys->pp_selected_programs[i] );
 		}
 	    }
@@ -1199,9 +1188,8 @@ static void ConditionalAccessHandle( access_t * p_access, int i_session_id,
 /*****************************************************************************
  * ConditionalAccessClose
  *****************************************************************************/
-static void ConditionalAccessClose( access_t * p_access, int i_session_id )
+static void ConditionalAccessClose( access_sys_t * p_sys, int i_session_id )
 {
-    access_sys_t *p_sys = p_access->p_sys;
 
     fprintf(stderr,"CAM : closing ConditionalAccess session (%d)", i_session_id );
 
@@ -1211,9 +1199,8 @@ static void ConditionalAccessClose( access_t * p_access, int i_session_id )
 /*****************************************************************************
  * ConditionalAccessOpen
  *****************************************************************************/
-static void ConditionalAccessOpen( access_t * p_access, int i_session_id )
+static void ConditionalAccessOpen( access_sys_t * p_sys, int i_session_id )
 {
-    access_sys_t *p_sys = p_access->p_sys;
 
     fprintf(stderr,"CAM : opening ConditionalAccess session (%d)\n", i_session_id );
 
@@ -1223,7 +1210,7 @@ static void ConditionalAccessOpen( access_t * p_access, int i_session_id )
     memset( p_sys->p_sessions[i_session_id - 1].p_sys, 0,
             sizeof(system_ids_t) );
 
-    APDUSend( p_access, i_session_id, AOT_CA_INFO_ENQ, NULL, 0 );
+    APDUSend( p_sys, i_session_id, AOT_CA_INFO_ENQ, NULL, 0 );
 }
 
 /*
@@ -1239,9 +1226,8 @@ typedef struct
 /*****************************************************************************
  * DateTimeSend
  *****************************************************************************/
-static void DateTimeSend( access_t * p_access, int i_session_id )
+static void DateTimeSend( access_sys_t * p_sys, int i_session_id )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     date_time_t *p_date =
         (date_time_t *)p_sys->p_sessions[i_session_id - 1].p_sys;
 
@@ -1269,7 +1255,7 @@ static void DateTimeSend( access_t * p_access, int i_session_id )
         p_response[5] = htons(tm_loc.tm_gmtoff / 60) >> 8;
         p_response[6] = htons(tm_loc.tm_gmtoff / 60) & 0xff;
 
-        APDUSend( p_access, i_session_id, AOT_DATE_TIME, p_response, 7 );
+        APDUSend( p_sys, i_session_id, AOT_DATE_TIME, p_response, 7 );
 
         p_date->i_last = mdate();
     }
@@ -1278,10 +1264,9 @@ static void DateTimeSend( access_t * p_access, int i_session_id )
 /*****************************************************************************
  * DateTimeHandle
  *****************************************************************************/
-static void DateTimeHandle( access_t * p_access, int i_session_id,
+static void DateTimeHandle( access_sys_t * p_sys, int i_session_id,
                             uint8_t *p_apdu, int i_size )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     date_time_t *p_date =
         (date_time_t *)p_sys->p_sessions[i_session_id - 1].p_sys;
 
@@ -1303,7 +1288,7 @@ static void DateTimeHandle( access_t * p_access, int i_session_id,
         else
             p_date->i_interval = 0;
 
-        DateTimeSend( p_access, i_session_id );
+        DateTimeSend( p_sys, i_session_id );
         break;
     }
     default:
@@ -1314,25 +1299,23 @@ static void DateTimeHandle( access_t * p_access, int i_session_id,
 /*****************************************************************************
  * DateTimeManage
  *****************************************************************************/
-static void DateTimeManage( access_t * p_access, int i_session_id )
+static void DateTimeManage( access_sys_t * p_sys, int i_session_id )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     date_time_t *p_date =
         (date_time_t *)p_sys->p_sessions[i_session_id - 1].p_sys;
 
     if ( p_date->i_interval
           && mdate() > p_date->i_last + (mtime_t)p_date->i_interval * 1000000 )
     {
-        DateTimeSend( p_access, i_session_id );
+        DateTimeSend( p_sys, i_session_id );
     }
 }
 
 /*****************************************************************************
  * DateTimeClose
  *****************************************************************************/
-static void DateTimeClose( access_t * p_access, int i_session_id )
+static void DateTimeClose( access_sys_t * p_sys, int i_session_id )
 {
-    access_sys_t *p_sys = p_access->p_sys;
 
     fprintf(stderr,"CAM : closing DateTime session (%d)", i_session_id );
 
@@ -1342,9 +1325,8 @@ static void DateTimeClose( access_t * p_access, int i_session_id )
 /*****************************************************************************
  * DateTimeOpen
  *****************************************************************************/
-static void DateTimeOpen( access_t * p_access, int i_session_id )
+static void DateTimeOpen( access_sys_t * p_sys, int i_session_id )
 {
-    access_sys_t *p_sys = p_access->p_sys;
 
     fprintf(stderr,"CAM : opening DateTime session (%d)\n", i_session_id );
 
@@ -1354,7 +1336,7 @@ static void DateTimeOpen( access_t * p_access, int i_session_id )
     p_sys->p_sessions[i_session_id - 1].p_sys = malloc(sizeof(date_time_t));
     memset( p_sys->p_sessions[i_session_id - 1].p_sys, 0, sizeof(date_time_t) );
 
-    DateTimeSend( p_access, i_session_id );
+    DateTimeSend( p_sys, i_session_id );
 }
 
 /*
@@ -1403,10 +1385,9 @@ typedef struct
 /*****************************************************************************
  * MMISendObject
  *****************************************************************************/
-static void MMISendObject( access_t *p_access, int i_session_id,
+static void MMISendObject( access_sys_t * p_sys, int i_session_id,
                            en50221_mmi_object_t *p_object )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     int i_slot = p_sys->p_sessions[i_session_id - 1].i_slot;
     uint8_t *p_data;
     int i_size, i_tag;
@@ -1433,7 +1414,7 @@ static void MMISendObject( access_t *p_access, int i_session_id,
         return;
     }
 
-    APDUSend( p_access, i_session_id, i_tag, p_data, i_size );
+    APDUSend( p_sys, i_session_id, i_tag, p_data, i_size );
     free( p_data );
 
     p_sys->pb_slot_mmi_expected[i_slot] = 1;
@@ -1442,12 +1423,11 @@ static void MMISendObject( access_t *p_access, int i_session_id,
 /*****************************************************************************
  * MMISendClose
  *****************************************************************************/
-static void MMISendClose( access_t *p_access, int i_session_id )
+static void MMISendClose( access_sys_t * p_sys, int i_session_id )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     int i_slot = p_sys->p_sessions[i_session_id - 1].i_slot;
 
-    APDUSend( p_access, i_session_id, AOT_CLOSE_MMI, NULL, 0 );
+    APDUSend( p_sys, i_session_id, AOT_CLOSE_MMI, NULL, 0 );
 
     p_sys->pb_slot_mmi_expected[i_slot] = 1;
 }
@@ -1455,14 +1435,14 @@ static void MMISendClose( access_t *p_access, int i_session_id )
 /*****************************************************************************
  * MMIDisplayReply
  *****************************************************************************/
-static void MMIDisplayReply( access_t *p_access, int i_session_id )
+static void MMIDisplayReply( access_sys_t * p_sys, int i_session_id )
 {
     uint8_t p_response[2];
 
     p_response[0] = DRI_MMI_MODE_ACK;
     p_response[1] = MM_HIGH_LEVEL;
 
-    APDUSend( p_access, i_session_id, AOT_DISPLAY_REPLY, p_response, 2 );
+    APDUSend( p_sys, i_session_id, AOT_DISPLAY_REPLY, p_response, 2 );
 
     fprintf(stderr,"CAM : sending DisplayReply on session (%d)", i_session_id );
 }
@@ -1470,7 +1450,7 @@ static void MMIDisplayReply( access_t *p_access, int i_session_id )
 /*****************************************************************************
  * MMIGetText
  *****************************************************************************/
-static char *MMIGetText( access_t *p_access, uint8_t **pp_apdu, int *pi_size )
+static char *MMIGetText( access_sys_t * p_sys, uint8_t **pp_apdu, int *pi_size )
 {
     int i_tag = APDUGetTag( *pp_apdu, *pi_size );
     int l;
@@ -1495,10 +1475,9 @@ static char *MMIGetText( access_t *p_access, uint8_t **pp_apdu, int *pi_size )
 /*****************************************************************************
  * MMIHandleEnq
  *****************************************************************************/
-static void MMIHandleEnq( access_t *p_access, int i_session_id,
+static void MMIHandleEnq( access_sys_t * p_sys, int i_session_id,
                           uint8_t *p_apdu, int i_size )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     mmi_t *p_mmi = (mmi_t *)p_sys->p_sessions[i_session_id - 1].p_sys;
     int i_slot = p_sys->p_sessions[i_session_id - 1].i_slot;
     int l;
@@ -1522,10 +1501,9 @@ static void MMIHandleEnq( access_t *p_access, int i_session_id,
 /*****************************************************************************
  * MMIHandleMenu
  *****************************************************************************/
-static void MMIHandleMenu( access_t *p_access, int i_session_id, int i_tag,
+static void MMIHandleMenu( access_sys_t * p_sys, int i_session_id, int i_tag,
                            uint8_t *p_apdu, int i_size )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     mmi_t *p_mmi = (mmi_t *)p_sys->p_sessions[i_session_id - 1].p_sys;
     int i_slot = p_sys->p_sessions[i_session_id - 1].i_slot;
     int l;
@@ -1546,7 +1524,7 @@ static void MMIHandleMenu( access_t *p_access, int i_session_id, int i_tag,
         if ( l > 0 )                                                        \
         {                                                                   \
             p_mmi->last_object.u.menu.psz_##x                               \
-                            = MMIGetText( p_access, &d, &l );               \
+                            = MMIGetText( p_sys, &d, &l );               \
             fprintf(stderr,"CAM : MMI " #x  ": %s",                \
                      p_mmi->last_object.u.menu.psz_##x );                   \
         }
@@ -1558,7 +1536,7 @@ static void MMIHandleMenu( access_t *p_access, int i_session_id, int i_tag,
 
         while ( l > 0 )
         {
-            char *psz_text = MMIGetText( p_access, &d, &l );
+            char *psz_text = MMIGetText( p_sys, &d, &l );
             TAB_APPEND( p_mmi->last_object.u.menu.i_choices,
                         p_mmi->last_object.u.menu.ppsz_choices,
                         psz_text );
@@ -1572,7 +1550,7 @@ static void MMIHandleMenu( access_t *p_access, int i_session_id, int i_tag,
 /*****************************************************************************
  * MMIHandle
  *****************************************************************************/
-static void MMIHandle( access_t *p_access, int i_session_id,
+static void MMIHandle( access_sys_t * p_sys, int i_session_id,
                        uint8_t *p_apdu, int i_size )
 {
     int i_tag = APDUGetTag( p_apdu, i_size );
@@ -1590,7 +1568,7 @@ static void MMIHandle( access_t *p_access, int i_session_id,
             {
             case DCC_SET_MMI_MODE:
                 if ( l == 2 && d[1] == MM_HIGH_LEVEL )
-                    MMIDisplayReply( p_access, i_session_id );
+                    MMIDisplayReply( p_sys, i_session_id );
                 else
                     fprintf(stderr,"CAM : unsupported MMI mode %02x", d[1] );
                 break;
@@ -1605,16 +1583,16 @@ static void MMIHandle( access_t *p_access, int i_session_id,
     }
 
     case AOT_ENQ:
-        MMIHandleEnq( p_access, i_session_id, p_apdu, i_size );
+        MMIHandleEnq( p_sys, i_session_id, p_apdu, i_size );
         break;
 
     case AOT_LIST_LAST:
     case AOT_MENU_LAST:
-        MMIHandleMenu( p_access, i_session_id, i_tag, p_apdu, i_size );
+        MMIHandleMenu( p_sys, i_session_id, i_tag, p_apdu, i_size );
         break;
 
     case AOT_CLOSE_MMI:
-        SessionSendClose( p_access, i_session_id );
+        SessionSendClose( p_sys, i_session_id );
         break;
 
     default:
@@ -1625,9 +1603,8 @@ static void MMIHandle( access_t *p_access, int i_session_id,
 /*****************************************************************************
  * MMIClose
  *****************************************************************************/
-static void MMIClose( access_t *p_access, int i_session_id )
+static void MMIClose( access_sys_t * p_sys, int i_session_id )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     int i_slot = p_sys->p_sessions[i_session_id - 1].i_slot;
     mmi_t *p_mmi = (mmi_t *)p_sys->p_sessions[i_session_id - 1].p_sys;
 
@@ -1642,9 +1619,8 @@ static void MMIClose( access_t *p_access, int i_session_id )
 /*****************************************************************************
  * MMIOpen
  *****************************************************************************/
-static void MMIOpen( access_t *p_access, int i_session_id )
+static void MMIOpen( access_sys_t * p_sys, int i_session_id )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     mmi_t *p_mmi;
 
     fprintf(stderr,"CAM : opening MMI session (%d)\n", i_session_id );
@@ -1666,12 +1642,11 @@ static void MMIOpen( access_t *p_access, int i_session_id )
  *****************************************************************************/
 #define MAX_TC_RETRIES 20
 
-static int InitSlot( access_t * p_access, int i_slot )
+static int InitSlot( access_sys_t * p_sys, int i_slot )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     int i;
 
-    if ( TPDUSend( p_access, i_slot, T_CREATE_TC, NULL, 0 )
+    if ( TPDUSend( p_sys, i_slot, T_CREATE_TC, NULL, 0 )
             != 0 )
     {
         fprintf(stderr,"CAM : en50221_Init: couldn't send TPDU on slot %d",
@@ -1683,14 +1658,14 @@ static int InitSlot( access_t * p_access, int i_slot )
     for ( i = 0; i < MAX_TC_RETRIES; i++ )
     {
         uint8_t i_tag;
-        if ( TPDURecv( p_access, i_slot, &i_tag, NULL, NULL ) == 0
+        if ( TPDURecv( p_sys, i_slot, &i_tag, NULL, NULL ) == 0
               && i_tag == T_CTC_REPLY )
         {
             p_sys->pb_active_slot[i_slot] = 1;
             break;
         }
 
-        if ( TPDUSend( p_access, i_slot, T_CREATE_TC, NULL, 0 )
+        if ( TPDUSend( p_sys, i_slot, T_CREATE_TC, NULL, 0 )
                 != 0 )
         {
             fprintf(stderr,
@@ -1717,9 +1692,8 @@ static int InitSlot( access_t * p_access, int i_slot )
 /*****************************************************************************
  * en50221_Init : Initialize the CAM for en50221
  *****************************************************************************/
-int en50221_Init( access_t * p_access )
+int en50221_Init( access_sys_t * p_sys )
 {
-    access_sys_t *p_sys = p_access->p_sys;
 
     if( p_sys->i_ca_type & CA_CI_LINK )
     {
@@ -1772,7 +1746,7 @@ int en50221_Init( access_t * p_access )
         ca_msg.msg[1] = ( AOT_APPLICATION_INFO & 0x00FF00 ) >> 8;
         ca_msg.msg[2] = ( AOT_APPLICATION_INFO & 0x0000FF ) >> 0;
         memset( &ca_msg.msg[3], 0, 253 );
-        APDUSend( p_access, 1, AOT_APPLICATION_INFO_ENQ, NULL, 0 );
+        APDUSend( p_sys, 1, AOT_APPLICATION_INFO_ENQ, NULL, 0 );
         if ( ioctl( p_sys->i_ca_handle, CA_GET_MSG, &ca_msg ) < 0 )
         {
             fprintf(stderr,"CAM : en50221_Init: failed getting message" );
@@ -1784,8 +1758,8 @@ int en50221_Init( access_t * p_access )
         {
             if( p_access->b_die ) return -666;
             msleep(1);
-            fprintf(stderr, "CAM: please wait" );
-            APDUSend( p_access, 1, AOT_APPLICATION_INFO_ENQ, NULL, 0 );
+            fprintf(stderr, "CAM : please wait" );
+            APDUSend( p_sys, 1, AOT_APPLICATION_INFO_ENQ, NULL, 0 );
             ca_msg.length=3;
             ca_msg.msg[0] = ( AOT_APPLICATION_INFO & 0xFF0000 ) >> 16;
             ca_msg.msg[1] = ( AOT_APPLICATION_INFO & 0x00FF00 ) >> 8;
@@ -1814,9 +1788,8 @@ int en50221_Init( access_t * p_access )
 /*****************************************************************************
  * en50221_Poll : Poll the CAM for TPDUs
  *****************************************************************************/
-int en50221_Poll( access_t * p_access )
+int en50221_Poll( access_sys_t * p_sys )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     int i_slot;
     int i_session_id;
 
@@ -1855,7 +1828,7 @@ int en50221_Poll( access_t * p_access )
                               != NULL )
                         {
                             p_sys->p_sessions[i_session_id - 1].pf_close(
-                                                p_access, i_session_id );
+                                                p_sys, i_session_id );
                         }
                         p_sys->p_sessions[i_session_id - 1].i_resource_id = 0;
                     }
@@ -1866,7 +1839,7 @@ int en50221_Poll( access_t * p_access )
         }
         else if ( !p_sys->pb_active_slot[i_slot] )
         {
-            InitSlot( p_access, i_slot );
+            InitSlot( p_sys, i_slot );
 
             if ( !p_sys->pb_active_slot[i_slot] )
             {
@@ -1886,7 +1859,7 @@ int en50221_Poll( access_t * p_access )
 
         if ( !p_sys->pb_tc_has_data[i_slot] )
         {
-            if ( TPDUSend( p_access, i_slot, T_DATA_LAST, NULL, 0 ) !=
+            if ( TPDUSend( p_sys, i_slot, T_DATA_LAST, NULL, 0 ) !=
                     0 )
             {
                 fprintf(stderr,
@@ -1894,7 +1867,7 @@ int en50221_Poll( access_t * p_access )
                          i_slot );
                 continue;
             }
-            if ( TPDURecv( p_access, i_slot, &i_tag, NULL, NULL ) !=
+            if ( TPDURecv( p_sys, i_slot, &i_tag, NULL, NULL ) !=
                     0 )
             {
                 fprintf(stderr,
@@ -1910,14 +1883,14 @@ int en50221_Poll( access_t * p_access )
             int i_size, i_session_size;
             uint8_t *p_session;
 
-            if ( TPDUSend( p_access, i_slot, T_RCV, NULL, 0 ) != 0 )
+            if ( TPDUSend( p_sys, i_slot, T_RCV, NULL, 0 ) != 0 )
             {
                 fprintf(stderr,
                          "en50221_Poll: couldn't send TPDU on slot %d",
                          i_slot );
                 continue;
             }
-            if ( TPDURecv( p_access, i_slot, &i_tag, p_tpdu, &i_size ) !=
+            if ( TPDURecv( p_sys, i_slot, &i_tag, p_tpdu, &i_size ) !=
                     0 )
             {
                 fprintf(stderr,
@@ -1940,7 +1913,7 @@ int en50221_Poll( access_t * p_access )
                 break;
             }
 
-            SPDUHandle( p_access, i_slot, p_session, i_session_size );
+            SPDUHandle( p_sys, i_slot, p_session, i_session_size );
         }
     }
 
@@ -1949,7 +1922,7 @@ int en50221_Poll( access_t * p_access )
         if ( p_sys->p_sessions[i_session_id - 1].i_resource_id
               && p_sys->p_sessions[i_session_id - 1].pf_manage )
         {
-            p_sys->p_sessions[i_session_id - 1].pf_manage( p_access,
+            p_sys->p_sessions[i_session_id - 1].pf_manage( p_sys,
                                                            i_session_id );
         }
     }
@@ -1968,14 +1941,13 @@ int en50221_Poll( access_t * p_access )
 /*****************************************************************************
  * en50221_SetCAPMT :
  *****************************************************************************/
-int en50221_SetCAPMT( access_t * p_access, mumudvb_pmt_t *p_pmt ) //braice
+int en50221_SetCAPMT( access_sys_t * p_sys, mumudvb_pmt_t *p_pmt ) //braice
 {
-    access_sys_t *p_sys = p_access->p_sys;
     int i, i_session_id;
     int b_update = 0;
     int b_needs_descrambling;
 
-    convert_pmt(p_access->p_sys->cai, p_pmt, 1, 1,1); //just for filling need_descr
+    convert_pmt(p_sys->cai, p_pmt, 1, 1,1); //just for filling need_descr
 
     b_needs_descrambling = p_pmt->need_descr;
 
@@ -2026,17 +1998,17 @@ int en50221_SetCAPMT( access_t * p_access, mumudvb_pmt_t *p_pmt ) //braice
                 if ( b_update && b_needs_descrambling )
 		  {
 		    fprintf(stderr,"CAM : CAPMTUpdate\n");
-                    //CAPMTUpdate( p_access, i_session_id, p_pmt );
+                    //CAPMTUpdate( p_sys, i_session_id, p_pmt );
 		  }
                 else if ( b_update )
 		  {
 		    fprintf(stderr,"CAM : CAPMTDelete\n");
-                    //CAPMTDelete( p_access, i_session_id, p_pmt );
+                    //CAPMTDelete( p_sys, i_session_id, p_pmt );
 		  }
                 else
 		  {
-		    fprintf(stderr,"CAM : CAPMTAdd %d selected programs\n", p_access->p_sys->i_selected_programs);
-                    CAPMTAdd( p_access, i_session_id, p_pmt );
+		    fprintf(stderr,"CAM : CAPMTAdd %d selected programs\n", p_sys->i_selected_programs);
+                    CAPMTAdd( p_sys, i_session_id, p_pmt );
 		  }
             }
         }
@@ -2047,6 +2019,8 @@ int en50221_SetCAPMT( access_t * p_access, mumudvb_pmt_t *p_pmt ) //braice
       fprintf(stderr,"CAM : No need to descramble channel %d\n", p_pmt->i_program_number);
       free( p_pmt );//braice
     }
+    
+    fprintf(stderr,"\n");
 
     return 0;
 }
@@ -2054,9 +2028,8 @@ int en50221_SetCAPMT( access_t * p_access, mumudvb_pmt_t *p_pmt ) //braice
 /*****************************************************************************
  * en50221_OpenMMI :
  *****************************************************************************/
-int en50221_OpenMMI( access_t * p_access, int i_slot )
+int en50221_OpenMMI( access_sys_t * p_sys, int i_slot )
 {
-    access_sys_t *p_sys = p_access->p_sys;
 
     if( p_sys->i_ca_type & CA_CI_LINK )
     {
@@ -2079,7 +2052,7 @@ int en50221_OpenMMI( access_t * p_access, int i_slot )
                     == RI_APPLICATION_INFORMATION
                   && p_sys->p_sessions[i_session_id - 1].i_slot == i_slot )
             {
-                ApplicationInformationEnterMenu( p_access, i_session_id );
+                ApplicationInformationEnterMenu( p_sys, i_session_id );
                 return 0;
             }
         }
@@ -2097,9 +2070,8 @@ int en50221_OpenMMI( access_t * p_access, int i_slot )
 /*****************************************************************************
  * en50221_CloseMMI :
  *****************************************************************************/
-int en50221_CloseMMI( access_t * p_access, int i_slot )
+int en50221_CloseMMI( access_sys_t * p_sys, int i_slot )
 {
-    access_sys_t *p_sys = p_access->p_sys;
 
     if( p_sys->i_ca_type & CA_CI_LINK )
     {
@@ -2109,7 +2081,7 @@ int en50221_CloseMMI( access_t * p_access, int i_slot )
             if ( p_sys->p_sessions[i_session_id - 1].i_resource_id == RI_MMI
                   && p_sys->p_sessions[i_session_id - 1].i_slot == i_slot )
             {
-                MMISendClose( p_access, i_session_id );
+                MMISendClose( p_sys, i_session_id );
                 return 0;
             }
         }
@@ -2128,10 +2100,9 @@ int en50221_CloseMMI( access_t * p_access, int i_slot )
 /*****************************************************************************
  * en50221_GetMMIObject :
  *****************************************************************************/
-en50221_mmi_object_t *en50221_GetMMIObject( access_t * p_access,
+en50221_mmi_object_t *en50221_GetMMIObject( access_sys_t * p_sys,
                                                 int i_slot )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     int i_session_id;
 
     if ( p_sys->pb_slot_mmi_expected[i_slot] == 1 )
@@ -2157,10 +2128,9 @@ en50221_mmi_object_t *en50221_GetMMIObject( access_t * p_access,
 /*****************************************************************************
  * en50221_SendMMIObject :
  *****************************************************************************/
-void en50221_SendMMIObject( access_t * p_access, int i_slot,
+void en50221_SendMMIObject( access_sys_t * p_sys, int i_slot,
                                 en50221_mmi_object_t *p_object )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     int i_session_id;
 
     for ( i_session_id = 1; i_session_id <= MAX_SESSIONS; i_session_id++ )
@@ -2168,7 +2138,7 @@ void en50221_SendMMIObject( access_t * p_access, int i_slot,
         if ( p_sys->p_sessions[i_session_id - 1].i_resource_id == RI_MMI
               && p_sys->p_sessions[i_session_id - 1].i_slot == i_slot )
         {
-            MMISendObject( p_access, i_session_id, p_object );
+            MMISendObject( p_sys, i_session_id, p_object );
             return;
         }
     }
@@ -2179,9 +2149,8 @@ void en50221_SendMMIObject( access_t * p_access, int i_slot,
 /*****************************************************************************
  * en50221_End :
  *****************************************************************************/
-void en50221_End( access_t * p_access )
+void en50221_End( access_sys_t * p_sys )
 {
-    access_sys_t *p_sys = p_access->p_sys;
     int i_session_id, i;
 
     for ( i = 0; i < MAX_PROGRAMS; i++ )
@@ -2197,7 +2166,7 @@ void en50221_End( access_t * p_access )
         if ( p_sys->p_sessions[i_session_id - 1].i_resource_id
               && p_sys->p_sessions[i_session_id - 1].pf_close != NULL )
         {
-            p_sys->p_sessions[i_session_id - 1].pf_close( p_access,
+            p_sys->p_sessions[i_session_id - 1].pf_close( p_sys,
                                                           i_session_id );
         }
     }
