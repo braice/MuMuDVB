@@ -1,29 +1,28 @@
 /* 
-mumudvb - UDP-ize a DVB transport stream.
-Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
-
-Modified By Brice DUBOST
-
-The latest version can be found at http://mumudvb.braice.net
-
-Copyright notice:
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-    
-*/
-
+ * mumudvb - UDP-ize a DVB transport stream.
+ * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
+ * 
+ * (C) Brice DUBOST
+ * 
+ * The latest version can be found at http://mumudvb.braice.net
+ * 
+ * Copyright notice:
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *     
+ */
 
 #define _GNU_SOURCE		// pour utiliser le program_invocation_short_name (extension gnu)
 
@@ -50,8 +49,6 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "dvb.h"
 #include "errors.h"
 #include "cam.h"
-  //#include "vlc_dvb.h"
-
 
 #define VERSION "1.2.5-devel"
 
@@ -77,10 +74,9 @@ char nom_fich_chaines_diff[256];
 char nom_fich_chaines_non_diff[256];
 int card = 0;
 
-//CAM
+//CAM (Conditionnal Access Modules : for scrambled channels)
 int cam_support = 0;
 access_sys_t *vlc_sys_access;
-
 
 // file descriptors
 fds_t fds; // defined in dvb.h
@@ -191,9 +187,12 @@ main (int argc, char **argv)
   //do we support conditionnal access modules ?
   int i;
   int cam_pmt_pid[MAX_CHAINES];
-  cam_pmt_pid[0] = 0; //paranoya
   mumudvb_pmt_t *cam_pmt_ptr;
   int cam_number=0;
+
+  for(i=0;i<MAX_CHAINES;i++)
+    cam_pmt_pid[i] = 0; //paranoya
+
 
   const char short_options[] = "c:sdh";
   const struct option long_options[] = {
@@ -277,11 +276,12 @@ main (int argc, char **argv)
 	fprintf (stderr,
 		 "%s: %s\n",
 		 conf_filename, strerror (errno));
+      free(conf_filename);
       exit(ERROR_CONF_FILE);
     }
+  free(conf_filename);
 
   memset (pids, 0, sizeof (pids));
-
 
 
   // we scan config file
@@ -312,10 +312,10 @@ main (int argc, char **argv)
 	    {
 	      if (!no_daemon)
 		syslog (LOG_USER|LOG_INFO,
-			"!!! You have enabled the Pat Rewriting, this is an experimental feature, you have been warned\n");
+			"!!! You have enabled the Pat Rewriting, it has still some limitations please contact if you have some issuses\n");
 	      else
 		fprintf (stderr,
-			"!!! You have enabled the Pat Rewriting, this is an experimental feature, you have been warned\n");
+			"!!! You have enabled the Pat Rewriting, it has still some limitations please contact if you have some issuses\n");
 	    }
 	}
       else if (!strcmp (sous_chaine, "cam_support"))
@@ -491,7 +491,7 @@ main (int argc, char **argv)
 	}
       else if (!strcmp (sous_chaine, "qam"))
 	{
-	  // TNT
+	  // DVB-T
 	  sous_chaine = strtok (NULL, delimiteurs);
 	  sscanf (sous_chaine, "%s\n", sous_chaine);
 	  if (!strcmp (sous_chaine, "qpsk"))
@@ -521,7 +521,7 @@ main (int argc, char **argv)
 	}
       else if (!strcmp (sous_chaine, "trans_mode"))
 	{
-	  // TNT
+	  // DVB-T
 	  sous_chaine = strtok (NULL, delimiteurs);
 	  sscanf (sous_chaine, "%s\n", sous_chaine);
 	  if (!strcmp (sous_chaine, "2k"))
@@ -543,7 +543,7 @@ main (int argc, char **argv)
 	}
       else if (!strcmp (sous_chaine, "bandwidth"))
 	{
-	  // TNT
+	  // DVB-T
 	  sous_chaine = strtok (NULL, delimiteurs);
 	  sscanf (sous_chaine, "%s\n", sous_chaine);
 	  if (!strcmp (sous_chaine, "8MHz"))
@@ -567,7 +567,7 @@ main (int argc, char **argv)
 	}
       else if (!strcmp (sous_chaine, "guardinterval"))
 	{
-	  // TNT
+	  // DVB-T
 	  sous_chaine = strtok (NULL, delimiteurs);
 	  sscanf (sous_chaine, "%s\n", sous_chaine);
 	  if (!strcmp (sous_chaine, "1/32"))
@@ -593,7 +593,7 @@ main (int argc, char **argv)
 	}
       else if (!strcmp (sous_chaine, "coderate"))
 	{
-	  // TNT
+	  // DVB-T
 	  sous_chaine = strtok (NULL, delimiteurs);
 	  sscanf (sous_chaine, "%s\n", sous_chaine);
 	  if (!strcmp (sous_chaine, "none"))
@@ -630,7 +630,6 @@ main (int argc, char **argv)
 	}
       else
 	{
-	  /*probleme */
 	  if (!no_daemon)
 	    syslog (LOG_USER|LOG_INFO,
 		    "Config issue : unknow symbol : %s\n\n", sous_chaine);
@@ -640,6 +639,9 @@ main (int argc, char **argv)
 	  continue;
 	}
     }
+  //end of config file reading
+  fclose (conf_file);
+
   nb_flux = curr_channel;
   if (curr_channel > MAX_CHAINES)
     {
@@ -775,7 +777,6 @@ main (int argc, char **argv)
     CAMOpen(vlc_sys_access, card, cam_number);
     vlc_sys_access->cai->initialized=0;
     CAMPoll(vlc_sys_access);
-
   }
   
 
@@ -950,9 +951,9 @@ main (int argc, char **argv)
      			  cam_pmt_pid[curr_channel]=0; //once we have asked the CAM for this PID, we clear it not to ask it again
 			  cam_pmt_ptr->i_program_number=curr_channel;
 			  en50221_SetCAPMT(vlc_sys_access, cam_pmt_ptr);
-			  cam_pmt_ptr=malloc(sizeof(mumudvb_pmt_t)); //on alloue un nouveau
+			  cam_pmt_ptr=malloc(sizeof(mumudvb_pmt_t)); //on alloue un nouveau //l'ancien est stocke dans la structure VLC
 			  //TODO check if we have enough memory
-			  memset (cam_pmt_ptr, 0, sizeof( mumudvb_pmt_t));
+			  memset (cam_pmt_ptr, 0, sizeof( mumudvb_pmt_t));//we clear it
 			}
 		    }
 		}
@@ -1047,7 +1048,11 @@ main (int argc, char **argv)
   close_card_fd (card, nb_flux, num_pids, mandatory_pid, fds);
 
   if(cam_support)
-    CAMClose(vlc_sys_access);
+    {
+      CAMClose(vlc_sys_access);
+      free(cam_pmt_ptr);
+      free(vlc_sys_access);
+    }
 
   if (remove (nom_fich_chaines_diff))
     {

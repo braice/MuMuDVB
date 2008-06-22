@@ -98,16 +98,15 @@ int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai)
 	{
 	  // -- PES/PS                                                                                                                               
 	  //tspid->id   = buf[j+3];                                                                                                                  
-	  printf("\t#PES/PS ----- We ignore \n");
+	  sprintf(stderr, "CAM : parse PMT : #PES/PS ----- We ignore \n");
 	  ok=0;
 	}
       else
-	{
 	  ok=1;
-	}
     }
 
-  if (header->adaptation_field_control == 3) { ok=0; }
+  if (header->adaptation_field_control == 3)
+    ok=0;
 
   if(header->payload_unit_start_indicator) //It's the beginning of a new packet
     {
@@ -134,11 +133,8 @@ int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai)
 	  pmt->empty=1;
 	}
       pmt->continuity_counter=header->continuity_counter;
-      // -- duplicate packet?  (this would be ok, due to ISO13818-1)                                                                                 
-      //if ((pid == tsd.pid) && (cc == tsd.continuity_counter)) {                                                                                    
-      //return 1;                                                                                                                                    
-      //}
       pmt->len=AddPacketContinue(pmt->packet,buf+delta,188-delta,pmt->len); //on ajoute le paquet 
+
       //fprintf(stderr,"CAM : \t\t Len %d PMT_len %d\n",pmt->len,HILO(((pmt_t *)pmt->packet)->section_length));
       
       //We check if the PMT is full
@@ -156,11 +152,8 @@ int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai)
 //Les fonctions qui permettent de coller les paquets les uns aux autres
 // -- add TS data
 // -- return: 0 = fail
-
-
 int AddPacketStart (unsigned char *packet, unsigned char *buf, unsigned int len)
 {
-
   memset(packet,0,4096);
   memcpy(packet,buf,len);
   return len;
@@ -168,12 +161,12 @@ int AddPacketStart (unsigned char *packet, unsigned char *buf, unsigned int len)
 
 int AddPacketContinue  (unsigned char *packet, unsigned char *buf, unsigned int len, unsigned int act_len)
 {
-
   memcpy(packet+act_len,buf,len);
   return len+act_len;
 }
 
 
+//Checking of the CRC32
 int cam_ca_pmt_check_CRC( mumudvb_pmt_t *pmt)
 {
   pmt_t *pmt_struct;
@@ -185,7 +178,6 @@ int cam_ca_pmt_check_CRC( mumudvb_pmt_t *pmt)
   //the real lenght
   pmt->len=HILO(pmt_struct->section_length)+3; //+3 pour les trois bits du début (compris le section_lenght)
 
-  //CRC32
   //CRC32 calculation mostly taken from the xine project
   //Test of the crc32
   crc32=0xffffffff;
@@ -210,13 +202,16 @@ int cam_ca_pmt_check_CRC( mumudvb_pmt_t *pmt)
 
 /****************************************************************************/
 //Code from libdvb with commentaries added
+//convert the PMT into CA_PMT
 /****************************************************************************/
 
+//convert the PMT descriptors
 int convert_desc(struct ca_info *cai, 
 		 uint8_t *out, uint8_t *buf, int dslen, uint8_t cmd,int quiet)
 {
   int i, j, dlen, olen=0;
   int id;
+  int bad_sysid=0;
 
   out[2]=cmd;                            //ca_pmt_cmd_id 01 ok_descrambling 02 ok_mmi 03 query 04 not_selected
   for (i=0; i<dslen; i+=dlen)           //loop on all the descriptors (for each descriptor we add its length)
@@ -232,8 +227,11 @@ int convert_desc(struct ca_info *cai,
 	      break; //yes --> we leave the loop
 	  if (j==cai->sys_num) // do we leaved the loop just because we reached the end ?
 	    {
-	      //if(!quiet)
-	      //fprintf(stderr,"CAM : \tdropped system id %d 0x%x\n", id, id);
+	      if(!bad_sysid && !quiet)
+		fprintf(stderr,"CAM : !!! The cam don't support the following system id : \nCAM : ");
+	      if(!quiet && (bad_sysid!=id))
+		fprintf(stderr,"%d 0x%x - ", id, id);
+	      bad_sysid=id;
 	      continue;          //yes, so we dont record this descriptor
 	    }
 	  memcpy(out+olen+3, buf+i, dlen); //good descriptor supported by the cam, we copy it
@@ -243,6 +241,8 @@ int convert_desc(struct ca_info *cai,
   olen=olen?olen+1:0; //if not empty we add one
   out[0]=(olen>>8);   //we write the program info_len
   out[1]=(olen&0xff);
+  if (bad_sysid && !quiet)
+    fprintf(stderr,"\nCAM :  Check if the good descrambling algorithms are selected\n");
   //if(!quiet)
   //fprintf(stderr,"CAM : \tOK CA descriptors len %d\n",olen);
   return olen+2;      //we return the total written len
@@ -314,10 +314,6 @@ int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt,
 /* VLC part */
 /****************************************************************************/
 
-
-/*
- * CAM device
- */
 
 /*****************************************************************************
  * CAMOpen :
@@ -420,7 +416,7 @@ int CAMPoll( access_sys_t * p_sys )
 
     if ( p_sys->i_ca_handle == 0 )
     {
-        fprintf(stderr, "CAMPoll: p_sys->i_ca_handle == 0" );
+        fprintf(stderr, "CAMPoll: Cannot Poll the CAM\n" );
         return -666;
     }
 
