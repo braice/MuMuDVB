@@ -1,28 +1,29 @@
 /* 
-udp.h fonction in order to send a multicast stream
-mumudvb - UDP-ize a DVB transport stream.
-(C) Dave Chapman <dave@dchapman.com> 2001, 2002.
-Modified By Brice DUBOST
+ * udp.h fonction in order to send a multicast stream
+ * mumudvb - UDP-ize a DVB transport stream.
  * 
- The latest version can be found at http://mumudvb.braice.net
-
-Copyright notice:
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-    
-*/
+ * (C) Brice DUBOST
+ * (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
+ * 
+ *  The latest version can be found at http://mumudvb.braice.net
+ * 
+ * Copyright notice:
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *     
+ */
 
 #include "udp.h"
 
@@ -38,7 +39,7 @@ sendudp (int fd, struct sockaddr_in *sSockAddr, char *data, int len)
 /* create a sender socket. */
 int
 makesocket (char *szAddr, unsigned short port, int TTL,
-	    struct sockaddr_in *sSockAddr, int no_daemon)
+	    struct sockaddr_in *sSockAddr)
 {
   int iRet, iLoop = 1;
   struct sockaddr_in sin;
@@ -49,10 +50,7 @@ makesocket (char *szAddr, unsigned short port, int TTL,
 
   if (iSocket < 0)
     {
-      if(!no_daemon)
-	syslog(LOG_USER, "socket() failed.\n");
-      else
-	fprintf (stderr, "socket() failed.\n");
+      log_message( MSG_INFO, "socket() failed.\n");
       exit (1);
     }
 
@@ -63,10 +61,7 @@ makesocket (char *szAddr, unsigned short port, int TTL,
   iRet = setsockopt (iSocket, SOL_SOCKET, SO_REUSEADDR, &iLoop, sizeof (int));
   if (iRet < 0)
     {
-      if(!no_daemon)
-	syslog(LOG_USER,"setsockopt SO_REUSEADDR failed\n");
-      else
-	fprintf (stderr, "setsockopt SO_REUSEADDR failed\n");
+      log_message( MSG_ERROR,"setsockopt SO_REUSEADDR failed\n");
       exit (1);
     }
 
@@ -74,11 +69,7 @@ makesocket (char *szAddr, unsigned short port, int TTL,
     setsockopt (iSocket, IPPROTO_IP, IP_MULTICAST_TTL, &cTtl, sizeof (char));
   if (iRet < 0)
     {
-      if(!no_daemon)
-	syslog(LOG_USER,"setsockopt IP_MULTICAST_TTL failed.  multicast in kernel?\n");
-      else
-	fprintf (stderr,
-		 "setsockopt IP_MULTICAST_TTL failed.  multicast in kernel?\n");
+      log_message( MSG_ERROR,"setsockopt IP_MULTICAST_TTL failed.  multicast in kernel?\n");
       exit (1);
     }
 
@@ -87,11 +78,7 @@ makesocket (char *szAddr, unsigned short port, int TTL,
 		     &cLoop, sizeof (char));
   if (iRet < 0)
     {
-      if(!no_daemon)
-	syslog(LOG_USER,"setsockopt IP_MULTICAST_LOOP failed.  multicast in kernel?\n");
-      else
-	fprintf (stderr,
-		 "setsockopt IP_MULTICAST_LOOP failed.  multicast in kernel?\n");
+      log_message( MSG_ERROR,"setsockopt IP_MULTICAST_LOOP failed.  multicast in kernel?\n");
       exit (1);
     }
 
@@ -101,9 +88,9 @@ makesocket (char *szAddr, unsigned short port, int TTL,
 /* create a receiver socket, i.e. join the multicast group. */
 int
 makeclientsocket (char *szAddr, unsigned short port, int TTL,
-		  struct sockaddr_in *sSockAddr, int no_daemon)
+		  struct sockaddr_in *sSockAddr)
 {
-  int socket = makesocket (szAddr, port, TTL, sSockAddr, no_daemon);
+  int socket = makesocket (szAddr, port, TTL, sSockAddr);
   struct ip_mreq blub;
   struct sockaddr_in sin;
   unsigned int tempaddr;
@@ -112,8 +99,7 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL,
   sin.sin_addr.s_addr = inet_addr (szAddr);
   if (bind (socket, (struct sockaddr *) &sin, sizeof (sin)))
     {
-      if(!no_daemon)
-	syslog(LOG_USER,"bind failed");
+      log_message( MSG_ERROR,"bind failed");
       perror ("bind failed");
       exit (1);
     }
@@ -125,8 +111,7 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL,
       if (setsockopt
 	  (socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &blub, sizeof (blub)))
 	{
-	  if(!no_daemon)
-	    syslog(LOG_USER,"setsockopt IP_ADD_MEMBERSHIP failed (multicast kernel?)");
+	  log_message( MSG_ERROR,"setsockopt IP_ADD_MEMBERSHIP failed (multicast kernel?)");
 	  perror ("setsockopt IP_ADD_MEMBERSHIP failed (multicast kernel?)");
 	  exit (1);
 	}

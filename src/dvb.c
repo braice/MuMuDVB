@@ -28,6 +28,7 @@
 #define _GNU_SOURCE
 #include "dvb.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 #define FRONTEND_DEV_PATH "/dev/dvb/adapter%d/frontend0"
 #define DEMUX_DEV_PATH    "/dev/dvb/adapter%d/demux0"
@@ -39,7 +40,7 @@ open_fe (int *fd_frontend, int card)
 
   char *frontend_name;
   asprintf(&frontend_name,FRONTEND_DEV_PATH,card);
-  if ((*fd_frontend = open (frontenddev[card], O_RDWR | O_NONBLOCK)) < 0)
+  if ((*fd_frontend = open (frontend_name, O_RDWR | O_NONBLOCK)) < 0)
     {
       perror ("FRONTEND DEVICE: ");
       free(frontend_name);
@@ -56,7 +57,7 @@ set_ts_filt (int fd, uint16_t pid, dmx_pes_type_t pestype)
 {
   struct dmx_pes_filter_params pesFilterParams;
 
-  fprintf (stderr, "Setting filter for PID %d\n", pid);
+  log_message( MSG_DETAIL, "Setting filter for PID %d\n", pid);
   pesFilterParams.pid = pid;
   pesFilterParams.input = DMX_IN_FRONTEND;
   pesFilterParams.output = DMX_OUT_TS_TAP;
@@ -65,26 +66,21 @@ set_ts_filt (int fd, uint16_t pid, dmx_pes_type_t pestype)
 
   if (ioctl (fd, DMX_SET_PES_FILTER, &pesFilterParams) < 0)
     {
-      fprintf (stderr, "FILTER %i: ", pid);
+      log_message( MSG_ERROR, "FILTER %i: ", pid);
       perror ("DMX SET PES FILTER");
     }
 }
 
 
 void
-affiche_puissance (fds_t fds, int no_daemon)
+affiche_puissance (fds_t fds)
 {
   int strength, ber, snr;
   strength = ber = snr = 0;
   if (ioctl (fds.fd_frontend, FE_READ_BER, &ber) >= 0)
     if (ioctl (fds.fd_frontend, FE_READ_SIGNAL_STRENGTH, &strength) >= 0)
       if (ioctl (fds.fd_frontend, FE_READ_SNR, &snr) >= 0)
-	{
-	  if(!no_daemon)
-	    syslog(LOG_USER, "Bit error rate: %10d Signal strength: %10d SNR: %10d\n", ber,strength,snr);
-	  else
-	    fprintf (stderr, "Bit error rate: %10d Signal strength: %10d SNR: %10d\n", ber,strength,snr);
-	}
+	log_message( MSG_INFO, "Bit error rate: %10d Signal strength: %10d SNR: %10d\n", ber,strength,snr);
 }
 
 int
@@ -103,7 +99,7 @@ create_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t *
     //we check if we need to open the file descriptor (some cards are limited)
     if ((mandatory_pid[curr_pid_mandatory] != 0)&& ((fds->fd_mandatory[curr_pid_mandatory] = open (demuxdev_name, O_RDWR)) < 0) )	
       {
-	fprintf (stderr, "FD Mandatory %i: ", curr_pid_mandatory);
+	log_message( MSG_ERROR, "FD Mandatory %i: ", curr_pid_mandatory);
 	perror ("DEMUX DEVICE: ");
 	free(demuxdev_name);
 	return -1;
@@ -115,7 +111,7 @@ create_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t *
 	{
 	  if ((fds->fd[i][j] = open (demuxdev_name, O_RDWR)) < 0)
 	    {
-	      fprintf (stderr, "FD %i: ", i);
+	      log_message( MSG_ERROR, "FD %i: ", i);
 	      perror ("DEMUX DEVICE: ");
 	      free(demuxdev_name);
 	      return -1;

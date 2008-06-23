@@ -20,9 +20,9 @@ int ttl;
 struct sockaddr_in sOut[MAX_CHAINES];
 int socketOut[MAX_CHAINES];
 
-int makeclientsocket (char *szAddr, unsigned short port, int TTL, struct sockaddr_in *sSockAddr, int no_daemon);
+int makeclientsocket (char *szAddr, unsigned short port, int TTL, struct sockaddr_in *sSockAddr);
 int sendudp (int fd, struct sockaddr_in *sSockAddr, char *data, int len);
-int makesocket (char *szAddr, unsigned short port, int TTL, struct sockaddr_in *sSockAddr, int no_daemon);
+int makesocket (char *szAddr, unsigned short port, int TTL, struct sockaddr_in *sSockAddr);
 
 
 #endif

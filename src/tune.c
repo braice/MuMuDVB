@@ -1,5 +1,10 @@
 /* dvbtune - tune.c
 
+   part of mumudvb
+
+   last version availaible from http://mumudvb.braice.net/
+
+   Copyright (C) Brice DUBOST
    Copyright (C) Dave Chapman 2001,2002
   
    This program is free software; you can redistribute it and/or
@@ -33,17 +38,17 @@
 #include <linux/dvb/frontend.h>
 
 #include "tune.h"
+#include "mumudvb.h"
 
-
-void print_status(FILE* fd,fe_status_t festatus) {
-  fprintf(fd,"FE_STATUS:");
-  if (festatus & FE_HAS_SIGNAL) fprintf(fd," FE_HAS_SIGNAL");
-  if (festatus & FE_TIMEDOUT) fprintf(fd," FE_TIMEDOUT");
-  if (festatus & FE_HAS_LOCK) fprintf(fd," FE_HAS_LOCK");
-  if (festatus & FE_HAS_CARRIER) fprintf(fd," FE_HAS_CARRIER");
-  if (festatus & FE_HAS_VITERBI) fprintf(fd," FE_HAS_VITERBI");
-  if (festatus & FE_HAS_SYNC) fprintf(fd," FE_HAS_SYNC");
-  fprintf(fd,"\n");
+void print_status(fe_status_t festatus) {
+  log_message( MSG_INFO, "FE_STATUS:");
+  if (festatus & FE_HAS_SIGNAL) log_message( MSG_INFO, " FE_HAS_SIGNAL");
+  if (festatus & FE_TIMEDOUT) log_message( MSG_INFO, " FE_TIMEDOUT");
+  if (festatus & FE_HAS_LOCK) log_message( MSG_INFO, " FE_HAS_LOCK");
+  if (festatus & FE_HAS_CARRIER) log_message( MSG_INFO, " FE_HAS_CARRIER");
+  if (festatus & FE_HAS_VITERBI) log_message( MSG_INFO, " FE_HAS_VITERBI");
+  if (festatus & FE_HAS_SYNC) log_message( MSG_INFO, " FE_HAS_SYNC");
+  log_message( MSG_INFO, "\n");
 }
 
 
@@ -69,7 +74,7 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd,
    }
    else	//A or B simple diseqc
    {
-    fprintf(stderr, "SETTING SIMPLE %c BURST\n", sat_no);
+    log_message( MSG_INFO, "SETTING SIMPLE %c BURST\n", sat_no);
     if(ioctl(fd, FE_DISEQC_SEND_BURST, (sat_no == 'B' ? SEC_MINI_B : SEC_MINI_A)) < 0)
    	return -1;
     usleep(15 * 1000);
@@ -107,7 +112,7 @@ static int do_diseqc(int fd, unsigned char sat_no, int polv, int hi_lo)
     }
     else 	//only tone and voltage
     {
-	fprintf(stderr, "Setting only tone %s and voltage %dV\n", (hi_lo ? "ON" : "OFF"), (polv ? 13 : 18));
+	log_message( MSG_INFO, "Setting only tone %s and voltage %dV\n", (hi_lo ? "ON" : "OFF"), (polv ? 13 : 18));
 	
 	if(ioctl(fd, FE_SET_VOLTAGE, (polv ? SEC_VOLTAGE_13 : SEC_VOLTAGE_18)) < 0)
    	    return -1;
@@ -143,18 +148,18 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
 
   event.status=0;
   while (((event.status & FE_TIMEDOUT)==0) && ((event.status & FE_HAS_LOCK)==0)) {
-    fprintf(stderr,"polling....\n");
+    log_message( MSG_DETAIL, "polling....\n");
     if (poll(pfd,1,10000) > 0){
       if (pfd[0].revents & POLLPRI){
-        fprintf(stderr,"Getting frontend event\n");
+        log_message( MSG_DETAIL, "Getting frontend event\n");
         if ((status = ioctl(fd_frontend, FE_GET_EVENT, &event)) < 0){
 	  if (errno != EOVERFLOW) {
 	    perror("FE_GET_EVENT");
-	    fprintf(stderr,"status = %d\n", status);
-	    fprintf(stderr,"errno = %d\n", errno);
+	    log_message( MSG_ERROR, "status = %d\n", status);
+	    log_message( MSG_ERROR, "errno = %d\n", errno);
 	    return -1;
 	  }
-	  else fprintf(stderr,"Overflow error, trying again (status = %d, errno = %d)", status, errno);
+	  else log_message( MSG_WARN, "Overflow error, trying again (status = %d, errno = %d)", status, errno);
         }
       }
       if(display_strength)
@@ -162,31 +167,31 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
 	  //Braice
 	  strength=0;
 	  if(ioctl(fd_frontend,FE_READ_SIGNAL_STRENGTH,&strength) >= 0)
-	    fprintf(stderr,"Strength: %10d ",strength);
+	    log_message( MSG_INFO, "Strength: %10d ",strength);
 	  strength=0;
 	  if(ioctl(fd_frontend,FE_READ_SNR,&strength) >= 0)
-	    fprintf(stderr,"SNR: %10d\n",strength);
+	    log_message( MSG_INFO, "SNR: %10d\n",strength);
 	}
 
-      print_status(stderr,event.status);
+      print_status(event.status);
     }
   }
 
   if (event.status & FE_HAS_LOCK) {
       switch(type) {
          case FE_OFDM:
-           fprintf(stderr,"Event:  Frequency: %d\n",event.parameters.frequency);
+           log_message( MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);
            break;
          case FE_QPSK:
-           fprintf(stderr,"Event:  Frequency: %d\n",(unsigned int)((event.parameters.frequency)+(hi_lo ? LOF2 : LOF1)));
-           fprintf(stderr,"        SymbolRate: %d\n",event.parameters.u.qpsk.symbol_rate);
-           fprintf(stderr,"        FEC_inner:  %d\n",event.parameters.u.qpsk.fec_inner);
-           fprintf(stderr,"\n");
+           log_message( MSG_INFO, "Event:  Frequency: %d\n",(unsigned int)((event.parameters.frequency)+(hi_lo ? LOF2 : LOF1)));
+           log_message( MSG_INFO, "        SymbolRate: %d\n",event.parameters.u.qpsk.symbol_rate);
+           log_message( MSG_INFO, "        FEC_inner:  %d\n",event.parameters.u.qpsk.fec_inner);
+           log_message( MSG_INFO, "\n");
            break;
          case FE_QAM:
-           fprintf(stderr,"Event:  Frequency: %d\n",event.parameters.frequency);
-           fprintf(stderr,"        SymbolRate: %d\n",event.parameters.u.qpsk.symbol_rate);
-           fprintf(stderr,"        FEC_inner:  %d\n",event.parameters.u.qpsk.fec_inner);
+           log_message( MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);
+           log_message( MSG_INFO, "        SymbolRate: %d\n",event.parameters.u.qpsk.symbol_rate);
+           log_message( MSG_INFO, "        FEC_inner:  %d\n",event.parameters.u.qpsk.fec_inner);
            break;
          default:
            break;
@@ -194,21 +199,21 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
 
       strength=0;
       if(ioctl(fd_frontend,FE_READ_BER,&strength) >= 0)
-      fprintf(stderr,"Bit error rate: %d\n",strength);
+      log_message( MSG_INFO, "Bit error rate: %d\n",strength);
 
       strength=0;
       if(ioctl(fd_frontend,FE_READ_SIGNAL_STRENGTH,&strength) >= 0)
-      fprintf(stderr,"Signal strength: %d\n",strength);
+      log_message( MSG_INFO, "Signal strength: %d\n",strength);
 
       strength=0;
       if(ioctl(fd_frontend,FE_READ_SNR,&strength) >= 0)
-      fprintf(stderr,"SNR: %d\n",strength);
+      log_message( MSG_INFO, "SNR: %d\n",strength);
 
       festatus=0;
       if(ioctl(fd_frontend,FE_READ_STATUS,&festatus) >= 0)
-      print_status(stderr,festatus);
+      print_status(festatus);
     } else {
-    fprintf(stderr,"Not able to lock to the signal on the given frequency\n");
+    log_message( MSG_ERROR, "Not able to lock to the signal on the given frequency\n");
     return -1;
   }
   return 0;
@@ -227,7 +232,7 @@ int tune_it(int fd_frontend, unsigned int freq, unsigned int srate, char pol, in
      return -1;
   }
   
-  fprintf(stderr,"Using DVB card \"%s\"\n",fe_info.name);
+  log_message( MSG_INFO, "Using DVB card \"%s\"\n",fe_info.name);
 
   switch(fe_info.type) {
     case FE_OFDM:
@@ -241,7 +246,7 @@ int tune_it(int fd_frontend, unsigned int freq, unsigned int srate, char pol, in
       feparams.u.ofdm.transmission_mode=TransmissionMode;
       feparams.u.ofdm.guard_interval=guardInterval;
       feparams.u.ofdm.hierarchy_information=hier;
-      fprintf(stderr,"tuning DVB-T (%s) to %d Hz, Bandwidth: %d\n",DVB_T_LOCATION,freq, 
+      log_message( MSG_INFO, "tuning DVB-T (%s) to %d Hz, Bandwidth: %d\n",DVB_T_LOCATION,freq, 
 	bandwidth==BANDWIDTH_8_MHZ ? 8 : (bandwidth==BANDWIDTH_7_MHZ ? 7 : 6));
       break;
     case FE_QPSK:
@@ -254,21 +259,21 @@ int tune_it(int fd_frontend, unsigned int freq, unsigned int srate, char pol, in
 	  hi_lo = 1;
       }
 
-	fprintf(stderr,"tuning DVB-S to Freq: %u, Pol:%c Srate=%d, 22kHz tone=%s, LNB: %d\n",feparams.frequency,pol,srate,tone == SEC_TONE_ON ? "on" : "off", diseqc);
+	log_message( MSG_INFO, "tuning DVB-S to Freq: %u, Pol:%c Srate=%d, 22kHz tone=%s, LNB: %d\n",feparams.frequency,pol,srate,tone == SEC_TONE_ON ? "on" : "off", diseqc);
       feparams.inversion=specInv;
       feparams.u.qpsk.symbol_rate=srate;
       feparams.u.qpsk.fec_inner=FEC_AUTO;
       dfd = fd_frontend;
 
    if(do_diseqc(dfd, diseqc, (pol == 'V' ? 1 : 0), hi_lo) == 0)
-	fprintf(stderr, "DISEQC SETTING SUCCEDED\n");
+	log_message( MSG_INFO, "DISEQC SETTING SUCCEDED\n");
    else  {
-	fprintf(stderr, "DISEQC SETTING FAILED\n");
+	log_message( MSG_INFO, "DISEQC SETTING FAILED\n");
           return -1;
         }
       break;
     case FE_QAM:
-      fprintf(stderr,"tuning DVB-C to %d, srate=%d\n",freq,srate);
+      log_message( MSG_INFO, "tuning DVB-C to %d, srate=%d\n",freq,srate);
       feparams.frequency=freq;
       feparams.inversion=INVERSION_OFF;
       feparams.u.qam.symbol_rate = srate;
@@ -276,7 +281,7 @@ int tune_it(int fd_frontend, unsigned int freq, unsigned int srate, char pol, in
       feparams.u.qam.modulation = modulation;
       break;
     default:
-      fprintf(stderr,"Unknown FE type. Aborting\n");
+      log_message( MSG_ERROR, "Unknown FE type. Aborting\n");
       exit(-1);
   }
   usleep(100000);

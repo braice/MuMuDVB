@@ -47,8 +47,8 @@
 #include "tune.h"
 #include "udp.h"
 #include "dvb.h"
-#include "errors.h"
 #include "cam.h"
+#include "errors.h"
 
 #define VERSION "1.2.5-devel"
 
@@ -74,6 +74,10 @@ char nom_fich_chaines_diff[256];
 char nom_fich_chaines_non_diff[256];
 int card = 0;
 
+//logging
+int log_initialised=0;
+int verbosity = 1;
+
 //CAM (Conditionnal Access Modules : for scrambled channels)
 int cam_support = 0;
 access_sys_t *vlc_sys_access;
@@ -82,13 +86,12 @@ access_sys_t *vlc_sys_access;
 fds_t fds; // defined in dvb.h
 
 
-//Global for the moment
-// CRC table for PAT rebuilding and cam support
+//CRC table for PAT rebuilding and cam support
 unsigned long       crc32_table[256];
 
 // prototypes
 static void SignalHandler (int signum);
-void gen_chaines_diff (int no_daemon, int *chaines_diffuses);
+void gen_chaines_diff (int *chaines_diffuses);
 int pat_rewrite(unsigned char *buf,int num_pids, int *pids);
 
 
@@ -100,6 +103,8 @@ usage (char *name)
 	   "-c, --config : Config file\n"
 	   "-s, --signal : Display signal power\n"
 	   "-d, --debug  : Don't deamonize\n"
+	   "-v           : More verbose\n"
+	   "-q           : Less verbose\n"
 	   "-h, --help   : Help\n"
 	   "\n"
 	   "%s Version "
@@ -194,7 +199,7 @@ main (int argc, char **argv)
     cam_pmt_pid[i] = 0; //paranoya
 
 
-  const char short_options[] = "c:sdh";
+  const char short_options[] = "c:sdhvq";
   const struct option long_options[] = {
     {"config", required_argument, NULL, 'c'},
     {"signal", no_argument, NULL, 's'},
@@ -209,6 +214,7 @@ main (int argc, char **argv)
       hi_mappids[k] = (k >> 8);
       lo_mappids[k] = (k & 0xff);
     }
+
 
   if (argc == 1)
     {
@@ -230,10 +236,7 @@ main (int argc, char **argv)
 	  conf_filename = (char *) malloc (strlen (optarg) + 1);
 	  if (!conf_filename)
 	    {
-	      if (!no_daemon)
-		syslog (LOG_USER|LOG_INFO, "malloc() failed: %s\n", strerror(errno));
-	      else
-		fprintf(stderr, "malloc() failed: %s\n", strerror(errno));
+	      log_message( MSG_INFO, "malloc() failed: %s\n", strerror(errno));
 	      exit(errno);
 	    }
 	  strncpy (conf_filename, optarg, strlen (optarg) + 1);
@@ -243,6 +246,12 @@ main (int argc, char **argv)
 	  break;
 	case 'd':
 	  no_daemon = 1;
+	  break;
+	case 'v':
+	  verbosity++;
+	  break;
+	case 'q':
+	  verbosity--;
 	  break;
 	case 'h':
 	  usage (program_invocation_short_name);
@@ -264,18 +273,14 @@ main (int argc, char **argv)
 
   if (!no_daemon)
     openlog ("MUMUDVB", LOG_PID, 0);
+  log_initialised=1;
 
   // config file
   conf_file = fopen (conf_filename, "r");
   if (conf_file == NULL)
     {
-      if (!no_daemon)
-	syslog (LOG_USER|LOG_INFO, "%s: %s\n",
+      log_message( MSG_INFO, "%s: %s\n",
 		conf_filename, strerror (errno));
-      else
-	fprintf (stderr,
-		 "%s: %s\n",
-		 conf_filename, strerror (errno));
       free(conf_filename);
       exit(ERROR_CONF_FILE);
     }
@@ -310,11 +315,7 @@ main (int argc, char **argv)
 	  rewrite_pat = atoi (sous_chaine);
 	  if(rewrite_pat)
 	    {
-	      if (!no_daemon)
-		syslog (LOG_USER|LOG_INFO,
-			"!!! You have enabled the Pat Rewriting, it has still some limitations please contact if you have some issuses\n");
-	      else
-		fprintf (stderr,
+	      log_message( MSG_INFO,
 			"!!! You have enabled the Pat Rewriting, it has still some limitations please contact if you have some issuses\n");
 	    }
 	}
@@ -324,11 +325,7 @@ main (int argc, char **argv)
 	  cam_support = atoi (sous_chaine);
 	  if(cam_support)
 	    {
-	      if (!no_daemon)
-		syslog (LOG_USER|LOG_INFO,
-			"!!! You have enabled the support for conditionnal acces modules, this is an experimental feature, you have been warned\n");
-	      else
-		fprintf (stderr,
+	      log_message( MSG_INFO,
 			"!!! You have enabled the support for conditionnal acces modules, this is an experimental feature, you have been warned\n");
 	    }
 	}
@@ -351,14 +348,9 @@ main (int argc, char **argv)
 	    }
 	  else
 	    {
-	      if (!no_daemon)
-		syslog (LOG_USER|LOG_INFO,
-			"Config issue : %s polarisation\n",
-			conf_filename);
-	      else
-		fprintf (stderr,
-			 "Config issue : %s polarisation\n",
-			 conf_filename);
+	      log_message( MSG_INFO,
+			   "Config issue : %s polarisation\n",
+			   conf_filename);
 	      exit(ERROR_CONF);
 	    }
 	}
@@ -372,16 +364,6 @@ main (int argc, char **argv)
 	{
 	  sous_chaine = strtok (NULL, delimiteurs);
 	  card = atoi (sous_chaine);
-	  if (card > 5)
-	    {
-	      if (!no_daemon)
-		syslog (LOG_USER|LOG_INFO,
-			"Six cards MAX\n");
-	      else
-		fprintf (stderr,
-			"Six cards MAX\n");
-	      exit(ERROR_CONF);
-	    }
 	}
       else if (!strcmp (sous_chaine, "cam_number"))
 	{
@@ -404,25 +386,16 @@ main (int argc, char **argv)
 	{
 	  if (port_ok == 0 || ip_ok == 0)
 	    {
-	      if (!no_daemon)
-		syslog (LOG_USER|LOG_INFO,
-			"You must precise ip and port before PIDs\n");
-	      else
-		fprintf (stderr,
+	      log_message( MSG_INFO,
 			"You must precise ip and port before PIDs\n");
 	      exit(ERROR_CONF);
 	    }
 	  sous_chaine = strtok (NULL, delimiteurs);
       	  cam_pmt_pid[curr_channel] = atoi (sous_chaine);
 	  if (cam_pmt_pid[curr_channel] < 10 || cam_pmt_pid[curr_channel] > 8191){
-	    if (!no_daemon)
-	      syslog (LOG_USER|LOG_INFO,
+	      log_message( MSG_INFO,
 		      "Config issue : %s in pids, given pid : %d\n",
 		      conf_filename, pids[curr_channel][curr_pid]);
-	    else
-	      fprintf (stderr,
-		       "Config issue : %s in pids, given pid : %d\n",
-		       conf_filename, pids[curr_channel][curr_pid]);
 	    exit(ERROR_CONF);
 	  }
 	}
@@ -430,11 +403,7 @@ main (int argc, char **argv)
 	{
 	  if (port_ok == 0 || ip_ok == 0)
 	    {
-	      if (!no_daemon)
-		syslog (LOG_USER|LOG_INFO,
-			"You must precise ip and port before PIDs\n");
-	      else
-		fprintf (stderr,
+		log_message( MSG_INFO,
 			"You must precise ip and port before PIDs\n");
 	      exit(ERROR_CONF);
 	    }
@@ -444,27 +413,17 @@ main (int argc, char **argv)
 	      // we see if the given pid is good
 	      if (pids[curr_channel][curr_pid] < 10 || pids[curr_channel][curr_pid] > 8191)
 		{
-		  if (!no_daemon)
-		    syslog (LOG_USER|LOG_INFO,
+		  log_message( MSG_INFO,
 			    "Config issue : %s in pids, given pid : %d\n",
 			    conf_filename, pids[curr_channel][curr_pid]);
-		  else
-		    fprintf (stderr,
-			    "Config issue : %s in pids, given pid : %d\n",
-			     conf_filename, pids[curr_channel][curr_pid]);
 		  exit(ERROR_CONF);
 		}
 	      curr_pid++;
 	      if (curr_pid >= MAX_PIDS_PAR_CHAINE)
 		{
-		  if (!no_daemon)
-		    syslog (LOG_USER|LOG_INFO,
-			    "Too many pids : %d channel : %d\n",
-			    curr_pid, curr_channel);
-		  else
-		    fprintf (stderr,
-			    "Too many pids : %d channel : %d\n",
-			     curr_pid, curr_channel);
+		  log_message( MSG_INFO,
+			       "Too many pids : %d channel : %d\n",
+			       curr_pid, curr_channel);
 		  exit(ERROR_CONF);
 		}
 	    }
@@ -483,10 +442,7 @@ main (int argc, char **argv)
 	    strcpy(noms[curr_channel],strtok(sous_chaine,"\n"));	
 	  else
 	    {
-	      if (!no_daemon)
-		syslog (LOG_USER|LOG_INFO,"Channel name too long\n");
-	      else
-		fprintf (stderr, "Channel name too long\n");
+		log_message( MSG_INFO,"Channel name too long\n");
 	    }
 	}
       else if (!strcmp (sous_chaine, "qam"))
@@ -510,11 +466,7 @@ main (int argc, char **argv)
 	    modulation=QAM_AUTO;
 	  else
 	    {
-	      if (!no_daemon)
-		syslog (LOG_USER|LOG_INFO,
-			"Config issue : QAM\n");
-	      else
-		fprintf (stderr,
+		log_message( MSG_INFO,
 			"Config issue : QAM\n");
 	      exit(ERROR_CONF);
 	    }
@@ -532,11 +484,7 @@ main (int argc, char **argv)
 	    TransmissionMode=TRANSMISSION_MODE_AUTO;
 	  else
 	    {
-	      if (!no_daemon)
-		syslog (LOG_USER|LOG_INFO,
-			"Config issue : trans_mode\n");
-	      else
-		fprintf (stderr,
+		log_message( MSG_INFO,
 			"Config issue : trans_mode\n");
 	      exit(ERROR_CONF);
 	    }
@@ -556,11 +504,7 @@ main (int argc, char **argv)
 	    bandWidth=BANDWIDTH_AUTO;
 	  else
 	    {
-	      if (!no_daemon)
-		syslog (LOG_USER|LOG_INFO,
-			"Config issue : bandwidth\n");
-	      else
-		fprintf (stderr,
+		log_message( MSG_INFO,
 			"Config issue : bandwidth\n");
 	      exit(ERROR_CONF);
 	    }
@@ -582,12 +526,8 @@ main (int argc, char **argv)
 	    guardInterval=GUARD_INTERVAL_AUTO;
 	  else
 	    {
-	      if (!no_daemon)
-		syslog (LOG_USER|LOG_INFO,
+		log_message( MSG_INFO,
 			"Config issue : guardinterval\n");
-	      else
-		fprintf (stderr,
-			 "Config issue : guardinterval\n");
 	      exit(ERROR_CONF);
 	    }
 	}
@@ -618,11 +558,7 @@ main (int argc, char **argv)
 	    HP_CodeRate=FEC_AUTO;
 	  else
 	    {
-	      if (!no_daemon)
-		syslog (LOG_USER|LOG_INFO,
-			"Config issue : coderate\n");
-	      else
-		fprintf (stderr,
+	      log_message( MSG_INFO,
 			"Config issue : coderate\n");
 	      exit(ERROR_CONF);
 	    }
@@ -630,12 +566,8 @@ main (int argc, char **argv)
 	}
       else
 	{
-	  if (!no_daemon)
-	    syslog (LOG_USER|LOG_INFO,
-		    "Config issue : unknow symbol : %s\n\n", sous_chaine);
-	  else
-	    fprintf (stderr,
-		    "Config issue : unknow symbol : %s\n\n", sous_chaine);
+	  log_message( MSG_INFO,
+		       "Config issue : unknow symbol : %s\n\n", sous_chaine);
 	  continue;
 	}
     }
@@ -645,16 +577,12 @@ main (int argc, char **argv)
   nb_flux = curr_channel;
   if (curr_channel > MAX_CHAINES)
     {
-      if (!no_daemon)
-	syslog (LOG_USER|LOG_INFO, "Too many channels : %d limit : %d\n",
-		curr_channel, MAX_CHAINES);
-      else
-	fprintf (stderr, "Too many channels : %d limit : %d\n",
-		 curr_channel, MAX_CHAINES);
+      log_message( MSG_INFO, "Too many channels : %d limit : %d\n",
+		   curr_channel, MAX_CHAINES);
       exit(ERROR_TOO_CHANNELS);
     }
 
-  // we clear it by precaution
+  // we clear it by paranoia
   sprintf (nom_fich_chaines_diff, "/var/run/mumudvb/chaines_diffusees_carte%d",
 	   card);
   sprintf (nom_fich_chaines_non_diff, "/var/run/mumudvb/chaines_non_diffusees_carte%d",
@@ -662,14 +590,9 @@ main (int argc, char **argv)
   chaines_diff = fopen (nom_fich_chaines_diff, "w");
   if (chaines_diff == NULL)
     {
-      if (!no_daemon)
-	syslog (LOG_USER|LOG_INFO,
-		"%s: %s\n",
-		nom_fich_chaines_diff, strerror (errno));
-      else
-	fprintf (stderr,
-		 "%s: %s\n",
-		 nom_fich_chaines_diff, strerror (errno));
+      log_message( MSG_INFO,
+		   "%s: %s\n",
+		   nom_fich_chaines_diff, strerror (errno));
       exit(ERROR_CREATE_FILE);
     }
 
@@ -678,22 +601,18 @@ main (int argc, char **argv)
   chaines_non_diff = fopen (nom_fich_chaines_non_diff, "w");
   if (chaines_diff == NULL)
     {
-      if (!no_daemon)
-	syslog (LOG_USER|LOG_INFO,
-		"%s: %s\n",
-		nom_fich_chaines_non_diff, strerror (errno));
-      else
-	fprintf (stderr,
-		 "%s: %s\n",
-		 nom_fich_chaines_non_diff, strerror (errno));
+      log_message( MSG_INFO,
+		   "%s: %s\n",
+		   nom_fich_chaines_non_diff, strerror (errno));
       exit(ERROR_CREATE_FILE);
     }
 
   fclose (chaines_non_diff);
 
-  if (!no_daemon)
-    syslog (LOG_USER|LOG_INFO, "Diffusion. Freq %lu pol %c srate %lu\n",
-	    freq, pol, srate);
+  
+  log_message( MSG_INFO, "Streaming. Freq %lu pol %c srate %lu\n",
+	       freq, pol, srate);
+
 
   if(cam_support||rewrite_pat)
     {
@@ -732,10 +651,6 @@ main (int argc, char **argv)
     {
       if (open_fe (&fds.fd_frontend, card))
 	{
-	  if (!no_daemon)
-	    syslog (LOG_USER|LOG_INFO, "Tuning to %ld Hz\n", freq);
-	  else
-	    fprintf (stderr, "Tuning to %ld Hz\n", freq);
 	  tune_retval =
 	    tune_it (fds.fd_frontend, freq, srate, pol, tone, specInv, diseqc,
 		     modulation, HP_CodeRate, TransmissionMode, guardInterval,
@@ -745,11 +660,8 @@ main (int argc, char **argv)
 
   if (tune_retval < 0)
     {
-      if (!no_daemon)
-	syslog (LOG_USER|LOG_INFO, "Tunning issue, card %d\n", card);
-      else
-	fprintf (stderr, "Tunning issue, card %d\n", card);
-
+      log_message( MSG_INFO, "Tunning issue, card %d\n", card);
+      
       // we close the file descriptors
       close_card_fd (card, nb_flux, num_pids, mandatory_pid, fds);
       exit(ERROR_TUNE);
@@ -787,7 +699,7 @@ main (int argc, char **argv)
       pidfile = fopen (nom_fich_pid, "w");
       if (pidfile == NULL)
 	{
-	  syslog (LOG_USER|LOG_INFO, "%s: %s\n",
+	  log_message( MSG_INFO,"%s: %s\n",
 		  nom_fich_pid, strerror (errno));
 	  exit(ERROR_CREATE_FILE);
 	}
@@ -845,43 +757,29 @@ main (int argc, char **argv)
   now = 0;
 
   ttl = 2;
-  if (!no_daemon)
-    syslog (LOG_USER|LOG_INFO, "Card %d tuned\n", card);
-  else
-    fprintf (stderr, "Card %d tuned\n", card);
+  
+  log_message( MSG_INFO, "Card %d tuned\n", card);
 
   // Init udp
   for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
     {
       // le makeclientsocket est pour joindre automatiquement l'ip de multicast créée
       // les swiths HP broadcastent les ip de multicast sans clients
-      socketOut[curr_channel] = makeclientsocket (ipOut[curr_channel], portOut[curr_channel], ttl, &sOut[curr_channel], no_daemon);
+      socketOut[curr_channel] = makeclientsocket (ipOut[curr_channel], portOut[curr_channel], ttl, &sOut[curr_channel]);
     }
 
-  if (!no_daemon)
-    syslog (LOG_USER|LOG_INFO, "Diffusion %d channel%s\n", nb_flux,
-	    (nb_flux == 1 ? "" : "s"));
-  else
-    fprintf (stderr, "Diffusion %d channel%s\n", nb_flux,
-	     (nb_flux == 1 ? "" : "s"));
+  
+  log_message( MSG_INFO, "Diffusion %d channel%s\n", nb_flux,
+	       (nb_flux == 1 ? "" : "s"));
 
   for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
     {
-      if (!no_daemon)
-	{
-	  syslog (LOG_USER|LOG_INFO, "Channel \"%s\" num %d ip %s:%d\n",
+	  log_message( MSG_INFO, "Channel \"%s\" num %d ip %s:%d\n",
 		  noms[curr_channel], curr_channel, ipOut[curr_channel], portOut[curr_channel]);
-	}
-      else
-	{
-	  fprintf (stderr,
-		   "Channel \"%s\" num %d ip %s:%d\n",
-		   noms[curr_channel], curr_channel, ipOut[curr_channel], portOut[curr_channel]);
-	  fprintf (stderr, "        pids : ");
+	  log_message( MSG_DETAIL, "        pids : ");
 	  for (curr_pid = 0; curr_pid < num_pids[curr_channel]; curr_pid++)
-	    fprintf (stderr, "%d ", pids[curr_channel][curr_pid]);
-	  fprintf (stderr, "\n");
-	}
+	    log_message( MSG_DETAIL, "%d ", pids[curr_channel][curr_pid]);
+	  log_message( MSG_DETAIL, "\n");
     }
 
 
@@ -904,11 +802,7 @@ main (int argc, char **argv)
 	{
 	  if (bytes_read != TS_PACKET_SIZE)
 	    {
-		if (!no_daemon)
-		  syslog (LOG_USER|LOG_INFO, "No bytes left to read - aborting\n");
-		else
-		  fprintf (stderr, "No bytes left to read - aborting\n");
-		break;
+	      log_message( MSG_INFO, "No bytes left to read - aborting\n");
 	    }
 
 	  pid = ((temp_buf[1] & 0x1f) << 8) | (temp_buf[2]);
@@ -995,25 +889,16 @@ main (int argc, char **argv)
 	      if (alarm_count == 1)
 		{
 		  alarm_count = 0;
-		  if (!no_daemon)
-		    syslog (LOG_USER|LOG_INFO,
-			   "Good, we receive back significant data\n");
-		  else
-		    fprintf (stderr,
-			   "Good, we receive back significant data\n");
+		  log_message( MSG_INFO,
+			       "Good, we receive back significant data\n");
 		}
 	    }
 	  count_non_transmis++;
 	  if (count_non_transmis > ALARM_COUNT_LIMIT)
 	    {
-	      if (!no_daemon)
-		syslog (LOG_USER|LOG_INFO,
-			"Error : less than one paquet on %d sent\n",
-			ALARM_COUNT_LIMIT);
-	      else
-		fprintf (stderr,
-			 "Error : less than one paquet on %d sent\n",
-			 ALARM_COUNT_LIMIT);
+	      log_message( MSG_INFO,
+			   "Error : less than one paquet on %d sent\n",
+			   ALARM_COUNT_LIMIT);
 	      alarm_count = 1;
 	    }
 	}
@@ -1021,23 +906,11 @@ main (int argc, char **argv)
 
   if (Interrupted)
     {
-      if (!no_daemon)
-	{
-	  if(Interrupted< (1<<8)) //we check if it's a signal or a mumudvb error
-	    syslog (LOG_USER|LOG_INFO, "\nCaught signal %d - closing cleanly.\n",
-		    Interrupted);
-	  else
-	    syslog (LOG_USER|LOG_INFO, "\nclosing cleanly.\n");
-	}
-      else
-	{
-	  if(Interrupted< (1<<8)) //we check if it's a signal or a mumudvb error
-	    fprintf (stderr, "\nCaught signal %d - closing cleanly.\n",
+      if(Interrupted< (1<<8)) //we check if it's a signal or a mumudvb error
+	log_message( MSG_INFO, "\nCaught signal %d - closing cleanly.\n",
 		     Interrupted);
-	  else
-	    fprintf (stderr, "\nclosing cleanly.\n");
-
-	}
+      else
+	log_message( MSG_INFO, "\nclosing cleanly.\n");
     }
 
   for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
@@ -1055,27 +928,17 @@ main (int argc, char **argv)
 
   if (remove (nom_fich_chaines_diff))
     {
-      if (!no_daemon)
-	syslog (LOG_USER|LOG_INFO,
-		"%s: %s\n",
-		nom_fich_chaines_diff, strerror (errno));
-      else
-	fprintf (stderr,
-		 "%s: %s\n",
-		 nom_fich_chaines_diff, strerror (errno));
+      log_message( MSG_INFO,
+		   "%s: %s\n",
+		   nom_fich_chaines_diff, strerror (errno));
       exit(ERROR_DEL_FILE);
     }
 
   if (remove (nom_fich_chaines_non_diff))
     {
-      if (!no_daemon)
-	syslog (LOG_USER|LOG_INFO,
-		"%s: %s\n",
-		nom_fich_chaines_non_diff, strerror (errno));
-      else
-	fprintf (stderr,
-		 "%s: %s\n",
-		 nom_fich_chaines_non_diff, strerror (errno));
+      log_message( MSG_INFO,
+		   "%s: %s\n",
+		   nom_fich_chaines_non_diff, strerror (errno));
       exit(ERROR_DEL_FILE);
     }
 
@@ -1084,8 +947,8 @@ main (int argc, char **argv)
     {
       if (remove (nom_fich_pid))
 	{
-	  syslog (LOG_USER|LOG_INFO, "%s: %s\n",
-		  nom_fich_pid, strerror (errno));
+	  log_message( MSG_INFO, "%s: %s\n",
+		       nom_fich_pid, strerror (errno));
 	  exit(ERROR_DEL_FILE);
 	}
     }
@@ -1109,42 +972,27 @@ SignalHandler (int signum)
       gettimeofday (&tv, (struct timezone *) NULL);
       now = tv.tv_sec - real_start_time;
       if (aff_force_signal && carte_accordee)
-	affiche_puissance (fds, no_daemon);
+	affiche_puissance (fds);
       if (!carte_accordee)
 	{
-	  if (!no_daemon)
-	    syslog (LOG_USER|LOG_INFO,
-		    "Card not tuned after %ds - exiting\n",
-		    timeout_accord);
-	  else
-	    fprintf (stderr,
-		    "Card not tuned after %ds - exiting\n",
-		     timeout_accord);
+	  log_message( MSG_INFO,
+		       "Card not tuned after %ds - exiting\n",
+		       timeout_accord);
 	  exit(ERROR_TUNE);
 	}	
       for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
 	if ((chaines_diffuses[curr_channel] >= 100) && (!chaines_diffuses_old[curr_channel]))
 	  {
-	    if (!no_daemon)
-	      syslog (LOG_USER|LOG_INFO,
-		      "Channel \"%s\" back.Card %d\n",
-		      noms[curr_channel], card);
-	    else
-	      fprintf (stderr,
-		      "Channel \"%s\" back.Card %d\n",
-		       noms[curr_channel], card);
+	    log_message( MSG_INFO,
+			 "Channel \"%s\" back.Card %d\n",
+			 noms[curr_channel], card);
 	    chaines_diffuses_old[curr_channel] = 1;	// update
 	  }
 	else if ((chaines_diffuses_old[curr_channel]) && (chaines_diffuses[curr_channel] < 100))
 	  {
-	    if (!no_daemon)
-	      syslog (LOG_USER|LOG_INFO,
-		      "Channel \"%s\" down.Card %d\n",
-		      noms[curr_channel], card);
-	    else
-	      fprintf (stderr,
-		      "Channel \"%s\" down.Card %d\n",
-		      noms[curr_channel], card);
+	    log_message( MSG_INFO,
+			 "Channel \"%s\" down.Card %d\n",
+			 noms[curr_channel], card);
 	    chaines_diffuses_old[curr_channel] = 0;	// update
 	  }
 
@@ -1163,20 +1011,15 @@ SignalHandler (int signum)
       // on ne diffuse plus depuis trop longtemps
       if(time_no_diff&&((now-time_no_diff)>timeout_no_diff))
 	{
-	  if (!no_daemon)
-	    syslog (LOG_USER|LOG_INFO,
-		    "No data from card %d in %ds, exiting.\n",
-		      card, timeout_no_diff);
-	    else
-	      fprintf (stderr,
-		    "No data from card %d in %ds, exiting.\n",
-		      card, timeout_no_diff);
+	  log_message( MSG_INFO,
+		       "No data from card %d in %ds, exiting.\n",
+		       card, timeout_no_diff);
 	  Interrupted=ERROR_NO_DIFF<<8; //the <<8 is to make difference beetween signals and errors
 	}
 
       // on envoie le old pour annoncer que les chaines
       // qui diffusent au dessus du quota de pauqets
-      gen_chaines_diff (no_daemon, chaines_diffuses_old);
+      gen_chaines_diff (chaines_diffuses_old);
 
       // reinit
       for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
@@ -1203,7 +1046,7 @@ SignalHandler (int signum)
 
 
 void
-gen_chaines_diff (int no_daemon, int *chaines_diffuses)
+gen_chaines_diff (int *chaines_diffuses)
 {
   FILE *chaines_diff;
   FILE *chaines_non_diff;
@@ -1212,28 +1055,18 @@ gen_chaines_diff (int no_daemon, int *chaines_diffuses)
   chaines_diff = fopen (nom_fich_chaines_diff, "w");
   if (chaines_diff == NULL)
     {
-      if (!no_daemon)
-	syslog (LOG_USER|LOG_INFO,
-		"%s: %s\n",
-		nom_fich_chaines_diff, strerror (errno));
-      else
-	fprintf (stderr,
-		 "%s: %s\n",
-		 nom_fich_chaines_diff, strerror (errno));
+      log_message( MSG_INFO,
+		   "%s: %s\n",
+		   nom_fich_chaines_diff, strerror (errno));
       exit(ERROR_CREATE_FILE);
     }
 
   chaines_non_diff = fopen (nom_fich_chaines_non_diff, "w");
   if (chaines_non_diff == NULL)
     {
-      if (!no_daemon)
-	syslog (LOG_USER|LOG_INFO,
-		"%s: %s\n",
-		nom_fich_chaines_non_diff, strerror (errno));
-      else
-	fprintf (stderr,
-		 "%s: %s\n",
-		 nom_fich_chaines_non_diff, strerror (errno));
+      log_message( MSG_INFO,
+		   "%s: %s\n",
+		   nom_fich_chaines_non_diff, strerror (errno));
       exit(ERROR_CREATE_FILE);
     }
 
@@ -1272,10 +1105,7 @@ pat_rewrite(unsigned char *buf,int num_pids, int *pids)
     {
       if (section_length)
 	{
-	  if (!no_daemon)
-	    syslog (LOG_USER|LOG_INFO,"PAT too big : %d, don't know how rewrite, sent as is\n", section_length);
-	  else
-	    fprintf (stderr, "PAT too big : %d, don't know how rewrite, sent as is\n", section_length);
+	  log_message( MSG_INFO,"PAT too big : %d, don't know how rewrite, sent as is\n", section_length);
 	}
       else //empty PAT
 	{

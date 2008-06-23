@@ -25,6 +25,17 @@
 #define ALARM_COUNT_LIMIT	1024
 #define MAX_LEN_NOM		256
 
+
+enum
+  {
+    MSG_ERROR=-2,
+    MSG_WARN,
+    MSG_INFO,
+    MSG_DETAIL,
+    MSG_DEBUG
+  };
+
+
 //For pat rewriting
 
 //From libsi
@@ -99,6 +110,9 @@ typedef struct {
    /* or program_map_pid (if prog_num=0)*/
 } pat_prog_t;
 
+
+//logging
+void log_message( int , const char *, ... );
 
 
 
