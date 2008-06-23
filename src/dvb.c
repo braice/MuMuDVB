@@ -1,58 +1,51 @@
 /* 
-dvb.h dvb part (except tune) of mumudvb
-mumudvb - UDP-ize a DVB transport stream.
-(C) Dave Chapman <dave@dchapman.com> 2001, 2002.
-Modified By Brice DUBOST
+ * dvb.h dvb part (except tune) of mumudvb
+ * mumudvb - UDP-ize a DVB transport stream.
  * 
-The latest version can be found at http://mumudvb.braice.net
+ * (C) Brice DUBOST
+ * (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
+ * 
+ * The latest version can be found at http://mumudvb.braice.net
+ * 
+ * Copyright notice:
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *     
+ */
 
-Copyright notice:
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-    
-*/
-
+#define _GNU_SOURCE
 #include "dvb.h"
+#include <stdio.h>
 
-
-char *frontenddev[6] =
-  { "/dev/dvb/adapter0/frontend0", "/dev/dvb/adapter1/frontend0",
-  "/dev/dvb/adapter2/frontend0", "/dev/dvb/adapter3/frontend0",
-  "/dev/dvb/adapter4/frontend0", "/dev/dvb/adapter5/frontend0"
-};
-
-char *demuxdev[6] = { "/dev/dvb/adapter0/demux0", "/dev/dvb/adapter1/demux0",
-  "/dev/dvb/adapter2/demux0", "/dev/dvb/adapter3/demux0",
-  "/dev/dvb/adapter4/demux0", "/dev/dvb/adapter5/demux0"
-};
-
-char *dvrdev[6] = { "/dev/dvb/adapter0/dvr0", "/dev/dvb/adapter1/dvr0",
-  "/dev/dvb/adapter2/dvr0", "/dev/dvb/adapter3/dvr0",
-  "/dev/dvb/adapter4/dvr0", "/dev/dvb/adapter5/dvr0"
-};
-
-
+#define FRONTEND_DEV_PATH "/dev/dvb/adapter%d/frontend0"
+#define DEMUX_DEV_PATH    "/dev/dvb/adapter%d/demux0"
+#define DVR_DEV_PATH      "/dev/dvb/adapter%d/dvr0"
 
 int
 open_fe (int *fd_frontend, int card)
 {
+
+  char *frontend_name;
+  asprintf(&frontend_name,FRONTEND_DEV_PATH,card);
   if ((*fd_frontend = open (frontenddev[card], O_RDWR | O_NONBLOCK)) < 0)
     {
       perror ("FRONTEND DEVICE: ");
+      free(frontend_name);
       return -1;
     }
+  free(frontend_name);
   return 1;
 }
 
@@ -101,14 +94,18 @@ create_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t *
   int i=0;
   int j=0;
   int curr_pid_mandatory = 0;
+  char *demuxdev_name;
+  char *dvrdev_name;
+  asprintf(&demuxdev_name,DEMUX_DEV_PATH,card);
 
   for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY;curr_pid_mandatory++)
     //file descriptors for the mandatory pids
     //we check if we need to open the file descriptor (some cards are limited)
-    if ((mandatory_pid[curr_pid_mandatory] != 0)&& ((fds->fd_mandatory[curr_pid_mandatory] = open (demuxdev[card], O_RDWR)) < 0) )	
+    if ((mandatory_pid[curr_pid_mandatory] != 0)&& ((fds->fd_mandatory[curr_pid_mandatory] = open (demuxdev_name, O_RDWR)) < 0) )	
       {
 	fprintf (stderr, "FD Mandatory %i: ", curr_pid_mandatory);
 	perror ("DEMUX DEVICE: ");
+	free(demuxdev_name);
 	return -1;
       }
 
@@ -116,21 +113,25 @@ create_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t *
     {
       for(j=0;j<num_pids[i];j++)
 	{
-	  if ((fds->fd[i][j] = open (demuxdev[card], O_RDWR)) < 0)
+	  if ((fds->fd[i][j] = open (demuxdev_name, O_RDWR)) < 0)
 	    {
 	      fprintf (stderr, "FD %i: ", i);
 	      perror ("DEMUX DEVICE: ");
-	    return -1;
+	      free(demuxdev_name);
+	      return -1;
 	    }
 	}
     }
-  if ((fds->fd_dvr = open (dvrdev[card], O_RDONLY | O_NONBLOCK)) < 0)
+  asprintf(&dvrdev_name,DVR_DEV_PATH,card);
+  if ((fds->fd_dvr = open (dvrdev_name, O_RDONLY | O_NONBLOCK)) < 0)
     {
       perror ("DVR DEVICE: ");
+      free(dvrdev_name);
       return -1;
     }
 
-
+  free(dvrdev_name);
+  free(demuxdev_name);
   return 0;
 
 }
