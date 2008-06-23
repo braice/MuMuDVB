@@ -187,7 +187,7 @@ main (int argc, char **argv)
   //do we support conditionnal access modules ?
   int i;
   int cam_pmt_pid[MAX_CHAINES];
-  mumudvb_pmt_t *cam_pmt_ptr;
+  mumudvb_pmt_t *cam_pmt_ptr=NULL;
   int cam_number=0;
 
   for(i=0;i<MAX_CHAINES;i++)
@@ -947,7 +947,6 @@ main (int argc, char **argv)
 		      if(cam_parse_pmt(temp_buf,cam_pmt_ptr,vlc_sys_access->cai)) 
 			{
 			  //fprintf(stderr,"HOP\n");
-			  printf("CAM : New PMT packet, Pid %d channel %d\n", cam_pmt_pid[curr_channel], curr_channel);
      			  cam_pmt_pid[curr_channel]=0; //once we have asked the CAM for this PID, we clear it not to ask it again
 			  cam_pmt_ptr->i_program_number=curr_channel;
 			  en50221_SetCAPMT(vlc_sys_access, cam_pmt_ptr);

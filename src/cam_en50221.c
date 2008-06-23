@@ -421,8 +421,7 @@ static int SPDUSend( access_sys_t * p_sys, int i_session_id,
             if ( TPDUSend( p_sys, i_slot, T_DATA_MORE, p,
                            MAX_TPDU_DATA ) != 0 )
             {
-                fprintf (stderr, "couldn't send TPDU on session %d",
-                         i_session_id );
+                fprintf (stderr, "CAM : couldn't send TPDU on session %d\n", i_session_id );
                 free( p_spdu );
                 return -666;
             }
@@ -434,7 +433,7 @@ static int SPDUSend( access_sys_t * p_sys, int i_session_id,
             if ( TPDUSend( p_sys, i_slot, T_DATA_LAST, p, i_size )
                     != 0 )
             {
-                fprintf (stderr, "couldn't send TPDU on session %d",
+                fprintf (stderr, "CAM : couldn't send TPDU on session %d\n",
                          i_session_id );
                 free( p_spdu );
                 return -666;
@@ -445,7 +444,7 @@ static int SPDUSend( access_sys_t * p_sys, int i_session_id,
         if ( TPDURecv( p_sys, i_slot, &i_tag, NULL, NULL ) != 0
                || i_tag != T_SB )
         {
-	  fprintf (stderr,  "couldn't recv TPDU on session %d",
+	  fprintf (stderr,  "CAM : couldn't recv TPDU on session %d\n",
                      i_session_id );
             free( p_spdu );
             return -666;
@@ -476,7 +475,7 @@ static void SessionOpen( access_sys_t * p_sys, uint8_t i_slot,
     }
     if ( i_session_id == MAX_SESSIONS )
     {
-        fprintf (stderr, "too many sessions !" );
+        fprintf (stderr, "CAM : too many sessions !\n" );
         return;
     }
     p_sys->p_sessions[i_session_id - 1].i_slot = i_slot;
@@ -507,13 +506,13 @@ static void SessionOpen( access_sys_t * p_sys, uint8_t i_slot,
             0 )
     {
         fprintf (stderr, 
-                 "CAM : SessionOpen: couldn't send TPDU on slot %d", i_slot );
+                 "CAM : SessionOpen: couldn't send TPDU on slot %d\n", i_slot );
         return;
     }
     if ( TPDURecv( p_sys, i_slot, &i_tag, NULL, NULL ) != 0 )
     {
         fprintf (stderr, 
-                 "CAM : SessionOpen: couldn't recv TPDU on slot %d", i_slot );
+                 "CAM : SessionOpen: couldn't recv TPDU on slot %d\n", i_slot );
         return;
     }
 
@@ -532,7 +531,7 @@ static void SessionOpen( access_sys_t * p_sys, uint8_t i_slot,
 
     case RI_HOST_CONTROL:
     default:
-        fprintf (stderr, "CAM : unknown resource id (0x%x)", i_resource_id );
+        fprintf (stderr, "CAM : unknown resource id (0x%x)\n", i_resource_id );
         p_sys->p_sessions[i_session_id - 1].i_resource_id = 0;
     }
 }
@@ -550,7 +549,7 @@ static void SessionCreateResponse( access_sys_t * p_sys, uint8_t i_slot,
     if ( i_status != SS_OK )
     {
         fprintf(stderr,"CAM : SessionCreateResponse: failed to open session %d"
-                 " resource=0x%x status=0x%x", i_session_id, i_resource_id,
+                 " resource=0x%x status=0x%x\n", i_session_id, i_resource_id,
                  i_status );
         p_sys->p_sessions[i_session_id - 1].i_resource_id = 0;
         return;
@@ -571,7 +570,7 @@ static void SessionCreateResponse( access_sys_t * p_sys, uint8_t i_slot,
 
     case RI_HOST_CONTROL:
     default:
-        fprintf(stderr,"CAM : unknown resource id (0x%x)", i_resource_id );
+        fprintf(stderr,"CAM : unknown resource id (0x%x)\n", i_resource_id );
         p_sys->p_sessions[i_session_id - 1].i_resource_id = 0;
     }
 }
@@ -594,13 +593,13 @@ static void SessionSendClose( access_sys_t * p_sys, int i_session_id )
             0 )
     {
         fprintf(stderr,
-                 "CAM : SessionSendClose: couldn't send TPDU on slot %d", i_slot );
+                 "CAM : SessionSendClose: couldn't send TPDU on slot %d\n", i_slot );
         return;
     }
     if ( TPDURecv( p_sys, i_slot, &i_tag, NULL, NULL ) != 0 )
     {
         fprintf(stderr,
-                 "CAM : SessionSendClose: couldn't recv TPDU on slot %d", i_slot );
+                 "CAM : SessionSendClose: couldn't recv TPDU on slot %d\n", i_slot );
         return;
     }
 }
@@ -628,13 +627,13 @@ static void SessionClose( access_sys_t * p_sys, int i_session_id )
             0 )
     {
         fprintf(stderr,
-                 "CAM : SessionClose: couldn't send TPDU on slot %d", i_slot );
+                 "CAM : SessionClose: couldn't send TPDU on slot %d\n", i_slot );
         return;
     }
     if ( TPDURecv( p_sys, i_slot, &i_tag, NULL, NULL ) != 0 )
     {
         fprintf(stderr,
-                 "CAM : SessionClose: couldn't recv TPDU on slot %d", i_slot );
+                 "CAM : SessionClose: couldn't recv TPDU on slot %d\n", i_slot );
         return;
     }
 }
@@ -682,7 +681,7 @@ static void SPDUHandle( access_sys_t * p_sys, uint8_t i_slot,
         i_session_id = ((int)p_spdu[3] << 8) | p_spdu[4];
         if ( p_spdu[2] )
         {
-            fprintf(stderr,"CAM : closing a session which is not allocated (%d)",
+            fprintf(stderr,"CAM : closing a session which is not allocated (%d)\n",
                      i_session_id );
         }
         else
@@ -695,7 +694,7 @@ static void SPDUHandle( access_sys_t * p_sys, uint8_t i_slot,
         break;
 
     default:
-        fprintf(stderr,"CAM : unexpected tag in SPDUHandle (%x)", p_spdu[0] );
+        fprintf(stderr,"CAM : unexpected tag in SPDUHandle (%x)\n", p_spdu[0] );
         break;
     }
 }
@@ -803,7 +802,7 @@ static int APDUSend( access_sys_t * p_sys, int i_session_id, int i_tag,
     {
         if ( i_size + p - p_apdu > 256 )
         {
-            fprintf(stderr, "CAM : apdu overflow" );
+            fprintf(stderr, "CAM : apdu overflow\n" );
             i_ret = -666;
         }
         else
@@ -816,7 +815,7 @@ static int APDUSend( access_sys_t * p_sys, int i_session_id, int i_tag,
             i_ret = ioctl(p_sys->i_ca_handle, CA_SEND_MSG, &ca_msg );
             if ( i_ret < 0 )
             {
-                fprintf(stderr,"CAM : Error sending to CAM: %s", strerror(errno) );
+                fprintf(stderr,"CAM : Error sending to CAM: %s\n", strerror(errno) );
                 i_ret = -666;
             }
         }
@@ -856,7 +855,7 @@ static void ResourceManagerHandle( access_sys_t * p_sys, int i_session_id,
         break;
 
     default:
-        fprintf(stderr,"CAM : !!! unexpected tag in ResourceManagerHandle (0x%x)",
+        fprintf(stderr,"CAM : !!! unexpected tag in ResourceManagerHandle (0x%x)\n",
                  i_tag );
     }
 }
@@ -886,7 +885,7 @@ static void ApplicationInformationEnterMenu( access_sys_t * p_sys,
 {
     int i_slot = p_sys->p_sessions[i_session_id - 1].i_slot;
 
-    fprintf(stderr,"CAM : entering MMI menus on session %d", i_session_id );
+    fprintf(stderr,"CAM : entering MMI menus on session %d\n", i_session_id );
     APDUSend( p_sys, i_session_id, AOT_ENTER_MENU, NULL, 0 );
     p_sys->pb_slot_mmi_expected[i_slot] = 1;
 }
@@ -923,7 +922,7 @@ static void ApplicationInformationHandle( access_sys_t * p_sys, int i_session_id
     }
     default:
         fprintf(stderr,
-                 "CAM : !!! unexpected tag in ApplicationInformationHandle (0x%x)",
+                 "CAM : !!! unexpected tag in ApplicationInformationHandle (0x%x)\n",
                  i_tag );
     }
 }
@@ -963,18 +962,19 @@ static void CAPMTAdd( access_sys_t * p_sys, int i_session_id,
 
     if( p_sys->i_selected_programs >= CAM_PROG_MAX )
     {
-        fprintf(stderr,"CAM : Not adding CAPMT for SID %d, too many programs",
+        fprintf(stderr,"CAM : Not adding CAPMT for SID %d, too many programs\n",
                   p_pmt->i_program_number );
         return;
     }
     p_sys->i_selected_programs++;
     if( p_sys->i_selected_programs == 1 )
       {
+	fprintf(stderr,"CAM : adding first CAPMT for channel %d on session %d\n",
+		p_pmt->i_program_number, i_session_id );
 	convert_pmt(p_sys->cai, p_pmt, 1, 1, 0); //1=first 1=ok_descrambling 
+	//convert_pmt(p_sys->cai, p_pmt, 1, 3, 0); //1=first 3=query
 	if ( p_pmt->len )//TODO check if it's ok to test p_pmt->len
 	  {
-	    fprintf(stderr,"CAM : adding first CAPMT for channel %d on session %d\n",
-		    p_pmt->i_program_number, i_session_id );
 	    APDUSend( p_sys, i_session_id, AOT_CA_PMT, p_pmt->converted_packet, p_pmt->len );
 	  }
         return;
@@ -983,18 +983,10 @@ static void CAPMTAdd( access_sys_t * p_sys, int i_session_id,
     fprintf(stderr,"CAM : adding CAPMT for channel %d on session %d\n",
              p_pmt->i_program_number, i_session_id );
     convert_pmt(p_sys->cai, p_pmt, 4, 1, 0); //4=add 1=ok_descrambling  
+    //convert_pmt(p_sys->cai, p_pmt, 4, 3, 0); //4=add 3=query
 
     if ( p_pmt->len )//TODO check if it's ok to test p_pmt->len
       APDUSend( p_sys, i_session_id, AOT_CA_PMT, p_pmt->converted_packet, p_pmt->len );
-
-#if 0
-    p_capmt = CAPMTBuild( p_sys, i_session_id, p_pmt,
-                          0x4 /* add */, 0x1 /* ok_descrambling */,
-                          &i_capmt_size );
-
-    if ( i_capmt_size )
-        APDUSend( p_sys, i_session_id, AOT_CA_PMT, p_capmt, i_capmt_size );
-#endif
 }
 
 /*****************************************************************************
@@ -1006,7 +998,7 @@ static void CAPMTUpdate( access_sys_t * p_sys, int i_session_id,
     uint8_t *p_capmt;
     int i_capmt_size;
 
-    fprintf(stderr,"CAM : updating CAPMT for SID %d on session %d",
+    fprintf(stderr,"CAM : updating CAPMT for SID %d on session %d\n",
              p_pmt->i_program_number, i_session_id );
 
 #if 0
@@ -1030,7 +1022,7 @@ static void CAPMTDelete( access_sys_t * p_sys, int i_session_id,
     int i_capmt_size;
 
     p_sys->i_selected_programs--;
-    fprintf(stderr,"CAM : deleting CAPMT for SID %d on session %d",
+    fprintf(stderr,"CAM : deleting CAPMT for SID %d on session %d\n",
              p_pmt->i_program_number, i_session_id );
 #if 0
     convert_pmt(p_sys->cai, p_pmt, 5, 4, 0); //5=update 4=not selected
@@ -1050,8 +1042,6 @@ static void CAPMTDelete( access_sys_t * p_sys, int i_session_id,
 static void ConditionalAccessHandle( access_sys_t * p_sys, int i_session_id,
                                      uint8_t *p_apdu, int i_size )
 {
-    system_ids_t *p_ids =
-        (system_ids_t *)p_sys->p_sessions[i_session_id - 1].p_sys;
     int i_tag = APDUGetTag( p_apdu, i_size );
 
     switch ( i_tag )
@@ -1070,40 +1060,22 @@ static void ConditionalAccessHandle( access_sys_t * p_sys, int i_session_id,
 	      p_sys->cai->sys_id[i]=(d[i*2]<<8)|d[1+i*2];
 	      fprintf(stderr, "CAM : - 0x%x %d\n", p_sys->cai->sys_id[i], p_sys->cai->sys_id[i] );
 	    }
+	  //Now the cam can receive CA_PMT messages
 	  p_sys->cai->initialized=1;
 	  //fin du remplissage retour au code de VLC
-#if 0
-	  for ( i = 0; i < l / 2; i++ )
-	    {
-	      p_ids->pi_system_ids[i] = ((uint16_t)d[0] << 8) | d[1];
-	      d += 2;
-	      fprintf(stderr, "CAM : - 0x%x %d\n", p_ids->pi_system_ids[i], p_ids->pi_system_ids[i] );
-	    }
-	  p_ids->pi_system_ids[i] = 0;
-	
-	  for ( i = 0; i < MAX_PROGRAMS; i++ )
-	    {
-	      if ( p_sys->pp_selected_programs[i] != NULL )
-		{
-		  CAPMTAdd( p_sys, i_session_id,
-			    p_sys->pp_selected_programs[i] );
-		}
-	    }
-#endif
 	  break;
 	}
       case AOT_CA_PMT_REPLY: //code mostly taken from VDR
       {
-	fprintf(stderr,"CAM :  Ca Pmt Reply\n");
 	int l = 0;
 	uint8_t *d = APDUGetLength( p_apdu, &l );
 	if (l > 1) {
 	  uint16_t pnr = ((uint16_t)(*d) << 8) | *(d + 1);
-	  fprintf(stderr,"CAM :   program number %d\n", pnr);
+	  fprintf(stderr,"CAM :  Ca Pmt Reply, program number %d\n", pnr);
 	  d += 2;
 	  l -= 2;
 	  if (l > 0) {
-	    fprintf(stderr,"CAM : \t version number and currnexind 0x%02X\n", *d);
+	    //fprintf(stderr,"CAM : \t version number and curr_next_indic 0x%02X\n", *d);
 	    d += 1;
 	    l -= 1;
 	    if (l > 0) {
@@ -1126,22 +1098,22 @@ static void ConditionalAccessHandle( access_sys_t * p_sys, int i_session_id,
 		  switch (caepl & 0x7f)
 		    {
 		    case 0x01:
-		      fprintf(stderr,"CAM :  Descrambling possible");
+		      fprintf(stderr," Descrambling possible\n");
 		      break;
 		    case 0x02:
-		      fprintf(stderr,"CAM :  Descrambling possible under conditions (purchase dialogue)");
+		      fprintf(stderr," Descrambling possible under conditions (purchase dialogue)\n");
 		      break;
 		    case 0x03:
-		      fprintf(stderr,"CAM :  Descrambling possible under conditions (technical dialogue)");
+		      fprintf(stderr," Descrambling possible under conditions (technical dialogue)\n");
 		      break;
 		    case 0x71:
-		      fprintf(stderr,"CAM :  Descrambling not possible (because no entitlement)");
+		      fprintf(stderr," Descrambling not possible (because no entitlement)\n");
 		      break;
 		    case 0x73:
-		      fprintf(stderr,"CAM :  Descrambling not possible (for technical reasons)");
+		      fprintf(stderr," Descrambling not possible (for technical reasons)\n");
 		      break;
 		    default:
-		      fprintf(stderr,"CAM :  RFU");
+		      fprintf(stderr," RFU\n");
 
 		    }
 		}
@@ -1152,26 +1124,26 @@ static void ConditionalAccessHandle( access_sys_t * p_sys, int i_session_id,
 		unsigned char caees = *(d + 2);
 	      if ((caees & 0x80)>>7)
 		{
-		  fprintf(stderr,"CAM : \n\t CA_Enable pid %d : ", pid);
+		  fprintf(stderr,"CAM : \t CA_Enable pid %d : ", pid);
 		  switch (caees & 0x7f)
 		    {
 		    case 0x01:
-		      fprintf(stderr,"CAM :  Descrambling possible");
+		      fprintf(stderr,"  Descrambling possible\n");
 		      break;
 		    case 0x02:
-		      fprintf(stderr,"CAM :  Descrambling possible under conditions (purchase dialogue)");
+		      fprintf(stderr," Descrambling possible under conditions (purchase dialogue)\n");
 		      break;
 		    case 0x03:
-		      fprintf(stderr,"CAM :  Descrambling possible under conditions (technical dialogue)");
+		      fprintf(stderr," Descrambling possible under conditions (technical dialogue)\n");
 		      break;
 		    case 0x71:
-		      fprintf(stderr,"CAM :  Descrambling not possible (because no entitlement)");
+		      fprintf(stderr," Descrambling not possible (because no entitlement)\n");
 		      break;
 		    case 0x73:
-		      fprintf(stderr,"CAM :  Descrambling not possible (for technical reasons)");
+		      fprintf(stderr," Descrambling not possible (for technical reasons)\n");
 		      break;
 		    default:
-		      fprintf(stderr,"CAM :  RFU");
+		      fprintf(stderr," RFU\n");
 
 		    }
 		}
@@ -1186,7 +1158,7 @@ static void ConditionalAccessHandle( access_sys_t * p_sys, int i_session_id,
       }
     default: 
         fprintf(stderr,
-                 "CAM : !!! unexpected tag in ConditionalAccessHandle (0x%x)",
+                 "CAM : !!! unexpected tag in ConditionalAccessHandle (0x%x)\n",
                  i_tag );
     }
 }
@@ -1197,7 +1169,7 @@ static void ConditionalAccessHandle( access_sys_t * p_sys, int i_session_id,
 static void ConditionalAccessClose( access_sys_t * p_sys, int i_session_id )
 {
 
-    fprintf(stderr,"CAM : closing ConditionalAccess session (%d)", i_session_id );
+    fprintf(stderr,"CAM : closing ConditionalAccess session (%d)\n", i_session_id );
 
     free( p_sys->p_sessions[i_session_id - 1].p_sys );
 }
@@ -1288,7 +1260,7 @@ static void DateTimeHandle( access_sys_t * p_sys, int i_session_id,
         if ( l > 0 )
         {
             p_date->i_interval = *d;
-            fprintf(stderr,"CAM : DateTimeHandle : interval set to %d",
+            fprintf(stderr,"CAM : DateTimeHandle : interval set to %d\n",
                      p_date->i_interval );
         }
         else
@@ -1298,7 +1270,7 @@ static void DateTimeHandle( access_sys_t * p_sys, int i_session_id,
         break;
     }
     default:
-        fprintf(stderr,"CAM : unexpected tag in DateTimeHandle (0x%x)", i_tag );
+        fprintf(stderr,"CAM : unexpected tag in DateTimeHandle (0x%x)\n", i_tag );
     }
 }
 
@@ -1965,7 +1937,7 @@ int en50221_SetCAPMT( access_sys_t * p_sys, mumudvb_pmt_t *p_pmt ) //braice
         {
             if ( p_sys->pp_selected_programs[i] == NULL )
             {
-	      fprintf(stderr,"CAM : Nouveau PMT %d len %d\n",i, p_pmt->len);
+	      fprintf(stderr,"CAM : New PMT, number %d pid %d len %d channel number %d\n",i, p_pmt->pid, p_pmt->len, p_pmt->i_program_number );
 	      p_sys->pp_selected_programs[i] = p_pmt;
 	      break;
             }
@@ -1991,7 +1963,7 @@ int en50221_SetCAPMT( access_sys_t * p_sys, mumudvb_pmt_t *p_pmt ) //braice
 		  }
                 else
 		  {
-		    fprintf(stderr,"CAM : CAPMTAdd \n");
+		    //fprintf(stderr,"CAM : CAPMTAdd \n");
                     CAPMTAdd( p_sys, i_session_id, p_pmt );
 		  }
             }

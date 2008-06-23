@@ -15,6 +15,8 @@ All parameters are like: name=value
 ----
 ||'''Name :'''                          ||'''value:'''                                ||
 ||rewrite_pat                    ||specify if we wants the PAT rewriting feature ||
+||cam_support                    ||specify if we wants the support for scrambled channels ||
+||cam_number                     ||the number of the CAM we want to use (default 0) ||
 ||freq                           ||transponder's frequency in MHz ||
 ||pol                            ||transponder's polarisation (a char) v or h (not case sensitive) ||
 ||srate                          ||transponder's strate ||
@@ -30,7 +32,8 @@ All parameters are like: name=value
 ||'''For each channel '''||
 ||ip                             ||multicast (can also be unicast) ip where the chanel will be diffused ||
 ||port                           ||port ||
-||pids                           ||a pid list space separeted (any number, some pids are always sent (PAD EIT SDT TDT NIT) see mumudvb.c for more details) ||
+||pids                           ||a pid list space separeted (any number, some pids are always sent (PAD EIT SDT TDT NIT) see README for more details) ||
+||cam_pmt_pid                    ||(only for scrambled channels) the PMT PID for CAM support ||
 ||name (f)                       ||the name given to the chanel in /var/run/mumudvb/chaines_diffusees%d (used to generate  SAP announces) ||
 
 

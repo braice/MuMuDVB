@@ -98,7 +98,7 @@ int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai)
 	{
 	  // -- PES/PS                                                                                                                               
 	  //tspid->id   = buf[j+3];                                                                                                                  
-	  sprintf(stderr, "CAM : parse PMT : #PES/PS ----- We ignore \n");
+	  fprintf(stderr, "CAM : parse PMT : #PES/PS ----- We ignore \n");
 	  ok=0;
 	}
       else
@@ -302,6 +302,7 @@ int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt,
 	  out[o++]=buf[i];                            //stream_type
 	  out[o++]=buf[i+1];                          //reserved and elementary_pid
 	  out[o++]=buf[i+2];                          //reserved and elementary_pid
+	  //fprintf(stderr,"CAM : TEST, PID %d bytes : %d %x \n",((buf[i+1] & 0x1f)<<8) | buf[i+2]);
 	  ds_convlen=convert_desc(cai, out+o, buf+i+5, dslen, cmd,quiet);//we look to the descriptors associated to this stream
 	  o+=ds_convlen;
 	  if(ds_convlen>2)

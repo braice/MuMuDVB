@@ -4,7 +4,11 @@ mumudvb v1.2 - README
 http://mumudvb.braice.net
 
 = Description =
-mumudvb est une modification de dvbstream pour le cr@ns (http://www.crans.org) pour lui ajouter des fonctionnalités qui nous manquaient, la quantité de modifications étant importante nous avons décidé de redistribuer le projet (dans l'esprit du logiciel libre).
+mumudvb est une modification de dvbstream pour le cr@ns (http://www.crans.org), la quantité de modifications étant importante nous avons décidé de redistribuer le projet (dans l'esprit du logiciel libre).
+
+Désormais mumudvb est un projet indépendant de dvbstream
+
+Mumudvp permet de diffuser plusieurs chaines d'un transpondeur dvb sur différentes adresse de multicast.
 
 = Auteurs =
 
@@ -41,6 +45,7 @@ Nouvelles fonctionnalités par rapport à la version 0.6 de dvbstream:
  * Le programme s'inscrit lui même au flux (IGMP membership request) pour éviter que certains switchs braodcastent les flux
  * Le programme est capable de réécrire à la volée le pid PAT pour n'annoncer que les flux réelement présents (utile pour les set-top boxes).
   * Cette fonctionalité est expérimentale (03/2006) et ne permet pas de réécrire des Pids PAT plus gros que 188 bytes
+ * Support expérimental des chaines cryptées
 
 Ce programme n'est pas un patch pour dvbstream à cause de certaines restrictions:
  * obligation d'utiliser un fichier de configuration

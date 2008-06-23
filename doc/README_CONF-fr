@@ -15,6 +15,8 @@ Tous les paramètres sont de la forme suivante : nom=valeur
 ----
 ||'''Nom :'''                          ||'''valeur:'''                                ||
 ||rewrite_pat                    ||Spécifie si l'on veut la réécriture du PID PAT à la volée ||
+||cam_support                    ||Spécifie si l'on veut le support pour les chaines cryptées ||
+||cam_number                     ||Le numéro du module cam (défaut : 0) ||
 ||freq                           ||la fréquence du transpondeur en MHz ||
 ||pol                            ||la polarisation (un caractère) v ou h (insensible à la casse) ||
 ||srate                          ||le srate du transpondeur ||
@@ -31,6 +33,7 @@ Tous les paramètres sont de la forme suivante : nom=valeur
 ||ip                             ||l'ip de multicast sur laquelle cette chaise sera diffusée ||
 ||port                           ||le port ||
 ||pids                           ||une liste de pids séparés par des espaces (en nombre quelconque, certains pids sont toujours diffusés (PAT EIT SDT TDT NIT)) ||
+||cam_pmt_pid                    ||(uniquement pour les chaines crypées) numéro du PID PMT ||
 |name (f)                       ||le nom donné à la chaîne dans les fichiers qui indique les chaînes diffusées actuellement (utilisé par les scripts en exemple pour générer les annonces SAP) ||
 
 
