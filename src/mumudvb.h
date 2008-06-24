@@ -1,6 +1,8 @@
 #ifndef _MUMUDVB_H
 #define _MUMUDVB_H
 
+#include "ts.h"
+
 //the number of pids by channel
 #define MAX_PIDS_PAR_CHAINE     18
 
@@ -59,6 +61,7 @@ typedef struct{
 //logging
 void log_message( int , const char *, ... );
 
-
+//autoconfiguration
+int autoconf_read_pmt(mumudvb_pmt_t *pmt, mumudvb_channel_t *channel);
 
 #endif

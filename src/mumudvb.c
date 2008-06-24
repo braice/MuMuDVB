@@ -193,6 +193,10 @@ main (int argc, char **argv)
   mumudvb_pmt_t *cam_pmt_ptr=NULL;
   int cam_number=0;
 
+  //for autoconfiguration
+  mumudvb_pmt_t *autoconf_temp_pmt=NULL;
+
+
   const char short_options[] = "c:sdhvq";
   const struct option long_options[] = {
     {"config", required_argument, NULL, 'c'},
@@ -700,6 +704,9 @@ main (int argc, char **argv)
     CAMPoll(vlc_sys_access);
   }
   
+  if(autoconfiguration)
+    autoconf_temp_pmt=malloc(sizeof(mumudvb_pmt_t));
+
 
   // We write our pid in a file if deamon
   if (!no_daemon)
@@ -826,13 +833,18 @@ main (int argc, char **argv)
 	      for(curr_channel=0;curr_channel<MAX_CHAINES;curr_channel++)
 		if((!channels[curr_channel].autoconfigurated) &&(channels[curr_channel].pids[0]==pid))
 		  {
-#if 0
 		    if(get_pmt(temp_buf,autoconf_temp_pmt)) 
 		    {
 		      //Now we have the PMT, we parse it
+		      log_message(MSG_DEBUG,"Autoconf : New PMT pid %d for channel %d\n",pid,curr_channel);
+		      autoconf_read_pmt(autoconf_temp_pmt,&channels[curr_channel]);
 		      channels[curr_channel].autoconfigurated=1;
+		      log_message(MSG_DEBUG,"Autoconf : Final PIDs for channel %d : ",curr_channel);
+		      for(i=0;i<channels[curr_channel].num_pids;i++)
+			log_message(MSG_DEBUG," %d -",channels[curr_channel].pids[i]);
+		      log_message(MSG_DEBUG,"\n\n");
+
 		    }
-#endif
 		  }
 #if 0
 	      //TODO once the autoconfiguration is finished 
@@ -963,6 +975,10 @@ main (int argc, char **argv)
       free(cam_pmt_ptr);
       free(vlc_sys_access);
     }
+
+  if(autoconfiguration)
+    free(autoconf_temp_pmt);
+
 
   if (remove (nom_fich_chaines_diff))
     {
