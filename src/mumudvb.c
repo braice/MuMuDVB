@@ -838,12 +838,11 @@ main (int argc, char **argv)
 		      //Now we have the PMT, we parse it
 		      log_message(MSG_DEBUG,"Autoconf : New PMT pid %d for channel %d\n",pid,curr_channel);
 		      autoconf_read_pmt(autoconf_temp_pmt,&channels[curr_channel]);
-		      channels[curr_channel].autoconfigurated=1;
 		      log_message(MSG_DEBUG,"Autoconf : Final PIDs for channel %d : ",curr_channel);
 		      for(i=0;i<channels[curr_channel].num_pids;i++)
 			log_message(MSG_DEBUG," %d -",channels[curr_channel].pids[i]);
 		      log_message(MSG_DEBUG,"\n\n");
-
+		      channels[curr_channel].autoconfigurated=1;
 		    }
 		  }
 	      continue;
@@ -1030,14 +1029,27 @@ SignalHandler (int signum)
 	}
 
       //autoconfiguration
-      //here we only check if it's finished
+      //here we check if it's finished
+      //if it's finished, we open the new descriptors and add the new filters
       if(autoconfiguration)
 	{
+	  //We check if the autoconfiguration is finished
+	  //  if there is still a channel wich is not configurated we 
+	  //  keep autoconfiguration continue
+	  autoconfiguration=0;
+	  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+	    if(!channels[curr_channel].autoconfigurated)
+	      autoconfiguration=1;
+
 	  if(time_start_autoconfiguration)
 	    time_start_autoconfiguration=now;
 	  else if (now-time_start_autoconfiguration>AUTOCONFIGURE_TIME)
 	    {
-	      //TODO check if all the channels are already autoconfigured, so we can leave before the timeout
+	      autoconfiguration=0;
+	    }
+
+	  if(!autoconfiguration)
+	    {
 	      log_message(MSG_DETAIL,"Autoconfiguration almost done\n");
 	      log_message(MSG_DETAIL,"Autoconf : Open the new descriptors\n");
 	      if (complete_card_fds(card, nb_flux, channels, &fds) < 0)
@@ -1053,8 +1065,8 @@ SignalHandler (int signum)
 		}
 
 	      log_message(MSG_DETAIL,"Autoconfiguration done\n");
-	      autoconfiguration=0;
 	    }
+
 	}
       //end of autoconfiguration
       else //we are not doing autoconfiguration we can do something else
