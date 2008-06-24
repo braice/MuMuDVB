@@ -846,13 +846,6 @@ main (int argc, char **argv)
 
 		    }
 		  }
-#if 0
-	      //TODO once the autoconfiguration is finished 
-	      close_card_fd (card, nb_flux, channels, mandatory_pid, fds);
-	      if (create_card_fd (card, nb_flux, channels, mandatory_pid, &fds) < 0)
-		return -1;
-#endif
-
 	      continue;
 	    }
 
@@ -1019,6 +1012,7 @@ SignalHandler (int signum)
 {
   struct timeval tv;
   int curr_channel = 0;
+  int curr_pid = 0;
   int compteur_chaines_diff=0;
 
   if (signum == SIGALRM)
@@ -1043,6 +1037,21 @@ SignalHandler (int signum)
 	    time_start_autoconfiguration=now;
 	  else if (now-time_start_autoconfiguration>AUTOCONFIGURE_TIME)
 	    {
+	      //TODO check if all the channels are already autoconfigured, so we can leave before the timeout
+	      log_message(MSG_DETAIL,"Autoconfiguration almost done\n");
+	      log_message(MSG_DETAIL,"Autoconf : Open the new descriptors\n");
+	      if (complete_card_fds(card, nb_flux, channels, &fds) < 0)
+		{
+		  log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");
+		//return -1; //TODO !!!!!!!!! ADD AN ERROR
+		}
+	      log_message(MSG_DETAIL,"Autoconf : Add the new filters\n");
+	      for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+		{
+		  for (curr_pid = 1; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+		    set_ts_filt (fds.fd[curr_channel][curr_pid], channels[curr_channel].pids[curr_pid], DMX_PES_OTHER);
+		}
+
 	      log_message(MSG_DETAIL,"Autoconfiguration done\n");
 	      autoconfiguration=0;
 	    }
