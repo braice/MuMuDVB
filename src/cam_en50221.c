@@ -34,6 +34,7 @@
  *****************************************************************************/
 #include "errors.h"
 #include "cam.h"
+#include "ts.h"
 #include "mumudvb.h"
 
 #include <sys/ioctl.h>

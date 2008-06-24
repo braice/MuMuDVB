@@ -48,6 +48,7 @@
 #include "udp.h"
 #include "dvb.h"
 #include "cam.h"
+#include "ts.h"
 #include "errors.h"
 
 #define VERSION "1.3.0-devel"
@@ -815,6 +816,17 @@ main (int argc, char **argv)
 	  if( autoconfiguration)
 	    {
 	      //here we call the autoconfiguration function
+	      for(curr_channel=0;curr_channel<MAX_CHAINES;curr_channel++)
+		if((!channels[curr_channel].autoconfigurated) &&(channels[curr_channel].pids[0]==pid))
+		  {
+#if 0
+		    if(get_pmt(temp_buf,autoconf_temp_pmt)) 
+		    {
+		      //Now we have the PMT, we parse it
+		      channels[curr_channel].autoconfigurated=1;
+		    }
+#endif
+		  }
 #if 0
 	      //TODO once the autoconfiguration is finished 
 	      close_card_fd (card, nb_flux, channels, mandatory_pid, fds);
@@ -856,7 +868,7 @@ main (int argc, char **argv)
 		{
 		  if ((channels[curr_channel].cam_pmt_pid)&& (channels[curr_channel].cam_pmt_pid == pid))
 		    {
-		      if(cam_parse_pmt(temp_buf,cam_pmt_ptr,vlc_sys_access->cai)) 
+		      if(get_pmt(temp_buf,cam_pmt_ptr)) 
 			{
 			  //fprintf(stderr,"HOP\n");
      			  channels[curr_channel].cam_pmt_pid=0; //once we have asked the CAM for this PID, we clear it not to ask it again
