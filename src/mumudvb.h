@@ -15,6 +15,8 @@
 #define ALARM_TIME_TIMEOUT 60
 #define ALARM_TIME_TIMEOUT_NO_DIFF 600
 
+#define AUTOCONFIGURE_TIME 10
+
 // seven dvb paquets in one UDP
 #define MAX_UDP_SIZE (TS_PACKET_SIZE*7)
 
@@ -25,7 +27,7 @@
 #define ALARM_COUNT_LIMIT	1024
 #define MAX_LEN_NOM		256
 
-
+//errors
 enum
   {
     MSG_ERROR=-2,
@@ -35,6 +37,22 @@ enum
     MSG_DEBUG
   };
 
+//Channels
+typedef struct{
+  int streamed_channel;    //tell if this channel is actually streamed
+  int streamed_channel_old;//tell if this channel is actually streamed (precedent test, to see if it's changed)
+
+  char name[MAX_LEN_NOM];  //the channel name
+
+  int pids[MAX_PIDS_PAR_CHAINE];   //the channel pids
+  int num_pids;                    //number of channel pids
+  int cam_pmt_pid;                 //pmt pid number for cam support
+
+  unsigned char buf[MAX_UDP_SIZE]; //the buffer wich will be sent once it's full
+  int nb_bytes;                    //number of bytes actually in the buffer
+
+  int autoconfigurated;            //is the channel autoconfigurated ?
+}mumudvb_channel_t;
 
 //For pat rewriting
 

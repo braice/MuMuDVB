@@ -27,6 +27,6 @@ typedef struct {
 int open_fe (int *fd_frontend, int card);
 void set_ts_filt (int fd,uint16_t pid, dmx_pes_type_t pestype);
 void affiche_puissance (fds_t fds);
-int create_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t *fds);
-void close_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t fds);
+int create_card_fd(int card, int nb_flux, mumudvb_channel_t *channels, int *mandatory_pid, fds_t *fds);
+void close_card_fd(int card, int nb_flux, mumudvb_channel_t *channels, int *mandatory_pid, fds_t fds);
 #endif

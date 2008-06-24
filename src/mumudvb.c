@@ -50,7 +50,7 @@
 #include "cam.h"
 #include "errors.h"
 
-#define VERSION "1.2.5-devel"
+#define VERSION "1.3.0-devel"
 
 
 /* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
@@ -63,9 +63,8 @@ long real_start_time;
 int aff_force_signal = 0;
 int no_daemon = 0;
 int nb_flux;
-int chaines_diffuses[MAX_CHAINES];
-int chaines_diffuses_old[MAX_CHAINES];
-char noms[MAX_CHAINES][MAX_LEN_NOM];
+mumudvb_channel_t channels[MAX_CHAINES];
+
 int carte_accordee = 0;
 int timeout_accord = ALARM_TIME_TIMEOUT;
 int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
@@ -73,6 +72,9 @@ int Interrupted = 0;
 char nom_fich_chaines_diff[256];
 char nom_fich_chaines_non_diff[256];
 int card = 0;
+int autoconfiguration = 0;
+long time_start_autoconfiguration=0;
+
 
 //logging
 int log_initialised=0;
@@ -91,7 +93,7 @@ unsigned long       crc32_table[256];
 
 // prototypes
 static void SignalHandler (int signum);
-void gen_chaines_diff (int *chaines_diffuses);
+void gen_chaines_diff ();
 int pat_rewrite(unsigned char *buf,int num_pids, int *pids);
 
 
@@ -123,7 +125,6 @@ main (int argc, char **argv)
 {
   int k;
   int buf_pos;
-  unsigned char buf[MAX_CHAINES][MAX_UDP_SIZE];
   struct pollfd pfds[2];	//  DVR device
 
 
@@ -150,7 +151,6 @@ main (int argc, char **argv)
   int bytes_read;		// number of bytes actually read
   unsigned char temp_buf[TS_PACKET_SIZE];
   unsigned char temp_buf2[TS_PACKET_SIZE];
-  int nb_bytes[MAX_CHAINES];
   //Mandatory pids
   int mandatory_pid[MAX_MANDATORY];
 
@@ -178,8 +178,6 @@ main (int argc, char **argv)
 
   unsigned char hi_mappids[8192];
   unsigned char lo_mappids[8192];
-  int pids[MAX_CHAINES][MAX_PIDS_PAR_CHAINE];
-  int num_pids[MAX_CHAINES];
   int alarm_count = 0;
   int count_non_transmis = 0;
   int tune_retval=0;
@@ -191,13 +189,8 @@ main (int argc, char **argv)
 
   //do we support conditionnal access modules ?
   int i;
-  int cam_pmt_pid[MAX_CHAINES];
   mumudvb_pmt_t *cam_pmt_ptr=NULL;
   int cam_number=0;
-
-  for(i=0;i<MAX_CHAINES;i++)
-    cam_pmt_pid[i] = 0; //paranoya
-
 
   const char short_options[] = "c:sdhvq";
   const struct option long_options[] = {
@@ -286,8 +279,9 @@ main (int argc, char **argv)
     }
   free(conf_filename);
 
-  memset (pids, 0, sizeof (pids));
-
+  //paranoya we clear all the content of all the channels
+  for(curr_channel=0;curr_channel<MAX_CHAINES;curr_channel++)
+    memset (&channels[curr_channel], 0, sizeof (channels[curr_channel]));
 
   // we scan config file
   // see doc/README-conf for further information
@@ -327,6 +321,16 @@ main (int argc, char **argv)
 	    {
 	      log_message( MSG_INFO,
 			"!!! You have enabled the support for conditionnal acces modules, this is an experimental feature, you have been warned\n");
+	    }
+	}
+      else if (!strcmp (sous_chaine, "autoconfiguration"))
+	{
+	  sous_chaine = strtok (NULL, delimiteurs);
+	  autoconfiguration = atoi (sous_chaine);
+	  if(autoconfiguration)
+	    {
+	      log_message( MSG_INFO,
+			"!!! You have enabled the support for autoconfiguration, this is an experimental feature, you have been warned\n");
 	    }
 	}
       else if (!strcmp (sous_chaine, "freq"))
@@ -391,11 +395,11 @@ main (int argc, char **argv)
 	      exit(ERROR_CONF);
 	    }
 	  sous_chaine = strtok (NULL, delimiteurs);
-      	  cam_pmt_pid[curr_channel] = atoi (sous_chaine);
-	  if (cam_pmt_pid[curr_channel] < 10 || cam_pmt_pid[curr_channel] > 8191){
+      	  channels[curr_channel].cam_pmt_pid = atoi (sous_chaine);
+	  if (channels[curr_channel].cam_pmt_pid < 10 || channels[curr_channel].cam_pmt_pid > 8191){
 	      log_message( MSG_INFO,
 		      "Config issue : %s in pids, given pid : %d\n",
-		      conf_filename, pids[curr_channel][curr_pid]);
+		      conf_filename, channels[curr_channel].cam_pmt_pid);
 	    exit(ERROR_CONF);
 	  }
 	}
@@ -409,13 +413,13 @@ main (int argc, char **argv)
 	    }
 	  while ((sous_chaine = strtok (NULL, delimiteurs)) != NULL)
 	    {
-	      pids[curr_channel][curr_pid] = atoi (sous_chaine);
+	      channels[curr_channel].pids[curr_pid] = atoi (sous_chaine);
 	      // we see if the given pid is good
-	      if (pids[curr_channel][curr_pid] < 10 || pids[curr_channel][curr_pid] > 8191)
+	      if (channels[curr_channel].pids[curr_pid] < 10 || channels[curr_channel].pids[curr_pid] > 8191)
 		{
 		  log_message( MSG_INFO,
 			    "Config issue : %s in pids, given pid : %d\n",
-			    conf_filename, pids[curr_channel][curr_pid]);
+			    conf_filename, channels[curr_channel].pids[curr_pid]);
 		  exit(ERROR_CONF);
 		}
 	      curr_pid++;
@@ -427,10 +431,10 @@ main (int argc, char **argv)
 		  exit(ERROR_CONF);
 		}
 	    }
-	  num_pids[curr_channel] = curr_pid;
+	  channels[curr_channel].num_pids = curr_pid;
 	  curr_pid = 0;
 	  curr_channel++;
-      	  cam_pmt_pid[curr_channel] = 0; //paranoya
+      	  channels[curr_channel].cam_pmt_pid = 0; //paranoya
 	  port_ok = 0;
 	  ip_ok = 0;
 	}
@@ -439,7 +443,7 @@ main (int argc, char **argv)
 	  // other substring extraction method in order to keep spaces
 	  sous_chaine = strtok (NULL, "=");
 	  if (!(strlen (sous_chaine) >= MAX_LEN_NOM - 1))
-	    strcpy(noms[curr_channel],strtok(sous_chaine,"\n"));	
+	    strcpy(channels[curr_channel].name,strtok(sous_chaine,"\n"));	
 	  else
 	    {
 		log_message( MSG_INFO,"Channel name too long\n");
@@ -663,7 +667,7 @@ main (int argc, char **argv)
       log_message( MSG_INFO, "Tunning issue, card %d\n", card);
       
       // we close the file descriptors
-      close_card_fd (card, nb_flux, num_pids, mandatory_pid, fds);
+      close_card_fd (card, nb_flux, channels, mandatory_pid, fds);
       exit(ERROR_TUNE);
     }
 
@@ -712,8 +716,8 @@ main (int argc, char **argv)
   // init of active channels list
   for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
     {
-      chaines_diffuses[curr_channel] = 0;
-      chaines_diffuses_old[curr_channel] = 1;
+      channels[curr_channel].streamed_channel = 0;
+      channels[curr_channel].streamed_channel_old = 1;
     }
 
   //We initialise mantadory table
@@ -740,7 +744,7 @@ main (int argc, char **argv)
   mandatory_pid[20]=1;
 
   // we open the file descriptors
-  if (create_card_fd (card, nb_flux, num_pids, mandatory_pid, &fds) < 0)
+  if (create_card_fd (card, nb_flux, channels, mandatory_pid, &fds) < 0)
     return -1;
 
   for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY;curr_pid_mandatory++)
@@ -749,8 +753,8 @@ main (int argc, char **argv)
 
   for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
     {
-      for (curr_pid = 0; curr_pid < num_pids[curr_channel]; curr_pid++)
-	set_ts_filt (fds.fd[curr_channel][curr_pid], pids[curr_channel][curr_pid], DMX_PES_OTHER);
+      for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+	set_ts_filt (fds.fd[curr_channel][curr_pid], channels[curr_channel].pids[curr_pid], DMX_PES_OTHER);
     }
 
   gettimeofday (&tv, (struct timezone *) NULL);
@@ -776,10 +780,10 @@ main (int argc, char **argv)
   for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
     {
 	  log_message( MSG_INFO, "Channel \"%s\" num %d ip %s:%d\n",
-		  noms[curr_channel], curr_channel, ipOut[curr_channel], portOut[curr_channel]);
+		  channels[curr_channel].name, curr_channel, ipOut[curr_channel], portOut[curr_channel]);
 	  log_message( MSG_DETAIL, "        pids : ");
-	  for (curr_pid = 0; curr_pid < num_pids[curr_channel]; curr_pid++)
-	    log_message( MSG_DETAIL, "%d ", pids[curr_channel][curr_pid]);
+	  for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+	    log_message( MSG_DETAIL, "%d ", channels[curr_channel].pids[curr_pid]);
 	  log_message( MSG_DETAIL, "\n");
     }
 
@@ -791,7 +795,7 @@ main (int argc, char **argv)
   pfds[1].events = POLLIN | POLLPRI;
 
   for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
-    nb_bytes[curr_channel]=0;
+    channels[curr_channel].nb_bytes=0;
 
   while (!Interrupted)
     {
@@ -807,6 +811,19 @@ main (int argc, char **argv)
 	    }
 
 	  pid = ((temp_buf[1] & 0x1f) << 8) | (temp_buf[2]);
+
+	  if( autoconfiguration)
+	    {
+	      //here we call the autoconfiguration function
+#if 0
+	      //TODO once the autoconfiguration is finished 
+	      close_card_fd (card, nb_flux, channels, mandatory_pid, fds);
+	      if (create_card_fd (card, nb_flux, channels, mandatory_pid, &fds) < 0)
+		return -1;
+#endif
+
+	      continue;
+	    }
 
 	  //Pat rewrite only
 	  //we save the full pat before otherwise only the first channel will be rewritten with a full PAT
@@ -828,21 +845,21 @@ main (int argc, char **argv)
 	      
 	      //if it isn't mandatory wee see if it is in the channel list
 	      if(!send_packet)
-		for (curr_pid = 0; (curr_pid < num_pids[curr_channel])&& !send_packet; curr_pid++)
-		  if ((pids[curr_channel][curr_pid] == pid)) {
+		for (curr_pid = 0; (curr_pid < channels[curr_channel].num_pids)&& !send_packet; curr_pid++)
+		  if ((channels[curr_channel].pids[curr_pid] == pid)) {
 		    send_packet=1;
-		    chaines_diffuses[curr_channel]++;
+		    channels[curr_channel].streamed_channel++;
 		  }
 
 	      //cam support
 	      if(cam_support && send_packet==1 &&vlc_sys_access->cai->initialized&&vlc_sys_access->cai->ready>=3)  //no need to check paquets we don't send
 		{
-		  if ((cam_pmt_pid[curr_channel])&& (cam_pmt_pid[curr_channel] == pid))
+		  if ((channels[curr_channel].cam_pmt_pid)&& (channels[curr_channel].cam_pmt_pid == pid))
 		    {
 		      if(cam_parse_pmt(temp_buf,cam_pmt_ptr,vlc_sys_access->cai)) 
 			{
 			  //fprintf(stderr,"HOP\n");
-     			  cam_pmt_pid[curr_channel]=0; //once we have asked the CAM for this PID, we clear it not to ask it again
+     			  channels[curr_channel].cam_pmt_pid=0; //once we have asked the CAM for this PID, we clear it not to ask it again
 			  cam_pmt_ptr->i_program_number=curr_channel;
 			  en50221_SetCAPMT(vlc_sys_access, cam_pmt_ptr);
 			  vlc_sys_access->cai->ready=0;
@@ -861,28 +878,28 @@ main (int argc, char **argv)
 		    for(buf_pos=0;buf_pos<TS_PACKET_SIZE;buf_pos++)
 		      temp_buf[buf_pos]=temp_buf2[buf_pos]; //We restore the full PAT
 		    //and we try to rewrite it
-		    if(pat_rewrite(temp_buf,num_pids[curr_channel],pids[curr_channel])) //We try rewrite and if there's an error...
+		    if(pat_rewrite(temp_buf,channels[curr_channel].num_pids,channels[curr_channel].pids)) //We try rewrite and if there's an error...
 		      send_packet=0;//... we don't send it anyway
 		  }
 
 	      //Ok we must send it
 	      if(send_packet==1)
 		{
-		  // we fill the channel buffer
+		  // we fill the channel buffer //TODO Make a memcpy
 		  for (buf_pos = 0; buf_pos < bytes_read; buf_pos++)
-		    buf[curr_channel][nb_bytes[curr_channel] + buf_pos] = temp_buf[buf_pos];
+		    channels[curr_channel].buf[channels[curr_channel].nb_bytes + buf_pos] = temp_buf[buf_pos];
 
-		  buf[curr_channel][nb_bytes[curr_channel] + 1] =
-		    (buf[curr_channel][nb_bytes[curr_channel] + 1] & 0xe0) | hi_mappids[pid];
-		  buf[curr_channel][nb_bytes[curr_channel] + 2] = lo_mappids[pid];
+		  channels[curr_channel].buf[channels[curr_channel].nb_bytes + 1] =
+		    (channels[curr_channel].buf[channels[curr_channel].nb_bytes + 1] & 0xe0) | hi_mappids[pid];
+		  channels[curr_channel].buf[channels[curr_channel].nb_bytes + 2] = lo_mappids[pid];
 
-		  nb_bytes[curr_channel] += bytes_read;
+		  channels[curr_channel].nb_bytes += bytes_read;
 		  //The buffer is full, we send it
-		  if ((nb_bytes[curr_channel] + TS_PACKET_SIZE) > MAX_UDP_SIZE)
+		  if ((channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE)
 		    {
-		      sendudp (socketOut[curr_channel], &sOut[curr_channel], buf[curr_channel],
-			       nb_bytes[curr_channel]);
-		      nb_bytes[curr_channel] = 0;
+		      sendudp (socketOut[curr_channel], &sOut[curr_channel], channels[curr_channel].buf,
+			       channels[curr_channel].nb_bytes);
+		      channels[curr_channel].nb_bytes = 0;
 		    }
 		}
 
@@ -919,7 +936,7 @@ main (int argc, char **argv)
     close (socketOut[curr_channel]);
 
   // we close the file descriptors
-  close_card_fd (card, nb_flux, num_pids, mandatory_pid, fds);
+  close_card_fd (card, nb_flux, channels, mandatory_pid, fds);
 
   if(cam_support)
     {
@@ -981,58 +998,74 @@ SignalHandler (int signum)
 		       "Card not tuned after %ds - exiting\n",
 		       timeout_accord);
 	  exit(ERROR_TUNE);
-	}	
-      for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
-	if ((chaines_diffuses[curr_channel] >= 100) && (!chaines_diffuses_old[curr_channel]))
-	  {
-	    log_message( MSG_INFO,
-			 "Channel \"%s\" back.Card %d\n",
-			 noms[curr_channel], card);
-	    chaines_diffuses_old[curr_channel] = 1;	// update
-	  }
-	else if ((chaines_diffuses_old[curr_channel]) && (chaines_diffuses[curr_channel] < 100))
-	  {
-	    log_message( MSG_INFO,
-			 "Channel \"%s\" down.Card %d\n",
-			 noms[curr_channel], card);
-	    chaines_diffuses_old[curr_channel] = 0;	// update
-	  }
-
-      // we count active channels
-      for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
-	if (chaines_diffuses_old[curr_channel])
-	  compteur_chaines_diff++;
-
-      // reinit si on diffuse
-      if(compteur_chaines_diff)
-	time_no_diff=0;
-      // sinon si c le moment ou on arrete on stoque l'heure
-      else if(!time_no_diff)
-	time_no_diff=now;
-
-      // on ne diffuse plus depuis trop longtemps
-      if(time_no_diff&&((now-time_no_diff)>timeout_no_diff))
-	{
-	  log_message( MSG_INFO,
-		       "No data from card %d in %ds, exiting.\n",
-		       card, timeout_no_diff);
-	  Interrupted=ERROR_NO_DIFF<<8; //the <<8 is to make difference beetween signals and errors
 	}
 
-      // on envoie le old pour annoncer que les chaines
-      // qui diffusent au dessus du quota de pauqets
-      gen_chaines_diff (chaines_diffuses_old);
+      //autoconfiguration
+      //here we only check if it's finished
+      if(autoconfiguration)
+	{
+	  if(time_start_autoconfiguration)
+	    time_start_autoconfiguration=now;
+	  else if (now-time_start_autoconfiguration>AUTOCONFIGURE_TIME)
+	    {
+	      log_message(MSG_DETAIL,"Autoconfiguration done\n");
+	      autoconfiguration=0;
+	    }
+	}
+      //end of autoconfiguration
+      else //we are not doing autoconfiguration we can do something else
+	{
+	  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+	    if ((channels[curr_channel].streamed_channel >= 100) && (!channels[curr_channel].streamed_channel_old))
+	      {
+		log_message( MSG_INFO,
+			     "Channel \"%s\" back.Card %d\n",
+			     channels[curr_channel].name, card);
+		channels[curr_channel].streamed_channel_old = 1;	// update
+	      }
+	    else if ((channels[curr_channel].streamed_channel_old) && (channels[curr_channel].streamed_channel < 100))
+	      {
+		log_message( MSG_INFO,
+			     "Channel \"%s\" down.Card %d\n",
+			     channels[curr_channel].name, card);
+		channels[curr_channel].streamed_channel_old = 0;	// update
+	      }
 
-      // reinit
-      for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
-	chaines_diffuses[curr_channel] = 0;
+	  // we count active channels
+	  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+	    if (channels[curr_channel].streamed_channel_old)
+	      compteur_chaines_diff++;
+
+	  // reinit si on diffuse
+	  if(compteur_chaines_diff)
+	    time_no_diff=0;
+	  // sinon si c le moment ou on arrete on stoque l'heure
+	  else if(!time_no_diff)
+	    time_no_diff=now;
+
+	  // on ne diffuse plus depuis trop longtemps
+	  if(time_no_diff&&((now-time_no_diff)>timeout_no_diff))
+	    {
+	      log_message( MSG_INFO,
+			   "No data from card %d in %ds, exiting.\n",
+			   card, timeout_no_diff);
+	      Interrupted=ERROR_NO_DIFF<<8; //the <<8 is to make difference beetween signals and errors
+	    }
+
+	  // on envoie le old pour annoncer que les chaines
+	  // qui diffusent au dessus du quota de pauqets
+	  gen_chaines_diff();
+
+	  // reinit
+	  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+	    channels[curr_channel].streamed_channel = 0;
       
-      if(cam_support)
-	{
-	  CAMPoll(vlc_sys_access);
-	  vlc_sys_access->cai->ready++;
+	  if(cam_support)
+	    {
+	      CAMPoll(vlc_sys_access);
+	      vlc_sys_access->cai->ready++;
+	    }
 	}
-
 
       alarm (ALARM_TIME);
     }
@@ -1049,7 +1082,7 @@ SignalHandler (int signum)
 
 
 void
-gen_chaines_diff (int *chaines_diffuses)
+gen_chaines_diff (void)
 {
   FILE *chaines_diff;
   FILE *chaines_non_diff;
@@ -1074,10 +1107,11 @@ gen_chaines_diff (int *chaines_diffuses)
     }
 
   for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
-    if (chaines_diffuses[curr_channel])
-      fprintf (chaines_diff, "%s:%d:%s\n", ipOut[curr_channel], portOut[curr_channel], noms[curr_channel]);
+    // on envoie le old pour annoncer que les chaines qui diffusent au dessus du quota de pauqets
+    if (channels[curr_channel].streamed_channel_old)
+      fprintf (chaines_diff, "%s:%d:%s\n", ipOut[curr_channel], portOut[curr_channel], channels[curr_channel].name);
     else
-      fprintf (chaines_non_diff, "%s:%d:%s\n", ipOut[curr_channel], portOut[curr_channel], noms[curr_channel]);
+      fprintf (chaines_non_diff, "%s:%d:%s\n", ipOut[curr_channel], portOut[curr_channel], channels[curr_channel].name);
   fclose (chaines_diff);
   fclose (chaines_non_diff);
 

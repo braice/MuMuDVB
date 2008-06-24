@@ -84,7 +84,7 @@ affiche_puissance (fds_t fds)
 }
 
 int
-create_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t *fds)
+create_card_fd(int card, int nb_flux, mumudvb_channel_t *channels, int *mandatory_pid, fds_t *fds)
 {
 
   int i=0;
@@ -107,7 +107,7 @@ create_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t *
 
   for (i = 0; i < nb_flux; i++)
     {
-      for(j=0;j<num_pids[i];j++)
+      for(j=0;j<channels[i].num_pids;j++)
 	{
 	  if ((fds->fd[i][j] = open (demuxdev_name, O_RDWR)) < 0)
 	    {
@@ -134,7 +134,7 @@ create_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t *
 
 
 void
-close_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t fds)
+close_card_fd(int card, int nb_flux, mumudvb_channel_t *channels, int *mandatory_pid, fds_t fds)
 {
   int i=0;
   int j=0;
@@ -148,7 +148,7 @@ close_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t fd
 
   for (i = 0; i < nb_flux; i++)
     {
-      for(j=0;j<num_pids[i];j++)
+      for(j=0;j<channels[i].num_pids;j++)
 	close (fds.fd[i][j]);
     }
   close (fds.fd_dvr);
