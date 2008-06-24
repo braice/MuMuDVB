@@ -284,6 +284,7 @@ main (int argc, char **argv)
   for(curr_channel=0;curr_channel<MAX_CHAINES;curr_channel++)
     memset (&channels[curr_channel], 0, sizeof (channels[curr_channel]));
 
+  curr_channel=0;
   // we scan config file
   // see doc/README-conf for further information
   while (fgets (ligne_courante, CONF_LINELEN, conf_file)
@@ -435,6 +436,8 @@ main (int argc, char **argv)
 	  channels[curr_channel].num_pids = curr_pid;
 	  curr_pid = 0;
 	  curr_channel++;
+	  log_message( MSG_DEBUG, "Channel %d\n",curr_channel);
+
       	  channels[curr_channel].cam_pmt_pid = 0; //paranoya
 	  port_ok = 0;
 	  ip_ok = 0;
@@ -797,6 +800,10 @@ main (int argc, char **argv)
 
   for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
     channels[curr_channel].nb_bytes=0;
+
+  if( autoconfiguration)
+    log_message(MSG_DETAIL,"Autoconfiguration Start\n");
+
 
   while (!Interrupted)
     {
