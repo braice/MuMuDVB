@@ -688,6 +688,7 @@ main (int argc, char **argv)
       vlc_sys_access->pp_selected_programs[i]=NULL;
     CAMOpen(vlc_sys_access, card, cam_number);
     vlc_sys_access->cai->initialized=0;
+    vlc_sys_access->cai->ready=0;
     CAMPoll(vlc_sys_access);
   }
   
@@ -834,7 +835,7 @@ main (int argc, char **argv)
 		  }
 
 	      //cam support
-	      if(cam_support && send_packet==1 &&vlc_sys_access->cai->initialized)  //no need to check paquets we don't send
+	      if(cam_support && send_packet==1 &&vlc_sys_access->cai->initialized&&vlc_sys_access->cai->ready>=3)  //no need to check paquets we don't send
 		{
 		  if ((cam_pmt_pid[curr_channel])&& (cam_pmt_pid[curr_channel] == pid))
 		    {
@@ -844,6 +845,7 @@ main (int argc, char **argv)
      			  cam_pmt_pid[curr_channel]=0; //once we have asked the CAM for this PID, we clear it not to ask it again
 			  cam_pmt_ptr->i_program_number=curr_channel;
 			  en50221_SetCAPMT(vlc_sys_access, cam_pmt_ptr);
+			  vlc_sys_access->cai->ready=0;
 			  cam_pmt_ptr=malloc(sizeof(mumudvb_pmt_t)); //on alloue un nouveau //l'ancien est stocke dans la structure VLC
 			  //TODO check if we have enough memory
 			  memset (cam_pmt_ptr, 0, sizeof( mumudvb_pmt_t));//we clear it
@@ -1028,6 +1030,7 @@ SignalHandler (int signum)
       if(cam_support)
 	{
 	  CAMPoll(vlc_sys_access);
+	  vlc_sys_access->cai->ready++;
 	}
 
 

@@ -1591,7 +1591,7 @@ static void MMIClose( access_sys_t * p_sys, int i_session_id )
     en50221_MMIFree( &p_mmi->last_object );
     free( p_sys->p_sessions[i_session_id - 1].p_sys );
 
-    log_message( MSG_INFO,"CAM : closing MMI session (%d)", i_session_id );
+    log_message( MSG_INFO,"CAM : closing MMI session (%d)\n", i_session_id );
     p_sys->pb_slot_mmi_expected[i_slot] = 0;
     p_sys->pb_slot_mmi_undisplayed[i_slot] = 1;
 }

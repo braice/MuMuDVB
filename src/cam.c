@@ -129,8 +129,9 @@ int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai)
       // -- discontinuity error in packet ?                                                                                                          
       if  ((pmt->continuity_counter+1)%16 != header->continuity_counter) 
 	{
-	  log_message( MSG_DETAIL,"CAM : PMT parse : Continuity ERROR\n\n");
+	  log_message( MSG_INFO,"CAM : PMT parse : Continuity ERROR\n\n");
 	  pmt->empty=1;
+	  return 0;
 	}
       pmt->continuity_counter=header->continuity_counter;
       pmt->len=AddPacketContinue(pmt->packet,buf+delta,188-delta,pmt->len); //on ajoute le paquet 

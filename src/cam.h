@@ -50,6 +50,7 @@
 
 struct ca_info {
   int initialized; //are the cai complete ?
+  int ready; //We wait a pool between each channel sending
   int sys_num;
   uint16_t sys_id[256];
   char app_name[256];
