@@ -86,11 +86,11 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 	    log_message( MSG_DEBUG,"Autoconf : \t==Stream type : %d ",pmt->packet[i]);
 	  }
 
-	  log_message( MSG_DETAIL,"PID %d added\n", pid);
+	  log_message( MSG_DEBUG,"Autoconf : PID %d added\n", pid);
 	  channel->pids[channel->num_pids]=pid;
 	  channel->num_pids++;
 	}
-	log_message( MSG_DETAIL,"Autoconf : == Number of pids after autoconf %d\n", channel->num_pids);
+	log_message( MSG_DEBUG,"Autoconf : Number of pids after autoconf %d\n", channel->num_pids);
 	return 0;
 	  
 }
@@ -396,4 +396,57 @@ mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,
 
   return NULL;
 
+}
+
+
+int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channels, int cam_support, int port)
+{
+
+  mumudvb_service_t *actual_service;
+  int channel_number=0;
+  char ip[20];
+
+
+  actual_service=services;
+
+  do
+    {
+      if(!cam_support && actual_service->free_ca_mode)
+	{
+	  log_message(MSG_DETAIL,"Service scrambled and no cam support. Name \"%s\"\n", actual_service->name);
+	}
+      else
+	{
+	  if(actual_service->type==1)
+	    {
+	      log_message(MSG_DETAIL,"Autoconf : We convert a new service, id %d pmt_pid %d type %d name \"%s\" \n",
+			  actual_service->id, actual_service->pmt_pid, actual_service->type, actual_service->name);
+
+	      channels[channel_number].streamed_channel = 0;
+	      channels[channel_number].streamed_channel_old = 1;
+	      channels[channel_number].nb_bytes=0;
+	      channels[channel_number].pids[0]=actual_service->pmt_pid;
+	      channels[channel_number].num_pids=1;
+	      channels[channel_number].portOut=port;
+	      strcpy(channels[channel_number].name,actual_service->name);
+	      sprintf(ip,"239.100.100.%d",channel_number);
+	      strcpy(channels[channel_number].ipOut,ip);
+	      log_message(MSG_DEBUG,"Ip : \"%s\" port : %d\n",channels[channel_number].ipOut,port);
+
+	      if(cam_support && actual_service->free_ca_mode)
+		channels[channel_number].cam_pmt_pid=actual_service->pmt_pid;
+
+	      channel_number++;
+	    }
+	  else
+	    log_message(MSG_DETAIL,"Service type %d, no autoconfigure. Name \"%s\"\n", actual_service->type, actual_service->name);
+	}
+      actual_service=actual_service->next;
+    }
+  while(actual_service);
+
+  //TODO FREE the services
+  //TODO CHECK THE MAX CHANNELS
+
+  return channel_number;
 }

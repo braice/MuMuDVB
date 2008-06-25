@@ -171,6 +171,7 @@ main (int argc, char **argv)
   int curr_pid_mandatory = 0;
   int send_packet=0;
   int port_ok = 0;
+  int common_port = 0;
   int ip_ok = 0;
   char ligne_courante[CONF_LINELEN];
   char *sous_chaine;
@@ -386,18 +387,23 @@ main (int argc, char **argv)
       else if (!strcmp (sous_chaine, "ip"))
 	{
 	  sous_chaine = strtok (NULL, delimiteurs);
-	  sscanf (sous_chaine, "%s\n", ipOut[curr_channel]);
+	  sscanf (sous_chaine, "%s\n", channels[curr_channel].ipOut);
 	  ip_ok = 1;
+	}
+      else if (!strcmp (sous_chaine, "common_port"))
+	{
+	  sous_chaine = strtok (NULL, delimiteurs);
+	  common_port = atoi (sous_chaine);
 	}
       else if (!strcmp (sous_chaine, "port"))
 	{
 	  sous_chaine = strtok (NULL, delimiteurs);
-	  portOut[curr_channel] = atoi (sous_chaine);
+	  channels[curr_channel].portOut = atoi (sous_chaine);
 	  port_ok = 1;
 	}
       else if (!strcmp (sous_chaine, "cam_pmt_pid"))
 	{
-	  if (port_ok == 0 || ip_ok == 0)
+	  if ((port_ok == 0 && common_port==0)|| ip_ok == 0)
 	    {
 	      log_message( MSG_INFO,
 			"You must precise ip and port before PIDs\n");
@@ -414,12 +420,14 @@ main (int argc, char **argv)
 	}
       else if (!strcmp (sous_chaine, "pids"))
 	{
-	  if (port_ok == 0 || ip_ok == 0)
+	  if ((port_ok == 0 && common_port==0)|| ip_ok == 0)
 	    {
 		log_message( MSG_INFO,
 			"You must precise ip and port before PIDs\n");
 	      exit(ERROR_CONF);
 	    }
+	  if (common_port!=0)
+	    channels[curr_channel].portOut = common_port;
 	  while ((sous_chaine = strtok (NULL, delimiteurs)) != NULL)
 	    {
 	      channels[curr_channel].pids[curr_pid] = atoi (sous_chaine);
@@ -706,7 +714,7 @@ main (int argc, char **argv)
     CAMPoll(vlc_sys_access);
   }
   
-  if(autoconfiguration==1)
+  if(autoconfiguration)
     {
       autoconf_temp_pmt=malloc(sizeof(mumudvb_ts_packet_t));
       memset (autoconf_temp_pmt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -810,7 +818,7 @@ main (int argc, char **argv)
     {
       // le makeclientsocket est pour joindre automatiquement l'ip de multicast créée
       // les swiths HP broadcastent les ip de multicast sans clients
-      socketOut[curr_channel] = makeclientsocket (ipOut[curr_channel], portOut[curr_channel], ttl, &sOut[curr_channel]);
+      channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, ttl, &channels[curr_channel].sOut);
     }
 
   
@@ -820,7 +828,7 @@ main (int argc, char **argv)
   for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
     {
 	  log_message( MSG_INFO, "Channel \"%s\" num %d ip %s:%d\n",
-		  channels[curr_channel].name, curr_channel, ipOut[curr_channel], portOut[curr_channel]);
+		  channels[curr_channel].name, curr_channel, channels[curr_channel].ipOut, channels[curr_channel].portOut);
 	  log_message( MSG_DETAIL, "        pids : ");
 	  for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
 	    log_message( MSG_DETAIL, "%d ", channels[curr_channel].pids[curr_pid]);
@@ -856,6 +864,10 @@ main (int argc, char **argv)
 
 	  pid = ((temp_buf[1] & 0x1f) << 8) | (temp_buf[2]);
 
+
+	  /*************************************************************************************/
+	  /****              AUTOCONFIGURATION PART                                         ****/
+	  /*************************************************************************************/
 	  if( autoconfiguration==2)
 	    {
 	      if(pid==0)
@@ -866,10 +878,28 @@ main (int argc, char **argv)
 		      if(autoconf_read_pat(autoconf_temp_pat,services))
 			{
 			  log_message(MSG_DEBUG,"It seems that we have finished ***************\n");
-#if 0
-			  services_to_channels(services, channels, cam_support); //Convert the list of services into channels
-			  autoconfigure=1; //Next step add video and audio pids
-#endif
+			  //Interrupted=1;
+			  nb_flux=services_to_channels(services, channels, cam_support,common_port); //Convert the list of services into channels
+			  if (complete_card_fds(card, nb_flux, channels, &fds,autoconfiguration) < 0)
+			    {
+			      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");
+			      Interrupted=666;
+			      continue;
+			    }
+
+			  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+			    {
+			      //if (create_card_fd (card, nb_flux, channels, mandatory_pid, &fds) < 0)
+			      //return -1;
+			      //filters
+			      set_ts_filt (fds.fd[curr_channel][0], channels[curr_channel].pids[0], DMX_PES_OTHER);
+			      // Init udp
+			      channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, ttl, &channels[curr_channel].sOut);
+			    }
+
+			  log_message(MSG_DEBUG,"Autoconf : Step TWO, we get the video ond audio PIDs\n");
+
+			  autoconfiguration=1; //Next step add video and audio pids
 			}
 		      memset (autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
 		    }
@@ -897,16 +927,19 @@ main (int argc, char **argv)
 			  //Now we have the PMT, we parse it
 			  log_message(MSG_DEBUG,"Autoconf : New PMT pid %d for channel %d\n",pid,curr_channel);
 			  autoconf_read_pmt(autoconf_temp_pmt,&channels[curr_channel]);
-			  log_message(MSG_DETAIL,"Autoconf : Final PIDs for channel %d : ",curr_channel);
+			  log_message(MSG_DETAIL,"Autoconf : Final PIDs for channel %d \"%s\" : ",curr_channel, channels[curr_channel].name);
 			  for(i=0;i<channels[curr_channel].num_pids;i++)
 			    log_message(MSG_DETAIL," %d -",channels[curr_channel].pids[i]);
-			  log_message(MSG_DETAIL,"\n\n");
+			  log_message(MSG_DETAIL,"\n");
 			  channels[curr_channel].autoconfigurated=1;
 			}
 		    }
 		}
 	      continue;
 	    }
+	  /*************************************************************************************/
+	  /****              AUTOCONFIGURATION PART FINISHED                                ****/
+	  /*************************************************************************************/
 
 	  //Pat rewrite only
 	  //we save the full pat before otherwise only the first channel will be rewritten with a full PAT
@@ -980,7 +1013,7 @@ main (int argc, char **argv)
 		  //The buffer is full, we send it
 		  if ((channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE)
 		    {
-		      sendudp (socketOut[curr_channel], &sOut[curr_channel], channels[curr_channel].buf,
+		      sendudp (channels[curr_channel].socketOut, &channels[curr_channel].sOut, channels[curr_channel].buf,
 			       channels[curr_channel].nb_bytes);
 		      channels[curr_channel].nb_bytes = 0;
 		    }
@@ -1016,7 +1049,7 @@ main (int argc, char **argv)
     }
 
   for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
-    close (socketOut[curr_channel]);
+    close (channels[curr_channel].socketOut);
 
   // we close the file descriptors
   close_card_fd (card, nb_flux, channels, mandatory_pid, fds);
@@ -1115,7 +1148,7 @@ SignalHandler (int signum)
 	    {
 	      log_message(MSG_DETAIL,"Autoconfiguration almost done\n");
 	      log_message(MSG_DETAIL,"Autoconf : Open the new descriptors\n");
-	      if (complete_card_fds(card, nb_flux, channels, &fds) < 0)
+	      if (complete_card_fds(card, nb_flux, channels, &fds,autoconfiguration) < 0)
 		{
 		  log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");
 		//return -1; //TODO !!!!!!!!! ADD AN ERROR
@@ -1129,6 +1162,19 @@ SignalHandler (int signum)
 
 	      log_message(MSG_INFO,"Autoconfiguration done\n");
 	    }
+	  //TODO put this in a function
+	  log_message( MSG_INFO, "Diffusion %d channel%s\n", nb_flux,
+		       (nb_flux == 1 ? "" : "s"));
+	  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+	    {
+	      log_message( MSG_INFO, "Channel \"%s\" num %d ip %s:%d\n",
+			   channels[curr_channel].name, curr_channel, channels[curr_channel].ipOut, channels[curr_channel].portOut);
+	      log_message( MSG_DETAIL, "        pids : ");
+	      for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+		log_message( MSG_DETAIL, "%d ", channels[curr_channel].pids[curr_pid]);
+	      log_message( MSG_DETAIL, "\n");
+	    }
+
 
 	}
       //end of autoconfiguration
@@ -1228,9 +1274,9 @@ gen_chaines_diff (void)
   for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
     // on envoie le old pour annoncer que les chaines qui diffusent au dessus du quota de pauqets
     if (channels[curr_channel].streamed_channel_old)
-      fprintf (chaines_diff, "%s:%d:%s\n", ipOut[curr_channel], portOut[curr_channel], channels[curr_channel].name);
+      fprintf (chaines_diff, "%s:%d:%s\n", channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
     else
-      fprintf (chaines_non_diff, "%s:%d:%s\n", ipOut[curr_channel], portOut[curr_channel], channels[curr_channel].name);
+      fprintf (chaines_non_diff, "%s:%d:%s\n", channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
   fclose (chaines_diff);
   fclose (chaines_non_diff);
 

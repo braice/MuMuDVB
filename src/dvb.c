@@ -133,17 +133,24 @@ create_card_fd(int card, int nb_flux, mumudvb_channel_t *channels, int *mandator
 }
 
 
-int complete_card_fds(int card, int nb_flux, mumudvb_channel_t *channels, fds_t *fds)
+int complete_card_fds(int card, int nb_flux, mumudvb_channel_t *channels, fds_t *fds, int autoconf)
 {
   //this function open the descriptors for the new pids found by autoconfiguration
   int i=0;
   int j=0;
+  int start=0;
+
+  if(autoconf==1)
+    start=1;
+  if(autoconf==2) //full autoconf we didn't opened the PMT
+    start=0;
+
   char *demuxdev_name;
   asprintf(&demuxdev_name,DEMUX_DEV_PATH,card);
 
   for (i = 0; i < nb_flux; i++)
     {
-      for(j=1;j<channels[i].num_pids;j++) //the 1 is important, because when we call this function, it's after autoconf and we'va already opened a file descriptor for the first (pmt) pid
+      for(j=start;j<channels[i].num_pids;j++) //the 1 is important, because when we call this function, it's after autoconf and we'va already opened a file descriptor for the first (pmt) pid
 	{
 	  if ((fds->fd[i][j] = open (demuxdev_name, O_RDWR)) < 0)
 	    {

@@ -2,6 +2,7 @@
 #define _MUMUDVB_H
 
 #include "ts.h"
+#include "udp.h"
 
 //the number of pids by channel
 #define MAX_PIDS_PAR_CHAINE     18
@@ -54,8 +55,19 @@ typedef struct{
   int nb_bytes;                    //number of bytes actually in the buffer
 
   int autoconfigurated;            //is the channel autoconfigurated ?
+
+  char ipOut[20];
+  int portOut;
+  struct sockaddr_in sOut;
+  int socketOut;
+
 }mumudvb_channel_t;
 
+
+//logging
+void log_message( int , const char *, ... );
+
+//autoconfiguration
 //chained list of services
 //for autoconfiguration
 typedef struct mumudvb_service_t{
@@ -69,14 +81,10 @@ typedef struct mumudvb_service_t{
   struct mumudvb_service_t *next;
 }mumudvb_service_t;
 
-
-//logging
-void log_message( int , const char *, ... );
-
-//autoconfiguration
 int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel);
 int autoconf_read_sdt(unsigned char *buf, int len, mumudvb_service_t *services);
 int autoconf_read_pat(mumudvb_ts_packet_t *pat, mumudvb_service_t *services);
+int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channels, int cam_support, int common_port); 
 
 
 #endif
