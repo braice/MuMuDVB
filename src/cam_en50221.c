@@ -958,7 +958,7 @@ typedef struct
  * CAPMTAdd
  *****************************************************************************/
 static void CAPMTAdd( access_sys_t * p_sys, int i_session_id,
-                      mumudvb_pmt_t *p_pmt )//braice
+                      mumudvb_ts_packet_t *p_pmt )//braice
 {
   //uint8_t *p_capmt;
   //int i_capmt_size;
@@ -996,7 +996,7 @@ static void CAPMTAdd( access_sys_t * p_sys, int i_session_id,
  * CAPMTUpdate
  *****************************************************************************/
 static void CAPMTUpdate( access_sys_t * p_sys, int i_session_id,
-                         mumudvb_pmt_t *p_pmt )//braice
+                         mumudvb_ts_packet_t *p_pmt )//braice
 {
     uint8_t *p_capmt;
     int i_capmt_size;
@@ -1019,7 +1019,7 @@ static void CAPMTUpdate( access_sys_t * p_sys, int i_session_id,
  * CAPMTDelete
  *****************************************************************************/
 static void CAPMTDelete( access_sys_t * p_sys, int i_session_id,
-                         mumudvb_pmt_t *p_pmt )//braice
+                         mumudvb_ts_packet_t *p_pmt )//braice
 {
     uint8_t *p_capmt;
     int i_capmt_size;
@@ -1900,7 +1900,7 @@ int en50221_Poll( access_sys_t * p_sys )
 /*****************************************************************************
  * en50221_SetCAPMT :
  *****************************************************************************/
-int en50221_SetCAPMT( access_sys_t * p_sys, mumudvb_pmt_t *p_pmt ) //braice
+int en50221_SetCAPMT( access_sys_t * p_sys, mumudvb_ts_packet_t *p_pmt ) //braice
 {
     int i, i_session_id;
     int b_update = 0;

@@ -109,7 +109,7 @@ int convert_desc(struct ca_info *cai,
   return olen+2;      //we return the total written len
 }
 
-int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt, 
+int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt, 
 		       uint8_t list, uint8_t cmd, int quiet)
 {
 	int slen, dslen, o, i;
@@ -301,7 +301,7 @@ int CAMPoll( access_sys_t * p_sys )
 /*****************************************************************************
  * CAMSet :
  *****************************************************************************/
-int CAMSet( access_sys_t * p_sys, mumudvb_pmt_t *p_pmt )
+int CAMSet( access_sys_t * p_sys, mumudvb_ts_packet_t *p_pmt )
 {
 
     if( p_sys->i_ca_handle == 0 )

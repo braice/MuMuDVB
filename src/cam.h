@@ -58,9 +58,9 @@ struct ca_info {
 };
 
 
-int cam_send_ca_pmt( mumudvb_pmt_t *pmt, struct ca_info *cai);
+int cam_send_ca_pmt( mumudvb_ts_packet_t *pmt, struct ca_info *cai);
 int convert_desc(struct ca_info *cai, uint8_t *out, uint8_t *buf, int dslen, uint8_t cmd, int quiet);
-int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt, uint8_t list, uint8_t cmd,int quiet);
+int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt, uint8_t list, uint8_t cmd,int quiet);
 
 /*****************************************************************************
  * VLC PART
@@ -181,7 +181,7 @@ struct access_sys_t
     int pb_slot_mmi_undisplayed[MAX_CI_SLOTS];
     en50221_session_t p_sessions[MAX_SESSIONS];
     mtime_t i_ca_timeout, i_ca_next_event, i_frontend_timeout;
-  mumudvb_pmt_t *pp_selected_programs[MAX_PROGRAMS]; //braice
+  mumudvb_ts_packet_t *pp_selected_programs[MAX_PROGRAMS]; //braice
     int i_selected_programs;
 
     /* */
@@ -195,12 +195,12 @@ struct access_sys_t
  *****************************************************************************/
 int  CAMOpen( access_sys_t * , int, int);
 int  CAMPoll( access_sys_t * );
-int  CAMSet( access_sys_t *, mumudvb_pmt_t * );
+int  CAMSet( access_sys_t *, mumudvb_ts_packet_t * );
 void CAMClose( access_sys_t * );
 
 int en50221_Init( access_sys_t * );
 int en50221_Poll( access_sys_t * );
-int en50221_SetCAPMT( access_sys_t *, mumudvb_pmt_t * );
+int en50221_SetCAPMT( access_sys_t *, mumudvb_ts_packet_t * );
 int en50221_OpenMMI( access_sys_t * p_sys, int i_slot );
 int en50221_CloseMMI( access_sys_t * p_sys, int i_slot );
 en50221_mmi_object_t *en50221_GetMMIObject( access_sys_t * p_sys,
