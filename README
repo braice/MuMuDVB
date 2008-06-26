@@ -26,14 +26,13 @@ Special thanks to Dave CHAPMAN (dvbstream author)
 
 New features comparing to dvbstream v0.6 : 
 
+ * The main fonctionality : stream channels from a transponder on different multicast IPs
  * Can show reception level when streaming
- * To make a list of channels in real time (can be used to make SAP announces)
+ * Mumudvb make a list of streamed and down channels in real time (can be used to make SAP announces)
  * Can deamonize and write his own pid in a file
  * To use config file
- * The program can kill himself if he receives no data from the card
+ * The program can kill himself if it receives no data from the card
  * The program stops trying tuning after a configurable timeout
- * The main fonctionality : stream channels from a transponder on different multicast IPs
- * Can stream the same pid on different channels (multicast Ip)
  * Functionnal support of DVB-T
  * Always send mandatory pids
   * Mandatory pids are : 
@@ -43,10 +42,10 @@ New features comparing to dvbstream v0.6 :
    * EIT (18) : Event Information Table : the EIT contains data concerning events or programmes such as event name, start time, duration, etc.
    * TDT (20): Time and Date Table : the TDT gives information relating to the present time and date.This information is given in a separate table due to the frequent updating of this information.
  * mumudvb automatically suscribe to all multicast groups (IGMP membership request) in order to avoid some switches to broadcast all channels.
- * The program can rewrite the PAT Pid in order to announce only present channels (useful for set-top boxes)
+ * The program can rewrite the PAT Pid in order to announce only present channels (useful for some set-top boxes)
   * This is an experimental feature (03/2006) and dont rewrite Pat Pids larger than 188 bytes
  * Experimental support for scrambled channels
-
+ * Experimental support for autoconfiguration, see further
 
 This isn't a patch for dvbstream due to the following reasons :
  * You MUST use a config file
@@ -75,7 +74,7 @@ If you want use defalts values for DVB-T tuning (optionnal, fore more details se
 
 = Usage =
 
-The documentation for configuration file syntax is in doc/README_CONF
+The documentation for configuration file syntax is in doc/README_CONF.
 
 Usage : 
 	mumudvb [options] -c config_file
@@ -91,6 +90,12 @@ Possible options are :
 
 -h, --help
 	Show help
+
+-v
+	More verbose (add for more)
+
+-q
+	More quiet (repeat for less)
 
 Signal : (see thi kill's man page)
     SIGUSR1 : switch the signal strenght printing
@@ -117,7 +122,7 @@ Signal : (see thi kill's man page)
 
  * When the program starts, he writes the channel list on /var/run/mumudvb/chaines_diffusees_carte%d (where %d is the card number). This file contains streamed channels (updated every 5 seconds) in the form : "name:ip:port"
 
- * mumudvb can deal with 6 cards. You must use a kernel >= 2.6.11 and udev statically compiled witch klibc (04/2005) waiting for glibc update...
+ * mumudvb can deal with more than 4 cards. You must use a kernel >= 2.6.11 and udev statically compiled witch klibc (04/2005) waiting for glibc update...
 
 = Know issues =
 
@@ -136,3 +141,42 @@ Signal : (see thi kill's man page)
 == Tuning issues with DVB-T ==
 
  * You must check tuning settings, knowing that auto bandwidth does'nt work.
+
+= Autoconfiguration =
+
+Since 07/2008, mumudvb is able to do some autoconfiguration.
+
+Before autoconfiguration, you had to set the transponder parameters, and for each channel, the multicast ip, the port, the name and the pids (PMT, audio video)
+
+Mumudvb is able to do two kinds of autoconfiguration :
+
+== Simple autoconfiguration ==
+
+Use this when you want ton control wich channel you want to stream.
+
+In this case put only the PMT pid for each channel and put autoconfiguration=1, in the head of your
+config file. 
+
+Mumudvb will find the audio and video pids for you before streaming.
+
+== Full autoconfiguration ==
+
+Use this when you want to stream a full transponder.
+
+In this mode, mumudvb will find for you the different channels, their name and their pids.
+
+To use this mode, don't set any channels and add "autoconfiguration=2" in the head of your config file
+
+Example file : 
+
+-----
+freq=11296
+pol=h
+srate=27500
+common_port=1234
+autoconfiguration=2
+-----
+
+This is the easiest way to use mumudvb.
+
+The channels will be streamed over the multicasts ip adresses 239.100.100.* where * is the channel number.

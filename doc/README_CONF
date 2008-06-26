@@ -17,6 +17,7 @@ All parameters are like: name=value
 ||rewrite_pat                    ||specify if we wants the PAT rewriting feature ||
 ||cam_support                    ||specify if we wants the support for scrambled channels ||
 ||cam_number                     ||the number of the CAM we want to use (default 0) ||
+||autoconfiguration              ||autoconfiguration 1: find audio and video, 2: full autoconfiguration, see README ||
 ||freq                           ||transponder's frequency in MHz ||
 ||pol                            ||transponder's polarisation (a char) v or h (not case sensitive) ||
 ||srate                          ||transponder's strate ||
