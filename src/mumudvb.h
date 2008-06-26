@@ -67,24 +67,5 @@ typedef struct{
 //logging
 void log_message( int , const char *, ... );
 
-//autoconfiguration
-//chained list of services
-//for autoconfiguration
-typedef struct mumudvb_service_t{
-  char name[MAX_LEN_NOM];  //the channel name
-
-  int running_status;
-  int type;
-  int pmt_pid;
-  int id;
-  int free_ca_mode;
-  struct mumudvb_service_t *next;
-}mumudvb_service_t;
-
-int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel);
-int autoconf_read_sdt(unsigned char *buf, int len, mumudvb_service_t *services);
-int autoconf_read_pat(mumudvb_ts_packet_t *pat, mumudvb_service_t *services);
-int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channels, int cam_support, int common_port); 
-
 
 #endif

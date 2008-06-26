@@ -44,6 +44,7 @@
 #include "errors.h"
 #include "ts.h"
 #include "mumudvb.h"
+#include "autoconf.h"
 
 void parsesdtdescriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_service_t *services);
 void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *services);
@@ -256,9 +257,6 @@ void parsesdtdescriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_ser
 
 void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
 {
-  //TODO : virer les malloc
-  char *provider_name;
-  char *service_name;
   int len;
   unsigned char *src, *dest;
   unsigned char type;
@@ -286,30 +284,10 @@ void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
     }
 
   buf += 3;
-  len = *buf;
+  len = *buf; //provider name len
   buf++;
-
+  //we jump the provider name
   //log_message(MSG_DEBUG, "\t\tlen : %d\n", len);
-#if 0  
-  provider_name = malloc (len + 1);
-  memcpy (provider_name, buf, len);
-  provider_name[len] = '\0';
-
-  /* remove control characters (FIXME: handle short/long name) */
-  /* FIXME: handle character set correctly (e.g. via iconv)                                                                                            
-   * c.f. EN 300 468 annex A */
-  for (src = dest = (unsigned char *) provider_name; *src; src++)
-    if (*src >= 0x20 && (*src < 0x80 || *src > 0x9f))
-      *dest++ = *src;
-  *dest = '\0';
-  if (!provider_name[0]) {
-    /* zap zero length names */
-    free (provider_name);
-    provider_name = 0;
-  }
- 
-  //  log_message(MSG_DEBUG, "\t\tprovider_name : %s \n", provider_name);
-#endif
   buf += len;
   len = *buf;
   buf++;
@@ -371,7 +349,7 @@ mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int
 
 }
 
-//try t5Co find the service specified by id, if not fount return NULL, otherwise return the service
+//try to find the service specified by id, if not found return NULL, otherwise return the service
 mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,int service_id)
 {
   int found=0;
@@ -398,11 +376,13 @@ mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,
 
 }
 
-
+//Convert the chained list of services into channels
+//Free the services and return the number of channels
 int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channels, int cam_support, int port)
 {
 
   mumudvb_service_t *actual_service;
+  mumudvb_service_t *next_service=NULL;
   int channel_number=0;
   char ip[20];
 
@@ -445,7 +425,17 @@ int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channel
     }
   while(actual_service);
 
-  //TODO FREE the services
+  //FREE the services
+  actual_service=services;
+  do
+    {
+      next_service=actual_service->next;
+      free(actual_service);
+      actual_service=next_service;
+    }
+  while(actual_service);
+
+
   //TODO CHECK THE MAX CHANNELS
 
   return channel_number;

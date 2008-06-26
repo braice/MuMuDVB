@@ -50,8 +50,9 @@
 #include "cam.h"
 #include "ts.h"
 #include "errors.h"
+#include "autoconf.h"
 
-#define VERSION "1.3.0-devel"
+#define VERSION "1.5.0-devel"
 
 
 /* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
