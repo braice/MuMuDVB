@@ -69,7 +69,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 	for (i=dslen+12; i<slen-9; i+=dslen+5) {      //we parse the part after the descriptors
 	  dslen=((pmt->packet[i+3]&0x0f)<<8)|pmt->packet[i+4];        //ES_info_length
 	  pid=((pmt->packet[i+1] & 0x1f)<<8) | pmt->packet[i+2];
-	  if ((pmt->packet[i]==0)||(pmt->packet[i]>4))                //stream_type
+	  if ((pmt->packet[i]==0)||((pmt->packet[i]>4)&&(pmt->packet[i]!=6)))                //stream_type
 	    {
 	      log_message( MSG_DEBUG, "Autoconf : \t!!!!Stream dropped, type : %d, PID : %d \n",pmt->packet[i],pid);
 	      continue;
@@ -82,6 +82,9 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 	  case 3:
 	  case 4:
 	    log_message( MSG_DEBUG,"Autoconf :   Audio ");
+	    break;
+	  case 6:
+	    log_message( MSG_DEBUG,"Autoconf :   seems Teletex or Audio HD");
 	    break;
 	  default:
 	    log_message( MSG_DEBUG,"Autoconf : \t==Stream type : %d ",pmt->packet[i]);
