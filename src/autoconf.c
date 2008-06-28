@@ -67,10 +67,17 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 
 	int program_info_length;
 
-	log_message( MSG_DEBUG,"Autoconf : ==PMT read for autoconfiguration of channel \"%s\"\n", channel->name);
 
 	slen=pmt->len;
 	header=(pmt_t *)pmt->packet;
+
+	if(header->table_id!=0x02)
+	  {
+	    log_message( MSG_DETAIL,"Autoconf : == Packet PID %d for channel \"%s\" is not a PMT PID\n", pmt->pid, channel->name);
+	    return 1;
+	  }
+	
+	log_message( MSG_DEBUG,"Autoconf : ==PMT read for autoconfiguration of channel \"%s\"\n", channel->name);
 
 	program_info_length=HILO(header->program_info_length); //program_info_length
 
@@ -146,6 +153,7 @@ int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_le
   return 0;
 }
 
+//Print the tags present in the descriptor
 void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len)
 {
   while (descriptors_loop_len > 0) 
