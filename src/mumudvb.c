@@ -329,6 +329,11 @@ main (int argc, char **argv)
 			"!!! You have enabled the support for conditionnal acces modules, this is an experimental feature, you have been warned\n");
 	    }
 	}
+      else if (!strcmp (sous_chaine, "sat_number"))
+	{
+	  sous_chaine = strtok (NULL, delimiteurs);
+	  diseqc = atoi (sous_chaine);
+	}
       else if (!strcmp (sous_chaine, "freq"))
 	{
 	  sous_chaine = strtok (NULL, delimiteurs);
