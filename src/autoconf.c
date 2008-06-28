@@ -50,7 +50,8 @@ void parsesdtdescriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_ser
 void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *services);
 mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int service_id);
 mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,int service_id);
-
+int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_len);
+void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len);
 
 /****************************************************************************/
 //Code from libdvb, strongly modified, with commentaries added
@@ -61,42 +62,101 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 {
 	int slen, dslen, i;
 	int pid;
+	pmt_t *header;
+	pmt_info_t *descr_header;
 
-	log_message( MSG_DEBUG,"Autoconf : ===PMT read for autoconfiguration of channel \"%s\"\n", channel->name);
+	int program_info_length;
+
+	log_message( MSG_DEBUG,"Autoconf : ==PMT read for autoconfiguration of channel \"%s\"\n", channel->name);
 
 	slen=pmt->len;
-	dslen=((pmt->packet[10]&0x0f)<<8)|pmt->packet[11]; //program_info_length
-	for (i=dslen+12; i<slen-9; i+=dslen+5) {      //we parse the part after the descriptors
-	  dslen=((pmt->packet[i+3]&0x0f)<<8)|pmt->packet[i+4];        //ES_info_length
-	  pid=((pmt->packet[i+1] & 0x1f)<<8) | pmt->packet[i+2];
-	  if ((pmt->packet[i]==0)||((pmt->packet[i]>4)&&(pmt->packet[i]!=6)))                //stream_type
-	    {
+	header=(pmt_t *)pmt->packet;
+
+	program_info_length=HILO(header->program_info_length); //program_info_length
+
+	for (i=program_info_length+PMT_LEN; i<=slen-(PMT_INFO_LEN+4); i+=dslen+PMT_INFO_LEN)
+	  {      //we parse the part after the descriptors
+	    descr_header=(pmt_info_t *)(pmt->packet+i);
+	    dslen=HILO(descr_header->ES_info_length);        //ES_info_length
+	    pid=HILO(descr_header->elementary_PID);
+	    switch(descr_header->stream_type){
+	    case 0x01:
+	    case 0x02:
+	    case 0x1b: /* H.264 video stream */
+	      log_message( MSG_DEBUG,"Autoconf :   Video ");
+	      break;
+	    case 0x03:
+	    case 0x81: /* Audio per ATSC A/53B [2] Annex B */
+	    case 0x0f: /* ADTS Audio Stream - usually AAC */
+	    case 0x11: /* ISO/IEC 14496-3 Audio with LATM transport */
+	    case 0x04:
+	      log_message( MSG_DEBUG,"Autoconf :   Audio ");
+	      break;
+	    case 0x06:
+	      if(dslen)
+		{
+		  if(pmt_find_descriptor(0x56,pmt->packet+i+PMT_INFO_LEN,dslen))
+		    log_message( MSG_DEBUG,"Autoconf :   Teletext ");
+		  else if(pmt_find_descriptor(0x59,pmt->packet+i+PMT_INFO_LEN,dslen))
+		    log_message( MSG_DEBUG,"Autoconf :   Subtitling ");
+		  else if(pmt_find_descriptor(0x6a,pmt->packet+i+PMT_INFO_LEN,dslen))
+		    log_message( MSG_DEBUG,"Autoconf :   AC3 ");
+		  else
+		    {
+		      log_message( MSG_DEBUG,"Unknow descriptor see EN 300 468 table 12, descriptor tags : ");
+		      pmt_print_descriptor_tags(pmt->packet+i+PMT_INFO_LEN,dslen);
+		      log_message( MSG_DEBUG,"\n");
+		      continue;
+		    }
+		}
+	      else
+		{
+		  log_message( MSG_DEBUG,"Autoconf : stream type 0x06 without descriptor\n");
+		  continue;
+		}
+	      break;
+	    default:
 	      log_message( MSG_DEBUG, "Autoconf : \t!!!!Stream dropped, type : %d, PID : %d \n",pmt->packet[i],pid);
 	      continue;
 	    }
-	  switch(pmt->packet[i]){
-	  case 1:
-	  case 2:
-	    log_message( MSG_DEBUG,"Autoconf :   Video ");
-	    break;
-	  case 3:
-	  case 4:
-	    log_message( MSG_DEBUG,"Autoconf :   Audio ");
-	    break;
-	  case 6:
-	    log_message( MSG_DEBUG,"Autoconf :   seems Teletex or Audio HD");
-	    break;
-	  default:
-	    log_message( MSG_DEBUG,"Autoconf : \t==Stream type : %d ",pmt->packet[i]);
+	    
+	    log_message( MSG_DEBUG,"  PID %d added\n", pid);
+	    channel->pids[channel->num_pids]=pid;
+	    channel->num_pids++;
 	  }
-
-	  log_message( MSG_DEBUG,"Autoconf : PID %d added\n", pid);
-	  channel->pids[channel->num_pids]=pid;
-	  channel->num_pids++;
-	}
 	log_message( MSG_DEBUG,"Autoconf : Number of pids after autoconf %d\n", channel->num_pids);
 	return 0;
 	  
+}
+
+//Tells if the descriptor with tag in present in buf
+int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_len)
+{
+  while (descriptors_loop_len > 0) 
+    {
+      unsigned char descriptor_tag = buf[0];
+      unsigned char descriptor_len = buf[1] + 2;
+      
+      if (tag == descriptor_tag) 
+	return 1;
+
+      buf += descriptor_len;
+      descriptors_loop_len -= descriptor_len;
+    }
+  return 0;
+}
+
+void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len)
+{
+  while (descriptors_loop_len > 0) 
+    {
+      unsigned char descriptor_tag = buf[0];
+      unsigned char descriptor_len = buf[1] + 2;
+      
+      log_message( MSG_DEBUG,"0x%02x - ", descriptor_tag);
+      buf += descriptor_len;
+      descriptors_loop_len -= descriptor_len;
+    }
 }
 
 
@@ -381,7 +441,7 @@ mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,
 
 //Convert the chained list of services into channels
 //Free the services and return the number of channels
-int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channels, int cam_support, int port)
+int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channels, int cam_support, int port, int card)
 {
 
   mumudvb_service_t *actual_service;
@@ -412,7 +472,7 @@ int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channel
 	      channels[channel_number].num_pids=1;
 	      channels[channel_number].portOut=port;
 	      strcpy(channels[channel_number].name,actual_service->name);
-	      sprintf(ip,"239.100.100.%d",channel_number);
+	      sprintf(ip,"239.100.%d.%d", card, channel_number);
 	      strcpy(channels[channel_number].ipOut,ip);
 	      log_message(MSG_DEBUG,"Ip : \"%s\" port : %d\n",channels[channel_number].ipOut,port);
 

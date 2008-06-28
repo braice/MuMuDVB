@@ -24,7 +24,7 @@
  *     
  */
 
-#define _GNU_SOURCE		// pour utiliser le program_invocation_short_name (extension gnu)
+#define _GNU_SOURCE		//in order to use program_invocation_short_name (extension gnu)
 
 // Linux includes:
 #include <stdio.h>
@@ -880,7 +880,7 @@ main (int argc, char **argv)
 			{
 			  log_message(MSG_DEBUG,"It seems that we have finished ***************\n");
 			  //Interrupted=1;
-			  nb_flux=services_to_channels(services, channels, cam_support,common_port); //Convert the list of services into channels
+			  nb_flux=services_to_channels(services, channels, cam_support,common_port, card); //Convert the list of services into channels
 			  if (complete_card_fds(card, nb_flux, channels, &fds,autoconfiguration) < 0)
 			    {
 			      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");

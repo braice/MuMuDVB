@@ -45,7 +45,7 @@ typedef struct mumudvb_service_t{
 int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel);
 int autoconf_read_sdt(unsigned char *buf, int len, mumudvb_service_t *services);
 int autoconf_read_pat(mumudvb_ts_packet_t *pat, mumudvb_service_t *services);
-int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channels, int cam_support, int common_port); 
+int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channels, int cam_support, int port, int card);
 
 
 #endif
