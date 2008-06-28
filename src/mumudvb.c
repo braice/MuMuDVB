@@ -899,7 +899,8 @@ main (int argc, char **argv)
 			    }
 
 			  log_message(MSG_DEBUG,"Autoconf : Step TWO, we get the video ond audio PIDs\n");
-
+			  free(autoconf_temp_sdt);
+			  free(autoconf_temp_pat);
 			  autoconfiguration=1; //Next step add video and audio pids
 			}
 		      memset (autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
@@ -1062,7 +1063,7 @@ main (int argc, char **argv)
       free(vlc_sys_access);
     }
 
-  if(autoconfiguration)
+  if(autoconf_temp_pmt)
     free(autoconf_temp_pmt);
 
 
