@@ -1,5 +1,5 @@
 CC	= gcc
-CFLAGS	= -Wall -O2 -g
+CFLAGS	= -Wall -Wextra -O2 -g
 IFLAGS	= -g root -o root
 
 OUT		= mumudvb
