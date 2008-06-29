@@ -17,6 +17,7 @@ Tous les paramètres sont de la forme suivante : nom=valeur
 ||rewrite_pat                    ||Spécifie si l'on veut la réécriture du PID PAT à la volée ||
 ||cam_support                    ||Spécifie si l'on veut le support pour les chaines cryptées ||
 ||cam_number                     ||Le numéro du module cam (défaut : 0) ||
+||autoconfiguration              ||autoconfiguration 1: trouve les pids audio et video, 2: autoconfiguration complete, voir README-fr ||
 ||freq                           ||la fréquence du transpondeur en MHz ||
 ||pol                            ||la polarisation (un caractère) v ou h (insensible à la casse) ||
 ||srate                          ||le srate du transpondeur ||

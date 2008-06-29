@@ -56,149 +56,9 @@
 
 #include "errors.h"
 #include "cam.h"
+#include "ts.h"
 #include "mumudvb.h"
 
-extern unsigned long       crc32_table[256];
-
-int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai)
-{
-  //This function will join the 188 bytes packet until the PMT is full
-  //Once it's full we check the CRC32 and say if it's ok or not
-  //
-  //There is two important mpeg2-ts fields to do that
-  // * the continuity counter wich is incremented for each packet
-  // * The payload_unit_start_indicator wich says if it's the first packet
-  //
-  //When a packet is cutted in 188 bytes packets, there should be no other pid between two sub packets
-  //
-  //Return 1 when the packet is full and OK
-
-
-  ts_header_t *header;
-  int ok=0;
-  int parsed=0;
-  int delta,pid;
-
-  //mapping of the buffer onto the TS header
-  header=(ts_header_t *)buf;
-  pid=HILO(header->pid);
-
-  //delta used to remove TS HEADER
-  delta = TS_HEADER_LEN-1; 
-
-  //Sometimes there is some more data in the header, the adaptation field say it
-  if (header->adaptation_field_control & 0x2)
-    {
-      log_message( MSG_DEBUG, "CAM : parse PMT : Adaptation field \n");
-      delta += buf[delta] ;        // add adapt.field.len
-    }
-  else if (header->adaptation_field_control & 0x1)
-    {
-      if (buf[delta]==0x00 && buf[delta+1]==0x00 && buf[delta+2]==0x01) 
-	{
-	  // -- PES/PS                                                                                                                               
-	  //tspid->id   = buf[j+3];                                                                                                                  
-	  log_message( MSG_DEBUG, "CAM : parse PMT : #PES/PS ----- We ignore \n");
-	  ok=0;
-	}
-      else
-	  ok=1;
-    }
-
-  if (header->adaptation_field_control == 3)
-    ok=0;
-
-  if(header->payload_unit_start_indicator) //It's the beginning of a new packet
-    {
-      if(ok)
-	{
-	  pmt->empty=0;
-	  pmt->continuity_counter=header->continuity_counter;
-	  pmt->pid=pid;
-	  pmt->len=AddPacketStart(pmt->packet,buf+delta+1,188-delta-1); //on ajoute le paquet //NOTE len
-	}
-    }
-  else if(header->payload_unit_start_indicator==0) //Not the first, we check if che already registered packet corresponds
-    {
-      // -- pid change in stream? (without packet start). This is not supported
-      if (pmt->pid != pid)
-	{
-	  //log_message( MSG_INFO,"CAM : PMT parse. ERROR : PID change\n");
-	  pmt->empty=1;
-	}
-      // -- discontinuity error in packet ?                                                                                                          
-      if  ((pmt->continuity_counter+1)%16 != header->continuity_counter) 
-	{
-	  log_message( MSG_INFO,"CAM : PMT parse : Continuity ERROR\n\n");
-	  pmt->empty=1;
-	  return 0;
-	}
-      pmt->continuity_counter=header->continuity_counter;
-      pmt->len=AddPacketContinue(pmt->packet,buf+delta,188-delta,pmt->len); //on ajoute le paquet 
-
-      //log_message( MSG_INFO,"CAM : \t\t Len %d PMT_len %d\n",pmt->len,HILO(((pmt_t *)pmt->packet)->section_length));
-      
-      //We check if the PMT is full
-      if (pmt->len > ((HILO(((pmt_t *)pmt->packet)->section_length))+3)) //+3 is for the header
-      {
-	//Yes, it's full, I check the CRC32 to say it's valid
-	parsed=cam_ca_pmt_check_CRC(pmt); //TEST CRC32
-      }
-    }
-  return parsed;
-}
-
-
-
-//Les fonctions qui permettent de coller les paquets les uns aux autres
-// -- add TS data
-// -- return: 0 = fail
-int AddPacketStart (unsigned char *packet, unsigned char *buf, unsigned int len)
-{
-  memset(packet,0,4096);
-  memcpy(packet,buf,len);
-  return len;
-}
-
-int AddPacketContinue  (unsigned char *packet, unsigned char *buf, unsigned int len, unsigned int act_len)
-{
-  memcpy(packet+act_len,buf,len);
-  return len+act_len;
-}
-
-
-//Checking of the CRC32
-int cam_ca_pmt_check_CRC( mumudvb_pmt_t *pmt)
-{
-  pmt_t *pmt_struct;
-  unsigned long crc32;
-  int i;
-
-  pmt_struct=(pmt_t *)pmt->packet;
-
-  //the real lenght
-  pmt->len=HILO(pmt_struct->section_length)+3; //+3 pour les trois bits du début (compris le section_lenght)
-
-  //CRC32 calculation mostly taken from the xine project
-  //Test of the crc32
-  crc32=0xffffffff;
-  //we compute the CRC32
-  //we have two ways: either we compute untill the end and it should be 0
-  //either we exclude the 4 last bits and in should be equal to the 4 last bits
-  for(i = 0; i < pmt->len; i++) {
-    crc32 = (crc32 << 8) ^ crc32_table[(crc32 >> 24) ^ pmt->packet[i]];
-  }
-  
-  if(crc32!=0)
-    {
-      //Bad CRC32
-      log_message( MSG_DETAIL,"CAM : \tBAD CRC32 PID : %d\n", pmt->pid);
-      return 0; //We don't send this PMT
-    }
-  
-  return 1;
-
-}
 
 
 /****************************************************************************/
@@ -249,7 +109,7 @@ int convert_desc(struct ca_info *cai,
   return olen+2;      //we return the total written len
 }
 
-int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt, 
+int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt, 
 		       uint8_t list, uint8_t cmd, int quiet)
 {
 	int slen, dslen, o, i;
@@ -329,7 +189,7 @@ int CAMOpen( access_sys_t * p_sys , int card, int device)
     i_adapter = card;
     i_device = device;
 
-    if( snprintf( ca, sizeof(ca), CA, i_adapter, i_device ) >= (int)sizeof(ca) )
+    if( snprintf( ca, sizeof(ca), CA_DEV, i_adapter, i_device ) >= (int)sizeof(ca) )
     {
         log_message( MSG_INFO,"CAM : snprintf() truncated string for CA" );
         ca[sizeof(ca) - 1] = '\0';
@@ -441,7 +301,7 @@ int CAMPoll( access_sys_t * p_sys )
 /*****************************************************************************
  * CAMSet :
  *****************************************************************************/
-int CAMSet( access_sys_t * p_sys, mumudvb_pmt_t *p_pmt )
+int CAMSet( access_sys_t * p_sys, mumudvb_ts_packet_t *p_pmt )
 {
 
     if( p_sys->i_ca_handle == 0 )

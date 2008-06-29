@@ -1,6 +1,9 @@
 #ifndef _MUMUDVB_H
 #define _MUMUDVB_H
 
+#include "ts.h"
+#include "udp.h"
+
 //the number of pids by channel
 #define MAX_PIDS_PAR_CHAINE     18
 
@@ -15,6 +18,8 @@
 #define ALARM_TIME_TIMEOUT 60
 #define ALARM_TIME_TIMEOUT_NO_DIFF 600
 
+#define AUTOCONFIGURE_TIME 10
+
 // seven dvb paquets in one UDP
 #define MAX_UDP_SIZE (TS_PACKET_SIZE*7)
 
@@ -25,7 +30,7 @@
 #define ALARM_COUNT_LIMIT	1024
 #define MAX_LEN_NOM		256
 
-
+//errors
 enum
   {
     MSG_ERROR=-2,
@@ -35,85 +40,32 @@ enum
     MSG_DEBUG
   };
 
+//Channels
+typedef struct{
+  int streamed_channel;    //tell if this channel is actually streamed
+  int streamed_channel_old;//tell if this channel is actually streamed (precedent test, to see if it's changed)
 
-//For pat rewriting
+  char name[MAX_LEN_NOM];  //the channel name
 
-//From libsi
-//   (C) 2001-03 Rolf Hakenes <hakenes@hippomi.de>, under the
-//               GNU GPL with contribution of Oleg Assovski,
-//               www.satmania.com
+  int pids[MAX_PIDS_PAR_CHAINE];   //the channel pids
+  int num_pids;                    //number of channel pids
+  int cam_pmt_pid;                 //pmt pid number for cam support
 
-#define TS_HEADER_LEN 5
-#define HILO(x) (x##_hi << 8 | x##_lo)
+  unsigned char buf[MAX_UDP_SIZE]; //the buffer wich will be sent once it's full
+  int nb_bytes;                    //number of bytes actually in the buffer
 
- /*
- *
- *    ETSI ISO/IEC 13818-1 specifies SI which is referred to as PSI. The PSI
- *    data provides information to enable automatic configuration of the
- *    receiver to demultiplex and decode the various streams of programs
- *    within the multiplex. The PSI data is structured as four types of table.
- *    The tables are transmitted in sections.
- *
- *    1) Program Association Table (PAT):
- *
- *       - for each service in the multiplex, the PAT indicates the location
- *         (the Packet Identifier (PID) values of the Transport Stream (TS)
- *         packets) of the corresponding Program Map Table (PMT).
- *         It also gives the location of the Network Information Table (NIT).
- *
- */
+  int autoconfigurated;            //is the channel autoconfigurated ?
 
-#define PAT_LEN 8
+  char ipOut[20];
+  int portOut;
+  struct sockaddr_in sOut;
+  int socketOut;
 
-typedef struct {
-   u_char table_id                               :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char section_syntax_indicator               :1;
-   u_char dummy                                  :1;        // has to be 0
-   u_char                                        :2;
-   u_char section_length_hi                      :4;
-#else
-   u_char section_length_hi                      :4;
-   u_char                                        :2;
-   u_char dummy                                  :1;        // has to be 0
-   u_char section_syntax_indicator               :1;
-#endif
-   u_char section_length_lo                      :8;
-   u_char transport_stream_id_hi                 :8;
-   u_char transport_stream_id_lo                 :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :2;
-   u_char version_number                         :5;
-   u_char current_next_indicator                 :1;
-#else
-   u_char current_next_indicator                 :1;
-   u_char version_number                         :5;
-   u_char                                        :2;
-#endif
-   u_char section_number                         :8;
-   u_char last_section_number                    :8;
-} pat_t;
-
-#define PAT_PROG_LEN 4
-
-typedef struct {
-   u_char program_number_hi                      :8;
-   u_char program_number_lo                      :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :3;
-   u_char network_pid_hi                         :5;
-#else
-   u_char network_pid_hi                         :5;
-   u_char                                        :3;
-#endif
-   u_char network_pid_lo                         :8; 
-   /* or program_map_pid (if prog_num=0)*/
-} pat_prog_t;
+}mumudvb_channel_t;
 
 
 //logging
 void log_message( int , const char *, ... );
-
 
 
 #endif

@@ -84,7 +84,7 @@ affiche_puissance (fds_t fds)
 }
 
 int
-create_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t *fds)
+create_card_fd(int card, int nb_flux, mumudvb_channel_t *channels, int *mandatory_pid, fds_t *fds)
 {
 
   int i=0;
@@ -107,7 +107,7 @@ create_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t *
 
   for (i = 0; i < nb_flux; i++)
     {
-      for(j=0;j<num_pids[i];j++)
+      for(j=0;j<channels[i].num_pids;j++)
 	{
 	  if ((fds->fd[i][j] = open (demuxdev_name, O_RDWR)) < 0)
 	    {
@@ -133,8 +133,41 @@ create_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t *
 }
 
 
+int complete_card_fds(int card, int nb_flux, mumudvb_channel_t *channels, fds_t *fds, int autoconf)
+{
+  //this function open the descriptors for the new pids found by autoconfiguration
+  int i=0;
+  int j=0;
+  int start=0;
+
+  if(autoconf==1)
+    start=1;
+  if(autoconf==2) //full autoconf we didn't opened the PMT
+    start=0;
+
+  char *demuxdev_name;
+  asprintf(&demuxdev_name,DEMUX_DEV_PATH,card);
+
+  for (i = 0; i < nb_flux; i++)
+    {
+      for(j=start;j<channels[i].num_pids;j++) //the 1 is important, because when we call this function, it's after autoconf and we'va already opened a file descriptor for the first (pmt) pid
+	{
+	  if ((fds->fd[i][j] = open (demuxdev_name, O_RDWR)) < 0)
+	    {
+	      log_message( MSG_ERROR, "FD %i: ", i);
+	      perror ("DEMUX DEVICE: ");
+	      free(demuxdev_name);
+	      return -1;
+	    }
+	}
+    }
+  free(demuxdev_name);
+  return 0;
+
+}
+
 void
-close_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t fds)
+close_card_fd(int card, int nb_flux, mumudvb_channel_t *channels, int *mandatory_pid, fds_t fds)
 {
   int i=0;
   int j=0;
@@ -148,7 +181,7 @@ close_card_fd(int card, int nb_flux, int *num_pids, int *mandatory_pid, fds_t fd
 
   for (i = 0; i < nb_flux; i++)
     {
-      for(j=0;j<num_pids[i];j++)
+      for(j=0;j<channels[i].num_pids;j++)
 	close (fds.fd[i][j]);
     }
   close (fds.fd_dvr);

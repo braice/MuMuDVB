@@ -1,7 +1,7 @@
 mumudvb v1.2 - README
 
 = Site =
-http://mumudvb.braice.net
+Site principal de mumudvb http://mumudvb.braice.net
 
 = Description =
 mumudvb est une modification de dvbstream pour le cr@ns (http://www.crans.org), la quantité de modifications étant importante nous avons décidé de redistribuer le projet (dans l'esprit du logiciel libre).
@@ -47,6 +47,7 @@ Nouvelles fonctionnalités par rapport à la version 0.6 de dvbstream:
  * Le programme est capable de réécrire à la volée le pid PAT pour n'annoncer que les flux réelement présents (utile pour les set-top boxes).
   * Cette fonctionalité est expérimentale (03/2006) et ne permet pas de réécrire des Pids PAT plus gros que 188 bytes
  * Support expérimental des chaines cryptées
+ * Mumudvb est capable de s'autoconfigurer, voir plus bas
 
 Ce programme n'est pas un patch pour dvbstream à cause de certaines restrictions:
  * obligation d'utiliser un fichier de configuration
@@ -80,6 +81,8 @@ au lieu de "make"
 = Utilisation =
 
 Pour connaître la syntaxe des fichiers de configuration, se référer au fichier README_CONF
+
+Pour une utilisation rapide de mumudvb, voir la section autoconfiguration plus bas.
 
 Syntaxe :
 	mumudvb [options] -c fichier_de_configuration
@@ -144,3 +147,52 @@ Signaux : (voir la page de man de kill)
 == Problème d'accord avec la TNT ==
 
  * Il faut vérifier vos paramètres d'accord, en sachant que le paramètre bandwidth ne peux pas être mis en auto.
+
+= Autoconfiguration =
+
+Depuis 07/2008, mumudvb est capable de s'autoconfigurer.
+
+Mumudvb est capable de faire deux types d'autoconfiguration : 
+
+== Autoconfiguration Complète ==
+
+C'est la manière la plus simple d'utiliser mumudvb
+
+Utilisez ce mode lorsque vous voulez diffuser un transpondeur complet.
+
+Dans ce mode, mumudvb va trouver pour vous, les différentes chaînes, leurs noms et leurs PIDs (PMT, Audio, Vidéo, Sous-titres, Télétexte et AC3).
+
+Pour utiliser ce mode vous devez : 
+ * Définir les parametres pour l'accord de la carte (fréquence polarisation etc) dans le fichier de configuration
+ * Ajouter "autoconfiguration=2" dans le fichier de configuration
+ * Vous n'avez a définir aucune chanie
+ * Pour avoir les messages dans la console, pensez à utiliser le paramètre "-d" : 
+   ex : mumudvb -d -c your_config_file
+
+Exemple de fichier de configuration : 
+
+-----
+freq=11296
+pol=h
+srate=27500
+common_port=1234
+autoconfiguration=2
+-----
+
+Les chaînes seront diffusées sur les ip de multicast 239.100.c.n où c est le numéro de carte (0 par défaut) et n le numéro de chaîne.
+
+== Autoconfiguration "simple" ==
+
+Utilisez ce mode lorsque vous voulez controller le nom des chaînes, leurs ip et quelles chaines vous voulez diffuser
+
+Dans ce cas, vous avez a préciser pour chaque chaîne : 
+ * L'adresse ip
+ * Le port (optionnel si vous utilisez common_port)
+ * Le nom
+ * Le pid PMT 
+
+Et vous avez a ajouter "autoconfiguration=1" au début de votre fichier de configuration.
+
+Mumudvb trouvera les autres PIDs de chaque chaîne (Audio, Vidéo, Sous-titres, Télétexte et AC3) avant de les diffuser.
+
+Note : si vous précisez plus d'un PID pour une chaine, mumudvb désactivera l'autoconfiguration pour cette chaîne.
