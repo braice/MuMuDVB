@@ -95,7 +95,6 @@ unsigned long       crc32_table[256];
 
 // prototypes
 static void SignalHandler (int signum);
-void gen_chaines_diff ();
 int pat_rewrite(unsigned char *buf,int num_pids, int *pids);
 
 
@@ -1237,9 +1236,7 @@ SignalHandler (int signum)
 	      Interrupted=ERROR_NO_DIFF<<8; //the <<8 is to make difference beetween signals and errors
 	    }
 
-	  // on envoie le old pour annoncer que les chaines
-	  // qui diffusent au dessus du quota de pauqets
-	  gen_chaines_diff();
+	  gen_chaines_diff(nom_fich_chaines_diff, nom_fich_chaines_non_diff, nb_flux, channels);
 
 	  // reinit
 	  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
@@ -1265,42 +1262,6 @@ SignalHandler (int signum)
   signal (signum, SignalHandler);
 }
 
-
-void
-gen_chaines_diff (void)
-{
-  FILE *chaines_diff;
-  FILE *chaines_non_diff;
-  int curr_channel;
-
-  chaines_diff = fopen (nom_fich_chaines_diff, "w");
-  if (chaines_diff == NULL)
-    {
-      log_message( MSG_INFO,
-		   "%s: %s\n",
-		   nom_fich_chaines_diff, strerror (errno));
-      exit(ERROR_CREATE_FILE);
-    }
-
-  chaines_non_diff = fopen (nom_fich_chaines_non_diff, "w");
-  if (chaines_non_diff == NULL)
-    {
-      log_message( MSG_INFO,
-		   "%s: %s\n",
-		   nom_fich_chaines_non_diff, strerror (errno));
-      exit(ERROR_CREATE_FILE);
-    }
-
-  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
-    // on envoie le old pour annoncer que les chaines qui diffusent au dessus du quota de pauqets
-    if (channels[curr_channel].streamed_channel_old)
-      fprintf (chaines_diff, "%s:%d:%s\n", channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
-    else
-      fprintf (chaines_non_diff, "%s:%d:%s\n", channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
-  fclose (chaines_diff);
-  fclose (chaines_non_diff);
-
-}
 
 int
 pat_rewrite(unsigned char *buf,int num_pids, int *pids)

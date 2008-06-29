@@ -25,8 +25,13 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <stdarg.h>
 #include <syslog.h>
+#include <errno.h>
+
+#include "mumudvb.h"
+#include "errors.h"
 
 extern int no_daemon;
 extern int verbosity;
@@ -49,4 +54,41 @@ void log_message( int type,
     }
 
   va_end( args );
+}
+
+
+void
+gen_chaines_diff (char *nom_fich_chaines_diff, char *nom_fich_chaines_non_diff, int nb_flux, mumudvb_channel_t *channels)
+{
+  FILE *chaines_diff;
+  FILE *chaines_non_diff;
+  int curr_channel;
+
+  chaines_diff = fopen (nom_fich_chaines_diff, "w");
+  if (chaines_diff == NULL)
+    {
+      log_message( MSG_INFO,
+		   "%s: %s\n",
+		   nom_fich_chaines_diff, strerror (errno));
+      exit(ERROR_CREATE_FILE);
+    }
+
+  chaines_non_diff = fopen (nom_fich_chaines_non_diff, "w");
+  if (chaines_non_diff == NULL)
+    {
+      log_message( MSG_INFO,
+		   "%s: %s\n",
+		   nom_fich_chaines_non_diff, strerror (errno));
+      exit(ERROR_CREATE_FILE);
+    }
+
+  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+    // on envoie le old pour annoncer que les chaines qui diffusent au dessus du quota de pauqets
+    if (channels[curr_channel].streamed_channel_old)
+      fprintf (chaines_diff, "%s:%d:%s\n", channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
+    else
+      fprintf (chaines_non_diff, "%s:%d:%s\n", channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
+  fclose (chaines_diff);
+  fclose (chaines_non_diff);
+
 }

@@ -66,6 +66,7 @@ typedef struct{
 
 //logging
 void log_message( int , const char *, ... );
+void gen_chaines_diff (char *nom_fich_chaines_diff, char *nom_fich_chaines_non_diff, int nb_flux, mumudvb_channel_t *channels);
 
 
 #endif
