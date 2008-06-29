@@ -822,18 +822,20 @@ main (int argc, char **argv)
       channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, ttl, &channels[curr_channel].sOut);
     }
 
-  
-  log_message( MSG_INFO, "Diffusion %d channel%s\n", nb_flux,
-	       (nb_flux == 1 ? "" : "s"));
-
-  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+  if(autoconfiguration!=2)
     {
+      log_message( MSG_INFO, "Diffusion %d channel%s\n", nb_flux,
+		   (nb_flux == 1 ? "" : "s"));
+      
+      for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+	{
 	  log_message( MSG_INFO, "Channel \"%s\" num %d ip %s:%d\n",
-		  channels[curr_channel].name, curr_channel, channels[curr_channel].ipOut, channels[curr_channel].portOut);
+		       channels[curr_channel].name, curr_channel, channels[curr_channel].ipOut, channels[curr_channel].portOut);
 	  log_message( MSG_DETAIL, "        pids : ");
 	  for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
 	    log_message( MSG_DETAIL, "%d ", channels[curr_channel].pids[curr_pid]);
 	  log_message( MSG_DETAIL, "\n");
+	}
     }
 
 
@@ -844,12 +846,23 @@ main (int argc, char **argv)
   pfds[1].events = POLLIN | POLLPRI;
 
   for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
-    channels[curr_channel].nb_bytes=0;
+    {
+      channels[curr_channel].nb_bytes=0;
+      //If there is more than one pid in one channel we mark it
+      //For no autoconfiguration
+      if(autoconfiguration==1 && channels[curr_channel].num_pids>1)
+	{
+	  log_message( MSG_DETAIL, "Autoconf : Autoconfiguration desactivated for channel \"%s\" \n", channels[curr_channel].name);
+	  channels[curr_channel].autoconfigurated=1;
+	}
+    }
+
 
   if( autoconfiguration)
     log_message(MSG_INFO,"Autoconfiguration Start\n");
 
 
+  //The main loop where we get the packets and send them
   while (!Interrupted)
     {
       /* Poll the open file descriptors */
