@@ -25,6 +25,8 @@ Dave CHAPMAN pour avoir écrit dvbstream.
 = Fonctionalités et contenu =
 
 Nouvelles fonctionnalités par rapport à la version 0.6 de dvbstream:
+
+ * Possibilité de diffuser plusieurs chaînes d'un même transpondeur sur des ips différentes
  * Pouvoir afficher la puissance du signal pendant l'utilisation
  * Avoir une liste mise a jour en temps réel des chaînes diffusées (permet de générer les annonces SAP)
  * Avoir un programme qui tourne en tache de fond (en cas d'exécution en tache de fond les logs sont écrit via syslog)
@@ -32,7 +34,6 @@ Nouvelles fonctionnalités par rapport à la version 0.6 de dvbstream:
  * Pouvoir utiliser des fichiers de configuration
  * le programme est capable de se tuer tout seul si la carte ne diffuse plus rien au bout d'un temps paramétrable
  * le programme arrête de tenter d'accorder la carte au bout d'un temps paramétrable
- * Surtout pouvoir diffuser plusieurs chaînes d'un même transpondeur sur des ips différentes
  * Permet de diffuser le meme pid sur plusieurs chaines (permet de creer des chaines avec plusieurs langues)
  * Support fonctionnel du DVB-T
  * Diffusion des pids obligatoires systématique
@@ -94,6 +95,12 @@ Les différentes options possibles sont :
 -h, --help
 	affiche l'aide
 
+-v
+	Rends mumudvb plus "verbeux"
+
+-q
+	Rends mumudvb plus silencieux
+
 Signaux : (voir la page de man de kill)
     SIGUSR1 : change l'affichage de la puissance une fois la carte tunée, s'il était absent il devient présent et inversement
 
@@ -128,7 +135,7 @@ Signaux : (voir la page de man de kill)
 
 == Le programme quitte inopinément en mode deamon ==
 
- * Lors de l'exécution le programme écrit la liste des chaînes diffusées dans le fichier /var/run/mumudvb/chaines_diffusees_carte%d le %d est remplacé par le numéro de carte, si le chemin n'existe pas le probramme s'arrête. Pour vérifier, un tour du coté du fichier /var/log/syslog devrait aider.
+ * Lors de l'exécution le programme écrit la liste des chaînes diffusées dans le fichier /var/run/mumudvb/chaines_diffusees_carte%d le %d est remplacé par le numéro de carte, si le chemin n'existe pas le probramme s'arrête. Pour vérifier, regarder dans /var/log/syslog ou /var/log/message devrait aider.
 
 == Crash du système en utilisant mumudvb ==
 
@@ -136,4 +143,4 @@ Signaux : (voir la page de man de kill)
 
 == Problème d'accord avec la TNT ==
 
- * Il faut vérifier vos paramètres d'accord, en sachant que le paramètre bandwidth ne peux pas etre mis en auto.
+ * Il faut vérifier vos paramètres d'accord, en sachant que le paramètre bandwidth ne peux pas être mis en auto.

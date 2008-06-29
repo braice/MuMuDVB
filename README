@@ -92,6 +92,12 @@ Possible options are :
 -h, --help
 	Show help
 
+-v
+	More verbose (add for more)
+
+-q
+	More quiet (add for less)
+
 Signal : (see thi kill's man page)
     SIGUSR1 : switch the signal strenght printing
 
