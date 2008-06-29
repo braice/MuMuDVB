@@ -167,7 +167,7 @@ int complete_card_fds(int card, int nb_flux, mumudvb_channel_t *channels, fds_t 
 }
 
 void
-close_card_fd(int card, int nb_flux, mumudvb_channel_t *channels, int *mandatory_pid, fds_t fds)
+close_card_fd(int nb_flux, mumudvb_channel_t *channels, fds_t fds)
 {
   int i=0;
   int j=0;

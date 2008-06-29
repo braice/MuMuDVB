@@ -29,5 +29,5 @@ void set_ts_filt (int fd,uint16_t pid, dmx_pes_type_t pestype);
 void affiche_puissance (fds_t fds);
 int create_card_fd(int card, int nb_flux, mumudvb_channel_t *channels, int *mandatory_pid, fds_t *fds);
 int complete_card_fds(int card, int nb_flux, mumudvb_channel_t *channels, fds_t *fds, int autoconf);
-void close_card_fd(int card, int nb_flux, mumudvb_channel_t *channels, int *mandatory_pid, fds_t fds);
+void close_card_fd(int nb_flux, mumudvb_channel_t *channels, fds_t fds);
 #endif

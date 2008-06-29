@@ -690,7 +690,7 @@ main (int argc, char **argv)
       log_message( MSG_INFO, "Tunning issue, card %d\n", card);
       
       // we close the file descriptors
-      close_card_fd (card, nb_flux, channels, mandatory_pid, fds);
+      close_card_fd (nb_flux, channels, fds);
       exit(ERROR_TUNE);
     }
 
@@ -1071,7 +1071,7 @@ main (int argc, char **argv)
     close (channels[curr_channel].socketOut);
 
   // we close the file descriptors
-  close_card_fd (card, nb_flux, channels, mandatory_pid, fds);
+  close_card_fd (nb_flux, channels, fds);
 
   if(cam_support)
     {
