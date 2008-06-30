@@ -38,7 +38,7 @@ int
 open_fe (int *fd_frontend, int card)
 {
 
-  char *frontend_name;
+  char *frontend_name=NULL;
   asprintf(&frontend_name,FRONTEND_DEV_PATH,card);
   if ((*fd_frontend = open (frontend_name, O_RDWR | O_NONBLOCK)) < 0)
     {
@@ -90,8 +90,8 @@ create_card_fd(int card, int nb_flux, mumudvb_channel_t *channels, int *mandator
   int i=0;
   int j=0;
   int curr_pid_mandatory = 0;
-  char *demuxdev_name;
-  char *dvrdev_name;
+  char *demuxdev_name=NULL;
+  char *dvrdev_name=NULL;
   asprintf(&demuxdev_name,DEMUX_DEV_PATH,card);
 
   for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY;curr_pid_mandatory++)
@@ -145,7 +145,7 @@ int complete_card_fds(int card, int nb_flux, mumudvb_channel_t *channels, fds_t 
   if(autoconf==2) //full autoconf we didn't opened the PMT
     start=0;
 
-  char *demuxdev_name;
+  char *demuxdev_name=NULL;
   asprintf(&demuxdev_name,DEMUX_DEV_PATH,card);
 
   for (i = 0; i < nb_flux; i++)

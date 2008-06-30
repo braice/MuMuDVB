@@ -174,7 +174,7 @@ void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len)
 
 int autoconf_read_pat(mumudvb_ts_packet_t *pat_mumu, mumudvb_service_t *services)
 {
-  unsigned char *buf;
+  unsigned char *buf=NULL;
   mumudvb_service_t *actual_service=NULL;
 
   buf=pat_mumu->packet;

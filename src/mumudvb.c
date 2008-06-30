@@ -101,7 +101,7 @@ int pat_rewrite(unsigned char *buf,int num_pids, int *pids);
 void
 usage (char *name)
 {
-  fprintf (stderr, "mumudvb is a program who can redistribute stream from DVB on a network, in multicast. It's main feature is to take a whole transponder and put each channel on a different multicast IP.\n\n"
+  fprintf (stderr, "mumudvb is a program who can redistribute stream from DVB on a network, in multicast.\n It's main feature is to take a whole transponder and put each channel on a different multicast IP.\n\n"
 	   "Usage: %s [options] \n"
 	   "-c, --config : Config file\n"
 	   "-s, --signal : Display signal power\n"
@@ -174,7 +174,7 @@ main (int argc, char **argv)
   int common_port = 0;
   int ip_ok = 0;
   char ligne_courante[CONF_LINELEN];
-  char *sous_chaine;
+  char *sous_chaine=NULL;
   char delimiteurs[] = " =";
 
 
@@ -1207,7 +1207,7 @@ SignalHandler (int signum)
 			     channels[curr_channel].name, card);
 		channels[curr_channel].streamed_channel_old = 1;	// update
 	      }
-	    else if ((channels[curr_channel].streamed_channel_old) && (channels[curr_channel].streamed_channel < 100))
+	    else if ((channels[curr_channel].streamed_channel_old) && (channels[curr_channel].streamed_channel < 30))
 	      {
 		log_message( MSG_INFO,
 			     "Channel \"%s\" down.Card %d\n",
