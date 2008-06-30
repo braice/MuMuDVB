@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="338.36407"
+   height="176.82275"
+   id="svg2"
+   sodipodi:version="0.32"
+   inkscape:version="0.46"
+   sodipodi:docname="logo_mumu_alpha.svg"
+   inkscape:output_extension="org.inkscape.output.svg.inkscape"
+   version="1.0"
+   inkscape:export-filename="/home/braice/Bureau/logo_mumu_alpha.png"
+   inkscape:export-xdpi="106.39"
+   inkscape:export-ydpi="106.39">
+  <defs
+     id="defs4">
+    <linearGradient
+       id="linearGradient3199">
+      <stop
+         style="stop-color:#110745;stop-opacity:1;"
+         offset="0"
+         id="stop3201" />
+      <stop
+         id="stop3211"
+         offset="1"
+         style="stop-color:#550505;stop-opacity:0.95555556;" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient3163">
+      <stop
+         style="stop-color:#881200;stop-opacity:1;"
+         offset="0"
+         id="stop3165" />
+      <stop
+         id="stop3171"
+         offset="1"
+         style="stop-color:#ff6851;stop-opacity:0.49803922;" />
+    </linearGradient>
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="0 : 526.18109 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="744.09448 : 526.18109 : 1"
+       inkscape:persp3d-origin="372.04724 : 350.78739 : 1"
+       id="perspective10" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3163"
+       id="linearGradient3169"
+       x1="185.78386"
+       y1="618.28967"
+       x2="209.76109"
+       y2="576.47565"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-2,0)" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3163"
+       id="linearGradient3177"
+       gradientUnits="userSpaceOnUse"
+       x1="185.78386"
+       y1="618.28967"
+       x2="209.76109"
+       y2="576.47565"
+       gradientTransform="translate(215.46887,40.667963)" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3163"
+       id="linearGradient3181"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(215.46887,48.667963)"
+       x1="185.78386"
+       y1="618.28967"
+       x2="209.76109"
+       y2="576.47565" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3163"
+       id="linearGradient3185"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1,0,0,-1,215.46887,1214.2036)"
+       x1="185.78386"
+       y1="618.28967"
+       x2="209.76109"
+       y2="576.47565" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3163"
+       id="linearGradient3189"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1,0,0,-1,215.46887,1222.53)"
+       x1="185.78386"
+       y1="618.28967"
+       x2="209.76109"
+       y2="576.47565" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3199"
+       id="linearGradient3209"
+       x1="-16.332291"
+       y1="702.20447"
+       x2="115.58763"
+       y2="702.20447"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="2.5977935"
+     inkscape:cx="169.18204"
+     inkscape:cy="88.411376"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="980"
+     inkscape:window-height="722"
+     inkscape:window-x="144"
+     inkscape:window-y="99"
+     showguides="true"
+     inkscape:guide-bbox="true" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Calque 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-143.42989,-535.36041)">
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:url(#linearGradient3169);stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 172.08744,565.77353 C 187.78385,629.98611 243.43475,629.98611 243.43475,629.98611"
+       id="path2387"
+       sodipodi:nodetypes="cc" />
+    <text
+       xml:space="preserve"
+       style="font-size:28px;font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:AlMateen;-inkscape-font-specification:AlMateen Bold Italic"
+       x="141.26767"
+       y="555.78485"
+       id="text2389"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan2391"
+         x="141.26767"
+         y="555.78485">DVB</tspan></text>
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:url(#linearGradient3177);stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 376.71379,619.28401 C 422.37607,607.86844 443.78027,567.91394 443.78027,567.91394"
+       id="path3175"
+       sodipodi:nodetypes="cc" />
+    <path
+       sodipodi:nodetypes="cc"
+       id="path3179"
+       d="M 376.71379,627.28401 C 423.80302,627.28401 446.63416,611.5876 446.63416,611.5876"
+       style="fill:none;fill-rule:evenodd;stroke:url(#linearGradient3181);stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:url(#linearGradient3185);stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 376.71379,635.5876 C 423.80302,635.5876 446.63416,651.28401 446.63416,651.28401"
+       id="path3183"
+       sodipodi:nodetypes="cc" />
+    <path
+       sodipodi:nodetypes="cc"
+       id="path3187"
+       d="M 376.71379,643.91394 C 422.37607,655.32951 443.78027,695.28401 443.78027,695.28401"
+       style="fill:none;fill-rule:evenodd;stroke:url(#linearGradient3189);stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <text
+       xml:space="preserve"
+       style="font-size:28px;font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:AlMateen;-inkscape-font-specification:AlMateen Bold Italic"
+       x="452.85724"
+       y="617.36725"
+       id="text3191"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3193"
+         x="452.85724"
+         y="617.36725">IP</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:28px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:url(#linearGradient3209);fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Loma;-inkscape-font-specification:Loma Bold"
+       x="-18.410416"
+       y="712.04822"
+       id="text3195"
+       transform="matrix(0.9264014,-0.3765375,0.3765375,0.9264014,0,0)"
+       sodipodi:linespacing="100%"><tspan
+         sodipodi:role="line"
+         id="tspan3197"
+         x="-18.410416"
+         y="712.04822"
+         style="fill:url(#linearGradient3209);fill-opacity:1">MuMuDVB</tspan></text>
+    <rect
+       style="opacity:1;fill:none;fill-opacity:1;stroke:#12197f;stroke-width:2.5;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect2385"
+       width="132.70601"
+       height="78.482079"
+       x="244.0078"
+       y="592.8855"
+       ry="5.7077847" />
+    <text
+       xml:space="preserve"
+       style="font-size:28px;font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:AlMateen;-inkscape-font-specification:AlMateen Bold Italic"
+       x="449.70291"
+       y="662.07001"
+       id="text3213"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3215"
+         x="449.70291"
+         y="662.07001">IP</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:28px;font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:AlMateen;-inkscape-font-specification:AlMateen Bold Italic"
+       x="446.49567"
+       y="712.18317"
+       id="text3217"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3219"
+         x="446.49567"
+         y="712.18317">IP</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:28px;font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:AlMateen;-inkscape-font-specification:AlMateen Bold Italic"
+       x="446.89658"
+       y="565.85272"
+       id="text3221"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3223"
+         x="446.89658"
+         y="565.85272">IP</tspan></text>
+  </g>
+</svg>
