@@ -21,6 +21,7 @@ Tous les paramètres sont de la forme suivante : nom=valeur
 ||freq                           ||la fréquence du transpondeur en MHz ||
 ||pol                            ||la polarisation (un caractère) v ou h (insensible à la casse) ||
 ||srate                          ||le srate du transpondeur ||
+||sat_number                     ||le numéro du satellite (pour les utilisateurs de switchs diseqc) ||
 ||card (f)                       ||le numéro de la carte (défaut : 0) ||
 ||timeout_accord (f)             ||temps que l'on laisse à la carte pour s'accorder sur la fréquence (en secondes) (défaut : 300 (5min)) ||
 ||timeout_no_diff (f)            ||si le programme ne diffuse aucune chaîne, il se tuera au bout de ce temps (en secondes) (défaut : 600 (10min)) ||
@@ -47,6 +48,8 @@ Vous devez spécifier
 Il est conséillé de spécifier le pid PCR.
 
 = Obtenir les PIDs =
+
+Si vous n'utilisez pas l'autoconfiguration (voir README-fr), il vous faudra obtenir les PID (Program Identifier) de chaque chaine.
 
 Pour obtenir les différents pids, le plus simple est d'utiliser les linuxtv-dvb-apps.
 Vous accordez la carte sur la fréquence voulue.

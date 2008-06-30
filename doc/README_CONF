@@ -21,6 +21,7 @@ All parameters are like: name=value
 ||freq                           ||transponder's frequency in MHz ||
 ||pol                            ||transponder's polarisation (a char) v or h (not case sensitive) ||
 ||srate                          ||transponder's strate ||
+||sat_number                     ||The satellite number (for diseqc users) ||
 ||card (f)                       ||card number (défaut : 0) ||
 ||timeout_accord (f)             ||tuning timeout (in seconds) (default : 300 (5min)) ||
 ||timeout_no_diff (f)            ||if the program doesn't stream any chanels, he will kill himself at the end of this time (in seconds) (default : 600 (10min)) ||
@@ -46,6 +47,8 @@ You must specify :
 It's advised to set the PCR pid (usually the same as audio or video pid)
 
 = Get the PID numbers =
+
+If you don't use autoconfiguration (see the README), you have to get the PID (Program Identifier) for each channel
 
 In order to get the pids numbers, the easier way is to use linuxtv-dvb-apps.
 You tune the card on the wanted frequency (with """tune""" for example).
