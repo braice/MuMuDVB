@@ -136,7 +136,7 @@ int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt,
 	o=4+ds_convlen;
 	if(ds_convlen>2)
 	  pmt->need_descr=1;
-	for (i=dslen+12; i<slen-9; i+=dslen+5) {      //we parse the part after the descriptors
+	for (i=dslen+12; i<=slen-9; i+=dslen+5) {      //we parse the part after the descriptors
 	  dslen=((buf[i+3]&0x0f)<<8)|buf[i+4];        //ES_info_length
 	  if ((buf[i]==0)||(buf[i]>4))                //stream_type
 	    {
