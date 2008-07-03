@@ -1150,10 +1150,13 @@ SignalHandler (int signum)
 	  //We check if the autoconfiguration is finished
 	  //  if there is still a channel wich is not configurated we 
 	  //  keep autoconfiguration continue
-	  autoconfiguration=0;
-	  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
-	    if(!channels[curr_channel].autoconfigurated)
-	      autoconfiguration=oldautoconfiguration;
+	  if(autoconfiguration==1)
+	    {
+	      autoconfiguration=0;
+	      for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+		if(!channels[curr_channel].autoconfigurated)
+		  autoconfiguration=oldautoconfiguration;
+	    }
 
 	  if(time_start_autoconfiguration)
 	    time_start_autoconfiguration=now;
@@ -1180,18 +1183,18 @@ SignalHandler (int signum)
 		}
 
 	      log_message(MSG_INFO,"Autoconfiguration done\n");
-	    }
-	  //TODO put this in a function
-	  log_message( MSG_INFO, "Diffusion %d channel%s\n", nb_flux,
-		       (nb_flux == 1 ? "" : "s"));
-	  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
-	    {
-	      log_message( MSG_INFO, "Channel \"%s\" num %d ip %s:%d\n",
-			   channels[curr_channel].name, curr_channel, channels[curr_channel].ipOut, channels[curr_channel].portOut);
-	      log_message( MSG_DETAIL, "        pids : ");
-	      for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
-		log_message( MSG_DETAIL, "%d ", channels[curr_channel].pids[curr_pid]);
-	      log_message( MSG_DETAIL, "\n");
+	      //TODO put this in a function
+	      log_message( MSG_INFO, "Diffusion %d channel%s\n", nb_flux,
+			   (nb_flux == 1 ? "" : "s"));
+	      for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+		{
+		  log_message( MSG_INFO, "Channel \"%s\" num %d ip %s:%d\n",
+			       channels[curr_channel].name, curr_channel, channels[curr_channel].ipOut, channels[curr_channel].portOut);
+		  log_message( MSG_DETAIL, "        pids : ");
+		  for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+		    log_message( MSG_DETAIL, "%d ", channels[curr_channel].pids[curr_pid]);
+		  log_message( MSG_DETAIL, "\n");
+		}
 	    }
 
 

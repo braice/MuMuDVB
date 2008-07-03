@@ -462,6 +462,8 @@ int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channel
 
   do
     {
+      if(cam_support && actual_service->free_ca_mode)
+	  log_message(MSG_DETAIL,"Service scrambled. Name \"%s\"\n", actual_service->name);
       if(!cam_support && actual_service->free_ca_mode)
 	{
 	  log_message(MSG_DETAIL,"Service scrambled and no cam support. Name \"%s\"\n", actual_service->name);

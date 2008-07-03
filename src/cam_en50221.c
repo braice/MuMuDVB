@@ -1900,7 +1900,7 @@ int en50221_Poll( access_sys_t * p_sys )
 /*****************************************************************************
  * en50221_SetCAPMT :
  *****************************************************************************/
-int en50221_SetCAPMT( access_sys_t * p_sys, mumudvb_ts_packet_t *p_pmt ) //braice
+int en50221_SetCAPMT( access_sys_t * p_sys, mumudvb_ts_packet_t *p_pmt )
 {
     int i, i_session_id;
     int b_update = 0;

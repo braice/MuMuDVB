@@ -145,8 +145,8 @@ int complete_card_fds(int card, int nb_flux, mumudvb_channel_t *channels, fds_t 
   if(autoconf==2) //full autoconf we didn't opened the PMT
     start=0;
 
-  char *demuxdev_name=NULL;
-  asprintf(&demuxdev_name,DEMUX_DEV_PATH,card);
+  char demuxdev_name[256];
+  sprintf(demuxdev_name,DEMUX_DEV_PATH,card);
 
   for (i = 0; i < nb_flux; i++)
     {
@@ -161,7 +161,6 @@ int complete_card_fds(int card, int nb_flux, mumudvb_channel_t *channels, fds_t 
 	    }
 	}
     }
-  free(demuxdev_name);
   return 0;
 
 }
