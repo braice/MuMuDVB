@@ -73,16 +73,21 @@ int convert_desc(struct ca_info *cai,
   int i, j, dlen, olen=0;
   int id;
   int bad_sysid=0;
+  descr_ca_t *descriptor;
+
 
   out[2]=cmd;                            //ca_pmt_cmd_id 01 ok_descrambling 02 ok_mmi 03 query 04 not_selected
   for (i=0; i<dslen; i+=dlen)           //loop on all the descriptors (for each descriptor we add its length)
     {
-      dlen=buf[i+1]+2;                     //ca_descriptor len
+      descriptor=(descr_ca_t *)(buf+i);
+      dlen=descriptor->descriptor_length+2;
+      //dlen=buf[i+1]+2;                     //ca_descriptor len
       //if(!quiet)
       //log_message( MSG_INFO,"CAM : \tDescriptor tag %d\n",buf[i]);
-      if ((buf[i]==9)&&(dlen>2)&&(dlen+i<=dslen)) //here buf[i]=descriptor_tag (9=ca_descriptor)
+      if ((descriptor->descriptor_tag==9)&&(dlen>2)&&(dlen+i<=dslen)) //descriptor_tag (9=ca_descriptor)
 	{
-	  id=(buf[i+2]<<8)|buf[i+3];
+	  //id=(buf[i+2]<<8)|buf[i+3];
+	  id=HILO(descriptor->CA_type);
 	  for (j=0; j<cai->sys_num; j++)
 	    if (cai->sys_id[j]==id) //does the system id supported by the cam ?
 	      break; //yes --> we leave the loop
@@ -116,10 +121,20 @@ int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt,
 	uint8_t *buf;
 	uint8_t *out;
 	int ds_convlen;
+	pmt_t *header;
+	int program_info_length=0;
+	pmt_info_t *descr_header;
 
 	if(!quiet)
 	  log_message( MSG_DEBUG,"CAM : \t===PMT convert into CA_PMT\n");
 
+        header=(pmt_t *)pmt->packet;
+
+        if(header->table_id!=0x02)
+          {
+            log_message( MSG_WARN,"CAM : == Packet PID %d is not a PMT PID\n", pmt->pid);
+            return 1;
+          }
 
 	pmt->need_descr=0;
 	
@@ -131,40 +146,44 @@ int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt,
 	out[1]=buf[3]; //program number and version number
 	out[2]=buf[4]; //program number and version number
 	out[3]=buf[5]; //program number and version number
-	dslen=((buf[10]&0x0f)<<8)|buf[11]; //program_info_length
-	ds_convlen=convert_desc(cai, out+4, buf+12, dslen, cmd, quiet); //new index : 4 + the descriptor size
+
+	//dslen=((buf[10]&0x0f)<<8)|buf[11]; //program_info_length
+	program_info_length=HILO(header->program_info_length); //program_info_length
+
+	ds_convlen=convert_desc(cai, out+4, buf+PMT_LEN, program_info_length, cmd, quiet); //new index : 4 + the descriptor size
 	o=4+ds_convlen;
 	if(ds_convlen>2)
 	  pmt->need_descr=1;
-	for (i=dslen+12; i<=slen-9; i+=dslen+5) {      //we parse the part after the descriptors
-	  dslen=((buf[i+3]&0x0f)<<8)|buf[i+4];        //ES_info_length
-	  if ((buf[i]==0)||(buf[i]>4))                //stream_type
-	    {
-	      if(!quiet)
-		log_message( MSG_DEBUG, "CAM : \t=====Stream type throwed away : %d\n",buf[i]);
-	      continue;
-	    }
-	  if(!quiet)
-	    {
-	      switch(buf[i]){
-	      case 1:
-	      case 2:
-		log_message( MSG_DEBUG,"CAM : \t=====Stream type : video\n");
-		break;
-	      case 3:
-	      case 4:
-		log_message( MSG_DEBUG,"CAM : \t=====Stream type : audio\n");
-		break;
-	      default:
-		log_message( MSG_DEBUG,"CAM : \t=====Stream type : %d\n",buf[i]);
-	      }
-	    }
-
+	for (i=program_info_length+PMT_LEN; i<=slen-(PMT_INFO_LEN+4); i+=dslen+PMT_INFO_LEN) {      //we parse the part after the descriptors
+	  descr_header=(pmt_info_t *)(pmt->packet+i);
+	  dslen=HILO(descr_header->ES_info_length);        //ES_info_length
+	  switch(descr_header->stream_type){
+	  case 1:
+	  case 2:
+	    if(!quiet)
+	      log_message( MSG_DEBUG,"CAM : \t=====Stream type : video\n");
+	    break;
+	  case 3:
+	  case 4:
+	    if(!quiet)
+	      log_message( MSG_DEBUG,"CAM : \t=====Stream type : audio\n");
+	    break;
+	  case 0x06:
+	    if(!quiet)
+	      log_message( MSG_DEBUG,"CAM : \t=====Stream type : teletex, AC3 or subtitling, don(t kno if we need to descramble, dropped\n");
+	    continue;
+	    //break;
+	  default:
+	    if(!quiet)
+	      log_message( MSG_DEBUG, "CAM : \t=====Stream type throwed away : 0x%02x\n",buf[i]);
+	    continue;
+	  }
+	  
 	  out[o++]=buf[i];                            //stream_type
 	  out[o++]=buf[i+1];                          //reserved and elementary_pid
 	  out[o++]=buf[i+2];                          //reserved and elementary_pid
 	  //log_message( MSG_INFO,"CAM : TEST, PID %d bytes : %d %x \n",((buf[i+1] & 0x1f)<<8) | buf[i+2]);
-	  ds_convlen=convert_desc(cai, out+o, buf+i+5, dslen, cmd,quiet);//we look to the descriptors associated to this stream
+	  ds_convlen=convert_desc(cai, out+o, buf+i+PMT_INFO_LEN, dslen, cmd,quiet);//we look to the descriptors associated to this stream
 	  o+=ds_convlen;
 	  if(ds_convlen>2)
 	    pmt->need_descr=1;

@@ -215,6 +215,27 @@ typedef struct {
      // descriptors
 } pmt_info_t;
 
+
+/* 0x09 ca_descriptor */
+
+#define DESCR_CA_LEN 6
+typedef struct descr_ca_struct {
+  u_char descriptor_tag                         :8;
+  u_char descriptor_length                      :8;
+  u_char CA_type_hi                             :8;
+  u_char CA_type_lo                             :8;
+#if BYTE_ORDER == BIG_ENDIAN
+  u_char reserved                               :3;
+  u_char CA_PID_hi                              :5;
+#else
+  u_char CA_PID_hi                              :5;
+  u_char reserved                               :3;
+#endif
+  u_char CA_PID_lo                              :8;
+} descr_ca_t;
+
+
+
 /*
  *
  *    2) Service Description Table (SDT):
