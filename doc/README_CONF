@@ -25,14 +25,14 @@ All parameters are like: name=value
 ||card (f)                       ||card number (défaut : 0) ||
 ||timeout_accord (f)             ||tuning timeout (in seconds) (default : 300 (5min)) ||
 ||timeout_no_diff (f)            ||if the program doesn't stream any chanels, he will kill himself at the end of this time (in seconds) (default : 600 (10min)) ||
-|| Pour la TNT                   ||
+|| For DVB-T                     ||
 ||qam                            ||quadrature amplitude modulation, possible values : qpsk,16,32,64,128,256,auto ||
 ||trans_mode                     ||transmission mode, possible values : 2k,8k,auto ||
 ||bandwidth                      ||bandwith, possible values : 8MHz,7MHz,6MHz,auto ||
 ||guardinterval                  ||guard interval, possible values : 1/32,1/16,1/8,1/4,auto ||
 ||coderate                       ||coderate, possible values : none,1/2,2/3,3/4,4/5,5/6,6/7,7/8,8/9,auto ||
 ||'''For each channel '''||
-||ip                             ||multicast (can also be unicast) ip where the chanel will be diffused ||
+||ip                             ||multicast (can also be unicast) ip where the chanel will be streamed ||
 ||port                           ||port ||
 ||pids                           ||a pid list space separeted (any number, some pids are always sent (PAD EIT SDT TDT NIT) see README for more details) ||
 ||cam_pmt_pid                    ||(only for scrambled channels) the PMT PID for CAM support ||

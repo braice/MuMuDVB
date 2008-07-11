@@ -72,6 +72,8 @@ make install (with root user)
 If you want use defalts values for DVB-T tuning (optionnal, fore more details see src/dvb_defaults.h) type
 "make FRANCE=1" instead of "make"
 
+Without specifiying the country the default values are Auto for everything excepted the banwith wich is set to 8MHz
+
 = Usage =
 
 The documentation for configuration file syntax is in doc/README_CONF.

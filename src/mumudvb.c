@@ -160,6 +160,8 @@ main (int argc, char **argv)
   fe_code_rate_t HP_CodeRate = HP_CODERATE_DEFAULT, LP_CodeRate =
     LP_CODERATE_DEFAULT;
 
+  //TODO : check frontend capabilities
+
   fe_hierarchy_t hier = HIERARCHY_DEFAULT;
   uint8_t diseqc = 0; //satellite number
 
