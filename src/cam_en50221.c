@@ -1767,6 +1767,9 @@ int en50221_Poll( access_sys_t * p_sys )
 
         if ( !(sinfo.flags & CA_CI_MODULE_READY) )
         {
+	  log_message( MSG_INFO,"CAM : en50221_Poll: cam slot %d not ready\n",
+		       i_slot );
+
             if ( p_sys->pb_active_slot[i_slot] )
             {
                 log_message( MSG_INFO,"CAM : en50221_Poll: slot %d has been removed\n",
@@ -1816,6 +1819,7 @@ int en50221_Poll( access_sys_t * p_sys )
                      i_slot );
         }
 
+       
         if ( !p_sys->pb_tc_has_data[i_slot] )
         {
             if ( TPDUSend( p_sys, i_slot, T_DATA_LAST, NULL, 0 ) !=

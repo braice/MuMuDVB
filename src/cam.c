@@ -308,6 +308,7 @@ int CAMPoll( access_sys_t * p_sys )
         break;
     case CA_CI:
         i_ret = 0;
+        log_message( MSG_WARN, "CAMPoll: CAM link type not supported\n" );
         break;
     default:
         log_message( MSG_WARN, "CAMPoll: This should not happen\n" );

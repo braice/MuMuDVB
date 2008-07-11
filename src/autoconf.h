@@ -28,11 +28,10 @@
 
 #include "mumudvb.h"
 
-//autoconfiguration
 //chained list of services
 //for autoconfiguration
 typedef struct mumudvb_service_t{
-  char name[MAX_LEN_NOM];  //the channel name
+  char name[MAX_NAME_LEN];  //the channel name
 
   int running_status;
   int type;

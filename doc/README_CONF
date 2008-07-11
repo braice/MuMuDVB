@@ -4,9 +4,9 @@ README for config file of mumudvb
 
 mumudvb must use a file de configuration to give him all the different reception parameters and the pid repartition aver the different channels. You will find an example in the file conf.example attached with mumudvb sources in the doc directory.
 
-mumudvb does not worry to the parameter's order except for chanels where pids must be put after the ip and the port
+Mumudvb does not worry to the parameter's order except for chanels where pids must be put after the ip and the port
 
-comments can be done anywhere in the configuration file : just start the line with #
+You can put comments everywhere in the configuration file : just start the line with #
 
 All parameters are like: name=value
 
@@ -40,15 +40,16 @@ All parameters are like: name=value
 
 
 == Note ==
-You must specify : 
+You must specify (except with autoconfiguration, see README): 
  * audio pid
  * video pid
  * PMT pid
+
 It's advised to set the PCR pid (usually the same as audio or video pid)
 
 = Get the PID numbers =
 
-If you don't use autoconfiguration (see the README), you have to get the PID (Program Identifier) for each channel
+If you don't use autoconfiguration (see the README), you have to get the PIDs (Program Identifier) for each channel
 
 In order to get the pids numbers, the easier way is to use linuxtv-dvb-apps.
 You tune the card on the wanted frequency (with """tune""" for example).

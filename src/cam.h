@@ -171,21 +171,21 @@ static __inline__ void en50221_MMIFree( en50221_mmi_object_t *p_object )
 
 struct access_sys_t
 {
-    /* CA management */
-    int i_ca_handle;
-    int i_ca_type;
-    int i_nb_slots;
-    int pb_active_slot[MAX_CI_SLOTS];
-    int pb_tc_has_data[MAX_CI_SLOTS];
-    int pb_slot_mmi_expected[MAX_CI_SLOTS];
-    int pb_slot_mmi_undisplayed[MAX_CI_SLOTS];
-    en50221_session_t p_sessions[MAX_SESSIONS];
-    mtime_t i_ca_timeout, i_ca_next_event, i_frontend_timeout;
+  /* CA management */
+  int i_ca_handle;
+  int i_ca_type;
+  int i_nb_slots;
+  int pb_active_slot[MAX_CI_SLOTS];
+  int pb_tc_has_data[MAX_CI_SLOTS];
+  int pb_slot_mmi_expected[MAX_CI_SLOTS];
+  int pb_slot_mmi_undisplayed[MAX_CI_SLOTS];
+  en50221_session_t p_sessions[MAX_SESSIONS];
+  mtime_t i_ca_timeout, i_ca_next_event, i_frontend_timeout;
   mumudvb_ts_packet_t *pp_selected_programs[MAX_PROGRAMS]; //braice
-    int i_selected_programs;
+  int i_selected_programs;
 
     /* */
-    int i_read_once;
+  int i_read_once;
   struct ca_info cai[1];
 
 };

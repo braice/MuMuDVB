@@ -57,7 +57,7 @@ set_ts_filt (int fd, uint16_t pid, dmx_pes_type_t pestype)
 {
   struct dmx_pes_filter_params pesFilterParams;
 
-  log_message( MSG_DETAIL, "Setting filter for PID %d\n", pid);
+  log_message( MSG_DEBUG, "Setting filter for PID %d\n", pid);
   pesFilterParams.pid = pid;
   pesFilterParams.input = DMX_IN_FRONTEND;
   pesFilterParams.output = DMX_OUT_TS_TAP;
@@ -94,7 +94,7 @@ create_card_fd(int card, int nb_flux, mumudvb_channel_t *channels, int *mandator
   char *dvrdev_name=NULL;
   asprintf(&demuxdev_name,DEMUX_DEV_PATH,card);
 
-  for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY;curr_pid_mandatory++)
+  for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY_PID_NUMBER;curr_pid_mandatory++)
     //file descriptors for the mandatory pids
     //we check if we need to open the file descriptor (some cards are limited)
     if ((mandatory_pid[curr_pid_mandatory] != 0)&& ((fds->fd_mandatory[curr_pid_mandatory] = open (demuxdev_name, O_RDWR)) < 0) )	
@@ -172,7 +172,7 @@ close_card_fd(int nb_flux, mumudvb_channel_t *channels, fds_t fds)
   int j=0;
   int curr_pid_mandatory = 0;
 
-  for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY;curr_pid_mandatory++)
+  for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY_PID_NUMBER;curr_pid_mandatory++)
     {
       //      if(mandatory_pid[curr_pid_mandatory] != 0)
 	close(fds.fd_mandatory[curr_pid_mandatory]);
