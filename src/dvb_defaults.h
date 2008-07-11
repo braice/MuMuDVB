@@ -102,7 +102,7 @@
 #ifndef DVB_T_LOCATION
 
 /* AUTO settings */
-#define DVB_T_LOCATION		    "in United Kingdom"
+#define DVB_T_LOCATION		    "Automatic"
 #define BANDWIDTH_DEFAULT           BANDWIDTH_8_MHZ
 #define HP_CODERATE_DEFAULT         FEC_AUTO
 #define CONSTELLATION_DEFAULT       QAM_AUTO
