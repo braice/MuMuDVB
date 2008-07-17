@@ -28,7 +28,7 @@
 #include "udp.h"
 
 int
-sendudp (int fd, struct sockaddr_in *sSockAddr, char *data, int len)
+sendudp (int fd, struct sockaddr_in *sSockAddr, unsigned char *data, int len)
 {
   return sendto (fd, data, len, 0, (struct sockaddr *) sSockAddr,
 		 sizeof (*sSockAddr));

@@ -44,6 +44,7 @@
 #include "errors.h"
 #include "ts.h"
 #include "mumudvb.h"
+#include "dvb.h"
 #include "autoconf.h"
 
 void parsesdtdescriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_service_t *services);
@@ -512,4 +513,30 @@ int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channel
   //TODO CHECK THE MAX CHANNELS
 
   return channel_number;
+}
+
+//TODO : explain
+void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, fds_t *fds)
+{
+  int curr_channel;
+  int curr_pid;
+
+  log_message(MSG_DETAIL,"Autoconfiguration almost done\n");
+  log_message(MSG_DETAIL,"Autoconf : We open the new descriptors\n");
+  if (complete_card_fds(card, number_of_channels, channels, fds,1) < 0)
+    {
+      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors\n");
+      //return -1; //TODO !!!!!!!!! ADD AN ERROR
+    }
+  log_message(MSG_DETAIL,"Autoconf : Add the new filters\n");
+  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+    {
+      for (curr_pid = 1; curr_pid < channels[curr_channel].num_pids; curr_pid++) //curr_pid = 1 --> why ? PMT opened ?
+	set_ts_filt (fds->fd[curr_channel][curr_pid], channels[curr_channel].pids[curr_pid], DMX_PES_OTHER);
+    }
+  
+  log_message(MSG_INFO,"Autoconfiguration done\n");
+
+  log_streamed_channels(number_of_channels, channels);
+
 }

@@ -57,6 +57,25 @@ void log_message( int type,
 }
 
 
+void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels)
+{
+  int curr_channel;
+  int curr_pid;
+
+  log_message( MSG_INFO, "Diffusion %d channel%s\n", number_of_channels,
+	       (number_of_channels <= 1 ? "" : "s"));
+  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+    {
+      log_message( MSG_INFO, "Channel number : %3d, ip : %s:%d, name : \"%s\"\n",
+		   curr_channel, channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
+      log_message( MSG_DETAIL, "        pids : ");
+      for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+	log_message( MSG_DETAIL, "%d ", channels[curr_channel].pids[curr_pid]);
+      log_message( MSG_DETAIL, "\n");
+    }
+}
+
+
 void
 gen_chaines_diff (char *nom_fich_chaines_diff, char *nom_fich_chaines_non_diff, int nb_flux, mumudvb_channel_t *channels)
 {

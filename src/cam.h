@@ -48,6 +48,7 @@
 #include <sys/time.h>
 
 #include "ts.h"
+#include "mumudvb.h"
 
 struct ca_info {
   int initialized; //are the cai complete ?
@@ -200,7 +201,7 @@ void CAMClose( access_sys_t * );
 
 int en50221_Init( access_sys_t * );
 int en50221_Poll( access_sys_t * );
-int en50221_SetCAPMT( access_sys_t *, mumudvb_ts_packet_t * );
+int en50221_SetCAPMT( access_sys_t * , mumudvb_ts_packet_t * , mumudvb_channel_t *);
 int en50221_OpenMMI( access_sys_t * p_sys, int i_slot );
 int en50221_CloseMMI( access_sys_t * p_sys, int i_slot );
 en50221_mmi_object_t *en50221_GetMMIObject( access_sys_t * p_sys,

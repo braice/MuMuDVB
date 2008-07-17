@@ -918,18 +918,7 @@ main (int argc, char **argv)
 
   if(autoconfiguration!=2)
     {
-      log_message( MSG_INFO, "Diffusion %d channel%s\n", number_of_channels,
-		   (number_of_channels == 1 ? "" : "s"));
-      
-      for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-	{
-	  log_message( MSG_INFO, "Channel \"%s\" num %d ip %s:%d\n",
-		       channels[curr_channel].name, curr_channel, channels[curr_channel].ipOut, channels[curr_channel].portOut);
-	  log_message( MSG_DETAIL, "        pids : ");
-	  for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
-	    log_message( MSG_DETAIL, "%d ", channels[curr_channel].pids[curr_pid]);
-	  log_message( MSG_DETAIL, "\n");
-	}
+      log_streamed_channels(number_of_channels, channels);
     }
 
 
@@ -981,19 +970,19 @@ main (int argc, char **argv)
 	  /*************************************************************************************/
 	  /****              AUTOCONFIGURATION PART                                         ****/
 	  /*************************************************************************************/
-	  if( autoconfiguration==2)
+	  if( autoconfiguration==2) //Full autoconfiguration, we search the channels and their names
 	    {
-	      if(pid==0)
+	      if(pid==0) //PAT : contains the services identifiers and the pmt pid for each service
 		{
 		  if(get_ts_packet(temp_buffer_from_dvr,autoconf_temp_pat))
 		    {
 		      //log_message(MSG_DEBUG,"Autoconf : New PAT pid\n");
 		      if(autoconf_read_pat(autoconf_temp_pat,services))
 			{
-			  log_message(MSG_DEBUG,"It seems that we have finished ***************\n");
+			  log_message(MSG_DEBUG,"Autoconf : It seems that we have finished *\n");
 			  //Interrupted=1;
 			  number_of_channels=services_to_channels(services, channels, cam_support,common_port, card); //Convert the list of services into channels
-			  if (complete_card_fds(card, number_of_channels, channels, &fds,autoconfiguration) < 0)
+			  if (complete_card_fds(card, number_of_channels, channels, &fds,0) < 0)
 			    {
 			      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");
 			      Interrupted=666;
@@ -1019,7 +1008,7 @@ main (int argc, char **argv)
 		      memset (autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
 		    }
 		}
-	      if(pid==17)
+	      if(pid==17) //SDT : contains the names of the services
 		{
 		  if(get_ts_packet(temp_buffer_from_dvr,autoconf_temp_sdt))
 		    {
@@ -1030,7 +1019,7 @@ main (int argc, char **argv)
 		}
 	      continue;
 	    }
-	  if( autoconfiguration==1)
+	  if( autoconfiguration==1) //We have the channels and their PMT, we search the other pids
 	    {
 	      //here we call the autoconfiguration function
 	      for(curr_channel=0;curr_channel<MAX_CHANNELS;curr_channel++)
@@ -1047,6 +1036,18 @@ main (int argc, char **argv)
 			    log_message(MSG_DETAIL," %d -",channels[curr_channel].pids[i]);
 			  log_message(MSG_DETAIL,"\n");
 			  channels[curr_channel].autoconfigurated=1;
+
+			  //We check if autoconfiguration is finished
+			  autoconfiguration=0;
+			  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+			    if(!channels[curr_channel].autoconfigurated)
+			      autoconfiguration=1;
+
+			  //if it's finished, we open the new descriptors and add the new filters
+			  if(autoconfiguration==0)
+			    {
+			      autoconf_end(card, number_of_channels, channels, &fds);
+			    }
 			}
 		    }
 		}
@@ -1056,15 +1057,20 @@ main (int argc, char **argv)
 	  /****              AUTOCONFIGURATION PART FINISHED                                ****/
 	  /*************************************************************************************/
 
-	  //Pat rewrite only
+	  /******************************************************/
+	  //Pat rewrite 
+	  /******************************************************/
 	  //we save the full pat before otherwise only the first channel will be rewritten with a full PAT
+	  //in other words, we need a full pat for all the channels
 	  if( (pid == 0) && //This is a PAT PID
 	      rewrite_pat ) //AND we asked for rewrite
 	    for(buf_pos=0;buf_pos<TS_PACKET_SIZE;buf_pos++)//TODO : use memcpy
 	      saved_pat_buffer[buf_pos]=temp_buffer_from_dvr[buf_pos]; //We save the full pat
 	  
 
+	  /******************************************************/
 	  //for each channel we'll look if we must send this PID
+	  /******************************************************/
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	    {
 	      //we'll see if we must send this pid for this channel
@@ -1082,7 +1088,10 @@ main (int argc, char **argv)
 		    channels[curr_channel].streamed_channel++;
 		  }
 
+	      /******************************************************/
 	      //cam support
+	      // If we send the packet, we look if it's a cam pmt pid
+	      /******************************************************/
 	      if(cam_support && send_packet==1 &&cam_sys_access->cai->initialized&&cam_sys_access->cai->ready>=3)  //no need to check paquets we don't send
 		{
 		  if ((channels[curr_channel].cam_pmt_pid)&& (channels[curr_channel].cam_pmt_pid == pid))
@@ -1092,7 +1101,7 @@ main (int argc, char **argv)
 			  //fprintf(stderr,"HOP\n");
      			  channels[curr_channel].cam_pmt_pid=0; //once we have asked the CAM for this PID, we clear it not to ask it again
 			  cam_pmt_ptr->i_program_number=curr_channel;
-			  en50221_SetCAPMT(cam_sys_access, cam_pmt_ptr);
+			  en50221_SetCAPMT(cam_sys_access, cam_pmt_ptr, channels);
 			  cam_sys_access->cai->ready=0;
 			  cam_pmt_ptr=malloc(sizeof(mumudvb_ts_packet_t)); //on alloue un nouveau //l'ancien est stocke dans la structure VLC
 			  //TODO check if we have enough memory
@@ -1101,7 +1110,9 @@ main (int argc, char **argv)
 		    }
 		}
 
-	      //Rewrite PAT checking
+	      /******************************************************/
+	      //Rewrite PAT
+	      /******************************************************/
 	      if(send_packet==1)  //no need to check paquets we don't send
 		if( (pid == 0) && //This is a PAT PID
 		     rewrite_pat ) //AND we asked for rewrite
@@ -1113,7 +1124,10 @@ main (int argc, char **argv)
 		      send_packet=0;//... we don't send it anyway
 		  }
 
-	      //Ok we must send it
+	      /******************************************************/
+	      //Ok we must send this packet,
+	      // we add it to the channel buffer
+	      /******************************************************/
 	      if(send_packet==1)
 		{
 		  // we fill the channel buffer //TODO Make a memcpy
@@ -1134,7 +1148,8 @@ main (int argc, char **argv)
 		    }
 		}
 
-
+	      //TODO : explain more
+	      //TODO : treat the case we're still doing autoconfiguration
 	      count_non_transmis = 0;
 	      if (alarm_count == 1)
 		{
@@ -1166,6 +1181,9 @@ main (int argc, char **argv)
       else
 	log_message( MSG_INFO, "\nclosing cleanly.\n");
     }
+
+
+  //TODO check if we can make a function mumudvb_close
 
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     close (channels[curr_channel].socketOut);
@@ -1239,9 +1257,7 @@ SignalHandler (int signum)
 
   struct timeval tv;
   int curr_channel = 0;
-  int curr_pid = 0;
   int compteur_chaines_diff=0;
-  int oldautoconfiguration;
 
   if (signum == SIGALRM)
     {
@@ -1260,62 +1276,18 @@ SignalHandler (int signum)
 	}
 
       //autoconfiguration
-      //here we check if it's finished
+      //We check if we reached the autoconfiguration timeout
       //if it's finished, we open the new descriptors and add the new filters
       if(autoconfiguration)
 	{
-	  oldautoconfiguration=autoconfiguration;
-	  //We check if the autoconfiguration is finished
-	  //  if there is still a channel wich is not configurated we 
-	  //  keep autoconfiguration continue
-	  if(autoconfiguration==1)
-	    {
-	      autoconfiguration=0;
-	      for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-		if(!channels[curr_channel].autoconfigurated)
-		  autoconfiguration=oldautoconfiguration;
-	    }
-
-	  if(time_start_autoconfiguration)
+	  if(!time_start_autoconfiguration)
 	    time_start_autoconfiguration=now;
 	  else if (now-time_start_autoconfiguration>AUTOCONFIGURE_TIME)
 	    {
 	      log_message(MSG_WARN,"Autoconf : Warning : Not all the channels were configured before timeout\n");
 	      autoconfiguration=0;
+	      autoconf_end(card, number_of_channels, channels, &fds);
 	    }
-
-	  if(!autoconfiguration)
-	    {
-	      log_message(MSG_DETAIL,"Autoconfiguration almost done\n");
-	      log_message(MSG_DETAIL,"Autoconf : Open the new descriptors\n");
-	      if (complete_card_fds(card, number_of_channels, channels, &fds,autoconfiguration) < 0)
-		{
-		  log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");
-		//return -1; //TODO !!!!!!!!! ADD AN ERROR
-		}
-	      log_message(MSG_DETAIL,"Autoconf : Add the new filters\n");
-	      for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-		{
-		  for (curr_pid = 1; curr_pid < channels[curr_channel].num_pids; curr_pid++)
-		    set_ts_filt (fds.fd[curr_channel][curr_pid], channels[curr_channel].pids[curr_pid], DMX_PES_OTHER);
-		}
-
-	      log_message(MSG_INFO,"Autoconfiguration done\n");
-	      //TODO put this in a function
-	      log_message( MSG_INFO, "Diffusion %d channel%s\n", number_of_channels,
-			   (number_of_channels == 1 ? "" : "s"));
-	      for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-		{
-		  log_message( MSG_INFO, "Channel \"%s\" num %d ip %s:%d\n",
-			       channels[curr_channel].name, curr_channel, channels[curr_channel].ipOut, channels[curr_channel].portOut);
-		  log_message( MSG_DETAIL, "        pids : ");
-		  for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
-		    log_message( MSG_DETAIL, "%d ", channels[curr_channel].pids[curr_pid]);
-		  log_message( MSG_DETAIL, "\n");
-		}
-	    }
-
-
 	}
       //end of autoconfiguration
       else //we are not doing autoconfiguration we can do something else

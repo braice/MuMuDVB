@@ -4,6 +4,8 @@
 
    Copyright (C) Dave Chapman 2002
 
+   Copyright (C) Brice DUBOST
+
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
    as published by the Free Software Foundation; either version 2
@@ -35,10 +37,12 @@
 
 /* DVB-T */
 
-/* Either uncomment one of the following lines, or add it to your
+/* Add the country to your
    "make" command.  e.g.
 
    make FINLAND=1
+
+   if you want to use these default values
 */
 
 /* default option : full auto except bandwith = 8MHz*/

@@ -46,7 +46,7 @@
 #define DEFAULT_TTL		2
 
 int makeclientsocket (char *szAddr, unsigned short port, int TTL, struct sockaddr_in *sSockAddr);
-int sendudp (int fd, struct sockaddr_in *sSockAddr, char *data, int len);
+int sendudp (int fd, struct sockaddr_in *sSockAddr, unsigned char *data, int len);
 int makesocket (char *szAddr, unsigned short port, int TTL, struct sockaddr_in *sSockAddr);
 
 

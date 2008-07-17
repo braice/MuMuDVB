@@ -319,7 +319,7 @@ int CAMPoll( access_sys_t * p_sys )
 }
 
 /*****************************************************************************
- * CAMSet :
+ * CAMSet : //TODO use this function
  *****************************************************************************/
 int CAMSet( access_sys_t * p_sys, mumudvb_ts_packet_t *p_pmt )
 {
@@ -330,7 +330,7 @@ int CAMSet( access_sys_t * p_sys, mumudvb_ts_packet_t *p_pmt )
         return ERROR_CAM;
     }
 
-    en50221_SetCAPMT( p_sys, p_pmt );
+    en50221_SetCAPMT( p_sys, p_pmt , NULL); //TODO replace null by channels
 
     return 0;
 }
