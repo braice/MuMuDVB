@@ -79,6 +79,8 @@ int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
 int Interrupted = 0;
 char nom_fich_chaines_diff[256];
 char nom_fich_chaines_non_diff[256];
+char nom_fich_pid[256];
+
 
 //autoconfiguration
 int autoconfiguration = 0;           //Do we use autoconfiguration ?
@@ -107,6 +109,7 @@ unsigned long       crc32_table[256];
 
 // prototypes
 static void SignalHandler (int signum);
+int mumudvb_close(int Interrupted, mumudvb_ts_packet_t *cam_pmt_ptr);
 
 
 void
@@ -179,7 +182,6 @@ main (int argc, char **argv)
   //files
   char *conf_filename = NULL;
   FILE *conf_file;
-  char nom_fich_pid[256];
   FILE *chaines_diff;
   FILE *chaines_non_diff;
   FILE *pidfile;
@@ -766,7 +768,7 @@ main (int argc, char **argv)
   //packet structures
   /*****************************************************/
 
-  //TODO : check the return values of malloc
+  //TODO : use mumudvb_close in case of a malloc issue
   if(autoconfiguration)
     {
       autoconf_temp_pmt=malloc(sizeof(mumudvb_ts_packet_t));
@@ -935,7 +937,7 @@ main (int argc, char **argv)
       last_poll_error=0;
       while((poll (pfds, 1, 500)<0)&&(poll_try<MAX_POLL_TRIES))
 	{
-	  if(errno != EINTR) //TODO : comment why we ignore interrupted system call
+	  if(errno != EINTR) //EINTR means Interrupted System Call, it normally shouldn't matter so much so we don't count it for our Poll tries
 	    {
 	      poll_try++;
 	      last_poll_error=errno;
@@ -946,7 +948,7 @@ main (int argc, char **argv)
       if(poll_try==MAX_POLL_TRIES)
 	{
 	  log_message( MSG_ERROR, "Poll : We reach the maximum number of polling tries\n\tLast error when polling: %s\n", strerror (errno));
-	  Interrupted=errno;
+	  Interrupted=errno<<8; //the <<8 is to make difference beetween signals and errors;
 	  continue;
 	}
       else if(poll_try)
@@ -960,7 +962,7 @@ main (int argc, char **argv)
 	  if (bytes_read != TS_PACKET_SIZE)
 	    {
 	      log_message( MSG_ERROR, "No bytes left to read - aborting\n");
-	      Interrupted=errno;
+	      Interrupted=errno<<8; //the <<8 is to make difference beetween signals and errors;
 	      continue;
 	    }
 
@@ -985,7 +987,7 @@ main (int argc, char **argv)
 			  if (complete_card_fds(card, number_of_channels, channels, &fds,0) < 0)
 			    {
 			      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");
-			      Interrupted=666;
+			      Interrupted=666<<8; //the <<8 is to make difference beetween signals and errors;
 			      continue;
 			    }
 
@@ -1047,6 +1049,8 @@ main (int argc, char **argv)
 			  if(autoconfiguration==0)
 			    {
 			      autoconf_end(card, number_of_channels, channels, &fds);
+			      if(autoconf_temp_pmt) 
+				free(autoconf_temp_pmt);
 			    }
 			}
 		    }
@@ -1064,8 +1068,7 @@ main (int argc, char **argv)
 	  //in other words, we need a full pat for all the channels
 	  if( (pid == 0) && //This is a PAT PID
 	      rewrite_pat ) //AND we asked for rewrite
-	    for(buf_pos=0;buf_pos<TS_PACKET_SIZE;buf_pos++)//TODO : use memcpy
-	      saved_pat_buffer[buf_pos]=temp_buffer_from_dvr[buf_pos]; //We save the full pat
+	    memcpy(saved_pat_buffer,temp_buffer_from_dvr,TS_PACKET_SIZE); //We save the full pat
 	  
 
 	  /******************************************************/
@@ -1103,8 +1106,12 @@ main (int argc, char **argv)
 			  cam_pmt_ptr->i_program_number=curr_channel;
 			  en50221_SetCAPMT(cam_sys_access, cam_pmt_ptr, channels);
 			  cam_sys_access->cai->ready=0;
-			  cam_pmt_ptr=malloc(sizeof(mumudvb_ts_packet_t)); //on alloue un nouveau //l'ancien est stocke dans la structure VLC
-			  //TODO check if we have enough memory
+			  cam_pmt_ptr=malloc(sizeof(mumudvb_ts_packet_t)); //We allocate a new one, the old one is stored in cam_sys_access
+			  if(cam_pmt_ptr==NULL)
+			    {
+			      log_message( MSG_ERROR,"MALLOC\n");
+			      return -1; 			  //TODO return more cleanly
+			    }
 			  memset (cam_pmt_ptr, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 			}
 		    }
@@ -1117,8 +1124,8 @@ main (int argc, char **argv)
 		if( (pid == 0) && //This is a PAT PID
 		     rewrite_pat ) //AND we asked for rewrite
 		  {
-		    for(buf_pos=0;buf_pos<TS_PACKET_SIZE;buf_pos++)//TODO : use memcpy
-		      temp_buffer_from_dvr[buf_pos]=saved_pat_buffer[buf_pos]; //We restore the full PAT
+		    memcpy(temp_buffer_from_dvr,saved_pat_buffer,TS_PACKET_SIZE); //We restore the full PAT
+		    //TODO : test if pat_rewrite still works
 		    //and we try to rewrite it
 		    if(pat_rewrite(temp_buffer_from_dvr,channels[curr_channel].num_pids,channels[curr_channel].pids)) //We try rewrite and if there's an error...
 		      send_packet=0;//... we don't send it anyway
@@ -1148,8 +1155,11 @@ main (int argc, char **argv)
 		    }
 		}
 
-	      //TODO : explain more
-	      //TODO : treat the case we're still doing autoconfiguration
+	      //The idea is the following, when we send a packet we reinit count_non_transmis, wich count the number of packets
+	      //which are not sent
+	      //this number is increased for each new packet from the card
+	      //Normally this number should never increase a lot since we asked the card to give us only interesting PIDs
+	      //When it increases it means that the card give us crap, so we put a warning on the log.
 	      count_non_transmis = 0;
 	      if (alarm_count == 1)
 		{
@@ -1158,20 +1168,33 @@ main (int argc, char **argv)
 			       "Good, we receive back significant data\n");
 		}
 	    }
-	  count_non_transmis++;
-	  if (count_non_transmis > ALARM_COUNT_LIMIT)
+	  //when we do autoconfiguration, we didn't set all the filters etc, so we don't care about count_non_transmis
+	  if(!autoconfiguration)
 	    {
-	      log_message( MSG_INFO,
-			   "Error : less than one paquet on %d sent\n",
-			   ALARM_COUNT_LIMIT);
-	      alarm_count = 1;
+	      count_non_transmis++;
+	      if (count_non_transmis > ALARM_COUNT_LIMIT)
+		{
+		  log_message( MSG_INFO,
+			       "Error : less than one paquet on %d sent\n",
+			       ALARM_COUNT_LIMIT);
+		  alarm_count = 1;
+		}
 	    }
 	}
     }
   /******************************************************/
   //End of main loop
   /******************************************************/
+  
+  return mumudvb_close(Interrupted, cam_pmt_ptr);
+  
+}
 
+//TODO : use this function in case of error instead of a violent return and make it close only opened stuff
+int mumudvb_close(int Interrupted, mumudvb_ts_packet_t *cam_pmt_ptr)
+{
+
+  int curr_channel;
 
   if (Interrupted)
     {
@@ -1179,11 +1202,10 @@ main (int argc, char **argv)
 	log_message( MSG_INFO, "\nCaught signal %d - closing cleanly.\n",
 		     Interrupted);
       else
-	log_message( MSG_INFO, "\nclosing cleanly.\n");
+	log_message( MSG_INFO, "\nclosing cleanly. Error %d\n",Interrupted>>8);
     }
 
 
-  //TODO check if we can make a function mumudvb_close
 
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     close (channels[curr_channel].socketOut);
@@ -1198,11 +1220,9 @@ main (int argc, char **argv)
       free(cam_sys_access);
     }
 
-  if(autoconf_temp_pmt)
-    free(autoconf_temp_pmt);
+  //autoconf_temp_pmt et autres autoconf en cas de timeout
 
-
-  if (remove (nom_fich_chaines_diff))
+  if (remove (nom_fich_chaines_diff)) 
     {
       log_message( MSG_WARN,
 		   "%s: %s\n",
@@ -1246,7 +1266,7 @@ main (int argc, char **argv)
  *
  *  It shows the signal strenght
  *
- *  It check for the end of autoconfiguration //TODO : put this in a function called when a new PMT arrives
+ *  It check for the end of autoconfiguration
  * 
  * This function also catches SIGPIPE and SIGUSR1
  * 
@@ -1257,7 +1277,7 @@ SignalHandler (int signum)
 
   struct timeval tv;
   int curr_channel = 0;
-  int compteur_chaines_diff=0;
+  int count_of_active_channels=0;
 
   if (signum == SIGALRM)
     {
@@ -1308,19 +1328,22 @@ SignalHandler (int signum)
 		channels[curr_channel].streamed_channel_old = 0;	// update
 	      }
 
+	  /*******************************************/
 	  // we count active channels
+	  /*******************************************/
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	    if (channels[curr_channel].streamed_channel_old)
-	      compteur_chaines_diff++;
+	      count_of_active_channels++;
 
-	  // reinit si on diffuse
-	  if(compteur_chaines_diff)
+	  //Time no diff is the time when we got 0 active channels
+	  //if we have active channels, we reinit this counter
+	  if(count_of_active_channels)
 	    time_no_diff=0;
-	  // sinon si c le moment ou on arrete on stoque l'heure
+	  //If we don't have active channels and this is the first time, we store the time
 	  else if(!time_no_diff)
 	    time_no_diff=now;
 
-	  // on ne diffuse plus depuis trop longtemps
+	  //If we don't stream data for a too long time, we exit
 	  if(time_no_diff&&((now-time_no_diff)>timeout_no_diff))
 	    {
 	      log_message( MSG_INFO,
@@ -1329,6 +1352,7 @@ SignalHandler (int signum)
 	      Interrupted=ERROR_NO_DIFF<<8; //the <<8 is to make difference beetween signals and errors
 	    }
 
+	  //generation of the files wich says the streamed channels
 	  gen_chaines_diff(nom_fich_chaines_diff, nom_fich_chaines_non_diff, number_of_channels, channels);
 
 	  // reinit
