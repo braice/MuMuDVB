@@ -80,6 +80,7 @@ int Interrupted = 0;
 char nom_fich_chaines_diff[256];
 char nom_fich_chaines_non_diff[256];
 char nom_fich_pid[256];
+int  write_streamed_channels=1;
 
 
 //autoconfiguration
@@ -154,7 +155,6 @@ main (int argc, char **argv)
   char pol = 0;
   fe_spectral_inversion_t specInv = INVERSION_AUTO;
   int tone = -1;
-
   //DVB-T parameters
   fe_modulation_t modulation = CONSTELLATION_DEFAULT;
   fe_transmit_mode_t TransmissionMode = TRANSMISSION_MODE_DEFAULT;
@@ -166,7 +166,7 @@ main (int argc, char **argv)
   //TODO : check frontend capabilities
 
   fe_hierarchy_t hier = HIERARCHY_DEFAULT;
-  uint8_t diseqc = 0; //satellite number
+  uint8_t diseqc = 0; //satellite number //TODO : test diseqc
 
   //MPEG2-TS reception and sort
   int pid;			// pid of the current mpeg2 packet
@@ -648,10 +648,11 @@ main (int argc, char **argv)
   chaines_diff = fopen (nom_fich_chaines_diff, "w");
   if (chaines_diff == NULL)
     {
-      log_message( MSG_INFO,
-		   "%s: %s\n",
+      write_streamed_channels=0;
+      log_message( MSG_WARN,
+		   "WARNING : Can't create %s: %s\n",
 		   nom_fich_chaines_diff, strerror (errno));
-      exit(ERROR_CREATE_FILE);
+      //exit(ERROR_CREATE_FILE);
     }
 
   fclose (chaines_diff);
@@ -659,10 +660,11 @@ main (int argc, char **argv)
   chaines_non_diff = fopen (nom_fich_chaines_non_diff, "w");
   if (chaines_diff == NULL)
     {
-      log_message( MSG_INFO,
-		   "%s: %s\n",
+      write_streamed_channels=0;
+      log_message( MSG_WARN,
+		   "WARNING : Can't create %s: %s\n",
 		   nom_fich_chaines_non_diff, strerror (errno));
-      exit(ERROR_CREATE_FILE);
+      //exit(ERROR_CREATE_FILE);
     }
 
   fclose (chaines_non_diff);
@@ -1222,7 +1224,8 @@ int mumudvb_close(int Interrupted, mumudvb_ts_packet_t *cam_pmt_ptr)
 
   //autoconf_temp_pmt et autres autoconf en cas de timeout
 
-  if (remove (nom_fich_chaines_diff)) 
+  
+  if ((write_streamed_channels)&&remove (nom_fich_chaines_diff)) 
     {
       log_message( MSG_WARN,
 		   "%s: %s\n",
@@ -1230,7 +1233,7 @@ int mumudvb_close(int Interrupted, mumudvb_ts_packet_t *cam_pmt_ptr)
       exit(ERROR_DEL_FILE);
     }
 
-  if (remove (nom_fich_chaines_non_diff))
+  if ((write_streamed_channels)&&remove (nom_fich_chaines_non_diff))
     {
       log_message( MSG_WARN,
 		   "%s: %s\n",
@@ -1353,7 +1356,8 @@ SignalHandler (int signum)
 	    }
 
 	  //generation of the files wich says the streamed channels
-	  gen_chaines_diff(nom_fich_chaines_diff, nom_fich_chaines_non_diff, number_of_channels, channels);
+	  if (write_streamed_channels)
+	    gen_chaines_diff(nom_fich_chaines_diff, nom_fich_chaines_non_diff, number_of_channels, channels);
 
 	  // reinit
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
