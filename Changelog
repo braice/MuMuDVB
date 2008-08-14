@@ -1,0 +1,33 @@
+-- Mumudvb 1.5 --
+
+This is a test version for autoconf and cam support
+
+New features : 
+
+ * Support for conditionnal acces modules (support of scrambled channels) (beta)
+ * Support for autoconfiguration. Mumudvb is now able to partially decode the stream to find the channels. (beta)
+
+ * Verbosity levels for log messages
+ * Better default values for DVB-T
+
+Bugs corrected : 
+ * Logging priority issue (LOG_INFO and co)
+ * General code cleaning
+ * Small bugs
+
+Documentation update
+
+-- Mumudvb 1.2 --
+
+New Features : 
+ * PAT revriting : For some set top boxes, the pid PAT (wich announces the channels) should only contain the streamed channel
+   When you enable pat_revriting, mumudvb modify the pat packets for that
+
+Bugs Corrected 
+ * Small bugs
+
+-- Mumudvb 1.0 --
+
+First major release of mumudvb
+
+Main features : 

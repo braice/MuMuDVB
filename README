@@ -1,4 +1,4 @@
-mumudvb v1.2 - README
+mumudvb v1.5 - README
 
 Website :
 http://mumudvb.braice.net
@@ -9,7 +9,9 @@ Description : mumudvb is originally a modification of dvbstream that cr@ns (http
 
 Now it's a standalone project
 
-Mumudvb is a program which can redistribute stream from DVB on a network, in multicast. It's main feature is to take a whole transponder and put each channel on a different multicast IP.
+Mumudvb is a program that can redistribute streams from DVB on a network using
+multicasting. It is able to multicast a whole DVB transponder by assigning
+each channel to a different multicast IP.
 
 = Authors =
 
@@ -24,9 +26,16 @@ Special thanks to Dave CHAPMAN (dvbstream author)
 
 = Contents and features =
 
-New features comparing to dvbstream v0.6 : 
+== Features overview ==
 
- * The main fonctionality : stream channels from a transponder on different multicast IPs
+ * Stream channels from a transponder on different multicast IPs
+ * The program can rewrite the PAT Pid in order to announce only present channels (useful for some set-top boxes)
+ * Experimental support for scrambled channels
+ * Support for autoconfiguration, see further
+
+== Detailled feature list ==
+
+ * Stream channels from a transponder on different multicast IPs
  * Can show reception level when streaming
  * Mumudvb make a list of streamed and down channels in real time (can be used to make SAP announces)
  * Can deamonize and write his own pid in a file
@@ -43,15 +52,10 @@ New features comparing to dvbstream v0.6 :
    * TDT (20): Time and Date Table : the TDT gives information relating to the present time and date.This information is given in a separate table due to the frequent updating of this information.
  * mumudvb automatically suscribe to all multicast groups (IGMP membership request) in order to avoid some switches to broadcast all channels.
  * The program can rewrite the PAT Pid in order to announce only present channels (useful for some set-top boxes)
-  * This is an experimental feature (03/2006) and dont rewrite Pat Pids larger than 188 bytes
+  * Note : We don't rewrite Pat Pids larger than 188 bytes
  * Experimental support for scrambled channels
  * Support for autoconfiguration, see further
 
-This isn't a patch for dvbstream due to the following reasons :
- * You MUST use a config file
- * The command line parameters are not compatible
- * mumudvb uses raw udp and no RTP for a best compatibility
- * The option to get MPEG2-PS has been removed as the telnet interface
 
 Others programs are joined with mumudvb :
  * relay : this program takes a stream and sends it again on a different ip. It can be used to unicaast a stream over a network that doesn't support multicast, and multicast it again at the other end.
@@ -69,7 +73,7 @@ In order to install mumudvb type :
 make
 make install (with root user)
 
-If you want use defalts values for DVB-T tuning (optionnal, fore more details see src/dvb_defaults.h) type
+If you want use defalts values for DVB-T tuning (optionnal, for more details see src/dvb_defaults.h) type
 "make FRANCE=1" instead of "make"
 
 Without specifiying the country the default values are Auto for everything excepted the banwith wich is set to 8MHz
@@ -77,8 +81,6 @@ Without specifiying the country the default values are Auto for everything excep
 = Usage =
 
 The documentation for configuration file syntax is in doc/README_CONF.
-
-For a quick start, see autoconfiguration section further.
 
 Usage : 
 	mumudvb [options] -c config_file
@@ -126,13 +128,13 @@ Signal : (see thi kill's man page)
 
  * When the program starts, he writes the channel list on /var/run/mumudvb/chaines_diffusees_carte%d (where %d is the card number). This file contains streamed channels (updated every 5 seconds) in the form : "name:ip:port"
 
- * mumudvb can deal with more than 4 cards. You must use a kernel >= 2.6.11 and udev statically compiled witch klibc (04/2005) waiting for glibc update...
+ * mumudvb can deal with more than 4 cards. You must use a kernel >= 2.6.11 and udev statically compiled witch klibc (04/2005) waiting for glibc update... Not tested with upstream udev since...
 
 = Know issues =
 
 == Vlc can read the stream but not xine or mplayer ==
 
- * For Vlc, you must specify the PMT pid besides audio and video pids. It's a frequent issue, indeed scan doesn't give this pid but his number. To resolve this issue you can use {{{vlc -v}}} and you'll see a ligne like : {{{[00000269] ts demuxer debug:   * number=1025 pid=110}}} you'll have the pid associated with your number, or you can also use dvbsnoop. Another solution is to use the modified scan utility (joinned with mumudvb) to generate the config file with the  PMT pidd included.
+ * For Vlc, you must specify the PMT pid besides audio and video pids. It's a frequent issue, indeed scan doesn't give this pid but his number. To resolve this issue you can use {{{vlc -v}}} and you'll see a ligne like : {{{[00000269] ts demuxer debug:   * number=1025 pid=110}}} you'll have the pid associated with your number, or you can also use dvbsnoop. Another solution is to use autoconfiguration.
 
 == mumudvb can't deamonize ==
 
@@ -148,7 +150,7 @@ Signal : (see thi kill's man page)
 
 = Autoconfiguration =
 
-Since 07/2008, mumudvb is able to do some autoconfiguration.
+Since 07/2008, mumudvb is able to find the channels in the transponder and their pids.
 
 Without autoconfiguration, you had to set the transponder parameters, and for each channel, the multicast ip, the port, the name and the pids (PMT, audio video)
 
