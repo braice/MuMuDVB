@@ -173,11 +173,12 @@ Exemple de fichier de configuration :
 freq=11296
 pol=h
 srate=27500
-common_port=1234
 autoconfiguration=2
 -----
 
 Les chaînes seront diffusées sur les ip de multicast 239.100.c.n où c est le numéro de carte (0 par défaut) et n le numéro de chaîne.
+
+Si vous n'utilisez pas la directive common_port, mumudvb utilisera le port 1234.
 
 == Autoconfiguration "simple" ==
 

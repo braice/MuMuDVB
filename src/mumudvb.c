@@ -783,6 +783,8 @@ main (int argc, char **argv)
     }
   if(autoconfiguration==2)
     {
+      if(common_port==0)
+	common_port=1234;
       autoconf_temp_pat=malloc(sizeof(mumudvb_ts_packet_t));
       if(autoconf_temp_pat==NULL)
 	{

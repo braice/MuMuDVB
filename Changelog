@@ -9,6 +9,7 @@ New features :
 
  * Verbosity levels for log messages
  * Better default values for DVB-T
+ * common_port directive
 
 Bugs corrected : 
  * Logging priority issue (LOG_INFO and co)
