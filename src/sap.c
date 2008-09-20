@@ -140,7 +140,7 @@ int sap_add_program(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_messag
   // the / is the TTL
   //c=...
 
-  sprintf(temp_string,"o=%s/%d\r\n", channel.ipOut, DEFAULT_TTL);
+  sprintf(temp_string,"c=IN IP4 %s/%d\r\n", channel.ipOut, DEFAULT_TTL);
   memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
   payload_len+=strlen(temp_string);
 
