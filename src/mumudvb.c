@@ -51,7 +51,8 @@
 #include "ts.h"
 #include "errors.h"
 #include "autoconf.h"
-#include "sap.h"
+
+#define VERSION "1.5.0"
 
 
 /* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
@@ -81,9 +82,6 @@ char nom_fich_chaines_non_diff[256];
 char nom_fich_pid[256];
 int  write_streamed_channels=1;
 
-//sap announces
-mumudvb_sap_message_t sap_messages[MAX_CHANNELS]; //the sap message... //TODO : allocate dynamically
-int sap=0; //do we send sap announces ?
 
 //autoconfiguration
 int autoconfiguration = 0;           //Do we use autoconfiguration ?
@@ -373,16 +371,6 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  autoconfiguration = atoi (substring);
-	  if(autoconfiguration)
-	    {
-	      log_message( MSG_WARN,
-			"!!! You have enabled the support for autoconfiguration, this is a beta feature.Please report any bug/comment\n");
-	    }
-	}
-      else if (!strcmp (substring, "sap"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  sap = atoi (substring);
 	  if(autoconfiguration)
 	    {
 	      log_message( MSG_WARN,
@@ -1329,12 +1317,6 @@ SignalHandler (int signum)
       //end of autoconfiguration
       else //we are not doing autoconfiguration we can do something else
 	{
-	  //sap announces
-	  //TODO : update only when it's needed
-	  if(sap)
-	    sap_update(channels[0], &sap_messages[0]);
-	  //end of sap announces
-
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	    if ((channels[curr_channel].streamed_channel >= 100) && (!channels[curr_channel].streamed_channel_old))
 	      {
