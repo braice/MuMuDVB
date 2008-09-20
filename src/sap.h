@@ -51,7 +51,15 @@ typedef struct{
   int to_be_sent;
 }mumudvb_sap_message_t;
 
+char sap_organisation[256];
 
+struct sockaddr_in sap_sOut;
+int sap_socketOut;
+
+int sap_serial;
+long sap_last_time_sent;
+
+void sap_send(mumudvb_sap_message_t *sap_messages, int num_messages);
 int sap_update(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_message);
 int sap_add_program(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_message);
 

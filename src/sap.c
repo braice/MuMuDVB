@@ -41,6 +41,14 @@ int sap_init(mumudvb_sap_message_t *sap_messages, int num_messages)
 //SAP_send : send the sap message
 void sap_send(mumudvb_sap_message_t *sap_messages, int num_messages)
 {
+  int curr_message;
+  log_message(MSG_DEBUG,"DEBUG : SAP sending\n");
+
+  for( curr_message=0; curr_message<num_messages;curr_message++)
+    {
+      if(sap_messages[curr_message].to_be_sent)
+	sendudp (sap_socketOut, &sap_sOut, sap_messages[curr_message].buf, sap_messages[curr_message].len);
+    }
 
   return;
 }
@@ -50,10 +58,12 @@ void sap_send(mumudvb_sap_message_t *sap_messages, int num_messages)
 int sap_update(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_message)
 {
   //TAILLE DU PAQUET < MTU
-  //TODO : add debug messages 
   
   //This function is called when the channel changes so it increases the version and update the packet
   char temp_string[256];
+
+  //paranoia
+  memset(sap_message->buf,0, MAX_UDP_SIZE * sizeof (unsigned char));
 
   sap_message->version++;
   sap_message->buf[0]=SAP_HEADER;
@@ -70,10 +80,10 @@ int sap_update(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_message)
 
   //the mime type
   sprintf(temp_string,"application/sdp");
-  memcpy(sap_message->buf + 8, temp_string, sizeof(temp_string));
-  sap_message->len=8+sizeof(temp_string);
-
-  //boucle sur les chaines
+  memcpy(sap_message->buf + 8, temp_string, strlen(temp_string));
+  sap_message->len=8+strlen(temp_string);
+  sap_message->buf[sap_message->len]=0;
+  sap_message->len++;
 
   // one program per message
   if(!sap_add_program(channel, sap_message))
@@ -94,7 +104,8 @@ int sap_add_program(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_messag
   char temp_string[256];
 
 
-  if(!channel.streamed_channel)
+  //we check if it's an alive channel
+  if(!channel.streamed_channel_old)
     return 1;
 
   //Now we write the sdp part
@@ -103,25 +114,25 @@ int sap_add_program(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_messag
   //v=0
 
   sprintf(temp_string,"v=0\r\n");
-  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, sizeof(temp_string));
-  payload_len+=sizeof(temp_string);
+  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
+  payload_len+=strlen(temp_string);
   
   //owner/creator and session identifier
   //o=username session_id version network_type address_type address
   //ex : o=mumudvb 123134 1 IN IP4 235.255.215.1
-  //find a way ta create session id
+  //TODO find a way to create session id
   //for version we'll use sap version
   //o=....
 
-  sprintf(temp_string,"o=mumudvb %d %d IN IP4 %s\r\n", sap_message->version, sap_message->version, channel.ipOut);
-  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, sizeof(temp_string));
-  payload_len+=sizeof(temp_string);
+  sprintf(temp_string,"o=%s %d %d IN IP4 %s\r\n", sap_organisation, sap_serial, sap_message->version, channel.ipOut);
+  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
+  payload_len+=strlen(temp_string);
 
   //session name (basically channel name)
   //s=...
-  sprintf(temp_string,"s=%s\r\n", channel.name);
-  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, sizeof(temp_string));
-  payload_len+=sizeof(temp_string);
+  sprintf(temp_string,"s=TEST%s\r\n", channel.name); //TODO : remove TEST
+  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
+  payload_len+=strlen(temp_string);
 
 
   //connection information
@@ -130,16 +141,16 @@ int sap_add_program(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_messag
   //c=...
 
   sprintf(temp_string,"o=%s/%d\r\n", channel.ipOut, DEFAULT_TTL);
-  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, sizeof(temp_string));
-  payload_len+=sizeof(temp_string);
+  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
+  payload_len+=strlen(temp_string);
 
   //time session is active
   //t=...
   //permanent : t=0 0
 
   sprintf(temp_string,"t=0 0\r\n");
-  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, sizeof(temp_string));
-  payload_len+=sizeof(temp_string);
+  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
+  payload_len+=strlen(temp_string);
 
   //attributes : group and co, we'll take the minisapserver ones
   //a=...
@@ -147,27 +158,25 @@ int sap_add_program(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_messag
   //a=type:broadcast
   //a=x-plgroup: //channel's group
 
-  sprintf(temp_string,"a=tool:mumudvb-VERSION\r\n");
-  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, sizeof(temp_string));
-  payload_len+=sizeof(temp_string);
+  sprintf(temp_string,"a=tool:mumudvb-%s\r\n", VERSION);
+  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
+  payload_len+=strlen(temp_string);
 
   sprintf(temp_string,"a=type:broadcast\r\n");
-  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, sizeof(temp_string));
-  payload_len+=sizeof(temp_string);
+  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
+  payload_len+=strlen(temp_string);
 
   //media name and transport address
   //m=...
   //m=video channel_port udp mpeg
 
   sprintf(temp_string,"m=video %d udp mpeg\r\n", channel.portOut);
-  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, sizeof(temp_string));
-  payload_len+=sizeof(temp_string);
+  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
+  payload_len+=strlen(temp_string);
   
-  //TODO : display the message for debug
-
   log_message(MSG_DEBUG,"DEBUG : SAP payload\n");
-  log_message(MSG_DEBUG,sap_message->buf + sap_message->len);
-  log_message(MSG_DEBUG,"DEBUG : end of SAP payload\n");
+  log_message(MSG_DEBUG, &sap_message->buf[sap_message->len]);
+  log_message(MSG_DEBUG,"DEBUG : end of SAP payload\n\n");
 
   sap_message->len+=payload_len;
 

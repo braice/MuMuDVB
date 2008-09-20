@@ -237,6 +237,8 @@ main (int argc, char **argv)
   };
   int c, option_index = 0;
 
+  //paranoia
+  sap_organisation[0]=0;
 
   // Initialise PID map
   for (k = 0; k < 8192; k++)
@@ -387,6 +389,27 @@ main (int argc, char **argv)
 	    {
 	      log_message( MSG_WARN,
 			"!!! You have enabled the support for autoconfiguration, this is a beta feature.Please report any bug/comment\n");
+	    }
+	}
+      else if (!strcmp (substring, "sap"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  sap = atoi (substring);
+	  if(autoconfiguration)
+	    {
+	      log_message( MSG_WARN,
+			"!!! You have enabled the support for autoconfiguration, this is a beta feature.Please report any bug/comment\n");
+	    }
+	}
+      else if (!strcmp (substring, "sap_organisation"))
+	{
+	  // other substring extraction method in order to keep spaces
+	  substring = strtok (NULL, delimiteurs);
+	  if (!(strlen (substring) >= 255 - 1))
+	    strcpy(sap_organisation,strtok(substring,"\n"));	
+	  else
+	    {
+		log_message( MSG_INFO,"Sap Organisation name too long\n");
 	    }
 	}
       else if (!strcmp (substring, "freq"))
@@ -643,6 +666,7 @@ main (int argc, char **argv)
   /******************************************************/
   //end of config file reading
   /******************************************************/
+
 
   number_of_channels = curr_channel;
   if (curr_channel > MAX_CHANNELS)
@@ -929,6 +953,23 @@ main (int argc, char **argv)
       //Some switches (like HP Procurve 26xx) broadcast multicast traffic when there is no client to the group
       channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, DEFAULT_TTL, &channels[curr_channel].sOut);
     }
+
+
+  /*****************************************************/
+  // init sap
+  /*****************************************************/
+
+  if(sap)
+    {
+      //For sap announces, we open the socket
+      sap_socketOut =  makeclientsocket (SAP_IP, SAP_PORT, SAP_TTL, &sap_sOut);
+      if(!strlen(sap_organisation))
+	sprintf(sap_organisation,"mumudvb");
+      sap_serial= 1 + (int) (424242.0 * (rand() / (RAND_MAX + 1.0)));
+      sap_last_time_sent = 0;
+      //todo : loop to create the version
+    }
+
 
   /*****************************************************/
   // Information about streamed channels
@@ -1330,9 +1371,20 @@ SignalHandler (int signum)
       else //we are not doing autoconfiguration we can do something else
 	{
 	  //sap announces
-	  //TODO : update only when it's needed
-	  if(sap)
-	    sap_update(channels[0], &sap_messages[0]);
+	  if(!sap_last_time_sent)
+	    {
+	      // it's the first time we are here, we initialize all the channels
+	      for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+		{
+		  sap_update(channels[curr_channel], &sap_messages[curr_channel]);
+		}
+	      sap_last_time_sent=now-SAP_INTERVAL-1;
+	    }
+	  if((now-sap_last_time_sent)>=SAP_INTERVAL)
+	    {
+	      sap_send(sap_messages, number_of_channels);
+	      sap_last_time_sent=now;
+	    }
 	  //end of sap announces
 
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
@@ -1342,6 +1394,7 @@ SignalHandler (int signum)
 			     "Channel \"%s\" back.Card %d\n",
 			     channels[curr_channel].name, card);
 		channels[curr_channel].streamed_channel_old = 1;	// update
+		sap_update(channels[curr_channel], &sap_messages[curr_channel]);
 	      }
 	    else if ((channels[curr_channel].streamed_channel_old) && (channels[curr_channel].streamed_channel < 30))
 	      {
@@ -1349,6 +1402,7 @@ SignalHandler (int signum)
 			     "Channel \"%s\" down.Card %d\n",
 			     channels[curr_channel].name, card);
 		channels[curr_channel].streamed_channel_old = 0;	// update
+		sap_update(channels[curr_channel], &sap_messages[curr_channel]);
 	      }
 
 	  /*******************************************/
