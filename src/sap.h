@@ -38,7 +38,7 @@
 #define SAP_TTL 255 
 
 //intervall between sap announces
-#define SAP_INTERVAL 5
+#define SAP_DEFAULT_INTERVAL 5
 
 #define SAP_HEADER 0x20 //00100000 : version 1 and nothing else
 #define SAP_HEADER2 0x00 //No auth header

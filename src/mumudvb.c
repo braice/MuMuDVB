@@ -86,6 +86,7 @@ int  write_streamed_channels=1;
 //sap announces
 mumudvb_sap_message_t sap_messages[MAX_CHANNELS]; //the sap message... //TODO : allocate dynamically
 int sap=0; //do we send sap announces ?
+int sap_interval=SAP_DEFAULT_INTERVAL;
 
 //autoconfiguration
 int autoconfiguration = 0;           //Do we use autoconfiguration ?
@@ -372,31 +373,34 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  autoconfiguration = atoi (substring);
-	  if(autoconfiguration)
+	  if((autoconfiguration==1)||(autoconfiguration==2))
 	    {
 	      log_message( MSG_WARN,
 			"!!! You have enabled the support for autoconfiguration, this is a beta feature.Please report any bug/comment\n");
+	    }
+	  else
+	    autoconfiguration=0;
+	  if(autoconfiguration==2)
+	    {
+	      log_message( MSG_INFO,
+			"Full autoconfiguration, we activate SAP announces. if you want to desactivate them see the README.\n");
+	      sap=1;
 	    }
 	}
       else if (!strcmp (substring, "sap"))
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  sap = atoi (substring);
-	  if(autoconfiguration)
+	  if(sap)
 	    {
 	      log_message( MSG_WARN,
-			"!!! You have enabled the support for autoconfiguration, this is a beta feature.Please report any bug/comment\n");
+			"!!! You have enabled the support for sap announces, this is a beta feature.Please report any bug/comment\n");
 	    }
 	}
-      else if (!strcmp (substring, "sap"))
+      else if (!strcmp (substring, "sap_interval"))
 	{
 	  substring = strtok (NULL, delimiteurs);
-	  sap = atoi (substring);
-	  if(autoconfiguration)
-	    {
-	      log_message( MSG_WARN,
-			"!!! You have enabled the support for autoconfiguration, this is a beta feature.Please report any bug/comment\n");
-	    }
+	  sap_interval = atoi (substring);
 	}
       else if (!strcmp (substring, "sap_organisation"))
 	{
@@ -1360,9 +1364,9 @@ SignalHandler (int signum)
 		{
 		  sap_update(channels[curr_channel], &sap_messages[curr_channel]);
 		}
-	      sap_last_time_sent=now-SAP_INTERVAL-1;
+	      sap_last_time_sent=now-sap_interval-1;
 	    }
-	  if((now-sap_last_time_sent)>=SAP_INTERVAL)
+	  if((now-sap_last_time_sent)>=sap_interval)
 	    {
 	      sap_send(sap_messages, number_of_channels);
 	      sap_last_time_sent=now;

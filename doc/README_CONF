@@ -18,6 +18,9 @@ All parameters are like: name=value
 ||cam_support                    ||specify if we wants the support for scrambled channels ||
 ||cam_number                     ||the number of the CAM we want to use (default 0) ||
 ||autoconfiguration              ||autoconfiguration 1: find audio and video, 2: full autoconfiguration, see README ||
+||sap                            ||generation of sap announces : 0 no, 1 yes ||
+||sap_organisation               ||Organisation sent in the sap announces (optionnal, default : mumudvb) ||
+||sap_interval                   ||Interval in seconds between sap announces (optionnal, default : 5) ||
 ||freq                           ||transponder's frequency in MHz ||
 ||pol                            ||transponder's polarisation (a char) v or h (not case sensitive) ||
 ||srate                          ||transponder's strate ||
