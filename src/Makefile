@@ -1,9 +1,9 @@
 CC	= gcc
-CFLAGS	= -Wall -Wextra -O2
+CFLAGS	= -Wall -Wextra -O2 -ggdb
 IFLAGS	= -g root -o root
 
 OUT		= mumudvb
-OBJ_FILES	= mumudvb.o tune.o udp.o dvb.o pat_rewrite.o cam.o cam_en50221.o log.o ts.o autoconf.o
+OBJ_FILES	= mumudvb.o tune.o udp.o dvb.o pat_rewrite.o cam.o cam_en50221.o log.o ts.o autoconf.o crc32.o
 SRC_FILES	= $(OBJ_FILES:.o=.c)
 
 ifdef DESTDIR

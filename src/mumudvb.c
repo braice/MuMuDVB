@@ -33,6 +33,7 @@
 #include <sys/time.h>
 #include <sys/poll.h>
 #include <sys/stat.h>
+#include <stdint.h>
 #include <resolv.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -54,6 +55,7 @@
 
 #define VERSION "1.5.0"
 
+extern uint32_t       crc32_table[256];
 
 /* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
    - see http://www.cadsoft.de/people/kls/vdr/index.htm */
@@ -103,10 +105,6 @@ access_sys_t *cam_sys_access;
 
 // file descriptors
 fds_t fds; // defined in dvb.h
-
-
-//CRC table for PAT rebuilding and cam support
-unsigned long       crc32_table[256];
 
 // prototypes
 static void SignalHandler (int signum);
@@ -210,7 +208,6 @@ main (int argc, char **argv)
 
   //do we rewrite the pat pid ?
   int rewrite_pat = 0;
-  unsigned long crc32_table_temp_var[3];
 
   //do we support conditionnal access modules ?
   int i;
@@ -654,8 +651,8 @@ main (int argc, char **argv)
 		   nom_fich_chaines_diff, strerror (errno));
       //exit(ERROR_CREATE_FILE);
     }
-
-  fclose (chaines_diff);
+  else
+    fclose (chaines_diff);
 
   chaines_non_diff = fopen (nom_fich_chaines_non_diff, "w");
   if (chaines_diff == NULL)
@@ -666,29 +663,12 @@ main (int argc, char **argv)
 		   nom_fich_chaines_non_diff, strerror (errno));
       //exit(ERROR_CREATE_FILE);
     }
-
-  fclose (chaines_non_diff);
+  else
+    fclose (chaines_non_diff);
 
   
   log_message( MSG_INFO, "Streaming. Freq %lu pol %c srate %lu\n",
 	       freq, pol, srate);
-
-
-  /******************************************************/
-  //we compute the crc32 tables for cam support,
-  // autoconfiguration or pat rewriting
-  /******************************************************/
-  if(cam_support||rewrite_pat||autoconfiguration)
-    {
-      //CRC32 table initialisation (taken from the xine project), we can also use static tables if we want
-      for( crc32_table_temp_var[0] = 0 ; crc32_table_temp_var[0] < 256 ; crc32_table_temp_var[0]++ ) {
-	crc32_table_temp_var[2] = 0;
-	for (crc32_table_temp_var[1] = (crc32_table_temp_var[0] << 24) | 0x800000 ; crc32_table_temp_var[1] != 0x80000000 ; crc32_table_temp_var[1] <<= 1) {
-	  crc32_table_temp_var[2] = (crc32_table_temp_var[2] << 1) ^ (((crc32_table_temp_var[2] ^ crc32_table_temp_var[1]) & 0x80000000) ? 0x04c11db7 : 0);
-	}
-	crc32_table[crc32_table_temp_var[0]] = crc32_table_temp_var[2];
-      }
-    }
 
 
   /******************************************************/
@@ -702,6 +682,8 @@ main (int argc, char **argv)
   alarm (timeout_accord);
 
   // We tune the card
+  tune_retval =-1;
+
   if ((freq > 100000000))
     {
       if (open_fe (&fds.fd_frontend, card))
