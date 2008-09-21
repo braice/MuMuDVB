@@ -29,7 +29,9 @@
 #include "ts.h"
 #include "mumudvb.h"
 
-extern unsigned long       crc32_table[256];
+#include <stdint.h>
+extern uint32_t       crc32_table[256];
+
 
 int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 {
@@ -160,7 +162,7 @@ int ts_check_CRC( mumudvb_ts_packet_t *pmt)
   //we have two ways: either we compute untill the end and it should be 0
   //either we exclude the 4 last bits and in should be equal to the 4 last bits
   for(i = 0; i < pmt->len; i++) {
-    crc32 = (crc32 << 8) ^ crc32_table[(crc32 >> 24) ^ pmt->packet[i]];
+    crc32 = (crc32 << 8) ^ crc32_table[((crc32 >> 24) ^ pmt->packet[i])&0xff];
   }
   
   if(crc32!=0)

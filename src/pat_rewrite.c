@@ -29,9 +29,9 @@
 
 #include "mumudvb.h"
 #include "ts.h"
+#include <stdint.h>
 
-extern unsigned long       crc32_table[256];
-
+extern uint32_t       crc32_table[256];
 
 int
 pat_rewrite(unsigned char *buf,int num_pids, int *pids)
@@ -72,7 +72,7 @@ pat_rewrite(unsigned char *buf,int num_pids, int *pids)
   calc_crc32=0xffffffff;
   //we compute the CRC32
   for(i = 0; i < section_length-1; i++) {
-    calc_crc32 = (calc_crc32 << 8) ^ crc32_table[(calc_crc32 >> 24) ^ buf[i+TS_HEADER_LEN]];
+    calc_crc32 = (calc_crc32 << 8) ^ crc32_table[((calc_crc32 >> 24) ^ buf[i+TS_HEADER_LEN])&0xff];
   }
  
   crc32=0x00000000;
@@ -150,7 +150,7 @@ pat_rewrite(unsigned char *buf,int num_pids, int *pids)
   //we compute the CRC32
   crc32=0xffffffff;
   for(i = 0; i < new_section_length-1; i++) {
-    crc32 = (crc32 << 8) ^ crc32_table[(crc32 >> 24) ^ buf_dest[i+TS_HEADER_LEN]];
+    crc32 = (crc32 << 8) ^ crc32_table[((crc32 >> 24) ^ buf_dest[i+TS_HEADER_LEN])&0xff];
   }
 
 
