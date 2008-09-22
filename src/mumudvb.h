@@ -90,6 +90,7 @@ typedef struct{
   int autoconfigurated;            //is the channel autoconfigurated ?
 
   char ipOut[20];
+  char sap_group[20];
   int portOut;
   struct sockaddr_in sOut;
   int socketOut;

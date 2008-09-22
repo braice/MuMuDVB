@@ -87,6 +87,7 @@ int  write_streamed_channels=1;
 mumudvb_sap_message_t sap_messages[MAX_CHANNELS]; //the sap message... //TODO : allocate dynamically
 int sap=0; //do we send sap announces ?
 int sap_interval=SAP_DEFAULT_INTERVAL;
+char sap_sending_ip[20]="0.0.0.0";
 
 //autoconfiguration
 int autoconfiguration = 0;           //Do we use autoconfiguration ?
@@ -405,13 +406,24 @@ main (int argc, char **argv)
       else if (!strcmp (substring, "sap_organisation"))
 	{
 	  // other substring extraction method in order to keep spaces
-	  substring = strtok (NULL, delimiteurs);
+	  substring = strtok (NULL, "=");
 	  if (!(strlen (substring) >= 255 - 1))
 	    strcpy(sap_organisation,strtok(substring,"\n"));	
 	  else
 	    {
 		log_message( MSG_INFO,"Sap Organisation name too long\n");
 	    }
+	}
+      else if (!strcmp (substring, "sap_sending_ip"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  if(strlen(substring)>19)
+	    {
+	      log_message( MSG_ERROR,
+			   "The sap sending ip is too long\n");
+	      exit(ERROR_CONF);
+	    }
+	  sscanf (substring, "%s\n", sap_sending_ip);
 	}
       else if (!strcmp (substring, "freq"))
 	{
@@ -459,6 +471,23 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  sscanf (substring, "%s\n", channels[curr_channel].ipOut);
 	  ip_ok = 1;
+	}
+      else if (!strcmp (substring, "sap_group"))
+	{
+	  if (sap==0)
+	    {
+	      log_message( MSG_WARN,
+			"Warning : you have not activated sap, the sap group will not be taken in account\n");
+
+	    }
+	  substring = strtok (NULL, "=");
+	  if(strlen(substring)>19)
+	    {
+	      log_message( MSG_ERROR,
+			   "The sap group is too long\n");
+	      exit(ERROR_CONF);
+	    }
+	  sscanf (substring, "%s\n", channels[curr_channel].sap_group);
 	}
       else if (!strcmp (substring, "common_port"))
 	{

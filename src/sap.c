@@ -30,18 +30,24 @@
 #include "udp.h"
 #include <string.h>
 
+extern char sap_sending_ip[20];
+
 
 //SAP_send : send the sap message
 void sap_send(mumudvb_sap_message_t *sap_messages, int num_messages)
 {
   int curr_message;
-  log_message(MSG_DEBUG,"DEBUG : SAP sending\n");
+  int sent_messages=0;
 
   for( curr_message=0; curr_message<num_messages;curr_message++)
     {
       if(sap_messages[curr_message].to_be_sent)
-	sendudp (sap_socketOut, &sap_sOut, sap_messages[curr_message].buf, sap_messages[curr_message].len);
+	{
+	  sendudp (sap_socketOut, &sap_sOut, sap_messages[curr_message].buf, sap_messages[curr_message].len);
+	  sent_messages++;
+	}
     }
+  log_message(MSG_DEBUG,"DEBUG : SAP sending. %d message(s) sent\n", sent_messages);
 
   return;
 }
@@ -55,6 +61,9 @@ int sap_update(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_message)
   //This function is called when the channel changes so it increases the version and update the packet
   char temp_string[256];
 
+  struct in_addr ip_struct;
+  in_addr_t ip;
+
   //paranoia
   memset(sap_message->buf,0, MAX_UDP_SIZE * sizeof (unsigned char));
 
@@ -64,11 +73,21 @@ int sap_update(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_message)
   sap_message->buf[2]=(sap_message->version&0xff00)>>8;
   sap_message->buf[3]=sap_message->version&0xff;
 
-  //TODO TODO   //sap_message->buf[4 5 6 7]= IP;
-  sap_message->buf[4]=0;
-  sap_message->buf[5]=0;
-  sap_message->buf[6]=0;
-  sap_message->buf[7]=0;
+  if( inet_aton(sap_sending_ip, &ip_struct))
+    {
+      ip=ip_struct.s_addr;
+      /* Bytes 4-7 (or 4-19) byte: Originating source */
+      log_message(MSG_DEBUG,"DEBUG : sap sending ip address : 0x%x\n", ip);
+      memcpy (sap_message->buf + 4, &ip, 4);
+    }
+  else
+    {
+      log_message(MSG_WARN,"WARNING : Invalid SAP sending Ip address, using 0.0.0.0 as Ip adress\n");
+      sap_message->buf[4]=0;
+      sap_message->buf[5]=0;
+      sap_message->buf[6]=0;
+      sap_message->buf[7]=0;
+    }
 
 
   //the mime type
@@ -156,7 +175,17 @@ int sap_add_program(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_messag
   memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
   payload_len+=strlen(temp_string);
 
-  
+  if(strlen(channel.sap_group))
+    {
+      sprintf(temp_string,"a=x-plgroup:%s\r\n", channel.sap_group);
+      if( (sap_message->len+payload_len+strlen(temp_string))>1024)
+	{
+	  log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel.name);
+	  return 1;
+	}
+      memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
+      payload_len+=strlen(temp_string);
+    }
   log_message(MSG_DEBUG,"DEBUG : SAP payload\n");
   log_message(MSG_DEBUG, &sap_message->buf[sap_message->len]);
   log_message(MSG_DEBUG,"DEBUG : end of SAP payload\n\n");
