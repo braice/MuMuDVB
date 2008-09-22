@@ -418,6 +418,12 @@ main (int argc, char **argv)
       else if (!strcmp (substring, "ip"))
 	{
 	  substring = strtok (NULL, delimiteurs);
+          if(strlen(substring)>19)
+            {
+              log_message( MSG_ERROR,
+                           "The Ip address %s is too long.\n", substring);
+              exit(ERROR_CONF);
+            }
 	  sscanf (substring, "%s\n", channels[curr_channel].ipOut);
 	  ip_ok = 1;
 	}
