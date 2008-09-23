@@ -28,6 +28,8 @@
 #ifndef _MUMUDVB_H
 #define _MUMUDVB_H
 
+#define VERSION "1.5.2"
+
 //#include "ts.h"
 #include "udp.h"  //for the sockaddr
 
@@ -88,6 +90,7 @@ typedef struct{
   int autoconfigurated;            //is the channel autoconfigurated ?
 
   char ipOut[20];
+  char sap_group[20];
   int portOut;
   struct sockaddr_in sOut;
   int socketOut;

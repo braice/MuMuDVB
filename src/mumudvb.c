@@ -52,8 +52,7 @@
 #include "ts.h"
 #include "errors.h"
 #include "autoconf.h"
-
-#define VERSION "1.5.0"
+#include "sap.h"
 
 extern uint32_t       crc32_table[256];
 
@@ -84,6 +83,11 @@ char nom_fich_chaines_non_diff[256];
 char nom_fich_pid[256];
 int  write_streamed_channels=1;
 
+//sap announces
+mumudvb_sap_message_t sap_messages[MAX_CHANNELS]; //the sap message... //TODO : allocate dynamically
+int sap=0; //do we send sap announces ?
+int sap_interval=SAP_DEFAULT_INTERVAL;
+char sap_sending_ip[20]="0.0.0.0";
 
 //autoconfiguration
 int autoconfiguration = 0;           //Do we use autoconfiguration ?
@@ -232,6 +236,8 @@ main (int argc, char **argv)
   };
   int c, option_index = 0;
 
+  //paranoia
+  sap_organisation[0]=0;
 
   // Initialise PID map
   for (k = 0; k < 8192; k++)
@@ -368,11 +374,56 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  autoconfiguration = atoi (substring);
-	  if(autoconfiguration)
+	  if((autoconfiguration==1)||(autoconfiguration==2))
 	    {
 	      log_message( MSG_WARN,
 			"!!! You have enabled the support for autoconfiguration, this is a beta feature.Please report any bug/comment\n");
 	    }
+	  else
+	    autoconfiguration=0;
+	  if(autoconfiguration==2)
+	    {
+	      log_message( MSG_INFO,
+			"Full autoconfiguration, we activate SAP announces. if you want to desactivate them see the README.\n");
+	      sap=1;
+	    }
+	}
+      else if (!strcmp (substring, "sap"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  sap = atoi (substring);
+	  if(sap)
+	    {
+	      log_message( MSG_WARN,
+			"!!! You have enabled the support for sap announces, this is a beta feature.Please report any bug/comment\n");
+	    }
+	}
+      else if (!strcmp (substring, "sap_interval"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  sap_interval = atoi (substring);
+	}
+      else if (!strcmp (substring, "sap_organisation"))
+	{
+	  // other substring extraction method in order to keep spaces
+	  substring = strtok (NULL, "=");
+	  if (!(strlen (substring) >= 255 - 1))
+	    strcpy(sap_organisation,strtok(substring,"\n"));	
+	  else
+	    {
+		log_message( MSG_INFO,"Sap Organisation name too long\n");
+	    }
+	}
+      else if (!strcmp (substring, "sap_sending_ip"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  if(strlen(substring)>19)
+	    {
+	      log_message( MSG_ERROR,
+			   "The sap sending ip is too long\n");
+	      exit(ERROR_CONF);
+	    }
+	  sscanf (substring, "%s\n", sap_sending_ip);
 	}
       else if (!strcmp (substring, "freq"))
 	{
@@ -426,6 +477,23 @@ main (int argc, char **argv)
             }
 	  sscanf (substring, "%s\n", channels[curr_channel].ipOut);
 	  ip_ok = 1;
+	}
+      else if (!strcmp (substring, "sap_group"))
+	{
+	  if (sap==0)
+	    {
+	      log_message( MSG_WARN,
+			"Warning : you have not activated sap, the sap group will not be taken in account\n");
+
+	    }
+	  substring = strtok (NULL, "=");
+	  if(strlen(substring)>19)
+	    {
+	      log_message( MSG_ERROR,
+			   "The sap group is too long\n");
+	      exit(ERROR_CONF);
+	    }
+	  sscanf (substring, "%s\n", channels[curr_channel].sap_group);
 	}
       else if (!strcmp (substring, "common_port"))
 	{
@@ -634,6 +702,7 @@ main (int argc, char **argv)
   /******************************************************/
   //end of config file reading
   /******************************************************/
+
 
   number_of_channels = curr_channel;
   if (curr_channel > MAX_CHANNELS)
@@ -905,6 +974,23 @@ main (int argc, char **argv)
       //Some switches (like HP Procurve 26xx) broadcast multicast traffic when there is no client to the group
       channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, DEFAULT_TTL, &channels[curr_channel].sOut);
     }
+
+
+  /*****************************************************/
+  // init sap
+  /*****************************************************/
+
+  if(sap)
+    {
+      //For sap announces, we open the socket
+      sap_socketOut =  makeclientsocket (SAP_IP, SAP_PORT, SAP_TTL, &sap_sOut);
+      if(!strlen(sap_organisation))
+	sprintf(sap_organisation,"mumudvb");
+      sap_serial= 1 + (int) (424242.0 * (rand() / (RAND_MAX + 1.0)));
+      sap_last_time_sent = 0;
+      //todo : loop to create the version
+    }
+
 
   /*****************************************************/
   // Information about streamed channels
@@ -1305,6 +1391,23 @@ SignalHandler (int signum)
       //end of autoconfiguration
       else //we are not doing autoconfiguration we can do something else
 	{
+	  //sap announces
+	  if(!sap_last_time_sent)
+	    {
+	      // it's the first time we are here, we initialize all the channels
+	      for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+		{
+		  sap_update(channels[curr_channel], &sap_messages[curr_channel]);
+		}
+	      sap_last_time_sent=now-sap_interval-1;
+	    }
+	  if((now-sap_last_time_sent)>=sap_interval)
+	    {
+	      sap_send(sap_messages, number_of_channels);
+	      sap_last_time_sent=now;
+	    }
+	  //end of sap announces
+
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	    if ((channels[curr_channel].streamed_channel >= 100) && (!channels[curr_channel].streamed_channel_old))
 	      {
@@ -1312,6 +1415,7 @@ SignalHandler (int signum)
 			     "Channel \"%s\" back.Card %d\n",
 			     channels[curr_channel].name, card);
 		channels[curr_channel].streamed_channel_old = 1;	// update
+		sap_update(channels[curr_channel], &sap_messages[curr_channel]);
 	      }
 	    else if ((channels[curr_channel].streamed_channel_old) && (channels[curr_channel].streamed_channel < 30))
 	      {
@@ -1319,6 +1423,7 @@ SignalHandler (int signum)
 			     "Channel \"%s\" down.Card %d\n",
 			     channels[curr_channel].name, card);
 		channels[curr_channel].streamed_channel_old = 0;	// update
+		sap_update(channels[curr_channel], &sap_messages[curr_channel]);
 	      }
 
 	  /*******************************************/

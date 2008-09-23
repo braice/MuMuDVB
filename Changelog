@@ -1,3 +1,14 @@
+-- Mumudvb 1.5.2 --
+
+New features : 
+
+ * Generation of sap announces (beta)
+
+Bugs corrected : 
+ * Segfault when the directory /var/run/mumudvb doesn't exist
+ * Gcc 4.2 issues when using pat rewriting or autoconfiguration
+ * Small corrections
+
 -- Mumudvb 1.5 --
 
 This is a test version for autoconf and cam support
