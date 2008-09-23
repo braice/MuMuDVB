@@ -11,35 +11,38 @@ You can put comments everywhere in the configuration file : just start the line 
 All parameters are like: name=value
 
 
-'''List of parameters and their description ( (f) : optionnal parameter )'''
+'''List of parameters and their description '''
 ----
 ||'''Name :'''                          ||'''value:'''                                ||
+||freq                           ||transponder's frequency in MHz ||
+||pol                            ||transponder's polarisation (a char) v or h (not case sensitive) ||
+||srate                          ||transponder's strate ||
+||sat_number                     ||The satellite number (for diseqc users) ||
+||card                           ||card number (defalut : 0) ||
+||timeout_accord                 ||tuning timeout (in seconds) (default : 300 (5min)) ||
+||timeout_no_diff                ||if the program doesn't stream any chanels, he will kill himself at the end of this time (in seconds) (default : 600 (10min)) ||
+||common_port                    ||If you don't want to specify the port for each channel, it will be the default port (if you use autoconfiguration=2 default : 1234) ||
 ||rewrite_pat                    ||specify if we wants the PAT rewriting feature ||
 ||cam_support                    ||specify if we wants the support for scrambled channels ||
 ||cam_number                     ||the number of the CAM we want to use (default 0) ||
 ||autoconfiguration              ||autoconfiguration 1: find audio and video, 2: full autoconfiguration, see README ||
 ||sap                            ||generation of sap announces : 0 no, 1 yes ||
 ||sap_organisation               ||Organisation sent in the sap announces (optionnal, default : mumudvb) ||
+||sap_sending_ip                 ||The sender Ip adress (optionnal, default : 0.0.0.0) ||
 ||sap_interval                   ||Interval in seconds between sap announces (optionnal, default : 5) ||
-||freq                           ||transponder's frequency in MHz ||
-||pol                            ||transponder's polarisation (a char) v or h (not case sensitive) ||
-||srate                          ||transponder's strate ||
-||sat_number                     ||The satellite number (for diseqc users) ||
-||card (f)                       ||card number (défaut : 0) ||
-||timeout_accord (f)             ||tuning timeout (in seconds) (default : 300 (5min)) ||
-||timeout_no_diff (f)            ||if the program doesn't stream any chanels, he will kill himself at the end of this time (in seconds) (default : 600 (10min)) ||
 || For DVB-T                     ||
 ||qam                            ||quadrature amplitude modulation, possible values : qpsk,16,32,64,128,256,auto ||
 ||trans_mode                     ||transmission mode, possible values : 2k,8k,auto ||
 ||bandwidth                      ||bandwith, possible values : 8MHz,7MHz,6MHz,auto ||
 ||guardinterval                  ||guard interval, possible values : 1/32,1/16,1/8,1/4,auto ||
 ||coderate                       ||coderate, possible values : none,1/2,2/3,3/4,4/5,5/6,6/7,7/8,8/9,auto ||
-||'''For each channel '''||
+||'''For each channel (this order is recommended : ip, port, ...,  pids)'''||
 ||ip                             ||multicast (can also be unicast) ip where the chanel will be streamed ||
-||port                           ||port ||
-||pids                           ||a pid list space separeted (any number, some pids are always sent (PAD EIT SDT TDT NIT) see README for more details) ||
+||port                           ||port (optionnal if common_port is used)||
+||sap_group                      ||The playlist group for sap announces (optionnal, only supported by VLC, as far as I know) ||
 ||cam_pmt_pid                    ||(only for scrambled channels) the PMT PID for CAM support ||
-||name (f)                       ||the name given to the chanel in /var/run/mumudvb/chaines_diffusees%d (used to generate  SAP announces) ||
+||name                           ||the name given to the chanel in /var/run/mumudvb/chaines_diffusees%d (used to generate  SAP announces) ||
+||pids                           ||a pid list space separeted (any number, some pids are always sent (PAD EIT SDT TDT NIT) see README for more details) ||
 
 
 == Note ==

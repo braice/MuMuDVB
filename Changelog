@@ -7,6 +7,7 @@ New features :
 Bugs corrected : 
  * Segfault when the directory /var/run/mumudvb doesn't exist
  * Gcc 4.2 issues when using pat rewriting or autoconfiguration
+ * Small corrections
 
 -- Mumudvb 1.5 --
 
