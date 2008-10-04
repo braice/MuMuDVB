@@ -62,7 +62,7 @@
 
 
 /****************************************************************************/
-//Code from libdvb with commentaries added
+//Code from libdvbpsi, adapted and with commentaries added
 //convert the PMT into CA_PMT
 /****************************************************************************/
 

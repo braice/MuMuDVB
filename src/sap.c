@@ -6,9 +6,6 @@
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
- * Parts of this code is from the VLC project, modified  for mumudvb
- * by Brice DUBOST 
- * 
  * Copyright notice:
  * 
  * This program is free software; you can redistribute it and/or modify

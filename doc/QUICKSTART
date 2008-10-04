@@ -3,7 +3,7 @@ Quickstart guide for mumudvb
 
 It this guide I'll explain how to stream a full transponder (all the channels
 multiplexed on the same carrier frequency) over a network, by assigning each
-channel to a different multicast IP.
+channel to a different multicast IP. The sap announces will automatically be generated.
 
 I'll take an example for DVB-S (satellite) and DVB-T (terrestrial)
 

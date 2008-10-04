@@ -59,6 +59,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #define IP "224.2.127.254\0"
 
 #define DUREE_PRISE_SAP 60
+#define SAP_FILE "/tmp/chaines_recup_sap.txt"
 
 #define MAX_CHAINES 256
 
@@ -147,7 +148,7 @@ int makeclientsocket(char *szAddr,unsigned short port,int TTL,struct sockaddr_in
 void
 Usage ()
 {
-  fprintf (stderr, "Usage: rtfm (qui n'existe pas) (pour le moment usage perso) \n\n");
+  fprintf (stderr, "Usage: just launch recup sap without arguments.\n");
 }
 
 
@@ -178,6 +179,8 @@ main (int argc, char **argv)
   unsigned char temp_buf[MAX_PACKET_SIZE];
 
   fprintf (stderr, "recup_sap\nProgram used to get a SAP stream\n");
+  fprintf (stderr, "This program only get well formated sap announces, it does NO checking\n");
+  fprintf (stderr, "It's a very simple program, if you experience issues please contact me\n\n");
   fprintf (stderr, "Released under the GPL.\n");
   fprintf (stderr,
 	   "Latest version available from http://mumudvb.braice.net/\n");
@@ -192,7 +195,7 @@ main (int argc, char **argv)
 
 
   ttl = 2;
-  fprintf (stderr, "C parti pour %ds de récupération de SAP\n",DUREE_PRISE_SAP);
+  fprintf (stderr, "We will get sap announces during %d seconds\nThey will be put in %s\n",DUREE_PRISE_SAP, SAP_FILE);
   
   /* Init udp */
   socketIn = makeclientsocket (ipIn, portIn, ttl, &sIn); //le makeclientsocket est pour joindre automatiquement le flux
@@ -207,7 +210,6 @@ main (int argc, char **argv)
   while (!Interrupted)
     {
       lengthPacket=recv(socketIn,temp_buf,MAX_PACKET_SIZE,0);
-//      lengthPacket=recv(socketIn,temp_buf,MAX_PACKET_SIZE,MSG_DONTWAIT);
        if(lengthPacket>0)
 	 {
 	    if(signaux==0)//mis ici pour pouvoir le tuer s'il n'y a pas de flux (aytomatiser ça à l'avenir)
@@ -250,7 +252,7 @@ main (int argc, char **argv)
 		      j++;
 		      if(j>255)
 			{
-			   fprintf(stderr,"Chaine trop longue, il y a un GROS probleme avec les annonces SAP\n");
+			   fprintf(stderr,"String too long.\nBad sap announces\n");
 			   print_line=0;
 			}
 		      
@@ -297,16 +299,15 @@ void on_ferme()
 {
    int i;
    FILE *fich_chaines;
-   fich_chaines=fopen("/tmp/chaines_recup_sap.txt","w");
+   fich_chaines=fopen(SAP_FILE,"w");
    if(fich_chaines==NULL)
      {
-	printf("Pb qvec le fichier\n");
+       printf("Issues with the file %s\n", SAP_FILE);
 	exit(1);
      }
    
    for(i=0;i<num_chaines;i++)
      {
-//	printf("%s\n",chaines[i]);
 	fprintf(fich_chaines,"%s\n",chaines[i]);
      }
    fclose(fich_chaines);

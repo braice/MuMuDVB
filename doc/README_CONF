@@ -8,7 +8,7 @@ Mumudvb does not worry to the parameter's order except for chanels where pids mu
 
 You can put comments everywhere in the configuration file : just start the line with #
 
-All parameters are like: name=value
+All parameters are in the form : name=value
 
 
 '''List of parameters and their description '''

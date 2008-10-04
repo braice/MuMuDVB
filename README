@@ -38,7 +38,7 @@ Special thanks to Dave CHAPMAN (dvbstream author)
 
  * Stream channels from a transponder on different multicast IPs
  * Can show reception level when streaming
- * Mumudvb make a list of streamed and down channels in real time (can be used to make SAP announces)
+ * Mumudvb make a list of streamed and down channels in real time
  * Can deamonize and write his own pid in a file
  * Mumudvb use a config file
  * The program can kill himself if it receives no data from the card
@@ -60,11 +60,7 @@ Special thanks to Dave CHAPMAN (dvbstream author)
 
 Others programs are joined with mumudvb :
  * relay : this program takes a stream and sends it again on a different ip. It can be used to unicaast a stream over a network that doesn't support multicast, and multicast it again at the other end.
- * dumpudp : this program takes a stream from the network and puts it on the standard output. you can set an optionnal timeout ( Can be useful to record a TV program )
- * dumpudp_limited : same as dumpudp but for a limited number of packets (used to generate thunbails)
- * recup_sap : tiny sap client, get sap announces during 60 seconds and put them on the standard output (unsorted)
- * scan_modified : it's a modified version of the scan utility from dvb-apps. It is able to generate mumudvb configuration files.
- * Example scripts are joind in the script directory. They are undocumented for the moment. They are used to genreate sap announces, automtically launch and generate configuration for mumudvb on multiple cards and multiple servers, and generate thundbails. See the source code for more explanations.
+ * recup_sap : tiny sap client, get sap announces during 60 seconds and put them on a file (unsorted)
 
 
 = Installation =

@@ -2,4 +2,6 @@ Mumudvb Tools Readme
 
 Here you can find the tools programs that are joined with mumudvb.
 
-If you want more documentation e-mail me (cf README)
+ * relay : can be used to unicast a multicast stream, or relay a stream between two networks
+ * recup_sap : get the sap announces and put them in a file
+

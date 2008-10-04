@@ -515,9 +515,10 @@ int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channel
   return channel_number;
 }
 
-//TODO : explain
 void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, fds_t *fds)
 {
+  //This function is called when autoconfiguration is finished
+  //It open what is needed to stream the new channels
   int curr_channel;
   int curr_pid;
 

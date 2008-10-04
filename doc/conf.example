@@ -8,21 +8,19 @@ srate=27500
 card=0
 #tuning timeout
 timeout_accord=20
+#Port used to stream channels
+common_port=1234
 #Channel list
 #The number of pids must be less than 16
 ip=239.200.200.200
-port=1234
 name=fra_autres__EBS
 pids=101 201 202 203 204 205 206 207 208 209 210 211 212 100
 ip=239.200.200.201
-port=1234
 name=fra_X_Stream
 pids=551 552 550
 ip=239.200.200.202
-port=1234
 name=ara_2M
 pids=601 602 257
 ip=239.200.200.203
-port=1234
 name=kur_CTV_Kurdistan
 pids=700 701 702

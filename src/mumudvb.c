@@ -142,7 +142,6 @@ int
 main (int argc, char **argv)
 {
   int k;
-  int buf_pos;
 
   //polling of the dvr device
   struct pollfd pfds[2];	//  DVR device
@@ -1215,9 +1214,8 @@ main (int argc, char **argv)
 	      /******************************************************/
 	      if(send_packet==1)
 		{
-		  // we fill the channel buffer //TODO Make a memcpy
-		  for (buf_pos = 0; buf_pos < bytes_read; buf_pos++)
-		    channels[curr_channel].buf[channels[curr_channel].nb_bytes + buf_pos] = temp_buffer_from_dvr[buf_pos];
+		  // we fill the channel buffer
+		  memcpy(channels[curr_channel].buf + channels[curr_channel].nb_bytes, temp_buffer_from_dvr, bytes_read);
 
 		  channels[curr_channel].buf[channels[curr_channel].nb_bytes + 1] =
 		    (channels[curr_channel].buf[channels[curr_channel].nb_bytes + 1] & 0xe0) | hi_mappids[pid];
