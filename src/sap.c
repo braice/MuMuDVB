@@ -161,9 +161,10 @@ int sap_add_program(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_messag
 
   //media name and transport address
   //m=...
-  //m=video channel_port udp mpeg
+  //m=video channel_port udp 33
+  //See RFC 1890
 
-  sprintf(temp_string,"t=0 0\r\na=tool:mumudvb-%s\r\na=type:broadcast\r\nm=video %d udp mpeg\r\n", VERSION, channel.portOut);
+  sprintf(temp_string,"t=0 0\r\na=tool:mumudvb-%s\r\na=type:broadcast\r\nm=video %d udp 33\r\n", VERSION, channel.portOut);
   if( (sap_message->len+payload_len+strlen(temp_string))>1024)
     {
       log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel.name);
