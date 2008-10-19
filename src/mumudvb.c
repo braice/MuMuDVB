@@ -56,6 +56,8 @@
 
 extern uint32_t       crc32_table[256];
 
+int multicast_ttl=DEFAULT_TTL;
+
 /* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
    - see http://www.cadsoft.de/people/kls/vdr/index.htm */
 
@@ -498,6 +500,11 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  common_port = atoi (substring);
+	}
+      else if (!strcmp (substring, "multicast_ttl"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  multicast_ttl = atoi (substring);
 	}
       else if (!strcmp (substring, "port"))
 	{
@@ -971,7 +978,7 @@ main (int argc, char **argv)
     {
       //we use makeclientsocket in order to join the multicast group associated with the channel
       //Some switches (like HP Procurve 26xx) broadcast multicast traffic when there is no client to the group
-      channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, DEFAULT_TTL, &channels[curr_channel].sOut);
+      channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
     }
 
 
@@ -1076,7 +1083,7 @@ main (int argc, char **argv)
 			      set_ts_filt (fds.fd[curr_channel][0], channels[curr_channel].pids[0], DMX_PES_OTHER);
 			      // Init udp
 			      //TODO explain
-			      channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, DEFAULT_TTL, &channels[curr_channel].sOut);
+			      channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
 			    }
 
 			  log_message(MSG_DEBUG,"Autoconf : Step TWO, we get the video ond audio PIDs\n");
@@ -1348,8 +1355,7 @@ int mumudvb_close(int Interrupted, mumudvb_ts_packet_t *cam_pmt_ptr)
  * This function also catches SIGPIPE and SIGUSR1
  * 
  ******************************************************/
-static void
-SignalHandler (int signum)
+static void SignalHandler (int signum)
 {
 
   struct timeval tv;

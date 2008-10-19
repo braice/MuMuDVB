@@ -22,6 +22,7 @@ All parameters are in the form : name=value
 ||timeout_accord                 ||tuning timeout (in seconds) (default : 300 (5min)) ||
 ||timeout_no_diff                ||if the program doesn't stream any chanels, he will kill himself at the end of this time (in seconds) (default : 600 (10min)) ||
 ||common_port                    ||If you don't want to specify the port for each channel, it will be the default port (if you use autoconfiguration=2 default : 1234) ||
+||multicast_ttl                  ||If you want to override the default multicast ttl, use this option. ||
 ||rewrite_pat                    ||specify if we wants the PAT rewriting feature ||
 ||cam_support                    ||specify if we wants the support for scrambled channels ||
 ||cam_number                     ||the number of the CAM we want to use (default 0) ||

@@ -29,6 +29,7 @@
 
 extern char sap_sending_ip[20];
 
+extern int multicast_ttl;
 
 //SAP_send : send the sap message
 void sap_send(mumudvb_sap_message_t *sap_messages, int num_messages)
@@ -139,7 +140,7 @@ int sap_add_program(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_messag
   sprintf(temp_string,"v=0\r\no=%s %d %d IN IP4 %s\r\ns=%s\r\nc=IN IP4 %s/%d\r\n", 
 	  sap_organisation, sap_serial, sap_message->version, channel.ipOut,
 	  channel.name, 
-	  channel.ipOut, DEFAULT_TTL);
+	  channel.ipOut, multicast_ttl);
   if( (sap_message->len+payload_len+strlen(temp_string))>1024)
     {
       log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel.name);

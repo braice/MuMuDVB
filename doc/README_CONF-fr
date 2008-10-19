@@ -21,6 +21,7 @@ Tous les paramètres sont de la forme suivante : nom=valeur
 ||timeout_accord                 ||temps que l'on laisse à la carte pour s'accorder sur la fréquence (en secondes) (défaut : 300 (5min)) ||
 ||timeout_no_diff                ||si le programme ne diffuse aucune chaîne, il se tuera au bout de ce temps (en secondes) (défaut : 600 (10min)) ||
 ||common_port                    ||Si vous ne voulez pas spécifier le port pour chaque chaine c'est le port qui sera utilisé par défaut (si vous utilisez autoconfiguration=2, défaut : 1234) ||
+||multicast_ttl                  ||Si vous voulez utiliser un Time to Live différent de celui par défaut. ||
 ||rewrite_pat                    ||Spécifie si l'on veut la réécriture du PID PAT à la volée ||
 ||cam_support                    ||Spécifie si l'on veut le support pour les chaines cryptées ||
 ||cam_number                     ||Le numéro du module cam (défaut : 0) ||
@@ -46,7 +47,7 @@ Tous les paramètres sont de la forme suivante : nom=valeur
 
 == Note ==
 
-Vous devez spécifier
+Si vous n'utilisez pas l'autoconfiguration, vous devez spécifier
  * Le pid audio
  * Le pid Vidéo
  * Le pid PMT

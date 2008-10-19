@@ -1,3 +1,11 @@
+-- Mumudvb 1.5.3 --
+
+New features : 
+ * Option multicast_ttl to override default ttl
+	
+Bugs corrected : 
+ * Better conformances to RFC for sap announces (this correct issues with VLC < 0.8.6f)
+	
 -- Mumudvb 1.5.2 --
 
 New features : 
