@@ -1,4 +1,4 @@
-mumudvb v1.5.2 - README
+mumudvb v1.5.3 - README
 
 = Site =
 Site principal de mumudvb http://mumudvb.braice.net
@@ -107,7 +107,7 @@ Signaux : (voir la page de man de kill)
 
 = Détails techniques (en vrac) =
 
- * mumudvb permet de recevoir un signal satellite (DVB-s) ou Terrestre (DVB-t), il ne gère pas les DisEq (implémenté récemment, merci de tester)
+ * mumudvb permet de recevoir un signal satellite (DVB-S), Terrestre (DVB-T) ou cable (DVB-C)
 
  * mumudvb diffuse les Pids suivants avec toutes les chaînes (conformément à la norme MPEG2-TS)
    * PAT (0): Program Association Table
@@ -122,18 +122,16 @@ Signaux : (voir la page de man de kill)
 
  * mumudvb est capable de diffuser de la TNT (télévision numérique terrestre). N'oubliez pas de vérifier les paramètres de réception si vous avez un problème.
 
- * mumudvb n'est à priori pas capable de diffuser du dvb-c (non essayé)
-
  * Lors de l'exécution le programme écrit la liste des chaînes diffusées dans le fichier /var/run/mumudvb/chaines_diffusees_carte%d le %d est remplacé par le numéro de carte, le chemin n'est pas paramétrable mais cela est facile à implémenter, envoyez moi un mail si vous en avez besoin. Ce fichier contient la liste des chaînes diffusées (actualisée toute les 5 secondes) de la forme suivante (pour chaque ligne) : "nom:ip:port"
 
  * mumudvb a été testé avec 6 cartes, et peut en supporter plus.
-  * au (04/2005) pour utiliser plus de 4 cartes, les possibilités sont d'utiliser un noyau 2.4.* avec devfs :-( ou d'utiliser un noyau > 2.6.11 ( ou 2.6.10 avec un backport du patch )  avec udev compilé statiquement avec klibc en attendant la mise a jour de la glibc. Nous n'avons pas testé avec les versions récentes d'udev depuis.
+  * au (04/2005) pour utiliser plus de 4 cartes, les possibilités sont d'utiliser un noyau 2.4.* avec devfs :-( ou d'utiliser un noyau > 2.6.11 avec udev compilé statiquement avec klibc en attendant la mise a jour de la glibc. Nous n'avons pas testé avec les versions récentes d'udev depuis.
 
 = Problèmes connus =
 
 == Vlc incapable de lire le flux vidéo mais pas xine ou mplayer ==
 
- * Pour Vlc, il faut indiquer le pid PMT en plus des pids audio et vidéo (sinon, il est aussi incapable de voir ce qui est présent dans le flux). Ceci est un problème courant, en effet scan ne fournit pas le pid PMT mais son numéro. pour résoudre ce problème, on peut utiliser {{{vlc -v}}} qui va vous sortir une ligne du genre : {{{[00000269] ts demuxer debug:   * number=1025 pid=110}}} vous aurez la correspondance entre le nombre donné par scan et le pid réel. Vous pouvez aussi utiliser dvbsnoop. Vous pouvez aussi utiliser l'autoconfiguration.
+ * Pour Vlc, il faut indiquer le pid PMT en plus des pids audio et vidéo (sinon, il est aussi incapable de voir ce qui est présent dans le flux). Ceci est un problème courant, en effet scan ne fournit pas le pid PMT mais son numéro. pour résoudre ce problème, on peut utiliser {{{vlc -v}}} qui va donner une ligne de la forme : {{{[00000269] ts demuxer debug:   * number=1025 pid=110}}} vous aurez la correspondance entre le nombre donné par scan et le pid réel, plus d'informations sont données dans le fichier readme-conf. dvbsnoop permet aussi d'obtenir cette information. Vous pouvez aussi utiliser l'autoconfiguration.
 
 == Crash du système en utilisant mumudvb ==
 
@@ -203,4 +201,4 @@ VLC et la plupart des set-top-boxes les supporte.
 
 Mumudvb génerera et enverra automatiquement les annonces sap si cela est demandé dans le fichier de configuration ou si le mode autoconfiguration complète est choisi.
 
-Les annonces sap sont envoyées pour les chaines détectées comme étant "vivantes". Si une chaine stoppe sa diffusion, mumudvb arretera de diffuser les annonces la concernant jusqu'a la reprise de la diffusiot.
+Les annonces sap sont envoyées pour les chaines détectées comme étant "vivantes". Si une chaine stoppe sa diffusion, mumudvb arretera de diffuser les annonces la concernant jusqu'a la reprise de la diffusion.

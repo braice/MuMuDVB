@@ -1,4 +1,4 @@
-mumudvb v1.5.2 - README
+mumudvb v1.5.3 - README
 
 Website :
 http://mumudvb.braice.net
@@ -105,7 +105,7 @@ Signal : (see thi kill's man page)
 
 = Technical details (not sorted) =
 
- * mumudvb can receive DVB-s (sattellite) or DVB-T (terrestrial). It doesn't support DisEq.
+ * mumudvb can receive DVB-S (sattellite) or DVB-T (terrestrial). It is also reported to work with DVB-C (cable).
 
  * The mandatory pids are sent with all channels
   * Mandatory pids are : 
@@ -115,13 +115,9 @@ Signal : (see thi kill's man page)
    * EIT (18) : Event Information Table : the EIT contains data concerning events or programmes such as event name, start time, duration, etc.
    * TDT (20): Time and Date Table : the TDT gives information relating to the present time and date.This information is given in a separate table due to the frequent updating of this information.
 
- * CPU consuming : mumudvb takes 15% CPU of a celeron 2.6GHz with an Hauppauge card and 2.6.9 when streaming a full transponder (about 30MBit/s)
+ * CPU consuming : mumudvb takes 15% CPU of a celeron 2.6GHz with an Hauppauge card and linux version 2.6.9 when streaming a full transponder (about 30MBit/s)
 
- * Don't use old via or nForce chipsets. They can't deal with a lot of datas on the PCI bus.
-
- * Using mumudvb for DVB-T streaming, don't forget to specify tuning parameters they are a little more complicated than satellite.
-
- * mumudvb hasn't been tried with DVB-C so it mights not work.
+ * Don't use old via or nForce chipsets. They can't deal with a lot of data on the PCI bus.
 
  * When the program starts, he writes the channel list on /var/run/mumudvb/chaines_diffusees_carte%d (where %d is the card number). This file contains streamed channels (updated every 5 seconds) in the form : "name:ip:port"
 
@@ -131,7 +127,7 @@ Signal : (see thi kill's man page)
 
 == Vlc can read the stream but not xine or mplayer ==
 
- * For Vlc, you must specify the PMT pid besides audio and video pids. It's a frequent issue, indeed scan doesn't give this pid but his number. To resolve this issue you can use {{{vlc -v}}} and you'll see a ligne like : {{{[00000269] ts demuxer debug:   * number=1025 pid=110}}} you'll have the pid associated with your number, or you can also use dvbsnoop. Another solution is to use autoconfiguration.
+ * For Vlc, you must specify the PMT pid besides audio and video pids. It's a frequent issue. To resolve this issue you can use {{{vlc -v}}} and you'll see a ligne like : {{{[00000269] ts demuxer debug:   * number=1025 pid=110}}} you'll have the pid associated with your number, you can also use dvbsnoop, or see how to get pids in readme-conf. Another solution is to use autoconfiguration.
 
 == mumudvb can't deamonize ==
 
@@ -139,7 +135,7 @@ Signal : (see thi kill's man page)
 
 == The system crashes ==
 
- * old via chipset or nForce chipset are not professional chipsets. They can't deal with a lot of datas on PCI. But you can try to tune your BIOS.
+ * old via chipset or nForce chipset are not professional chipsets. They can't deal with a lot of data on PCI. But you can try to tune your BIOS.
 
 == Tuning issues with DVB-T ==
 
