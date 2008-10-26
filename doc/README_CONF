@@ -27,6 +27,7 @@ All parameters are in the form : name=value
 ||cam_support                    ||specify if we wants the support for scrambled channels ||
 ||cam_number                     ||the number of the CAM we want to use (default 0) ||
 ||autoconfiguration              ||autoconfiguration 1: find audio and video, 2: full autoconfiguration, see README ||
+||autoconf_ip_header             ||For full autoconfiguration, the first part of the ip for streamed channel : ip = header.card.channel Default : 239.100 ||
 ||sap                            ||generation of sap announces : 0 no, 1 yes ||
 ||sap_organisation               ||Organisation sent in the sap announces (optionnal, default : mumudvb) ||
 ||sap_sending_ip                 ||The sender Ip adress (optionnal, default : 0.0.0.0) ||

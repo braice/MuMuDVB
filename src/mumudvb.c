@@ -97,6 +97,7 @@ int autoconfiguration = 0;           //Do we use autoconfiguration ?
 // 0 : none (or autoconf finished)
 // 1 : we have the PMT pids and the channels, we search the audio and video
 // 2 : we have only the tuning parameters, we search the channels and their pmt pids
+char autoconf_ip_header[10]="239.100";
 
 long time_start_autoconfiguration=0; //When did we started autoconfiguration ?
 
@@ -388,6 +389,17 @@ main (int argc, char **argv)
 			"Full autoconfiguration, we activate SAP announces. if you want to desactivate them see the README.\n");
 	      sap=1;
 	    }
+	}
+      else if (!strcmp (substring, "autoconf_ip_header"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  if(strlen(substring)>7)
+	    {
+	      log_message( MSG_ERROR,
+			   "The sap sending ip is too long\n");
+	      exit(ERROR_CONF);
+	    }
+	  sscanf (substring, "%s\n", autoconf_ip_header);
 	}
       else if (!strcmp (substring, "sap"))
 	{
