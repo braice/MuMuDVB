@@ -28,6 +28,7 @@
 #include <string.h>
 
 extern char sap_sending_ip[20];
+extern char sap_default_group[20];
 
 extern int multicast_ttl;
 
@@ -174,9 +175,12 @@ int sap_add_program(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_messag
   memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
   payload_len+=strlen(temp_string);
 
-  if(strlen(channel.sap_group))
+  if(strlen(channel.sap_group)||strlen(sap_default_group))
     {
-      sprintf(temp_string,"a=x-plgroup:%s\r\n", channel.sap_group);
+      if(strlen(channel.sap_group))
+	sprintf(temp_string,"a=x-plgroup:%s\r\n", channel.sap_group);
+      else
+	sprintf(temp_string,"a=x-plgroup:%s\r\n", sap_default_group);
       if( (sap_message->len+payload_len+strlen(temp_string))>1024)
 	{
 	  log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel.name);

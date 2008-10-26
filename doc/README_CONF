@@ -32,6 +32,7 @@ All parameters are in the form : name=value
 ||sap_organisation               ||Organisation sent in the sap announces (optionnal, default : mumudvb) ||
 ||sap_sending_ip                 ||The sender Ip adress (optionnal, default : 0.0.0.0) ||
 ||sap_interval                   ||Interval in seconds between sap announces (optionnal, default : 5) ||
+||sap_default_group              ||The default playlist group for sap announces (optionnal) ||
 || For DVB-T                     ||
 ||qam                            ||quadrature amplitude modulation, possible values : qpsk,16,32,64,128,256,auto ||
 ||trans_mode                     ||transmission mode, possible values : 2k,8k,auto ||
@@ -41,7 +42,7 @@ All parameters are in the form : name=value
 ||'''For each channel (this order is recommended : ip, port, ...,  pids)'''||
 ||ip                             ||multicast (can also be unicast) ip where the chanel will be streamed ||
 ||port                           ||port (optionnal if common_port is used)||
-||sap_group                      ||The playlist group for sap announces (optionnal, only supported by VLC, as far as I know) ||
+||sap_group                      ||The playlist group for sap announces (optionnal) ||
 ||cam_pmt_pid                    ||(only for scrambled channels) the PMT PID for CAM support ||
 ||name                           ||the name given to the chanel in /var/run/mumudvb/chaines_diffusees%d (used to generate  SAP announces) ||
 ||pids                           ||a pid list space separeted (any number, some pids are always sent (PAD EIT SDT TDT NIT) see README for more details) ||

@@ -90,6 +90,7 @@ mumudvb_sap_message_t sap_messages[MAX_CHANNELS]; //the sap message... //TODO : 
 int sap=0; //do we send sap announces ?
 int sap_interval=SAP_DEFAULT_INTERVAL;
 char sap_sending_ip[20]="0.0.0.0";
+char sap_default_group[20]="";
 
 //autoconfiguration
 int autoconfiguration = 0;           //Do we use autoconfiguration ?
@@ -507,6 +508,23 @@ main (int argc, char **argv)
 	      exit(ERROR_CONF);
 	    }
 	  sscanf (substring, "%s\n", channels[curr_channel].sap_group);
+	}
+      else if (!strcmp (substring, "sap_default_group"))
+	{
+	  if (sap==0)
+	    {
+	      log_message( MSG_WARN,
+			"Warning : you have not activated sap, the sap group will not be taken in account\n");
+
+	    }
+	  substring = strtok (NULL, "=");
+	  if(strlen(substring)>19)
+	    {
+	      log_message( MSG_ERROR,
+			   "The sap default group is too long\n");
+	      exit(ERROR_CONF);
+	    }
+	  sscanf (substring, "%s\n", sap_default_group);
 	}
       else if (!strcmp (substring, "common_port"))
 	{

@@ -31,6 +31,7 @@ Tous les paramètres sont de la forme suivante : nom=valeur
 ||sap_organisation               ||Organisation précisée dans les annonces sap (optionel, défaut : mumudvb) ||
 ||sap_sending_ip                 ||Adresse ip de l'émetteur (optionel, défaut : 0.0.0.0) ||
 ||sap_interval                   ||Intervale en secondes entre les annonces sap (optionel, defaut : 5) ||
+||sap_group                      ||Le groupe sap par défaut pour la liste de lecture (optionnel) ||
 ||'''Pour la TNT'''              ||
 ||qam                            ||la modulation en quadrature, valeurs possibles : qpsk,16,32,64,128,256,auto ||
 ||trans_mode                     ||le mode de transmission, valeurs possibles : 2k,8k,auto ||
@@ -41,7 +42,7 @@ Tous les paramètres sont de la forme suivante : nom=valeur
 ||ip                             ||l'ip de multicast sur laquelle cette chaise sera diffusée ||
 ||port                           ||le port ||
 ||cam_pmt_pid                    ||(uniquement pour les chaines crypées) numéro du PID PMT ||
-||sap_group                      ||Le groupe sap pour la liste de lecture (optionnel, supporté seulement par VLC dans l'état actuel de mes connaissances) ||
+||sap_group                      ||Le groupe sap pour la liste de lecture (optionnel) ||
 ||name                           ||le nom donné à la chaîne dans les fichiers qui indique les chaînes diffusées actuellement (utilisé par les scripts en exemple pour générer les annonces SAP) ||
 ||pids                           ||une liste de pids séparés par des espaces (en nombre quelconque, certains pids sont toujours diffusés (PAT EIT SDT TDT NIT)) ||
 

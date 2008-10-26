@@ -3,6 +3,7 @@
 New features : 
  * Option multicast_ttl to override default ttl
  * Option autoconf_ip_header, to change the first part of ip adresses used by autoconfiguration
+ * Option sap_default_group
 	
 Bugs corrected : 
  * Better conformances to RFC for sap announces (this correct issues with VLC < 0.8.6f)
