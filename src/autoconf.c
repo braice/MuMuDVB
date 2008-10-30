@@ -54,7 +54,7 @@ mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,
 int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_len);
 void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len);
 
-extern char *autoconf_ip_header;
+extern char autoconf_ip_header[10];
 
 /****************************************************************************/
 //Code from libdvb, strongly modified, with commentaries added
