@@ -3,8 +3,8 @@
 # This file is used to specify the locations of mumudvb config files for each card
 #
 
-#Don't start mumudvb
-#DONTSTARTMUMU=1
+#If you don't want to automatically start mumudvb, uncomment this line
+#DONTSTARTMUMU=true
 
 #Options for mumudvb
 DAEMON_OPTS=""

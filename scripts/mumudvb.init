@@ -19,7 +19,7 @@ if [ -f /etc/default/mumudvb ] ; then
         . /etc/default/mumudvb
 fi
 
-if [ $DONTSTARTMUMU = true ]; then exit 0; fi
+if [ "$DONTSTARTMUMU" = "true" ]; then exit 0; fi
 
 . /lib/lsb/init-functions
 
