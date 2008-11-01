@@ -30,7 +30,7 @@ Mailing-liste :
 == Fonctonalités principales =
  * Possibilité de diffuser plusieurs chaînes d'un même transpondeur sur des ips différentes
  * Mumudvb est capable de réécrire à la volée le pid PAT pour n'annoncer que les flux réelement présents (utile pour les set-top boxes).
- * Support des chaines cryptées (si vous n'avez pas de CAM vous pouveÃÃz utiliser sasc-ng)
+ * Support des chaines cryptées (si vous n'avez pas de CAM vous pouvez utiliser sasc-ng mais vérifiez que c'est autorisé dans votre pays)
  * Mumudvb est capable de trouver les chaines présentent dans le flux
  * Génération automatique des annonces SAP
 

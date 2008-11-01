@@ -33,7 +33,7 @@ Mailing list :
 
  * Stream channels from a transponder on different multicast IPs
  * The program can rewrite the PAT Pid in order to announce only present channels (useful for some set-top boxes)
- * Support for scrambled channels (beta) (if you don't have a CAM you can use sasc-ng)
+ * Support for scrambled channels (beta) (if you don't have a CAM you can use sasc-ng, but check if it's allowed in you country)
  * Support for autoconfiguration, see further
  * Generation of SAP announces
 
