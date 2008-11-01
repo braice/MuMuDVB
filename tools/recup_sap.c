@@ -212,7 +212,7 @@ main (int argc, char **argv)
       lengthPacket=recv(socketIn,temp_buf,MAX_PACKET_SIZE,0);
        if(lengthPacket>0)
 	 {
-	    if(signaux==0)//mis ici pour pouvoir le tuer s'il n'y a pas de flux (aytomatiser ça à l'avenir)
+	    if(signaux==0)//mis ici pour pouvoir le tuer s'il n'y a pas de flux (aytomatiser Ã§a Ã  l'avenir)
 	      {
 		 if (signal (SIGHUP, SignalHandler) == SIG_IGN)
 		   signal (SIGHUP, SIG_IGN);
