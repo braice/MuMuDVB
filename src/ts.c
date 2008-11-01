@@ -2,7 +2,7 @@
  * mumudvb - UDP-ize a DVB transport stream.
  * File for demuxing TS stream
  * 
- * (C) Brice DUBOST <mumudvb@braice.net>
+ * (C) 2004-2008 Brice DUBOST <mumudvb@braice.net>
  *
  * The latest version can be found at http://mumudvb.braice.net
  * 

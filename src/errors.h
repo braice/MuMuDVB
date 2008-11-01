@@ -1,7 +1,7 @@
 /* 
  * mumudvb - UDP-ize a DVB transport stream.
  * 
- * (C) Brice DUBOST
+ * (C) 2004-2008 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 

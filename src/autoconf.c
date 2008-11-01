@@ -2,7 +2,7 @@
  * mumudvb - UDP-ize a DVB transport stream.
  * File for Autoconfiguration
  * 
- * (C) Brice DUBOST <mumudvb@braice.net>
+ * (C) 2008 Brice DUBOST <mumudvb@braice.net>
  *  
  * Parts of this code come from libdvbpsi, modified for mumudvb
  * by Brice DUBOST 

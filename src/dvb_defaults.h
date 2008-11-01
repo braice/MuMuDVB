@@ -4,7 +4,7 @@
 
    Copyright (C) Dave Chapman 2002
 
-   Copyright (C) Brice DUBOST
+   Copyright (C) 2004-2008 Brice DUBOST
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License

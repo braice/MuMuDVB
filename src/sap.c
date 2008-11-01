@@ -2,7 +2,7 @@
  * mumudvb - UDP-ize a DVB transport stream.
  * File for Session Announcement Protocol Announces
  * 
- * (C) Brice DUBOST
+ * (C) 2008 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 

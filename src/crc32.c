@@ -2,7 +2,7 @@
  * mumudvb - UDP-ize a DVB transport stream.
  * File for CRC32 calculation
  * 
- * (C) Brice DUBOST
+ * (C) 2004-2008 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
