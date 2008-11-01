@@ -32,6 +32,7 @@ do_start() {
                 mkdir -p $PIDDIR
         fi
         chown $DAEMONUSER:$DAEMONUSER $PIDDIR
+	eval $LAUNCH_BEFORE_MUMU
 	for ADAPTER in $ADAPTERS; do
 		#Todo : add mumudvb opts
 		#Todo : fails if all card fails

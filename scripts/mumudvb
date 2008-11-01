@@ -6,6 +6,9 @@
 #If you don't want to automatically start mumudvb, uncomment this line
 #DONTSTARTMUMU=true
 
+#If you want to launch a command before mumudvb (for example for automatic configuration generation)
+#LAUNCH_BEFORE_MUMU=""
+
 #Options for mumudvb
 DAEMON_OPTS=""
 
