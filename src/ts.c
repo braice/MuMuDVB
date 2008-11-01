@@ -153,9 +153,9 @@ int ts_check_CRC( mumudvb_ts_packet_t *pmt)
   pmt_struct=(pmt_t *)pmt->packet;
 
   //the real lenght
-  pmt->len=HILO(pmt_struct->section_length)+3; //+3 pour les trois bits du début (compris le section_lenght)
+  pmt->len=HILO(pmt_struct->section_length)+3; //+3 for the first three bits
 
-  //CRC32 calculation mostly taken from the xine project
+  //CRC32 calculation
   //Test of the crc32
   crc32=0xffffffff;
   //we compute the CRC32

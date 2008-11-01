@@ -4,11 +4,11 @@ mumudvb v1.5.3 - README
 Site principal de mumudvb http://mumudvb.braice.net
 
 = Description =
-mumudvb est, à l'origine, une modification de dvbstream pour le cr@ns (http://www.crans.org), la quantité de modifications étant importante nous avons décidé de redistribuer le projet (dans l'esprit du logiciel libre).
+mumudvb est, Ã  l'origine, une modification de dvbstream pour le cr@ns (http://www.crans.org), la quantitÃ© de modifications Ã©tant importante nous avons dÃ©cidÃ© de redistribuer le projet (dans l'esprit du logiciel libre).
 
-Désormais mumudvb est un projet indépendant de dvbstream.
+DÃ©sormais mumudvb est un projet indÃ©pendant de dvbstream.
 
-Mumudvb permet de diffuser plusieurs chaines d'un transpondeur dvb sur différentes adresses de multicast.
+Mumudvb permet de diffuser plusieurs chaines d'un transpondeur dvb sur diffÃ©rentes adresses de multicast.
 
 = Auteurs =
 
@@ -16,52 +16,52 @@ Auteur principal:
 Brice DUBOST (mumudvb AT braice.net)
 
 Contributeurs:
-Manuel SABBAN (manu AT crans.ens-cachan.fr) (implémentation du getopt)
+Manuel SABBAN (manu AT crans.ens-cachan.fr) (implÃ©mentation du getopt)
 Stephane GLONDU (glondu AT crans.ens-cachan.fr) (page de man, nettoyage du Makefile)
 
 Remerciements:
-Dave CHAPMAN pour avoir écrit dvbstream.
+Dave CHAPMAN pour avoir Ã©crit dvbstream.
 
 Mailing-liste : 
 "mumudvb-dev _AT_ lists DOT crans DOT org"
 
-= Fonctionalités et contenu =
+= FonctionalitÃ©s et contenu =
 
-== Fonctonalités principales =
- * Possibilité de diffuser plusieurs chaînes d'un même transpondeur sur des ips différentes
- * Mumudvb est capable de réécrire à la volée le pid PAT pour n'annoncer que les flux réelement présents (utile pour les set-top boxes).
- * Support des chaines cryptées (si vous n'avez pas de CAM vous pouvez utiliser sasc-ng mais vérifiez que c'est autorisé dans votre pays)
- * Mumudvb est capable de trouver les chaines présentent dans le flux
- * Génération automatique des annonces SAP
+== FonctonalitÃ©s principales =
+ * PossibilitÃ© de diffuser plusieurs chaÃ®nes d'un mÃªme transpondeur sur des ips diffÃ©rentes
+ * Mumudvb est capable de rÃ©Ã©crire Ã  la volÃ©e le pid PAT pour n'annoncer que les flux rÃ©element prÃ©sents (utile pour les set-top boxes).
+ * Support des chaines cryptÃ©es (si vous n'avez pas de CAM vous pouvez utiliser sasc-ng mais vÃ©rifiez que c'est autorisÃ© dans votre pays)
+ * Mumudvb est capable de trouver les chaines prÃ©sentent dans le flux
+ * GÃ©nÃ©ration automatique des annonces SAP
 
-== Liste détaillée des fonctionalités ==
+== Liste dÃ©taillÃ©e des fonctionalitÃ©s ==
 
- * Possibilité de diffuser plusieurs chaînes d'un même transpondeur sur des ips différentes
+ * PossibilitÃ© de diffuser plusieurs chaÃ®nes d'un mÃªme transpondeur sur des ips diffÃ©rentes
  * Pouvoir afficher la puissance du signal pendant l'utilisation
- * Liste mise a jour en temps réel des chaînes diffusées
- * Mumudvb peut être lancé en tant que démon (en cas d'exécution en tache de fond les logs sont écrit via syslog)
+ * Liste mise a jour en temps rÃ©el des chaÃ®nes diffusÃ©es
+ * Mumudvb peut Ãªtre lancÃ© en tant que dÃ©mon (en cas d'exÃ©cution en tache de fond les logs sont Ã©crit via syslog)
  * Ecriture dans un fichier de son pid
  * Pouvoir utiliser des fichiers de configuration
- * Mumudvb est capable de se tuer tout seul si la carte ne diffuse plus rien au bout d'un temps paramétrable
- * Mumudvb arrête de tenter d'accorder la carte au bout d'un temps paramétrable.
+ * Mumudvb est capable de se tuer tout seul si la carte ne diffuse plus rien au bout d'un temps paramÃ©trable
+ * Mumudvb arrÃªte de tenter d'accorder la carte au bout d'un temps paramÃ©trable.
  * Permet de diffuser le meme pid sur plusieurs chaines (permet de creer des chaines avec plusieurs langues)
  * Support fonctionnel du DVB-T
- * Diffusion des pids obligatoires systématique
+ * Diffusion des pids obligatoires systÃ©matique
   * Les pids obligatoires sont les suivants :
    * PAT (0): Program Association Table
-   * NIT (16) : Network Information Table : Fournit des informations à propos du réseau physique.
-   * SDT (17) : Service Description Table : Le pid SDT contient des données décrivant les différents services ex : nom des services, fournisseur du service, etc.
-   * EIT (18) : Event Information Table : Le pid EIT contient des données concernant les programmes comme : le nom du programme, l'heure de début, la durée, une description etc ...
-   * TDT (20): Time and Date Table : Le pid TDT contient l'heure et la date. Cette information est dans un pid à part car sa mise à jour est fréquente.
- * Mumudvb s'inscrit lui même au flux (IGMP membership request) pour éviter que certains switchs braodcastent les flux
- * Mumudvb est capable de réécrire à la volée le pid PAT pour n'annoncer que les flux réelement présents (utile pour les set-top boxes).
-  * Cette fonctionalité est expérimentale (03/2006) et ne permet pas de réécrire des Pids PAT plus gros que 188 bytes
- * Support expérimental des chaines cryptées
+   * NIT (16) : Network Information Table : Fournit des informations Ã  propos du rÃ©seau physique.
+   * SDT (17) : Service Description Table : Le pid SDT contient des donnÃ©es dÃ©crivant les diffÃ©rents services ex : nom des services, fournisseur du service, etc.
+   * EIT (18) : Event Information Table : Le pid EIT contient des donnÃ©es concernant les programmes comme : le nom du programme, l'heure de dÃ©but, la durÃ©e, une description etc ...
+   * TDT (20): Time and Date Table : Le pid TDT contient l'heure et la date. Cette information est dans un pid Ã  part car sa mise Ã  jour est frÃ©quente.
+ * Mumudvb s'inscrit lui mÃªme au flux (IGMP membership request) pour Ã©viter que certains switchs braodcastent les flux
+ * Mumudvb est capable de rÃ©Ã©crire Ã  la volÃ©e le pid PAT pour n'annoncer que les flux rÃ©element prÃ©sents (utile pour les set-top boxes).
+  * Cette fonctionalitÃ© est expÃ©rimentale (03/2006) et ne permet pas de rÃ©Ã©crire des Pids PAT plus gros que 188 bytes
+ * Support expÃ©rimental des chaines cryptÃ©es
  * Mumudvb est capable de s'autoconfigurer, voir plus bas
 
 D'autres programmes sont joints dans les sources de mumudvb:
- * relay : permet de relayer un flux (récupérer un flux en multicast et l'unicaster ou l'envoyer vers une autre ip de multicast) il peut être utilisé pour traverser des routeurs ou des firewalls interdisant le multicast.
- * recup_sap : mini client sap, récupère les annonces sap sur le réseau pendant 60 secondes et les écrit dans un fichier (non triées)
+ * relay : permet de relayer un flux (rÃ©cupÃ©rer un flux en multicast et l'unicaster ou l'envoyer vers une autre ip de multicast) il peut Ãªtre utilisÃ© pour traverser des routeurs ou des firewalls interdisant le multicast.
+ * recup_sap : mini client sap, rÃ©cupÃ¨re les annonces sap sur le rÃ©seau pendant 60 secondes et les Ã©crit dans un fichier (non triÃ©es)
 
 
 = Installation =
@@ -73,28 +73,28 @@ make install (en root)
 
 C'est tout!
 
-Si vous voulez utiliser les valeurs par défaut pour la TNT tapez "make FRANCE=1"
+Si vous voulez utiliser les valeurs par dÃ©faut pour la TNT tapez "make FRANCE=1"
 au lieu de "make"
 
-Si vous ne spécifiez pas de pays à la compilation, les valeurs par défaut sont auto pour tous les paramètres, excepté pour la bande passante définie à 8MHz.
+Si vous ne spÃ©cifiez pas de pays Ã  la compilation, les valeurs par dÃ©faut sont auto pour tous les paramÃ¨tres, exceptÃ© pour la bande passante dÃ©finie Ã  8MHz.
 
 
 = Utilisation =
 
-Pour connaître la syntaxe des fichiers de configuration, se référer au fichier README_CONF
+Pour connaÃ®tre la syntaxe des fichiers de configuration, se rÃ©fÃ©rer au fichier README_CONF
 
 Pour une utilisation rapide de mumudvb, voir le fichier QUICKSTART
 
 Syntaxe :
 	mumudvb [options] -c fichier_de_configuration
 	mumudvb [options] --config fichier_de_configuration
-Les différentes options possibles sont : 
+Les diffÃ©rentes options possibles sont : 
 
 -d, --debug
-	ne se lance pas en démon et affiche les messages sur la sortie standard et d'erreur
+	ne se lance pas en dÃ©mon et affiche les messages sur la sortie standard et d'erreur
 
 -s, --signal
-	Affiche la force du signal pendant que la carte s'accorde et, une fois que la carte est accordé, toutes les 5 secondes
+	Affiche la force du signal pendant que la carte s'accorde et, une fois que la carte est accordÃ©, toutes les 5 secondes
 
 -h, --help
 	affiche l'aide
@@ -106,43 +106,43 @@ Les différentes options possibles sont :
 	Rends mumudvb plus silencieux
 
 Signaux : (voir la page de man de kill)
-    SIGUSR1 : change l'affichage de la puissance une fois la carte tunée, s'il était absent il devient présent et inversement
+    SIGUSR1 : change l'affichage de la puissance une fois la carte tunÃ©e, s'il Ã©tait absent il devient prÃ©sent et inversement
 
-= Détails techniques (en vrac) =
+= DÃ©tails techniques (en vrac) =
 
  * mumudvb permet de recevoir un signal satellite (DVB-S), Terrestre (DVB-T) ou cable (DVB-C)
 
- * mumudvb diffuse les Pids suivants avec toutes les chaînes (conformément à la norme MPEG2-TS)
+ * mumudvb diffuse les Pids suivants avec toutes les chaÃ®nes (conformÃ©ment Ã  la norme MPEG2-TS)
    * PAT (0): Program Association Table
-   * NIT (16) : Network Information Table : Fournit des informations à propos du réseau physique.
-   * SDT (17) : Service Description Table : Le pid SDT contient des données décrivant les différents services ex : nom des services, fournisseur du service,\ etc.
-   * EIT (18) : Event Information Table : Le pid EIT contient des données concernant les programmes comme : le nom du programme, l'heure de début, la durée,\ une description etc ...
-   * TDT (20): Time and Date Table : Le pid TDT contient l'heure et la date. Cette information est dans un pid à part car sa mise à jour est fréquente.
+   * NIT (16) : Network Information Table : Fournit des informations Ã  propos du rÃ©seau physique.
+   * SDT (17) : Service Description Table : Le pid SDT contient des donnÃ©es dÃ©crivant les diffÃ©rents services ex : nom des services, fournisseur du service,\ etc.
+   * EIT (18) : Event Information Table : Le pid EIT contient des donnÃ©es concernant les programmes comme : le nom du programme, l'heure de dÃ©but, la durÃ©e,\ une description etc ...
+   * TDT (20): Time and Date Table : Le pid TDT contient l'heure et la date. Cette information est dans un pid Ã  part car sa mise Ã  jour est frÃ©quente.
 
- * Performances: mumudvb consomme 15% du processeur d'un celeron 2.6GHz avec une carte Hauppauge et un noyau Linux 2.6.9 pour un transpondeur plein (mumudvb a été développé à l'origine dans ce but, après des tests avec VLC qui offrait de piteuses performances, une instabilité chronique et avec des fonctionnalités manquantes pour notre utilisation)
+ * Performances: mumudvb consomme 15% du processeur d'un celeron 2.6GHz avec une carte Hauppauge et un noyau Linux 2.6.9 pour un transpondeur plein (mumudvb a Ã©tÃ© dÃ©veloppÃ© Ã  l'origine dans ce but, aprÃ¨s des tests avec VLC qui offrait de piteuses performances, une instabilitÃ© chronique et avec des fonctionnalitÃ©s manquantes pour notre utilisation)
 
- * A éviter : les chipset via non récents ou nforce, ces chipset sont des chipsets grand public, incapables de gérer correctement une grande quantité de données sur le bus PCI.
+ * A Ã©viter : les chipset via non rÃ©cents ou nforce, ces chipset sont des chipsets grand public, incapables de gÃ©rer correctement une grande quantitÃ© de donnÃ©es sur le bus PCI.
 
- * mumudvb est capable de diffuser de la TNT (télévision numérique terrestre). N'oubliez pas de vérifier les paramètres de réception si vous avez un problème.
+ * mumudvb est capable de diffuser de la TNT (tÃ©lÃ©vision numÃ©rique terrestre). N'oubliez pas de vÃ©rifier les paramÃ¨tres de rÃ©ception si vous avez un problÃ¨me.
 
- * Lors de l'exécution le programme écrit la liste des chaînes diffusées dans le fichier /var/run/mumudvb/chaines_diffusees_carte%d le %d est remplacé par le numéro de carte, le chemin n'est pas paramétrable mais cela est facile à implémenter, envoyez moi un mail si vous en avez besoin. Ce fichier contient la liste des chaînes diffusées (actualisée toute les 5 secondes) de la forme suivante (pour chaque ligne) : "nom:ip:port"
+ * Lors de l'exÃ©cution le programme Ã©crit la liste des chaÃ®nes diffusÃ©es dans le fichier /var/run/mumudvb/chaines_diffusees_carte%d le %d est remplacÃ© par le numÃ©ro de carte, le chemin n'est pas paramÃ©trable mais cela est facile Ã  implÃ©menter, envoyez moi un mail si vous en avez besoin. Ce fichier contient la liste des chaÃ®nes diffusÃ©es (actualisÃ©e toute les 5 secondes) de la forme suivante (pour chaque ligne) : "nom:ip:port"
 
- * mumudvb a été testé avec 6 cartes, et peut en supporter plus.
-  * au (04/2005) pour utiliser plus de 4 cartes, les possibilités sont d'utiliser un noyau 2.4.* avec devfs :-( ou d'utiliser un noyau > 2.6.11 avec udev compilé statiquement avec klibc en attendant la mise a jour de la glibc. Nous n'avons pas testé avec les versions récentes d'udev depuis.
+ * mumudvb a Ã©tÃ© testÃ© avec 6 cartes, et peut en supporter plus.
+  * au (04/2005) pour utiliser plus de 4 cartes, les possibilitÃ©s sont d'utiliser un noyau 2.4.* avec devfs :-( ou d'utiliser un noyau > 2.6.11 avec udev compilÃ© statiquement avec klibc en attendant la mise a jour de la glibc. Nous n'avons pas testÃ© avec les versions rÃ©centes d'udev depuis.
 
-= Problèmes connus =
+= ProblÃ¨mes connus =
 
-== Vlc incapable de lire le flux vidéo mais pas xine ou mplayer ==
+== Vlc incapable de lire le flux vidÃ©o mais pas xine ou mplayer ==
 
- * Pour Vlc, il faut indiquer le pid PMT en plus des pids audio et vidéo (sinon, il est aussi incapable de voir ce qui est présent dans le flux). Ceci est un problème courant, en effet scan ne fournit pas le pid PMT mais son numéro. pour résoudre ce problème, on peut utiliser {{{vlc -v}}} qui va donner une ligne de la forme : {{{[00000269] ts demuxer debug:   * number=1025 pid=110}}} vous aurez la correspondance entre le nombre donné par scan et le pid réel, plus d'informations sont données dans le fichier readme-conf. dvbsnoop permet aussi d'obtenir cette information. Vous pouvez aussi utiliser l'autoconfiguration.
+ * Pour Vlc, il faut indiquer le pid PMT en plus des pids audio et vidÃ©o (sinon, il est aussi incapable de voir ce qui est prÃ©sent dans le flux). Ceci est un problÃ¨me courant, en effet scan ne fournit pas le pid PMT mais son numÃ©ro. pour rÃ©soudre ce problÃ¨me, on peut utiliser {{{vlc -v}}} qui va donner une ligne de la forme : {{{[00000269] ts demuxer debug:   * number=1025 pid=110}}} vous aurez la correspondance entre le nombre donnÃ© par scan et le pid rÃ©el, plus d'informations sont donnÃ©es dans le fichier readme-conf. dvbsnoop permet aussi d'obtenir cette information. Vous pouvez aussi utiliser l'autoconfiguration.
 
-== Crash du système en utilisant mumudvb ==
+== Crash du systÃ¨me en utilisant mumudvb ==
 
- * les chipset via non récents ou nforce, ces chipset sont des chipsets grand public, incapable de gérer correctement une grande quantité de données sur le bus PCI, ils peuvent faire planter la machine complètement.
+ * les chipset via non rÃ©cents ou nforce, ces chipset sont des chipsets grand public, incapable de gÃ©rer correctement une grande quantitÃ© de donnÃ©es sur le bus PCI, ils peuvent faire planter la machine complÃ¨tement.
 
-== Problème d'accord avec la TNT ==
+== ProblÃ¨me d'accord avec la TNT ==
 
- * Il faut vérifier vos paramètres d'accord, en sachant que le paramètre bandwidth ne peux pas être mis en auto.
+ * Il faut vÃ©rifier vos paramÃ¨tres d'accord, en sachant que le paramÃ¨tre bandwidth ne peux pas Ãªtre mis en auto.
 
 = Autoconfiguration =
 
@@ -150,19 +150,19 @@ Depuis 07/2008, mumudvb est capable de s'autoconfigurer.
 
 Mumudvb est capable de faire deux types d'autoconfiguration : 
 
-== Autoconfiguration Complète ==
+== Autoconfiguration ComplÃ¨te ==
 
-C'est la manière la plus simple d'utiliser mumudvb
+C'est la maniÃ¨re la plus simple d'utiliser mumudvb
 
 Utilisez ce mode lorsque vous voulez diffuser un transpondeur complet.
 
-Dans ce mode, mumudvb va trouver pour vous, les différentes chaînes, leurs noms et leurs PIDs (PMT, Audio, Vidéo, Sous-titres, Télétexte et AC3).
+Dans ce mode, mumudvb va trouver pour vous, les diffÃ©rentes chaÃ®nes, leurs noms et leurs PIDs (PMT, Audio, VidÃ©o, Sous-titres, TÃ©lÃ©texte et AC3).
 
 Pour utiliser ce mode vous devez : 
- * Définir les parametres pour l'accord de la carte (fréquence polarisation etc) dans le fichier de configuration
+ * DÃ©finir les parametres pour l'accord de la carte (frÃ©quence polarisation etc) dans le fichier de configuration
  * Ajouter "autoconfiguration=2" dans le fichier de configuration
- * Vous n'avez a définir aucune chanie
- * Pour avoir les messages dans la console, pensez à utiliser le paramètre "-d" : 
+ * Vous n'avez a dÃ©finir aucune chanie
+ * Pour avoir les messages dans la console, pensez Ã  utiliser le paramÃ¨tre "-d" : 
    ex : mumudvb -d -c your_config_file
 
 Exemple de fichier de configuration : 
@@ -174,34 +174,34 @@ srate=27500
 autoconfiguration=2
 -----
 
-Les chaînes seront diffusées sur les ip de multicast 239.100.c.n où c est le numéro de carte (0 par défaut) et n le numéro de chaîne.
+Les chaÃ®nes seront diffusÃ©es sur les ip de multicast 239.100.c.n oÃ¹ c est le numÃ©ro de carte (0 par dÃ©faut) et n le numÃ©ro de chaÃ®ne.
 
 Si vous n'utilisez pas la directive common_port, mumudvb utilisera le port 1234.
 
-Par défaut les annonces sap sont générées automatiquement si vous utilisez ce mode d'autoconfiguration. Pour les désactiver ajoutez une ligne "sap=0" apres la ligne autoconfiguration=2.
+Par dÃ©faut les annonces sap sont gÃ©nÃ©rÃ©es automatiquement si vous utilisez ce mode d'autoconfiguration. Pour les dÃ©sactiver ajoutez une ligne "sap=0" apres la ligne autoconfiguration=2.
 
 == Autoconfiguration "simple" ==
 
-Utilisez ce mode lorsque vous voulez controller le nom des chaînes, leurs ip et quelles chaines vous voulez diffuser
+Utilisez ce mode lorsque vous voulez controller le nom des chaÃ®nes, leurs ip et quelles chaines vous voulez diffuser
 
-Dans ce cas, vous avez a préciser pour chaque chaîne : 
+Dans ce cas, vous avez a prÃ©ciser pour chaque chaÃ®ne : 
  * L'adresse ip
  * Le port (optionnel si vous utilisez common_port)
  * Le nom
  * Le pid PMT 
 
-Et vous avez a ajouter "autoconfiguration=1" au début de votre fichier de configuration.
+Et vous avez a ajouter "autoconfiguration=1" au dÃ©but de votre fichier de configuration.
 
-Mumudvb trouvera les autres PIDs de chaque chaîne (Audio, Vidéo, Sous-titres, Télétexte et AC3) avant de les diffuser.
+Mumudvb trouvera les autres PIDs de chaque chaÃ®ne (Audio, VidÃ©o, Sous-titres, TÃ©lÃ©texte et AC3) avant de les diffuser.
 
-Note : si vous précisez plus d'un PID pour une chaine, mumudvb désactivera l'autoconfiguration pour cette chaîne.
+Note : si vous prÃ©cisez plus d'un PID pour une chaine, mumudvb dÃ©sactivera l'autoconfiguration pour cette chaÃ®ne.
 
 = Sap announces =
 
-Les annonces sap permettent aux clients de connaitre les flux diffusés automatinquement
+Les annonces sap permettent aux clients de connaitre les flux diffusÃ©s automatinquement
 
 VLC et la plupart des set-top-boxes les supporte.
 
-Mumudvb génerera et enverra automatiquement les annonces sap si cela est demandé dans le fichier de configuration ou si le mode autoconfiguration complète est choisi.
+Mumudvb gÃ©nerera et enverra automatiquement les annonces sap si cela est demandÃ© dans le fichier de configuration ou si le mode autoconfiguration complÃ¨te est choisi.
 
-Les annonces sap sont envoyées pour les chaines détectées comme étant "vivantes". Si une chaine stoppe sa diffusion, mumudvb arretera de diffuser les annonces la concernant jusqu'a la reprise de la diffusion.
+Les annonces sap sont envoyÃ©es pour les chaines dÃ©tectÃ©es comme Ã©tant "vivantes". Si une chaine stoppe sa diffusion, mumudvb arretera de diffuser les annonces la concernant jusqu'a la reprise de la diffusion.

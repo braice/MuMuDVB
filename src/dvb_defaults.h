@@ -63,7 +63,7 @@
 #ifdef FRANCE
 
 /* FINLAND settings 1 */
-#define DVB_T_LOCATION		    "France excepté R1"
+#define DVB_T_LOCATION		    "France exceptÃ© R1"
 #define BANDWIDTH_DEFAULT           BANDWIDTH_8_MHZ
 #define HP_CODERATE_DEFAULT         FEC_2_3
 #define CONSTELLATION_DEFAULT       QAM_64

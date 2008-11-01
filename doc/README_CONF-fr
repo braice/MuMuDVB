@@ -1,71 +1,71 @@
 README pour le fichier de configuration de mumudvb
 
-= Configuration générale =
+= Configuration gÃ©nÃ©rale =
 
-mumudvb utilise obligatoirement un fichier de configuration pour lui indiquer les différents paramètres de réception et la répartition des pids sur les ips de multicast (ces ips peuvent aussi bien être de l'unicast). Vous trouverez un exemple dans le fichier conf.example joint aux sources de mumudvb.
+mumudvb utilise obligatoirement un fichier de configuration pour lui indiquer les diffÃ©rents paramÃ¨tres de rÃ©ception et la rÃ©partition des pids sur les ips de multicast (ces ips peuvent aussi bien Ãªtre de l'unicast). Vous trouverez un exemple dans le fichier conf.example joint aux sources de mumudvb.
 
-mumudvb est insensible à l'ordre des paramètres sauf pour les chaînes où les pids doivent être mis après l'ip et le port.
+mumudvb est insensible Ã  l'ordre des paramÃ¨tres sauf pour les chaÃ®nes oÃ¹ les pids doivent Ãªtre mis aprÃ¨s l'ip et le port.
 
-Des commentaires peuvent êtres fait n'importe où dans le fichier de configuration, ce sont les lignes qui commencent par un #
+Des commentaires peuvent Ãªtres fait n'importe oÃ¹ dans le fichier de configuration, ce sont les lignes qui commencent par un #
 
-Tous les paramètres sont de la forme suivante : nom=valeur
+Tous les paramÃ¨tres sont de la forme suivante : nom=valeur
 
-'''Liste des paramètres et leur description '''
+'''Liste des paramÃ¨tres et leur description '''
 ----
 ||'''Nom :'''                    ||'''valeur:'''                                ||
-||freq                           ||la fréquence du transpondeur en MHz ||
-||pol                            ||la polarisation (un caractère) v ou h (insensible à la casse) ||
+||freq                           ||la frÃ©quence du transpondeur en MHz ||
+||pol                            ||la polarisation (un caractÃ¨re) v ou h (insensible Ã  la casse) ||
 ||srate                          ||le srate du transpondeur ||
-||sat_number                     ||le numéro du satellite (pour les utilisateurs de switchs diseqc) ||
-||card                           ||le numéro de la carte (défaut : 0) ||
-||timeout_accord                 ||temps que l'on laisse à la carte pour s'accorder sur la fréquence (en secondes) (défaut : 300 (5min)) ||
-||timeout_no_diff                ||si le programme ne diffuse aucune chaîne, il se tuera au bout de ce temps (en secondes) (défaut : 600 (10min)) ||
-||common_port                    ||Si vous ne voulez pas spécifier le port pour chaque chaine c'est le port qui sera utilisé par défaut (si vous utilisez autoconfiguration=2, défaut : 1234) ||
-||multicast_ttl                  ||Si vous voulez utiliser un Time to Live différent de celui par défaut. ||
-||rewrite_pat                    ||Spécifie si l'on veut la réécriture du PID PAT à la volée ||
-||cam_support                    ||Spécifie si l'on veut le support pour les chaines cryptées ||
-||cam_number                     ||Le numéro du module cam (défaut : 0) ||
+||sat_number                     ||le numÃ©ro du satellite (pour les utilisateurs de switchs diseqc) ||
+||card                           ||le numÃ©ro de la carte (dÃ©faut : 0) ||
+||timeout_accord                 ||temps que l'on laisse Ã  la carte pour s'accorder sur la frÃ©quence (en secondes) (dÃ©faut : 300 (5min)) ||
+||timeout_no_diff                ||si le programme ne diffuse aucune chaÃ®ne, il se tuera au bout de ce temps (en secondes) (dÃ©faut : 600 (10min)) ||
+||common_port                    ||Si vous ne voulez pas spÃ©cifier le port pour chaque chaine c'est le port qui sera utilisÃ© par dÃ©faut (si vous utilisez autoconfiguration=2, dÃ©faut : 1234) ||
+||multicast_ttl                  ||Si vous voulez utiliser un Time to Live diffÃ©rent de celui par dÃ©faut. ||
+||rewrite_pat                    ||SpÃ©cifie si l'on veut la rÃ©Ã©criture du PID PAT Ã  la volÃ©e ||
+||cam_support                    ||SpÃ©cifie si l'on veut le support pour les chaines cryptÃ©es ||
+||cam_number                     ||Le numÃ©ro du module cam (dÃ©faut : 0) ||
 ||autoconfiguration              ||autoconfiguration 1: trouve les pids audio et video, 2: autoconfiguration complete, voir README-fr ||
-||autoconf_ip_header             ||Pour l'autoconfiguration complete, deux premiers chiffres de l'ip utilisée pour envoyer les chaines : ip = header.card.channel, Default : 239.100 ||
-||sap                            ||Génération des annonces sap : 0 non, 1 oui ||
-||sap_organisation               ||Organisation précisée dans les annonces sap (optionel, défaut : mumudvb) ||
-||sap_sending_ip                 ||Adresse ip de l'émetteur (optionel, défaut : 0.0.0.0) ||
+||autoconf_ip_header             ||Pour l'autoconfiguration complete, deux premiers chiffres de l'ip utilisÃ©e pour envoyer les chaines : ip = header.card.channel, Default : 239.100 ||
+||sap                            ||GÃ©nÃ©ration des annonces sap : 0 non, 1 oui ||
+||sap_organisation               ||Organisation prÃ©cisÃ©e dans les annonces sap (optionel, dÃ©faut : mumudvb) ||
+||sap_sending_ip                 ||Adresse ip de l'Ã©metteur (optionel, dÃ©faut : 0.0.0.0) ||
 ||sap_interval                   ||Intervale en secondes entre les annonces sap (optionel, defaut : 5) ||
-||sap_group                      ||Le groupe sap par défaut pour la liste de lecture (optionnel) ||
+||sap_group                      ||Le groupe sap par dÃ©faut pour la liste de lecture (optionnel) ||
 ||'''Pour la TNT'''              ||
 ||qam                            ||la modulation en quadrature, valeurs possibles : qpsk,16,32,64,128,256,auto ||
 ||trans_mode                     ||le mode de transmission, valeurs possibles : 2k,8k,auto ||
 ||bandwidth                      ||la largeur de bande, valeurs possibles : 8MHz,7MHz,6MHz,auto ||
 ||guardinterval                  ||l'intervalle de garde, valeurs possibles : 1/32,1/16,1/8,1/4,auto ||
 ||coderate                       ||le taux de code, valeurs possibles : none,1/2,2/3,3/4,4/5,5/6,6/7,7/8,8/9,auto ||
-||'''Pour chaque chaîne ''' (ordre conseillé : ip, port, ..., pids) ||
-||ip                             ||l'ip de multicast sur laquelle cette chaise sera diffusée ||
+||'''Pour chaque chaÃ®ne ''' (ordre conseillÃ© : ip, port, ..., pids) ||
+||ip                             ||l'ip de multicast sur laquelle cette chaise sera diffusÃ©e ||
 ||port                           ||le port ||
-||cam_pmt_pid                    ||(uniquement pour les chaines crypées) numéro du PID PMT ||
+||cam_pmt_pid                    ||(uniquement pour les chaines crypÃ©es) numÃ©ro du PID PMT ||
 ||sap_group                      ||Le groupe sap pour la liste de lecture (optionnel) ||
-||name                           ||le nom donné à la chaîne dans les fichiers qui indique les chaînes diffusées actuellement (utilisé par les scripts en exemple pour générer les annonces SAP) ||
-||pids                           ||une liste de pids séparés par des espaces (en nombre quelconque, certains pids sont toujours diffusés (PAT EIT SDT TDT NIT)) ||
+||name                           ||le nom donnÃ© Ã  la chaÃ®ne dans les fichiers qui indique les chaÃ®nes diffusÃ©es actuellement (utilisÃ© par les scripts en exemple pour gÃ©nÃ©rer les annonces SAP) ||
+||pids                           ||une liste de pids sÃ©parÃ©s par des espaces (en nombre quelconque, certains pids sont toujours diffusÃ©s (PAT EIT SDT TDT NIT)) ||
 
 
 == Note ==
 
-Si vous n'utilisez pas l'autoconfiguration, vous devez spécifier
+Si vous n'utilisez pas l'autoconfiguration, vous devez spÃ©cifier
  * Le pid audio
- * Le pid Vidéo
+ * Le pid VidÃ©o
  * Le pid PMT
-Il est conséillé de spécifier le pid PCR.
+Il est consÃ©illÃ© de spÃ©cifier le pid PCR.
 
 = Obtenir les PIDs =
 
 Si vous n'utilisez pas l'autoconfiguration (voir README-fr), il vous faudra obtenir les PID (Program Identifier) de chaque chaine.
 
-Pour obtenir les différents pids, le plus simple est d'utiliser les linuxtv-dvb-apps.
-Vous accordez la carte sur la fréquence voulue.
+Pour obtenir les diffÃ©rents pids, le plus simple est d'utiliser les linuxtv-dvb-apps.
+Vous accordez la carte sur la frÃ©quence voulue.
 
 Ensuite il suffit d'utiliser l'utilitaire scan : 
-{{{scan -c -a """numero carte"""}}} (Note : cet exemple est pour le cas d'une carte déjà accordée avec szap ou tzap par exemple. Se référer à la documentation de scan pour plus de détails)
+{{{scan -c -a """numero carte"""}}} (Note : cet exemple est pour le cas d'une carte dÃ©jÃ  accordÃ©e avec szap ou tzap par exemple. Se rÃ©fÃ©rer Ã  la documentation de scan pour plus de dÃ©tails)
 
-Et vous aurez un résultat du genre : 
+Et vous aurez un rÃ©sultat du genre : 
 
 {{{
 using '/dev/dvb/adapter2/frontend0' and '/dev/dvb/adapter2/demux0'
@@ -85,13 +85,13 @@ France 3                 (0x0111) 01: PCR == V   V 0x00dc A 0x00e6 (fra) SUB 0x0
 Done.
 }}}
 
-Vous pouvez aussi utiliser la version modifiée de scan qui permet de créer un fichier de configuration directement au format mumudvb
-Pour cela compilez la version de scan jointe dans le répertoire tools (avec la commande make) et utilisez scan de la manière suivante : 
+Vous pouvez aussi utiliser la version modifiÃ©e de scan qui permet de crÃ©er un fichier de configuration directement au format mumudvb
+Pour cela compilez la version de scan jointe dans le rÃ©pertoire tools (avec la commande make) et utilisez scan de la maniÃ¨re suivante : 
 {{{./scan -c -a """numero carte""" -o mumudvb}}}
 
-Vous pouvez aussi récupérer la configuration directement dans un fichier
+Vous pouvez aussi rÃ©cupÃ©rer la configuration directement dans un fichier
 
 {{{./scan -c -a """numero carte""" -o mumudvb > mumudvb.conf}}}
 
-Attention le numéro de carte est à rajouter manuellement dans le fichier de configuration.
+Attention le numÃ©ro de carte est Ã  rajouter manuellement dans le fichier de configuration.
 

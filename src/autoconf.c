@@ -256,7 +256,7 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
     {
       log_message(MSG_DEBUG, "-- SDT --\n");
   
-      //On boucle sur les différents services
+      //Loop over different services
       delta=SDT_LEN;
       while((len-delta)>(4+SDT_DESCR_LEN))
 	{	  
@@ -354,7 +354,7 @@ void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
       break;
     default:
       log_message(MSG_DEBUG, "\t\ttype : 0x%02x ", type);
-      log_message(MSG_DEBUG, "\t\ttype inconnu se référer a EN 300 468 table 75\n");
+      log_message(MSG_DEBUG, "\t\tUnknow type, look at EN 300 468 table 75\n");
     }
 
   buf += 3;
