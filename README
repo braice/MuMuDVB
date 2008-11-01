@@ -16,13 +16,16 @@ each channel to a different multicast IP.
 = Authors =
 
 Upstream author : 
-Brice DUBOST (mumudvb@braice.net)
+Brice DUBOST (mumudvb AT braice.net)
 
 Contributions :
-Manuel SABBAN (manu@crans.ens-cachan.fr) (getopt)
-Stephane GLONDU (glondu@crans.ens-cachan.fr) (makefile cleaning, man page)
+Manuel SABBAN (manu AT crans.ens-cachan.fr) (getopt)
+Stephane GLONDU (glondu AT crans.ens-cachan.fr) (makefile cleaning, man page)
 
 Special thanks to Dave CHAPMAN (dvbstream author)
+
+Mailing list : 
+"mumudvb-dev _AT_ lists DOT crans DOT org"
 
 = Contents and features =
 

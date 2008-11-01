@@ -330,14 +330,13 @@ main (int argc, char **argv)
   curr_channel=0;
   // we scan config file
   // see doc/README-conf for further information
-  while (fgets (current_line, CONF_LINELEN, conf_file)
-	 && strlen (current_line) > 1)
+  while (fgets (current_line, CONF_LINELEN, conf_file))
     {
       substring = strtok (current_line, delimiteurs);
       //commentary
       if (substring[0] == '#')
 	continue; 
-      
+
       if (!strcmp (substring, "timeout_accord"))
 	{
 	  substring = strtok (NULL, delimiteurs);	// on extrait la sous chaine
@@ -729,8 +728,9 @@ main (int argc, char **argv)
 	}
       else
 	{
-	  log_message( MSG_INFO,
-		       "Config issue : unknow symbol : %s\n\n", substring);
+	  if(strlen (current_line) > 1)
+	    log_message( MSG_INFO,
+			 "Config issue : unknow symbol : %s\n\n", substring);
 	  continue;
 	}
     }

@@ -13,14 +13,17 @@ Mumudvb permet de diffuser plusieurs chaines d'un transpondeur dvb sur différent
 = Auteurs =
 
 Auteur principal:
-Brice DUBOST (mumudvb@braice.net)
+Brice DUBOST (mumudvb AT braice.net)
 
 Contributeurs:
-Manuel SABBAN (manu@crans.ens-cachan.fr) (implémentation du getopt)
-Stephane GLONDU (glondu@crans.ens-cachan.fr) (page de man, nettoyage du Makefile)
+Manuel SABBAN (manu AT crans.ens-cachan.fr) (implémentation du getopt)
+Stephane GLONDU (glondu AT crans.ens-cachan.fr) (page de man, nettoyage du Makefile)
 
 Remerciements:
 Dave CHAPMAN pour avoir écrit dvbstream.
+
+Mailing-liste : 
+"mumudvb-dev _AT_ lists DOT crans DOT org"
 
 = Fonctionalités et contenu =
 

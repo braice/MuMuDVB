@@ -43,6 +43,8 @@ srate=27500
  * That's all, you should get a list of the streamed channels with their IP
 adress
 
+ * The SAP (session announcement protocol) announces will be sent automatically
+
 = DVB-t =
 
  * It's the same way as DVB-s excepted that you need other informations for
@@ -61,11 +63,14 @@ If your bandwith is different from 8Mhz or if you experience tuning issues,
 look for the following parameters in README_CONF : bandwidth, qam, trans_mode,
 guardinterval, coderate
 
+ * The SAP (session announcement protocol) announces will be sent automatically
+
 = Troubleshooting =
 
  * Try adding -v to the mumudvb command line to have more detailled messages
  * If you experience tuning issues, try with other dvb software like scan or
 szap and check your parameters
  * If it still don't work, look at common issues in the README and you can
-write a mail at mumudvb _AT_ braice _DOT_ net
+write a mail at mumudvb _AT_ braice _DOT_ net or 
+"mumudvb-dev _AT_ lists DOT crans DOT org"
 
