@@ -11,16 +11,15 @@
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/bin/mumudvb
-DAEMON_OPTS=" -c "
 PIDDIR=/var/run/mumudvb
 NAME=Mumudvb
-DAEMONUSER=root
 
 #Reading of the config file
-if [ -f /etc/mumudvb/mumudvb.conf ] ; then
-        . /etc/mumudvb/mumudvb.conf
+if [ -f /etc/default/mumudvb ] ; then
+        . /etc/default/mumudvb
 fi
 
+if [ $DONTSTARTMUMU = true ]; then exit 0; fi
 
 . /lib/lsb/init-functions
 
@@ -42,7 +41,7 @@ do_start() {
                    log_warning_msg "\t\tConfig file $CONFIG_FILE not found."
 		else
 		   start-stop-daemon --start --oknodo --pidfile "$PIDDIR/mumudvb_carte$PIDFILE.pid" \
-               		 --exec $DAEMON -- $DAEMON_OPTS $CONFIG_FILE
+               		 --exec $DAEMON -- $DAEMON_OPTS -c $CONFIG_FILE
 		fi
 	done
 }

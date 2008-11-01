@@ -3,6 +3,15 @@
 # This file is used to specify the locations of mumudvb config files for each card
 #
 
+#Don't start mumudvb
+#DONTSTARTMUMU=1
+
+#Options for mumudvb
+DAEMON_OPTS=""
+
+#The user to launch mumudvb
+DAEMONUSER=mumudvb
+
 #Change this line to reflect your configuration
 #Ex : ADAPTERS="0 1 2 4"
 ADAPTERS="0"

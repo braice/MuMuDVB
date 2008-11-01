@@ -1,4 +1,4 @@
-Startup scripts for mumudvb
+Startup scripts for mumudvb (Debian flavour)
 
-This script expect to find /etc/mumudvb/mumudvb.conf, with the syntax specified in the example file
+This script expects to find /etc/default/mumudvb, with the syntax specified in the example file
 

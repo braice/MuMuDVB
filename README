@@ -33,7 +33,7 @@ Mailing list :
 
  * Stream channels from a transponder on different multicast IPs
  * The program can rewrite the PAT Pid in order to announce only present channels (useful for some set-top boxes)
- * Experimental support for scrambled channels
+ * Support for scrambled channels (beta) (if you don't have a CAM you can use sasc-ng)
  * Support for autoconfiguration, see further
  * Generation of SAP announces
 
@@ -57,7 +57,6 @@ Mailing list :
  * mumudvb automatically suscribe to all multicast groups (IGMP membership request) in order to avoid some switches to broadcast all channels.
  * The program can rewrite the PAT Pid in order to announce only present channels (useful for some set-top boxes)
   * Note : We don't rewrite Pat Pids larger than 188 bytes
- * Experimental support for scrambled channels
  * Support for autoconfiguration, see further
 
 
