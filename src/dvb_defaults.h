@@ -1,7 +1,5 @@
 /* dvb_defaults.h
 
-   Provided by Tomi Ollila
-
    Copyright (C) Dave Chapman 2002
 
    Copyright (C) 2004-2008 Brice DUBOST
@@ -37,73 +35,7 @@
 
 /* DVB-T */
 
-/* Add the country to your
-   "make" command.  e.g.
-
-   make FINLAND=1
-
-   if you want to use these default values
-*/
-
 /* default option : full auto except bandwith = 8MHz*/
-
-#ifdef FINLAND
-
-/* FINLAND settings 1 */
-#define DVB_T_LOCATION		    "Suomessa"
-#define BANDWIDTH_DEFAULT           BANDWIDTH_8_MHZ
-#define HP_CODERATE_DEFAULT         FEC_2_3
-#define CONSTELLATION_DEFAULT       QAM_64
-#define TRANSMISSION_MODE_DEFAULT   TRANSMISSION_MODE_8K
-#define GUARD_INTERVAL_DEFAULT	    GUARD_INTERVAL_1_8
-#define HIERARCHY_DEFAULT           HIERARCHY_NONE
-
-#endif
-
-#ifdef FRANCE
-
-/* FINLAND settings 1 */
-#define DVB_T_LOCATION		    "France excepté R1"
-#define BANDWIDTH_DEFAULT           BANDWIDTH_8_MHZ
-#define HP_CODERATE_DEFAULT         FEC_2_3
-#define CONSTELLATION_DEFAULT       QAM_64
-#define TRANSMISSION_MODE_DEFAULT   TRANSMISSION_MODE_8K
-#define GUARD_INTERVAL_DEFAULT	    GUARD_INTERVAL_1_32
-#define HIERARCHY_DEFAULT           HIERARCHY_NONE
-
-#endif
-
-#ifdef FINLAND2
-
-/* FINLAND settings 2 (someone verify there is such environment) */
-#define DVB_T_LOCATION		    "Suomessa II"
-#define BANDWIDTH_DEFAULT           BANDWIDTH_8_MHZ
-#define HP_CODERATE_DEFAULT         FEC_1_2
-#define CONSTELLATION_DEFAULT       QAM_64
-#define TRANSMISSION_MODE_DEFAULT   TRANSMISSION_MODE_2K
-#define GUARD_INTERVAL_DEFAULT      GUARD_INTERVAL_1_8
-#define HIERARCHY_DEFAULT           HIERARCHY_NONE
-
-#endif
-
-#ifdef UK
-
-/* UNITED KINGDOM settings */
-#define DVB_T_LOCATION		    "in United Kingdom"
-#define BANDWIDTH_DEFAULT           BANDWIDTH_8_MHZ
-#define HP_CODERATE_DEFAULT         FEC_2_3
-#define CONSTELLATION_DEFAULT       QAM_64
-#define TRANSMISSION_MODE_DEFAULT   TRANSMISSION_MODE_2K
-#define GUARD_INTERVAL_DEFAULT      GUARD_INTERVAL_1_32
-#define HIERARCHY_DEFAULT           HIERARCHY_NONE
-
-#endif
-
-//#if defined (UK) && defined (HP_CODERATE_DEFAULT)
-//#error Multible countries defined
-//#endif
-
-#ifndef DVB_T_LOCATION
 
 /* AUTO settings */
 #define DVB_T_LOCATION		    "Automatic"
@@ -113,8 +45,6 @@
 #define TRANSMISSION_MODE_DEFAULT   TRANSMISSION_MODE_AUTO
 #define GUARD_INTERVAL_DEFAULT      GUARD_INTERVAL_AUTO
 #define HIERARCHY_DEFAULT           HIERARCHY_NONE
-
-#endif
 
 #if HIERARCHY_DEFAULT == HIERARCHY_NONE && !defined (LP_CODERATE_DEFAULT)
 #define LP_CODERATE_DEFAULT (FEC_NONE) /* unused if HIERARCHY_NONE */

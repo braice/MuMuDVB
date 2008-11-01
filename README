@@ -72,10 +72,7 @@ In order to install mumudvb type :
 make
 make install (with root user)
 
-If you want use defalts values for DVB-T tuning (optionnal, for more details see src/dvb_defaults.h) type
-"make FRANCE=1" instead of "make"
-
-Without specifiying the country the default values are Auto for everything excepted the banwith wich is set to 8MHz
+For DVB-T the default values are Auto for everything excepted the banwith wich is set to 8MHz
 
 = Usage =
 

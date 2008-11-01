@@ -73,11 +73,7 @@ make install (en root)
 
 C'est tout!
 
-Si vous voulez utiliser les valeurs par défaut pour la TNT tapez "make FRANCE=1"
-au lieu de "make"
-
-Si vous ne spécifiez pas de pays à la compilation, les valeurs par défaut sont auto pour tous les paramètres, excepté pour la bande passante définie à 8MHz.
-
+Pour la TNT,n, les valeurs par défaut sont auto pour tous les paramètres, excepté pour la bande passante définie à 8MHz.
 
 = Utilisation =
 

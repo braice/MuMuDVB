@@ -16,22 +16,6 @@ ifdef DEBUG
   CFLAGS += -g
 endif
 
-ifdef UK
-  CFLAGS += -DUK
-endif
-
-ifdef FINLAND
-  CFLAGS += -DFINLAND
-endif
-
-ifdef FINLAND2
-  CFLAGS += -DFINLAND2
-endif
-
-ifdef FRANCE
-  CFLAGS += -DFRANCE
-endif
-
 .PHONY: all clean clean_objs install uninstall
 
 all: $(OUT)
