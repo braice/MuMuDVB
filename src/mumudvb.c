@@ -239,8 +239,8 @@ main (int argc, char **argv)
   };
   int c, option_index = 0;
 
-  //paranoia
-  sap_organisation[0]=0;
+  //default value
+  sprintf(sap_organisation,"none");
 
   // Initialise PID map
   for (k = 0; k < 8192; k++)
