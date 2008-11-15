@@ -92,15 +92,17 @@ int sap_interval=SAP_DEFAULT_INTERVAL;
 char sap_sending_ip[20]="0.0.0.0";
 char sap_default_group[20]="";
 
-//autoconfiguration
-int autoconfiguration = 0;           //Do we use autoconfiguration ?
-//Possible values for this variable
-// 0 : none (or autoconf finished)
-// 1 : we have the PMT pids and the channels, we search the audio and video
-// 2 : we have only the tuning parameters, we search the channels and their pmt pids
-char autoconf_ip_header[10]="239.100";
 
-long time_start_autoconfiguration=0; //When did we started autoconfiguration ?
+//autoconfiguration. C99 initialisation
+autoconf_parameters_t autoconf_vars={
+  .autoconfiguration=0,
+  .autoconf_ip_header="239.100",
+  .time_start_autoconfiguration=0,
+  .autoconf_temp_pmt=NULL,
+  .autoconf_temp_pat=NULL,
+  .autoconf_temp_sdt=NULL,
+  .services=NULL,
+  };
 
 
 //logging
@@ -171,7 +173,7 @@ main (int argc, char **argv)
   //TODO : check frontend capabilities
 
   fe_hierarchy_t hier = HIERARCHY_DEFAULT;
-  uint8_t diseqc = 0; //satellite number //TODO : test diseqc
+  uint8_t diseqc = 0; //satellite number 
 
   //MPEG2-TS reception and sort
   int pid;			// pid of the current mpeg2 packet
@@ -220,12 +222,6 @@ main (int argc, char **argv)
   int i;
   mumudvb_ts_packet_t *cam_pmt_ptr=NULL;
   int cam_number=0;
-
-  //for autoconfiguration
-  mumudvb_ts_packet_t *autoconf_temp_pmt=NULL;
-  mumudvb_ts_packet_t *autoconf_temp_pat=NULL;
-  mumudvb_ts_packet_t *autoconf_temp_sdt=NULL;
-  mumudvb_service_t   *services=NULL;
 
 
   //Getopt
@@ -375,15 +371,15 @@ main (int argc, char **argv)
       else if (!strcmp (substring, "autoconfiguration"))
 	{
 	  substring = strtok (NULL, delimiteurs);
-	  autoconfiguration = atoi (substring);
-	  if((autoconfiguration==1)||(autoconfiguration==2))
+	  autoconf_vars.autoconfiguration = atoi (substring);
+	  if((autoconf_vars.autoconfiguration==1)||(autoconf_vars.autoconfiguration==2))
 	    {
 	      log_message( MSG_WARN,
 			"!!! You have enabled the support for autoconfiguration, this is a beta feature.Please report any bug/comment\n");
 	    }
 	  else
-	    autoconfiguration=0;
-	  if(autoconfiguration==2)
+	    autoconf_vars.autoconfiguration=0;
+	  if(autoconf_vars.autoconfiguration==2)
 	    {
 	      log_message( MSG_INFO,
 			"Full autoconfiguration, we activate SAP announces. if you want to desactivate them see the README.\n");
@@ -399,7 +395,7 @@ main (int argc, char **argv)
 			   "The sap sending ip is too long\n");
 	      exit(ERROR_CONF);
 	    }
-	  sscanf (substring, "%s\n", autoconf_ip_header);
+	  sscanf (substring, "%s\n", autoconf_vars.autoconf_ip_header);
 	}
       else if (!strcmp (substring, "sap"))
 	{
@@ -863,42 +859,42 @@ main (int argc, char **argv)
   //packet structures
   /*****************************************************/
 
-  //TODO : use mumudvb_close in case of a malloc issue
-  if(autoconfiguration)
+  if(autoconf_vars.autoconfiguration)
     {
-      autoconf_temp_pmt=malloc(sizeof(mumudvb_ts_packet_t));
-      if(autoconf_temp_pmt==NULL)
+      autoconf_vars.autoconf_temp_pmt=malloc(sizeof(mumudvb_ts_packet_t));
+      if(autoconf_vars.autoconf_temp_pmt==NULL)
 	{
 	  log_message( MSG_ERROR,"MALLOC\n");
-	  return -1;
+	  return mumudvb_close(100>>8, cam_pmt_ptr);
 	}
-      memset (autoconf_temp_pmt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+      memset (autoconf_vars.autoconf_temp_pmt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
     }
-  if(autoconfiguration==2)
+  if(autoconf_vars.autoconfiguration==2)
     {
       if(common_port==0)
 	common_port=1234;
-      autoconf_temp_pat=malloc(sizeof(mumudvb_ts_packet_t));
-      if(autoconf_temp_pat==NULL)
+      autoconf_vars.autoconf_temp_pat=malloc(sizeof(mumudvb_ts_packet_t));
+      if(autoconf_vars.autoconf_temp_pat==NULL)
 	{
 	  log_message( MSG_ERROR,"MALLOC\n");
-	  return -1;
+	  return mumudvb_close(100>>8, cam_pmt_ptr);
 	}
-      memset (autoconf_temp_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-      autoconf_temp_sdt=malloc(sizeof(mumudvb_ts_packet_t));
-      if(autoconf_temp_sdt==NULL)
+      memset (autoconf_vars.autoconf_temp_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+      autoconf_vars.autoconf_temp_sdt=malloc(sizeof(mumudvb_ts_packet_t));
+      if(autoconf_vars.autoconf_temp_sdt==NULL)
 	{
 	  log_message( MSG_ERROR,"MALLOC\n");
-	  return -1;
+	  return mumudvb_close(100>>8, cam_pmt_ptr);
+	  
 	}
-      memset (autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-      services=malloc(sizeof(mumudvb_service_t));
-      if(services==NULL)
+      memset (autoconf_vars.autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+      autoconf_vars.services=malloc(sizeof(mumudvb_service_t));
+      if(autoconf_vars.services==NULL)
 	{
 	  log_message( MSG_ERROR,"MALLOC\n");
-	  return -1;
+	  return mumudvb_close(100>>8, cam_pmt_ptr);
 	}
-      memset (services, 0, sizeof( mumudvb_service_t));//we clear it
+      memset (autoconf_vars.services, 0, sizeof( mumudvb_service_t));//we clear it
 
     }
 
@@ -907,7 +903,7 @@ main (int argc, char **argv)
       channels[curr_channel].nb_bytes=0;
       //If there is more than one pid in one channel we mark it
       //For no autoconfiguration
-      if(autoconfiguration==1 && channels[curr_channel].num_pids>1)
+      if(autoconf_vars.autoconfiguration==1 && channels[curr_channel].num_pids>1)
 	{
 	  log_message( MSG_DETAIL, "Autoconf : Autoconfiguration desactivated for channel \"%s\" \n", channels[curr_channel].name);
 	  channels[curr_channel].autoconfigurated=1;
@@ -976,7 +972,7 @@ main (int argc, char **argv)
 
   // we open the file descriptors
   if (create_card_fd (card, number_of_channels, channels, mandatory_pid, &fds) < 0)
-    return -1;
+    return mumudvb_close(100>>8, cam_pmt_ptr);
 
   //File descriptor for polling
   pfds[0].fd = fds.fd_dvr;
@@ -1032,13 +1028,13 @@ main (int argc, char **argv)
   // Information about streamed channels
   /*****************************************************/
 
-  if(autoconfiguration!=2)
+  if(autoconf_vars.autoconfiguration!=2)
     {
       log_streamed_channels(number_of_channels, channels);
     }
 
 
-  if( autoconfiguration)
+  if(autoconf_vars.autoconfiguration)
     log_message(MSG_INFO,"Autoconfiguration Start\n");
 
   /******************************************************/
@@ -1086,18 +1082,18 @@ main (int argc, char **argv)
 	  /*************************************************************************************/
 	  /****              AUTOCONFIGURATION PART                                         ****/
 	  /*************************************************************************************/
-	  if( autoconfiguration==2) //Full autoconfiguration, we search the channels and their names
+	  if( autoconf_vars.autoconfiguration==2) //Full autoconfiguration, we search the channels and their names
 	    {
 	      if(pid==0) //PAT : contains the services identifiers and the pmt pid for each service
 		{
-		  if(get_ts_packet(temp_buffer_from_dvr,autoconf_temp_pat))
+		  if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_pat))
 		    {
 		      //log_message(MSG_DEBUG,"Autoconf : New PAT pid\n");
-		      if(autoconf_read_pat(autoconf_temp_pat,services))
+		      if(autoconf_read_pat(autoconf_vars.autoconf_temp_pat,autoconf_vars.services))
 			{
 			  log_message(MSG_DEBUG,"Autoconf : It seems that we have finished *\n");
 			  //Interrupted=1;
-			  number_of_channels=services_to_channels(services, channels, cam_support,common_port, card); //Convert the list of services into channels
+			  number_of_channels=services_to_channels(autoconf_vars.services, channels, cam_support,common_port, card); //Convert the list of services into channels
 			  if (complete_card_fds(card, number_of_channels, channels, &fds,0) < 0)
 			    {
 			      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");
@@ -1107,8 +1103,6 @@ main (int argc, char **argv)
 
 			  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 			    {
-			      //if (create_card_fd (card, number_of_channels, channels, mandatory_pid, &fds) < 0)
-			      //return -1;
 			      //filters
 			      set_ts_filt (fds.fd[curr_channel][0], channels[curr_channel].pids[0], DMX_PES_OTHER);
 			      // Init udp
@@ -1117,36 +1111,36 @@ main (int argc, char **argv)
 			    }
 
 			  log_message(MSG_DEBUG,"Autoconf : Step TWO, we get the video ond audio PIDs\n");
-			  free(autoconf_temp_sdt);
-			  free(autoconf_temp_pat);
-			  autoconfiguration=1; //Next step add video and audio pids
+			  free(autoconf_vars.autoconf_temp_sdt);
+			  free(autoconf_vars.autoconf_temp_pat);
+			  autoconf_vars.autoconfiguration=1; //Next step add video and audio pids
 			}
-		      memset (autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
+		      memset (autoconf_vars.autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
 		    }
 		}
 	      if(pid==17) //SDT : contains the names of the services
 		{
-		  if(get_ts_packet(temp_buffer_from_dvr,autoconf_temp_sdt))
+		  if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_sdt))
 		    {
 		      //log_message(MSG_DEBUG,"Autoconf : New SDT pid\n");
-		      autoconf_read_sdt(autoconf_temp_sdt->packet,autoconf_temp_sdt->len,services);
-		      memset (autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+		      autoconf_read_sdt(autoconf_vars.autoconf_temp_sdt->packet,autoconf_vars.autoconf_temp_sdt->len,autoconf_vars.services);
+		      memset (autoconf_vars.autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 		    }
 		}
 	      continue;
 	    }
-	  if( autoconfiguration==1) //We have the channels and their PMT, we search the other pids
+	  if( autoconf_vars.autoconfiguration==1) //We have the channels and their PMT, we search the other pids
 	    {
 	      //here we call the autoconfiguration function
 	      for(curr_channel=0;curr_channel<MAX_CHANNELS;curr_channel++)
 		{
 		  if((!channels[curr_channel].autoconfigurated) &&(channels[curr_channel].pids[0]==pid)&& pid)
 		    {
-		      if(get_ts_packet(temp_buffer_from_dvr,autoconf_temp_pmt))
+		      if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_pmt))
 			{
 			  //Now we have the PMT, we parse it
 			  log_message(MSG_DEBUG,"Autoconf : New PMT pid %d for channel %d\n",pid,curr_channel);
-			  autoconf_read_pmt(autoconf_temp_pmt,&channels[curr_channel]);
+			  autoconf_read_pmt(autoconf_vars.autoconf_temp_pmt,&channels[curr_channel]);
 			  log_message(MSG_DETAIL,"Autoconf : Final PIDs for channel %d \"%s\" : ",curr_channel, channels[curr_channel].name);
 			  for(i=0;i<channels[curr_channel].num_pids;i++)
 			    log_message(MSG_DETAIL," %d -",channels[curr_channel].pids[i]);
@@ -1154,17 +1148,17 @@ main (int argc, char **argv)
 			  channels[curr_channel].autoconfigurated=1;
 
 			  //We check if autoconfiguration is finished
-			  autoconfiguration=0;
+			  autoconf_vars.autoconfiguration=0;
 			  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 			    if(!channels[curr_channel].autoconfigurated)
-			      autoconfiguration=1;
+			      autoconf_vars.autoconfiguration=1;
 
 			  //if it's finished, we open the new descriptors and add the new filters
-			  if(autoconfiguration==0)
+			  if(autoconf_vars.autoconfiguration==0)
 			    {
 			      autoconf_end(card, number_of_channels, channels, &fds);
-			      if(autoconf_temp_pmt) 
-				free(autoconf_temp_pmt);
+			      if(autoconf_vars.autoconf_temp_pmt) 
+				free(autoconf_vars.autoconf_temp_pmt);
 			    }
 			}
 		    }
@@ -1224,7 +1218,7 @@ main (int argc, char **argv)
 			  if(cam_pmt_ptr==NULL)
 			    {
 			      log_message( MSG_ERROR,"MALLOC\n");
-			      return -1; 			  //TODO return more cleanly
+			        return mumudvb_close(100>>8, cam_pmt_ptr);
 			    }
 			  memset (cam_pmt_ptr, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 			}
@@ -1282,7 +1276,7 @@ main (int argc, char **argv)
 		}
 	    }
 	  //when we do autoconfiguration, we didn't set all the filters etc, so we don't care about count_non_transmis
-	  if(!autoconfiguration)
+	  if(!autoconf_vars.autoconfiguration)
 	    {
 	      count_non_transmis++;
 	      if (count_non_transmis > ALARM_COUNT_LIMIT)
@@ -1333,7 +1327,15 @@ int mumudvb_close(int Interrupted, mumudvb_ts_packet_t *cam_pmt_ptr)
       free(cam_sys_access);
     }
 
-  //autoconf_temp_pmt et autres autoconf en cas de timeout
+  //autoconf variables freeing
+  if(autoconf_vars.autoconf_temp_sdt)
+    free(autoconf_vars.autoconf_temp_sdt);
+  if(autoconf_vars.autoconf_temp_pmt)
+    free(autoconf_vars.autoconf_temp_pmt);
+  if(autoconf_vars.autoconf_temp_pat)
+    free(autoconf_vars.autoconf_temp_pat);
+  if(autoconf_vars.services)
+    free(autoconf_vars.services);
 
   
   if ((write_streamed_channels)&&remove (nom_fich_chaines_diff)) 
@@ -1411,15 +1413,24 @@ static void SignalHandler (int signum)
       //autoconfiguration
       //We check if we reached the autoconfiguration timeout
       //if it's finished, we open the new descriptors and add the new filters
-      if(autoconfiguration)
+      if(autoconf_vars.autoconfiguration)
 	{
-	  if(!time_start_autoconfiguration)
-	    time_start_autoconfiguration=now;
-	  else if (now-time_start_autoconfiguration>AUTOCONFIGURE_TIME)
+	  if(!autoconf_vars.time_start_autoconfiguration)
+	    autoconf_vars.time_start_autoconfiguration=now;
+	  else if (now-autoconf_vars.time_start_autoconfiguration>AUTOCONFIGURE_TIME)
 	    {
 	      log_message(MSG_WARN,"Autoconf : Warning : Not all the channels were configured before timeout\n");
-	      autoconfiguration=0;
+	      autoconf_vars.autoconfiguration=0;
 	      autoconf_end(card, number_of_channels, channels, &fds);
+	      //We free autoconf memory
+	      if(autoconf_vars.autoconf_temp_sdt)
+		free(autoconf_vars.autoconf_temp_sdt);
+	      if(autoconf_vars.autoconf_temp_pmt)
+		free(autoconf_vars.autoconf_temp_pmt);
+	      if(autoconf_vars.autoconf_temp_pat)
+		free(autoconf_vars.autoconf_temp_pat);
+	      if(autoconf_vars.services)
+		free(autoconf_vars.services);
 	    }
 	}
       //end of autoconfiguration

@@ -54,7 +54,7 @@ mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,
 int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_len);
 void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len);
 
-extern char autoconf_ip_header[10];
+extern autoconf_parameters_t autoconf_vars; //just for autoconf_ip_header
 
 /****************************************************************************/
 //Code from libdvb, strongly modified, with commentaries added
@@ -485,7 +485,7 @@ int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channel
 	      channels[channel_number].num_pids=1;
 	      channels[channel_number].portOut=port;
 	      strcpy(channels[channel_number].name,actual_service->name);
-	      sprintf(ip,"%s.%d.%d", autoconf_ip_header, card, channel_number);
+	      sprintf(ip,"%s.%d.%d", autoconf_vars.autoconf_ip_header, card, channel_number);
 	      strcpy(channels[channel_number].ipOut,ip);
 	      log_message(MSG_DEBUG,"Ip : \"%s\" port : %d\n",channels[channel_number].ipOut,port);
 

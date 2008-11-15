@@ -27,6 +27,7 @@
 #define _AUTOCONF_H
 
 #include "mumudvb.h"
+#include "ts.h"
 
 //chained list of services
 //for autoconfiguration
@@ -40,6 +41,26 @@ typedef struct mumudvb_service_t{
   int free_ca_mode;
   struct mumudvb_service_t *next;
 }mumudvb_service_t;
+
+//The different parameters used for autoconfiguration
+typedef struct autoconf_parameters_t{
+//Do we use autoconfiguration ?
+//Possible values for this variable
+// 0 : none (or autoconf finished)
+// 1 : we have the PMT pids and the channels, we search the audio and video
+// 2 : we have only the tuning parameters, we search the channels and their pmt pids
+  int autoconfiguration;
+  char autoconf_ip_header[10];
+  long time_start_autoconfiguration; //When did we started autoconfiguration ?
+
+  //Different packets used by autoconfiguration
+  mumudvb_ts_packet_t *autoconf_temp_pmt;
+  mumudvb_ts_packet_t *autoconf_temp_pat;
+  mumudvb_ts_packet_t *autoconf_temp_sdt;
+  mumudvb_service_t   *services;
+
+}autoconf_parameters_t;
+
 
 int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel);
 int autoconf_read_sdt(unsigned char *buf, int len, mumudvb_service_t *services);
