@@ -56,8 +56,8 @@ do_stop() {
 
 case "$1" in
   start)
-        if [ ! -f /etc/default/mumudvb/ ]; then
-                log_failure_msg "/etc/default/mumudvb/ not found, Can't start $NAME"
+        if [ ! -f /etc/default/mumudvb ]; then
+                log_failure_msg "/etc/default/mumudvb not found, Can't start $NAME"
                 exit 0
         fi
         
