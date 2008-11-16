@@ -41,16 +41,39 @@ void log_message( int type,
                     const char *psz_format, ... )
 {
   va_list args;
+  int priority;
 
+  priority=LOG_USER;
   va_start( args, psz_format );
+  
 
   if(type<verbosity)
     {
       if (no_daemon || !log_initialised)
 	vfprintf(stderr, psz_format, args );
       else
-	//TODO use verbosity to define log level
-	vsyslog (LOG_USER|LOG_INFO, psz_format, args );
+	{
+	  //what is the priority ?
+	  switch(type)
+	    {
+	    case MSG_ERROR:
+	      priority|=LOG_ERR;
+	      break;
+	    case MSG_WARN:
+	      priority|=LOG_WARNING;
+	      break;
+	    case MSG_INFO:
+	      priority|=LOG_INFO;
+	      break;
+	    case MSG_DETAIL:
+	      priority|=LOG_NOTICE;
+	    break;
+	    case MSG_DEBUG:
+	      priority|=LOG_DEBUG;
+	      break;
+	    }
+	  vsyslog (priority, psz_format, args );
+	}
     }
 
   va_end( args );

@@ -95,7 +95,6 @@ sap_parameters_t sap_vars={
   .sap_organisation="none",
 };
 
-
 //autoconfiguration. C99 initialisation
 autoconf_parameters_t autoconf_vars={
   .autoconfiguration=0,
@@ -223,8 +222,18 @@ main (int argc, char **argv)
   //do we rewrite the pat pid ?
   int rewrite_pat = 0;
 
+  // Initialise PID map
+  for (k = 0; k < 8192; k++)
+    {
+      hi_mappids[k] = (k >> 8);
+      lo_mappids[k] = (k & 0xff);
+    }
 
+
+
+  /******************************************************/
   //Getopt
+  /******************************************************/
   const char short_options[] = "c:sdhvq";
   const struct option long_options[] = {
     {"config", required_argument, NULL, 'c'},
@@ -235,13 +244,6 @@ main (int argc, char **argv)
   };
   int c, option_index = 0;
 
-
-  // Initialise PID map
-  for (k = 0; k < 8192; k++)
-    {
-      hi_mappids[k] = (k >> 8);
-      lo_mappids[k] = (k & 0xff);
-    }
 
 
   if (argc == 1)
@@ -293,7 +295,9 @@ main (int argc, char **argv)
       exit(ERROR_ARGS);
     }
   
+  /******************************************************/
   //end of command line options parsing
+  /******************************************************/
   
   // DO NOT REMOVE (make mumudvb a deamon)
   if(!no_daemon)
@@ -1238,7 +1242,6 @@ main (int argc, char **argv)
 		     rewrite_pat ) //AND we asked for rewrite
 		  {
 		    memcpy(temp_buffer_from_dvr,saved_pat_buffer,TS_PACKET_SIZE); //We restore the full PAT
-		    //TODO : test if pat_rewrite still works
 		    //and we try to rewrite it
 		    if(pat_rewrite(temp_buffer_from_dvr,channels[curr_channel].num_pids,channels[curr_channel].pids)) //We try rewrite and if there's an error...
 		      send_packet=0;//... we don't send it anyway
@@ -1302,7 +1305,9 @@ main (int argc, char **argv)
   
 }
 
-//TODO : use this function in case of error instead of a violent return and make it close only opened stuff
+/******************************************************/
+//Clean closing and freeing
+/******************************************************/
 int mumudvb_close(int Interrupted)
 {
 

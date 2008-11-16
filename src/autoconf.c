@@ -57,7 +57,7 @@ void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len);
 extern autoconf_parameters_t autoconf_vars; //just for autoconf_ip_header
 
 /****************************************************************************/
-//Code from libdvb, strongly modified, with commentaries added
+//Parts of this code from libdvb, strongly modified, with commentaries added
 //read the pmt for autoconfiguration
 /****************************************************************************/
 
@@ -135,8 +135,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 	    channel->num_pids++;
 	  }
 	log_message( MSG_DEBUG,"Autoconf : Number of pids after autoconf %d\n", channel->num_pids);
-	return 0;
-	  
+	return 0; 
 }
 
 //Tells if the descriptor with tag in present in buf
@@ -247,9 +246,9 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
   sdt_descr_t *descr_header;
   mumudvb_service_t *new_service=NULL;
 
-  header=(sdt_t *)buf; //on mappe l'en tete sur le paquet
+  header=(sdt_t *)buf; //we map the packet over the header structure (simpler parsing)
 
-  //On ne regarde que les tables
+  //We look only for the followidg tables
   //0x42 service_description_section - actual_transport_stream
   //0x46 service_description_section - other_transport_stream
   if((header->table_id==0x42)||(header->table_id==0x46))
@@ -280,7 +279,7 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
 		case 4:
 		  log_message(MSG_DEBUG, "running\t");
 		}
-	      //we store the datas
+	      //we store the data
 	      new_service->id=HILO(descr_header->service_id);
 	      new_service->running_status=descr_header->running_status;
 	      new_service->free_ca_mode=descr_header->free_ca_mode;
@@ -528,8 +527,7 @@ void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels,
   log_message(MSG_DETAIL,"Autoconf : We open the new descriptors\n");
   if (complete_card_fds(card, number_of_channels, channels, fds,1) < 0)
     {
-      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors\n");
-      //return -1; //TODO !!!!!!!!! ADD AN ERROR
+      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors Some channels will probably not work\n");
     }
   log_message(MSG_DETAIL,"Autoconf : Add the new filters\n");
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
