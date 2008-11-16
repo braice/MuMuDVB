@@ -27,8 +27,7 @@
 #include "udp.h"
 #include <string.h>
 
-extern char sap_sending_ip[20];
-extern char sap_default_group[20];
+extern sap_parameters_t sap_vars; 
 
 extern int multicast_ttl;
 
@@ -42,7 +41,7 @@ void sap_send(mumudvb_sap_message_t *sap_messages, int num_messages)
     {
       if(sap_messages[curr_message].to_be_sent)
 	{
-	  sendudp (sap_socketOut, &sap_sOut, sap_messages[curr_message].buf, sap_messages[curr_message].len);
+	  sendudp (sap_vars.sap_socketOut, &sap_vars.sap_sOut, sap_messages[curr_message].buf, sap_messages[curr_message].len);
 	  sent_messages++;
 	}
     }
@@ -55,7 +54,7 @@ void sap_send(mumudvb_sap_message_t *sap_messages, int num_messages)
 //SAP_update : update the contents of the sap message
 int sap_update(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_message)
 {
-  //TAILLE DU PAQUET < MTU
+  //PACKET Size < MTU
   
   //This function is called when the channel changes so it increases the version and update the packet
   char temp_string[256];
@@ -72,7 +71,7 @@ int sap_update(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_message)
   sap_message->buf[2]=(sap_message->version&0xff00)>>8;
   sap_message->buf[3]=sap_message->version&0xff;
 
-  if( inet_aton(sap_sending_ip, &ip_struct))
+  if( inet_aton(sap_vars.sap_sending_ip, &ip_struct))
     {
       ip=ip_struct.s_addr;
       /* Bytes 4-7 (or 4-19) byte: Originating source */
@@ -139,7 +138,7 @@ int sap_add_program(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_messag
   //c=...
 
   sprintf(temp_string,"v=0\r\no=%s %d %d IN IP4 %s\r\ns=%s\r\nc=IN IP4 %s/%d\r\n", 
-	  sap_organisation, sap_serial, sap_message->version, channel.ipOut,
+	  sap_vars.sap_organisation, sap_vars.sap_serial, sap_message->version, channel.ipOut,
 	  channel.name, 
 	  channel.ipOut, multicast_ttl);
   if( (sap_message->len+payload_len+strlen(temp_string))>1024)
@@ -175,12 +174,12 @@ int sap_add_program(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_messag
   memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
   payload_len+=strlen(temp_string);
 
-  if(strlen(channel.sap_group)||strlen(sap_default_group))
+  if(strlen(channel.sap_group)||strlen(sap_vars.sap_default_group))
     {
       if(strlen(channel.sap_group))
 	sprintf(temp_string,"a=x-plgroup:%s\r\n", channel.sap_group);
       else
-	sprintf(temp_string,"a=x-plgroup:%s\r\n", sap_default_group);
+	sprintf(temp_string,"a=x-plgroup:%s\r\n", sap_vars.sap_default_group);
       if( (sap_message->len+payload_len+strlen(temp_string))>1024)
 	{
 	  log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel.name);
@@ -190,7 +189,7 @@ int sap_add_program(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_messag
       payload_len+=strlen(temp_string);
     }
   log_message(MSG_DEBUG,"DEBUG : SAP payload\n");
-  log_message(MSG_DEBUG, &sap_message->buf[sap_message->len]);
+  log_message(MSG_DEBUG, (char *) &sap_message->buf[sap_message->len]);
   log_message(MSG_DEBUG,"DEBUG : end of SAP payload\n\n");
 
   sap_message->len+=payload_len;

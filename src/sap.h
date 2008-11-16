@@ -48,13 +48,21 @@ typedef struct{
   int to_be_sent;
 }mumudvb_sap_message_t;
 
-char sap_organisation[256];
 
-struct sockaddr_in sap_sOut;
-int sap_socketOut;
 
-int sap_serial;
-long sap_last_time_sent;
+typedef struct sap_parameters_t{
+  mumudvb_sap_message_t *sap_messages; //the sap message...
+  int sap; //do we send sap announces ?
+  int sap_interval; //Interval between two sap announce
+  char sap_sending_ip[20];
+  char sap_default_group[20]; //the x-plgroup default
+  char sap_organisation[256]; //The organisation wich made the announces
+  int sap_socketOut;
+  struct sockaddr_in sap_sOut;
+  int sap_serial;
+  long sap_last_time_sent;
+}sap_parameters_t;
+
 
 void sap_send(mumudvb_sap_message_t *sap_messages, int num_messages);
 int sap_update(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_message);

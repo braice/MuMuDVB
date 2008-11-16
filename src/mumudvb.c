@@ -85,12 +85,15 @@ char nom_fich_chaines_non_diff[256];
 char nom_fich_pid[256];
 int  write_streamed_channels=1;
 
-//sap announces
-mumudvb_sap_message_t sap_messages[MAX_CHANNELS]; //the sap message... //TODO : allocate dynamically
-int sap=0; //do we send sap announces ?
-int sap_interval=SAP_DEFAULT_INTERVAL;
-char sap_sending_ip[20]="0.0.0.0";
-char sap_default_group[20]="";
+//sap announces C99 initialisation
+sap_parameters_t sap_vars={
+  .sap_messages=NULL, 
+  .sap=0, //No sap by default
+  .sap_interval=SAP_DEFAULT_INTERVAL,
+  .sap_sending_ip="0.0.0.0",
+  .sap_default_group="",
+  .sap_organisation="none",
+};
 
 
 //autoconfiguration. C99 initialisation
@@ -235,8 +238,6 @@ main (int argc, char **argv)
   };
   int c, option_index = 0;
 
-  //default value
-  sprintf(sap_organisation,"none");
 
   // Initialise PID map
   for (k = 0; k < 8192; k++)
@@ -383,7 +384,7 @@ main (int argc, char **argv)
 	    {
 	      log_message( MSG_INFO,
 			"Full autoconfiguration, we activate SAP announces. if you want to desactivate them see the README.\n");
-	      sap=1;
+	      sap_vars.sap=1;
 	    }
 	}
       else if (!strcmp (substring, "autoconf_ip_header"))
@@ -400,8 +401,8 @@ main (int argc, char **argv)
       else if (!strcmp (substring, "sap"))
 	{
 	  substring = strtok (NULL, delimiteurs);
-	  sap = atoi (substring);
-	  if(sap)
+	  sap_vars.sap = atoi (substring);
+	  if(sap_vars.sap)
 	    {
 	      log_message( MSG_WARN,
 			"!!! You have enabled the support for sap announces, this is a beta feature.Please report any bug/comment\n");
@@ -410,14 +411,14 @@ main (int argc, char **argv)
       else if (!strcmp (substring, "sap_interval"))
 	{
 	  substring = strtok (NULL, delimiteurs);
-	  sap_interval = atoi (substring);
+	  sap_vars.sap_interval = atoi (substring);
 	}
       else if (!strcmp (substring, "sap_organisation"))
 	{
 	  // other substring extraction method in order to keep spaces
 	  substring = strtok (NULL, "=");
 	  if (!(strlen (substring) >= 255 - 1))
-	    strcpy(sap_organisation,strtok(substring,"\n"));	
+	    strcpy(sap_vars.sap_organisation,strtok(substring,"\n"));	
 	  else
 	    {
 		log_message( MSG_INFO,"Sap Organisation name too long\n");
@@ -432,7 +433,7 @@ main (int argc, char **argv)
 			   "The sap sending ip is too long\n");
 	      exit(ERROR_CONF);
 	    }
-	  sscanf (substring, "%s\n", sap_sending_ip);
+	  sscanf (substring, "%s\n", sap_vars.sap_sending_ip);
 	}
       else if (!strcmp (substring, "freq"))
 	{
@@ -489,7 +490,7 @@ main (int argc, char **argv)
 	}
       else if (!strcmp (substring, "sap_group"))
 	{
-	  if (sap==0)
+	  if (sap_vars.sap==0)
 	    {
 	      log_message( MSG_WARN,
 			"Warning : you have not activated sap, the sap group will not be taken in account\n");
@@ -506,7 +507,7 @@ main (int argc, char **argv)
 	}
       else if (!strcmp (substring, "sap_default_group"))
 	{
-	  if (sap==0)
+	  if (sap_vars.sap==0)
 	    {
 	      log_message( MSG_WARN,
 			"Warning : you have not activated sap, the sap group will not be taken in account\n");
@@ -519,7 +520,7 @@ main (int argc, char **argv)
 			   "The sap default group is too long\n");
 	      exit(ERROR_CONF);
 	    }
-	  sscanf (substring, "%s\n", sap_default_group);
+	  sscanf (substring, "%s\n", sap_vars.sap_default_group);
 	}
       else if (!strcmp (substring, "common_port"))
 	{
@@ -1012,14 +1013,21 @@ main (int argc, char **argv)
   // init sap
   /*****************************************************/
 
-  if(sap)
+  if(sap_vars.sap)
     {
+      sap_vars.sap_messages=malloc(sizeof(mumudvb_sap_message_t)*MAX_CHANNELS);
+      if(sap_vars.sap_messages==NULL)
+	{
+	  log_message( MSG_ERROR,"MALLOC\n");
+	  return mumudvb_close(100>>8, cam_pmt_ptr);
+	}
+      memset (sap_vars.sap_messages, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
       //For sap announces, we open the socket
-      sap_socketOut =  makeclientsocket (SAP_IP, SAP_PORT, SAP_TTL, &sap_sOut);
-      if(!strlen(sap_organisation))
-	sprintf(sap_organisation,"mumudvb");
-      sap_serial= 1 + (int) (424242.0 * (rand() / (RAND_MAX + 1.0)));
-      sap_last_time_sent = 0;
+      sap_vars.sap_socketOut =  makeclientsocket (SAP_IP, SAP_PORT, SAP_TTL, &sap_vars.sap_sOut);
+      if(!strlen(sap_vars.sap_organisation))
+	sprintf(sap_vars.sap_organisation,"mumudvb");
+      sap_vars.sap_serial= 1 + (int) (424242.0 * (rand() / (RAND_MAX + 1.0)));
+      sap_vars.sap_last_time_sent = 0;
       //todo : loop to create the version
     }
 
@@ -1337,6 +1345,8 @@ int mumudvb_close(int Interrupted, mumudvb_ts_packet_t *cam_pmt_ptr)
   if(autoconf_vars.services)
     free(autoconf_vars.services);
 
+  //sap variables freeing
+  free(sap_vars.sap_messages);
   
   if ((write_streamed_channels)&&remove (nom_fich_chaines_diff)) 
     {
@@ -1437,19 +1447,19 @@ static void SignalHandler (int signum)
       else //we are not doing autoconfiguration we can do something else
 	{
 	  //sap announces
-	  if(!sap_last_time_sent)
+	  if(!sap_vars.sap_last_time_sent)
 	    {
 	      // it's the first time we are here, we initialize all the channels
 	      for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 		{
-		  sap_update(channels[curr_channel], &sap_messages[curr_channel]);
+		  sap_update(channels[curr_channel], &sap_vars.sap_messages[curr_channel]);
 		}
-	      sap_last_time_sent=now-sap_interval-1;
+	      sap_vars.sap_last_time_sent=now-sap_vars.sap_interval-1;
 	    }
-	  if((now-sap_last_time_sent)>=sap_interval)
+	  if((now-sap_vars.sap_last_time_sent)>=sap_vars.sap_interval)
 	    {
-	      sap_send(sap_messages, number_of_channels);
-	      sap_last_time_sent=now;
+	      sap_send(sap_vars.sap_messages, number_of_channels);
+	      sap_vars.sap_last_time_sent=now;
 	    }
 	  //end of sap announces
 
@@ -1460,7 +1470,7 @@ static void SignalHandler (int signum)
 			     "Channel \"%s\" back.Card %d\n",
 			     channels[curr_channel].name, card);
 		channels[curr_channel].streamed_channel_old = 1;	// update
-		sap_update(channels[curr_channel], &sap_messages[curr_channel]);
+		sap_update(channels[curr_channel], &sap_vars.sap_messages[curr_channel]); //Channel status changed, we update the sap announces
 	      }
 	    else if ((channels[curr_channel].streamed_channel_old) && (channels[curr_channel].streamed_channel < 30))
 	      {
@@ -1468,7 +1478,7 @@ static void SignalHandler (int signum)
 			     "Channel \"%s\" down.Card %d\n",
 			     channels[curr_channel].name, card);
 		channels[curr_channel].streamed_channel_old = 0;	// update
-		sap_update(channels[curr_channel], &sap_messages[curr_channel]);
+		sap_update(channels[curr_channel], &sap_vars.sap_messages[curr_channel]); //Channel status changed, we update the sap announces
 	      }
 
 	  /*******************************************/
