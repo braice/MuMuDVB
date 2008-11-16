@@ -34,22 +34,21 @@ do_start() {
         chown $DAEMONUSER:$DAEMONUSER $PIDDIR
 	eval $LAUNCH_BEFORE_MUMU
 	for ADAPTER in $ADAPTERS; do
-		#Todo : add mumudvb opts
 		#Todo : fails if all card fails
-		log_daemon_msg "\t Card $ADAPTER"
+		log_daemon_msg "     Card $ADAPTER"
 		eval CONFIG_FILE=\$MUMUDVB_CONF_$ADAPTER 
 		if [ ! -f $CONFIG_FILE ]; then
-                   log_warning_msg "\t\tConfig file $CONFIG_FILE not found."
+                   log_warning_msg "        Config file $CONFIG_FILE not found."
 		else
-		   start-stop-daemon --start --oknodo --pidfile "$PIDDIR/mumudvb_carte$PIDFILE.pid" \
-               		 --exec $DAEMON -- $DAEMON_OPTS -c $CONFIG_FILE
+		   start-stop-daemon --start --oknodo --pidfile "$PIDDIR/mumudvb_carte$ADAPTER.pid"\ 
+               		 --chuid $DAEMONUSER --exec $DAEMON -- $DAEMON_OPTS -c $CONFIG_FILE
 		fi
 	done
 }
 
 do_stop() {
 	for PIDFILE in `ls $PIDDIR/mumudvb_carte*.pid 2> /dev/null`; do
-	        start-stop-daemon --stop --oknodo --quiet --pidfile "$PIDDIR/mumudvb_carte$PIDFILE.pid" \
+	        start-stop-daemon --stop --oknodo --pidfile "$PIDFILE" \
         	        --exec $DAEMON 
 	done
 }
