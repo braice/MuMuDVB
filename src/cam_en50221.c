@@ -467,7 +467,7 @@ static int SPDUSend( access_sys_t * p_sys, int i_session_id,
  * SessionOpen
  *****************************************************************************/
 static void SessionOpen( access_sys_t * p_sys, uint8_t i_slot,
-                         uint8_t *p_spdu, int i_size )
+                         uint8_t *p_spdu )
 {
     int i_session_id;
     int i_resource_id = ResourceIdToInt( &p_spdu[2] );
@@ -547,8 +547,8 @@ static void SessionOpen( access_sys_t * p_sys, uint8_t i_slot,
 /*****************************************************************************
  * SessionCreateResponse
  *****************************************************************************/
-static void SessionCreateResponse( access_sys_t * p_sys, uint8_t i_slot,
-                                   uint8_t *p_spdu, int i_size )
+static void SessionCreateResponse( access_sys_t * p_sys,
+                                   uint8_t *p_spdu )
 {
     int i_status = p_spdu[2];
     int i_resource_id = ResourceIdToInt( &p_spdu[3] );
@@ -667,13 +667,13 @@ static void SPDUHandle( access_sys_t * p_sys, uint8_t i_slot,
     case ST_OPEN_SESSION_REQUEST:
         if ( i_size != 6 || p_spdu[1] != 0x4 )
             return;
-        SessionOpen( p_sys, i_slot, p_spdu, i_size );
+        SessionOpen( p_sys, i_slot, p_spdu );
         break;
 
     case ST_CREATE_SESSION_RESPONSE:
         if ( i_size != 9 || p_spdu[1] != 0x7 )
             return;
-        SessionCreateResponse( p_sys, i_slot, p_spdu, i_size );
+        SessionCreateResponse( p_sys, p_spdu );
         break;
 
     case ST_CLOSE_SESSION_REQUEST:
@@ -815,10 +815,8 @@ static int APDUSend( access_sys_t * p_sys, int i_session_id, int i_tag,
         }
         else
         {
-            char *psz_hex;
             ca_msg.length = i_size + p - p_apdu;
             if ( i_size == 0 ) ca_msg.length=3;
-            psz_hex = (char*)malloc( ca_msg.length*3 + 1);
             memcpy( ca_msg.msg, p_apdu, i_size + p - p_apdu );
             i_ret = ioctl(p_sys->i_ca_handle, CA_SEND_MSG, &ca_msg );
             if ( i_ret < 0 )
@@ -1389,7 +1387,7 @@ static void MMIDisplayReply( access_sys_t * p_sys, int i_session_id )
 /*****************************************************************************
  * MMIGetText
  *****************************************************************************/
-static char *MMIGetText( access_sys_t * p_sys, uint8_t **pp_apdu, int *pi_size )
+static char *MMIGetText( uint8_t **pp_apdu, int *pi_size )
 {
     int i_tag = APDUGetTag( *pp_apdu, *pi_size );
     int l;
@@ -1415,7 +1413,7 @@ static char *MMIGetText( access_sys_t * p_sys, uint8_t **pp_apdu, int *pi_size )
  * MMIHandleEnq
  *****************************************************************************/
 static void MMIHandleEnq( access_sys_t * p_sys, int i_session_id,
-                          uint8_t *p_apdu, int i_size )
+                          uint8_t *p_apdu )
 {
     mmi_t *p_mmi = (mmi_t *)p_sys->p_sessions[i_session_id - 1].p_sys;
     int i_slot = p_sys->p_sessions[i_session_id - 1].i_slot;
@@ -1441,7 +1439,7 @@ static void MMIHandleEnq( access_sys_t * p_sys, int i_session_id,
  * MMIHandleMenu
  *****************************************************************************/
 static void MMIHandleMenu( access_sys_t * p_sys, int i_session_id, int i_tag,
-                           uint8_t *p_apdu, int i_size )
+                           uint8_t *p_apdu )
 {
     mmi_t *p_mmi = (mmi_t *)p_sys->p_sessions[i_session_id - 1].p_sys;
     int i_slot = p_sys->p_sessions[i_session_id - 1].i_slot;
@@ -1463,7 +1461,7 @@ static void MMIHandleMenu( access_sys_t * p_sys, int i_session_id, int i_tag,
         if ( l > 0 )                                                        \
         {                                                                   \
             p_mmi->last_object.u.menu.psz_##x                               \
-                            = MMIGetText( p_sys, &d, &l );               \
+                            = MMIGetText( &d, &l );                         \
             log_message( MSG_INFO,"CAM : MMI " #x  ": %s\n",                \
                      p_mmi->last_object.u.menu.psz_##x );                   \
         }
@@ -1475,7 +1473,7 @@ static void MMIHandleMenu( access_sys_t * p_sys, int i_session_id, int i_tag,
 
         while ( l > 0 )
         {
-            char *psz_text = MMIGetText( p_sys, &d, &l );
+            char *psz_text = MMIGetText( &d, &l );
             TAB_APPEND( p_mmi->last_object.u.menu.i_choices,
                         p_mmi->last_object.u.menu.ppsz_choices,
                         psz_text );
@@ -1522,12 +1520,12 @@ static void MMIHandle( access_sys_t * p_sys, int i_session_id,
     }
 
     case AOT_ENQ:
-        MMIHandleEnq( p_sys, i_session_id, p_apdu, i_size );
+        MMIHandleEnq( p_sys, i_session_id, p_apdu );
         break;
 
     case AOT_LIST_LAST:
     case AOT_MENU_LAST:
-        MMIHandleMenu( p_sys, i_session_id, i_tag, p_apdu, i_size );
+        MMIHandleMenu( p_sys, i_session_id, i_tag, p_apdu );
         break;
 
     case AOT_CLOSE_MMI:
