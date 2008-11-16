@@ -50,6 +50,8 @@
 #include "ts.h"
 #include "mumudvb.h"
 
+
+
 struct ca_info {
   int initialized; //are the cai complete ?
   int ready; //We wait a pool between each channel sending
@@ -59,12 +61,13 @@ struct ca_info {
 };
 
 
+
 int cam_send_ca_pmt( mumudvb_ts_packet_t *pmt, struct ca_info *cai);
 int convert_desc(struct ca_info *cai, uint8_t *out, uint8_t *buf, int dslen, uint8_t cmd, int quiet);
 int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt, uint8_t list, uint8_t cmd,int quiet);
 
 /*****************************************************************************
- * VLC PART
+ * VLC PART (another mumudvb part below)
  *****************************************************************************/
 
 #define CA_DEV       "/dev/dvb/adapter%d/ca%d"
@@ -209,6 +212,16 @@ en50221_mmi_object_t *en50221_GetMMIObject( access_sys_t * p_sys,
 void en50221_SendMMIObject( access_sys_t * p_sys, int i_slot,
                                 en50221_mmi_object_t *p_object );
 void en50221_End( access_sys_t * );
+
+/*****************************************************************************
+ * MUMUDVB Part
+ *****************************************************************************/
+typedef struct cam_parameters_t{
+  int cam_support;
+  access_sys_t *cam_sys_access;
+  mumudvb_ts_packet_t *cam_pmt_ptr;
+  int cam_number;
+}cam_parameters_t;
 
 
 #endif

@@ -107,21 +107,24 @@ autoconf_parameters_t autoconf_vars={
   .services=NULL,
   };
 
+//CAM (Conditionnal Access Modules : for scrambled channels) C99 initialisation
+cam_parameters_t cam_vars={
+  .cam_support = 0,
+  .cam_pmt_ptr=NULL,
+  .cam_number=0,
+};
 
 //logging
 int log_initialised=0;
 int verbosity = 1;
 
-//CAM (Conditionnal Access Modules : for scrambled channels)
-int cam_support = 0;
-access_sys_t *cam_sys_access;
 
 // file descriptors
 fds_t fds; // defined in dvb.h
 
 // prototypes
 static void SignalHandler (int signum);
-int mumudvb_close(int Interrupted, mumudvb_ts_packet_t *cam_pmt_ptr);
+int mumudvb_close(int Interrupted);
 
 
 void
@@ -150,7 +153,7 @@ usage (char *name)
 int
 main (int argc, char **argv)
 {
-  int k;
+  int k,i;
 
   //polling of the dvr device
   struct pollfd pfds[2];	//  DVR device
@@ -172,11 +175,10 @@ main (int argc, char **argv)
   fe_guard_interval_t guardInterval = GUARD_INTERVAL_DEFAULT;
   fe_code_rate_t HP_CodeRate = HP_CODERATE_DEFAULT, LP_CodeRate =
     LP_CODERATE_DEFAULT;
-
   //TODO : check frontend capabilities
-
   fe_hierarchy_t hier = HIERARCHY_DEFAULT;
   uint8_t diseqc = 0; //satellite number 
+
 
   //MPEG2-TS reception and sort
   int pid;			// pid of the current mpeg2 packet
@@ -220,11 +222,6 @@ main (int argc, char **argv)
 
   //do we rewrite the pat pid ?
   int rewrite_pat = 0;
-
-  //do we support conditionnal access modules ?
-  int i;
-  mumudvb_ts_packet_t *cam_pmt_ptr=NULL;
-  int cam_number=0;
 
 
   //Getopt
@@ -357,8 +354,8 @@ main (int argc, char **argv)
       else if (!strcmp (substring, "cam_support"))
 	{
 	  substring = strtok (NULL, delimiteurs);
-	  cam_support = atoi (substring);
-	  if(cam_support)
+	  cam_vars.cam_support = atoi (substring);
+	  if(cam_vars.cam_support)
 	    {
 	      log_message( MSG_WARN,
 			"!!! You have enabled the support for conditionnal acces modules (scrambled channels), this is a beta feature.Please report any bug/comment\n");
@@ -474,7 +471,7 @@ main (int argc, char **argv)
       else if (!strcmp (substring, "cam_number"))
 	{
 	  substring = strtok (NULL, delimiteurs);
-	  cam_number = atoi (substring);
+	  cam_vars.cam_number = atoi (substring);
 	}
       else if (!strcmp (substring, "ip"))
 	{
@@ -841,17 +838,17 @@ main (int argc, char **argv)
   //cam_support
   /*****************************************************/
 
-  if(cam_support){
+  if(cam_vars.cam_support){
 
-    cam_pmt_ptr=malloc(sizeof(mumudvb_ts_packet_t));
-    cam_sys_access=malloc(sizeof(access_sys_t));
+    cam_vars.cam_pmt_ptr=malloc(sizeof(mumudvb_ts_packet_t));
+    cam_vars.cam_sys_access=malloc(sizeof(access_sys_t));
     //cleaning
     for ( i = 0; i < MAX_PROGRAMS; i++ )
-      cam_sys_access->pp_selected_programs[i]=NULL;
-    CAMOpen(cam_sys_access, card, cam_number);
-    cam_sys_access->cai->initialized=0;
-    cam_sys_access->cai->ready=0;
-    CAMPoll(cam_sys_access); //TODO : check why it sometimes fails --> look if the failure is associated with a non ready slot
+      cam_vars.cam_sys_access->pp_selected_programs[i]=NULL;
+    CAMOpen(cam_vars.cam_sys_access, card, cam_vars.cam_number);
+    cam_vars.cam_sys_access->cai->initialized=0;
+    cam_vars.cam_sys_access->cai->ready=0;
+    CAMPoll(cam_vars.cam_sys_access); //TODO : check why it sometimes fails --> look if the failure is associated with a non ready slot
   }
   
   /*****************************************************/
@@ -866,7 +863,7 @@ main (int argc, char **argv)
       if(autoconf_vars.autoconf_temp_pmt==NULL)
 	{
 	  log_message( MSG_ERROR,"MALLOC\n");
-	  return mumudvb_close(100>>8, cam_pmt_ptr);
+	  return mumudvb_close(100<<8);
 	}
       memset (autoconf_vars.autoconf_temp_pmt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
     }
@@ -878,14 +875,14 @@ main (int argc, char **argv)
       if(autoconf_vars.autoconf_temp_pat==NULL)
 	{
 	  log_message( MSG_ERROR,"MALLOC\n");
-	  return mumudvb_close(100>>8, cam_pmt_ptr);
+	  return mumudvb_close(100<<8);
 	}
       memset (autoconf_vars.autoconf_temp_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
       autoconf_vars.autoconf_temp_sdt=malloc(sizeof(mumudvb_ts_packet_t));
       if(autoconf_vars.autoconf_temp_sdt==NULL)
 	{
 	  log_message( MSG_ERROR,"MALLOC\n");
-	  return mumudvb_close(100>>8, cam_pmt_ptr);
+	  return mumudvb_close(100<<8);
 	  
 	}
       memset (autoconf_vars.autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -893,7 +890,7 @@ main (int argc, char **argv)
       if(autoconf_vars.services==NULL)
 	{
 	  log_message( MSG_ERROR,"MALLOC\n");
-	  return mumudvb_close(100>>8, cam_pmt_ptr);
+	  return mumudvb_close(100<<8);
 	}
       memset (autoconf_vars.services, 0, sizeof( mumudvb_service_t));//we clear it
 
@@ -973,7 +970,7 @@ main (int argc, char **argv)
 
   // we open the file descriptors
   if (create_card_fd (card, number_of_channels, channels, mandatory_pid, &fds) < 0)
-    return mumudvb_close(100>>8, cam_pmt_ptr);
+    return mumudvb_close(100<<8);
 
   //File descriptor for polling
   pfds[0].fd = fds.fd_dvr;
@@ -1019,7 +1016,7 @@ main (int argc, char **argv)
       if(sap_vars.sap_messages==NULL)
 	{
 	  log_message( MSG_ERROR,"MALLOC\n");
-	  return mumudvb_close(100>>8, cam_pmt_ptr);
+	  return mumudvb_close(100<<8);
 	}
       memset (sap_vars.sap_messages, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
       //For sap announces, we open the socket
@@ -1101,7 +1098,7 @@ main (int argc, char **argv)
 			{
 			  log_message(MSG_DEBUG,"Autoconf : It seems that we have finished *\n");
 			  //Interrupted=1;
-			  number_of_channels=services_to_channels(autoconf_vars.services, channels, cam_support,common_port, card); //Convert the list of services into channels
+			  number_of_channels=services_to_channels(autoconf_vars.services, channels, cam_vars.cam_support,common_port, card); //Convert the list of services into channels
 			  if (complete_card_fds(card, number_of_channels, channels, &fds,0) < 0)
 			    {
 			      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");
@@ -1211,24 +1208,24 @@ main (int argc, char **argv)
 	      //cam support
 	      // If we send the packet, we look if it's a cam pmt pid
 	      /******************************************************/
-	      if(cam_support && send_packet==1 &&cam_sys_access->cai->initialized&&cam_sys_access->cai->ready>=3)  //no need to check paquets we don't send
+	      if(cam_vars.cam_support && send_packet==1 &&cam_vars.cam_sys_access->cai->initialized&&cam_vars.cam_sys_access->cai->ready>=3)  //no need to check paquets we don't send
 		{
 		  if ((channels[curr_channel].cam_pmt_pid)&& (channels[curr_channel].cam_pmt_pid == pid))
 		    {
-		      if(get_ts_packet(temp_buffer_from_dvr,cam_pmt_ptr)) 
+		      if(get_ts_packet(temp_buffer_from_dvr,cam_vars.cam_pmt_ptr)) 
 			{
 			  //fprintf(stderr,"HOP\n");
      			  channels[curr_channel].cam_pmt_pid=0; //once we have asked the CAM for this PID, we clear it not to ask it again
-			  cam_pmt_ptr->i_program_number=curr_channel;
-			  en50221_SetCAPMT(cam_sys_access, cam_pmt_ptr, channels);
-			  cam_sys_access->cai->ready=0;
-			  cam_pmt_ptr=malloc(sizeof(mumudvb_ts_packet_t)); //We allocate a new one, the old one is stored in cam_sys_access
-			  if(cam_pmt_ptr==NULL)
+			  cam_vars.cam_pmt_ptr->i_program_number=curr_channel;
+			  en50221_SetCAPMT(cam_vars.cam_sys_access, cam_vars.cam_pmt_ptr, channels);
+			  cam_vars.cam_sys_access->cai->ready=0;
+			  cam_vars.cam_pmt_ptr=malloc(sizeof(mumudvb_ts_packet_t)); //We allocate a new one, the old one is stored in cam_sys_access
+			  if(cam_vars.cam_pmt_ptr==NULL)
 			    {
 			      log_message( MSG_ERROR,"MALLOC\n");
-			        return mumudvb_close(100>>8, cam_pmt_ptr);
+			        return mumudvb_close(100<<8);
 			    }
-			  memset (cam_pmt_ptr, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+			  memset (cam_vars.cam_pmt_ptr, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 			}
 		    }
 		}
@@ -1301,12 +1298,12 @@ main (int argc, char **argv)
   //End of main loop
   /******************************************************/
   
-  return mumudvb_close(Interrupted, cam_pmt_ptr);
+  return mumudvb_close(Interrupted);
   
 }
 
 //TODO : use this function in case of error instead of a violent return and make it close only opened stuff
-int mumudvb_close(int Interrupted, mumudvb_ts_packet_t *cam_pmt_ptr)
+int mumudvb_close(int Interrupted)
 {
 
   int curr_channel;
@@ -1328,11 +1325,11 @@ int mumudvb_close(int Interrupted, mumudvb_ts_packet_t *cam_pmt_ptr)
   // we close the file descriptors
   close_card_fd (number_of_channels, channels, fds);
 
-  if(cam_support)
+  if(cam_vars.cam_support)
     {
-      CAMClose(cam_sys_access);
-      free(cam_pmt_ptr);
-      free(cam_sys_access);
+      CAMClose(cam_vars.cam_sys_access);
+      free(cam_vars.cam_pmt_ptr);
+      free(cam_vars.cam_sys_access);
     }
 
   //autoconf variables freeing
@@ -1513,10 +1510,10 @@ static void SignalHandler (int signum)
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	    channels[curr_channel].streamed_channel = 0;
       
-	  if(cam_support)
+	  if(cam_vars.cam_support)
 	    {
-	      CAMPoll(cam_sys_access);
-	      cam_sys_access->cai->ready++;
+	      CAMPoll(cam_vars.cam_sys_access);
+	      cam_vars.cam_sys_access->cai->ready++;
 	    }
 	}
 
