@@ -1881,7 +1881,8 @@ int en50221_SetCAPMT( access_sys_t * p_sys, mumudvb_ts_packet_t *p_pmt , mumudvb
             if ( !b_needs_descrambling )
             {
                 p_pmt = p_sys->pp_selected_programs[i];
-		free(p_pmt); //braice
+		free(p_pmt);
+		p_pmt=NULL;
                 p_sys->pp_selected_programs[i] = NULL;
             }
             else if( p_pmt != p_sys->pp_selected_programs[i] )
@@ -1937,11 +1938,10 @@ int en50221_SetCAPMT( access_sys_t * p_sys, mumudvb_ts_packet_t *p_pmt , mumudvb
     if ( !b_needs_descrambling )
     {
       log_message( MSG_INFO,"CAM : No need to descramble channel %d\n", p_pmt->i_program_number);
-      free( p_pmt );//braice
+      if(p_pmt)
+	free( p_pmt );//braice
     }
     
-    //log_message( MSG_INFO,"\n");
-
     return 0;
 }
 
@@ -2078,6 +2078,7 @@ void en50221_End( access_sys_t * p_sys )
         if ( p_sys->pp_selected_programs[i] != NULL )
         {
 	  free( p_sys->pp_selected_programs[i] );
+	  p_sys->pp_selected_programs[i] =NULL;
         }
     }
 

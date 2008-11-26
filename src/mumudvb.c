@@ -1119,12 +1119,15 @@ main (int argc, char **argv)
 			      channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
 			    }
 
-			  log_message(MSG_DEBUG,"Autoconf : Step TWO, we get the video ond audio PIDs\n");
+			  log_message(MSG_DEBUG,"Autoconf : Step TWO, we get the video and audio PIDs\n");
 			  free(autoconf_vars.autoconf_temp_sdt);
+			  autoconf_vars.autoconf_temp_sdt=NULL;
 			  free(autoconf_vars.autoconf_temp_pat);
+			  autoconf_vars.autoconf_temp_pat=NULL;
 			  autoconf_vars.autoconfiguration=1; //Next step add video and audio pids
 			}
-		      memset (autoconf_vars.autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
+		      else
+			memset (autoconf_vars.autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
 		    }
 		}
 	      if(pid==17) //SDT : contains the names of the services
@@ -1166,8 +1169,11 @@ main (int argc, char **argv)
 			  if(autoconf_vars.autoconfiguration==0)
 			    {
 			      autoconf_end(card, number_of_channels, channels, &fds);
-			      if(autoconf_vars.autoconf_temp_pmt) 
-				free(autoconf_vars.autoconf_temp_pmt);
+			      if(autoconf_vars.autoconf_temp_pmt)
+				{
+				  free(autoconf_vars.autoconf_temp_pmt);
+				  autoconf_vars.autoconf_temp_pmt=NULL;
+				}
 			    }
 			}
 		    }
@@ -1333,22 +1339,26 @@ int mumudvb_close(int Interrupted)
   if(cam_vars.cam_support)
     {
       CAMClose(cam_vars.cam_sys_access);
-      free(cam_vars.cam_pmt_ptr);
-      free(cam_vars.cam_sys_access);
+      if(cam_vars.cam_pmt_ptr)
+	free(cam_vars.cam_pmt_ptr);
+      if(cam_vars.cam_sys_access)
+	free(cam_vars.cam_sys_access);
     }
 
   //autoconf variables freeing
+  //TODO : free the whole chained list	
+  //  if(autoconf_vars.services)
+  //free(autoconf_vars.services);
   if(autoconf_vars.autoconf_temp_sdt)
     free(autoconf_vars.autoconf_temp_sdt);
   if(autoconf_vars.autoconf_temp_pmt)
     free(autoconf_vars.autoconf_temp_pmt);
   if(autoconf_vars.autoconf_temp_pat)
     free(autoconf_vars.autoconf_temp_pat);
-  if(autoconf_vars.services)
-    free(autoconf_vars.services);
 
   //sap variables freeing
-  free(sap_vars.sap_messages);
+  if(sap_vars.sap_messages)
+    free(sap_vars.sap_messages);
   
   if ((write_streamed_channels)&&remove (nom_fich_chaines_diff)) 
     {
@@ -1436,32 +1446,47 @@ static void SignalHandler (int signum)
 	      autoconf_end(card, number_of_channels, channels, &fds);
 	      //We free autoconf memory
 	      if(autoconf_vars.autoconf_temp_sdt)
-		free(autoconf_vars.autoconf_temp_sdt);
+		{
+		  free(autoconf_vars.autoconf_temp_sdt);
+		  autoconf_vars.autoconf_temp_sdt=NULL;
+		}
 	      if(autoconf_vars.autoconf_temp_pmt)
-		free(autoconf_vars.autoconf_temp_pmt);
+		{
+		  free(autoconf_vars.autoconf_temp_pmt);
+		  autoconf_vars.autoconf_temp_pmt=NULL;
+		}
 	      if(autoconf_vars.autoconf_temp_pat)
-		free(autoconf_vars.autoconf_temp_pat);
-	      if(autoconf_vars.services)
-		free(autoconf_vars.services);
+		{
+		  free(autoconf_vars.autoconf_temp_pat);
+		  autoconf_vars.autoconf_temp_pat=NULL;
+		}
+/* 	      if(autoconf_vars.services) */
+/* 		{ //TODO : free the whole chained list */
+/* 		  free(autoconf_vars.services); */
+/* 		  autoconf_vars.services=NULL; */
+/* 		} */
 	    }
 	}
       //end of autoconfiguration
       else //we are not doing autoconfiguration we can do something else
 	{
 	  //sap announces
-	  if(!sap_vars.sap_last_time_sent)
+	  if(sap_vars.sap)
 	    {
-	      // it's the first time we are here, we initialize all the channels
-	      for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+	      if(!sap_vars.sap_last_time_sent)
 		{
-		  sap_update(channels[curr_channel], &sap_vars.sap_messages[curr_channel]);
+		  // it's the first time we are here, we initialize all the channels
+		  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+		    {
+		      sap_update(channels[curr_channel], &sap_vars.sap_messages[curr_channel]);
+		    }
+		  sap_vars.sap_last_time_sent=now-sap_vars.sap_interval-1;
 		}
-	      sap_vars.sap_last_time_sent=now-sap_vars.sap_interval-1;
-	    }
-	  if((now-sap_vars.sap_last_time_sent)>=sap_vars.sap_interval)
-	    {
-	      sap_send(sap_vars.sap_messages, number_of_channels);
-	      sap_vars.sap_last_time_sent=now;
+	      if((now-sap_vars.sap_last_time_sent)>=sap_vars.sap_interval)
+		{
+		  sap_send(sap_vars.sap_messages, number_of_channels);
+		  sap_vars.sap_last_time_sent=now;
+		}
 	    }
 	  //end of sap announces
 
@@ -1472,7 +1497,8 @@ static void SignalHandler (int signum)
 			     "Channel \"%s\" back.Card %d\n",
 			     channels[curr_channel].name, card);
 		channels[curr_channel].streamed_channel_old = 1;	// update
-		sap_update(channels[curr_channel], &sap_vars.sap_messages[curr_channel]); //Channel status changed, we update the sap announces
+		if(sap_vars.sap)
+		  sap_update(channels[curr_channel], &sap_vars.sap_messages[curr_channel]); //Channel status changed, we update the sap announces
 	      }
 	    else if ((channels[curr_channel].streamed_channel_old) && (channels[curr_channel].streamed_channel < 30))
 	      {
@@ -1480,7 +1506,8 @@ static void SignalHandler (int signum)
 			     "Channel \"%s\" down.Card %d\n",
 			     channels[curr_channel].name, card);
 		channels[curr_channel].streamed_channel_old = 0;	// update
-		sap_update(channels[curr_channel], &sap_vars.sap_messages[curr_channel]); //Channel status changed, we update the sap announces
+		if(sap_vars.sap)
+		  sap_update(channels[curr_channel], &sap_vars.sap_messages[curr_channel]); //Channel status changed, we update the sap announces
 	      }
 
 	  /*******************************************/
