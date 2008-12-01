@@ -90,7 +90,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 	  ts_packet->empty=0;
 	  ts_packet->continuity_counter=header->continuity_counter;
 	  ts_packet->pid=pid;
-	  ts_packet->len=AddPacketStart(ts_packet->packet,buf+delta+1,188-delta-1); //on ajoute le paquet //NOTE len
+	  ts_packet->len=AddPacketStart(ts_packet->packet,buf+delta+1,188-delta-1); //we add the packet to the buffer
 	}
     }
   else if(header->payload_unit_start_indicator==0) //Not the first, we check if che already registered packet corresponds
@@ -109,7 +109,14 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 	  return 0;
 	}
       ts_packet->continuity_counter=header->continuity_counter;
-      ts_packet->len=AddPacketContinue(ts_packet->packet,buf+delta,188-delta,ts_packet->len); //on ajoute le paquet 
+      if(ts_packet->len+(188-delta)<4096)
+	ts_packet->len=AddPacketContinue(ts_packet->packet,buf+delta,188-delta,ts_packet->len); //we add the packet to the buffer
+      else
+	{
+	  log_message( MSG_INFO," TS parse ERROR : Packet to big\n\n");
+	  ts_packet->empty=1;
+	  return 0;
+	}
 
       //log_message( MSG_DEBUG," \t\t Len %d PMT_len %d\n",ts_packet->len,HILO(((pmt_t *)ts_packet->packet)->section_length));
     }      

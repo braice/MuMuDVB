@@ -1346,9 +1346,8 @@ int mumudvb_close(int Interrupted)
     }
 
   //autoconf variables freeing
-  //TODO : free the whole chained list	
-  //  if(autoconf_vars.services)
-  //free(autoconf_vars.services);
+  if(autoconf_vars.services)
+    autoconf_free_services(autoconf_vars.services);
   if(autoconf_vars.autoconf_temp_sdt)
     free(autoconf_vars.autoconf_temp_sdt);
   if(autoconf_vars.autoconf_temp_pmt)
@@ -1460,11 +1459,11 @@ static void SignalHandler (int signum)
 		  free(autoconf_vars.autoconf_temp_pat);
 		  autoconf_vars.autoconf_temp_pat=NULL;
 		}
-/* 	      if(autoconf_vars.services) */
-/* 		{ //TODO : free the whole chained list */
-/* 		  free(autoconf_vars.services); */
-/* 		  autoconf_vars.services=NULL; */
-/* 		} */
+	      if(autoconf_vars.services)
+		{
+		  autoconf_free_services(autoconf_vars.services);
+ 		  autoconf_vars.services=NULL;
+		}
 	    }
 	}
       //end of autoconfiguration

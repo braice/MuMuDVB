@@ -449,6 +449,23 @@ mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,
 
 }
 
+
+//Free the services list
+void autoconf_free_services(mumudvb_service_t *services)
+{
+
+  mumudvb_service_t *actual_service;
+  mumudvb_service_t *next_service;
+
+  actual_service=services;
+
+  for(actual_service=services;actual_service != NULL; actual_service=next_service)
+    {
+      next_service= actual_service->next;
+      free(actual_service);
+    }
+}
+
 //Convert the chained list of services into channels
 //Free the services and return the number of channels
 int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channels, int cam_support, int port, int card)
