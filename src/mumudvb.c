@@ -1294,12 +1294,13 @@ main (int argc, char **argv)
 	    {
 	      count_non_transmis++;
 	      if (count_non_transmis > ALARM_COUNT_LIMIT)
-		{
-		  log_message( MSG_INFO,
-			       "Error : less than one paquet on %d sent\n",
-			       ALARM_COUNT_LIMIT);
-		  alarm_count = 1;
-		}
+		if (alarm_count == 0)
+		  {
+		    log_message( MSG_INFO,
+				 "Error : less than one paquet on %d sent\n",
+				 ALARM_COUNT_LIMIT);
+		    alarm_count = 1;
+		  }
 	    }
 	}
     }
