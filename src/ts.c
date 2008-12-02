@@ -154,7 +154,7 @@ int AddPacketContinue  (unsigned char *packet, unsigned char *buf, unsigned int 
 int ts_check_CRC( mumudvb_ts_packet_t *pmt)
 {
   pmt_t *pmt_struct;
-  unsigned long crc32;
+  uint32_t crc32;
   int i;
 
   pmt_struct=(pmt_t *)pmt->packet;
