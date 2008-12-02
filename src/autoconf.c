@@ -467,12 +467,10 @@ void autoconf_free_services(mumudvb_service_t *services)
 }
 
 //Convert the chained list of services into channels
-//Free the services and return the number of channels
 int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channels, int cam_support, int port, int card)
 {
 
   mumudvb_service_t *actual_service;
-  mumudvb_service_t *next_service=NULL;
   int channel_number=0;
   char ip[20];
 
@@ -514,16 +512,6 @@ int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channel
 	    log_message(MSG_DETAIL,"Service type %d, no autoconfigure. Name \"%s\"\n", actual_service->type, actual_service->name);
 	}
       actual_service=actual_service->next;
-    }
-  while(actual_service);
-
-  //FREE the services
-  actual_service=services;
-  do
-    {
-      next_service=actual_service->next;
-      free(actual_service);
-      actual_service=next_service;
     }
   while(actual_service);
 

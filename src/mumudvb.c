@@ -1103,6 +1103,11 @@ main (int argc, char **argv)
 			  log_message(MSG_DEBUG,"Autoconf : It seems that we have finished *\n");
 			  //Interrupted=1;
 			  number_of_channels=services_to_channels(autoconf_vars.services, channels, cam_vars.cam_support,common_port, card); //Convert the list of services into channels
+			  if(autoconf_vars.services)
+			    {
+			      autoconf_free_services(autoconf_vars.services);
+			      autoconf_vars.services=NULL;
+			    }
 			  if (complete_card_fds(card, number_of_channels, channels, &fds,0) < 0)
 			    {
 			      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");
@@ -1169,10 +1174,26 @@ main (int argc, char **argv)
 			  if(autoconf_vars.autoconfiguration==0)
 			    {
 			      autoconf_end(card, number_of_channels, channels, &fds);
+			      //We free autoconf memory
+			      if(autoconf_vars.autoconf_temp_sdt)
+				{
+				  free(autoconf_vars.autoconf_temp_sdt);
+				  autoconf_vars.autoconf_temp_sdt=NULL;
+				}
 			      if(autoconf_vars.autoconf_temp_pmt)
 				{
 				  free(autoconf_vars.autoconf_temp_pmt);
 				  autoconf_vars.autoconf_temp_pmt=NULL;
+				}
+			      if(autoconf_vars.autoconf_temp_pat)
+				{
+				  free(autoconf_vars.autoconf_temp_pat);
+				  autoconf_vars.autoconf_temp_pat=NULL;
+				}
+			      if(autoconf_vars.services)
+				{
+				  autoconf_free_services(autoconf_vars.services);
+				  autoconf_vars.services=NULL;
 				}
 			    }
 			}
