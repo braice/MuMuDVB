@@ -85,13 +85,3 @@ France 3                 (0x0111) 01: PCR == V   V 0x00dc A 0x00e6 (fra) SUB 0x0
 Done.
 }}}
 
-Vous pouvez aussi utiliser la version modifiée de scan qui permet de créer un fichier de configuration directement au format mumudvb
-Pour cela compilez la version de scan jointe dans le répertoire tools (avec la commande make) et utilisez scan de la manière suivante : 
-{{{./scan -c -a """numero carte""" -o mumudvb}}}
-
-Vous pouvez aussi récupérer la configuration directement dans un fichier
-
-{{{./scan -c -a """numero carte""" -o mumudvb > mumudvb.conf}}}
-
-Attention le numéro de carte est à rajouter manuellement dans le fichier de configuration.
-

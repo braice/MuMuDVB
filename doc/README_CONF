@@ -86,12 +86,3 @@ France 3                 (0x0111) 01: PCR == V   V 0x00dc A 0x00e6 (fra) SUB 0x0
 Done.
 }}}
 
-You can also use the modified version of scan wich is able to make a config file for mumudvb.
-In order to do that you have to compile the modified version in the tools directory (with the make command) and use scan the following way : 
-{{{./scan -c -a """card number""" -o mumudvb}}}
-
-You can also get the configuration directly in a file
-
-{{{./scan -c -a """card number""" -o mumudvb > mumudvb.conf}}}
-
-Warning : you have to manually add the card number in the generated configuration file.
