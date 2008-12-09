@@ -10,11 +10,9 @@ endif
 
 all:
 	$(MAKE) -C src
-	$(MAKE) -C tools
 
 clean:
 	$(MAKE) clean -C src
-	$(MAKE) clean -C tools
 
 install:
 	$(MAKE) install -C src
