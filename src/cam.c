@@ -353,4 +353,128 @@ void CAMClose( access_sys_t * p_sys )
     }
 }
 
+#else
+/*****************************************************************************
+ * Code for dealing with libdvben50221
+ *****************************************************************************/
+static void *camthread_func(void* arg);
+static int mumudvb_cam_ai_callback(void *arg, uint8_t slot_id, uint16_t session_number,
+			   uint8_t application_type, uint16_t application_manufacturer,
+			   uint16_t manufacturer_code, uint8_t menu_string_length,
+		    uint8_t *menu_string);
+static int mumudvb_cam_ca_info_callback(void *arg, uint8_t slot_id, uint16_t session_number, uint32_t ca_id_count, uint16_t *ca_ids);
+
+int cam_start(cam_parameters_t cam_params, int adapter_id)
+{
+  // create transport layer
+  cam_params.tl = en50221_tl_create(1, 16);
+  if (cam_params.tl == NULL) {
+    log_message( MSG_ERROR,"ERROR : CAM : Failed to create transport layer\n");
+    return 1;
+  }
+
+  // create session layer
+  cam_params.sl = en50221_sl_create(cam_params.tl, 16);
+  if (cam_params.sl == NULL) {
+    log_message( MSG_ERROR, "ERROR : CAM : Failed to create session layer\n");
+    en50221_tl_destroy(cam_params.tl);
+    return 1;
+  }
+
+  // create the stdcam instance
+  cam_params.stdcam = en50221_stdcam_create(adapter_id, cam_params.cam_number, cam_params.tl, cam_params.sl);
+  if (cam_params.stdcam == NULL) {
+    log_message( MSG_ERROR, "ERROR : CAM : Failed to create the stdcam instance (no cam present ?)\n");
+    en50221_sl_destroy(cam_params.sl);
+    en50221_tl_destroy(cam_params.tl);
+    return 1;
+  }
+  // hook up the AI callbacks
+  if (cam_params.stdcam->ai_resource) {
+    en50221_app_ai_register_callback(cam_params.stdcam->ai_resource, mumudvb_cam_ai_callback, cam_params.stdcam);
+  }
+
+  // hook up the CA callbacks
+  if (cam_params.stdcam->ca_resource) {
+    en50221_app_ca_register_info_callback(cam_params.stdcam->ca_resource, mumudvb_cam_ca_info_callback, &cam_params);
+  }
+
+  //TODO : add hook up for MMI Callbacks (To display Menus)
+
+  // any other stuff
+  cam_params.moveca = 1; //see http://www.linuxtv.org/pipermail/linux-dvb/2007-May/018198.html
+
+  // start the cam thread
+  pthread_create(&cam_params.camthread, NULL, camthread_func, &cam_params);
+
+  return 0;
+}
+
+void cam_stop(cam_parameters_t cam_params)
+{
+  if (cam_params.stdcam == NULL)
+    return;
+
+  // shutdown the cam thread
+  cam_params.camthread_shutdown = 1;
+  pthread_join(cam_params.camthread, NULL);
+
+  // destroy session layer
+  en50221_sl_destroy(cam_params.sl);
+
+  // destroy transport layer
+  en50221_tl_destroy(cam_params.tl);
+
+  // destroy the stdcam
+  if (cam_params.stdcam->destroy)
+    cam_params.stdcam->destroy(cam_params.stdcam, 1);
+}
+
+static void *camthread_func(void* arg)
+{
+  cam_parameters_t *cam_params;
+  cam_params= (cam_parameters_t *) arg;
+
+  while(!cam_params->camthread_shutdown) {
+    cam_params->stdcam->poll(cam_params->stdcam);
+    log_message( MSG_DEBUG, "Polllll\n");
+  }
+
+  return 0;
+}
+
+
+static int mumudvb_cam_ai_callback(void *arg, uint8_t slot_id, uint16_t session_number,
+			   uint8_t application_type, uint16_t application_manufacturer,
+			   uint16_t manufacturer_code, uint8_t menu_string_length,
+			   uint8_t *menu_string)
+{
+  (void) arg;
+  (void) slot_id;
+  (void) session_number;
+
+  log_message( MSG_INFO, "CAM Application type: %02x\n", application_type);
+  log_message( MSG_INFO, "CAM Application manufacturer: %04x\n", application_manufacturer);
+  log_message( MSG_INFO, "CAM Manufacturer code: %04x\n", manufacturer_code);
+  log_message( MSG_INFO, "CAM Menu string: %.*s\n", menu_string_length, menu_string);
+
+  return 0;
+}
+
+static int mumudvb_cam_ca_info_callback(void *arg, uint8_t slot_id, uint16_t session_number, uint32_t ca_id_count, uint16_t *ca_ids)
+{
+  cam_parameters_t *cam_params;
+  cam_params= (cam_parameters_t *) arg;
+  (void) slot_id;
+  (void) session_number;
+
+  log_message( MSG_INFO, "CAM supports the following ca system ids:\n");
+  uint32_t i;
+  for(i=0; i< ca_id_count; i++) {
+    log_message( MSG_INFO, "  0x%04x\n", ca_ids[i]);
+  }
+  cam_params->ca_resource_connected = 1; //Todo : see how to acces to this variable (via the callback call)
+  return 0;
+}
+
 #endif

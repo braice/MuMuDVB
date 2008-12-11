@@ -52,6 +52,7 @@
 
 #ifdef LIBDVBEN50221
 #include <libdvben50221/en50221_stdcam.h>
+#include <pthread.h>
 #endif
 
 struct ca_info {
@@ -71,6 +72,7 @@ int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt, uint8_t list, uin
 /*****************************************************************************
  * VLC PART (another mumudvb part below)
  *****************************************************************************/
+#ifndef LIBDVBEN50221
 
 #define CA_DEV       "/dev/dvb/adapter%d/ca%d"
 
@@ -215,15 +217,36 @@ void en50221_SendMMIObject( access_sys_t * p_sys, int i_slot,
                                 en50221_mmi_object_t *p_object );
 void en50221_End( access_sys_t * );
 
+#endif
 /*****************************************************************************
  * MUMUDVB Part
  *****************************************************************************/
 typedef struct cam_parameters_t{
   int cam_support;
+  int cam_number;
+#ifdef LIBDVBEN50221
+  struct en50221_transport_layer *tl;
+  struct en50221_session_layer *sl;
+  struct en50221_stdcam *stdcam;
+  int ca_resource_connected;
+  int camthread_shutdown;
+  pthread_t camthread;
+  int seenpmt;
+  int moveca;
+#else
   access_sys_t *cam_sys_access;
   mumudvb_ts_packet_t *cam_pmt_ptr;
-  int cam_number;
+#endif
 }cam_parameters_t;
 
+/*****************************************************************************
+ * Code for dealing with libdvben50221
+ *****************************************************************************/
+#ifdef LIBDVBEN50221
+
+int cam_start(cam_parameters_t, int);
+void cam_stop(cam_parameters_t);
+
+#endif
 
 #endif

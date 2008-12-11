@@ -4,6 +4,10 @@
  * 
  * (C) 2004-2008 Brice DUBOST
  * 
+ * Code for dealing with libdvben50221 inspired from zap_ca
+ * Copyright (C) 2004, 2005 Manu Abraham <abraham.manu@gmail.com>
+ * Copyright (C) 2006 Andrew de Quincey (adq_dvb@lidskialf.net)
+ *
  * The latest version can be found at http://mumudvb.braice.net
  * 
  * Copyright notice:
@@ -109,8 +113,11 @@ autoconf_parameters_t autoconf_vars={
 //CAM (Conditionnal Access Modules : for scrambled channels) C99 initialisation
 cam_parameters_t cam_vars={
   .cam_support = 0,
-  .cam_pmt_ptr=NULL,
   .cam_number=0,
+#ifdef LIBDVBEN50221
+#else
+  .cam_pmt_ptr=NULL,
+#endif
 };
 
 //logging
@@ -363,6 +370,13 @@ main (int argc, char **argv)
 	    {
 	      log_message( MSG_WARN,
 			"!!! You have enabled the support for conditionnal acces modules (scrambled channels), this is a beta feature.Please report any bug/comment\n");
+#ifndef LIBDVBEN50221
+	      log_message( MSG_DEBUG,
+			"       You will use VLC code for cam support\n");
+#else
+	      log_message( MSG_DEBUG,
+			"       You will use libdvben50221 for cam support\n");
+#endif
 	    }
 	}
       else if (!strcmp (substring, "sat_number"))
@@ -843,7 +857,7 @@ main (int argc, char **argv)
   /*****************************************************/
 
   if(cam_vars.cam_support){
-
+#ifndef LIBDVBEN50221
     cam_vars.cam_pmt_ptr=malloc(sizeof(mumudvb_ts_packet_t));
     cam_vars.cam_sys_access=malloc(sizeof(access_sys_t));
     //cleaning
@@ -853,6 +867,15 @@ main (int argc, char **argv)
     cam_vars.cam_sys_access->cai->initialized=0;
     cam_vars.cam_sys_access->cai->ready=0;
     CAMPoll(cam_vars.cam_sys_access); //TODO : check why it sometimes fails --> look if the failure is associated with a non ready slot
+#else
+    //We initialise the cam. If fail, we remove cam support
+    if(cam_start(cam_vars,card))
+      {
+	log_message( MSG_ERROR,"Cannot initalise cam\n");
+	cam_vars.cam_support=0;
+      }
+
+#endif
   }
   
   /*****************************************************/
@@ -1239,6 +1262,7 @@ main (int argc, char **argv)
 	      //cam support
 	      // If we send the packet, we look if it's a cam pmt pid
 	      /******************************************************/
+#ifndef LIBDVBEN50221
 	      if(cam_vars.cam_support && send_packet==1 &&cam_vars.cam_sys_access->cai->initialized&&cam_vars.cam_sys_access->cai->ready>=3)  //no need to check paquets we don't send
 		{
 		  if ((channels[curr_channel].cam_pmt_pid)&& (channels[curr_channel].cam_pmt_pid == pid))
@@ -1260,6 +1284,7 @@ main (int argc, char **argv)
 			}
 		    }
 		}
+#endif
 
 	      /******************************************************/
 	      //Rewrite PAT
@@ -1360,11 +1385,15 @@ int mumudvb_close(int Interrupted)
 
   if(cam_vars.cam_support)
     {
+#ifdef LIBDVBEN50221
+      cam_stop(cam_vars);
+#else
       CAMClose(cam_vars.cam_sys_access);
       if(cam_vars.cam_pmt_ptr)
 	free(cam_vars.cam_pmt_ptr);
       if(cam_vars.cam_sys_access)
 	free(cam_vars.cam_sys_access);
+#endif
     }
 
   //autoconf variables freeing
@@ -1565,8 +1594,10 @@ static void SignalHandler (int signum)
       
 	  if(cam_vars.cam_support)
 	    {
+#ifndef LIBDVBEN50221
 	      CAMPoll(cam_vars.cam_sys_access);
 	      cam_vars.cam_sys_access->cai->ready++;
+#endif
 	    }
 	}
 
