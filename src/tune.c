@@ -4,7 +4,7 @@
 
    last version availaible from http://mumudvb.braice.net/
 
-   Copyright (C) Brice DUBOST
+   Copyright (C) 2004-2008 Brice DUBOST
    Copyright (C) Dave Chapman 2001,2002
   
    This program is free software; you can redistribute it and/or
@@ -67,6 +67,9 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd,
    usleep(15 * 1000);
    if(sat_no >= 1 && sat_no <= 4)	//1.x compatible equipment
    {
+     if(ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd->cmd) < 0)
+       return -1;
+     usleep(15 * 1000);
     if(ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd->cmd) < 0)
    	return -1;
     usleep(cmd->wait * 1000);

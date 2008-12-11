@@ -2,7 +2,7 @@
  * mumudvb - UDP-ize a DVB transport stream.
  * File for Conditionnal Access Modules support
  * 
- * (C) Brice DUBOST <mumudvb@braice.net>
+ * (C) 2008 Brice DUBOST <mumudvb@braice.net>
  *
  * Most of this code is from the VLC project, modified  for mumudvb
  * by Brice DUBOST 
@@ -34,6 +34,7 @@
  *****************************************************************************/
 #include "errors.h"
 #include "cam.h"
+#include "ts.h"
 #include "mumudvb.h"
 
 #include <sys/ioctl.h>
@@ -224,17 +225,17 @@ static uint8_t *SetLength( uint8_t *p_data, int i_length )
 #define T_DATA_LAST    0xA0
 #define T_DATA_MORE    0xA1
 
+#ifdef DEBUG_TPDU
 static void Dump( int b_outgoing, uint8_t *p_data, int i_size )
 {
-#ifdef DEBUG_TPDU
     int i;
 #define MAX_DUMP 256
     log_message( MSG_DETAIL, "%s ", b_outgoing ? "-->" : "<--");
     for ( i = 0; i < i_size && i < MAX_DUMP; i++)
         log_message( MSG_DETAIL, "%02X ", p_data[i]);
     log_message( MSG_DETAIL, "%s\n", i_size >= MAX_DUMP ? "..." : "");
-#endif
 }
+#endif
 
 /*****************************************************************************
  * TPDUSend
@@ -289,7 +290,9 @@ static int TPDUSend( access_sys_t * p_sys, uint8_t i_slot, uint8_t i_tag,
     default:
         break;
     }
+#ifdef DEBUG_TPDU
     Dump( 1, p_data, i_size );
+#endif
 
     if ( write( p_sys->i_ca_handle, p_data, i_size ) != i_size )
     {
@@ -305,7 +308,8 @@ static int TPDUSend( access_sys_t * p_sys, uint8_t i_slot, uint8_t i_tag,
 /*****************************************************************************
  * TPDURecv
  *****************************************************************************/
-#define CAM_READ_TIMEOUT  3500 // ms
+#define CAM_READ_TIMEOUT  1500 // ms
+//#define CAM_READ_TIMEOUT  3500 // ms
 
 static int TPDURecv( access_sys_t * p_sys, uint8_t i_slot, uint8_t *pi_tag,
                      uint8_t *p_data, int *pi_size )
@@ -356,7 +360,9 @@ static int TPDURecv( access_sys_t * p_sys, uint8_t i_slot, uint8_t *pi_tag,
                                       && (p_data[i_size - 1] & DATA_INDICATOR))
                                         ?  1 : 0;
 
+#ifdef DEBUG_TPDU
     Dump( 0, p_data, i_size );
+#endif
 
     if ( pi_size == NULL )
         free( p_data );
@@ -461,7 +467,7 @@ static int SPDUSend( access_sys_t * p_sys, int i_session_id,
  * SessionOpen
  *****************************************************************************/
 static void SessionOpen( access_sys_t * p_sys, uint8_t i_slot,
-                         uint8_t *p_spdu, int i_size )
+                         uint8_t *p_spdu )
 {
     int i_session_id;
     int i_resource_id = ResourceIdToInt( &p_spdu[2] );
@@ -541,8 +547,8 @@ static void SessionOpen( access_sys_t * p_sys, uint8_t i_slot,
 /*****************************************************************************
  * SessionCreateResponse
  *****************************************************************************/
-static void SessionCreateResponse( access_sys_t * p_sys, uint8_t i_slot,
-                                   uint8_t *p_spdu, int i_size )
+static void SessionCreateResponse( access_sys_t * p_sys,
+                                   uint8_t *p_spdu )
 {
     int i_status = p_spdu[2];
     int i_resource_id = ResourceIdToInt( &p_spdu[3] );
@@ -661,13 +667,13 @@ static void SPDUHandle( access_sys_t * p_sys, uint8_t i_slot,
     case ST_OPEN_SESSION_REQUEST:
         if ( i_size != 6 || p_spdu[1] != 0x4 )
             return;
-        SessionOpen( p_sys, i_slot, p_spdu, i_size );
+        SessionOpen( p_sys, i_slot, p_spdu );
         break;
 
     case ST_CREATE_SESSION_RESPONSE:
         if ( i_size != 9 || p_spdu[1] != 0x7 )
             return;
-        SessionCreateResponse( p_sys, i_slot, p_spdu, i_size );
+        SessionCreateResponse( p_sys, p_spdu );
         break;
 
     case ST_CLOSE_SESSION_REQUEST:
@@ -809,10 +815,8 @@ static int APDUSend( access_sys_t * p_sys, int i_session_id, int i_tag,
         }
         else
         {
-            char *psz_hex;
             ca_msg.length = i_size + p - p_apdu;
             if ( i_size == 0 ) ca_msg.length=3;
-            psz_hex = (char*)malloc( ca_msg.length*3 + 1);
             memcpy( ca_msg.msg, p_apdu, i_size + p - p_apdu );
             i_ret = ioctl(p_sys->i_ca_handle, CA_SEND_MSG, &ca_msg );
             if ( i_ret < 0 )
@@ -957,10 +961,10 @@ typedef struct
  * CAPMTAdd
  *****************************************************************************/
 static void CAPMTAdd( access_sys_t * p_sys, int i_session_id,
-                      mumudvb_pmt_t *p_pmt )//braice
+                      mumudvb_ts_packet_t *p_pmt )
 {
-  //uint8_t *p_capmt;
-  //int i_capmt_size;
+
+  log_message( MSG_INFO,"CAM : Adding Conditionnal Access Program Map Table (we ask the cam to decrypt this channel)\n");
 
     if( p_sys->i_selected_programs >= CAM_PROG_MAX )
     {
@@ -989,53 +993,6 @@ static void CAPMTAdd( access_sys_t * p_sys, int i_session_id,
 
     if ( p_pmt->len )//TODO check if it's ok to test p_pmt->len
       APDUSend( p_sys, i_session_id, AOT_CA_PMT, p_pmt->converted_packet, p_pmt->len );
-}
-
-/*****************************************************************************
- * CAPMTUpdate
- *****************************************************************************/
-static void CAPMTUpdate( access_sys_t * p_sys, int i_session_id,
-                         mumudvb_pmt_t *p_pmt )//braice
-{
-    uint8_t *p_capmt;
-    int i_capmt_size;
-
-    log_message( MSG_INFO,"CAM : updating CAPMT for SID %d on session %d\n",
-             p_pmt->i_program_number, i_session_id );
-
-#if 0
-    convert_pmt(p_sys->cai, p_pmt, 5, 1, 0); //5=update 1=ok_descrambling
-
-    p_capmt = CAPMTBuild( p_sys, i_session_id, p_pmt,
-                          0x5 /* update */, 0x1 /* ok_descrambling */,
-                          &i_capmt_size );
-#endif
-    if ( i_capmt_size )
-        APDUSend( p_sys, i_session_id, AOT_CA_PMT, p_capmt, i_capmt_size );
-}
-
-/*****************************************************************************
- * CAPMTDelete
- *****************************************************************************/
-static void CAPMTDelete( access_sys_t * p_sys, int i_session_id,
-                         mumudvb_pmt_t *p_pmt )//braice
-{
-    uint8_t *p_capmt;
-    int i_capmt_size;
-
-    p_sys->i_selected_programs--;
-    log_message( MSG_INFO,"CAM : deleting CAPMT for SID %d on session %d\n",
-             p_pmt->i_program_number, i_session_id );
-#if 0
-    convert_pmt(p_sys->cai, p_pmt, 5, 4, 0); //5=update 4=not selected
-
-    p_capmt = CAPMTBuild( p_sys, i_session_id, p_pmt,
-                          0x5 /* update */, 0x4 /* not selected */,
-                          &i_capmt_size );
-#endif
-
-    if ( i_capmt_size )
-        APDUSend( p_sys, i_session_id, AOT_CA_PMT, p_capmt, i_capmt_size );
 }
 
 /*****************************************************************************
@@ -1155,7 +1112,7 @@ static void ConditionalAccessHandle( access_sys_t * p_sys, int i_session_id,
 	    }
 	  }
 	}
-	log_message( MSG_INFO, "\n");
+	//log_message( MSG_INFO, "\n");
 	break;
       }
     default: 
@@ -1430,7 +1387,7 @@ static void MMIDisplayReply( access_sys_t * p_sys, int i_session_id )
 /*****************************************************************************
  * MMIGetText
  *****************************************************************************/
-static char *MMIGetText( access_sys_t * p_sys, uint8_t **pp_apdu, int *pi_size )
+static char *MMIGetText( uint8_t **pp_apdu, int *pi_size )
 {
     int i_tag = APDUGetTag( *pp_apdu, *pi_size );
     int l;
@@ -1456,7 +1413,7 @@ static char *MMIGetText( access_sys_t * p_sys, uint8_t **pp_apdu, int *pi_size )
  * MMIHandleEnq
  *****************************************************************************/
 static void MMIHandleEnq( access_sys_t * p_sys, int i_session_id,
-                          uint8_t *p_apdu, int i_size )
+                          uint8_t *p_apdu )
 {
     mmi_t *p_mmi = (mmi_t *)p_sys->p_sessions[i_session_id - 1].p_sys;
     int i_slot = p_sys->p_sessions[i_session_id - 1].i_slot;
@@ -1482,7 +1439,7 @@ static void MMIHandleEnq( access_sys_t * p_sys, int i_session_id,
  * MMIHandleMenu
  *****************************************************************************/
 static void MMIHandleMenu( access_sys_t * p_sys, int i_session_id, int i_tag,
-                           uint8_t *p_apdu, int i_size )
+                           uint8_t *p_apdu )
 {
     mmi_t *p_mmi = (mmi_t *)p_sys->p_sessions[i_session_id - 1].p_sys;
     int i_slot = p_sys->p_sessions[i_session_id - 1].i_slot;
@@ -1504,7 +1461,7 @@ static void MMIHandleMenu( access_sys_t * p_sys, int i_session_id, int i_tag,
         if ( l > 0 )                                                        \
         {                                                                   \
             p_mmi->last_object.u.menu.psz_##x                               \
-                            = MMIGetText( p_sys, &d, &l );               \
+                            = MMIGetText( &d, &l );                         \
             log_message( MSG_INFO,"CAM : MMI " #x  ": %s\n",                \
                      p_mmi->last_object.u.menu.psz_##x );                   \
         }
@@ -1516,7 +1473,7 @@ static void MMIHandleMenu( access_sys_t * p_sys, int i_session_id, int i_tag,
 
         while ( l > 0 )
         {
-            char *psz_text = MMIGetText( p_sys, &d, &l );
+            char *psz_text = MMIGetText( &d, &l );
             TAB_APPEND( p_mmi->last_object.u.menu.i_choices,
                         p_mmi->last_object.u.menu.ppsz_choices,
                         psz_text );
@@ -1563,12 +1520,12 @@ static void MMIHandle( access_sys_t * p_sys, int i_session_id,
     }
 
     case AOT_ENQ:
-        MMIHandleEnq( p_sys, i_session_id, p_apdu, i_size );
+        MMIHandleEnq( p_sys, i_session_id, p_apdu );
         break;
 
     case AOT_LIST_LAST:
     case AOT_MENU_LAST:
-        MMIHandleMenu( p_sys, i_session_id, i_tag, p_apdu, i_size );
+        MMIHandleMenu( p_sys, i_session_id, i_tag, p_apdu );
         break;
 
     case AOT_CLOSE_MMI:
@@ -1766,6 +1723,9 @@ int en50221_Poll( access_sys_t * p_sys )
 
         if ( !(sinfo.flags & CA_CI_MODULE_READY) )
         {
+	  log_message( MSG_INFO,"CAM : en50221_Poll: cam slot %d not ready\n",
+		       i_slot );
+
             if ( p_sys->pb_active_slot[i_slot] )
             {
                 log_message( MSG_INFO,"CAM : en50221_Poll: slot %d has been removed\n",
@@ -1815,6 +1775,7 @@ int en50221_Poll( access_sys_t * p_sys )
                      i_slot );
         }
 
+       
         if ( !p_sys->pb_tc_has_data[i_slot] )
         {
             if ( TPDUSend( p_sys, i_slot, T_DATA_LAST, NULL, 0 ) !=
@@ -1899,7 +1860,7 @@ int en50221_Poll( access_sys_t * p_sys )
 /*****************************************************************************
  * en50221_SetCAPMT :
  *****************************************************************************/
-int en50221_SetCAPMT( access_sys_t * p_sys, mumudvb_pmt_t *p_pmt ) //braice
+int en50221_SetCAPMT( access_sys_t * p_sys, mumudvb_ts_packet_t *p_pmt , mumudvb_channel_t *channels )
 {
     int i, i_session_id;
     int b_update = 0;
@@ -1920,7 +1881,8 @@ int en50221_SetCAPMT( access_sys_t * p_sys, mumudvb_pmt_t *p_pmt ) //braice
             if ( !b_needs_descrambling )
             {
                 p_pmt = p_sys->pp_selected_programs[i];
-		free(p_pmt); //braice
+		free(p_pmt);
+		p_pmt=NULL;
                 p_sys->pp_selected_programs[i] = NULL;
             }
             else if( p_pmt != p_sys->pp_selected_programs[i] )
@@ -1939,7 +1901,8 @@ int en50221_SetCAPMT( access_sys_t * p_sys, mumudvb_pmt_t *p_pmt ) //braice
         {
             if ( p_sys->pp_selected_programs[i] == NULL )
             {
-	      log_message( MSG_INFO,"CAM : New PMT, number %d pid %d len %d channel number %d\n",i, p_pmt->pid, p_pmt->len, p_pmt->i_program_number );
+	      log_message( MSG_INFO,"CAM : New Program Map Table, number %d for channel %d : \"%s\"\n",i, p_pmt->i_program_number, channels[p_pmt->i_program_number].name );
+	      log_message( MSG_DETAIL,"CAM : PMT pid %d len %d\n", p_pmt->pid, p_pmt->len );
 	      p_sys->pp_selected_programs[i] = p_pmt;
 	      break;
             }
@@ -1975,11 +1938,10 @@ int en50221_SetCAPMT( access_sys_t * p_sys, mumudvb_pmt_t *p_pmt ) //braice
     if ( !b_needs_descrambling )
     {
       log_message( MSG_INFO,"CAM : No need to descramble channel %d\n", p_pmt->i_program_number);
-      free( p_pmt );//braice
+      if(p_pmt)
+	free( p_pmt );//braice
     }
     
-    log_message( MSG_INFO,"\n");
-
     return 0;
 }
 
@@ -2116,6 +2078,7 @@ void en50221_End( access_sys_t * p_sys )
         if ( p_sys->pp_selected_programs[i] != NULL )
         {
 	  free( p_sys->pp_selected_programs[i] );
+	  p_sys->pp_selected_programs[i] =NULL;
         }
     }
 

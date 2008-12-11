@@ -1,10 +1,5 @@
 freq=474000
-qam=auto
-trans_mode=auto
-bandwidth=8MHz
-guardinterval=auto
-coderate=auto
-card=4
+card=0
 timeout_accord=20
 timeout_no_diff=60
 ip=239.202.204.200

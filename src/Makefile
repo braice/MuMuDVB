@@ -1,9 +1,9 @@
 CC	= gcc
-CFLAGS	= -Wall -O2 -g
+CFLAGS	= -Wall -Wextra -O2 -ggdb
 IFLAGS	= -g root -o root
 
 OUT		= mumudvb
-OBJ_FILES	= mumudvb.o tune.o udp.o dvb.o cam.o cam_en50221.o log.o
+OBJ_FILES	= mumudvb.o tune.o udp.o dvb.o pat_rewrite.o cam.o cam_en50221.o log.o ts.o autoconf.o sap.o crc32.o
 SRC_FILES	= $(OBJ_FILES:.o=.c)
 
 ifdef DESTDIR
@@ -14,22 +14,6 @@ endif
 
 ifdef DEBUG
   CFLAGS += -g
-endif
-
-ifdef UK
-  CFLAGS += -DUK
-endif
-
-ifdef FINLAND
-  CFLAGS += -DFINLAND
-endif
-
-ifdef FINLAND2
-  CFLAGS += -DFINLAND2
-endif
-
-ifdef FRANCE
-  CFLAGS += -DFRANCE
 endif
 
 .PHONY: all clean clean_objs install uninstall

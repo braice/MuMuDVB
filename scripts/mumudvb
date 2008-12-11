@@ -1,0 +1,25 @@
+#Mumudvb init config file
+#
+# This file is used to specify the locations of mumudvb config files for each card
+#
+
+#If you don't want to automatically start mumudvb, uncomment this line
+#DONTSTARTMUMU=true
+
+#If you want to launch a command before mumudvb (for example for automatic configuration generation)
+#LAUNCH_BEFORE_MUMU=""
+
+#Options for mumudvb
+DAEMON_OPTS=""
+
+#The user to launch mumudvb
+DAEMONUSER=mumudvb
+
+#Change this line to reflect your configuration
+#Ex : ADAPTERS="0 1 2 4"
+ADAPTERS="0"
+
+#Location of the config files
+#Ex : MUMUDVB_CONF_1="/etc/mumudvb/card1.conf"
+MUMUDVB_CONF_0="/etc/mumudvb/to_be_configured.conf"
+

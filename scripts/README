@@ -1,0 +1,5 @@
+Startup scripts for mumudvb (Debian flavour)
+
+This script expects to find /etc/default/mumudvb, with the syntax specified in the example file
+
+These scripts can be used to use monit to monitor mumudvb (http://mmonit.com/monit/)

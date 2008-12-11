@@ -10,17 +10,16 @@ endif
 
 all:
 	$(MAKE) -C src
-	$(MAKE) -C tools
 
 clean:
 	$(MAKE) clean -C src
-	$(MAKE) clean -C tools
 
 install:
 	$(MAKE) install -C src
 	install -d $(DESTDIR)/usr/share/doc/mumudvb
 	install -d $(DESTDIR)/usr/share/doc/mumudvb/examples
 	install -m 644 doc/README_CONF* $(DESTDIR)/usr/share/doc/mumudvb
+	install -m 644 doc/QUICKSTART $(DESTDIR)/usr/share/doc/mumudvb
 	install -m 644 README README-fr $(DESTDIR)/usr/share/doc/mumudvb
 	install -m 644 doc/conf.example* $(DESTDIR)/usr/share/doc/mumudvb/examples
 	mkdir -p $(DESTDIR)/var/run/mumudvb

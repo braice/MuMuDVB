@@ -4,47 +4,61 @@ README for config file of mumudvb
 
 mumudvb must use a file de configuration to give him all the different reception parameters and the pid repartition aver the different channels. You will find an example in the file conf.example attached with mumudvb sources in the doc directory.
 
-mumudvb does not worry to the parameter's order except for chanels where pids must be put after the ip and the port
+Mumudvb does not worry to the parameter's order except for chanels where pids must be put after the ip and the port
 
-comments can be done anywhere in the configuration file : just start the line with #
+You can put comments everywhere in the configuration file : just start the line with #
 
-All parameters are like: name=value
+All parameters are in the form : name=value
 
 
-'''List of parameters and their description ( (f) : optionnal parameter )'''
+'''List of parameters and their description '''
 ----
 ||'''Name :'''                          ||'''value:'''                                ||
-||rewrite_pat                    ||specify if we wants the PAT rewriting feature ||
-||cam_support                    ||specify if we wants the support for scrambled channels ||
-||cam_number                     ||the number of the CAM we want to use (default 0) ||
 ||freq                           ||transponder's frequency in MHz ||
 ||pol                            ||transponder's polarisation (a char) v or h (not case sensitive) ||
 ||srate                          ||transponder's strate ||
-||card (f)                       ||card number (défaut : 0) ||
-||timeout_accord (f)             ||tuning timeout (in seconds) (default : 300 (5min)) ||
-||timeout_no_diff (f)            ||if the program doesn't stream any chanels, he will kill himself at the end of this time (in seconds) (default : 600 (10min)) ||
-|| Pour la TNT                   ||
+||sat_number                     ||The satellite number (for diseqc users) ||
+||card                           ||card number (defalut : 0) ||
+||timeout_accord                 ||tuning timeout (in seconds) (default : 300 (5min)) ||
+||timeout_no_diff                ||if the program doesn't stream any chanels, he will kill himself at the end of this time (in seconds) (default : 600 (10min)) ||
+||common_port                    ||If you don't want to specify the port for each channel, it will be the default port (if you use autoconfiguration=2 default : 1234) ||
+||multicast_ttl                  ||If you want to override the default multicast ttl, use this option. ||
+||rewrite_pat                    ||specify if we wants the PAT rewriting feature ||
+||cam_support                    ||specify if we wants the support for scrambled channels ||
+||cam_number                     ||the number of the CAM we want to use (default 0) ||
+||autoconfiguration              ||autoconfiguration 1: find audio and video, 2: full autoconfiguration, see README ||
+||autoconf_ip_header             ||For full autoconfiguration, the first part of the ip for streamed channel : ip = header.card.channel Default : 239.100 ||
+||sap                            ||generation of sap announces : 0 no, 1 yes ||
+||sap_organisation               ||Organisation sent in the sap announces (optionnal, default : mumudvb) ||
+||sap_sending_ip                 ||The sender Ip adress (optionnal, default : 0.0.0.0) ||
+||sap_interval                   ||Interval in seconds between sap announces (optionnal, default : 5) ||
+||sap_default_group              ||The default playlist group for sap announces (optionnal) ||
+|| For DVB-T                     ||
 ||qam                            ||quadrature amplitude modulation, possible values : qpsk,16,32,64,128,256,auto ||
 ||trans_mode                     ||transmission mode, possible values : 2k,8k,auto ||
 ||bandwidth                      ||bandwith, possible values : 8MHz,7MHz,6MHz,auto ||
 ||guardinterval                  ||guard interval, possible values : 1/32,1/16,1/8,1/4,auto ||
 ||coderate                       ||coderate, possible values : none,1/2,2/3,3/4,4/5,5/6,6/7,7/8,8/9,auto ||
-||'''For each channel '''||
-||ip                             ||multicast (can also be unicast) ip where the chanel will be diffused ||
-||port                           ||port ||
-||pids                           ||a pid list space separeted (any number, some pids are always sent (PAD EIT SDT TDT NIT) see README for more details) ||
+||'''For each channel (this order is recommended : ip, port, ...,  pids)'''||
+||ip                             ||multicast (can also be unicast) ip where the chanel will be streamed ||
+||port                           ||port (optionnal if common_port is used)||
+||sap_group                      ||The playlist group for sap announces (optionnal) ||
 ||cam_pmt_pid                    ||(only for scrambled channels) the PMT PID for CAM support ||
-||name (f)                       ||the name given to the chanel in /var/run/mumudvb/chaines_diffusees%d (used to generate  SAP announces) ||
+||name                           ||the name given to the chanel in /var/run/mumudvb/chaines_diffusees%d (used to generate  SAP announces) ||
+||pids                           ||a pid list space separeted (any number, some pids are always sent (PAD EIT SDT TDT NIT) see README for more details) ||
 
 
 == Note ==
-You must specify : 
+You must specify (except with autoconfiguration, see README): 
  * audio pid
  * video pid
  * PMT pid
+
 It's advised to set the PCR pid (usually the same as audio or video pid)
 
 = Get the PID numbers =
+
+If you don't use autoconfiguration (see the README), you have to get the PIDs (Program Identifier) for each channel
 
 In order to get the pids numbers, the easier way is to use linuxtv-dvb-apps.
 You tune the card on the wanted frequency (with """tune""" for example).
@@ -72,12 +86,3 @@ France 3                 (0x0111) 01: PCR == V   V 0x00dc A 0x00e6 (fra) SUB 0x0
 Done.
 }}}
 
-You can also use the modified version of scan wich is able to make a config file for mumudvb.
-In order to do that you have to compile the modified version in the tools directory (with the make command) and use scan the following way : 
-{{{./scan -c -a """card number""" -o mumudvb}}}
-
-You can also get the configuration directly in a file
-
-{{{./scan -c -a """card number""" -o mumudvb > mumudvb.conf}}}
-
-Warning : you have to manually add the card number in the generated configuration file.

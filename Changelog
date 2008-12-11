@@ -1,0 +1,59 @@
+-- Mumudvb 1.5.3 --
+
+New features : 
+ * Option multicast_ttl to override default ttl
+ * Option autoconf_ip_header, to change the first part of ip adresses used by autoconfiguration
+ * Option sap_default_group
+ * Init scripts, cf scripts/ directory
+ * Smaller memory footprint
+	
+Bugs corrected : 
+ * Better conformances to RFC for sap announces (this correct issues with VLC < 0.8.6f)
+ * Better memory freeing
+ * CRC32 calculation was wrong on 64bits platforms
+	
+-- Mumudvb 1.5.2 --
+
+New features : 
+
+ * Generation of sap announces (beta)
+
+Bugs corrected : 
+ * Segfault when the directory /var/run/mumudvb doesn't exist
+ * Gcc 4.2 issues when using pat rewriting or autoconfiguration
+ * Small corrections
+
+-- Mumudvb 1.5 --
+
+This is a test version for autoconf and cam support
+
+New features : 
+
+ * Support for conditionnal acces modules (support of scrambled channels) (beta)
+ * Support for autoconfiguration. Mumudvb is now able to partially decode the stream to find the channels. (beta)
+
+ * Verbosity levels for log messages
+ * Better default values for DVB-T
+ * common_port directive
+
+Bugs corrected : 
+ * Logging priority issue (LOG_INFO and co)
+ * General code cleaning
+ * Small bugs
+
+Documentation update
+
+-- Mumudvb 1.2 --
+
+New Features : 
+ * PAT revriting : For some set top boxes, the pid PAT (wich announces the channels) should only contain the streamed channel
+   When you enable pat_revriting, mumudvb modify the pat packets for that
+
+Bugs Corrected 
+ * Small bugs
+
+-- Mumudvb 1.0 --
+
+First major release of mumudvb
+
+Main features : 

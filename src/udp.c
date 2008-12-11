@@ -2,7 +2,7 @@
  * udp.h fonction in order to send a multicast stream
  * mumudvb - UDP-ize a DVB transport stream.
  * 
- * (C) Brice DUBOST
+ * (C) 2004-2008 Brice DUBOST
  * (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
  *  The latest version can be found at http://mumudvb.braice.net
@@ -28,7 +28,7 @@
 #include "udp.h"
 
 int
-sendudp (int fd, struct sockaddr_in *sSockAddr, char *data, int len)
+sendudp (int fd, struct sockaddr_in *sSockAddr, unsigned char *data, int len)
 {
   return sendto (fd, data, len, 0, (struct sockaddr *) sSockAddr,
 		 sizeof (*sSockAddr));

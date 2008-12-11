@@ -2,7 +2,7 @@
  * mumudvb - UDP-ize a DVB transport stream.
  * File for Conditionnal Access Modules support
  * 
- * (C) Brice DUBOST <mumudvb@braice.net>
+ * (C) 2004-2008 Brice DUBOST <mumudvb@braice.net>
  *
  * Parts of this code is from the VLC project, modified  for mumudvb
  * by Brice DUBOST 
@@ -12,6 +12,8 @@
  *                          Jean-Paul Saman <jpsaman _at_ videolan _dot_ org>
  *                          Christopher Ross <chris@tebibyte.org>
  *                          Christophe Massiot <massiot@via.ecp.fr>
+ *
+ * Copyright (C) 1998-2005 the VideoLAN team
  * 
  * Parts of this code come from libdvbpsi, modified for mumudvb
  * by Brice DUBOST 
@@ -56,153 +58,13 @@
 
 #include "errors.h"
 #include "cam.h"
+#include "ts.h"
 #include "mumudvb.h"
 
-extern unsigned long       crc32_table[256];
-
-int cam_parse_pmt(unsigned char *buf, mumudvb_pmt_t *pmt, struct ca_info *cai)
-{
-  //This function will join the 188 bytes packet until the PMT is full
-  //Once it's full we check the CRC32 and say if it's ok or not
-  //
-  //There is two important mpeg2-ts fields to do that
-  // * the continuity counter wich is incremented for each packet
-  // * The payload_unit_start_indicator wich says if it's the first packet
-  //
-  //When a packet is cutted in 188 bytes packets, there should be no other pid between two sub packets
-  //
-  //Return 1 when the packet is full and OK
-
-
-  ts_header_t *header;
-  int ok=0;
-  int parsed=0;
-  int delta,pid;
-
-  //mapping of the buffer onto the TS header
-  header=(ts_header_t *)buf;
-  pid=HILO(header->pid);
-
-  //delta used to remove TS HEADER
-  delta = TS_HEADER_LEN-1; 
-
-  //Sometimes there is some more data in the header, the adaptation field say it
-  if (header->adaptation_field_control & 0x2)
-    {
-      log_message( MSG_DEBUG, "CAM : parse PMT : Adaptation field \n");
-      delta += buf[delta] ;        // add adapt.field.len
-    }
-  else if (header->adaptation_field_control & 0x1)
-    {
-      if (buf[delta]==0x00 && buf[delta+1]==0x00 && buf[delta+2]==0x01) 
-	{
-	  // -- PES/PS                                                                                                                               
-	  //tspid->id   = buf[j+3];                                                                                                                  
-	  log_message( MSG_DEBUG, "CAM : parse PMT : #PES/PS ----- We ignore \n");
-	  ok=0;
-	}
-      else
-	  ok=1;
-    }
-
-  if (header->adaptation_field_control == 3)
-    ok=0;
-
-  if(header->payload_unit_start_indicator) //It's the beginning of a new packet
-    {
-      if(ok)
-	{
-	  pmt->empty=0;
-	  pmt->continuity_counter=header->continuity_counter;
-	  pmt->pid=pid;
-	  pmt->len=AddPacketStart(pmt->packet,buf+delta+1,188-delta-1); //on ajoute le paquet //NOTE len
-	}
-    }
-  else if(header->payload_unit_start_indicator==0) //Not the first, we check if che already registered packet corresponds
-    {
-      // -- pid change in stream? (without packet start). This is not supported
-      if (pmt->pid != pid)
-	{
-	  //log_message( MSG_INFO,"CAM : PMT parse. ERROR : PID change\n");
-	  pmt->empty=1;
-	}
-      // -- discontinuity error in packet ?                                                                                                          
-      if  ((pmt->continuity_counter+1)%16 != header->continuity_counter) 
-	{
-	  log_message( MSG_INFO,"CAM : PMT parse : Continuity ERROR\n\n");
-	  pmt->empty=1;
-	  return 0;
-	}
-      pmt->continuity_counter=header->continuity_counter;
-      pmt->len=AddPacketContinue(pmt->packet,buf+delta,188-delta,pmt->len); //on ajoute le paquet 
-
-      //log_message( MSG_INFO,"CAM : \t\t Len %d PMT_len %d\n",pmt->len,HILO(((pmt_t *)pmt->packet)->section_length));
-      
-      //We check if the PMT is full
-      if (pmt->len > ((HILO(((pmt_t *)pmt->packet)->section_length))+3)) //+3 is for the header
-      {
-	//Yes, it's full, I check the CRC32 to say it's valid
-	parsed=cam_ca_pmt_check_CRC(pmt); //TEST CRC32
-      }
-    }
-  return parsed;
-}
-
-
-
-//Les fonctions qui permettent de coller les paquets les uns aux autres
-// -- add TS data
-// -- return: 0 = fail
-int AddPacketStart (unsigned char *packet, unsigned char *buf, unsigned int len)
-{
-  memset(packet,0,4096);
-  memcpy(packet,buf,len);
-  return len;
-}
-
-int AddPacketContinue  (unsigned char *packet, unsigned char *buf, unsigned int len, unsigned int act_len)
-{
-  memcpy(packet+act_len,buf,len);
-  return len+act_len;
-}
-
-
-//Checking of the CRC32
-int cam_ca_pmt_check_CRC( mumudvb_pmt_t *pmt)
-{
-  pmt_t *pmt_struct;
-  unsigned long crc32;
-  int i;
-
-  pmt_struct=(pmt_t *)pmt->packet;
-
-  //the real lenght
-  pmt->len=HILO(pmt_struct->section_length)+3; //+3 pour les trois bits du début (compris le section_lenght)
-
-  //CRC32 calculation mostly taken from the xine project
-  //Test of the crc32
-  crc32=0xffffffff;
-  //we compute the CRC32
-  //we have two ways: either we compute untill the end and it should be 0
-  //either we exclude the 4 last bits and in should be equal to the 4 last bits
-  for(i = 0; i < pmt->len; i++) {
-    crc32 = (crc32 << 8) ^ crc32_table[(crc32 >> 24) ^ pmt->packet[i]];
-  }
-  
-  if(crc32!=0)
-    {
-      //Bad CRC32
-      log_message( MSG_DETAIL,"CAM : \tBAD CRC32 PID : %d\n", pmt->pid);
-      return 0; //We don't send this PMT
-    }
-  
-  return 1;
-
-}
 
 
 /****************************************************************************/
-//Code from libdvb with commentaries added
+//Code from libdvbpsi, adapted and with commentaries added
 //convert the PMT into CA_PMT
 /****************************************************************************/
 
@@ -213,16 +75,21 @@ int convert_desc(struct ca_info *cai,
   int i, j, dlen, olen=0;
   int id;
   int bad_sysid=0;
+  descr_ca_t *descriptor;
+
 
   out[2]=cmd;                            //ca_pmt_cmd_id 01 ok_descrambling 02 ok_mmi 03 query 04 not_selected
   for (i=0; i<dslen; i+=dlen)           //loop on all the descriptors (for each descriptor we add its length)
     {
-      dlen=buf[i+1]+2;                     //ca_descriptor len
+      descriptor=(descr_ca_t *)(buf+i);
+      dlen=descriptor->descriptor_length+2;
+      //dlen=buf[i+1]+2;                     //ca_descriptor len
       //if(!quiet)
       //log_message( MSG_INFO,"CAM : \tDescriptor tag %d\n",buf[i]);
-      if ((buf[i]==9)&&(dlen>2)&&(dlen+i<=dslen)) //here buf[i]=descriptor_tag (9=ca_descriptor)
+      if ((descriptor->descriptor_tag==9)&&(dlen>2)&&(dlen+i<=dslen)) //descriptor_tag (9=ca_descriptor)
 	{
-	  id=(buf[i+2]<<8)|buf[i+3];
+	  //id=(buf[i+2]<<8)|buf[i+3];
+	  id=HILO(descriptor->CA_type);
 	  for (j=0; j<cai->sys_num; j++)
 	    if (cai->sys_id[j]==id) //does the system id supported by the cam ?
 	      break; //yes --> we leave the loop
@@ -249,17 +116,27 @@ int convert_desc(struct ca_info *cai,
   return olen+2;      //we return the total written len
 }
 
-int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt, 
+int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt, 
 		       uint8_t list, uint8_t cmd, int quiet)
 {
 	int slen, dslen, o, i;
 	uint8_t *buf;
 	uint8_t *out;
 	int ds_convlen;
+	pmt_t *header;
+	int program_info_length=0;
+	pmt_info_t *descr_header;
 
 	if(!quiet)
 	  log_message( MSG_DEBUG,"CAM : \t===PMT convert into CA_PMT\n");
 
+        header=(pmt_t *)pmt->packet;
+
+        if(header->table_id!=0x02)
+          {
+            log_message( MSG_WARN,"CAM : == Packet PID %d is not a PMT PID\n", pmt->pid);
+            return 1;
+          }
 
 	pmt->need_descr=0;
 	
@@ -271,40 +148,44 @@ int convert_pmt(struct ca_info *cai, mumudvb_pmt_t *pmt,
 	out[1]=buf[3]; //program number and version number
 	out[2]=buf[4]; //program number and version number
 	out[3]=buf[5]; //program number and version number
-	dslen=((buf[10]&0x0f)<<8)|buf[11]; //program_info_length
-	ds_convlen=convert_desc(cai, out+4, buf+12, dslen, cmd, quiet); //new index : 4 + the descriptor size
+
+	//dslen=((buf[10]&0x0f)<<8)|buf[11]; //program_info_length
+	program_info_length=HILO(header->program_info_length); //program_info_length
+
+	ds_convlen=convert_desc(cai, out+4, buf+PMT_LEN, program_info_length, cmd, quiet); //new index : 4 + the descriptor size
 	o=4+ds_convlen;
 	if(ds_convlen>2)
 	  pmt->need_descr=1;
-	for (i=dslen+12; i<slen-9; i+=dslen+5) {      //we parse the part after the descriptors
-	  dslen=((buf[i+3]&0x0f)<<8)|buf[i+4];        //ES_info_length
-	  if ((buf[i]==0)||(buf[i]>4))                //stream_type
-	    {
-	      if(!quiet)
-		log_message( MSG_DEBUG, "CAM : \t=====Stream type throwed away : %d\n",buf[i]);
-	      continue;
-	    }
-	  if(!quiet)
-	    {
-	      switch(buf[i]){
-	      case 1:
-	      case 2:
-		log_message( MSG_DEBUG,"CAM : \t=====Stream type : video\n");
-		break;
-	      case 3:
-	      case 4:
-		log_message( MSG_DEBUG,"CAM : \t=====Stream type : audio\n");
-		break;
-	      default:
-		log_message( MSG_DEBUG,"CAM : \t=====Stream type : %d\n",buf[i]);
-	      }
-	    }
-
+	for (i=program_info_length+PMT_LEN; i<=slen-(PMT_INFO_LEN+4); i+=dslen+PMT_INFO_LEN) {      //we parse the part after the descriptors
+	  descr_header=(pmt_info_t *)(pmt->packet+i);
+	  dslen=HILO(descr_header->ES_info_length);        //ES_info_length
+	  switch(descr_header->stream_type){
+	  case 1:
+	  case 2:
+	    if(!quiet)
+	      log_message( MSG_DEBUG,"CAM : \t=====Stream type : video\n");
+	    break;
+	  case 3:
+	  case 4:
+	    if(!quiet)
+	      log_message( MSG_DEBUG,"CAM : \t=====Stream type : audio\n");
+	    break;
+	  case 0x06:
+	    if(!quiet)
+	      log_message( MSG_DEBUG,"CAM : \t=====Stream type : teletex, AC3 or subtitling, don(t kno if we need to descramble, dropped\n");
+	    continue;
+	    //break;
+	  default:
+	    if(!quiet)
+	      log_message( MSG_DEBUG, "CAM : \t=====Stream type throwed away : 0x%02x\n",buf[i]);
+	    continue;
+	  }
+	  
 	  out[o++]=buf[i];                            //stream_type
 	  out[o++]=buf[i+1];                          //reserved and elementary_pid
 	  out[o++]=buf[i+2];                          //reserved and elementary_pid
 	  //log_message( MSG_INFO,"CAM : TEST, PID %d bytes : %d %x \n",((buf[i+1] & 0x1f)<<8) | buf[i+2]);
-	  ds_convlen=convert_desc(cai, out+o, buf+i+5, dslen, cmd,quiet);//we look to the descriptors associated to this stream
+	  ds_convlen=convert_desc(cai, out+o, buf+i+PMT_INFO_LEN, dslen, cmd,quiet);//we look to the descriptors associated to this stream
 	  o+=ds_convlen;
 	  if(ds_convlen>2)
 	    pmt->need_descr=1;
@@ -329,7 +210,7 @@ int CAMOpen( access_sys_t * p_sys , int card, int device)
     i_adapter = card;
     i_device = device;
 
-    if( snprintf( ca, sizeof(ca), CA, i_adapter, i_device ) >= (int)sizeof(ca) )
+    if( snprintf( ca, sizeof(ca), CA_DEV, i_adapter, i_device ) >= (int)sizeof(ca) )
     {
         log_message( MSG_INFO,"CAM : snprintf() truncated string for CA" );
         ca[sizeof(ca) - 1] = '\0';
@@ -429,6 +310,7 @@ int CAMPoll( access_sys_t * p_sys )
         break;
     case CA_CI:
         i_ret = 0;
+        log_message( MSG_WARN, "CAMPoll: CAM link type not supported\n" );
         break;
     default:
         log_message( MSG_WARN, "CAMPoll: This should not happen\n" );
@@ -439,9 +321,9 @@ int CAMPoll( access_sys_t * p_sys )
 }
 
 /*****************************************************************************
- * CAMSet :
+ * CAMSet : //TODO use this function
  *****************************************************************************/
-int CAMSet( access_sys_t * p_sys, mumudvb_pmt_t *p_pmt )
+int CAMSet( access_sys_t * p_sys, mumudvb_ts_packet_t *p_pmt )
 {
 
     if( p_sys->i_ca_handle == 0 )
@@ -450,7 +332,7 @@ int CAMSet( access_sys_t * p_sys, mumudvb_pmt_t *p_pmt )
         return ERROR_CAM;
     }
 
-    en50221_SetCAPMT( p_sys, p_pmt );
+    en50221_SetCAPMT( p_sys, p_pmt , NULL); //TODO replace null by channels
 
     return 0;
 }

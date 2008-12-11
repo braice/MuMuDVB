@@ -1,0 +1,85 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          mumudvb
+# Required-Start:    $local_fs $network $syslog
+# Required-Stop:     
+# Default-Start:     S
+# Default-Stop:      
+# Short-Description: mumudvb
+# Description:       Digital television streaming program
+### END INIT INFO
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/bin/mumudvb
+PIDDIR=/var/run/mumudvb
+NAME=Mumudvb
+
+#Reading of the config file
+if [ -f /etc/default/mumudvb ] ; then
+        . /etc/default/mumudvb
+fi
+
+if [ "$DONTSTARTMUMU" = "true" ]; then exit 0; fi
+
+. /lib/lsb/init-functions
+
+test -x $DAEMON || exit 0
+
+set -e
+
+do_start() {
+        if [ ! -d $PIDDIR ]; then
+                mkdir -p $PIDDIR
+        fi
+        chown $DAEMONUSER:$DAEMONUSER $PIDDIR
+	eval $LAUNCH_BEFORE_MUMU
+	for ADAPTER in $ADAPTERS; do
+		#Todo : fails if all card fails
+		log_daemon_msg "     Card $ADAPTER"
+		eval CONFIG_FILE=\$MUMUDVB_CONF_$ADAPTER 
+		if [ ! -f $CONFIG_FILE ]; then
+                   log_warning_msg "        Config file $CONFIG_FILE not found."
+		else
+		   start-stop-daemon --start --oknodo --pidfile "$PIDDIR/mumudvb_carte$ADAPTER.pid"\ 
+               		 --chuid $DAEMONUSER --exec $DAEMON -- $DAEMON_OPTS -c $CONFIG_FILE
+		fi
+	done
+}
+
+do_stop() {
+	for PIDFILE in `ls $PIDDIR/mumudvb_carte*.pid 2> /dev/null`; do
+	        start-stop-daemon --stop --oknodo --pidfile "$PIDFILE" \
+        	        --exec $DAEMON 
+	done
+}
+
+case "$1" in
+  start)
+        if [ ! -f /etc/default/mumudvb ]; then
+                log_failure_msg "/etc/default/mumudvb not found, Can't start $NAME"
+                exit 0
+        fi
+        
+        log_daemon_msg "Starting $NAME"
+        do_start
+        log_end_msg $?
+        ;;
+  stop)
+        log_daemon_msg "Stopping $NAME"
+        do_stop
+        log_end_msg $?
+        ;;
+  restart|force-reload)
+        log_daemon_msg "Restarting $NAME"
+        do_stop
+        sleep 1
+        do_start
+        log_end_msg $?
+        ;;
+  *)
+        log_success_msg "Usage: $0 {start|stop|restart|force-reload}" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

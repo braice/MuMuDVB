@@ -1,11 +1,43 @@
+/* 
+ * mumudvb - UDP-ize a DVB transport stream.
+ * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
+ * 
+ * (C) 2004-2008 Brice DUBOST
+ * 
+ * The latest version can be found at http://mumudvb.braice.net
+ * 
+ * Copyright notice:
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *     
+ */
+
+
 #ifndef _MUMUDVB_H
 #define _MUMUDVB_H
+
+#define VERSION "1.5.3"
+
+//#include "ts.h"
+#include "udp.h"  //for the sockaddr
 
 //the number of pids by channel
 #define MAX_PIDS_PAR_CHAINE     18
 
 //the maximum channel number
-#define MAX_CHAINES		128
+#define MAX_CHANNELS		128
 
 //Size of an MPEG2-TS packet
 #define TS_PACKET_SIZE 188
@@ -15,17 +47,23 @@
 #define ALARM_TIME_TIMEOUT 60
 #define ALARM_TIME_TIMEOUT_NO_DIFF 600
 
+//timeout for autoconfiguration
+#define AUTOCONFIGURE_TIME 10
+
 // seven dvb paquets in one UDP
 #define MAX_UDP_SIZE (TS_PACKET_SIZE*7)
 
 //the max mandatory pid number
-#define MAX_MANDATORY           32
+#define MAX_MANDATORY_PID_NUMBER   32
 //config line length
 #define CONF_LINELEN 	        512
 #define ALARM_COUNT_LIMIT	1024
-#define MAX_LEN_NOM		256
+#define MAX_NAME_LEN		256
 
+//Maximum number of polling tries
+#define MAX_POLL_TRIES		5
 
+//errors
 enum
   {
     MSG_ERROR=-2,
@@ -35,85 +73,37 @@ enum
     MSG_DEBUG
   };
 
+//Channels
+typedef struct{
+  int streamed_channel;    //tell if this channel is actually streamed
+  int streamed_channel_old;//tell if this channel is actually streamed (precedent test, to see if it's changed)
 
-//For pat rewriting
+  char name[MAX_NAME_LEN];  //the channel name
 
-//From libsi
-//   (C) 2001-03 Rolf Hakenes <hakenes@hippomi.de>, under the
-//               GNU GPL with contribution of Oleg Assovski,
-//               www.satmania.com
+  int pids[MAX_PIDS_PAR_CHAINE];   //the channel pids
+  int num_pids;                    //number of channel pids
+  int cam_pmt_pid;                 //pmt pid number for cam support
 
-#define TS_HEADER_LEN 5
-#define HILO(x) (x##_hi << 8 | x##_lo)
+  unsigned char buf[MAX_UDP_SIZE]; //the buffer wich will be sent once it's full
+  int nb_bytes;                    //number of bytes actually in the buffer
 
- /*
- *
- *    ETSI ISO/IEC 13818-1 specifies SI which is referred to as PSI. The PSI
- *    data provides information to enable automatic configuration of the
- *    receiver to demultiplex and decode the various streams of programs
- *    within the multiplex. The PSI data is structured as four types of table.
- *    The tables are transmitted in sections.
- *
- *    1) Program Association Table (PAT):
- *
- *       - for each service in the multiplex, the PAT indicates the location
- *         (the Packet Identifier (PID) values of the Transport Stream (TS)
- *         packets) of the corresponding Program Map Table (PMT).
- *         It also gives the location of the Network Information Table (NIT).
- *
- */
+  int autoconfigurated;            //is the channel autoconfigurated ?
 
-#define PAT_LEN 8
+  char ipOut[20];
+  char sap_group[20];
+  int portOut;
+  struct sockaddr_in sOut;
+  int socketOut;
 
-typedef struct {
-   u_char table_id                               :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char section_syntax_indicator               :1;
-   u_char dummy                                  :1;        // has to be 0
-   u_char                                        :2;
-   u_char section_length_hi                      :4;
-#else
-   u_char section_length_hi                      :4;
-   u_char                                        :2;
-   u_char dummy                                  :1;        // has to be 0
-   u_char section_syntax_indicator               :1;
-#endif
-   u_char section_length_lo                      :8;
-   u_char transport_stream_id_hi                 :8;
-   u_char transport_stream_id_lo                 :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :2;
-   u_char version_number                         :5;
-   u_char current_next_indicator                 :1;
-#else
-   u_char current_next_indicator                 :1;
-   u_char version_number                         :5;
-   u_char                                        :2;
-#endif
-   u_char section_number                         :8;
-   u_char last_section_number                    :8;
-} pat_t;
-
-#define PAT_PROG_LEN 4
-
-typedef struct {
-   u_char program_number_hi                      :8;
-   u_char program_number_lo                      :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :3;
-   u_char network_pid_hi                         :5;
-#else
-   u_char network_pid_hi                         :5;
-   u_char                                        :3;
-#endif
-   u_char network_pid_lo                         :8; 
-   /* or program_map_pid (if prog_num=0)*/
-} pat_prog_t;
+}mumudvb_channel_t;
 
 
 //logging
 void log_message( int , const char *, ... );
+void gen_chaines_diff (char *nom_fich_chaines_diff, char *nom_fich_chaines_non_diff, int nb_flux, mumudvb_channel_t *channels);
+void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels);
 
-
+//pat_rewrite
+int pat_rewrite(unsigned char *buf,int num_pids, int *pids);
 
 #endif
