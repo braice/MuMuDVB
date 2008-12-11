@@ -23,7 +23,7 @@ all: $(OUT)
 
 mumudvb: $(OBJ_FILES)
 ifdef LIBDVBEN50221
-	$(CC) $(INCS) $(CFLAGS) -llibdvben50221 -I../lib/libdvben50221 -o $@ $^
+	$(CC) $(INCS) $(CFLAGS) -ldvben50221 -ldvbapi -lucsi -I../lib/libdvben50221 -o $@ $^
 else
 	$(CC) $(INCS) $(CFLAGS) -o $@ $^
 endif
