@@ -20,8 +20,13 @@ endif
 
 all: $(OUT)
 
+
 mumudvb: $(OBJ_FILES)
+ifdef LIBDVBEN50221
+	$(CC) $(INCS) $(CFLAGS) -llibdvben50221 -I../lib/libdvben50221 -o $@ $^
+else
 	$(CC) $(INCS) $(CFLAGS) -o $@ $^
+endif
 
 clean: clean_objs
 	-rm -f  $(OUT)
@@ -38,8 +43,11 @@ uninstall:
 	-rm -r /var/run/mumudvb
 
 %.o: %.c
+ifdef LIBDVBEN50221
+	$(CC) $(CFLAGS) -I../lib/libdvben50221 -c $<
+else
 	$(CC) $(CFLAGS) -c $<
-
+endif
 .depend: $(SRC_FILES)
 	$(CC) -MM $^ > $@
 

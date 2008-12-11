@@ -50,7 +50,9 @@
 #include "ts.h"
 #include "mumudvb.h"
 
-
+#ifdef LIBDVBEN50221
+#include <libdvben50221/en50221_stdcam.h>
+#endif
 
 struct ca_info {
   int initialized; //are the cai complete ?

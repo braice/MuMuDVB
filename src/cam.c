@@ -193,6 +193,8 @@ int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt,
 	return o;
 }
 
+
+#ifndef LIBDVBEN50221
 /****************************************************************************/
 /* VLC part */
 /****************************************************************************/
@@ -351,3 +353,4 @@ void CAMClose( access_sys_t * p_sys )
     }
 }
 
+#endif
