@@ -364,80 +364,91 @@ static int mumudvb_cam_ai_callback(void *arg, uint8_t slot_id, uint16_t session_
 		    uint8_t *menu_string);
 static int mumudvb_cam_ca_info_callback(void *arg, uint8_t slot_id, uint16_t session_number, uint32_t ca_id_count, uint16_t *ca_ids);
 
-int cam_start(cam_parameters_t cam_params, int adapter_id)
+
+
+void en50221_stdcam_llci_destroy(struct en50221_stdcam *stdcam, int closefd);
+
+
+int cam_start(cam_parameters_t *cam_params, int adapter_id)
 {
   // create transport layer
-  cam_params.tl = en50221_tl_create(1, 16);
-  if (cam_params.tl == NULL) {
+  cam_params->tl = en50221_tl_create(1, 16);
+  if (cam_params->tl == NULL) {
     log_message( MSG_ERROR,"ERROR : CAM : Failed to create transport layer\n");
     return 1;
   }
 
   // create session layer
-  cam_params.sl = en50221_sl_create(cam_params.tl, 16);
-  if (cam_params.sl == NULL) {
+  cam_params->sl = en50221_sl_create(cam_params->tl, 16);
+  if (cam_params->sl == NULL) {
     log_message( MSG_ERROR, "ERROR : CAM : Failed to create session layer\n");
-    en50221_tl_destroy(cam_params.tl);
+    en50221_tl_destroy(cam_params->tl);
     return 1;
   }
 
   // create the stdcam instance
-  cam_params.stdcam = en50221_stdcam_create(adapter_id, cam_params.cam_number, cam_params.tl, cam_params.sl);
-  if (cam_params.stdcam == NULL) {
+  cam_params->stdcam = en50221_stdcam_create(adapter_id, cam_params->cam_number, cam_params->tl, cam_params->sl);
+  if (cam_params->stdcam == NULL) {
     log_message( MSG_ERROR, "ERROR : CAM : Failed to create the stdcam instance (no cam present ?)\n");
-    en50221_sl_destroy(cam_params.sl);
-    en50221_tl_destroy(cam_params.tl);
+    en50221_sl_destroy(cam_params->sl);
+    en50221_tl_destroy(cam_params->tl);
     return 1;
   }
+
   // hook up the AI callbacks
-  if (cam_params.stdcam->ai_resource) {
-    en50221_app_ai_register_callback(cam_params.stdcam->ai_resource, mumudvb_cam_ai_callback, cam_params.stdcam);
+  if (cam_params->stdcam->ai_resource) {
+    en50221_app_ai_register_callback(cam_params->stdcam->ai_resource, mumudvb_cam_ai_callback, cam_params->stdcam);
   }
 
   // hook up the CA callbacks
-  if (cam_params.stdcam->ca_resource) {
-    en50221_app_ca_register_info_callback(cam_params.stdcam->ca_resource, mumudvb_cam_ca_info_callback, &cam_params);
+  if (cam_params->stdcam->ca_resource) {
+    en50221_app_ca_register_info_callback(cam_params->stdcam->ca_resource, mumudvb_cam_ca_info_callback, cam_params);
   }
 
   //TODO : add hook up for MMI Callbacks (To display Menus)
 
   // any other stuff
-  cam_params.moveca = 1; //see http://www.linuxtv.org/pipermail/linux-dvb/2007-May/018198.html
-
+  cam_params->moveca = 1; //see http://www.linuxtv.org/pipermail/linux-dvb/2007-May/018198.html
   // start the cam thread
-  pthread_create(&cam_params.camthread, NULL, camthread_func, &cam_params);
-
+  pthread_create(&(cam_params->camthread), NULL, camthread_func, cam_params);
   return 0;
 }
 
-void cam_stop(cam_parameters_t cam_params)
+void cam_stop(cam_parameters_t *cam_params)
 {
-  if (cam_params.stdcam == NULL)
+  if (cam_params->stdcam == NULL)
     return;
 
   // shutdown the cam thread
-  cam_params.camthread_shutdown = 1;
-  pthread_join(cam_params.camthread, NULL);
+  cam_params->camthread_shutdown = 1;
+  pthread_join(cam_params->camthread, NULL);
 
   // destroy session layer
-  en50221_sl_destroy(cam_params.sl);
+  en50221_sl_destroy(cam_params->sl);
 
   // destroy transport layer
-  en50221_tl_destroy(cam_params.tl);
+  en50221_tl_destroy(cam_params->tl);
 
-  // destroy the stdcam
-  if (cam_params.stdcam->destroy)
-    cam_params.stdcam->destroy(cam_params.stdcam, 1);
+  // destroy the stdcam //FIXME : Doesn't work
+  /*get stuk in the line 
+  pthread_mutex_lock(&tl->slots[slot_id].slot_lock);
+  
+  Backtrace : 
+  en50221_tl_destroy_slot(llci->tl, llci->tl_slot_id);
+  llci_cam_removed(llci);
+  static void en50221_stdcam_llci_destroy(struct en50221_stdcam *stdcam, int closefd)
+  */
+  //  if (cam_params->stdcam->destroy)
+  //cam_params->stdcam->destroy(cam_params->stdcam, 1);
 }
 
 static void *camthread_func(void* arg)
 {
   cam_parameters_t *cam_params;
   cam_params= (cam_parameters_t *) arg;
-
-  while(!cam_params->camthread_shutdown) {
+  while(!cam_params->camthread_shutdown) { 
+    usleep(100000); //some waiting
     cam_params->stdcam->poll(cam_params->stdcam);
-    log_message( MSG_DEBUG, "Polllll\n");
   }
 
   return 0;
@@ -473,8 +484,89 @@ static int mumudvb_cam_ca_info_callback(void *arg, uint8_t slot_id, uint16_t ses
   for(i=0; i< ca_id_count; i++) {
     log_message( MSG_INFO, "  0x%04x\n", ca_ids[i]);
   }
-  cam_params->ca_resource_connected = 1; //Todo : see how to acces to this variable (via the callback call)
+  cam_params->ca_resource_connected = 1; 
   return 0;
 }
+
+
+
+
+int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_pmt_ptr)
+{
+  uint8_t capmt[4096];
+  int size;
+
+  // parse section
+  struct section *section = section_codec(cam_pmt_ptr->packet,cam_pmt_ptr->len);
+  if (section == NULL) {
+    log_message( MSG_WARN,"CAM : section_codec parsing error\n");
+    return -1;
+  }
+
+  // parse section_ext
+  struct section_ext *section_ext = section_ext_decode(section, 0);
+  if (section_ext == NULL) {
+    log_message( MSG_WARN,"CAM : section_ext parsing error\n");
+    return -1;
+  }
+
+#if 0
+  if ((section_ext->table_id_ext != cam_pmt_ptr->i_program_number) || //program number "already checked" by thb pmt pid attribution
+      (section_ext->version_number == cam_params->ca_pmt_version)) { //cam_pmt_version allow to see if there is new information, not implemented for the moment (to be attached to the channel)
+    return;
+  }
+#endif
+
+  // parse PMT
+  struct mpeg_pmt_section *pmt = mpeg_pmt_section_codec(section_ext);
+  if (pmt == NULL) {
+    log_message( MSG_WARN,"CAM : mpeg_pmt_section_codec parsing error\n");
+    return -1;
+  }
+
+  if(pmt->head.table_id!=0x02)
+    {
+      log_message( MSG_WARN,"CAM : == Packet PID %d is not a PMT PID\n", cam_pmt_ptr->pid);
+      return 1;
+    }
+
+
+  if (cam_params->stdcam == NULL)
+    return -1;
+
+  if (cam_params->ca_resource_connected) {
+    log_message( MSG_INFO, "Received new PMT - sending to CAM...\n");
+
+    // translate it into a CA PMT
+    int listmgmt = CA_LIST_MANAGEMENT_ONLY;
+    if (cam_params->seenpmt) {
+      listmgmt = CA_LIST_MANAGEMENT_UPDATE;
+    }
+    cam_params->seenpmt = 1;
+
+    if ((size = en50221_ca_format_pmt(pmt, capmt, sizeof(capmt), cam_params->moveca, listmgmt,
+				      CA_PMT_CMD_ID_OK_DESCRAMBLING)) < 0) {
+      log_message( MSG_WARN, "Failed to format PMT\n");
+      return -1;
+    }
+
+    // set it
+    if (en50221_app_ca_pmt(cam_params->stdcam->ca_resource, cam_params->stdcam->ca_session_number, capmt, size)) {
+      log_message( MSG_WARN, "Failed to send PMT\n");
+      return -1;
+    }
+
+    // we've seen this PMT
+    return 1;
+  }
+
+  return 0;
+}
+
+
+
+
+
+
 
 #endif

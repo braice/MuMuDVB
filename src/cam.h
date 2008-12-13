@@ -233,10 +233,11 @@ typedef struct cam_parameters_t{
   pthread_t camthread;
   int seenpmt;
   int moveca;
+  int delay; //used to avoit timeout of the cam when sending pmts
 #else
   access_sys_t *cam_sys_access;
-  mumudvb_ts_packet_t *cam_pmt_ptr;
 #endif
+  mumudvb_ts_packet_t *cam_pmt_ptr;
 }cam_parameters_t;
 
 /*****************************************************************************
@@ -244,9 +245,9 @@ typedef struct cam_parameters_t{
  *****************************************************************************/
 #ifdef LIBDVBEN50221
 
-int cam_start(cam_parameters_t, int);
-void cam_stop(cam_parameters_t);
-
+int cam_start(cam_parameters_t *, int);
+void cam_stop(cam_parameters_t *);
+int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_pmt_ptr);
 #endif
 
 #endif
