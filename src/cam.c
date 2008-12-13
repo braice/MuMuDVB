@@ -56,6 +56,11 @@
 #include <linux/dvb/dmx.h>
 #include <linux/dvb/frontend.h>
 
+
+#ifdef LIBDVBEN50221
+#include <libucsi/section.h>
+#endif
+
 #include "errors.h"
 #include "cam.h"
 #include "ts.h"
@@ -63,6 +68,7 @@
 
 
 
+#ifndef LIBDVBEN50221
 /****************************************************************************/
 //Code from libdvbpsi, adapted and with commentaries added
 //convert the PMT into CA_PMT
@@ -194,7 +200,6 @@ int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt,
 }
 
 
-#ifndef LIBDVBEN50221
 /****************************************************************************/
 /* VLC part */
 /****************************************************************************/
@@ -355,18 +360,20 @@ void CAMClose( access_sys_t * p_sys )
 
 #else
 /*****************************************************************************
- * Code for dealing with libdvben50221
+ * Code for dealing with cam using libdvben50221
  *****************************************************************************/
-static void *camthread_func(void* arg);
+static void *camthread_func(void* arg); //The polling thread
 static int mumudvb_cam_ai_callback(void *arg, uint8_t slot_id, uint16_t session_number,
 			   uint8_t application_type, uint16_t application_manufacturer,
 			   uint16_t manufacturer_code, uint8_t menu_string_length,
-		    uint8_t *menu_string);
+				   uint8_t *menu_string); //The application information callback
 static int mumudvb_cam_ca_info_callback(void *arg, uint8_t slot_id, uint16_t session_number, uint32_t ca_id_count, uint16_t *ca_ids);
+static int mumudvb_cam_app_ca_pmt_reply_callback(void *arg,
+                                                  uint8_t slot_id,
+                                                  uint16_t session_number,
+                                                  struct en50221_app_pmt_reply *reply,
+                                                  uint32_t reply_size);
 
-
-
-void en50221_stdcam_llci_destroy(struct en50221_stdcam *stdcam, int closefd);
 
 
 int cam_start(cam_parameters_t *cam_params, int adapter_id)
@@ -403,7 +410,10 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id)
   // hook up the CA callbacks
   if (cam_params->stdcam->ca_resource) {
     en50221_app_ca_register_info_callback(cam_params->stdcam->ca_resource, mumudvb_cam_ca_info_callback, cam_params);
+    en50221_app_ca_register_pmt_reply_callback(cam_params->stdcam->ca_resource, mumudvb_cam_app_ca_pmt_reply_callback, cam_params);
   }
+
+
 
   //TODO : add hook up for MMI Callbacks (To display Menus)
 
@@ -490,6 +500,78 @@ static int mumudvb_cam_ca_info_callback(void *arg, uint8_t slot_id, uint16_t ses
 
 
 
+static int mumudvb_cam_app_ca_pmt_reply_callback(void *arg,
+                                                  uint8_t slot_id,
+                                                  uint16_t session_number,
+                                                  struct en50221_app_pmt_reply *reply,
+                                                  uint32_t reply_size)
+{
+
+  struct en50221_app_pmt_stream *pos;
+  (void) arg;
+  (void) slot_id;
+  (void) session_number;
+  log_message( MSG_INFO, "CAM PMT reply\n");
+  log_message( MSG_INFO, "  Program number %d\n",reply->program_number);
+
+  switch(reply->CA_enable)
+    {
+    case CA_ENABLE_DESCRAMBLING_POSSIBLE:
+      log_message( MSG_INFO,"   Descrambling possible\n");
+      break;
+    case CA_ENABLE_DESCRAMBLING_POSSIBLE_PURCHASE:
+      log_message( MSG_INFO,"   Descrambling possible under conditions (purchase dialogue)\n");
+      break;
+    case CA_ENABLE_DESCRAMBLING_POSSIBLE_TECHNICAL:
+      log_message( MSG_INFO,"   Descrambling possible under conditions (technical dialogue)\n");
+      break;
+    case CA_ENABLE_DESCRAMBLING_NOT_POSSIBLE_NO_ENTITLEMENT:
+      log_message( MSG_INFO,"   Descrambling not possible (because no entitlement)\n");
+      break;
+    case CA_ENABLE_DESCRAMBLING_NOT_POSSIBLE_TECHNICAL:
+      log_message( MSG_INFO,"   Descrambling not possible (for technical reasons)\n");
+      break;
+    default:
+      log_message( MSG_INFO,"   RFU\n");
+    }
+
+
+  en50221_app_pmt_reply_streams_for_each(reply, pos, reply_size)
+    {
+      log_message( MSG_INFO, "   ES pid %d\n",pos->es_pid);
+      switch(pos->CA_enable)
+	{
+	case CA_ENABLE_DESCRAMBLING_POSSIBLE:
+	  log_message( MSG_INFO,"     Descrambling possible\n");
+	  break;
+	case CA_ENABLE_DESCRAMBLING_POSSIBLE_PURCHASE:
+	  log_message( MSG_INFO,"     Descrambling possible under conditions (purchase dialogue)\n");
+	  break;
+	case CA_ENABLE_DESCRAMBLING_POSSIBLE_TECHNICAL:
+	  log_message( MSG_INFO,"     Descrambling possible under conditions (technical dialogue)\n");
+	  break;
+	case CA_ENABLE_DESCRAMBLING_NOT_POSSIBLE_NO_ENTITLEMENT:
+	  log_message( MSG_INFO,"     Descrambling not possible (because no entitlement)\n");
+	  break;
+	case CA_ENABLE_DESCRAMBLING_NOT_POSSIBLE_TECHNICAL:
+	  log_message( MSG_INFO,"     Descrambling not possible (for technical reasons)\n");
+	  break;
+	default:
+	  log_message( MSG_INFO,"     RFU\n");
+	}
+    }
+
+
+
+
+
+  return 0;
+}
+
+
+
+
+
 
 int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_pmt_ptr)
 {
@@ -546,6 +628,7 @@ int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_p
 
     if ((size = en50221_ca_format_pmt(pmt, capmt, sizeof(capmt), cam_params->moveca, listmgmt,
 				      CA_PMT_CMD_ID_OK_DESCRAMBLING)) < 0) {
+      //CA_PMT_CMD_ID_QUERY)) < 0) {// We don't do query, My cam (powercam PRO) never give good answers
       log_message( MSG_WARN, "Failed to format PMT\n");
       return -1;
     }
@@ -562,7 +645,6 @@ int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_p
 
   return 0;
 }
-
 
 
 

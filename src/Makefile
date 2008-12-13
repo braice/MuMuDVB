@@ -29,7 +29,7 @@ all: $(OUT)
 
 mumudvb: $(OBJ_FILES)
 ifdef LIBDVBEN50221
-	$(CC) $(INCS) $(CFLAGS) -ldvben50221 -ldvbapi -lucsi -lpthread -I../lib/libdvben50221 -o $@ $^
+	$(CC) $(INCS) $(CFLAGS) -ldvben50221 -ldvbapi -lucsi -lpthread -I../lib -o $@ $^
 else
 	$(CC) $(INCS) $(CFLAGS) -o $@ $^
 endif
@@ -50,7 +50,7 @@ uninstall:
 
 %.o: %.c
 ifdef LIBDVBEN50221
-	$(CC) $(CFLAGS) -I../lib/libdvben50221 -c $<
+	$(CC) $(CFLAGS) -I../lib/ -c $<
 else
 	$(CC) $(CFLAGS) -c $<
 endif
