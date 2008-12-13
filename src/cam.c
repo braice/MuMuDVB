@@ -375,6 +375,26 @@ static int mumudvb_cam_app_ca_pmt_reply_callback(void *arg,
                                                   uint32_t reply_size);
 
 
+static int mumudvb_cam_mmi_menu_callback(void *arg, uint8_t slot_id, uint16_t session_number,
+					 struct en50221_app_mmi_text *title,
+					 struct en50221_app_mmi_text *sub_title,
+					 struct en50221_app_mmi_text *bottom,
+					 uint32_t item_count, struct en50221_app_mmi_text *items,
+					 uint32_t item_raw_length, uint8_t *items_raw);
+
+
+static int mumudvb_cam_mmi_close_callback(void *arg, uint8_t slot_id, uint16_t session_number,
+					  uint8_t cmd_id, uint8_t delay);
+
+
+
+static int mumudvb_cam_mmi_display_control_callback(void *arg, uint8_t slot_id, uint16_t session_number,
+						    uint8_t cmd_id, uint8_t mmi_mode);
+
+static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t session_number,
+					uint8_t blind_answer, uint8_t expected_answer_length,
+					uint8_t *text, uint32_t text_size);
+
 
 int cam_start(cam_parameters_t *cam_params, int adapter_id)
 {
@@ -414,8 +434,19 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id)
   }
 
 
-
-  //TODO : add hook up for MMI Callbacks (To display Menus)
+  
+  // hook up the MMI callbacks
+  if (cam_params->stdcam->mmi_resource) {
+    en50221_app_mmi_register_close_callback(cam_params->stdcam->mmi_resource, mumudvb_cam_mmi_close_callback, cam_params);
+    en50221_app_mmi_register_display_control_callback(cam_params->stdcam->mmi_resource, mumudvb_cam_mmi_display_control_callback, cam_params);
+    en50221_app_mmi_register_enq_callback(cam_params->stdcam->mmi_resource, mumudvb_cam_mmi_enq_callback, cam_params);
+    en50221_app_mmi_register_menu_callback(cam_params->stdcam->mmi_resource, mumudvb_cam_mmi_menu_callback, cam_params);
+    en50221_app_mmi_register_list_callback(cam_params->stdcam->mmi_resource, mumudvb_cam_mmi_menu_callback, cam_params);
+  } else {
+    fprintf(stderr, "CAM Menus are not supported by this interface hardware\n");
+    exit(1);
+  }
+  
 
   // any other stuff
   cam_params->moveca = 1; //see http://www.linuxtv.org/pipermail/linux-dvb/2007-May/018198.html
@@ -440,6 +471,7 @@ void cam_stop(cam_parameters_t *cam_params)
   en50221_tl_destroy(cam_params->tl);
 
   // destroy the stdcam //FIXME : Doesn't work
+
   /*get stuk in the line 
   pthread_mutex_lock(&tl->slots[slot_id].slot_lock);
   
@@ -448,6 +480,7 @@ void cam_stop(cam_parameters_t *cam_params)
   llci_cam_removed(llci);
   static void en50221_stdcam_llci_destroy(struct en50221_stdcam *stdcam, int closefd)
   */
+
   //  if (cam_params->stdcam->destroy)
   //cam_params->stdcam->destroy(cam_params->stdcam, 1);
 }
@@ -463,6 +496,85 @@ static void *camthread_func(void* arg)
 
   return 0;
 }
+
+
+
+
+
+
+int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_pmt_ptr)
+{
+  uint8_t capmt[4096];
+  int size;
+
+  // parse section
+  struct section *section = section_codec(cam_pmt_ptr->packet,cam_pmt_ptr->len);
+  if (section == NULL) {
+    log_message( MSG_WARN,"CAM : section_codec parsing error\n");
+    return -1;
+  }
+
+  // parse section_ext
+  struct section_ext *section_ext = section_ext_decode(section, 0);
+  if (section_ext == NULL) {
+    log_message( MSG_WARN,"CAM : section_ext parsing error\n");
+    return -1;
+  }
+
+#if 0
+  if ((section_ext->table_id_ext != cam_pmt_ptr->i_program_number) || //program number "already checked" by thb pmt pid attribution
+      (section_ext->version_number == cam_params->ca_pmt_version)) { //cam_pmt_version allow to see if there is new information, not implemented for the moment (to be attached to the channel)
+    return;
+  }
+#endif
+
+  // parse PMT
+  struct mpeg_pmt_section *pmt = mpeg_pmt_section_codec(section_ext);
+  if (pmt == NULL) {
+    log_message( MSG_WARN,"CAM : mpeg_pmt_section_codec parsing error\n");
+    return -1;
+  }
+
+  if(pmt->head.table_id!=0x02)
+    {
+      log_message( MSG_WARN,"CAM : == Packet PID %d is not a PMT PID\n", cam_pmt_ptr->pid);
+      return 1;
+    }
+
+
+  if (cam_params->stdcam == NULL)
+    return -1;
+
+  if (cam_params->ca_resource_connected) {
+    log_message( MSG_INFO, "CAM : Received new PMT - sending to CAM...\n");
+
+    // translate it into a CA PMT
+    int listmgmt = CA_LIST_MANAGEMENT_ONLY;
+    if (cam_params->seenpmt) {
+      listmgmt = CA_LIST_MANAGEMENT_UPDATE;
+    }
+    cam_params->seenpmt = 1;
+
+    if ((size = en50221_ca_format_pmt(pmt, capmt, sizeof(capmt), cam_params->moveca, listmgmt,
+				      CA_PMT_CMD_ID_OK_DESCRAMBLING)) < 0) {
+      //CA_PMT_CMD_ID_QUERY)) < 0) {// We don't do query, My cam (powercam PRO) never give good answers
+      log_message( MSG_WARN, "Failed to format PMT\n");
+      return -1;
+    }
+
+    // set it
+    if (en50221_app_ca_pmt(cam_params->stdcam->ca_resource, cam_params->stdcam->ca_session_number, capmt, size)) {
+      log_message( MSG_WARN, "Failed to send PMT\n");
+      return -1;
+    }
+
+    // we've seen this PMT
+    return 1;
+  }
+
+  return 0;
+}
+
 
 
 static int mumudvb_cam_ai_callback(void *arg, uint8_t slot_id, uint16_t session_number,
@@ -561,90 +673,136 @@ static int mumudvb_cam_app_ca_pmt_reply_callback(void *arg,
 	}
     }
 
-
-
-
-
   return 0;
 }
 
 
+/*******************************
+ * MMI
+ *******************************/
 
-
-
-
-int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_pmt_ptr)
+static int mumudvb_cam_mmi_menu_callback(void *arg, uint8_t slot_id, uint16_t session_number,
+                                   struct en50221_app_mmi_text *title,
+                                   struct en50221_app_mmi_text *sub_title,
+                                   struct en50221_app_mmi_text *bottom,
+                                   uint32_t item_count, struct en50221_app_mmi_text *items,
+                                   uint32_t item_raw_length, uint8_t *items_raw)
 {
-  uint8_t capmt[4096];
-  int size;
+  cam_parameters_t *cam_params;
+  cam_params= (cam_parameters_t *) arg;
+  (void) slot_id;
+  (void) session_number;
+  (void) item_raw_length;
+  (void) items_raw;
 
-  // parse section
-  struct section *section = section_codec(cam_pmt_ptr->packet,cam_pmt_ptr->len);
-  if (section == NULL) {
-    log_message( MSG_WARN,"CAM : section_codec parsing error\n");
-    return -1;
+  fprintf(stderr, "------------------------------\n");
+
+  if (title->text_length) {
+    fprintf(stderr, "%.*s\n", title->text_length, title->text);
+  }
+  if (sub_title->text_length) {
+    fprintf(stderr, "%.*s\n", sub_title->text_length, sub_title->text);
   }
 
-  // parse section_ext
-  struct section_ext *section_ext = section_ext_decode(section, 0);
-  if (section_ext == NULL) {
-    log_message( MSG_WARN,"CAM : section_ext parsing error\n");
-    return -1;
+  uint32_t i;
+  for(i=0; i< item_count; i++) {
+    fprintf(stderr, "%.*s\n", items[i].text_length, items[i].text);
   }
 
-#if 0
-  if ((section_ext->table_id_ext != cam_pmt_ptr->i_program_number) || //program number "already checked" by thb pmt pid attribution
-      (section_ext->version_number == cam_params->ca_pmt_version)) { //cam_pmt_version allow to see if there is new information, not implemented for the moment (to be attached to the channel)
-    return;
+  if (bottom->text_length) {
+    fprintf(stderr, "%.*s\n", bottom->text_length, bottom->text);
   }
-#endif
+  fflush(stdout);
 
-  // parse PMT
-  struct mpeg_pmt_section *pmt = mpeg_pmt_section_codec(section_ext);
-  if (pmt == NULL) {
-    log_message( MSG_WARN,"CAM : mpeg_pmt_section_codec parsing error\n");
-    return -1;
-  }
+  cam_params->mmi_state = MMI_STATE_MENU;
 
-  if(pmt->head.table_id!=0x02)
-    {
-      log_message( MSG_WARN,"CAM : == Packet PID %d is not a PMT PID\n", cam_pmt_ptr->pid);
-      return 1;
-    }
+  //We leave
+  en50221_app_mmi_answ(cam_params->stdcam->mmi_resource, cam_params->stdcam->mmi_session_number,
+		       MMI_ANSW_ID_CANCEL, NULL, 0);
 
-
-  if (cam_params->stdcam == NULL)
-    return -1;
-
-  if (cam_params->ca_resource_connected) {
-    log_message( MSG_INFO, "Received new PMT - sending to CAM...\n");
-
-    // translate it into a CA PMT
-    int listmgmt = CA_LIST_MANAGEMENT_ONLY;
-    if (cam_params->seenpmt) {
-      listmgmt = CA_LIST_MANAGEMENT_UPDATE;
-    }
-    cam_params->seenpmt = 1;
-
-    if ((size = en50221_ca_format_pmt(pmt, capmt, sizeof(capmt), cam_params->moveca, listmgmt,
-				      CA_PMT_CMD_ID_OK_DESCRAMBLING)) < 0) {
-      //CA_PMT_CMD_ID_QUERY)) < 0) {// We don't do query, My cam (powercam PRO) never give good answers
-      log_message( MSG_WARN, "Failed to format PMT\n");
-      return -1;
-    }
-
-    // set it
-    if (en50221_app_ca_pmt(cam_params->stdcam->ca_resource, cam_params->stdcam->ca_session_number, capmt, size)) {
-      log_message( MSG_WARN, "Failed to send PMT\n");
-      return -1;
-    }
-
-    // we've seen this PMT
-    return 1;
-  }
 
   return 0;
 }
+
+
+
+static int mumudvb_cam_mmi_close_callback(void *arg, uint8_t slot_id, uint16_t session_number,
+                                    uint8_t cmd_id, uint8_t delay)
+{
+  cam_parameters_t *cam_params;
+  cam_params= (cam_parameters_t *) arg;
+  (void) slot_id;
+  (void) session_number;
+  (void) cmd_id;
+  (void) delay;
+
+  // note: not entirely correct as its supposed to delay if asked
+  cam_params->mmi_state = MMI_STATE_CLOSED;
+  return 0;
+}
+
+static int mumudvb_cam_mmi_display_control_callback(void *arg, uint8_t slot_id, uint16_t session_number,
+                                              uint8_t cmd_id, uint8_t mmi_mode)
+{
+  struct en50221_app_mmi_display_reply_details reply;
+  cam_parameters_t *cam_params;
+  cam_params= (cam_parameters_t *) arg;
+  (void) slot_id;
+
+  // don't support any commands but set mode
+  if (cmd_id != MMI_DISPLAY_CONTROL_CMD_ID_SET_MMI_MODE) {
+    en50221_app_mmi_display_reply(cam_params->stdcam->mmi_resource, session_number,
+				  MMI_DISPLAY_REPLY_ID_UNKNOWN_CMD_ID, &reply);
+    return 0;
+  }
+
+  // we only support high level mode
+  if (mmi_mode != MMI_MODE_HIGH_LEVEL) {
+    en50221_app_mmi_display_reply(cam_params->stdcam->mmi_resource, session_number,
+				  MMI_DISPLAY_REPLY_ID_UNKNOWN_MMI_MODE, &reply);
+    return 0;
+  }
+
+  // ack the high level open
+  reply.u.mode_ack.mmi_mode = mmi_mode;
+  en50221_app_mmi_display_reply(cam_params->stdcam->mmi_resource, session_number,
+				MMI_DISPLAY_REPLY_ID_MMI_MODE_ACK, &reply);
+  cam_params->mmi_state = MMI_STATE_OPEN;
+  return 0;
+}
+
+static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t session_number,
+                                  uint8_t blind_answer, uint8_t expected_answer_length,
+                                  uint8_t *text, uint32_t text_size)
+{
+  cam_parameters_t *cam_params;
+  cam_params= (cam_parameters_t *) arg;
+  (void) slot_id;
+  (void) session_number;
+
+  fprintf(stderr, "ENQ");
+  fprintf(stderr, "%.*s: ", text_size, text);
+  fflush(stdout);
+
+  cam_params->mmi_enq_blind = blind_answer;
+  cam_params->mmi_enq_length = expected_answer_length;
+  cam_params->mmi_state = MMI_STATE_ENQ;
+
+  //We leave
+  en50221_app_mmi_answ(cam_params->stdcam->mmi_resource, cam_params->stdcam->mmi_session_number,
+		       MMI_ANSW_ID_CANCEL, NULL, 0);
+
+  return 0;
+}
+
+
+
+
+
+
+
+
+
 
 
 

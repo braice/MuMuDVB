@@ -122,6 +122,7 @@ cam_parameters_t cam_vars={
   .ca_resource_connected=0,
   .seenpmt=0,
   .delay=0,
+  .mmi_state = MMI_STATE_CLOSED,
 #else
 #endif
 };
@@ -1272,7 +1273,7 @@ main (int argc, char **argv)
 #ifndef LIBDVBEN50221
 		if(cam_vars.cam_sys_access->cai->initialized&&cam_vars.cam_sys_access->cai->ready>=3)  
 #else
-		if(cam_vars.ca_resource_connected && cam_vars.delay>=3 )
+		if(cam_vars.ca_resource_connected && cam_vars.delay>=1 )
 #endif
 		{
 		  if ((channels[curr_channel].cam_pmt_pid)&& (channels[curr_channel].cam_pmt_pid == pid))
@@ -1293,7 +1294,8 @@ main (int argc, char **argv)
 			  memset (cam_vars.cam_pmt_ptr, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 #else
 			  cam_vars.delay=0;
-			  mumudvb_cam_new_pmt(&cam_vars, cam_vars.cam_pmt_ptr);
+			  if(mumudvb_cam_new_pmt(&cam_vars, cam_vars.cam_pmt_ptr)==1)
+			    log_message( MSG_INFO,"CAM : CA PMT sent for channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name );
      			  channels[curr_channel].cam_pmt_pid=0; //once we have asked the CAM for this PID, we clear it not to ask it again
 #endif
 

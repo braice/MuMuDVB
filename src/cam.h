@@ -233,7 +233,11 @@ typedef struct cam_parameters_t{
   pthread_t camthread;
   int seenpmt;
   int moveca;
-  int delay; //used to avoit timeout of the cam when sending pmts
+  int delay; //used to get the menu answer
+  int mmi_state;
+  int mmi_enq_blind;
+  int mmi_enq_length;
+
 #else
   access_sys_t *cam_sys_access;
 #endif
@@ -244,6 +248,12 @@ typedef struct cam_parameters_t{
  * Code for dealing with libdvben50221
  *****************************************************************************/
 #ifdef LIBDVBEN50221
+
+#define MMI_STATE_CLOSED 0
+#define MMI_STATE_OPEN 1
+#define MMI_STATE_ENQ 2
+#define MMI_STATE_MENU 3
+
 
 int cam_start(cam_parameters_t *, int);
 void cam_stop(cam_parameters_t *);
