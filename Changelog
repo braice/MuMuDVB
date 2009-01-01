@@ -1,3 +1,9 @@
+-- Mumudvb 1.5.4 --
+
+New features : 
+ * Option dont_tune to avoid mumudvb to try to tune the card (can be used to test dvb-s2)
+
+
 -- Mumudvb 1.5.3 --
 
 New features : 

@@ -76,6 +76,7 @@ mumudvb_channel_t channels[MAX_CHANNELS]; //the channels...
 
 int card = 0;
 int card_tuned = 0;
+int dont_tune = 0;
 int timeout_accord = ALARM_TIME_TIMEOUT;
 int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
 
@@ -369,6 +370,11 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  diseqc = atoi (substring);
+	}
+      else if (!strcmp (substring, "dont_tune"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  dont_tune = atoi (substring);
 	}
       else if (!strcmp (substring, "autoconfiguration"))
 	{
@@ -790,41 +796,46 @@ main (int argc, char **argv)
     signal (SIGUSR1, SIG_IGN);
   alarm (timeout_accord);
 
-  // We tune the card
-  tune_retval =-1;
-
-  if ((freq > 100000000))
+  if(!dont_tune)
     {
-      if (open_fe (&fds.fd_frontend, card))
-	{
-	  tune_retval =
-	    tune_it (fds.fd_frontend, freq, srate, 0, tone, specInv, diseqc,
-		     modulation, HP_CodeRate, TransmissionMode, guardInterval,
-		     bandWidth, LP_CodeRate, hier, display_signal_strenght);
-	}
-    }
-  else if ((freq != 0) && (pol != 0) && (srate != 0))
-    {
-      if (open_fe (&fds.fd_frontend, card))
-	{
-	  tune_retval =
-	    tune_it (fds.fd_frontend, freq, srate, pol, tone, specInv, diseqc,
-		     modulation, HP_CodeRate, TransmissionMode, guardInterval,
-		     bandWidth, LP_CodeRate, hier, display_signal_strenght);
-	}
-    }
-
-  if (tune_retval < 0)
-    {
-      log_message( MSG_INFO, "Tunning issue, card %d\n", card);
+      // We tune the card
+      tune_retval =-1;
       
-      // we close the file descriptors
-      close_card_fd (number_of_channels, channels, fds);
-      exit(ERROR_TUNE);
+      if ((freq > 100000000))
+      {
+        if (open_fe (&fds.fd_frontend, card))
+          {
+            tune_retval =
+              tune_it (fds.fd_frontend, freq, srate, 0, tone, specInv, diseqc,
+                      modulation, HP_CodeRate, TransmissionMode, guardInterval,
+                      bandWidth, LP_CodeRate, hier, display_signal_strenght);
+          }
+      }
+    else if ((freq != 0) && (pol != 0) && (srate != 0))
+      {
+        if (open_fe (&fds.fd_frontend, card))
+          {
+            tune_retval =
+              tune_it (fds.fd_frontend, freq, srate, pol, tone, specInv, diseqc,
+                      modulation, HP_CodeRate, TransmissionMode, guardInterval,
+                      bandWidth, LP_CodeRate, hier, display_signal_strenght);
+          }
+      }
+    if (tune_retval < 0)
+      {
+        log_message( MSG_INFO, "Tunning issue, card %d\n", card);
+        // we close the file descriptors
+        close_card_fd (number_of_channels, channels, fds);
+        exit(ERROR_TUNE);
+      }
+      log_message( MSG_INFO, "Card %d tuned\n", card);
+      card_tuned = 1;
     }
-
-  log_message( MSG_INFO, "Card %d tuned\n", card);
-  card_tuned = 1;
+  else
+  {
+    log_message( MSG_INFO, "We don't tune card %d\n", card);
+    card_tuned = 1;
+  }
   /******************************************************/
   //card tuned
   /******************************************************/

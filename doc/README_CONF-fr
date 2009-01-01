@@ -4,7 +4,7 @@ README pour le fichier de configuration de mumudvb
 
 mumudvb utilise obligatoirement un fichier de configuration pour lui indiquer les différents paramètres de réception et la répartition des pids sur les ips de multicast (ces ips peuvent aussi bien être de l'unicast). Vous trouverez un exemple dans le fichier conf.example joint aux sources de mumudvb.
 
-mumudvb est insensible à l'ordre des paramètres sauf pour les chaînes où les pids doivent être mis après l'ip et le port.
+mumudvb est insensible a l'ordre des paramètres sauf pour les chaînes où les pids doivent être mis après l'ip et le port.
 
 Des commentaires peuvent êtres fait n'importe où dans le fichier de configuration, ce sont les lignes qui commencent par un #
 
@@ -17,6 +17,7 @@ Tous les paramètres sont de la forme suivante : nom=valeur
 ||pol                            ||la polarisation (un caractère) v ou h (insensible à la casse) ||
 ||srate                          ||le srate du transpondeur ||
 ||sat_number                     ||le numéro du satellite (pour les utilisateurs de switchs diseqc) ||
+||dont_tune                      ||Mumudvb n'essaiera pas d'accorder la carte ( ex : un autre programme comme tzap, l'a fait avant) ||
 ||card                           ||le numéro de la carte (défaut : 0) ||
 ||timeout_accord                 ||temps que l'on laisse à la carte pour s'accorder sur la fréquence (en secondes) (défaut : 300 (5min)) ||
 ||timeout_no_diff                ||si le programme ne diffuse aucune chaîne, il se tuera au bout de ce temps (en secondes) (défaut : 600 (10min)) ||
