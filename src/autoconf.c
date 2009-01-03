@@ -538,6 +538,7 @@ void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels,
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
       for (curr_pid = 1; curr_pid < channels[curr_channel].num_pids; curr_pid++) //curr_pid = 1 --> why ? PMT opened ?
+	//TODO : don't open a filter two times if two channes uses some pids in common
 	set_ts_filt (fds->fd[curr_channel][curr_pid], channels[curr_channel].pids[curr_pid], DMX_PES_OTHER);
     }
   

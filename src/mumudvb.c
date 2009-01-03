@@ -998,6 +998,7 @@ main (int argc, char **argv)
     if(mandatory_pid[curr_pid_mandatory]==1)
       set_ts_filt (fds.fd_mandatory[curr_pid_mandatory], curr_pid_mandatory, DMX_PES_OTHER);
 
+  //TODO : don't open a filter two times if two channes uses some pids in common
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
       for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)

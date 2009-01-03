@@ -109,6 +109,8 @@ create_card_fd(int card, int nb_flux, mumudvb_channel_t *channels, int *mandator
     {
       for(j=0;j<channels[i].num_pids;j++)
 	{
+	  //TODO : don't open a file descriptor two times if two channels uses some pids in common
+	  //Make a list of unique pids and open file descriptors for them
 	  if ((fds->fd[i][j] = open (demuxdev_name, O_RDWR)) < 0)
 	    {
 	      log_message( MSG_ERROR, "FD %i: ", i);
