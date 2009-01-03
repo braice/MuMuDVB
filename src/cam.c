@@ -514,7 +514,7 @@ int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_p
   }
 
 #if 0
-  if ((section_ext->table_id_ext != cam_pmt_ptr->i_program_number) || //program number "already checked" by thb pmt pid attribution
+  if ((section_ext->table_id_ext != cam_pmt_ptr->i_program_number) || //program number "already checked" by the pmt pid attribution
       (section_ext->version_number == cam_params->ca_pmt_version)) { //cam_pmt_version allow to see if there is new information, not implemented for the moment (to be attached to the channel)
     return;
   }
@@ -687,22 +687,22 @@ static int mumudvb_cam_mmi_menu_callback(void *arg, uint8_t slot_id, uint16_t se
   (void) item_raw_length;
   (void) items_raw;
 
-  fprintf(stderr, "------------------------------\n");
+  log_message( MSG_INFO, "--- CAM MENU ----------------\n");
 
   if (title->text_length) {
-    fprintf(stderr, "%.*s\n", title->text_length, title->text);
+    log_message( MSG_INFO, "%.*s\n", title->text_length, title->text);
   }
   if (sub_title->text_length) {
-    fprintf(stderr, "%.*s\n", sub_title->text_length, sub_title->text);
+    log_message( MSG_INFO, "%.*s\n", sub_title->text_length, sub_title->text);
   }
 
   uint32_t i;
   for(i=0; i< item_count; i++) {
-    fprintf(stderr, "%.*s\n", items[i].text_length, items[i].text);
+    log_message( MSG_INFO, "%.*s\n", items[i].text_length, items[i].text);
   }
 
   if (bottom->text_length) {
-    fprintf(stderr, "%.*s\n", bottom->text_length, bottom->text);
+    log_message( MSG_INFO, "%.*s\n", bottom->text_length, bottom->text);
   }
   fflush(stdout);
 
@@ -772,9 +772,8 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
   (void) slot_id;
   (void) session_number;
 
-  fprintf(stderr, "ENQ");
-  fprintf(stderr, "%.*s: ", text_size, text);
-  fflush(stdout);
+  log_message( MSG_INFO, "ENQ");
+  log_message( MSG_INFO, "%.*s: ", text_size, text);
 
   cam_params->mmi_enq_blind = blind_answer;
   cam_params->mmi_enq_length = expected_answer_length;
