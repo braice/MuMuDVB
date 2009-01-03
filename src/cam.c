@@ -464,25 +464,17 @@ void cam_stop(cam_parameters_t *cam_params)
   cam_params->camthread_shutdown = 1;
   pthread_join(cam_params->camthread, NULL);
 
+  // destroy the stdcam
+  if (cam_params->stdcam->destroy)
+    cam_params->stdcam->destroy(cam_params->stdcam, 1);
+
   // destroy session layer
   en50221_sl_destroy(cam_params->sl);
 
   // destroy transport layer
   en50221_tl_destroy(cam_params->tl);
 
-  // destroy the stdcam //FIXME : Doesn't work
 
-  /*get stuk in the line 
-  pthread_mutex_lock(&tl->slots[slot_id].slot_lock);
-  
-  Backtrace : 
-  en50221_tl_destroy_slot(llci->tl, llci->tl_slot_id);
-  llci_cam_removed(llci);
-  static void en50221_stdcam_llci_destroy(struct en50221_stdcam *stdcam, int closefd)
-  */
-
-  //  if (cam_params->stdcam->destroy)
-  //cam_params->stdcam->destroy(cam_params->stdcam, 1);
 }
 
 static void *camthread_func(void* arg)
