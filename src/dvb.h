@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <resolv.h>
+#include <sys/poll.h>
 
 #define PID_NOT_ASKED 0
 #define PID_ASKED 1
@@ -46,11 +47,13 @@
 #include "mumudvb.h"
 
 //file descriptors
-//TODO : define here poll file descriptors
 typedef struct {
   int fd_dvr;
   int fd_frontend;
+  /** demuxer file descriptors */
   int fd_demuxer[8192];
+  /** poll file descriptors */
+  struct pollfd pfds[2];	//  DVR device
 }fds_t;
 
 

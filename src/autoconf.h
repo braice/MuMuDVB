@@ -29,6 +29,11 @@
 #include "mumudvb.h"
 #include "ts.h"
 
+//find the audio and video pids from the PMT
+#define AUTOCONF_MODE_PIDS 1
+//find the pmt pids and the channels from the pat, and go to AUTOCONF_MODE_PIDS
+#define AUTOCONF_MODE_FULL 2
+
 //chained list of services
 //for autoconfiguration
 typedef struct mumudvb_service_t{
