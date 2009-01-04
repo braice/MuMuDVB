@@ -121,6 +121,9 @@ int verbosity = 1;
 
 // file descriptors
 fds_t fds; // defined in dvb.h
+//Asked pids //used for filtering
+uint8_t asked_pid[8192];
+
 
 // prototypes
 static void SignalHandler (int signum);
@@ -186,8 +189,8 @@ main (int argc, char **argv)
   //temporary buffers
   unsigned char temp_buffer_from_dvr[TS_PACKET_SIZE];
   unsigned char saved_pat_buffer[TS_PACKET_SIZE];
-  //Mandatory pids
-  int mandatory_pid[MAX_MANDATORY_PID_NUMBER];
+
+  uint8_t mandatory_pid[MAX_MANDATORY_PID_NUMBER];
 
   struct timeval tv;
 
@@ -201,7 +204,6 @@ main (int argc, char **argv)
   // configuration file parsing
   int curr_channel = 0;
   int curr_pid = 0;
-  int curr_pid_mandatory = 0;
   int send_packet=0;
   int port_ok = 0;
   int common_port = 0;
@@ -825,7 +827,7 @@ main (int argc, char **argv)
       {
         log_message( MSG_INFO, "Tunning issue, card %d\n", card);
         // we close the file descriptors
-        close_card_fd (number_of_channels, channels, fds);
+        close_card_fd (fds);
         exit(ERROR_TUNE);
       }
       log_message( MSG_INFO, "Card %d tuned\n", card);
@@ -954,28 +956,32 @@ main (int argc, char **argv)
       channels[curr_channel].streamed_channel_old = 1;
     }
 
-  //We initialise mantadory pid table
-  for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY_PID_NUMBER;curr_pid_mandatory++)
-    {
-      mandatory_pid[curr_pid_mandatory]=0;
-    }
+  //We initialise asked pid table
+  memset (asked_pid, 0, sizeof( uint8_t)*8192);//we clear it
+  //We initialise mandatory pid table
+  memset (mandatory_pid, 0, sizeof( uint8_t)*MAX_MANDATORY_PID_NUMBER);//we clear it
 
   //mandatory pids (always sent with all channels)
   //PAT : Program Association Table
   mandatory_pid[0]=1;
+  asked_pid[0]=PID_ASKED;
   //NIT : Network Information Table
   //It is intended to provide information about the physical network.
   mandatory_pid[16]=1;
+  asked_pid[16]=PID_ASKED;
   //SDT : Service Description Table
   //the SDT contains data describing the services in the system e.g. names of services, the service provider, etc.
   mandatory_pid[17]=1;
+  asked_pid[17]=PID_ASKED;
   //EIT : Event Information Table
   //the EIT contains data concerning events or programmes such as event name, start time, duration, etc.
   mandatory_pid[18]=1;
+  asked_pid[18]=PID_ASKED;
   //TDT : Time and Date Table
   //the TDT gives information relating to the present time and date.
   //This information is given in a separate table due to the frequent updating of this information.
   mandatory_pid[20]=1;
+  asked_pid[20]=PID_ASKED;
 
   /*****************************************************/
   //We open the file descriptors and
@@ -983,9 +989,18 @@ main (int argc, char **argv)
   /*****************************************************/
 
 
+  //We fill the asked_pid array
+  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+    {
+      for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+	asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
+    }
+
   // we open the file descriptors
-  if (create_card_fd (card, number_of_channels, channels, mandatory_pid, &fds) < 0)
+  if (create_card_fd (card, asked_pid, &fds) < 0)
     return mumudvb_close(100<<8);
+
+  set_filters(asked_pid, &fds);
 
   //File descriptor for polling
   pfds[0].fd = fds.fd_dvr;
@@ -993,17 +1008,6 @@ main (int argc, char **argv)
   pfds[0].events = POLLIN | POLLPRI; 
   pfds[1].fd = 0;
   pfds[1].events = POLLIN | POLLPRI;
-
-  for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY_PID_NUMBER;curr_pid_mandatory++)
-    if(mandatory_pid[curr_pid_mandatory]==1)
-      set_ts_filt (fds.fd_mandatory[curr_pid_mandatory], curr_pid_mandatory, DMX_PES_OTHER);
-
-  //TODO : don't open a filter two times if two channes uses some pids in common
-  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-    {
-      for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
-	set_ts_filt (fds.fd[curr_channel][curr_pid], channels[curr_channel].pids[curr_pid], DMX_PES_OTHER);
-    }
 
 
   gettimeofday (&tv, (struct timezone *) NULL);
@@ -1120,17 +1124,24 @@ main (int argc, char **argv)
 			      autoconf_free_services(autoconf_vars.services);
 			      autoconf_vars.services=NULL;
 			    }
-			  if (complete_card_fds(card, number_of_channels, channels, &fds,0) < 0)
+			  //we got the pmt pids for the channels, we open the filters
+			  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+			    {
+			      for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+				asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
+			    }
+			  // we open the file descriptors
+			  if (create_card_fd (card, asked_pid, &fds) < 0)
 			    {
 			      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");
 			      Interrupted=666<<8; //the <<8 is to make difference beetween signals and errors;
 			      continue;
 			    }
-
+			  // we set the new filters
+			  set_filters( asked_pid, &fds);
+			    
 			  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 			    {
-			      //filters
-			      set_ts_filt (fds.fd[curr_channel][0], channels[curr_channel].pids[0], DMX_PES_OTHER);
 			      // Init udp
 			      //TODO explain
 			      channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
@@ -1185,7 +1196,7 @@ main (int argc, char **argv)
 			  //if it's finished, we open the new descriptors and add the new filters
 			  if(autoconf_vars.autoconfiguration==0)
 			    {
-			      autoconf_end(card, number_of_channels, channels, &fds);
+			      autoconf_end(card, number_of_channels, channels, asked_pid, &fds);
 			      //We free autoconf memory
 			      if(autoconf_vars.autoconf_temp_sdt)
 				{
@@ -1368,7 +1379,7 @@ int mumudvb_close(int Interrupted)
     close (channels[curr_channel].socketOut);
 
   // we close the file descriptors
-  close_card_fd (number_of_channels, channels, fds);
+  close_card_fd (fds);
 
   if(cam_vars.cam_support)
     {
@@ -1455,7 +1466,7 @@ static void SignalHandler (int signum)
       now = tv.tv_sec - real_start_time;
 
       if (display_signal_strenght && card_tuned)
-	affiche_puissance (fds);
+	show_power (fds);
 
       if (!card_tuned)
 	{
@@ -1476,7 +1487,7 @@ static void SignalHandler (int signum)
 	    {
 	      log_message(MSG_WARN,"Autoconf : Warning : Not all the channels were configured before timeout\n");
 	      autoconf_vars.autoconfiguration=0;
-	      autoconf_end(card, number_of_channels, channels, &fds);
+	      autoconf_end(card, number_of_channels, channels, asked_pid, &fds);
 	      //We free autoconf memory
 	      if(autoconf_vars.autoconf_temp_sdt)
 		{

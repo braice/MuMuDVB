@@ -521,7 +521,7 @@ int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channel
   return channel_number;
 }
 
-void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, fds_t *fds)
+void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, uint8_t *asked_pid, fds_t *fds)
 {
   //This function is called when autoconfiguration is finished
   //It open what is needed to stream the new channels
@@ -530,17 +530,20 @@ void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels,
 
   log_message(MSG_DETAIL,"Autoconfiguration almost done\n");
   log_message(MSG_DETAIL,"Autoconf : We open the new descriptors\n");
-  if (complete_card_fds(card, number_of_channels, channels, fds,1) < 0)
-    {
-      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors Some channels will probably not work\n");
-    }
-  log_message(MSG_DETAIL,"Autoconf : Add the new filters\n");
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
-      for (curr_pid = 1; curr_pid < channels[curr_channel].num_pids; curr_pid++) //curr_pid = 1 --> why ? PMT opened ?
-	//TODO : don't open a filter two times if two channes uses some pids in common
-	set_ts_filt (fds->fd[curr_channel][curr_pid], channels[curr_channel].pids[curr_pid], DMX_PES_OTHER);
+      for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+	asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
     }
+  // we open the file descriptors
+  if (create_card_fd (card, asked_pid, fds) < 0)
+    {
+      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors Some channels will probably not work\n");
+      //return; //FIXME : whato do we do here ?
+    }
+  
+  log_message(MSG_DETAIL,"Autoconf : Add the new filters\n");
+  set_filters(asked_pid, fds);
   
   log_message(MSG_INFO,"Autoconfiguration done\n");
 

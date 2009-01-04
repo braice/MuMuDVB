@@ -66,7 +66,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel);
 int autoconf_read_sdt(unsigned char *buf, int len, mumudvb_service_t *services);
 int autoconf_read_pat(mumudvb_ts_packet_t *pat, mumudvb_service_t *services);
 int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channels, int cam_support, int port, int card);
-void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, fds_t *fds);
+void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, uint8_t *asked_pid, fds_t *fds);
 void autoconf_free_services(mumudvb_service_t *services);
 
 #endif
