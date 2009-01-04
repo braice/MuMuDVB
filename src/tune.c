@@ -4,7 +4,7 @@
 
    last version availaible from http://mumudvb.braice.net/
 
-   Copyright (C) 2004-2008 Brice DUBOST
+   Copyright (C) 2004-2009 Brice DUBOST
    Copyright (C) Dave Chapman 2001,2002
   
    This program is free software; you can redistribute it and/or

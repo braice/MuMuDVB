@@ -2,7 +2,7 @@
  * mumudvb - UDP-ize a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * (C) 2004-2008 Brice DUBOST
+ * (C) 2004-2009 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -1056,7 +1056,7 @@ main (int argc, char **argv)
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
       //we use makeclientsocket in order to join the multicast group associated with the channel
-      //Some switches (like HP Procurve 26xx) broadcast multicast traffic when there is no client to the group
+      //Some switches (like HP Procurve 26xx) broadcast multicast traffic when there is no client to the group //Note, it seems that it's now corrected
       channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
     }
 

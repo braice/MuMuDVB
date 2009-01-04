@@ -2,7 +2,7 @@
  * udp.h fonction in order to send a multicast stream
  * mumudvb - UDP-ize a DVB transport stream.
  * 
- * (C) 2004-2008 Brice DUBOST
+ * (C) 2004-2009 Brice DUBOST
  * (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
  *  The latest version can be found at http://mumudvb.braice.net
