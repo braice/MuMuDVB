@@ -40,6 +40,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/poll.h>
+#include <iconv.h>
 
 #include "errors.h"
 #include "ts.h"
@@ -331,7 +332,9 @@ void parsesdtdescriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_ser
 void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
 {
   int len;
-  unsigned char *src, *dest;
+  unsigned char *src;
+  char *dest;
+  char *tempdest, *tempbuf;
   unsigned char type;
 
   type=buf[2];
@@ -371,17 +374,46 @@ void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
   service->name[len] = '\0';
 
   /* remove control characters (FIXME: handle short/long name) */
-  /* FIXME: handle character set correctly (e.g. via iconv)                                                                                            
+  /* FIXME: handle character set correctly (e.g. via iconv)
    * c.f. EN 300 468 annex A */
-  for (src = dest = (unsigned char *) service->name; *src; src++)
-    if (*src >= 0x20 && (*src < 0x80 || *src > 0x9f))
-      *dest++ = *src;
+
+  //it seems that most of the broadcaster uses ISO/IEC 8859-9 contrary to what
+  //EN 300 468 claims
+  //temporary buffers allocation
+  tempdest=tempbuf=malloc(sizeof(char)*MAX_NAME_LEN);
+
+  len=0;
+  for (src = (unsigned char *) service->name; *src; src++)
+    if (*src >= 0x20 && (*src < 0x80 || *src > 0x9f)){  
+      *tempdest++ = *src;
+      len++;
+    }
+    else{
+      log_message(MSG_DEBUG, "\t\t service name control_character : %x\n", *src);
+    }
+
+  
+  //Conversion to utf8
+  iconv_t cd;
+  //we open th conversion table
+  cd = iconv_open( "UTF8", "ISO8859-9" ); //FIXME : define the table according to the control characters
+
+  size_t inSize, outSize=MAX_NAME_LEN;
+  inSize=len;
+  //pointers initialisation
+  dest=service->name;
+  tempdest=tempbuf;
+  //conversion
+  iconv(cd, &tempdest, &inSize, &dest, &outSize );
   *dest = '\0';
+  free(tempbuf);
+  iconv_close( cd );
   if (!service->name[0]) {
     /* zap zero length names */
     //free (service->name);
     service->name[0] = 0;
   }
+
   log_message(MSG_DEBUG, "\t\tservice_name : %s\n", service->name);
 
 }
