@@ -201,7 +201,7 @@ For more detailled information, refer to the monit website
 
  * When the program starts, he writes the channel list on /var/run/mumudvb/chaines_diffusees_carte%d (where %d is the card number). This file contains streamed channels (updated every 5 seconds) in the form : "name:ip:port"
 
- * mumudvb can deal with more than 4 cards. You must use a kernel >= 2.6.11 and udev statically compiled witch klibc (04/2005) waiting for glibc update... Not tested with upstream udev since...
+ * mumudvb can deal with more than 4 cards. You must use a kernel >= 2.6.11 and udev statically compiled witch klibc (04/2005) waiting for glibc update... Note : this issue seems to be solved now ( udev 104 and libc6 2.7 )
 
 = Know issues =
 
