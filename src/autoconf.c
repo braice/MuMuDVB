@@ -57,6 +57,29 @@ void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len);
 
 extern autoconf_parameters_t autoconf_vars; //just for autoconf_ip_header
 
+/**
+The different encodings that can be used
+Cf EN 300 468 Annex A
+ */
+char *encodings_en300468[] ={
+  "ISO8859-1",
+  "ISO8859-2",
+  "ISO8859-3",
+  "ISO8859-4",
+  "ISO8859-5",
+  "ISO8859-6",
+  "ISO8859-7",
+  "ISO8859-8",
+  "ISO8859-9",
+  "ISO8859-10",
+  "ISO8859-11",
+  "ISO8859-12",
+  "ISO8859-13",
+  "ISO8859-14",
+  "ISO8859-15"
+};
+
+
 /****************************************************************************/
 //Parts of this code from libdvb, strongly modified, with commentaries added
 //read the pmt for autoconfiguration
@@ -329,6 +352,12 @@ void parsesdtdescriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_ser
 
 
 
+/**
+ * Parse the service descriptor
+ * It's used to get the channel name
+ * @param buf the buffer containing the descriptor
+ * @param service the associated service
+ */
 void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
 {
   int len;
@@ -336,6 +365,7 @@ void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
   char *dest;
   char *tempdest, *tempbuf;
   unsigned char type;
+  int encoding_control_char=8;
 
   type=buf[2];
   service->type=type;
@@ -363,20 +393,14 @@ void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
   len = *buf; //provider name len
   buf++;
   //we jump the provider name
-  //log_message(MSG_DEBUG, "\t\tlen : %d\n", len);
   buf += len;
   len = *buf;
   buf++;
-  //log_message(MSG_DEBUG, "\t\tlen : %d\n", len);
-
 
   memcpy (service->name, buf, len);
   service->name[len] = '\0';
 
-  /* remove control characters (FIXME: handle short/long name) */
-  /* FIXME: handle character set correctly (e.g. via iconv)
-   * c.f. EN 300 468 annex A */
-
+  /* remove control characters and convert to UTF-8 the channel name */
   //it seems that most of the broadcaster uses ISO/IEC 8859-9 contrary to what
   //EN 300 468 claims
   //temporary buffers allocation
@@ -389,14 +413,18 @@ void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
       len++;
     }
     else{
+      if(*src<=0x0b)
+	encoding_control_char=(int) *src+4-1;
+      else
+	log_message(MSG_INFO, "\t\t Not implemented yet, we'll use the default encoding for service name\n");
       log_message(MSG_DEBUG, "\t\t service name control_character : %x\n", *src);
     }
 
   
   //Conversion to utf8
   iconv_t cd;
-  //we open th conversion table
-  cd = iconv_open( "UTF8", "ISO8859-9" ); //FIXME : define the table according to the control characters
+  //we open the conversion table
+  cd = iconv_open( "UTF8", encodings_en300468[encoding_control_char] );
 
   size_t inSize, outSize=MAX_NAME_LEN;
   inSize=len;
@@ -408,13 +436,7 @@ void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
   *dest = '\0';
   free(tempbuf);
   iconv_close( cd );
-  if (!service->name[0]) {
-    /* zap zero length names */
-    //free (service->name);
-    service->name[0] = 0;
-  }
-
-  log_message(MSG_DEBUG, "\t\tservice_name : %s\n", service->name);
+  log_message(MSG_DEBUG, "\t\tservice_name : %s\t\tencoding : %s\n", service->name,encodings_en300468[encoding_control_char]);
 
 }
 

@@ -67,6 +67,7 @@ typedef struct autoconf_parameters_t{
 }autoconf_parameters_t;
 
 
+
 int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel);
 int autoconf_read_sdt(unsigned char *buf, int len, mumudvb_service_t *services);
 int autoconf_read_pat(mumudvb_ts_packet_t *pat, mumudvb_service_t *services);
