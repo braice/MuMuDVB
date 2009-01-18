@@ -1151,7 +1151,7 @@ main (int argc, char **argv)
 		      //log_message(MSG_DEBUG,"Autoconf : New PAT pid\n");
 		      if(autoconf_read_pat(autoconf_vars.autoconf_temp_pat,autoconf_vars.services))
 			{
-			  log_message(MSG_DEBUG,"Autoconf : It seems that we have finished *\n");
+			  log_message(MSG_DEBUG,"Autoconf : It seems that we have finished to get the services list\n");
 			  //Interrupted=1;
 			  number_of_channels=services_to_channels(autoconf_vars.services, channels, cam_vars.cam_support,common_port, card); //Convert the list of services into channels
 			  if(autoconf_vars.services)
@@ -1197,7 +1197,6 @@ main (int argc, char **argv)
 		{
 		  if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_sdt))
 		    {
-		      //log_message(MSG_DEBUG,"Autoconf : New SDT pid\n");
 		      autoconf_read_sdt(autoconf_vars.autoconf_temp_sdt->packet,autoconf_vars.autoconf_temp_sdt->len,autoconf_vars.services);
 		      memset (autoconf_vars.autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 		    }
@@ -1214,7 +1213,7 @@ main (int argc, char **argv)
 		      if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_pmt))
 			{
 			  //Now we have the PMT, we parse it
-			  log_message(MSG_DEBUG,"Autoconf : New PMT pid %d for channel %d\n",pid,curr_channel);
+			  log_message(MSG_DEBUG,"\nAutoconf : New PMT pid %d for channel %d\n",pid,curr_channel);
 			  autoconf_read_pmt(autoconf_vars.autoconf_temp_pmt,&channels[curr_channel]);
 			  log_message(MSG_DETAIL,"Autoconf : Final PIDs for channel %d \"%s\" : ",curr_channel, channels[curr_channel].name);
 			  for(i=0;i<channels[curr_channel].num_pids;i++)

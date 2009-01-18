@@ -59,7 +59,7 @@ extern autoconf_parameters_t autoconf_vars; //just for autoconf_ip_header
 
 /**
 The different encodings that can be used
-Cf EN 300 468 Annex A
+Cf EN 300 468 Annex A (I used v1.9.1)
  */
 char *encodings_en300468[] ={
   "ISO8859-1",
@@ -76,7 +76,11 @@ char *encodings_en300468[] ={
   "ISO8859-12",
   "ISO8859-13",
   "ISO8859-14",
-  "ISO8859-15"
+  "ISO8859-15",
+  "ISO-10646", //control char 0x11
+  "GB2312",    //control char 0x13
+  "BIG5",      //control char 0x14
+  "ISO-10646/UTF8",      //control char 0x15
 };
 
 
@@ -84,7 +88,12 @@ char *encodings_en300468[] ={
 //Parts of this code from libdvb, strongly modified, with commentaries added
 //read the pmt for autoconfiguration
 /****************************************************************************/
-
+/**
+ * Reads the program map table
+ * It's used to get the differents "useful" pids of the channel
+ * @param pmt the pmt packet
+ * @param channel the associated channel
+ */
 int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 {
 	int slen, dslen, i;
@@ -100,14 +109,16 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 
 	if(header->table_id!=0x02)
 	  {
-	    log_message( MSG_DETAIL,"Autoconf : == Packet PID %d for channel \"%s\" is not a PMT PID\n", pmt->pid, channel->name);
+	    log_message( MSG_DETAIL,"Autoconf : Packet PID %d for channel \"%s\" is not a PMT PID\n", pmt->pid, channel->name);
 	    return 1;
 	  }
 	
-	log_message( MSG_DEBUG,"Autoconf : ==PMT read for autoconfiguration of channel \"%s\"\n", channel->name);
+	log_message( MSG_DEBUG,"Autoconf : PMT read for autoconfiguration of channel \"%s\"\n", channel->name);
 
 	program_info_length=HILO(header->program_info_length); //program_info_length
 
+	//we read the different descriptors included in the pmt
+	//for more information see ITU-T Rec. H.222.0 | ISO/IEC 13818 table 2-34
 	for (i=program_info_length+PMT_LEN; i<=slen-(PMT_INFO_LEN+4); i+=dslen+PMT_INFO_LEN)
 	  {      //we parse the part after the descriptors
 	    descr_header=(pmt_info_t *)(pmt->packet+i);
@@ -116,28 +127,37 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 	    switch(descr_header->stream_type){
 	    case 0x01:
 	    case 0x02:
-	    case 0x1b: /* H.264 video stream */
+	    case 0x10: /* ISO/IEC 14496-2 Visual - MPEG4 video */	      
+	    case 0x1b: /* AVC video stream as defined in ITU-T Rec. H.264 | ISO/IEC 14496-10 Video */
 	      log_message( MSG_DEBUG,"Autoconf :   Video ");
 	      break;
 	    case 0x03:
-	    case 0x81: /* Audio per ATSC A/53B [2] Annex B */
-	    case 0x0f: /* ADTS Audio Stream - usually AAC */
-	    case 0x11: /* ISO/IEC 14496-3 Audio with LATM transport */
 	    case 0x04:
+	    case 0x81: /* Audio per ATSC A/53B [2] Annex B */
+	    case 0x0f: /* ISO/IEC 13818-7 Audio with ADTS transport syntax - usually AAC */
+	    case 0x11: /* ISO/IEC 14496-3 Audio with the LATM transport syntax as defined in ISO/IEC 14496-3 */
 	      log_message( MSG_DEBUG,"Autoconf :   Audio ");
 	      break;
-	    case 0x06:
+	    case 0x06: /* Descriptor defined in EN 300 468 */
 	      if(dslen)
 		{
-		  if(pmt_find_descriptor(0x56,pmt->packet+i+PMT_INFO_LEN,dslen))
+		  if(pmt_find_descriptor(0x46,pmt->packet+i+PMT_INFO_LEN,dslen))
+		    log_message( MSG_DEBUG,"Autoconf :   VBI Teletext ");
+		  else if(pmt_find_descriptor(0x56,pmt->packet+i+PMT_INFO_LEN,dslen))
 		    log_message( MSG_DEBUG,"Autoconf :   Teletext ");
 		  else if(pmt_find_descriptor(0x59,pmt->packet+i+PMT_INFO_LEN,dslen))
 		    log_message( MSG_DEBUG,"Autoconf :   Subtitling ");
 		  else if(pmt_find_descriptor(0x6a,pmt->packet+i+PMT_INFO_LEN,dslen))
-		    log_message( MSG_DEBUG,"Autoconf :   AC3 ");
+		    log_message( MSG_DEBUG,"Autoconf :   AC3 (audio) ");
+		  else if(pmt_find_descriptor(0x7a,pmt->packet+i+PMT_INFO_LEN,dslen))
+		    log_message( MSG_DEBUG,"Autoconf :   Enhanced AC3 (audio)");
+		  else if(pmt_find_descriptor(0x7b,pmt->packet+i+PMT_INFO_LEN,dslen))
+		    log_message( MSG_DEBUG,"Autoconf :   DTS (audio)");
+		  else if(pmt_find_descriptor(0x7c,pmt->packet+i+PMT_INFO_LEN,dslen))
+		    log_message( MSG_DEBUG,"Autoconf :   AAC (audio)");
 		  else
 		    {
-		      log_message( MSG_DEBUG,"Unknow descriptor see EN 300 468 table 12, descriptor tags : ");
+		      log_message( MSG_DEBUG,"Autoconf : Unknown descriptor see EN 300 468 v1.9.1 table 12, pid %d descriptor tags : ", pid);
 		      pmt_print_descriptor_tags(pmt->packet+i+PMT_INFO_LEN,dslen);
 		      log_message( MSG_DEBUG,"\n");
 		      continue;
@@ -149,8 +169,21 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 		  continue;
 		}
 	      break;
+	    case 0x05:
+	      log_message( MSG_DEBUG, "Autoconf : Dropped pid %d, type : 0x05, ITU-T Rec. H.222.0 | ISO/IEC 13818-1 private_sections \n",pid);
+	      continue;
+	      //Digital Storage Medium Command and Control (DSM-CC) cf H.222.0 | ISO/IEC 13818-1 annex B
+	    case 0x0a:
+	      log_message( MSG_DEBUG, "Autoconf : Dropped pid %d, type : 0x0A ISO/IEC 13818-6 type A (DSM-CC)\n",pid);
+	      continue;
+	    case 0x0b:
+	      log_message( MSG_DEBUG, "Autoconf : Dropped pid %d, type : 0x0B ISO/IEC 13818-6 type B (DSM-CC)\n",pid);
+	      continue;
+	    case 0x0c:
+	      log_message( MSG_DEBUG, "Autoconf : Dropped pid %d, type : 0x0C ISO/IEC 13818-6 type C (DSM-CC)\n",pid);
+	      continue;
 	    default:
-	      log_message( MSG_DEBUG, "Autoconf : \t!!!!Stream dropped, type : %d, PID : %d \n",pmt->packet[i],pid);
+	      log_message( MSG_INFO, "Autoconf : !!!!Unknown stream type : 0x%02x, PID : %d cf ITU-T Rec. H.222.0 | ISO/IEC 13818\n",descr_header->stream_type,pid);
 	      continue;
 	    }
 	    
@@ -162,7 +195,14 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 	return 0; 
 }
 
-//Tells if the descriptor with tag in present in buf
+
+/**
+ * Tells if the descriptor with tag in present in buf
+ * for more information see ITU-T Rec. H.222.0 | ISO/IEC 13818
+ * @param tag the descriptor tag, cf EN 300 468
+ * @param buf the decriptors buffer (part of the PMT)
+ * @param descriptors_loop_len the length of the descriptors
+ */
 int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_len)
 {
   while (descriptors_loop_len > 0) 
@@ -179,7 +219,12 @@ int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_le
   return 0;
 }
 
-//Print the tags present in the descriptor
+/**
+ * Debugging function, Print the tags present in the descriptor
+ * for more information see ITU-T Rec. H.222.0 | ISO/IEC 13818
+ * @param buf the decriptors buffer (part of the PMT)
+ * @param descriptors_loop_len the length of the descriptors
+ */
 void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len)
 {
   while (descriptors_loop_len > 0) 
@@ -253,7 +298,7 @@ int autoconf_read_pat(mumudvb_ts_packet_t *pat_mumu, mumudvb_service_t *services
 
   if(!found)
     {
-      log_message(MSG_DEBUG,"Pat : No services not found, porbably no SDT for the moment\n");
+      log_message(MSG_DEBUG,"Autoconf : No services not found, probably no SDT for the moment, we skip this PAT\n");
     }
 
   return found;
@@ -262,7 +307,14 @@ int autoconf_read_pat(mumudvb_ts_packet_t *pat_mumu, mumudvb_service_t *services
 /****************************************************************************/
 //read the SDT for autoconfiguration
 /****************************************************************************/
-
+/**
+Read the service description table (cf EN 300 468)
+This table is used to find the name of the services versus the service number
+Thins function will fill the services chained list.
+ * @param buf the buffer containing the SDT
+ * @param len the len of the buffer
+ * @param services the chained list of services
+ */
 int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
 {
   int delta;
@@ -270,14 +322,14 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
   sdt_descr_t *descr_header;
   mumudvb_service_t *new_service=NULL;
 
-  header=(sdt_t *)buf; //we map the packet over the header structure (simpler parsing)
+  header=(sdt_t *)buf; //we map the packet over the header structure
 
-  //We look only for the followidg tables
+  //We look only for the following tables
   //0x42 service_description_section - actual_transport_stream
   //0x46 service_description_section - other_transport_stream
   if((header->table_id==0x42)||(header->table_id==0x46))
     {
-      log_message(MSG_DEBUG, "-- SDT --\n");
+      log_message(MSG_DEBUG, "-- SDT : Service Description Table --\n");
   
       //Loop over different services
       delta=SDT_LEN;
@@ -290,40 +342,55 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
 	  
 	  if(new_service)
 	    {
-	      log_message(MSG_DEBUG, "\tNe service, service_id : 0x%x  ", HILO(descr_header->service_id));
-	      log_message(MSG_DEBUG, "\trunning_status : ");
+	      log_message(MSG_DEBUG, "\tWe discovered a new service, service_id : 0x%x  ", HILO(descr_header->service_id));
 	      switch(descr_header->running_status)
 		{
+		case 0:
+		  log_message(MSG_DEBUG, "running_status : undefined\t");
+		  break;
 		case 1:
-		  log_message(MSG_DEBUG, "not running\t");
+		  log_message(MSG_DEBUG, "running_status : not running\t");
+		  break;
 		case 2:
-		  log_message(MSG_DEBUG, "starts in a few seconds\t");
+		  log_message(MSG_DEBUG, "running_status : starts in a few seconds\t");
+		  break;
 		case 3:
-		  log_message(MSG_DEBUG, "pausing\t");
-		case 4:
-		  log_message(MSG_DEBUG, "running\t");
+		  log_message(MSG_DEBUG, "running_status : pausing\t");
+		  break;
+		  /* 		case 4: */ //too usual to be printed
+/* 		  log_message(MSG_DEBUG, "running\t"); */
+/* 		  break; */
+		case 5:
+		  log_message(MSG_DEBUG, "running_status : service off-air\t");
+		  break;
 		}
 	      //we store the data
 	      new_service->id=HILO(descr_header->service_id);
 	      new_service->running_status=descr_header->running_status;
 	      new_service->free_ca_mode=descr_header->free_ca_mode;
-	      log_message(MSG_DEBUG, "\tfree_ca_mode : 0x%x\n", descr_header->free_ca_mode);
+	      log_message(MSG_DEBUG, "free_ca_mode : 0x%x\n", descr_header->free_ca_mode);
 	      
-	      //log_message(MSG_DEBUG, "\t\tdescriptors_loop_length : %d\n", HILO(descr_header->descriptors_loop_length));
-	      //On lit le descripteur contenu dans le paquet
+	      //We read the descriptor
 	      parsesdtdescriptor(buf+delta+SDT_DESCR_LEN,HILO(descr_header->descriptors_loop_length),new_service);
 	    }
 	  delta+=HILO(descr_header->descriptors_loop_length)+SDT_DESCR_LEN;
 	}
     }
   else
-    log_message(MSG_DEBUG, "\ttable_id : 0x%x\n", header->table_id);
+    log_message(MSG_DEBUG, "\tread sdt, ignored table_id : 0x%x (cf EN 300 468 table 2)\n", header->table_id);
   return 0;
 }
 
 
 
 
+/**
+ * Parse the SDT descriptors
+ * loop over the sdt descriptors and call other parsing functions if necessary
+ * @param buf the buffer containing the descriptors
+ * @param descriptor_loop_len the len of buffer containing the descriptors
+ * @param service the associated service
+ */
 void parsesdtdescriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_service_t *service)
 {
 
@@ -332,10 +399,11 @@ void parsesdtdescriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_ser
     unsigned char descriptor_len = buf[1] + 2;
     
     if (!descriptor_len) {
-      log_message(MSG_DEBUG, "############descriptor_tag == 0x%02x, len is 0\n", descriptor_tag);
+      log_message(MSG_DEBUG, "####SDT#####descriptor_tag == 0x%02x, len is 0\n", descriptor_tag);
       break;
     }
-
+    
+    //The service descriptor provides the names of the service provider and the service in text form together with the service_type.
     if(descriptor_tag==0x48)
       {
 	parseservicedescriptor(buf,service);
@@ -365,11 +433,12 @@ void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
   char *dest;
   char *tempdest, *tempbuf;
   unsigned char type;
-  int encoding_control_char=8;
+  int encoding_control_char=8; //cf encodings_en300468 
 
   type=buf[2];
   service->type=type;
   //TODO utiliser lookup
+  //Cf EN 300 468 v1.9.1 table 81
   switch(type)
     {
       case 0x01:
@@ -381,12 +450,17 @@ void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
       case 0x03:
 	log_message(MSG_DEBUG, "\t Teletext ");
       break;
+      case 0x06:
+	log_message(MSG_DEBUG, "\t Mosaic service ");
+      break;
       case 0x0c:
 	log_message(MSG_DEBUG, "\t Data braodcast service ");
       break;
+      case 0x11:
+	log_message(MSG_DEBUG, "\t Television MPEG2-HD");
+      break;
     default:
-      log_message(MSG_DEBUG, "\t\ttype : 0x%02x ", type);
-      log_message(MSG_DEBUG, "\t\tUnknow type, look at EN 300 468 table 75\n");
+      log_message(MSG_DEBUG, "\tUnknow service type (0x%02x), look at EN 300 468 v1.9.1 table 81\n", type);
     }
 
   buf += 3;
@@ -401,8 +475,9 @@ void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
   service->name[len] = '\0';
 
   /* remove control characters and convert to UTF-8 the channel name */
-  //it seems that most of the broadcaster uses ISO/IEC 8859-9 contrary to what
-  //EN 300 468 claims
+  //If no channel encoding is specified, it seems that most of the broadcasters
+  //uses ISO/IEC 8859-9. But the norm (EN 300 468) said that it should be Latin-1 (ISO/IEC 6937 + euro)
+
   //temporary buffers allocation
   tempdest=tempbuf=malloc(sizeof(char)*MAX_NAME_LEN);
 
@@ -412,14 +487,48 @@ void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
       *tempdest++ = *src;
       len++;
     }
-    else{
-      if(*src<=0x0b)
+    else if(*src <= 0x20){
+      //control character recognition based on EN 300 468 v1.9.1 Annex A
+      if(*src<=0x0b){
 	encoding_control_char=(int) *src+4-1;
-      else
-	log_message(MSG_INFO, "\t\t Not implemented yet, we'll use the default encoding for service name\n");
-      log_message(MSG_DEBUG, "\t\t service name control_character : %x\n", *src);
+      }
+      else if(*src==0x10){ //ISO/IEC 8859 : See table A.4
+	src++;//we skip the current byte
+	src++;//This one is always set to 0
+	if(*src >= 0x01 && *src <=0x0f)
+	  encoding_control_char=(int) *src-1;
+      }
+      else if(*src==0x11){//ISO/IEC 10646 : Basic Multilingual Plane
+	encoding_control_char=15;
+      }
+      else if(*src==0x12){//KSX1001-2004 : Korean Character Set
+	log_message(MSG_WARN, "\t\t Encoding KSX1001-2004 (korean character set) not implemented yet by iconv, we'll use the default encoding for service name\n");
+      }
+      else if(*src==0x13){//GB-2312-1980 : Simplified Chinese Character
+	encoding_control_char=16;
+      }
+      else if(*src==0x14){//Big5 subset of ISO/IEC 10646 : Traditional Chinese
+	encoding_control_char=17;
+      }
+      else if(*src==0x15){//UTF-8 encoding of ISO/IEC 10646 : Basic Multilingual Plane
+	encoding_control_char=18;
+      }
+      else{
+	log_message(MSG_WARN, "\t\t Encoding not implemented yet (0x%02x), we'll use the default encoding for service name\n",*src);
+      }
     }
-
+    else if (*src >= 0x80 && *src <= 0x9f){
+      //to encode in UTF-8 we add 0xc2 before this control character
+      if(*src==0x86 || *src==0x87 || *src>=0x8a ){ 
+	*tempdest++ = 0xc2;
+	len++;
+	*tempdest++ = *src;
+	len++;
+      }
+      else{  
+      log_message(MSG_DEBUG, "\tUnimplemented name control_character : %x ", *src);
+      }
+    }
   
   //Conversion to utf8
   iconv_t cd;
@@ -436,7 +545,7 @@ void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
   *dest = '\0';
   free(tempbuf);
   iconv_close( cd );
-  log_message(MSG_DEBUG, "\t\tservice_name : %s\t\tencoding : %s\n", service->name,encodings_en300468[encoding_control_char]);
+  log_message(MSG_DEBUG, "\tservice_name : \"%s\" (name encoding : %s)\n", service->name,encodings_en300468[encoding_control_char]);
 
 }
 
@@ -463,7 +572,7 @@ mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int
       return NULL;
     }
 
-  log_message(MSG_DEBUG,"Service NOT found\n");
+  log_message(MSG_DEBUG,"Service not found : ie new service\n");
   
   actual_service->next=malloc(sizeof(mumudvb_service_t));
   if(actual_service->next==NULL)
@@ -520,7 +629,16 @@ void autoconf_free_services(mumudvb_service_t *services)
     }
 }
 
-//Convert the chained list of services into channels
+/**
+   Convert the chained list of services into channels
+   This function is called when We've got all the services, we now fill the channels structure
+   After that we go in AUTOCONF_MODE_PIDS to get audio and video pids
+   @param services Chained list of services
+   @param channels Chained list of channels
+   @param cam_support Do we care about scrambled channels ?
+   @param port The mulicast port
+   @param card The card number for the ip address
+ */
 int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channels, int cam_support, int port, int card)
 {
 
@@ -535,13 +653,14 @@ int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channel
     {
       if(cam_support && actual_service->free_ca_mode)
 	  log_message(MSG_DETAIL,"Service scrambled. Name \"%s\"\n", actual_service->name);
-      if(!cam_support && actual_service->free_ca_mode)
+      if(!cam_support && actual_service->free_ca_mode) //FIXME : Some providers does not repport correctly free_ca_mode, add an option to ignore this
 	{
 	  log_message(MSG_DETAIL,"Service scrambled and no cam support. Name \"%s\"\n", actual_service->name);
 	}
       else
 	{
-	  if(actual_service->type==1)
+	  //Cf EN 300 468 v1.9.1 Table 81
+	  if(actual_service->type==1||actual_service->type==0x11) //service_type "digital television service" (0x01) || MPEG-2 HD digital television service (0x11)
 	    {
 	      log_message(MSG_DETAIL,"Autoconf : We convert a new service, id %d pmt_pid %d type %d name \"%s\" \n",
 			  actual_service->id, actual_service->pmt_pid, actual_service->type, actual_service->name);
@@ -562,15 +681,25 @@ int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channel
 
 	      channel_number++;
 	    }
+	  else if(actual_service->type==0x02) //service_type digital radio sound service
+	    {
+	      //TODO : set this as an option (autoconfigure radios)
+	      log_message(MSG_DETAIL,"Service type digital radio sound service, no autoconfigure. Name \"%s\"\n", actual_service->name);
+	    }
+	  else if(actual_service->type==0x0c) //service_type data broadcast service
+	    {
+	      log_message(MSG_DETAIL,"Service type data broadcast service, no autoconfigure. Name \"%s\"\n", actual_service->name);
+	    }
 	  else
-	    log_message(MSG_DETAIL,"Service type %d, no autoconfigure. Name \"%s\"\n", actual_service->type, actual_service->name);
+	    log_message(MSG_DETAIL,"Service type 0x%02x, no autoconfigure. Name \"%s\"\n", actual_service->type, actual_service->name);
 	}
       actual_service=actual_service->next;
     }
-  while(actual_service);
+  while(actual_service&&channel_number<MAX_CHANNELS);
+  
+  if(channel_number==MAX_CHANNELS)
+    log_message(MSG_WARN,"We reached the maximum channel number, we drop other possible channels !\n");
 
-
-  //TODO CHECK THE MAX CHANNELS
 
   return channel_number;
 }
