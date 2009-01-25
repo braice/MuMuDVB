@@ -2,7 +2,7 @@
  * mumudvb - UDP-ize a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * (C) 2004-2008 Brice DUBOST
+ * (C) 2004-2009 Brice DUBOST
  * 
  * Code for dealing with libdvben50221 inspired from zap_ca
  * Copyright (C) 2004, 2005 Manu Abraham <abraham.manu@gmail.com>
@@ -58,8 +58,10 @@
 #include "autoconf.h"
 #include "sap.h"
 
+/** the table for crc32 claculations */
 extern uint32_t       crc32_table[256];
 
+/** Time to live of sent packets */
 int multicast_ttl=DEFAULT_TTL;
 
 /* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
@@ -70,18 +72,25 @@ long now;
 long time_no_diff;
 long real_start_time;
 
-int display_signal_strenght = 0; //do we periodically show the signal strenght ?
+int display_signal_strenght = 0; ///do we periodically show the signal strenght ?
 
-int no_daemon = 0; //do we deamonize mumudvb ?
+int no_daemon = 0; ///do we deamonize mumudvb ?
+
 
 int number_of_channels;
+mumudvb_channel_t channels[MAX_CHANNELS]; ///the channels...
+//Asked pids //used for filtering
+uint8_t asked_pid[8192];
 
-mumudvb_channel_t channels[MAX_CHANNELS]; //the channels...
 
 int card = 0;
 int card_tuned = 0;
-int timeout_accord = ALARM_TIME_TIMEOUT;
+int dont_tune = 0;
+int tuning_timeout = ALARM_TIME_TIMEOUT;
 int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
+// file descriptors
+fds_t fds; // defined in dvb.h
+
 
 int Interrupted = 0;
 char nom_fich_chaines_diff[256];
@@ -132,8 +141,7 @@ int log_initialised=0;
 int verbosity = 1;
 
 
-// file descriptors
-fds_t fds; // defined in dvb.h
+
 
 // prototypes
 static void SignalHandler (int signum);
@@ -143,7 +151,7 @@ int mumudvb_close(int Interrupted);
 void
 usage (char *name)
 {
-  fprintf (stderr, "mumudvb is a program who can redistribute stream from DVB on a network, in multicast.\n It's main feature is to take a whole transponder and put each channel on a different multicast IP.\n\n"
+  fprintf (stderr, "%s is a program who can redistribute stream from DVB on a network, in multicast.\n It's main feature is to take a whole transponder and put each channel on a different multicast IP.\n\n"
 	   "Usage: %s [options] \n"
 	   "-c, --config : Config file\n"
 	   "-s, --signal : Display signal power\n"
@@ -159,7 +167,7 @@ usage (char *name)
 	   "Released under the GPL.\n"
 	   "Latest version available from http://mumudvb.braice.net/\n"
 	   "Project from the cr@ns (www.crans.org)\n"
-	   "by Brice DUBOST (mumudvb@braice.net)\n", name, name);
+	   "by Brice DUBOST (mumudvb@braice.net)\n", name, name, name);
 }
 
 
@@ -169,7 +177,6 @@ main (int argc, char **argv)
   int k,i;
 
   //polling of the dvr device
-  struct pollfd pfds[2];	//  DVR device
   int poll_try;
   int last_poll_error;
 
@@ -194,13 +201,14 @@ main (int argc, char **argv)
 
 
   //MPEG2-TS reception and sort
-  int pid;			// pid of the current mpeg2 packet
-  int bytes_read;		// number of bytes actually read
+  int pid;			/// pid of the current mpeg2 packet
+  int bytes_read;		/// number of bytes actually read
   //temporary buffers
   unsigned char temp_buffer_from_dvr[TS_PACKET_SIZE];
   unsigned char saved_pat_buffer[TS_PACKET_SIZE];
-  //Mandatory pids
-  int mandatory_pid[MAX_MANDATORY_PID_NUMBER];
+
+  /** List of mandatory pids */
+  uint8_t mandatory_pid[MAX_MANDATORY_PID_NUMBER];
 
   struct timeval tv;
 
@@ -214,9 +222,7 @@ main (int argc, char **argv)
   // configuration file parsing
   int curr_channel = 0;
   int curr_pid = 0;
-  int curr_pid_mandatory = 0;
   int send_packet=0;
-  int port_ok = 0;
   int common_port = 0;
   int ip_ok = 0;
   char current_line[CONF_LINELEN];
@@ -280,7 +286,7 @@ main (int argc, char **argv)
 	  conf_filename = (char *) malloc (strlen (optarg) + 1);
 	  if (!conf_filename)
 	    {
-	      log_message( MSG_INFO, "malloc() failed: %s\n", strerror(errno));
+	      log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
 	      exit(errno);
 	    }
 	  strncpy (conf_filename, optarg, strlen (optarg) + 1);
@@ -315,7 +321,12 @@ main (int argc, char **argv)
   
   // DO NOT REMOVE (make mumudvb a deamon)
   if(!no_daemon)
-      daemon(42,0);
+    if(daemon(42,0))
+      {
+	log_message( MSG_WARN, "Cannot daemonize: %s\n",
+		     strerror (errno));
+	exit(666); //FIXME : use an error
+      }
 
   //we open the descriptor for syslog
   if (!no_daemon)
@@ -328,7 +339,7 @@ main (int argc, char **argv)
   conf_file = fopen (conf_filename, "r");
   if (conf_file == NULL)
     {
-      log_message( MSG_INFO, "%s: %s\n",
+      log_message( MSG_ERROR, "%s: %s\n",
 		conf_filename, strerror (errno));
       free(conf_filename);
       exit(ERROR_CONF_FILE);
@@ -336,8 +347,7 @@ main (int argc, char **argv)
   free(conf_filename);
 
   //paranoya we clear all the content of all the channels
-  for(curr_channel=0;curr_channel<MAX_CHANNELS;curr_channel++)
-    memset (&channels[curr_channel], 0, sizeof (channels[curr_channel]));
+  memset (&channels, 0, sizeof (channels[0])*MAX_CHANNELS);
 
   curr_channel=0;
   // we scan config file
@@ -351,8 +361,8 @@ main (int argc, char **argv)
 
       if (!strcmp (substring, "timeout_accord"))
 	{
-	  substring = strtok (NULL, delimiteurs);	// on extrait la sous chaine
-	  timeout_accord = atoi (substring);
+	  substring = strtok (NULL, delimiteurs);	//we extract the substring
+	  tuning_timeout = atoi (substring);
 	}
       else if (!strcmp (substring, "timeout_no_diff"))
 	{
@@ -391,18 +401,22 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  diseqc = atoi (substring);
 	}
+      else if (!strcmp (substring, "dont_tune"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  dont_tune = atoi (substring);
+	}
       else if (!strcmp (substring, "autoconfiguration"))
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  autoconf_vars.autoconfiguration = atoi (substring);
-	  if((autoconf_vars.autoconfiguration==1)||(autoconf_vars.autoconfiguration==2))
+	  if(!((autoconf_vars.autoconfiguration==AUTOCONF_MODE_PIDS)||(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)))
 	    {
 	      log_message( MSG_WARN,
-			"!!! You have enabled the support for autoconfiguration, this is a beta feature.Please report any bug/comment\n");
-	    }
-	  else
+			"Bad value for autoconfiguration, autoconfiguration will not be run\n");
 	    autoconf_vars.autoconfiguration=0;
-	  if(autoconf_vars.autoconfiguration==2)
+	    }
+	  if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)
 	    {
 	      log_message( MSG_INFO,
 			"Full autoconfiguration, we activate SAP announces. if you want to desactivate them see the README.\n");
@@ -426,8 +440,8 @@ main (int argc, char **argv)
 	  sap_vars.sap = atoi (substring);
 	  if(sap_vars.sap)
 	    {
-	      log_message( MSG_WARN,
-			"!!! You have enabled the support for sap announces, this is a beta feature.Please report any bug/comment\n");
+	      log_message( MSG_INFO,
+			"Sap announces will be sent\n");
 	    }
 	}
       else if (!strcmp (substring, "sap_interval"))
@@ -443,7 +457,8 @@ main (int argc, char **argv)
 	    strcpy(sap_vars.sap_organisation,strtok(substring,"\n"));	
 	  else
 	    {
-		log_message( MSG_INFO,"Sap Organisation name too long\n");
+		log_message( MSG_WARN,"Sap Organisation name too long\n");
+		strncpy(sap_vars.sap_organisation,strtok(substring,"\n"),255 - 1);
 	    }
 	}
       else if (!strcmp (substring, "sap_sending_ip"))
@@ -476,7 +491,7 @@ main (int argc, char **argv)
 	    }
 	  else
 	    {
-	      log_message( MSG_INFO,
+	      log_message( MSG_ERROR,
 			   "Config issue : %s polarisation\n",
 			   conf_filename);
 	      exit(ERROR_CONF);
@@ -500,6 +515,13 @@ main (int argc, char **argv)
 	}
       else if (!strcmp (substring, "ip"))
 	{
+	  if ( ip_ok )
+	    {
+	      log_message( MSG_ERROR,
+			   "You must precise the pids last, or you forgot the pids\n");
+	      exit(ERROR_CONF);
+	    }
+
 	  substring = strtok (NULL, delimiteurs);
           if(strlen(substring)>19)
             {
@@ -518,6 +540,13 @@ main (int argc, char **argv)
 			"Warning : you have not activated sap, the sap group will not be taken in account\n");
 
 	    }
+	  if ( ip_ok == 0)
+	    {
+	      log_message( MSG_ERROR,
+			   "You must precise ip first\n");
+	      exit(ERROR_CONF);
+	    }
+
 	  substring = strtok (NULL, "=");
 	  if(strlen(substring)>19)
 	    {
@@ -546,6 +575,12 @@ main (int argc, char **argv)
 	}
       else if (!strcmp (substring, "common_port"))
 	{
+	  if ( ip_ok )
+	    {
+	      log_message( MSG_ERROR,
+			   "You have to set common_port before the channels\n");
+	      exit(ERROR_CONF);
+	    }
 	  substring = strtok (NULL, delimiteurs);
 	  common_port = atoi (substring);
 	}
@@ -556,22 +591,27 @@ main (int argc, char **argv)
 	}
       else if (!strcmp (substring, "port"))
 	{
+	  if ( ip_ok == 0)
+	    {
+	      log_message( MSG_ERROR,
+			   "You must precise ip first\n");
+	      exit(ERROR_CONF);
+	    }
 	  substring = strtok (NULL, delimiteurs);
 	  channels[curr_channel].portOut = atoi (substring);
-	  port_ok = 1;
 	}
       else if (!strcmp (substring, "cam_pmt_pid"))
 	{
-	  if ((port_ok == 0 && common_port==0)|| ip_ok == 0)
+	  if ( ip_ok == 0)
 	    {
-	      log_message( MSG_INFO,
-			"You must precise ip and port before PIDs\n");
+	      log_message( MSG_ERROR,
+			"You must precise ip first\n");
 	      exit(ERROR_CONF);
 	    }
 	  substring = strtok (NULL, delimiteurs);
       	  channels[curr_channel].cam_pmt_pid = atoi (substring);
 	  if (channels[curr_channel].cam_pmt_pid < 10 || channels[curr_channel].cam_pmt_pid > 8191){
-	      log_message( MSG_INFO,
+	      log_message( MSG_ERROR,
 		      "Config issue : %s in pids, given pid : %d\n",
 		      conf_filename, channels[curr_channel].cam_pmt_pid);
 	    exit(ERROR_CONF);
@@ -579,10 +619,10 @@ main (int argc, char **argv)
 	}
       else if (!strcmp (substring, "pids"))
 	{
-	  if ((port_ok == 0 && common_port==0)|| ip_ok == 0)
+	  if ( ip_ok == 0)
 	    {
-		log_message( MSG_INFO,
-			"You must precise ip and port before PIDs\n");
+		log_message( MSG_ERROR,
+			"You must precise ip first\n");
 	      exit(ERROR_CONF);
 	    }
 	  if (common_port!=0)
@@ -593,7 +633,7 @@ main (int argc, char **argv)
 	      // we see if the given pid is good
 	      if (channels[curr_channel].pids[curr_pid] < 10 || channels[curr_channel].pids[curr_pid] > 8191)
 		{
-		  log_message( MSG_INFO,
+		  log_message( MSG_ERROR,
 			    "Config issue : %s in pids, given pid : %d\n",
 			    conf_filename, channels[curr_channel].pids[curr_pid]);
 		  exit(ERROR_CONF);
@@ -601,7 +641,7 @@ main (int argc, char **argv)
 	      curr_pid++;
 	      if (curr_pid >= MAX_PIDS_PAR_CHAINE)
 		{
-		  log_message( MSG_INFO,
+		  log_message( MSG_ERROR,
 			       "Too many pids : %d channel : %d\n",
 			       curr_pid, curr_channel);
 		  exit(ERROR_CONF);
@@ -612,18 +652,24 @@ main (int argc, char **argv)
 	  curr_channel++;
 
       	  channels[curr_channel].cam_pmt_pid = 0; //paranoya
-	  port_ok = 0;
 	  ip_ok = 0;
 	}
       else if (!strcmp (substring, "name"))
 	{
+	  if ( ip_ok == 0)
+	    {
+	      log_message( MSG_ERROR,
+			   "You must precise ip first\n");
+	      exit(ERROR_CONF);
+	    }
 	  // other substring extraction method in order to keep spaces
 	  substring = strtok (NULL, "=");
 	  if (!(strlen (substring) >= MAX_NAME_LEN - 1))
 	    strcpy(channels[curr_channel].name,strtok(substring,"\n"));	
 	  else
 	    {
-		log_message( MSG_INFO,"Channel name too long\n");
+		log_message( MSG_WARN,"Channel name too long\n");
+		strncpy(channels[curr_channel].name,strtok(substring,"\n"),MAX_NAME_LEN-1);
 	    }
 	}
       else if (!strcmp (substring, "qam"))
@@ -647,7 +693,7 @@ main (int argc, char **argv)
 	    modulation=QAM_AUTO;
 	  else
 	    {
-		log_message( MSG_INFO,
+		log_message( MSG_ERROR,
 			"Config issue : QAM\n");
 	      exit(ERROR_CONF);
 	    }
@@ -665,7 +711,7 @@ main (int argc, char **argv)
 	    TransmissionMode=TRANSMISSION_MODE_AUTO;
 	  else
 	    {
-		log_message( MSG_INFO,
+		log_message( MSG_ERROR,
 			"Config issue : trans_mode\n");
 	      exit(ERROR_CONF);
 	    }
@@ -685,7 +731,7 @@ main (int argc, char **argv)
 	    bandWidth=BANDWIDTH_AUTO;
 	  else
 	    {
-		log_message( MSG_INFO,
+		log_message( MSG_ERROR,
 			"Config issue : bandwidth\n");
 	      exit(ERROR_CONF);
 	    }
@@ -707,7 +753,7 @@ main (int argc, char **argv)
 	    guardInterval=GUARD_INTERVAL_AUTO;
 	  else
 	    {
-		log_message( MSG_INFO,
+		log_message( MSG_ERROR,
 			"Config issue : guardinterval\n");
 	      exit(ERROR_CONF);
 	    }
@@ -739,7 +785,7 @@ main (int argc, char **argv)
 	    HP_CodeRate=FEC_AUTO;
 	  else
 	    {
-	      log_message( MSG_INFO,
+	      log_message( MSG_ERROR,
 			"Config issue : coderate\n");
 	      exit(ERROR_CONF);
 	    }
@@ -748,7 +794,7 @@ main (int argc, char **argv)
       else
 	{
 	  if(strlen (current_line) > 1)
-	    log_message( MSG_INFO,
+	    log_message( MSG_WARN,
 			 "Config issue : unknow symbol : %s\n\n", substring);
 	  continue;
 	}
@@ -762,7 +808,7 @@ main (int argc, char **argv)
   number_of_channels = curr_channel;
   if (curr_channel > MAX_CHANNELS)
     {
-      log_message( MSG_INFO, "Too many channels : %d limit : %d\n",
+      log_message( MSG_ERROR, "Too many channels : %d limit : %d\n",
 		   curr_channel, MAX_CHANNELS);
       exit(ERROR_TOO_CHANNELS);
     }
@@ -779,7 +825,6 @@ main (int argc, char **argv)
       log_message( MSG_WARN,
 		   "WARNING : Can't create %s: %s\n",
 		   nom_fich_chaines_diff, strerror (errno));
-      //exit(ERROR_CREATE_FILE);
     }
   else
     fclose (chaines_diff);
@@ -791,14 +836,12 @@ main (int argc, char **argv)
       log_message( MSG_WARN,
 		   "WARNING : Can't create %s: %s\n",
 		   nom_fich_chaines_non_diff, strerror (errno));
-      //exit(ERROR_CREATE_FILE);
     }
   else
     fclose (chaines_non_diff);
 
-  
-  log_message( MSG_INFO, "Streaming. Freq %lu pol %c srate %lu\n",
-	       freq, pol, srate);
+  log_message( MSG_INFO, "Streaming. Freq %lu\n",
+	       freq);
 
 
   /******************************************************/
@@ -809,43 +852,48 @@ main (int argc, char **argv)
     signal (SIGALRM, SIG_IGN);
   if (signal (SIGUSR1, SignalHandler) == SIG_IGN)
     signal (SIGUSR1, SIG_IGN);
-  alarm (timeout_accord);
+  alarm (tuning_timeout);
 
-  // We tune the card
-  tune_retval =-1;
-
-  if ((freq > 100000000))
+  if(!dont_tune)
     {
-      if (open_fe (&fds.fd_frontend, card))
-	{
-	  tune_retval =
-	    tune_it (fds.fd_frontend, freq, srate, 0, tone, specInv, diseqc,
-		     modulation, HP_CodeRate, TransmissionMode, guardInterval,
-		     bandWidth, LP_CodeRate, hier, display_signal_strenght);
-	}
-    }
-  else if ((freq != 0) && (pol != 0) && (srate != 0))
-    {
-      if (open_fe (&fds.fd_frontend, card))
-	{
-	  tune_retval =
-	    tune_it (fds.fd_frontend, freq, srate, pol, tone, specInv, diseqc,
-		     modulation, HP_CodeRate, TransmissionMode, guardInterval,
-		     bandWidth, LP_CodeRate, hier, display_signal_strenght);
-	}
-    }
-
-  if (tune_retval < 0)
-    {
-      log_message( MSG_INFO, "Tunning issue, card %d\n", card);
+      // We tune the card
+      tune_retval =-1;
       
-      // we close the file descriptors
-      close_card_fd (number_of_channels, channels, fds);
-      exit(ERROR_TUNE);
+      if ((freq > 100000000))
+      {
+        if (open_fe (&fds.fd_frontend, card))
+          {
+            tune_retval =
+              tune_it (fds.fd_frontend, freq, srate, 0, tone, specInv, diseqc,
+                      modulation, HP_CodeRate, TransmissionMode, guardInterval,
+                      bandWidth, LP_CodeRate, hier, display_signal_strenght);
+          }
+      }
+    else if ((freq != 0) && (pol != 0) && (srate != 0))
+      {
+        if (open_fe (&fds.fd_frontend, card))
+          {
+            tune_retval =
+              tune_it (fds.fd_frontend, freq, srate, pol, tone, specInv, diseqc,
+                      modulation, HP_CodeRate, TransmissionMode, guardInterval,
+                      bandWidth, LP_CodeRate, hier, display_signal_strenght);
+          }
+      }
+    if (tune_retval < 0)
+      {
+        log_message( MSG_INFO, "Tunning issue, card %d\n", card);
+        // we close the file descriptors
+        close_card_fd (fds);
+        exit(ERROR_TUNE);
+      }
+      log_message( MSG_INFO, "Card %d tuned\n", card);
+      card_tuned = 1;
     }
-
-  log_message( MSG_INFO, "Card %d tuned\n", card);
-  card_tuned = 1;
+  else
+  {
+    log_message( MSG_INFO, "We don't tune card %d\n", card);
+    card_tuned = 1;
+  }
   /******************************************************/
   //card tuned
   /******************************************************/
@@ -901,7 +949,8 @@ main (int argc, char **argv)
 	}
       memset (autoconf_vars.autoconf_temp_pmt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
     }
-  if(autoconf_vars.autoconfiguration==2)
+
+  if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)
     {
       if(common_port==0)
 	common_port=1234;
@@ -935,7 +984,7 @@ main (int argc, char **argv)
       channels[curr_channel].nb_bytes=0;
       //If there is more than one pid in one channel we mark it
       //For no autoconfiguration
-      if(autoconf_vars.autoconfiguration==1 && channels[curr_channel].num_pids>1)
+      if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_PIDS && channels[curr_channel].num_pids>1)
 	{
 	  log_message( MSG_DETAIL, "Autoconf : Autoconfiguration desactivated for channel \"%s\" \n", channels[curr_channel].name);
 	  channels[curr_channel].autoconfigurated=1;
@@ -973,28 +1022,32 @@ main (int argc, char **argv)
       channels[curr_channel].streamed_channel_old = 1;
     }
 
-  //We initialise mantadory pid table
-  for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY_PID_NUMBER;curr_pid_mandatory++)
-    {
-      mandatory_pid[curr_pid_mandatory]=0;
-    }
+  //We initialise asked pid table
+  memset (asked_pid, 0, sizeof( uint8_t)*8192);//we clear it
+  //We initialise mandatory pid table
+  memset (mandatory_pid, 0, sizeof( uint8_t)*MAX_MANDATORY_PID_NUMBER);//we clear it
 
   //mandatory pids (always sent with all channels)
   //PAT : Program Association Table
   mandatory_pid[0]=1;
+  asked_pid[0]=PID_ASKED;
   //NIT : Network Information Table
   //It is intended to provide information about the physical network.
   mandatory_pid[16]=1;
+  asked_pid[16]=PID_ASKED;
   //SDT : Service Description Table
   //the SDT contains data describing the services in the system e.g. names of services, the service provider, etc.
   mandatory_pid[17]=1;
+  asked_pid[17]=PID_ASKED;
   //EIT : Event Information Table
   //the EIT contains data concerning events or programmes such as event name, start time, duration, etc.
   mandatory_pid[18]=1;
+  asked_pid[18]=PID_ASKED;
   //TDT : Time and Date Table
   //the TDT gives information relating to the present time and date.
   //This information is given in a separate table due to the frequent updating of this information.
   mandatory_pid[20]=1;
+  asked_pid[20]=PID_ASKED;
 
   /*****************************************************/
   //We open the file descriptors and
@@ -1002,32 +1055,30 @@ main (int argc, char **argv)
   /*****************************************************/
 
 
-  // we open the file descriptors
-  if (create_card_fd (card, number_of_channels, channels, mandatory_pid, &fds) < 0)
-    return mumudvb_close(100<<8);
-
-  //File descriptor for polling
-  pfds[0].fd = fds.fd_dvr;
-  //POLLIN : data available for read
-  pfds[0].events = POLLIN | POLLPRI; 
-  pfds[1].fd = 0;
-  pfds[1].events = POLLIN | POLLPRI;
-
-  for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY_PID_NUMBER;curr_pid_mandatory++)
-    if(mandatory_pid[curr_pid_mandatory]==1)
-      set_ts_filt (fds.fd_mandatory[curr_pid_mandatory], curr_pid_mandatory, DMX_PES_OTHER);
-
+  //We fill the asked_pid array
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
       for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
-	set_ts_filt (fds.fd[curr_channel][curr_pid], channels[curr_channel].pids[curr_pid], DMX_PES_OTHER);
+	asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
     }
 
+  // we open the file descriptors
+  if (create_card_fd (card, asked_pid, &fds) < 0)
+    return mumudvb_close(100<<8);
 
+  set_filters(asked_pid, &fds);
+
+  //File descriptor for polling
+  fds.pfds[0].fd = fds.fd_dvr;
+  //POLLIN : data available for read
+  fds.pfds[0].events = POLLIN | POLLPRI; 
+  fds.pfds[1].fd = 0;
+  fds.pfds[1].events = POLLIN | POLLPRI;
+
+  //We record the starting time
   gettimeofday (&tv, (struct timezone *) NULL);
   real_start_time = tv.tv_sec;
   now = 0;
-
 
   /*****************************************************/
   // Init udp, we open the sockets
@@ -1035,7 +1086,7 @@ main (int argc, char **argv)
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
       //we use makeclientsocket in order to join the multicast group associated with the channel
-      //Some switches (like HP Procurve 26xx) broadcast multicast traffic when there is no client to the group
+      //Some switches (like HP Procurve 26xx) broadcast multicast traffic when there is no client to the group //Note, it seems that it's now corrected
       channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
     }
 
@@ -1067,7 +1118,7 @@ main (int argc, char **argv)
   // Information about streamed channels
   /*****************************************************/
 
-  if(autoconf_vars.autoconfiguration!=2)
+  if(autoconf_vars.autoconfiguration!=AUTOCONF_MODE_FULL)
     {
       log_streamed_channels(number_of_channels, channels);
     }
@@ -1084,7 +1135,7 @@ main (int argc, char **argv)
       /* Poll the open file descriptors : we wait for data*/
       poll_try=0;
       last_poll_error=0;
-      while((poll (pfds, 1, 500)<0)&&(poll_try<MAX_POLL_TRIES))
+      while((poll (fds.pfds, 1, 500)<0)&&(poll_try<MAX_POLL_TRIES))
 	{
 	  if(errno != EINTR) //EINTR means Interrupted System Call, it normally shouldn't matter so much so we don't count it for our Poll tries
 	    {
@@ -1121,7 +1172,7 @@ main (int argc, char **argv)
 	  /*************************************************************************************/
 	  /****              AUTOCONFIGURATION PART                                         ****/
 	  /*************************************************************************************/
-	  if( autoconf_vars.autoconfiguration==2) //Full autoconfiguration, we search the channels and their names
+	  if( autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL) //Full autoconfiguration, we search the channels and their names
 	    {
 	      if(pid==0) //PAT : contains the services identifiers and the pmt pid for each service
 		{
@@ -1130,7 +1181,7 @@ main (int argc, char **argv)
 		      //log_message(MSG_DEBUG,"Autoconf : New PAT pid\n");
 		      if(autoconf_read_pat(autoconf_vars.autoconf_temp_pat,autoconf_vars.services))
 			{
-			  log_message(MSG_DEBUG,"Autoconf : It seems that we have finished *\n");
+			  log_message(MSG_DEBUG,"Autoconf : It seems that we have finished to get the services list\n");
 			  //Interrupted=1;
 			  number_of_channels=services_to_channels(autoconf_vars.services, channels, cam_vars.cam_support,common_port, card); //Convert the list of services into channels
 			  if(autoconf_vars.services)
@@ -1138,17 +1189,24 @@ main (int argc, char **argv)
 			      autoconf_free_services(autoconf_vars.services);
 			      autoconf_vars.services=NULL;
 			    }
-			  if (complete_card_fds(card, number_of_channels, channels, &fds,0) < 0)
+			  //we got the pmt pids for the channels, we open the filters
+			  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+			    {
+			      for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+				asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
+			    }
+			  // we open the file descriptors
+			  if (create_card_fd (card, asked_pid, &fds) < 0)
 			    {
 			      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");
 			      Interrupted=666<<8; //the <<8 is to make difference beetween signals and errors;
 			      continue;
 			    }
-
+			  // we set the new filters
+			  set_filters( asked_pid, &fds);
+			    
 			  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 			    {
-			      //filters
-			      set_ts_filt (fds.fd[curr_channel][0], channels[curr_channel].pids[0], DMX_PES_OTHER);
 			      // Init udp
 			      //TODO explain
 			      channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
@@ -1159,7 +1217,7 @@ main (int argc, char **argv)
 			  autoconf_vars.autoconf_temp_sdt=NULL;
 			  free(autoconf_vars.autoconf_temp_pat);
 			  autoconf_vars.autoconf_temp_pat=NULL;
-			  autoconf_vars.autoconfiguration=1; //Next step add video and audio pids
+			  autoconf_vars.autoconfiguration=AUTOCONF_MODE_PIDS; //Next step add video and audio pids
 			}
 		      else
 			memset (autoconf_vars.autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
@@ -1169,14 +1227,13 @@ main (int argc, char **argv)
 		{
 		  if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_sdt))
 		    {
-		      //log_message(MSG_DEBUG,"Autoconf : New SDT pid\n");
 		      autoconf_read_sdt(autoconf_vars.autoconf_temp_sdt->packet,autoconf_vars.autoconf_temp_sdt->len,autoconf_vars.services);
 		      memset (autoconf_vars.autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 		    }
 		}
 	      continue;
 	    }
-	  if( autoconf_vars.autoconfiguration==1) //We have the channels and their PMT, we search the other pids
+	  if( autoconf_vars.autoconfiguration==AUTOCONF_MODE_PIDS) //We have the channels and their PMT, we search the other pids
 	    {
 	      //here we call the autoconfiguration function
 	      for(curr_channel=0;curr_channel<MAX_CHANNELS;curr_channel++)
@@ -1186,7 +1243,7 @@ main (int argc, char **argv)
 		      if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_pmt))
 			{
 			  //Now we have the PMT, we parse it
-			  log_message(MSG_DEBUG,"Autoconf : New PMT pid %d for channel %d\n",pid,curr_channel);
+			  log_message(MSG_DEBUG,"\nAutoconf : New PMT pid %d for channel %d\n",pid,curr_channel);
 			  autoconf_read_pmt(autoconf_vars.autoconf_temp_pmt,&channels[curr_channel]);
 			  log_message(MSG_DETAIL,"Autoconf : Final PIDs for channel %d \"%s\" : ",curr_channel, channels[curr_channel].name);
 			  for(i=0;i<channels[curr_channel].num_pids;i++)
@@ -1198,12 +1255,12 @@ main (int argc, char **argv)
 			  autoconf_vars.autoconfiguration=0;
 			  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 			    if(!channels[curr_channel].autoconfigurated)
-			      autoconf_vars.autoconfiguration=1;
+			      autoconf_vars.autoconfiguration=AUTOCONF_MODE_PIDS;
 
 			  //if it's finished, we open the new descriptors and add the new filters
 			  if(autoconf_vars.autoconfiguration==0)
 			    {
-			      autoconf_end(card, number_of_channels, channels, &fds);
+			      autoconf_end(card, number_of_channels, channels, asked_pid, &fds);
 			      //We free autoconf memory
 			      if(autoconf_vars.autoconf_temp_sdt)
 				{
@@ -1370,7 +1427,11 @@ main (int argc, char **argv)
   /******************************************************/
   //End of main loop
   /******************************************************/
-  
+
+  gettimeofday (&tv, (struct timezone *) NULL);
+  log_message( MSG_INFO,
+	       "\nEnd of streaming. We streamed during %d:%02d:%02d\n",(tv.tv_sec - real_start_time)/3600,((tv.tv_sec - real_start_time) % 3600)/60,(tv.tv_sec - real_start_time) %60 );
+
   return mumudvb_close(Interrupted);
   
 }
@@ -1397,7 +1458,7 @@ int mumudvb_close(int Interrupted)
     close (channels[curr_channel].socketOut);
 
   // we close the file descriptors
-  close_card_fd (number_of_channels, channels, fds);
+  close_card_fd (fds);
 
   if(cam_vars.cam_support)
     {
@@ -1489,13 +1550,13 @@ static void SignalHandler (int signum)
       now = tv.tv_sec - real_start_time;
 
       if (display_signal_strenght && card_tuned)
-	affiche_puissance (fds);
+	show_power (fds);
 
       if (!card_tuned)
 	{
 	  log_message( MSG_INFO,
 		       "Card not tuned after %ds - exiting\n",
-		       timeout_accord);
+		       tuning_timeout);
 	  exit(ERROR_TUNE);
 	}
 
@@ -1510,7 +1571,7 @@ static void SignalHandler (int signum)
 	    {
 	      log_message(MSG_WARN,"Autoconf : Warning : Not all the channels were configured before timeout\n");
 	      autoconf_vars.autoconfiguration=0;
-	      autoconf_end(card, number_of_channels, channels, &fds);
+	      autoconf_end(card, number_of_channels, channels, asked_pid, &fds);
 	      //We free autoconf memory
 	      if(autoconf_vars.autoconf_temp_sdt)
 		{

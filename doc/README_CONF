@@ -18,6 +18,7 @@ All parameters are in the form : name=value
 ||pol                            ||transponder's polarisation (a char) v or h (not case sensitive) ||
 ||srate                          ||transponder's strate ||
 ||sat_number                     ||The satellite number (for diseqc users) ||
+||dont_tune                      ||We do not try to tune the card (another program,like tzap, did it for us) ||
 ||card                           ||card number (defalut : 0) ||
 ||timeout_accord                 ||tuning timeout (in seconds) (default : 300 (5min)) ||
 ||timeout_no_diff                ||if the program doesn't stream any chanels, he will kill himself at the end of this time (in seconds) (default : 600 (10min)) ||
@@ -39,7 +40,7 @@ All parameters are in the form : name=value
 ||bandwidth                      ||bandwith, possible values : 8MHz,7MHz,6MHz,auto ||
 ||guardinterval                  ||guard interval, possible values : 1/32,1/16,1/8,1/4,auto ||
 ||coderate                       ||coderate, possible values : none,1/2,2/3,3/4,4/5,5/6,6/7,7/8,8/9,auto ||
-||'''For each channel (this order is recommended : ip, port, ...,  pids)'''||
+||'''For each channel (this order is mandatory : ip, ...,  pids)'''||
 ||ip                             ||multicast (can also be unicast) ip where the chanel will be streamed ||
 ||port                           ||port (optionnal if common_port is used)||
 ||sap_group                      ||The playlist group for sap announces (optionnal) ||

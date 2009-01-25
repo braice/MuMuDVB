@@ -1,4 +1,4 @@
-mumudvb v1.5.3 - README
+mumudvb v1.5.4 - README
 
 = Site =
 Site principal de mumudvb http://mumudvb.braice.net
@@ -203,7 +203,7 @@ Pour plus d'informations consultez le site de monit
  * Lors de l'exécution le programme écrit la liste des chaînes diffusées dans le fichier /var/run/mumudvb/chaines_diffusees_carte%d le %d est remplacé par le numéro de carte, le chemin n'est pas paramétrable mais cela est facile à implémenter, envoyez moi un mail si vous en avez besoin. Ce fichier contient la liste des chaînes diffusées (actualisée toute les 5 secondes) de la forme suivante (pour chaque ligne) : "nom:ip:port"
 
  * mumudvb a été testé avec 6 cartes, et peut en supporter plus.
-  * au (04/2005) pour utiliser plus de 4 cartes, les possibilités sont d'utiliser un noyau 2.4.* avec devfs :-( ou d'utiliser un noyau > 2.6.11 avec udev compilé statiquement avec klibc en attendant la mise a jour de la glibc. Nous n'avons pas testé avec les versions récentes d'udev depuis.
+  * au (04/2005) pour utiliser plus de 4 cartes, les possibilités sont d'utiliser un noyau 2.4.* avec devfs :-( ou d'utiliser un noyau > 2.6.11 avec udev compilé statiquement avec klibc en attendant la mise a jour de la glibc. Note : ce probleme a l'air d'etre resolu désormais (testé avec udev 104 et libc6 2.7 ie debian etch).
 
 = Problèmes connus =
 

@@ -2,7 +2,7 @@
  * mumudvb - UDP-ize a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * (C) 2004-2008 Brice DUBOST
+ * (C) 2004-2009 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -34,7 +34,11 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <resolv.h>
+#include <sys/poll.h>
 
+#define PID_NOT_ASKED 0
+#define PID_ASKED 1
+#define PID_FILTERED 2
 
 // DVB includes:
 #include <linux/dvb/dmx.h>
@@ -43,19 +47,20 @@
 #include "mumudvb.h"
 
 //file descriptors
-//TODO : define here poll file descriptors
 typedef struct {
   int fd_dvr;
   int fd_frontend;
-  int fd[MAX_CHANNELS][MAX_PIDS_PAR_CHAINE];
-  int fd_mandatory[MAX_MANDATORY_PID_NUMBER];
+  /** demuxer file descriptors */
+  int fd_demuxer[8192];
+  /** poll file descriptors */
+  struct pollfd pfds[2];	//  DVR device
 }fds_t;
 
 
 int open_fe (int *fd_frontend, int card);
-void set_ts_filt (int fd,uint16_t pid, dmx_pes_type_t pestype);
-void affiche_puissance (fds_t fds);
-int create_card_fd(int card, int nb_flux, mumudvb_channel_t *channels, int *mandatory_pid, fds_t *fds);
-int complete_card_fds(int card, int nb_flux, mumudvb_channel_t *channels, fds_t *fds, int pmt_fd_opened);
-void close_card_fd(int nb_flux, mumudvb_channel_t *channels, fds_t fds);
+void set_ts_filt (int fd,uint16_t pid);
+void show_power (fds_t fds);
+int create_card_fd(int card, uint8_t *asked_pid, fds_t *fds);
+void set_filters(uint8_t *asked_pid, fds_t *fds);
+void close_card_fd(fds_t fds);
 #endif

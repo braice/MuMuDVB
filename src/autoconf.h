@@ -1,7 +1,7 @@
 /* 
  * mumudvb - UDP-ize a DVB transport stream.
  * 
- * (C) 2008 Brice DUBOST
+ * (C) 2008-2009 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -28,6 +28,11 @@
 
 #include "mumudvb.h"
 #include "ts.h"
+
+//find the audio and video pids from the PMT
+#define AUTOCONF_MODE_PIDS 1
+//find the pmt pids and the channels from the pat, and go to AUTOCONF_MODE_PIDS
+#define AUTOCONF_MODE_FULL 2
 
 //chained list of services
 //for autoconfiguration
@@ -62,11 +67,12 @@ typedef struct autoconf_parameters_t{
 }autoconf_parameters_t;
 
 
+
 int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel);
 int autoconf_read_sdt(unsigned char *buf, int len, mumudvb_service_t *services);
 int autoconf_read_pat(mumudvb_ts_packet_t *pat, mumudvb_service_t *services);
 int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channels, int cam_support, int port, int card);
-void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, fds_t *fds);
+void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, uint8_t *asked_pid, fds_t *fds);
 void autoconf_free_services(mumudvb_service_t *services);
 
 #endif

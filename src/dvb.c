@@ -2,7 +2,7 @@
  * dvb.h dvb part (except tune) of mumudvb
  * mumudvb - UDP-ize a DVB transport stream.
  * 
- * (C) 2004-2008 Brice DUBOST
+ * (C) 2004-2009 Brice DUBOST
  * (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
  * The latest version can be found at http://mumudvb.braice.net
@@ -53,7 +53,7 @@ open_fe (int *fd_frontend, int card)
 
 
 void
-set_ts_filt (int fd, uint16_t pid, dmx_pes_type_t pestype)
+set_ts_filt (int fd, uint16_t pid)
 {
   struct dmx_pes_filter_params pesFilterParams;
 
@@ -61,7 +61,7 @@ set_ts_filt (int fd, uint16_t pid, dmx_pes_type_t pestype)
   pesFilterParams.pid = pid;
   pesFilterParams.input = DMX_IN_FRONTEND;
   pesFilterParams.output = DMX_OUT_TS_TAP;
-  pesFilterParams.pes_type = pestype;
+  pesFilterParams.pes_type = DMX_PES_OTHER;
   pesFilterParams.flags = DMX_IMMEDIATE_START;
 
   if (ioctl (fd, DMX_SET_PES_FILTER, &pesFilterParams) < 0)
@@ -73,7 +73,7 @@ set_ts_filt (int fd, uint16_t pid, dmx_pes_type_t pestype)
 
 
 void
-affiche_puissance (fds_t fds)
+show_power (fds_t fds)
 {
   int strength, ber, snr;
   strength = ber = snr = 0;
@@ -83,48 +83,44 @@ affiche_puissance (fds_t fds)
 	log_message( MSG_INFO, "Bit error rate: %10d Signal strength: %10d SNR: %10d\n", ber,strength,snr);
 }
 
+/**
+ * Open file descriptors for the card. open dvr and one demuxer fd per asked pid. This function can be called 
+ * more than one time if new pids are added (typical case autoconf)
+ * @param card the card number
+ * @param asked_pid the array of asked pids
+ * @param fds the structure with the file descriptors
+ */
 int
-create_card_fd(int card, int nb_flux, mumudvb_channel_t *channels, int *mandatory_pid, fds_t *fds)
+create_card_fd(int card, uint8_t *asked_pid, fds_t *fds)
 {
 
-  int i=0;
-  int j=0;
-  int curr_pid_mandatory = 0;
+  int curr_pid = 0;
   char *demuxdev_name=NULL;
   char *dvrdev_name=NULL;
   asprintf(&demuxdev_name,DEMUX_DEV_PATH,card);
 
-  for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY_PID_NUMBER;curr_pid_mandatory++)
-    //file descriptors for the mandatory pids
+  for(curr_pid=0;curr_pid<8192;curr_pid++)
+    //file descriptors for the demuxer (used to set the filters)
     //we check if we need to open the file descriptor (some cards are limited)
-    if ((mandatory_pid[curr_pid_mandatory] != 0)&& ((fds->fd_mandatory[curr_pid_mandatory] = open (demuxdev_name, O_RDWR)) < 0) )	
+    if ((asked_pid[curr_pid] != 0)&& (fds->fd_demuxer[curr_pid]==0) )
+      if((fds->fd_demuxer[curr_pid] = open (demuxdev_name, O_RDWR)) < 0)
+	{
+	  log_message( MSG_ERROR, "FD PID %i: ", curr_pid);
+	  perror ("DEMUX DEVICE: ");
+	  free(demuxdev_name);
+	  return -1;
+	}
+
+
+  asprintf(&dvrdev_name,DVR_DEV_PATH,card);
+  if (fds->fd_dvr==0)  //this function can be called more than one time, we check if we opened it before
+    if ((fds->fd_dvr = open (dvrdev_name, O_RDONLY | O_NONBLOCK)) < 0)
       {
-	log_message( MSG_ERROR, "FD Mandatory %i: ", curr_pid_mandatory);
-	perror ("DEMUX DEVICE: ");
-	free(demuxdev_name);
+	perror ("DVR DEVICE: ");
+	free(dvrdev_name);
 	return -1;
       }
 
-  for (i = 0; i < nb_flux; i++)
-    {
-      for(j=0;j<channels[i].num_pids;j++)
-	{
-	  if ((fds->fd[i][j] = open (demuxdev_name, O_RDWR)) < 0)
-	    {
-	      log_message( MSG_ERROR, "FD %i: ", i);
-	      perror ("DEMUX DEVICE: ");
-	      free(demuxdev_name);
-	      return -1;
-	    }
-	}
-    }
-  asprintf(&dvrdev_name,DVR_DEV_PATH,card);
-  if ((fds->fd_dvr = open (dvrdev_name, O_RDONLY | O_NONBLOCK)) < 0)
-    {
-      perror ("DVR DEVICE: ");
-      free(dvrdev_name);
-      return -1;
-    }
 
   free(dvrdev_name);
   free(demuxdev_name);
@@ -133,54 +129,41 @@ create_card_fd(int card, int nb_flux, mumudvb_channel_t *channels, int *mandator
 }
 
 
-int complete_card_fds(int card, int nb_flux, mumudvb_channel_t *channels, fds_t *fds, int pmt_fd_opened)
+/**
+ * Open filters for the pids in asked_pid. This function update the asked_pid array and 
+ * can be called more than one time if new pids are added (typical case autoconf)
+ * @param asked_pid the array of asked pids
+ * @param fds the structure with the file descriptors
+ */
+void set_filters(uint8_t *asked_pid, fds_t *fds)
 {
-  //this function open the descriptors for the new pids found by autoconfiguration
-  int i=0;
-  int j=0;
-  int start=0;
-  
-  //If the pmt fd is already opened we start at 1 to skip it, otherwise we start at 0
-  start=pmt_fd_opened ? 1 : 0;
 
-  char demuxdev_name[256];
-  sprintf(demuxdev_name,DEMUX_DEV_PATH,card);
+  int curr_pid = 0;
 
-  for (i = 0; i < nb_flux; i++)
-    {
-      for(j=start;j<channels[i].num_pids;j++) //the 1 is important, because when we call this function, it's after autoconf and we'va already opened a file descriptor for the first (pmt) pid
-	{
-	  if ((fds->fd[i][j] = open (demuxdev_name, O_RDWR)) < 0)
-	    {
-	      log_message( MSG_ERROR, "FD %i: ", i);
-	      perror ("DEMUX DEVICE: ");
-	      free(demuxdev_name);
-	      return -1;
-	    }
-	}
-    }
-  return 0;
+  for(curr_pid=0;curr_pid<8192;curr_pid++)
+    if ((asked_pid[curr_pid] == PID_ASKED) )
+      {
+	set_ts_filt (fds->fd_demuxer[curr_pid], curr_pid);
+	asked_pid[curr_pid] = PID_FILTERED;
+      }
 
 }
 
+
+/**
+ * Close the file descriptors associated with the card
+ * @param fds the structure with the file descriptors
+ */
 void
-close_card_fd(int nb_flux, mumudvb_channel_t *channels, fds_t fds)
+close_card_fd(fds_t fds)
 {
-  int i=0;
-  int j=0;
-  int curr_pid_mandatory = 0;
+  int curr_pid = 0;
 
-  for(curr_pid_mandatory=0;curr_pid_mandatory<MAX_MANDATORY_PID_NUMBER;curr_pid_mandatory++)
+  for(curr_pid=0;curr_pid<8192;curr_pid++)
     {
-      //      if(mandatory_pid[curr_pid_mandatory] != 0)
-	close(fds.fd_mandatory[curr_pid_mandatory]);
+	close(fds.fd_demuxer[curr_pid]);
     }
 
-  for (i = 0; i < nb_flux; i++)
-    {
-      for(j=0;j<channels[i].num_pids;j++)
-	close (fds.fd[i][j]);
-    }
   close (fds.fd_dvr);
   close (fds.fd_frontend);
 
