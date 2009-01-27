@@ -97,7 +97,8 @@ char *encodings_en300468[] ={
 int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 {
 	int slen, dslen, i;
-	int pid;
+	int pid,pcr_pid;
+	int found=0;
 	pmt_t *header;
 	pmt_info_t *descr_header;
 
@@ -114,6 +115,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 	  }
 	
 	log_message( MSG_DEBUG,"Autoconf : PMT read for autoconfiguration of channel \"%s\"\n", channel->name);
+
 
 	program_info_length=HILO(header->program_info_length); //program_info_length
 
@@ -190,6 +192,21 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 	    log_message( MSG_DEBUG,"  PID %d added\n", pid);
 	    channel->pids[channel->num_pids]=pid;
 	    channel->num_pids++;
+	  }
+
+	pcr_pid=HILO(header->PCR_PID); //the pcr pid
+	//we check if it's not already included (ie the pcr is carried with the video)
+	found=0;
+	for(i=0;i<channel->num_pids;i++)
+	  {
+	    if(channel->pids[i]==pcr_pid)
+	       found=1;
+	  }
+	if(!found)
+	  {
+	    channel->pids[channel->num_pids]=pcr_pid;
+	    channel->num_pids++;
+	    log_message( MSG_DEBUG, "Autoconf : Added PCR pid %d\n",pcr_pid);
 	  }
 	log_message( MSG_DEBUG,"Autoconf : Number of pids after autoconf %d\n", channel->num_pids);
 	return 0; 
