@@ -486,6 +486,7 @@ static void *camthread_func(void* arg)
     cam_params->stdcam->poll(cam_params->stdcam);
   }
 
+
   return 0;
 }
 
@@ -549,7 +550,7 @@ int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_p
 
     if ((size = en50221_ca_format_pmt(pmt, capmt, sizeof(capmt), cam_params->moveca, listmgmt,
 				      CA_PMT_CMD_ID_OK_DESCRAMBLING)) < 0) {
-      //CA_PMT_CMD_ID_QUERY)) < 0) {// We don't do query, My cam (powercam PRO) never give good answers
+				      //CA_PMT_CMD_ID_QUERY)) < 0) {// We don't do query, My cam (powercam PRO) never give good answers
       log_message( MSG_WARN, "Failed to format PMT\n");
       return -1;
     }
@@ -683,7 +684,7 @@ static int mumudvb_cam_mmi_menu_callback(void *arg, uint8_t slot_id, uint16_t se
   cam_parameters_t *cam_params;
   cam_params= (cam_parameters_t *) arg;
   (void) slot_id;
-  (void) session_number;
+  //  (void) session_number;
   (void) item_raw_length;
   (void) items_raw;
 
@@ -708,9 +709,10 @@ static int mumudvb_cam_mmi_menu_callback(void *arg, uint8_t slot_id, uint16_t se
 
   cam_params->mmi_state = MMI_STATE_MENU;
 
+  cam_params->stdcam->mmi_session_number=session_number;
   //We leave
-  en50221_app_mmi_answ(cam_params->stdcam->mmi_resource, cam_params->stdcam->mmi_session_number,
-		       MMI_ANSW_ID_CANCEL, NULL, 0);
+
+  en50221_app_mmi_menu_answ(cam_params->stdcam->mmi_resource, cam_params->stdcam->mmi_session_number, 0);
 
 
   return 0;
@@ -727,6 +729,8 @@ static int mumudvb_cam_mmi_close_callback(void *arg, uint8_t slot_id, uint16_t s
   (void) session_number;
   (void) cmd_id;
   (void) delay;
+
+  log_message( MSG_INFO, "--- CAM MENU ----CLOSED-------\n");
 
   // note: not entirely correct as its supposed to delay if asked
   cam_params->mmi_state = MMI_STATE_CLOSED;
