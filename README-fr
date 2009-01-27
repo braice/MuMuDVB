@@ -211,6 +211,10 @@ Pour plus d'informations consultez le site de monit
 
  * Pour Vlc, il faut indiquer le pid PMT en plus des pids audio et vidéo (sinon, il est aussi incapable de voir ce qui est présent dans le flux). Ceci est un problème courant, en effet scan ne fournit pas le pid PMT mais son numéro. pour résoudre ce problème, on peut utiliser {{{vlc -v}}} qui va donner une ligne de la forme : {{{[00000269] ts demuxer debug:   * number=1025 pid=110}}} vous aurez la correspondance entre le nombre donné par scan et le pid réel, plus d'informations sont données dans le fichier readme-conf. dvbsnoop permet aussi d'obtenir cette information. Vous pouvez aussi utiliser l'autoconfiguration.
 
+== VLC lit la video mais pas le Son ==
+
+ * Ceci peux arriver lorsque les information PCR (program clock reference) ne sont pas transmises avec la video mais avec un pid a part. Verifiez si le pid PCR est bien transmis.
+
 == Crash du système en utilisant mumudvb ==
 
  * les chipset via non récents ou nforce, ces chipset sont des chipsets grand public, incapable de gérer correctement une grande quantité de données sur le bus PCI, ils peuvent faire planter la machine complètement.

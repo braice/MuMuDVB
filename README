@@ -209,6 +209,10 @@ For more detailled information, refer to the monit website
 
  * For Vlc, you must specify the PMT pid besides audio and video pids. It's a frequent issue. To resolve this issue you can use {{{vlc -v}}} and you'll see a ligne like : {{{[00000269] ts demuxer debug:   * number=1025 pid=110}}} you'll have the pid associated with your number, you can also use dvbsnoop, or see how to get pids in readme-conf. Another solution is to use autoconfiguration.
 
+== VLC reads the video but no audio ==
+
+ * This problem can happend if the PCR (ie clock) information is not carried with the video. In this case you have to check if the PCR pid is in the pids list.
+
 == mumudvb can't deamonize ==
 
  * In order to deamonize mumudvb needs the directory /var/run/mumudvb/ to be writable, in order to write his pid and the channel list.
