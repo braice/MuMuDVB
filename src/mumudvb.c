@@ -405,10 +405,10 @@ main (int argc, char **argv)
       else if (!strcmp (substring, "autoconf_ip_header"))
 	{
 	  substring = strtok (NULL, delimiteurs);
-	  if(strlen(substring)>7)
+	  if(strlen(substring)>8)
 	    {
 	      log_message( MSG_ERROR,
-			   "The sap sending ip is too long\n");
+			   "The autoconf ip header is too long\n");
 	      exit(ERROR_CONF);
 	    }
 	  sscanf (substring, "%s\n", autoconf_vars.autoconf_ip_header);
