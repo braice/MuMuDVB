@@ -34,12 +34,22 @@
 #define DEMUX_DEV_PATH    "/dev/dvb/adapter%d/demux0"
 #define DVR_DEV_PATH      "/dev/dvb/adapter%d/dvr0"
 
+/**
+ * Open the frontend associated with card
+ * Return 1 in case of succes, -1 otherwise
+ * 
+ * @param fd_frontend the file descriptor for the frontend 
+ * @param card the card number 
+*/
 int
 open_fe (int *fd_frontend, int card)
 {
 
   char *frontend_name=NULL;
-  asprintf(&frontend_name,FRONTEND_DEV_PATH,card);
+  int asprintf_ret;
+  asprintf_ret=asprintf(&frontend_name,FRONTEND_DEV_PATH,card);
+  if(asprintf_ret==-1)
+    return -1;
   if ((*fd_frontend = open (frontend_name, O_RDWR | O_NONBLOCK)) < 0)
     {
       perror ("FRONTEND DEVICE: ");
@@ -51,7 +61,12 @@ open_fe (int *fd_frontend, int card)
 }
 
 
-
+/**
+ * Set a filter of the pid asked. The file descriptor has to be
+ * opened before. Ie it will ask the card for this PID.
+ * @param fd the file descriptor
+ * @param pid the pid for the filter
+ */
 void
 set_ts_filt (int fd, uint16_t pid)
 {
@@ -72,6 +87,12 @@ set_ts_filt (int fd, uint16_t pid)
 }
 
 
+/**
+ * Show the reception power.
+ * This information is not alway reliable
+ *
+ * @param fds the file descriptors of the card
+ */
 void
 show_power (fds_t fds)
 {
@@ -83,9 +104,12 @@ show_power (fds_t fds)
 	log_message( MSG_INFO, "Bit error rate: %10d Signal strength: %10d SNR: %10d\n", ber,strength,snr);
 }
 
+
+
 /**
  * Open file descriptors for the card. open dvr and one demuxer fd per asked pid. This function can be called 
  * more than one time if new pids are added (typical case autoconf)
+ * return -1 in case of error
  * @param card the card number
  * @param asked_pid the array of asked pids
  * @param fds the structure with the file descriptors
@@ -97,7 +121,11 @@ create_card_fd(int card, uint8_t *asked_pid, fds_t *fds)
   int curr_pid = 0;
   char *demuxdev_name=NULL;
   char *dvrdev_name=NULL;
-  asprintf(&demuxdev_name,DEMUX_DEV_PATH,card);
+  int asprintf_ret;
+
+  asprintf_ret=asprintf(&demuxdev_name,DEMUX_DEV_PATH,card);
+  if(asprintf_ret==-1)
+    return -1;
 
   for(curr_pid=0;curr_pid<8192;curr_pid++)
     //file descriptors for the demuxer (used to set the filters)
@@ -112,7 +140,9 @@ create_card_fd(int card, uint8_t *asked_pid, fds_t *fds)
 	}
 
 
-  asprintf(&dvrdev_name,DVR_DEV_PATH,card);
+  asprintf_ret=asprintf(&dvrdev_name,DVR_DEV_PATH,card);
+  if(asprintf_ret==-1)
+    return -1;
   if (fds->fd_dvr==0)  //this function can be called more than one time, we check if we opened it before
     if ((fds->fd_dvr = open (dvrdev_name, O_RDONLY | O_NONBLOCK)) < 0)
       {
@@ -132,6 +162,7 @@ create_card_fd(int card, uint8_t *asked_pid, fds_t *fds)
 /**
  * Open filters for the pids in asked_pid. This function update the asked_pid array and 
  * can be called more than one time if new pids are added (typical case autoconf)
+ * Ie it asks the card for the pid list by calling set_ts_filt
  * @param asked_pid the array of asked pids
  * @param fds the structure with the file descriptors
  */
