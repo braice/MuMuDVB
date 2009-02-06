@@ -37,6 +37,14 @@ extern int no_daemon;
 extern int verbosity;
 extern int log_initialised;
 
+/**
+ * Print a log message on the console or via syslog 
+ * depending if mumudvb is daemonized or not
+ *
+ * @param type : message type MSG_*
+ * @param psz_format : the message in the printf format
+*/
+
 void log_message( int type,
                     const char *psz_format, ... )
 {
@@ -79,7 +87,12 @@ void log_message( int type,
   va_end( args );
 }
 
-
+/**
+ * Display the list of the streamed channels
+ *
+ * @param number_of_channels the number of channels
+ * @param channels : the channels array
+ */
 void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels)
 {
   int curr_channel;
@@ -109,7 +122,7 @@ gen_chaines_diff (char *nom_fich_chaines_diff, char *nom_fich_chaines_non_diff, 
   chaines_diff = fopen (nom_fich_chaines_diff, "w");
   if (chaines_diff == NULL)
     {
-      log_message( MSG_INFO,
+      log_message( MSG_WARN,
 		   "%s: %s\n",
 		   nom_fich_chaines_diff, strerror (errno));
       exit(ERROR_CREATE_FILE);
@@ -118,7 +131,7 @@ gen_chaines_diff (char *nom_fich_chaines_diff, char *nom_fich_chaines_non_diff, 
   chaines_non_diff = fopen (nom_fich_chaines_non_diff, "w");
   if (chaines_non_diff == NULL)
     {
-      log_message( MSG_INFO,
+      log_message( MSG_WARN,
 		   "%s: %s\n",
 		   nom_fich_chaines_non_diff, strerror (errno));
       exit(ERROR_CREATE_FILE);
@@ -134,3 +147,60 @@ gen_chaines_diff (char *nom_fich_chaines_diff, char *nom_fich_chaines_non_diff, 
   fclose (chaines_non_diff);
 
 }
+
+
+
+/**
+ * Write a config file with the current parameters
+ * in a form understandable per mumudvb
+ * This is useful if you want to do fine tuning after autoconf
+ *
+ * @param number_of_channels the number of channels
+ * @param channels the channels array
+ * @param config_file the pointer to the config file (should be already opened)
+ */
+void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *saving_filename)
+{
+  FILE *config_file;
+
+  int curr_channel;
+  int curr_pid;
+
+
+
+  config_file = fopen (saving_filename, "w");
+  if (config_file == NULL)
+    {
+      log_message( MSG_WARN,
+		   "%s: %s\n",
+		   saving_filename, strerror (errno));
+      return;
+    }
+
+  fprintf ( config_file, "#This is a generated configuration file for mumudvb\n");
+  fprintf ( config_file, "#For having this file work You have to manually copy the tuning parameters\n");
+  fprintf ( config_file, "#\n");
+
+  //TODO : generate complete conf (copy actual conf or regenerate ?)
+
+
+  //Channels part
+  fprintf ( config_file, "#Configuration for %d channel%s\n", number_of_channels,
+	       (number_of_channels <= 1 ? "" : "s"));
+  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+    {
+      fprintf ( config_file, "#Channel number : %3d\nip=%s\nport=%d\nname=%s\n",
+		   curr_channel, channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
+	//sap group
+	//cam pmt pid
+      log_message( MSG_info, "pids=");
+      for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+	fprintf ( config_file, "%d ", channels[curr_channel].pids[curr_pid]);
+      fprintf ( config_file, "\n");
+    }
+      fprintf ( config_file, "#End of config file\n");
+
+  fclose (config_file);
+
+}
+

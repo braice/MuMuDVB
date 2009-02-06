@@ -738,8 +738,8 @@ void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels,
   // we open the file descriptors
   if (create_card_fd (card, asked_pid, fds) < 0)
     {
-      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors Some channels will probably not work\n");
-      //return; //FIXME : whato do we do here ?
+      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors. Some channels will probably not work\n");
+      //return; //FIXME : what do we do here ?
     }
   
   log_message(MSG_DETAIL,"Autoconf : Add the new filters\n");
@@ -748,5 +748,8 @@ void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels,
   log_message(MSG_INFO,"Autoconfiguration done\n");
 
   log_streamed_channels(number_of_channels, channels);
+
+  //TODO : make an option ?
+  gen_config_file(number_of_channels, channels, "/var/run/mumudvb/mumudvb_generated_conf");
 
 }
