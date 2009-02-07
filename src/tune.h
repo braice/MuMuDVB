@@ -31,6 +31,26 @@
 
 #include "dvb_defaults.h"
 
-int tune_it(int fd_frontend, unsigned int freq, unsigned int srate, char pol, int tone, fe_spectral_inversion_t specInv, unsigned char diseqc,fe_modulation_t modulation,fe_code_rate_t HP_CodeRate,fe_transmit_mode_t TransmissionMode,fe_guard_interval_t guardInterval, fe_bandwidth_t bandwidth, fe_code_rate_t LP_CodeRate, fe_hierarchy_t hier, int display_strenght);
+//The different parameters used for autoconfiguration
+typedef struct tuning_parameters_t{
+  unsigned long freq;
+  unsigned int srate;
+  char pol;
+  //int tone;
+  fe_spectral_inversion_t specInv;
+  unsigned char sat_number;
+  fe_modulation_t modulation;
+  fe_code_rate_t HP_CodeRate;
+  fe_code_rate_t LP_CodeRate;
+  fe_transmit_mode_t TransmissionMode;
+  fe_guard_interval_t guardInterval;
+  fe_bandwidth_t bandwidth;
+  fe_hierarchy_t hier;
+  int display_strenght;
+}tuning_parameters_t;
+
+
+
+int tune_it(int, tuning_parameters_t);
 
 #endif

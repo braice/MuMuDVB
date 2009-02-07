@@ -1,8 +1,12 @@
 /* dvb_defaults.h
 
+   part of mumudvb
+
+   last version availaible from http://mumudvb.braice.net/
+
    Copyright (C) Dave Chapman 2002
 
-   Copyright (C) 2004-2008 Brice DUBOST
+   Copyright (C) 2004-2009 Brice DUBOST
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -25,10 +29,12 @@
 #define _DVB_DEFAULTS_H
 
 /* DVB-S */
-
 // With a diseqc system you may need different values per LNB.  I hope
 // no-one ever asks for that :-)
 
+/* lnb_lof1: local frequency of lower LNB band */
+/* lnb_lof2: local frequency of upper LNB band */
+/* lnb_slof: switch frequency of LNB */
 #define SLOF (11700*1000UL)
 #define LOF1 (9750*1000UL)
 #define LOF2 (10600*1000UL)
@@ -41,7 +47,7 @@
 #define DVB_T_LOCATION		    "Automatic"
 #define BANDWIDTH_DEFAULT           BANDWIDTH_8_MHZ
 #define HP_CODERATE_DEFAULT         FEC_AUTO
-#define CONSTELLATION_DEFAULT       QAM_AUTO
+#define MODULATION_DEFAULT          QAM_AUTO
 #define TRANSMISSION_MODE_DEFAULT   TRANSMISSION_MODE_AUTO
 #define GUARD_INTERVAL_DEFAULT      GUARD_INTERVAL_AUTO
 #define HIERARCHY_DEFAULT           HIERARCHY_NONE

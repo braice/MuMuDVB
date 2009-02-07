@@ -42,12 +42,13 @@
 
 void print_status(fe_status_t festatus) {
   log_message( MSG_INFO, "FE_STATUS:");
-  if (festatus & FE_HAS_SIGNAL) log_message( MSG_INFO, " FE_HAS_SIGNAL");
-  if (festatus & FE_TIMEDOUT) log_message( MSG_INFO, " FE_TIMEDOUT");
-  if (festatus & FE_HAS_LOCK) log_message( MSG_INFO, " FE_HAS_LOCK");
-  if (festatus & FE_HAS_CARRIER) log_message( MSG_INFO, " FE_HAS_CARRIER");
-  if (festatus & FE_HAS_VITERBI) log_message( MSG_INFO, " FE_HAS_VITERBI");
-  if (festatus & FE_HAS_SYNC) log_message( MSG_INFO, " FE_HAS_SYNC");
+  if (festatus & FE_HAS_SIGNAL) log_message( MSG_INFO, " FE_HAS_SIGNAL : found something above the noise level");
+  if (festatus & FE_HAS_CARRIER) log_message( MSG_INFO, " FE_HAS_CARRIER : found a DVB signal");
+  if (festatus & FE_HAS_VITERBI) log_message( MSG_INFO, " FE_HAS_VITERBI : FEC is stable");
+  if (festatus & FE_HAS_SYNC) log_message( MSG_INFO, " FE_HAS_SYNC : found sync bytes");
+  if (festatus & FE_HAS_LOCK) log_message( MSG_INFO, " FE_HAS_LOCK : everything's working... ");
+  if (festatus & FE_TIMEDOUT) log_message( MSG_INFO, " FE_TIMEDOUT : no lock within the last ... seconds");
+  if (festatus & FE_REINIT) log_message( MSG_INFO, " FE_REINIT : frontend was reinitialized");
   log_message( MSG_INFO, "\n");
 }
 
@@ -88,10 +89,9 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd,
    return 0;
 }
 
-/* digital satellite equipment control,
+/** digital satellite equipment control,
  * specification is available from http://www.eutelsat.com/ 
  */
-
 static int do_diseqc(int fd, unsigned char sat_no, int polv, int hi_lo)
 {
     struct diseqc_cmd cmd =  { {{0xe0, 0x10, 0x38, 0xf0, 0x00, 0x00}, 4}, 0 };
@@ -167,7 +167,6 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
       }
       if(display_strength)
 	{
-	  //Braice
 	  strength=0;
 	  if(ioctl(fd_frontend,FE_READ_SIGNAL_STRENGTH,&strength) >= 0)
 	    log_message( MSG_INFO, "Strength: %10d ",strength);
@@ -184,6 +183,7 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
       switch(type) {
          case FE_OFDM:
            log_message( MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);
+	   //TODO : display the other parameters
            break;
          case FE_QPSK:
            log_message( MSG_INFO, "Event:  Frequency: %d\n",(unsigned int)((event.parameters.frequency)+(hi_lo ? LOF2 : LOF1)));
@@ -222,7 +222,8 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
   return 0;
 }
 
-int tune_it(int fd_frontend, unsigned int freq, unsigned int srate, char pol, int tone, fe_spectral_inversion_t specInv, unsigned char diseqc,fe_modulation_t modulation,fe_code_rate_t HP_CodeRate,fe_transmit_mode_t TransmissionMode,fe_guard_interval_t guardInterval, fe_bandwidth_t bandwidth, fe_code_rate_t LP_CodeRate, fe_hierarchy_t hier, int display_strength) {
+int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
+{
   int res, hi_lo, dfd;
   struct dvb_frontend_parameters feparams;
   struct dvb_frontend_info fe_info;
@@ -234,60 +235,62 @@ int tune_it(int fd_frontend, unsigned int freq, unsigned int srate, char pol, in
      perror("FE_GET_INFO: ");
      return -1;
   }
-  
+
+  //TODO here check the capabilities of the card
+
   log_message( MSG_INFO, "Using DVB card \"%s\"\n",fe_info.name);
 
   switch(fe_info.type) {
-    case FE_OFDM:
-      if (freq < 1000000) freq*=1000UL;
-      feparams.frequency=freq;
-      feparams.inversion=INVERSION_AUTO;
-      feparams.u.ofdm.bandwidth=bandwidth;
-      feparams.u.ofdm.code_rate_HP=HP_CodeRate;
-      feparams.u.ofdm.code_rate_LP=LP_CodeRate;
-      feparams.u.ofdm.constellation=modulation;
-      feparams.u.ofdm.transmission_mode=TransmissionMode;
-      feparams.u.ofdm.guard_interval=guardInterval;
-      feparams.u.ofdm.hierarchy_information=hier;
-      log_message( MSG_INFO, "tuning DVB-T (%s) to %d Hz, Bandwidth: %d\n",DVB_T_LOCATION,freq, 
-	bandwidth==BANDWIDTH_8_MHZ ? 8 : (bandwidth==BANDWIDTH_7_MHZ ? 7 : 6));
-      break;
-    case FE_QPSK:
-    	pol = toupper(pol);
-        if (freq < SLOF) {
-          feparams.frequency=(freq-LOF1);
-	  hi_lo = 0;
-        } else {
-          feparams.frequency=(freq-LOF2);
-	  hi_lo = 1;
-      }
-
-	log_message( MSG_INFO, "tuning DVB-S to Freq: %u, Pol:%c Srate=%d, 22kHz tone=%s, LNB: %d\n",feparams.frequency,pol,srate,tone == SEC_TONE_ON ? "on" : "off", diseqc);
-      feparams.inversion=specInv;
-      feparams.u.qpsk.symbol_rate=srate;
-      feparams.u.qpsk.fec_inner=FEC_AUTO;
-      dfd = fd_frontend;
-
-   if(do_diseqc(dfd, diseqc, (pol == 'V' ? 1 : 0), hi_lo) == 0)
-	log_message( MSG_INFO, "DISEQC SETTING SUCCEDED\n");
-   else  {
-	log_message( MSG_INFO, "DISEQC SETTING FAILED\n");
-          return -1;
-        }
-      break;
-    case FE_QAM:
-      log_message( MSG_INFO, "tuning DVB-C to %d, srate=%d\n",freq,srate);
-      feparams.frequency=freq;
-      feparams.inversion=INVERSION_OFF;
-      feparams.u.qam.symbol_rate = srate;
-      feparams.u.qam.fec_inner = FEC_AUTO;
-      feparams.u.qam.modulation = modulation;
-      break;
-    default:
-      log_message( MSG_ERROR, "Unknown FE type. Aborting\n");
-      exit(-1);
+  case FE_OFDM: //DVB-T
+    if (freq < 1000000) freq*=1000UL;
+    feparams.frequency=tuneparams.freq;
+    feparams.inversion=INVERSION_AUTO;
+    feparams.u.ofdm.bandwidth=tuneparams.bandwidth;
+    feparams.u.ofdm.code_rate_HP=tuneparams.HP_CodeRate;
+    feparams.u.ofdm.code_rate_LP=tuneparams.LP_CodeRate;
+    feparams.u.ofdm.constellation=tuneparams.modulation;
+    feparams.u.ofdm.transmission_mode=tuneparams.TransmissionMode;
+    feparams.u.ofdm.guard_interval=tuneparams.guardInterval;
+    feparams.u.ofdm.hierarchy_information=tuneparams.hier;
+    log_message( MSG_INFO, "tuning DVB-T (%s) to %d Hz, Bandwidth: %d\n",DVB_T_LOCATION,freq, 
+		 tuneparams.bandwidth==BANDWIDTH_8_MHZ ? 8 : (tuneparams.bandwidth==BANDWIDTH_7_MHZ ? 7 : 6));
+    break;
+  case FE_QPSK: //DVB-S
+    tuneparams.pol = toupper(tuneparams.pol);
+    if (tuneparams.freq < SLOF) {
+      feparams.frequency=(tuneparams.freq-LOF1);
+      hi_lo = 0;
+    } else {
+      feparams.frequency=(tuneparams.freq-LOF2);
+      hi_lo = 1;
+    }
+    
+    log_message( MSG_INFO, "tuning DVB-S to Freq: %u, Pol:%c Srate=%d, 22kHz tone=%s, LNB: %d\n",feparams.frequency,pol,srate,tone == SEC_TONE_ON ? "on" : "off", sat_number);
+    feparams.inversion=tuneparams.specInv;
+    feparams.u.qpsk.symbol_rate=tuneparams.srate;
+    feparams.u.qpsk.fec_inner=FEC_AUTO;
+    dfd = fd_frontend;
+    
+    if(do_diseqc(dfd, tuneparams.sat_number, (tuneparams.pol == 'V' ? 1 : 0), hi_lo) == 0)
+      log_message( MSG_INFO, "DISEQC SETTING SUCCEDED\n");
+    else  {
+      log_message( MSG_INFO, "DISEQC SETTING FAILED\n");
+      return -1;
+    }
+    break;
+  case FE_QAM: //DVB-C
+    log_message( MSG_INFO, "tuning DVB-C to %d, srate=%d\n",freq,srate);
+    feparams.frequency=tuneparams.freq;
+    feparams.inversion=INVERSION_OFF;
+    feparams.u.qam.symbol_rate = tuneparams.srate;
+    feparams.u.qam.fec_inner = FEC_AUTO;
+    feparams.u.qam.modulation = tuneparams.modulation;
+    break;
+  default:
+    log_message( MSG_ERROR, "Unknown FE type. Aborting\n");
+    exit(-1);
   }
   usleep(100000);
 
-  return(check_status(fd_frontend,fe_info.type,&feparams,hi_lo,display_strength));
+  return(check_status(fd_frontend,fe_info.type,&feparams,hi_lo,tuneparams.display_strength));
 }

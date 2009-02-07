@@ -68,6 +68,7 @@ long now;
 long time_no_diff;
 long real_start_time;
 
+
 int display_signal_strenght = 0; ///do we periodically show the signal strenght ?
 
 int no_daemon = 0; ///do we deamonize mumudvb ?
@@ -93,6 +94,42 @@ char nom_fich_chaines_diff[256];
 char nom_fich_chaines_non_diff[256];
 char nom_fich_pid[256];
 int  write_streamed_channels=1;
+
+//tuning parameters C99 initialisation
+tuninng_parameters_t tuneparams={
+  /** the frequency (in MHz for dvb-s in kHz for dvb-t) */
+  .freq = 0,  
+  /** The symbol rate (QPSK and QAM modulation ie cable and satellite) in symbols per second*/
+  .srate = 0, 
+  /**The polarisation H or V ( for satellite)*/
+  .pol = 0,
+  //The 22KHz tone burst is usually used with non-DiSEqC capable switches to select
+  //between two connected LNBs/satellites. When using DiSEqC epuipment this voltage
+  //has to be switched consistently to the DiSEqC commands as described in the DiSEqC
+  //spec.
+  //.tone = -1; //not used, only diseqc is supported
+  /**spectral inversion. AUTO seems to work with all the hardware*/
+  .specInv = INVERSION_AUTO, //Todo : catch more information about this
+  /**The satellite number ie the LNB number*/
+  .sat_number = 0, 
+  //For cable and terrestrial frontends (QAM and OFDM) one also has to specify the
+  /** quadrature modulation */
+  .modulation = MODULATION_DEFAULT, //cf dvb defaults
+  //FEC
+  /** high priority stream code rate */
+  .HP_Coderate = HP_CODERATE_DEFAULT,
+  /** low priority stream code rate */
+  .LP_Coderate = LP_CODERATE_DEFAULT,
+  //For DVB-T 
+  .TransmissionMode = TRANSMISSION_MODE_DEFAULT,
+  //For DVB-T 
+  .guardInterval = GUARD_INTERVAL_DEFAULT,
+  //For DVB-T : the bandwith (often 8MHz)
+  .bandwith = BANDWIDTH_DEFAULT,
+  //For DVB-T //TODO : find what it does mean
+  .hier = HIERARCHY_DEFAULT,
+};
+
 
 //sap announces C99 initialisation
 sap_parameters_t sap_vars={
@@ -165,26 +202,6 @@ main (int argc, char **argv)
   //polling of the dvr device
   int poll_try;
   int last_poll_error;
-
-
-  // Tuning parapmeters
-  //TODO : put all of them in a structure.
-  unsigned long freq = 0;
-  unsigned long srate = 0;
-  char pol = 0;
-  fe_spectral_inversion_t specInv = INVERSION_AUTO;
-  int tone = -1;
-  //DVB-T parameters
-  fe_modulation_t modulation = CONSTELLATION_DEFAULT;
-  fe_transmit_mode_t TransmissionMode = TRANSMISSION_MODE_DEFAULT;
-  fe_bandwidth_t bandWidth = BANDWIDTH_DEFAULT;
-  fe_guard_interval_t guardInterval = GUARD_INTERVAL_DEFAULT;
-  fe_code_rate_t HP_CodeRate = HP_CODERATE_DEFAULT, LP_CodeRate =
-    LP_CODERATE_DEFAULT;
-  //TODO : check frontend capabilities
-  fe_hierarchy_t hier = HIERARCHY_DEFAULT;
-  uint8_t diseqc = 0; //satellite number 
-
 
   //MPEG2-TS reception and sort
   int pid;			/// pid of the current mpeg2 packet
@@ -378,7 +395,7 @@ main (int argc, char **argv)
       else if (!strcmp (substring, "sat_number"))
 	{
 	  substring = strtok (NULL, delimiteurs);
-	  diseqc = atoi (substring);
+	  tuneparams.sat_number = atoi (substring);
 	}
       else if (!strcmp (substring, "dont_tune"))
 	{
@@ -454,19 +471,19 @@ main (int argc, char **argv)
       else if (!strcmp (substring, "freq"))
 	{
 	  substring = strtok (NULL, delimiteurs);
-	  freq = atol (substring);
-	  freq *= 1000UL;
+	  tuneparams.freq = atol (substring);
+	  tuneparams.freq *= 1000UL;
 	}
       else if (!strcmp (substring, "pol"))
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  if (tolower (substring[0]) == 'v')
 	    {
-	      pol = 'V';
+	      tuneparams.pol = 'V';
 	    }
 	  else if (tolower (substring[0]) == 'h')
 	    {
-	      pol = 'H';
+	      tuneparams.pol = 'H';
 	    }
 	  else
 	    {
@@ -479,8 +496,8 @@ main (int argc, char **argv)
       else if (!strcmp (substring, "srate"))
 	{
 	  substring = strtok (NULL, delimiteurs);
-	  srate = atol (substring);
-	  srate *= 1000UL;
+	  tuneparams.srate = atol (substring);
+	  tuneparams.srate *= 1000UL;
 	}
       else if (!strcmp (substring, "card"))
 	{
@@ -657,19 +674,19 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  sscanf (substring, "%s\n", substring);
 	  if (!strcmp (substring, "qpsk"))
-	    modulation=QPSK;
+	    tuneparams.modulation=QPSK;
 	  else if (!strcmp (substring, "16"))
-	    modulation=QAM_16;
+	    tuneparams.modulation=QAM_16;
 	  else if (!strcmp (substring, "32"))
-	    modulation=QAM_32;
+	    tuneparams.modulation=QAM_32;
 	  else if (!strcmp (substring, "64"))
-	    modulation=QAM_64;
+	    tuneparams.modulation=QAM_64;
 	  else if (!strcmp (substring, "128"))
-	    modulation=QAM_128;
+	    tuneparams.modulation=QAM_128;
 	  else if (!strcmp (substring, "256"))
-	    modulation=QAM_256;
+	    tuneparams.modulation=QAM_256;
 	  else if (!strcmp (substring, "auto"))
-	    modulation=QAM_AUTO;
+	    tuneparams.modulation=QAM_AUTO;
 	  else
 	    {
 		log_message( MSG_ERROR,
@@ -683,11 +700,11 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  sscanf (substring, "%s\n", substring);
 	  if (!strcmp (substring, "2k"))
-	    TransmissionMode=TRANSMISSION_MODE_2K;
+	    tuneparams.TransmissionMode=TRANSMISSION_MODE_2K;
 	  else if (!strcmp (substring, "8k"))
-	    TransmissionMode=TRANSMISSION_MODE_8K;
+	    tuneparams.TransmissionMode=TRANSMISSION_MODE_8K;
 	  else if (!strcmp (substring, "auto"))
-	    TransmissionMode=TRANSMISSION_MODE_AUTO;
+	    tuneparams.TransmissionMode=TRANSMISSION_MODE_AUTO;
 	  else
 	    {
 		log_message( MSG_ERROR,
@@ -701,13 +718,13 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  sscanf (substring, "%s\n", substring);
 	  if (!strcmp (substring, "8MHz"))
-	    bandWidth=BANDWIDTH_8_MHZ;
+	    tuneparams.bandwidth=BANDWIDTH_8_MHZ;
 	  else if (!strcmp (substring, "7MHz"))
-	    bandWidth=BANDWIDTH_7_MHZ;
+	    tuneparams.bandwidth=BANDWIDTH_7_MHZ;
 	  else if (!strcmp (substring, "6MHz"))
-	    bandWidth=BANDWIDTH_6_MHZ;
+	    tuneparams.bandwidth=BANDWIDTH_6_MHZ;
 	  else if (!strcmp (substring, "auto"))
-	    bandWidth=BANDWIDTH_AUTO;
+	    tuneparams.bandwidth=BANDWIDTH_AUTO;
 	  else
 	    {
 		log_message( MSG_ERROR,
@@ -721,15 +738,15 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  sscanf (substring, "%s\n", substring);
 	  if (!strcmp (substring, "1/32"))
-	    guardInterval=GUARD_INTERVAL_1_32;
+	    tuneparams.guardInterval=GUARD_INTERVAL_1_32;
 	  else if (!strcmp (substring, "1/16"))
-	    guardInterval=GUARD_INTERVAL_1_16;
+	    tuneparams.guardInterval=GUARD_INTERVAL_1_16;
 	  else if (!strcmp (substring, "1/8"))
-	    guardInterval=GUARD_INTERVAL_1_8;
+	    tuneparams.guardInterval=GUARD_INTERVAL_1_8;
 	  else if (!strcmp (substring, "1/4"))
-	    guardInterval=GUARD_INTERVAL_1_4;
+	    tuneparams.guardInterval=GUARD_INTERVAL_1_4;
 	  else if (!strcmp (substring, "auto"))
-	    guardInterval=GUARD_INTERVAL_AUTO;
+	    tuneparams.guardInterval=GUARD_INTERVAL_AUTO;
 	  else
 	    {
 		log_message( MSG_ERROR,
@@ -743,32 +760,32 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  sscanf (substring, "%s\n", substring);
 	  if (!strcmp (substring, "none"))
-	    HP_CodeRate=FEC_NONE;
+	    tuneparams.HP_CodeRate=FEC_NONE;
 	  else if (!strcmp (substring, "1/2"))
-	    HP_CodeRate=FEC_1_2;
+	    tuneparams.HP_CodeRate=FEC_1_2;
 	  else if (!strcmp (substring, "2/3"))
-	    HP_CodeRate=FEC_2_3;
+	    tuneparams.HP_CodeRate=FEC_2_3;
 	  else if (!strcmp (substring, "3/4"))
-	    HP_CodeRate=FEC_3_4;
+	    tuneparams.HP_CodeRate=FEC_3_4;
 	  else if (!strcmp (substring, "4/5"))
-	    HP_CodeRate=FEC_4_5;
+	    tuneparams.HP_CodeRate=FEC_4_5;
 	  else if (!strcmp (substring, "5/6"))
-	    HP_CodeRate=FEC_5_6;
+	    tuneparams.HP_CodeRate=FEC_5_6;
 	  else if (!strcmp (substring, "6/7"))
-	    HP_CodeRate=FEC_6_7;
+	    tuneparams.HP_CodeRate=FEC_6_7;
 	  else if (!strcmp (substring, "7/8"))
-	    HP_CodeRate=FEC_7_8;
+	    tuneparams.HP_CodeRate=FEC_7_8;
 	  else if (!strcmp (substring, "8/9"))
-	    HP_CodeRate=FEC_8_9;
+	    tuneparams.HP_CodeRate=FEC_8_9;
 	  else if (!strcmp (substring, "auto"))
-	    HP_CodeRate=FEC_AUTO;
+	    tuneparams.HP_CodeRate=FEC_AUTO;
 	  else
 	    {
 	      log_message( MSG_ERROR,
 			"Config issue : coderate\n");
 	      exit(ERROR_CONF);
 	    }
-	  LP_CodeRate=HP_CodeRate; // I don't know what it exactly does, but it works like that
+	  tuneparams.LP_CodeRate=tuneparams.HP_CodeRate; // I don't know what it exactly does, but it works like that. //TODO find doc about this
 	}
       else
 	{
@@ -820,7 +837,7 @@ main (int argc, char **argv)
     fclose (chaines_non_diff);
 
   log_message( MSG_INFO, "Streaming. Freq %lu\n",
-	       freq);
+	       tuneparams.freq);
 
 
   /******************************************************/
@@ -838,24 +855,20 @@ main (int argc, char **argv)
       // We tune the card
       tune_retval =-1;
       
-      if ((freq > 100000000))
+      if ((tuneparams.freq > 100000000))
       {
         if (open_fe (&fds.fd_frontend, card))
           {
-            tune_retval =
-              tune_it (fds.fd_frontend, freq, srate, 0, tone, specInv, diseqc,
-                      modulation, HP_CodeRate, TransmissionMode, guardInterval,
-                      bandWidth, LP_CodeRate, hier, display_signal_strenght);
+            tune_retval = 
+              tune_it (fds.fd_frontend, tuneparams);
           }
       }
-    else if ((freq != 0) && (pol != 0) && (srate != 0))
+    else if ((tuneparams.freq != 0) && (tuneparams.pol != 0) && (tuneparams.srate != 0))
       {
         if (open_fe (&fds.fd_frontend, card))
           {
             tune_retval =
-              tune_it (fds.fd_frontend, freq, srate, pol, tone, specInv, diseqc,
-                      modulation, HP_CodeRate, TransmissionMode, guardInterval,
-                      bandWidth, LP_CodeRate, hier, display_signal_strenght);
+              tune_it (fds.fd_frontend, tuneparams);
           }
       }
     if (tune_retval < 0)
