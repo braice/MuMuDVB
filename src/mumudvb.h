@@ -63,6 +63,9 @@
 //Maximum number of polling tries
 #define MAX_POLL_TRIES		5
 
+//The path for the auto generated config file
+#define GEN_CONF_PATH "/var/run/mumudvb/mumudvb_generated_conf"
+
 //errors
 enum
   {
@@ -102,6 +105,10 @@ typedef struct{
 void log_message( int , const char *, ... );
 void gen_chaines_diff (char *nom_fich_chaines_diff, char *nom_fich_chaines_non_diff, int nb_flux, mumudvb_channel_t *channels);
 void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels);
+
+void gen_config_file_header(char *orig_conf_filename, char *saving_filename);
+void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *saving_filename);
+
 
 //pat_rewrite
 int pat_rewrite(unsigned char *buf,int num_pids, int *pids);

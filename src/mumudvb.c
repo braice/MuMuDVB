@@ -800,6 +800,12 @@ main (int argc, char **argv)
   //end of config file reading
   /******************************************************/
 
+  if(autoconf_vars.autoconfiguration)
+    {
+      //In case of autoconfiguration, we generate a config file with the channels discovered
+      //Here we generate the header, ie we take the actual config file and copy it removing the channels
+      gen_config_file_header(conf_filename, GEN_CONF_PATH);
+    }
 
   number_of_channels = curr_channel;
   if (curr_channel > MAX_CHANNELS)

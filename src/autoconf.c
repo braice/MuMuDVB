@@ -749,7 +749,7 @@ void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels,
 
   log_streamed_channels(number_of_channels, channels);
 
-  //TODO : make an option ?
-  gen_config_file(number_of_channels, channels, "/var/run/mumudvb/mumudvb_generated_conf");
+  //TODO : make an option to generate it or not ?
+  gen_config_file(number_of_channels, channels, GEN_CONF_PATH);
 
 }

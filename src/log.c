@@ -44,7 +44,6 @@ extern int log_initialised;
  * @param type : message type MSG_*
  * @param psz_format : the message in the printf format
 */
-
 void log_message( int type,
                     const char *psz_format, ... )
 {
@@ -111,40 +110,49 @@ void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels)
     }
 }
 
-
+/**
+ * Generate a file containing the list of the streamed channels and 
+ * file containing a list of not streamed channels
+ *
+ * @param file_streamed_channels_filename The filename for the file containig the list of streamed channels
+ * @param file_not_streamed_channels_filename The filename for the file containig the list of NOT streamed channels
+ * @param number_of_channels the number of channels
+ * @param channels the channels array
+ */
 void
-gen_chaines_diff (char *nom_fich_chaines_diff, char *nom_fich_chaines_non_diff, int nb_flux, mumudvb_channel_t *channels)
+gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_not_streamed_channels_filename,
+			    int number_of_channels, mumudvb_channel_t *channels)
 {
-  FILE *chaines_diff;
-  FILE *chaines_non_diff;
+  FILE *file_streamed_channels;
+  FILE *file_not_streamed_channels;
   int curr_channel;
 
-  chaines_diff = fopen (nom_fich_chaines_diff, "w");
-  if (chaines_diff == NULL)
+  file_streamed_channels = fopen (file_streamed_channels_filename, "w");
+  if (file_streamed_channels == NULL)
     {
       log_message( MSG_WARN,
 		   "%s: %s\n",
-		   nom_fich_chaines_diff, strerror (errno));
+		   file_streamed_channels_filename, strerror (errno));
       exit(ERROR_CREATE_FILE);
     }
 
-  chaines_non_diff = fopen (nom_fich_chaines_non_diff, "w");
-  if (chaines_non_diff == NULL)
+  file_not_streamed_channels = fopen (file_not_streamed_channels_filename, "w");
+  if (file_not_streamed_channels == NULL)
     {
       log_message( MSG_WARN,
 		   "%s: %s\n",
-		   nom_fich_chaines_non_diff, strerror (errno));
+		   file_not_streamed_channels_filename, strerror (errno));
       exit(ERROR_CREATE_FILE);
     }
 
-  for (curr_channel = 0; curr_channel < nb_flux; curr_channel++)
+  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     // on envoie le old pour annoncer que les chaines qui diffusent au dessus du quota de pauqets
     if (channels[curr_channel].streamed_channel_old)
-      fprintf (chaines_diff, "%s:%d:%s\n", channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
+      fprintf (file_streamed_channels, "%s:%d:%s\n", channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
     else
-      fprintf (chaines_non_diff, "%s:%d:%s\n", channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
-  fclose (chaines_diff);
-  fclose (chaines_non_diff);
+      fprintf (file_not_streamed_channels, "%s:%d:%s\n", channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
+  fclose (file_streamed_channels);
+  fclose (file_not_streamed_channels);
 
 }
 
@@ -154,18 +162,29 @@ gen_chaines_diff (char *nom_fich_chaines_diff, char *nom_fich_chaines_non_diff, 
  * Write a config file with the current parameters
  * in a form understandable per mumudvb
  * This is useful if you want to do fine tuning after autoconf
+ * This part generate the header ie take the actual config file and remove useless thing (ie channels, autoconf ...)
  *
- * @param number_of_channels the number of channels
- * @param channels the channels array
- * @param config_file the pointer to the config file (should be already opened)
+ * @param orig_conf_filename The name of the config file used actually by mumudvb
+ * @param saving_filename the path of the generated config file
  */
-void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *saving_filename)
+void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
 {
+  FILE *orig_conf_file;
   FILE *config_file;
+  char current_line[CONF_LINELEN];
+  char *substring=NULL;
+  char delimiteurs[] = " =";
+  int autoconf=0;
 
-  int curr_channel;
-  int curr_pid;
 
+
+  orig_conf_file = fopen (orig_conf_filename, "r");
+  if (orig_conf_file == NULL)
+    {
+      log_message( MSG_WARN, "Strange error %s: %s\n",
+		   orig_conf_filename, strerror (errno));
+      return;
+    }
 
 
   config_file = fopen (saving_filename, "w");
@@ -176,23 +195,89 @@ void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *
 		   saving_filename, strerror (errno));
       return;
     }
+  
 
   fprintf ( config_file, "#This is a generated configuration file for mumudvb\n");
-  fprintf ( config_file, "#For having this file work You have to manually copy the tuning parameters\n");
   fprintf ( config_file, "#\n");
 
-  //TODO : generate complete conf (copy actual conf or regenerate ?)
+
+  while (fgets (current_line, CONF_LINELEN, orig_conf_file))
+    {
+      substring = strtok (current_line, delimiteurs);
+      
+      //We remove useless parts
+      //if (substring[0] == '#')
+      //continue; 
+      if (!strcmp (substring, "autoconfigure"))
+	continue;
+      else if (!strcmp (substring, "autoconf_ip_header"))
+	continue;
+      else if (!strcmp (substring, "ip"))
+	continue;
+      else if (!strcmp (substring, "port"))
+	continue;
+      else if (!strcmp (substring, "cam_pmt_pid"))
+	continue;
+      else if (!strcmp (substring, "pids"))
+	continue;
+      else if (!strcmp (substring, "sap_group"))
+	continue;
+      else if (!strcmp (substring, "name"))
+	continue;
+
+      //we write the parts we didn't dropped
+      fwrite(config_file,current_line);
+
+    }
+  fprintf ( config_file, "#End of global part\n#\n");
+
+  fclose(config_file);
+  fclose(orig_conf_file);
+}
 
 
-  //Channels part
+/**
+ * Write a config file with the current parameters
+ * in a form understandable per mumudvb
+ * This is useful if you want to do fine tuning after autoconf
+ * this part generates the channels
+ *
+ * @param number_of_channels the number of channels
+ * @param channels the channels array
+ * @param saving_filename the path of the generated config file
+ */
+void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *saving_filename)
+{
+  FILE *config_file;
+
+  int curr_channel;
+  int curr_pid;
+
+  //Append mode to avoid erasing the header
+  config_file = fopen (saving_filename, "a");
+  if (config_file == NULL)
+    {
+      log_message( MSG_WARN,
+		   "%s: %s\n",
+		   saving_filename, strerror (errno));
+      return;
+    }
+
   fprintf ( config_file, "#Configuration for %d channel%s\n", number_of_channels,
 	       (number_of_channels <= 1 ? "" : "s"));
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
       fprintf ( config_file, "#Channel number : %3d\nip=%s\nport=%d\nname=%s\n",
-		   curr_channel, channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
-	//sap group
-	//cam pmt pid
+		curr_channel,
+		channels[curr_channel].ipOut,
+		channels[curr_channel].portOut,
+		channels[curr_channel].name);
+
+      if (channels[curr_channel].sap_group[0])
+	fprintf ( config_file, "sap_group=%s\n", channels[curr_channel].sap_group);
+      if (channels[curr_channel].cam_pmt_pid)
+	fprintf ( config_file, "cam_pmt_pid=%d\n", channels[curr_channel].cam_pmt_pid);
+
       log_message( MSG_info, "pids=");
       for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
 	fprintf ( config_file, "%d ", channels[curr_channel].pids[curr_pid]);
