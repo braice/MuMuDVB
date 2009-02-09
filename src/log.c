@@ -172,10 +172,9 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
   FILE *orig_conf_file;
   FILE *config_file;
   char current_line[CONF_LINELEN];
+  char current_line_temp[CONF_LINELEN];
   char *substring=NULL;
   char delimiteurs[] = " =";
-  int autoconf=0;
-
 
 
   orig_conf_file = fopen (orig_conf_filename, "r");
@@ -197,18 +196,19 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
     }
   
 
-  fprintf ( config_file, "#This is a generated configuration file for mumudvb\n");
+  fprintf ( config_file, "# !!!!!!! This is a generated configuration file for mumudvb !!!!!!!!!!!\n");
   fprintf ( config_file, "#\n");
 
 
   while (fgets (current_line, CONF_LINELEN, orig_conf_file))
     {
-      substring = strtok (current_line, delimiteurs);
+      strcpy(current_line_temp,current_line);
+      substring = strtok (current_line_temp, delimiteurs);
       
       //We remove useless parts
       //if (substring[0] == '#')
       //continue; 
-      if (!strcmp (substring, "autoconfigure"))
+      if (!strcmp (substring, "autoconfiguration"))
 	continue;
       else if (!strcmp (substring, "autoconf_ip_header"))
 	continue;
@@ -226,10 +226,10 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
 	continue;
 
       //we write the parts we didn't dropped
-      fwrite(config_file,current_line);
+      fprintf(config_file,"%s",current_line);
 
     }
-  fprintf ( config_file, "#End of global part\n#\n");
+  fprintf ( config_file, "\n#End of global part\n#\n");
 
   fclose(config_file);
   fclose(orig_conf_file);
@@ -278,7 +278,7 @@ void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *
       if (channels[curr_channel].cam_pmt_pid)
 	fprintf ( config_file, "cam_pmt_pid=%d\n", channels[curr_channel].cam_pmt_pid);
 
-      log_message( MSG_info, "pids=");
+      fprintf ( config_file, "pids=");
       for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
 	fprintf ( config_file, "%d ", channels[curr_channel].pids[curr_pid]);
       fprintf ( config_file, "\n");

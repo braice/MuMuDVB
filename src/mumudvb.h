@@ -103,7 +103,7 @@ typedef struct{
 
 //logging
 void log_message( int , const char *, ... );
-void gen_chaines_diff (char *nom_fich_chaines_diff, char *nom_fich_chaines_non_diff, int nb_flux, mumudvb_channel_t *channels);
+void gen_file_streamed_channels (char *nom_fich_chaines_diff, char *nom_fich_chaines_non_diff, int nb_flux, mumudvb_channel_t *channels);
 void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels);
 
 void gen_config_file_header(char *orig_conf_filename, char *saving_filename);

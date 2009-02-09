@@ -96,7 +96,7 @@ char nom_fich_pid[256];
 int  write_streamed_channels=1;
 
 //tuning parameters C99 initialisation
-tuninng_parameters_t tuneparams={
+tuning_parameters_t tuneparams={
   /** the frequency (in MHz for dvb-s in kHz for dvb-t) */
   .freq = 0,  
   /** The symbol rate (QPSK and QAM modulation ie cable and satellite) in symbols per second*/
@@ -117,15 +117,15 @@ tuninng_parameters_t tuneparams={
   .modulation = MODULATION_DEFAULT, //cf dvb defaults
   //FEC
   /** high priority stream code rate */
-  .HP_Coderate = HP_CODERATE_DEFAULT,
+  .HP_CodeRate = HP_CODERATE_DEFAULT,
   /** low priority stream code rate */
-  .LP_Coderate = LP_CODERATE_DEFAULT,
+  .LP_CodeRate = LP_CODERATE_DEFAULT,
   //For DVB-T 
   .TransmissionMode = TRANSMISSION_MODE_DEFAULT,
   //For DVB-T 
   .guardInterval = GUARD_INTERVAL_DEFAULT,
   //For DVB-T : the bandwith (often 8MHz)
-  .bandwith = BANDWIDTH_DEFAULT,
+  .bandwidth = BANDWIDTH_DEFAULT,
   //For DVB-T //TODO : find what it does mean
   .hier = HIERARCHY_DEFAULT,
 };
@@ -347,7 +347,6 @@ main (int argc, char **argv)
       free(conf_filename);
       exit(ERROR_CONF_FILE);
     }
-  free(conf_filename);
 
   //paranoya we clear all the content of all the channels
   memset (&channels, 0, sizeof (channels[0])*MAX_CHANNELS);
@@ -806,6 +805,8 @@ main (int argc, char **argv)
       //Here we generate the header, ie we take the actual config file and copy it removing the channels
       gen_config_file_header(conf_filename, GEN_CONF_PATH);
     }
+  
+  free(conf_filename);
 
   number_of_channels = curr_channel;
   if (curr_channel > MAX_CHANNELS)
@@ -1637,7 +1638,7 @@ static void SignalHandler (int signum)
 
 	  //generation of the files wich says the streamed channels
 	  if (write_streamed_channels)
-	    gen_chaines_diff(nom_fich_chaines_diff, nom_fich_chaines_non_diff, number_of_channels, channels);
+	    gen_file_streamed_channels(nom_fich_chaines_diff, nom_fich_chaines_non_diff, number_of_channels, channels);
 
 	  // reinit
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)

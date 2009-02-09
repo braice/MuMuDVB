@@ -41,15 +41,14 @@
 #include "mumudvb.h"
 
 void print_status(fe_status_t festatus) {
-  log_message( MSG_INFO, "FE_STATUS:");
-  if (festatus & FE_HAS_SIGNAL) log_message( MSG_INFO, " FE_HAS_SIGNAL : found something above the noise level");
-  if (festatus & FE_HAS_CARRIER) log_message( MSG_INFO, " FE_HAS_CARRIER : found a DVB signal");
-  if (festatus & FE_HAS_VITERBI) log_message( MSG_INFO, " FE_HAS_VITERBI : FEC is stable");
-  if (festatus & FE_HAS_SYNC) log_message( MSG_INFO, " FE_HAS_SYNC : found sync bytes");
-  if (festatus & FE_HAS_LOCK) log_message( MSG_INFO, " FE_HAS_LOCK : everything's working... ");
-  if (festatus & FE_TIMEDOUT) log_message( MSG_INFO, " FE_TIMEDOUT : no lock within the last ... seconds");
-  if (festatus & FE_REINIT) log_message( MSG_INFO, " FE_REINIT : frontend was reinitialized");
-  log_message( MSG_INFO, "\n");
+  log_message( MSG_INFO, "FE_STATUS:\n");
+  if (festatus & FE_HAS_SIGNAL) log_message( MSG_INFO, "     FE_HAS_SIGNAL : found something above the noise level\n");
+  if (festatus & FE_HAS_CARRIER) log_message( MSG_INFO, "     FE_HAS_CARRIER : found a DVB signal\n");
+  if (festatus & FE_HAS_VITERBI) log_message( MSG_INFO, "     FE_HAS_VITERBI : FEC is stable\n");
+  if (festatus & FE_HAS_SYNC) log_message( MSG_INFO, "     FE_HAS_SYNC : found sync bytes\n");
+  if (festatus & FE_HAS_LOCK) log_message( MSG_INFO, "     FE_HAS_LOCK : everything's working... \n");
+  if (festatus & FE_TIMEDOUT) log_message( MSG_INFO, "     FE_TIMEDOUT : no lock within the last ... seconds\n");
+  if (festatus & FE_REINIT) log_message( MSG_INFO, "     FE_REINIT : frontend was reinitialized\n");
 }
 
 
@@ -242,7 +241,7 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
 
   switch(fe_info.type) {
   case FE_OFDM: //DVB-T
-    if (freq < 1000000) freq*=1000UL;
+    if (tuneparams.freq < 1000000) tuneparams.freq*=1000UL;
     feparams.frequency=tuneparams.freq;
     feparams.inversion=INVERSION_AUTO;
     feparams.u.ofdm.bandwidth=tuneparams.bandwidth;
@@ -252,7 +251,8 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
     feparams.u.ofdm.transmission_mode=tuneparams.TransmissionMode;
     feparams.u.ofdm.guard_interval=tuneparams.guardInterval;
     feparams.u.ofdm.hierarchy_information=tuneparams.hier;
-    log_message( MSG_INFO, "tuning DVB-T (%s) to %d Hz, Bandwidth: %d\n",DVB_T_LOCATION,freq, 
+    log_message( MSG_INFO, "tuning DVB-T (%s) to %d Hz, Bandwidth: %d\n",DVB_T_LOCATION,
+		 tuneparams.freq, 
 		 tuneparams.bandwidth==BANDWIDTH_8_MHZ ? 8 : (tuneparams.bandwidth==BANDWIDTH_7_MHZ ? 7 : 6));
     break;
   case FE_QPSK: //DVB-S
@@ -265,7 +265,8 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
       hi_lo = 1;
     }
     
-    log_message( MSG_INFO, "tuning DVB-S to Freq: %u, Pol:%c Srate=%d, 22kHz tone=%s, LNB: %d\n",feparams.frequency,pol,srate,tone == SEC_TONE_ON ? "on" : "off", sat_number);
+    log_message( MSG_INFO, "tuning DVB-S to Freq: %u, Pol:%c Srate=%d, LNB: %d\n",feparams.frequency,tuneparams.pol,
+		 tuneparams.srate, tuneparams.sat_number);
     feparams.inversion=tuneparams.specInv;
     feparams.u.qpsk.symbol_rate=tuneparams.srate;
     feparams.u.qpsk.fec_inner=FEC_AUTO;
@@ -279,7 +280,7 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
     }
     break;
   case FE_QAM: //DVB-C
-    log_message( MSG_INFO, "tuning DVB-C to %d, srate=%d\n",freq,srate);
+    log_message( MSG_INFO, "tuning DVB-C to %d, srate=%d\n",tuneparams.freq,tuneparams.srate);
     feparams.frequency=tuneparams.freq;
     feparams.inversion=INVERSION_OFF;
     feparams.u.qam.symbol_rate = tuneparams.srate;
@@ -292,5 +293,5 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
   }
   usleep(100000);
 
-  return(check_status(fd_frontend,fe_info.type,&feparams,hi_lo,tuneparams.display_strength));
+  return(check_status(fd_frontend,fe_info.type,&feparams,hi_lo,tuneparams.display_strenght));
 }
