@@ -16,12 +16,22 @@ ifdef DEBUG
   CFLAGS += -g
 endif
 
+
+ifdef LIBDVBEN50221
+  CFLAGS += -DLIBDVBEN50221
+endif
+
+
 .PHONY: all clean clean_objs install uninstall
 
 all: $(OUT)
 
 mumudvb: $(OBJ_FILES)
+ifdef LIBDVBEN50221
+	$(CC) $(INCS) $(CFLAGS) -ldvben50221 -ldvbapi -lucsi -lpthread -o $@ $^
+else
 	$(CC) $(INCS) $(CFLAGS) -o $@ $^
+endif
 
 clean: clean_objs
 	-rm -f  $(OUT)
@@ -38,8 +48,11 @@ uninstall:
 	-rm -r /var/run/mumudvb
 
 %.o: %.c
+ifdef LIBDVBEN50221
 	$(CC) $(CFLAGS) -c $<
-
+else
+	$(CC) $(CFLAGS) -c $<
+endif
 .depend: $(SRC_FILES)
 	$(CC) -MM $^ > $@
 

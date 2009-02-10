@@ -55,6 +55,7 @@
 #include <linux/dvb/frontend.h>
 #include <linux/dvb/ca.h>
 
+#ifndef LIBDVBEN50221 //useful only if we don't use the libdvben50221 from dvb_apps
 
 #undef DEBUG_TPDU
 #define CAM_PROG_MAX MAX_PROGRAMS
@@ -2096,3 +2097,4 @@ void en50221_End( access_sys_t * p_sys )
      * program. */
 }
 
+#endif
