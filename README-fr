@@ -75,6 +75,11 @@ C'est tout!
 
 Pour la TNT, les valeurs par défaut sont auto pour tous les paramètres, excepté pour la bande passante définie à 8MHz.
 
+Note : Si vous voulez utiliser le nouveau code pour le support des cartes CAM, vous devez installer dvb-apps et taper 
+"make LIBDVBEN50221=1" au lieu de make. Il est conseillé d'utiliser le nouveau code, l'ancien sera supprimé dans une
+future version.
+
+
 = Utilisation =
 
 Pour connaître la syntaxe des fichiers de configuration, se référer au fichier README_CONF

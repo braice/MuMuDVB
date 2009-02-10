@@ -74,6 +74,10 @@ make install (with root user)
 
 For DVB-T the default values are Auto for everything excepted the banwith wich is set to 8MHz
 
+Note : if you want to use the new stack for cam support, you'll need to install dvb-apps and type
+"make LIBDVBEN50221=1" instead of make. The users are advised to use this new stack since the old one 
+will be removed in a future version.
+
 = Usage =
 
 The documentation for configuration file syntax is in doc/README_CONF.
