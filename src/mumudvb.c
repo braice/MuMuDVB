@@ -368,8 +368,16 @@ main (int argc, char **argv)
   curr_channel=0;
   // we scan config file
   // see doc/README-conf for further information
+  int line_len;
   while (fgets (current_line, CONF_LINELEN, conf_file))
     {
+      //We suppress the end of line (this can disturb atoi if there is spaces at the end of the line)
+      //Thanks to pierre gronlier pierre.gronlier at gmail.com for finding that bug
+      line_len=strlen(current_line);
+      if(current_line[line_len-1]=='\r' ||current_line[line_len-1]=='\n')
+	  current_line[line_len-1]=0;
+
+      //We split the line
       substring = strtok (current_line, delimiteurs);
       //commentary
       if (substring[0] == '#')
