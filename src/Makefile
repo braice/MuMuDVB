@@ -1,5 +1,5 @@
 CC	= gcc
-CFLAGS	= -Wall -Wextra -O2 -ggdb
+CFLAGS	= -Wall -Wextra -O2 
 IFLAGS	= -g root -o root
 
 OUT		= mumudvb
@@ -13,7 +13,15 @@ else
 endif
 
 ifdef DEBUG
-  CFLAGS += -g
+  CFLAGS += -g -ggdb
+endif
+
+ifdef GCOV
+  CFLAGS += -fprofile-arcs -ftest-coverage 
+endif
+
+ifdef GPROF
+  CFLAGS += -pg
 endif
 
 
