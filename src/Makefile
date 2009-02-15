@@ -45,7 +45,7 @@ clean: clean_objs
 	-rm -f  $(OUT)
 
 clean_objs:
-	-rm -f  *.o *~ .depend
+	-rm -f  *.o *~ *.gcda *.gcno .depend
 
 install: $(OUT)
 	install $(IFLAGS) -d $(BINDIR)
