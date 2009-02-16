@@ -1,8 +1,7 @@
 /* 
  * mumudvb - UDP-ize a DVB transport stream.
- * File for Session Announcement Protocol Announces
  * 
- * (C) 2008 Brice DUBOST
+ * (C) 2008-2009 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -23,6 +22,12 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/** @file
+ * @brief File for Session Announcement Protocol Announces
+ * @author Brice DUBOST
+ * @date 2008-2009
+ */
+
 #include "sap.h"
 #include "udp.h"
 #include <string.h>
@@ -31,7 +36,11 @@ extern sap_parameters_t sap_vars;
 
 extern int multicast_ttl;
 
-//SAP_send : send the sap message
+/** @brief Send the sap message
+ * 
+ * @param sap_messages the array of sap messages
+ * @param num_messages the number of sap messages
+ */
 void sap_send(mumudvb_sap_message_t *sap_messages, int num_messages)
 {
   int curr_message;
@@ -51,10 +60,14 @@ void sap_send(mumudvb_sap_message_t *sap_messages, int num_messages)
 }
 
 
-//SAP_update : update the contents of the sap message
+/** @brief update the contents of the sap message
+ * This function read the informations of the channel and update the sap message
+ * @param channel : the channel to be updated
+ * @param sap_message the sap message associated with the channel
+ */
 int sap_update(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_message)
 {
-  //PACKET Size < MTU
+  /** @todo check PACKET Size < MTU*/
   
   //This function is called when the channel changes so it increases the version and update the packet
   char temp_string[256];
@@ -105,6 +118,12 @@ int sap_update(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_message)
 
 }
 
+/** @brief Add a program to a sap message
+ * When this function is called the header of the sap message is already done
+ * it adds the payload (sdp). For mare information refer to RFC 2327 and RFC 1890
+ * @param channel the channel
+ * @param sap_message the sap message
+ */
 int sap_add_program(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_message)
 {
 
@@ -117,26 +136,22 @@ int sap_add_program(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_messag
   //we check if it's an alive channel
   if(!channel.streamed_channel_old)
     return 1;
-
   //Now we write the sdp part, in two times to avoid heavy code
+  /** @section payload
+  @subsection version
+  v=0
+  @subsection owner/creator and session identifier
+  o=username session_id version network_type address_type address
+  
+  ex : o=mumudvb 123134 1 IN IP4 235.255.215.1
 
-  //version
-  //v=0
+  @subsection session name (basically channel name)
+  s= ...
+  @subsection connection information
+  ex : c=IN IP4 235.214.225.1/2
 
-  //owner/creator and session identifier
-  //o=username session_id version network_type address_type address
-  //ex : o=mumudvb 123134 1 IN IP4 235.255.215.1
-  //for version we'll use sap version
-  //o=....
-
-  //session name (basically channel name)
-  //s=...
-
-  //connection information
-  //Ex : c=IN IP4 235.214.225.1/2
-  // the / is the TTL
-  //c=...
-
+  the /2 is the TTL of the media
+  */
   sprintf(temp_string,"v=0\r\no=%s %d %d IN IP4 %s\r\ns=%s\r\nc=IN IP4 %s/%d\r\n", 
 	  sap_vars.sap_organisation, sap_vars.sap_serial, sap_message->version, channel.ipOut,
 	  channel.name, 
@@ -150,21 +165,26 @@ int sap_add_program(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_messag
   payload_len+=strlen(temp_string);
 
 
-  //time session is active
-  //t=...
-  //permanent : t=0 0
+  /**@subsection time session : tell when the session is active
+     
+     t=...
+     
+     permanent program : t=0 0
 
-  //attributes : group and co, we'll take the minisapserver ones
-  //a=...
-  //a=tool:mumudvb-VERSION
-  //a=type:broadcast
-  //a=x-plgroup: //channel's group
+     @subsection attributes : group and co, we'll take the minisapserver ones
+     a=...
 
-  //media name and transport address
-  //m=...
-  //m=video channel_port udp 33
-  //See RFC 1890
+     a=tool:mumudvb-VERSION
+     
+     a=type:broadcast
 
+     a=x-plgroup: //channel's group
+
+     @subsection media name and transport address See RFC 1890
+     m=...
+
+     m=video channel_port udp 33     
+  */
   sprintf(temp_string,"t=0 0\r\na=tool:mumudvb-%s\r\na=type:broadcast\r\nm=video %d udp 33\r\n", VERSION, channel.portOut);
   if( (sap_message->len+payload_len+strlen(temp_string))>1024)
     {

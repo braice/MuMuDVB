@@ -1,8 +1,7 @@
 /* 
  * mumudvb - UDP-ize a DVB transport stream.
- * File for CRC32 calculation
  * 
- * (C) 2004-2008 Brice DUBOST
+ * (C) 2004-2009 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -23,11 +22,14 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/** @file
+ * @brief File for CRC32 calculation
+ * it contains the precomputed table
+ */
 
 #include <stdint.h>
 
-//CRC table for PAT rebuilding, cam support and autoconfiguration
-
+/**CRC table for PAT rebuilding, cam support and autoconfiguration*/
 uint32_t crc32_table[256] =
 {
 	0x00000000, 0x04c11db7, 0x09823b6e, 0x0d4326d9,

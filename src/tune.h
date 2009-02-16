@@ -24,6 +24,13 @@
 
 */
 
+/** @file
+ * @brief Tuning of the dvb card
+ *
+ * This file contains the definition of the parameters for tuning the card
+ */
+
+
 #ifndef _TUNE_H
 #define _TUNE_H
 
@@ -31,21 +38,39 @@
 
 #include "dvb_defaults.h"
 
-//The different parameters used for autoconfiguration
+/** @brief Parameters for tuning the card*/
 typedef struct tuning_parameters_t{
+  /** the frequency (in MHz for dvb-s in kHz for dvb-t) */
   unsigned long freq;
+  /** The symbol rate (QPSK and QAM modulation ie cable and satellite) in symbols per second*/
   unsigned int srate;
+  /**The polarisation H or V ( for satellite)*/
   char pol;
   //int tone;
+  /**spectral inversion. AUTO seems to work with all the hardware
+     @todo : catch more information about this*/
   fe_spectral_inversion_t specInv;
+  /**The satellite number ie the LNB number*/
   unsigned char sat_number;
+  /** quadrature modulation 
+      For cable and terrestrial frontends (QAM and OFDM) */
   fe_modulation_t modulation;
+  /** high priority stream code rate ie error correction, FEC */
   fe_code_rate_t HP_CodeRate;
+  /** low priority stream code rate 
+   * In order to achieve hierarchy, two different code rates may be applied to two different levels of the modulation.*/ 
   fe_code_rate_t LP_CodeRate;
+  /** For DVB-T */
   fe_transmit_mode_t TransmissionMode;
+  /** For DVB-T */
   fe_guard_interval_t guardInterval;
+  /**For DVB-T : the bandwith (often 8MHz)*/
   fe_bandwidth_t bandwidth;
+  /**For DVB-T 
+   It seems that it's related to the capability to transmit information in parallel
+  Not configurable for the moment, I have found no transponder to test it*/
   fe_hierarchy_t hier;
+  /** do we periodically display the strenght of the signal ?*/
   int display_strenght;
 }tuning_parameters_t;
 

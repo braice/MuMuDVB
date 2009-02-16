@@ -2,7 +2,7 @@
  * mumudvb - UDP-ize a DVB transport stream.
  * File for Conditionnal Access Modules support
  * 
- * (C) 2004-2008 Brice DUBOST <mumudvb@braice.net>
+ * (C) 2004-2009 Brice DUBOST <mumudvb@braice.net>
  *
  * Parts of this code is from the VLC project, modified  for mumudvb
  * by Brice DUBOST 

@@ -76,7 +76,9 @@ enum
     MSG_DEBUG
   };
 
-//Channels
+/**@brief Structure for storing channels
+ *
+ */
 typedef struct{
   int streamed_channel;    //tell if this channel is actually streamed
   int streamed_channel_old;//tell if this channel is actually streamed (precedent test, to see if it's changed)

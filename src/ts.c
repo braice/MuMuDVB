@@ -1,8 +1,7 @@
 /* 
  * mumudvb - UDP-ize a DVB transport stream.
- * File for demuxing TS stream
  * 
- * (C) 2004-2008 Brice DUBOST <mumudvb@braice.net>
+ * (C) 2004-2009 Brice DUBOST <mumudvb@braice.net>
  *
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -23,6 +22,9 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/**@file
+ * @brief File for demuxing TS stream
+ */
 
 #include <string.h>
 
@@ -32,19 +34,24 @@
 #include <stdint.h>
 extern uint32_t       crc32_table[256];
 
-
+/**@brief This function will join the 188 bytes packet until the PMT/PAT/SDT is full
+ * Once it's full we check the CRC32 and say if it's ok or not
+ * 
+ * There is two important mpeg2-ts fields to do that
+ * 
+ *  * the continuity counter wich is incremented for each packet
+ * 
+ *  * The payload_unit_start_indicator wich says if it's the first packet
+ *
+ * When a packet is cutted in 188 bytes packets, there should be no other pid between two sub packets
+ *
+ * Return 1 when the packet is full and OK
+ *
+ * @param buf : the received buffer from the card
+ * @param ts_packet : the packet to be completed
+ */
 int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 {
-  //This function will join the 188 bytes packet until the PMT/PAT/SDT is full
-  //Once it's full we check the CRC32 and say if it's ok or not
-  //
-  //There is two important mpeg2-ts fields to do that
-  // * the continuity counter wich is incremented for each packet
-  // * The payload_unit_start_indicator wich says if it's the first packet
-  //
-  //When a packet is cutted in 188 bytes packets, there should be no other pid between two sub packets
-  //
-  //Return 1 when the packet is full and OK
 
   ts_header_t *header;
   int ok=0;
@@ -132,7 +139,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 }
 
 
-
+/**@todo document*/
 //Les fonctions qui permettent de coller les paquets les uns aux autres
 // -- add TS data
 // -- return: 0 = fail
@@ -150,7 +157,10 @@ int AddPacketContinue  (unsigned char *packet, unsigned char *buf, unsigned int 
 }
 
 
-//Checking of the CRC32
+/**@brief Checking of the CRC32
+ * return 1 if crc32 is ok, 0 otherwise
+ * @param pmt : the packet to be checked
+ */
 int ts_check_CRC( mumudvb_ts_packet_t *pmt)
 {
   pmt_t *pmt_struct;

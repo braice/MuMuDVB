@@ -2,7 +2,7 @@
  * mumudvb - UDP-ize a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * (C) 2004-2008 Brice DUBOST
+ * (C) 2004-2009 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -24,6 +24,12 @@
  *     
  */
 
+/** @file
+ * @brief Log functions for mumudvb
+ * 
+ * This file contains functions to log messages or write logging information to a file
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
@@ -38,7 +44,7 @@ extern int verbosity;
 extern int log_initialised;
 
 /**
- * Print a log message on the console or via syslog 
+ * @brief Print a log message on the console or via syslog 
  * depending if mumudvb is daemonized or not
  *
  * @param type : message type MSG_*
@@ -87,7 +93,7 @@ void log_message( int type,
 }
 
 /**
- * Display the list of the streamed channels
+ * @brief Display the list of the streamed channels
  *
  * @param number_of_channels the number of channels
  * @param channels : the channels array
@@ -111,8 +117,8 @@ void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels)
 }
 
 /**
- * Generate a file containing the list of the streamed channels and 
- * file containing a list of not streamed channels
+ * @brief Generate a file containing the list of the streamed channels
+ * and a file containing a list of not streamed channels
  *
  * @param file_streamed_channels_filename The filename for the file containig the list of streamed channels
  * @param file_not_streamed_channels_filename The filename for the file containig the list of NOT streamed channels
@@ -159,8 +165,8 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
 
 
 /**
- * Write a config file with the current parameters
- * in a form understandable per mumudvb
+ * @brief Write a config file with the current parameters
+ * in a form understandable by mumudvb
  * This is useful if you want to do fine tuning after autoconf
  * This part generate the header ie take the actual config file and remove useless thing (ie channels, autoconf ...)
  *
@@ -237,8 +243,8 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
 
 
 /**
- * Write a config file with the current parameters
- * in a form understandable per mumudvb
+ * @brief Write a config file with the current parameters
+ * in a form understandable by mumudvb
  * This is useful if you want to do fine tuning after autoconf
  * this part generates the channels
  *

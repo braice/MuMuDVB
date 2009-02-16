@@ -23,6 +23,12 @@
    Or, point your browser to http://www.gnu.org/copyleft/gpl.html
 
 */
+
+/** @file
+ * @brief Tuning of the dvb card
+ *
+ * This file contains functions for tuning the card, or displaying signal strength...
+ */
    
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,6 +46,7 @@
 #include "tune.h"
 #include "mumudvb.h"
 
+/** @todo document*/
 void print_status(fe_status_t festatus) {
   log_message( MSG_INFO, "FE_STATUS:\n");
   if (festatus & FE_HAS_SIGNAL) log_message( MSG_INFO, "     FE_HAS_SIGNAL : found something above the noise level\n");
@@ -52,11 +59,13 @@ void print_status(fe_status_t festatus) {
 }
 
 
+/** @todo document*/
 struct diseqc_cmd {
    struct dvb_diseqc_master_cmd cmd;
    uint32_t wait;
 };
 
+/** @todo document*/
 static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd,
 		     fe_sec_tone_mode_t t, unsigned char sat_no)
 {
@@ -128,6 +137,7 @@ static int do_diseqc(int fd, unsigned char sat_no, int polv, int hi_lo)
     }
 }
 
+/** @todo document*/
 int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* feparams,int hi_lo, int display_strength) {
   int32_t strength;
   fe_status_t festatus;
@@ -182,7 +192,7 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
       switch(type) {
          case FE_OFDM:
            log_message( MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);
-	   //TODO : display the other parameters
+	   /**\todo : display the other parameters*/
            break;
          case FE_QPSK:
            log_message( MSG_INFO, "Event:  Frequency: %d\n",(unsigned int)((event.parameters.frequency)+(hi_lo ? LOF2 : LOF1)));
@@ -235,7 +245,7 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
      return -1;
   }
 
-  //TODO here check the capabilities of the card
+  /**\todo here check the capabilities of the card*/
 
   log_message( MSG_INFO, "Using DVB card \"%s\"\n",fe_info.name);
 
@@ -251,8 +261,7 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
     feparams.u.ofdm.transmission_mode=tuneparams.TransmissionMode;
     feparams.u.ofdm.guard_interval=tuneparams.guardInterval;
     feparams.u.ofdm.hierarchy_information=tuneparams.hier;
-    log_message( MSG_INFO, "tuning DVB-T (%s) to %d Hz, Bandwidth: %d\n",DVB_T_LOCATION,
-		 tuneparams.freq, 
+    log_message( MSG_INFO, "tuning DVB-T to %d Hz, Bandwidth: %d\n", tuneparams.freq, 
 		 tuneparams.bandwidth==BANDWIDTH_8_MHZ ? 8 : (tuneparams.bandwidth==BANDWIDTH_7_MHZ ? 7 : 6));
     break;
   case FE_QPSK: //DVB-S

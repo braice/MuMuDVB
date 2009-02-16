@@ -1,7 +1,7 @@
 /* 
  * mumudvb - UDP-ize a DVB transport stream.
  * 
- * (C) 2004-2008 Brice DUBOST
+ * (C) 2004-2009 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -21,6 +21,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *     
+ */
+
+/**@file
+ *File for the enumeration of the different possible errors
+ *@todo : update it 
  */
 
 #ifndef _ERRORS_MUMUDVB_H

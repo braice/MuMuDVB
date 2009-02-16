@@ -24,6 +24,9 @@
  *     
  */
 
+/**@file
+ * @brief Networking functions
+ */
 
 #ifndef _UDP_H
 #define _UDP_H
@@ -42,7 +45,7 @@
 /* udp */
 /* Output: {uni,multi,broad}cast socket */
 
-//The default time to live
+/** The default time to live*/
 #define DEFAULT_TTL		2
 
 int makeclientsocket (char *szAddr, unsigned short port, int TTL, struct sockaddr_in *sSockAddr);

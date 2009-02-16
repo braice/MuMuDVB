@@ -25,8 +25,15 @@
  *     
  */
 
+/**@file
+ * @brief Networking functions
+ */
+
 #include "udp.h"
 
+/**@brief Send data
+ *@todo document
+ */
 int
 sendudp (int fd, struct sockaddr_in *sSockAddr, unsigned char *data, int len)
 {
@@ -36,7 +43,10 @@ sendudp (int fd, struct sockaddr_in *sSockAddr, unsigned char *data, int len)
 
 
 
-/* create a sender socket. */
+/** @brief create a sender socket.
+ *
+ * @todo document
+ */
 int
 makesocket (char *szAddr, unsigned short port, int TTL,
 	    struct sockaddr_in *sSockAddr)
@@ -85,7 +95,9 @@ makesocket (char *szAddr, unsigned short port, int TTL,
   return iSocket;
 }
 
-/* create a receiver socket, i.e. join the multicast group. */
+/** @brief create a receiver socket, i.e. join the multicast group. 
+ *@todo document
+*/
 int
 makeclientsocket (char *szAddr, unsigned short port, int TTL,
 		  struct sockaddr_in *sSockAddr)

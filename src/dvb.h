@@ -24,6 +24,12 @@
  *     
  */
 
+/** @file
+ * @brief dvb part (except tune) of mumudvb
+ * Ie : setting the filters, openning the file descriptors etc...
+ */
+
+
 #ifndef _DVB_H
 #define _DVB_H
 
@@ -46,9 +52,16 @@
 
 #include "mumudvb.h"
 
-//file descriptors
+#define FRONTEND_DEV_PATH "/dev/dvb/adapter%d/frontend0"
+#define DEMUX_DEV_PATH    "/dev/dvb/adapter%d/demux0"
+#define DVR_DEV_PATH      "/dev/dvb/adapter%d/dvr0"
+
+
+/**@brief file descriptors*/
 typedef struct {
+  /** the dvb dvr*/
   int fd_dvr;
+  /** the dvb frontend*/
   int fd_frontend;
   /** demuxer file descriptors */
   int fd_demuxer[8192];

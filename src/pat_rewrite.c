@@ -1,7 +1,7 @@
 /* 
  * mumudvb - UDP-ize a DVB transport stream.
  * 
- * (C) 2004-2008 Brice DUBOST
+ * (C) 2004-2009 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -23,6 +23,9 @@
  *     
  */
 
+/**@file
+ * Pat rewrite : this file contains the function for rewriting the pat pid
+ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -33,6 +36,9 @@
 
 extern uint32_t       crc32_table[256];
 
+/** \todo document
+ *
+ */
 int
 pat_rewrite(unsigned char *buf,int num_pids, int *pids)
 {

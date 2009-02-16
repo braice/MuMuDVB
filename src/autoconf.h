@@ -22,6 +22,9 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/**@file
+ * @brief Autoconfiguration structures
+ */
 
 #ifndef _AUTOCONF_H
 #define _AUTOCONF_H
@@ -29,13 +32,12 @@
 #include "mumudvb.h"
 #include "ts.h"
 
-//find the audio and video pids from the PMT
+/**find the audio and video pids from the PMT*/
 #define AUTOCONF_MODE_PIDS 1
-//find the pmt pids and the channels from the pat, and go to AUTOCONF_MODE_PIDS
+/**find the pmt pids and the channels from the pat, and go to AUTOCONF_MODE_PIDS*/
 #define AUTOCONF_MODE_FULL 2
 
-//chained list of services
-//for autoconfiguration
+/**@brief chained list of services for autoconfiguration*/
 typedef struct mumudvb_service_t{
   char name[MAX_NAME_LEN];  //the channel name
 
@@ -47,13 +49,17 @@ typedef struct mumudvb_service_t{
   struct mumudvb_service_t *next;
 }mumudvb_service_t;
 
-//The different parameters used for autoconfiguration
+/**@brief The different parameters used for autoconfiguration*/
 typedef struct autoconf_parameters_t{
-//Do we use autoconfiguration ?
-//Possible values for this variable
-// 0 : none (or autoconf finished)
-// 1 : we have the PMT pids and the channels, we search the audio and video
-// 2 : we have only the tuning parameters, we search the channels and their pmt pids
+  /**Do we use autoconfiguration ?
+
+Possible values for this variable
+
+ 0 : none (or autoconf finished)
+
+ 1 or AUTOCONF_MODE_PIDS : we have the PMT pids and the channels, we search the audio and video
+
+ 2 or AUTOCONF_MODE_FULL : we have only the tuning parameters, we search the channels and their pmt pids*/
   int autoconfiguration;
   char autoconf_ip_header[10];
   long time_start_autoconfiguration; //When did we started autoconfiguration ?

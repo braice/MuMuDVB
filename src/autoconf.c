@@ -27,6 +27,30 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/** @file
+ *  @brief This file contain the code related to the autoconfiguration of mumudvb
+ * 
+ *  It contains the functions to extract the relevant informations from the PAT,PMT and SDT pids
+ * 
+ *  The pat contains the list of the channels in the actual stream, their service number and the PMT pid
+ * 
+ *  The sdt contains the name of the channels associated to a certain service number and the type of service
+ * 
+ *  The pmt contains the Pids of the channels,
+ * 
+ *  The idea is the following (for full autoconf),
+ *  once we find a sdt, we add the service to a service list (ie we add the name and the service number)
+ *  if we find a pat, we check if we have seen the services before, if no we skip, if yes we update the pmt pids
+ * 
+ *  Once we updated all the services or reach the timeout we create a channel list from the services list and we go
+ *  in the autoconf=1 mode (and we add the filters for the new pmt pids)
+ * 
+ *  In partial autoconf, we read the pmt pids to find the other pids of the channel. We add only pids wich seems relevant
+ *  ie : audio, video, pcr, teletext, subtitle
+ * 
+ *  once it's finished, we add the new filters
+ */
+
 #include <sys/ioctl.h>
 #include <errno.h>
 #include <stdint.h>
@@ -58,7 +82,7 @@ void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len);
 extern autoconf_parameters_t autoconf_vars; //just for autoconf_ip_header
 
 /**
-The different encodings that can be used
+@brief The different encodings that can be used
 Cf EN 300 468 Annex A (I used v1.9.1)
  */
 char *encodings_en300468[] ={
@@ -89,7 +113,7 @@ char *encodings_en300468[] ={
 //read the pmt for autoconfiguration
 /****************************************************************************/
 /**
- * Reads the program map table
+ * @brief Reads the program map table
  * It's used to get the differents "useful" pids of the channel
  * @param pmt the pmt packet
  * @param channel the associated channel
@@ -214,7 +238,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 
 
 /**
- * Tells if the descriptor with tag in present in buf
+ * @brief Tells if the descriptor with tag in present in buf
  * for more information see ITU-T Rec. H.222.0 | ISO/IEC 13818
  * @param tag the descriptor tag, cf EN 300 468
  * @param buf the decriptors buffer (part of the PMT)
@@ -237,7 +261,7 @@ int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_le
 }
 
 /**
- * Debugging function, Print the tags present in the descriptor
+ * @brief Debugging function, Print the tags present in the descriptor
  * for more information see ITU-T Rec. H.222.0 | ISO/IEC 13818
  * @param buf the decriptors buffer (part of the PMT)
  * @param descriptors_loop_len the length of the descriptors
@@ -256,9 +280,9 @@ void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len)
 }
 
 
-/****************************************************************************/
-//read the PAT for autoconfiguration
-/****************************************************************************/
+/** @brief read the PAT for autoconfiguration
+ * @todo document
+ */
 
 int autoconf_read_pat(mumudvb_ts_packet_t *pat_mumu, mumudvb_service_t *services)
 {
@@ -321,11 +345,8 @@ int autoconf_read_pat(mumudvb_ts_packet_t *pat_mumu, mumudvb_service_t *services
   return found;
 }
 
-/****************************************************************************/
-//read the SDT for autoconfiguration
-/****************************************************************************/
 /**
-Read the service description table (cf EN 300 468)
+@brief Read the service description table (cf EN 300 468)
 This table is used to find the name of the services versus the service number
 Thins function will fill the services chained list.
  * @param buf the buffer containing the SDT
@@ -402,10 +423,10 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
 
 
 /**
- * Parse the SDT descriptors
+ * @brief Parse the SDT descriptors
  * loop over the sdt descriptors and call other parsing functions if necessary
  * @param buf the buffer containing the descriptors
- * @param descriptor_loop_len the len of buffer containing the descriptors
+ * @param descriptors_loop_len the len of buffer containing the descriptors
  * @param service the associated service
  */
 void parsesdtdescriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_service_t *service)
@@ -438,7 +459,7 @@ void parsesdtdescriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_ser
 
 
 /**
- * Parse the service descriptor
+ * @brief Parse the service descriptor
  * It's used to get the channel name
  * @param buf the buffer containing the descriptor
  * @param service the associated service
@@ -454,7 +475,7 @@ void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
 
   type=buf[2];
   service->type=type;
-  //TODO utiliser lookup
+  /**\todo utiliser lookup*/
   //Cf EN 300 468 v1.9.1 table 81
   switch(type)
     {
@@ -566,7 +587,9 @@ void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
 
 }
 
-//try to find the service specified by id, if not fount create a new one
+/**try to find the service specified by id, if not fount create a new one
+ * @todo document
+ */
 mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int service_id)
 {
   int found=0;
@@ -602,7 +625,9 @@ mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int
 
 }
 
-//try to find the service specified by id, if not found return NULL, otherwise return the service
+/**try to find the service specified by id, if not found return NULL, otherwise return the service
+ * @todo document
+ */
 mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,int service_id)
 {
   int found=0;
@@ -630,7 +655,9 @@ mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,
 }
 
 
-//Free the services list
+/**Free the services list
+ * @todo document
+ */
 void autoconf_free_services(mumudvb_service_t *services)
 {
 
@@ -646,8 +673,7 @@ void autoconf_free_services(mumudvb_service_t *services)
     }
 }
 
-/**
-   Convert the chained list of services into channels
+/** @brief Convert the chained list of services into channels
    This function is called when We've got all the services, we now fill the channels structure
    After that we go in AUTOCONF_MODE_PIDS to get audio and video pids
    @param services Chained list of services
@@ -700,7 +726,7 @@ int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channel
 	    }
 	  else if(actual_service->type==0x02) //service_type digital radio sound service
 	    {
-	      //TODO : set this as an option (autoconfigure radios)
+	      /**\todo : set this as an option (autoconfigure radios)*/
 	      log_message(MSG_DETAIL,"Service type digital radio sound service, no autoconfigure. Name \"%s\"\n", actual_service->name);
 	    }
 	  else if(actual_service->type==0x0c) //service_type data broadcast service
@@ -721,6 +747,9 @@ int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channel
   return channel_number;
 }
 
+/** @brief Finish autoconf
+ @todo document
+*/
 void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, uint8_t *asked_pid, fds_t *fds)
 {
   //This function is called when autoconfiguration is finished
@@ -749,7 +778,7 @@ void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels,
 
   log_streamed_channels(number_of_channels, channels);
 
-  //TODO : make an option to generate it or not ?
+  /**\todo : make an option to generate it or not ?*/
   gen_config_file(number_of_channels, channels, GEN_CONF_PATH);
 
 }

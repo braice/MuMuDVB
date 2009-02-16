@@ -28,6 +28,52 @@
  *     
  */
 
+
+/** @file
+ * @brief This file is the main file of mumudvb
+ */
+
+
+/** @mainpage Documentation for the mumudvb project
+ * @section introduction
+ * Mumudvb is a program that can redistribute streams from DVB on a network using
+ * multicasting. It is able to multicast a whole DVB transponder by assigning
+ * each channel to a different multicast IP.
+ *
+ * @section Main features
+
+ * Stream channels from a transponder on different multicast IPs
+
+ * The program can rewrite the PAT Pid in order to announce only present channels (useful for some set-top boxes)
+
+ * Support for scrambled channels (beta) (if you don't have a CAM you can use sasc-ng, but check if it's allowed in you country)
+
+ * Support for autoconfiguration
+
+ * Generation of SAP announces
+
+ *@section files
+ * autoconf.c autoconf.h code related to autoconfiguration
+ *
+ * cam.c cam.h cam_en50221.c : code related to the support of scrambled channels
+ *
+ * crc32.c : the crc32 table
+ *
+ * dvb.c dvb.h functions related to the DVB card : oppening filters, file descriptors etc
+ *
+ * log.c logging functions
+ *
+ * pat_rewrite.c : the functions associated with the rewrite of the PAT pid
+ *
+ * sap.c sap.h : sap announces
+ *
+ * ts.c ts.h : function related to the MPEG-TS parsing
+ *
+ * tune.c tune.h : tuning of the dvb card
+ *
+ * udp.c udp.h : networking ie openning sockets, sending packets
+ */
+
 #define _GNU_SOURCE		//in order to use program_invocation_short_name (extension gnu)
 
 // Linux includes:
@@ -73,15 +119,15 @@ long time_no_diff;
 long real_start_time;
 
 
-int display_signal_strenght = 0; ///do we periodically show the signal strenght ?
+int display_signal_strenght = 0; /** do we periodically show the signal strenght ?*/
 
-int no_daemon = 0; ///do we deamonize mumudvb ?
+int no_daemon = 0; /** do we deamonize mumudvb ? */
 
 
-int number_of_channels;
-mumudvb_channel_t channels[MAX_CHANNELS]; ///the channels...
+int number_of_channels; /** The number of channels ... */
+mumudvb_channel_t channels[MAX_CHANNELS]; /** The channels array */
 //Asked pids //used for filtering
-uint8_t asked_pid[8192];
+uint8_t asked_pid[8192]; /** this array contains the pids we want to filter @todo malloc it ?*/
 
 
 int card = 0;
@@ -90,7 +136,7 @@ int dont_tune = 0;
 int tuning_timeout = ALARM_TIME_TIMEOUT;
 int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
 // file descriptors
-fds_t fds; // defined in dvb.h
+fds_t fds; /** File descriptors associated with the card */
 
 
 int Interrupted = 0;
@@ -101,36 +147,22 @@ int  write_streamed_channels=1;
 
 //tuning parameters C99 initialisation
 tuning_parameters_t tuneparams={
-  /** the frequency (in MHz for dvb-s in kHz for dvb-t) */
   .freq = 0,  
-  /** The symbol rate (QPSK and QAM modulation ie cable and satellite) in symbols per second*/
   .srate = 0, 
-  /**The polarisation H or V ( for satellite)*/
   .pol = 0,
   //The 22KHz tone burst is usually used with non-DiSEqC capable switches to select
   //between two connected LNBs/satellites. When using DiSEqC epuipment this voltage
   //has to be switched consistently to the DiSEqC commands as described in the DiSEqC
   //spec.
   //.tone = -1; //not used, only diseqc is supported
-  /**spectral inversion. AUTO seems to work with all the hardware*/
-  .specInv = INVERSION_AUTO, //Todo : catch more information about this
-  /**The satellite number ie the LNB number*/
+  .specInv = INVERSION_AUTO,
   .sat_number = 0, 
-  //For cable and terrestrial frontends (QAM and OFDM) one also has to specify the
-  /** quadrature modulation */
   .modulation = MODULATION_DEFAULT, //cf dvb defaults
-  //FEC
-  /** high priority stream code rate */
   .HP_CodeRate = HP_CODERATE_DEFAULT,
-  /** low priority stream code rate */
   .LP_CodeRate = LP_CODERATE_DEFAULT,
-  //For DVB-T 
   .TransmissionMode = TRANSMISSION_MODE_DEFAULT,
-  //For DVB-T 
   .guardInterval = GUARD_INTERVAL_DEFAULT,
-  //For DVB-T : the bandwith (often 8MHz)
   .bandwidth = BANDWIDTH_DEFAULT,
-  //For DVB-T //TODO : find what it does mean
   .hier = HIERARCHY_DEFAULT,
 };
 
@@ -174,9 +206,8 @@ cam_parameters_t cam_vars={
 };
 
 //logging
-int log_initialised=0;
-int verbosity = 1;
-
+int log_initialised=0; /**say if we opened the syslog ressource*/
+int verbosity = MSG_INFO+1; /** the verbosity level for log messages */
 
 
 
@@ -218,8 +249,8 @@ main (int argc, char **argv)
   int last_poll_error;
 
   //MPEG2-TS reception and sort
-  int pid;			/// pid of the current mpeg2 packet
-  int bytes_read;		/// number of bytes actually read
+  int pid;			/** pid of the current mpeg2 packet */
+  int bytes_read;		/** number of bytes actually read */
   //temporary buffers
   unsigned char temp_buffer_from_dvr[TS_PACKET_SIZE];
   unsigned char saved_pat_buffer[TS_PACKET_SIZE];
@@ -252,7 +283,7 @@ main (int argc, char **argv)
 
 
   int alarm_count = 0;
-  int count_non_transmis = 0;
+  int non_transmitted_counter = 0;
   int tune_retval=0;
 
 
@@ -813,7 +844,8 @@ main (int argc, char **argv)
 			"Config issue : coderate\n");
 	      exit(ERROR_CONF);
 	    }
-	  tuneparams.LP_CodeRate=tuneparams.HP_CodeRate; // I don't know what it exactly does, but it works like that. //TODO find doc about this
+	  tuneparams.LP_CodeRate=tuneparams.HP_CodeRate; // I found the following : 
+	  //In order to achieve hierarchy, two different code rates may be applied to two different levels of the modulation. Since hierarchy is not implemented ...
 	}
       else
 	{
@@ -846,6 +878,7 @@ main (int argc, char **argv)
     }
 
   // we clear it by paranoia
+  /** @todo put the path in a header */
   sprintf (nom_fich_chaines_diff, "/var/run/mumudvb/chaines_diffusees_carte%d",
 	   card);
   sprintf (nom_fich_chaines_non_diff, "/var/run/mumudvb/chaines_non_diffusees_carte%d",
@@ -1170,7 +1203,7 @@ main (int argc, char **argv)
 	      poll_try++;
 	      last_poll_error=errno;
 	    }
-	  //TODO : put a maximum number of interrupted system calls
+	  /**\todo : put a maximum number of interrupted system calls*/
 	}
 
       if(poll_try==MAX_POLL_TRIES)
@@ -1236,7 +1269,7 @@ main (int argc, char **argv)
 			  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 			    {
 			      // Init udp
-			      //TODO explain
+			      /**\todo explain*/
 			      channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
 			    }
 
@@ -1424,12 +1457,12 @@ main (int argc, char **argv)
 		    }
 		}
 
-	      //The idea is the following, when we send a packet we reinit count_non_transmis, wich count the number of packets
+	      //The idea is the following, when we send a packet we reinit non_transmitted_counter, wich count the number of packets
 	      //which are not sent
 	      //this number is increased for each new packet from the card
 	      //Normally this number should never increase a lot since we asked the card to give us only interesting PIDs
 	      //When it increases it means that the card give us crap, so we put a warning on the log.
-	      count_non_transmis = 0;
+	      non_transmitted_counter = 0;
 	      if (alarm_count == 1)
 		{
 		  alarm_count = 0;
@@ -1437,11 +1470,11 @@ main (int argc, char **argv)
 			       "Good, we receive back significant data\n");
 		}
 	    }
-	  //when we do autoconfiguration, we didn't set all the filters etc, so we don't care about count_non_transmis
+	  //when we do autoconfiguration, we didn't set all the filters etc, so we don't care about non_transmitted_counter
 	  if(!autoconf_vars.autoconfiguration)
 	    {
-	      count_non_transmis++;
-	      if (count_non_transmis > ALARM_COUNT_LIMIT)
+	      non_transmitted_counter++;
+	      if (non_transmitted_counter > ALARM_COUNT_LIMIT)
 		if (alarm_count == 0)
 		  {
 		    log_message( MSG_INFO,

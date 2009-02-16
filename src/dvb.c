@@ -1,5 +1,4 @@
-/* 
- * dvb.h dvb part (except tune) of mumudvb
+/* dvb.c
  * mumudvb - UDP-ize a DVB transport stream.
  * 
  * (C) 2004-2009 Brice DUBOST
@@ -25,17 +24,19 @@
  *     
  */
 
+/** @file
+ * @brief dvb part (except tune) of mumudvb
+ * Ie : setting the filters, openning the file descriptors etc...
+ */
+
 #define _GNU_SOURCE
 #include "dvb.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-#define FRONTEND_DEV_PATH "/dev/dvb/adapter%d/frontend0"
-#define DEMUX_DEV_PATH    "/dev/dvb/adapter%d/demux0"
-#define DVR_DEV_PATH      "/dev/dvb/adapter%d/dvr0"
 
 /**
- * Open the frontend associated with card
+ * @brief Open the frontend associated with card
  * Return 1 in case of succes, -1 otherwise
  * 
  * @param fd_frontend the file descriptor for the frontend 
@@ -62,7 +63,7 @@ open_fe (int *fd_frontend, int card)
 
 
 /**
- * Set a filter of the pid asked. The file descriptor has to be
+ * @brief Set a filter of the pid asked. The file descriptor has to be
  * opened before. Ie it will ask the card for this PID.
  * @param fd the file descriptor
  * @param pid the pid for the filter
@@ -88,7 +89,7 @@ set_ts_filt (int fd, uint16_t pid)
 
 
 /**
- * Show the reception power.
+ * @brief Show the reception power.
  * This information is not alway reliable
  *
  * @param fds the file descriptors of the card
@@ -107,7 +108,7 @@ show_power (fds_t fds)
 
 
 /**
- * Open file descriptors for the card. open dvr and one demuxer fd per asked pid. This function can be called 
+ * @brief Open file descriptors for the card. open dvr and one demuxer fd per asked pid. This function can be called 
  * more than one time if new pids are added (typical case autoconf)
  * return -1 in case of error
  * @param card the card number
@@ -160,7 +161,7 @@ create_card_fd(int card, uint8_t *asked_pid, fds_t *fds)
 
 
 /**
- * Open filters for the pids in asked_pid. This function update the asked_pid array and 
+ * @brief Open filters for the pids in asked_pid. This function update the asked_pid array and 
  * can be called more than one time if new pids are added (typical case autoconf)
  * Ie it asks the card for the pid list by calling set_ts_filt
  * @param asked_pid the array of asked pids
@@ -182,7 +183,7 @@ void set_filters(uint8_t *asked_pid, fds_t *fds)
 
 
 /**
- * Close the file descriptors associated with the card
+ * @brief Close the file descriptors associated with the card
  * @param fds the structure with the file descriptors
  */
 void

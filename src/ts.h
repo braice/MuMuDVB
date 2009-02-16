@@ -1,7 +1,7 @@
 /* 
  * mumudvb - UDP-ize a DVB transport stream.
  * 
- * (C) 2004-2008 Brice DUBOST
+ * (C) 2004-2009 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -22,6 +22,9 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/**@file
+ * @brief File for demuxing TS stream
+ */
 
 #ifndef _TS_H
 #define _TS_H
@@ -29,9 +32,8 @@
 
 #include <sys/types.h>
 
-//For pat rewriting
 
-//From libsi
+//Part of this conde comes from libsi
 //   (C) 2001-03 Rolf Hakenes <hakenes@hippomi.de>, under the
 //               GNU GPL with contribution of Oleg Assovski,
 //               www.satmania.com
@@ -304,16 +306,26 @@ typedef struct {
 } sdt_descr_t;
 
 
-//structur for the build of the pmt packet
+/**@brief structure for the build of a ts packet*/
 typedef struct {
-  int empty; //say if the pmt is empty
-  int pid;   //The PID of the packet
-  int continuity_counter; //the countinuity counter, incremented in each packet
+  /**say if the packet is empty*/
+  int empty; 
+  /**The PID of the packet*/
+  int pid;
+  /**the countinuity counter, incremented in each packet*/
+  int continuity_counter;
+  /** packet len*/
   int len;
-  int i_program_number; 
+  /**the buffer*/
+  unsigned char packet[4096];
+#ifndef LIBDVBEN50221 //useful only if we don't use the libdvben50221 from dvb_apps 
+  /** do we need to descramble ? for vlc cam support*/
   int need_descr;
-  unsigned char packet[4096]; //the buffer
-  unsigned char converted_packet[4096]; //the buffer for the cam (for cam_support)
+  /** program number for vlc cam support*/
+  int i_program_number; 
+  /**the buffer for the cam (for cam_support)*/
+  unsigned char converted_packet[4096]; 
+#endif
 }mumudvb_ts_packet_t;
 
 

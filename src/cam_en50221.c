@@ -1940,7 +1940,7 @@ int en50221_SetCAPMT( access_sys_t * p_sys, mumudvb_ts_packet_t *p_pmt , mumudvb
     {
       log_message( MSG_INFO,"CAM : No need to descramble channel %d\n", p_pmt->i_program_number);
       if(p_pmt)
-	free( p_pmt );//braice
+	free( p_pmt );
     }
     
     return 0;
