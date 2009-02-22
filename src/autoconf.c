@@ -281,9 +281,12 @@ void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len)
 
 
 /** @brief read the PAT for autoconfiguration
- * @todo document
+ * This function extract the pmt from the pat 
+ * before doiing so ti checks if the service is already initialised (sdt packet)
+ *
+ * @param pat_mumu The packet containing the PAT
+ * @param services the cained list of services
  */
-
 int autoconf_read_pat(mumudvb_ts_packet_t *pat_mumu, mumudvb_service_t *services)
 {
   unsigned char *buf=NULL;
@@ -475,7 +478,7 @@ void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
 
   type=buf[2];
   service->type=type;
-  /**\todo utiliser lookup*/
+  /**\todo use lookup*/
   //Cf EN 300 468 v1.9.1 table 81
   switch(type)
     {
@@ -587,8 +590,12 @@ void parseservicedescriptor(unsigned char *buf, mumudvb_service_t *service)
 
 }
 
-/**try to find the service specified by id, if not fount create a new one
- * @todo document
+/** @bried Try to find the service specified by id, if not found create a new one
+ * if the service is not foud, it returns a pointer to the new service, and NULL if 
+ * the service is found or run out of memory
+ * 
+ * @param services the chained list of services
+ * @param service_id the identifier of the searched service
  */
 mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int service_id)
 {
@@ -625,8 +632,11 @@ mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int
 
 }
 
-/**try to find the service specified by id, if not found return NULL, otherwise return the service
- * @todo document
+/** @brief try to find the service specified by id
+ * if not found return NULL, otherwise return the service
+ *
+ * @param services the chained list of services
+ * @param service_id the identifier of the searched service
  */
 mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,int service_id)
 {
@@ -655,8 +665,10 @@ mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,
 }
 
 
-/**Free the services list
- * @todo document
+/**@brief Free the services list
+ * Free the chained list of services.
+ *
+ * @param services the chained list of services
  */
 void autoconf_free_services(mumudvb_service_t *services)
 {
@@ -748,12 +760,19 @@ int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channel
 }
 
 /** @brief Finish autoconf
- @todo document
+ * This function is called when autoconfiguration is finished
+ * It open what is needed to stream the new channels
+ * It create the file descriptors for the filters, set the filters
+ * It also generate a config file with the data obtained during autoconfiguration
+ *
+ * @param card the card number
+ * @param number_of_channels the number of channels
+ * @param channels the array of channels
+ * @param asked_pid the array containing the pids already asked
+ * @param fds the file descriptors
 */
 void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, uint8_t *asked_pid, fds_t *fds)
 {
-  //This function is called when autoconfiguration is finished
-  //It open what is needed to stream the new channels
   int curr_channel;
   int curr_pid;
 

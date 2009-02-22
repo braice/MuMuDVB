@@ -227,10 +227,12 @@ void en50221_End( access_sys_t * );
  * MUMUDVB Part
  *****************************************************************************/
 /** @brief the parameters for the cam
- *@todo document
+ * This structure contain the parameters needed for the CAM
  */
 typedef struct cam_parameters_t{
+  /**Do we activate the support for CAMs*/
   int cam_support;
+  /**The came number (in case of multiple cams)*/
   int cam_number;
 #ifdef LIBDVBEN50221
   struct en50221_transport_layer *tl;

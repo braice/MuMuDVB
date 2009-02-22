@@ -46,7 +46,11 @@
 #include "tune.h"
 #include "mumudvb.h"
 
-/** @todo document*/
+/** @ brief Print the status 
+ * Print the status contained in festatus, this status says if the card is lock, sync etc.
+ *
+ * @param festatus the status to display
+*/
 void print_status(fe_status_t festatus) {
   log_message( MSG_INFO, "FE_STATUS:\n");
   if (festatus & FE_HAS_SIGNAL) log_message( MSG_INFO, "     FE_HAS_SIGNAL : found something above the noise level\n");
@@ -99,6 +103,7 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd,
 
 /** digital satellite equipment control,
  * specification is available from http://www.eutelsat.com/ 
+ * @todo document more
  */
 static int do_diseqc(int fd, unsigned char sat_no, int polv, int hi_lo)
 {
