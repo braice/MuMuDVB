@@ -410,6 +410,10 @@ main (int argc, char **argv)
 
       //We split the line
       substring = strtok (current_line, delimiteurs);
+
+      //If nothing in the substring we avoid the segfault in the next line
+      if(substring == NULL)
+	continue;
       //commentary
       if (substring[0] == '#')
 	continue; 
