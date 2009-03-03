@@ -46,7 +46,7 @@
 
  * The program can rewrite the PAT Pid in order to announce only present channels (useful for some set-top boxes)
 
- * Support for scrambled channels (beta) (if you don't have a CAM you can use sasc-ng, but check if it's allowed in you country)
+ * Support for scrambled channels (if you don't have a CAM you can use sasc-ng, but check if it's allowed in you country)
 
  * Support for autoconfiguration
 
@@ -55,7 +55,7 @@
  *@section files
  * autoconf.c autoconf.h code related to autoconfiguration
  *
- * cam.c cam.h cam_en50221.c : code related to the support of scrambled channels
+ * cam.c cam.h : code related to the support of scrambled channels
  *
  * crc32.c : the crc32 table
  *
@@ -98,7 +98,9 @@
 #include "tune.h"
 #include "udp.h"
 #include "dvb.h"
+#ifdef LIBDVBEN50221
 #include "cam.h"
+#endif
 #include "ts.h"
 #include "errors.h"
 #include "autoconf.h"
@@ -188,12 +190,12 @@ autoconf_parameters_t autoconf_vars={
   .services=NULL,
   };
 
+#ifdef LIBDVBEN50221
 //CAM (Conditionnal Access Modules : for scrambled channels) C99 initialisation
 cam_parameters_t cam_vars={
   .cam_support = 0,
   .cam_number=0,
   .cam_pmt_ptr=NULL,
-#ifdef LIBDVBEN50221
   .tl=NULL,
   .sl=NULL,
   .stdcam=NULL,
@@ -201,9 +203,9 @@ cam_parameters_t cam_vars={
   .seenpmt=0,
   .delay=0,
   .mmi_state = MMI_STATE_CLOSED,
-#else
-#endif
 };
+#endif
+
 
 //logging
 int log_initialised=0; /**say if we opened the syslog ressource*/
@@ -438,6 +440,7 @@ main (int argc, char **argv)
 			"You have enabled the Pat Rewriting, it has still some limitations please contact if you have some issues\n");
 	    }
 	}
+#ifdef LIBDVBEN50221
       else if (!strcmp (substring, "cam_support"))
 	{
 	  substring = strtok (NULL, delimiteurs);
@@ -446,15 +449,11 @@ main (int argc, char **argv)
 	    {
 	      log_message( MSG_WARN,
 			"!!! You have enabled the support for conditionnal acces modules (scrambled channels), this is a beta feature.Please report any bug/comment\n");
-#ifndef LIBDVBEN50221
-	      log_message( MSG_DEBUG,
-			"       You will use VLC code for cam support\n");
-#else
 	      log_message( MSG_DEBUG,
 			"       You will use libdvben50221 for cam support\n");
-#endif
 	    }
 	}
+#endif
       else if (!strcmp (substring, "sat_number"))
 	{
 	  substring = strtok (NULL, delimiteurs);
@@ -567,11 +566,13 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  card = atoi (substring);
 	}
+#ifdef LIBDVBEN50221
       else if (!strcmp (substring, "cam_number"))
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  cam_vars.cam_number = atoi (substring);
 	}
+#endif
       else if (!strcmp (substring, "ip"))
 	{
 	  if ( ip_ok )
@@ -659,6 +660,7 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  channels[curr_channel].portOut = atoi (substring);
 	}
+#ifdef LIBDVBEN50221
       else if (!strcmp (substring, "cam_pmt_pid"))
 	{
 	  if ( ip_ok == 0)
@@ -676,6 +678,7 @@ main (int argc, char **argv)
 	    exit(ERROR_CONF);
 	  }
 	}
+#endif
       else if (!strcmp (substring, "pids"))
 	{
 	  if ( ip_ok == 0)
@@ -709,7 +712,6 @@ main (int argc, char **argv)
 	  channels[curr_channel].num_pids = curr_pid;
 	  curr_pid = 0;
 	  curr_channel++;
-
       	  channels[curr_channel].cam_pmt_pid = 0; //paranoya
 	  ip_ok = 0;
 	}
@@ -976,28 +978,18 @@ main (int argc, char **argv)
   //cam_support
   /*****************************************************/
 
+#ifdef LIBDVBEN50221
   if(cam_vars.cam_support){
     cam_vars.cam_pmt_ptr=malloc(sizeof(mumudvb_ts_packet_t));
-#ifndef LIBDVBEN50221
-    cam_vars.cam_sys_access=malloc(sizeof(access_sys_t));
-    //cleaning
-    for ( i = 0; i < MAX_PROGRAMS; i++ )
-      cam_vars.cam_sys_access->pp_selected_programs[i]=NULL;
-    CAMOpen(cam_vars.cam_sys_access, card, cam_vars.cam_number);
-    cam_vars.cam_sys_access->cai->initialized=0;
-    cam_vars.cam_sys_access->cai->ready=0;
-    CAMPoll(cam_vars.cam_sys_access); //TODO : check why it sometimes fails --> look if the failure is associated with a non ready slot
-#else
     //We initialise the cam. If fail, we remove cam support
     if(cam_start(&cam_vars,card))
       {
 	log_message( MSG_ERROR,"Cannot initalise cam\n");
 	cam_vars.cam_support=0;
       }
-
-#endif
   }
-  
+#endif  
+
   /*****************************************************/
   //autoconfiguration
   //memory allocation for MPEG2-TS
@@ -1248,7 +1240,11 @@ main (int argc, char **argv)
 			{
 			  log_message(MSG_DEBUG,"Autoconf : It seems that we have finished to get the services list\n");
 			  //Interrupted=1;
+#ifdef LIBDVBEN50221 /**@todo : do it in a cleaner way*/
 			  number_of_channels=services_to_channels(autoconf_vars.services, channels, cam_vars.cam_support,common_port, card); //Convert the list of services into channels
+#else
+			  number_of_channels=services_to_channels(autoconf_vars.services, channels, 0,common_port, card); //Convert the list of services into channels
+#endif
 			  if(autoconf_vars.services)
 			    {
 			      autoconf_free_services(autoconf_vars.services);
@@ -1391,39 +1387,23 @@ main (int argc, char **argv)
 	      //cam support
 	      // If we send the packet, we look if it's a cam pmt pid
 	      /******************************************************/
-	      if(cam_vars.cam_support && send_packet==1)  //no need to check paquets we don't send
-#ifndef LIBDVBEN50221
-		if(cam_vars.cam_sys_access->cai->initialized&&cam_vars.cam_sys_access->cai->ready>=3)  
-#else
-		if(cam_vars.ca_resource_connected && cam_vars.delay>=1 )
-#endif
-		{
-		  if ((channels[curr_channel].cam_pmt_pid)&& (channels[curr_channel].cam_pmt_pid == pid))
-		    {
-		      if(get_ts_packet(temp_buffer_from_dvr,cam_vars.cam_pmt_ptr)) 
-			{
-#ifndef LIBDVBEN50221
-     			  channels[curr_channel].cam_pmt_pid=0; //once we have asked the CAM for this PID, we clear it not to ask it again
-			  cam_vars.cam_pmt_ptr->i_program_number=curr_channel;
-			  en50221_SetCAPMT(cam_vars.cam_sys_access, cam_vars.cam_pmt_ptr, channels);
-			  cam_vars.cam_sys_access->cai->ready=0;
-			  cam_vars.cam_pmt_ptr=malloc(sizeof(mumudvb_ts_packet_t)); //We allocate a new one, the old one is stored in cam_sys_access
-			  if(cam_vars.cam_pmt_ptr==NULL)
-			    {
-			      log_message( MSG_ERROR,"MALLOC\n");
-			        return mumudvb_close(100<<8);
-			    }
-			  memset (cam_vars.cam_pmt_ptr, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-#else
-			  cam_vars.delay=0;
-			  if(mumudvb_cam_new_pmt(&cam_vars, cam_vars.cam_pmt_ptr)==1)
-			    log_message( MSG_INFO,"CAM : CA PMT sent for channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name );
-     			  channels[curr_channel].cam_pmt_pid=0; //once we have asked the CAM for this PID, we clear it not to ask it again
-#endif
+#ifdef LIBDVBEN50221
 
-			}
-		    }
-		}
+	      if(cam_vars.cam_support && send_packet==1)  //no need to check paquets we don't send
+		if(cam_vars.ca_resource_connected && cam_vars.delay>=1 )
+		  {
+		    if ((channels[curr_channel].cam_pmt_pid)&& (channels[curr_channel].cam_pmt_pid == pid))
+		      {
+			if(get_ts_packet(temp_buffer_from_dvr,cam_vars.cam_pmt_ptr)) 
+			  {
+			    cam_vars.delay=0;
+			    if(mumudvb_cam_new_pmt(&cam_vars, cam_vars.cam_pmt_ptr)==1)
+			      log_message( MSG_INFO,"CAM : CA PMT sent for channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name );
+			    channels[curr_channel].cam_pmt_pid=0; //once we have asked the CAM for this PID, we clear it not to ask it again
+			  }
+		      }
+		  }
+#endif
 
 	      /******************************************************/
 	      //Rewrite PAT
@@ -1525,18 +1505,14 @@ int mumudvb_close(int Interrupted)
   // we close the file descriptors
   close_card_fd (fds);
 
+#ifdef LIBDVBEN50221
   if(cam_vars.cam_support)
     {
       if(cam_vars.cam_pmt_ptr)
 	free(cam_vars.cam_pmt_ptr);
-#ifdef LIBDVBEN50221
       cam_stop(&cam_vars);
-#else
-      CAMClose(cam_vars.cam_sys_access);
-      if(cam_vars.cam_sys_access)
-	free(cam_vars.cam_sys_access);
-#endif
     }
+#endif
 
   //autoconf variables freeing
   if(autoconf_vars.services)
@@ -1735,15 +1711,12 @@ static void SignalHandler (int signum)
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	    channels[curr_channel].streamed_channel = 0;
       
+#ifdef LIBDVBEN50221
 	  if(cam_vars.cam_support)
 	    {
-#ifndef LIBDVBEN50221
-	      CAMPoll(cam_vars.cam_sys_access);
-	      cam_vars.cam_sys_access->cai->ready++;
-#else
 	      cam_vars.delay++;
-#endif
 	    }
+#endif
 	}
       alarm (ALARM_TIME);
     }
