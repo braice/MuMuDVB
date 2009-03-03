@@ -3,7 +3,7 @@ CFLAGS	= -Wall -Wextra
 IFLAGS	= -g root -o root
 
 OUT		= mumudvb
-OBJ_FILES	= mumudvb.o tune.o udp.o dvb.o pat_rewrite.o cam.o cam_en50221.o log.o ts.o autoconf.o sap.o crc32.o
+OBJ_FILES	= mumudvb.o tune.o udp.o dvb.o pat_rewrite.o cam.o log.o ts.o autoconf.o sap.o crc32.o
 SRC_FILES	= $(OBJ_FILES:.o=.c)
 
 ifdef DESTDIR
@@ -15,7 +15,7 @@ endif
 ifdef DEBUG
   CFLAGS += -g -ggdb
 else
-  CFLAGS += -02
+  CFLAGS += -O2
 endif
 
 ifdef GCOV
@@ -26,11 +26,9 @@ ifdef GPROF
   CFLAGS += -pg
 endif
 
-
-ifdef LIBDVBEN50221
+ifndef NOCAMSUPPORT
   CFLAGS += -DLIBDVBEN50221
 endif
-
 
 .PHONY: all clean clean_objs install uninstall
 
