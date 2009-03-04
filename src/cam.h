@@ -43,7 +43,8 @@
 
 /**@file
  * @brief cam support
- * @todo document
+ * 
+ * Header file for cam support, contains mainly the structure for carrying cam parameters
  */
 
 #ifdef LIBDVBEN50221

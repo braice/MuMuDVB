@@ -24,7 +24,10 @@
  */
 
 /**@file
- * Pat rewrite : this file contains the function for rewriting the pat pid
+ * @brief This file contains the function for rewriting the pat pid
+ *
+ * The pat rewrite is made to announce only the video stram associated with the channel in the PAT pid
+ * Some set top boxes need it
  */
 
 #include <stdlib.h>
@@ -36,8 +39,15 @@
 
 extern uint32_t       crc32_table[256];
 
-/** \todo document
+/** @brief Main function for pat rewriting 
+ * The goal of this function is to make a new pat with only the announement for the streamed channel
+ * by default it contains all the channels of the transponder. For each channel descriptor this function will search
+ * the pmt pid of the channel in the given pid list. if foud it keeps it otherwise it drops.
+ * At the end, a new CRC32 is computed. The buffer is overwritten, so the caller have to save it before.
  *
+ * @param buf The packet to rewrite (must be less than 188bytes)
+ * @param num_pids : the number of pids in the channel
+ * @param pids : the array of pids of the channel
  */
 int
 pat_rewrite(unsigned char *buf,int num_pids, int *pids)
@@ -175,7 +185,8 @@ pat_rewrite(unsigned char *buf,int num_pids, int *pids)
   memset(buf_dest+buf_dest_pos,0xFF,TS_PACKET_SIZE-buf_dest_pos);
 
 
-  //We copy the result to the original buffer
+  //We copy the result to the original buffer 
+  /**@todo use memcopy*/
   for(buf_pos=0;buf_pos<TS_PACKET_SIZE;buf_pos++)
     buf[buf_pos]=buf_dest[buf_pos];
 

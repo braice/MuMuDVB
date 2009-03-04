@@ -48,8 +48,9 @@
  *    receiver to demultiplex and decode the various streams of programs
  *    within the multiplex. The PSI data is structured as four types of table.
  *    The tables are transmitted in sections.
- *
- *    1) Program Association Table (PAT):
+ */
+/**
+ * @brief Program Association Table (PAT):
  *
  *       - for each service in the multiplex, the PAT indicates the location
  *         (the Packet Identifier (PID) values of the Transport Stream (TS)
@@ -60,6 +61,7 @@
 
 #define PAT_LEN 8
 
+/** @brief Program Association Table (PAT):*/
 typedef struct {
    u_char table_id                               :8;
 #if BYTE_ORDER == BIG_ENDIAN
@@ -91,6 +93,7 @@ typedef struct {
 
 #define PAT_PROG_LEN 4
 
+/** @brief Program Association Table (PAT): program*/
 typedef struct {
    u_char program_number_hi                      :8;
    u_char program_number_lo                      :8;
@@ -107,7 +110,7 @@ typedef struct {
 
 
 //Used to generate the CA_PMT message
-
+/** @brief Mpeg2-TS header*/
 typedef struct {
   u_char sync_byte                              :8;
 #if BYTE_ORDER == BIG_ENDIAN
@@ -136,9 +139,9 @@ typedef struct {
 
 //For cam support and autoconfigure
 
-/*
+/**
  *
- *    3) Program Map Table (PMT):
+ * @brief  Program Map Table (PMT):
  *
  *       - the PMT identifies and indicates the locations of the streams that
  *         make up each service, and the location of the Program Clock
@@ -147,7 +150,7 @@ typedef struct {
  */
 
 #define PMT_LEN 12
-
+/** @brief  Program Map Table (PMT)*/
 typedef struct {
    u_char table_id                               :8;
 #if BYTE_ORDER == BIG_ENDIAN
@@ -195,7 +198,7 @@ typedef struct {
 } pmt_t;
 
 #define PMT_INFO_LEN 5
-
+/** @brief  Program Map Table (PMT)*/
 typedef struct {
    u_char stream_type                            :8;
 #if BYTE_ORDER == BIG_ENDIAN
@@ -218,10 +221,9 @@ typedef struct {
 } pmt_info_t;
 
 
-/* 0x09 ca_descriptor */
-
 #define DESCR_CA_LEN 6
-typedef struct descr_ca_struct {
+/** @brief 0x09 ca_descriptor */
+typedef struct {
   u_char descriptor_tag                         :8;
   u_char descriptor_length                      :8;
   u_char CA_type_hi                             :8;
@@ -234,13 +236,13 @@ typedef struct descr_ca_struct {
   u_char reserved                               :3;
 #endif
   u_char CA_PID_lo                              :8;
-} descr_ca_t;
+} descr_ca_t; 
 
 
 
 /*
  *
- *    2) Service Description Table (SDT):
+ *     Service Description Table (SDT):
  *
  *       - the SDT contains data describing the services in the system e.g.
  *         names of services, the service provider, etc.
@@ -248,7 +250,7 @@ typedef struct descr_ca_struct {
  */
 
 #define SDT_LEN 11
-
+/**@brief  Service Description Table (SDT) */
 typedef struct {
    u_char table_id                               :8;
 #if BYTE_ORDER == BIG_ENDIAN
@@ -283,7 +285,7 @@ typedef struct {
 #define GetSDTOriginalNetworkId(x) (HILO(((sdt_t *) x)->original_network_id))
 
 #define SDT_DESCR_LEN 5
-
+/**@brief  Service Description Table (SDT), descriptor */
 typedef struct {
    u_char service_id_hi                          :8;
    u_char service_id_lo                          :8;

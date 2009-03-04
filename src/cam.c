@@ -44,6 +44,11 @@
 #include <linux/dvb/dmx.h>
 #include <linux/dvb/frontend.h>
 
+/**@file
+ * @brief cam support
+ * 
+ * Code for talking with conditionnal acces modules. This code uses the libdvben50221 from dvb-apps
+ */
 
 #ifdef LIBDVBEN50221
 #include <libucsi/section.h>

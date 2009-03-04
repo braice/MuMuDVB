@@ -25,7 +25,7 @@
 */
 
 /**@file
- * defaults for the dvb parameters
+ * @brief defaults for the dvb parameters
  */
 
 #ifndef _DVB_DEFAULTS_H
