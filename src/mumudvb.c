@@ -895,10 +895,9 @@ main (int argc, char **argv)
     }
 
   // we clear it by paranoia
-  /** @todo put the path in a header */
-  sprintf (nom_fich_chaines_diff, "/var/run/mumudvb/chaines_diffusees_carte%d",
+  sprintf (nom_fich_chaines_diff, STREAMED_LIST_PATH,
 	   card);
-  sprintf (nom_fich_chaines_non_diff, "/var/run/mumudvb/chaines_non_diffusees_carte%d",
+  sprintf (nom_fich_chaines_non_diff, NOT_STREAMED_LIST_PATH,
 	   card);
   chaines_diff = fopen (nom_fich_chaines_diff, "w");
   if (chaines_diff == NULL)

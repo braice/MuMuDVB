@@ -66,6 +66,11 @@
 //The path for the auto generated config file
 #define GEN_CONF_PATH "/var/run/mumudvb/mumudvb_generated_conf"
 
+//The path for the list of streamed channels
+#define STREAMED_LIST_PATH "/var/run/mumudvb/chaines_diffusees_carte%d"
+//The path for the list of *not* streamed channels
+#define NOT_STREAMED_LIST_PATH "/var/run/mumudvb/chaines_non_diffusees_carte%d"
+
 //errors
 enum
   {
