@@ -182,6 +182,7 @@ sap_parameters_t sap_vars={
 //autoconfiguration. C99 initialisation
 autoconf_parameters_t autoconf_vars={
   .autoconfiguration=0,
+  .autoconf_radios=0,
   .autoconf_ip_header="239.100",
   .time_start_autoconfiguration=0,
   .autoconf_temp_pmt=NULL,
@@ -479,6 +480,16 @@ main (int argc, char **argv)
 	      log_message( MSG_INFO,
 			"Full autoconfiguration, we activate SAP announces. if you want to desactivate them see the README.\n");
 	      sap_vars.sap=1;
+	    }
+	}
+      else if (!strcmp (substring, "autoconf_radios"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  autoconf_vars.autoconf_radios = atoi (substring);
+	  if(!(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL))
+	    {
+	      log_message( MSG_WARN,
+			"Warning : you have to set autoconfiguration in full mode to use autoconf of the radios\n");
 	    }
 	}
       else if (!strcmp (substring, "autoconf_ip_header"))
@@ -1241,9 +1252,9 @@ main (int argc, char **argv)
 			  log_message(MSG_DEBUG,"Autoconf : It seems that we have finished to get the services list\n");
 			  //Interrupted=1;
 #ifdef LIBDVBEN50221 /**@todo : do it in a cleaner way*/
-			  number_of_channels=services_to_channels(autoconf_vars.services, channels, cam_vars.cam_support,common_port, card); //Convert the list of services into channels
+			  number_of_channels=services_to_channels(autoconf_vars, channels, cam_vars.cam_support,common_port, card); //Convert the list of services into channels
 #else
-			  number_of_channels=services_to_channels(autoconf_vars.services, channels, 0,common_port, card); //Convert the list of services into channels
+			  number_of_channels=services_to_channels(autoconf_vars, channels, 0,common_port, card); //Convert the list of services into channels
 #endif
 			  if(autoconf_vars.services)
 			    {

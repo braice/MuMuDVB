@@ -694,15 +694,14 @@ void autoconf_free_services(mumudvb_service_t *services)
    @param port The mulicast port
    @param card The card number for the ip address
  */
-int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channels, int cam_support, int port, int card)
+int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int cam_support, int port, int card)
 {
 
   mumudvb_service_t *actual_service;
   int channel_number=0;
   char ip[20];
-
-
-  actual_service=services;
+  
+  actual_service=parameters.services;
 
   do
     {
@@ -715,7 +714,7 @@ int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channel
       else
 	{
 	  //Cf EN 300 468 v1.9.1 Table 81
-	  if(actual_service->type==1||actual_service->type==0x11) //service_type "digital television service" (0x01) || MPEG-2 HD digital television service (0x11)
+	  if((actual_service->type==1||actual_service->type==0x11)||(actual_service->type==0x02&&parameters.autoconf_radios)) //service_type "digital television service" (0x01) || MPEG-2 HD digital television service (0x11) || service_type digital radio sound service  (0x02)
 	    {
 	      log_message(MSG_DETAIL,"Autoconf : We convert a new service, id %d pmt_pid %d type %d name \"%s\" \n",
 			  actual_service->id, actual_service->pmt_pid, actual_service->type, actual_service->name);
@@ -738,8 +737,7 @@ int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channel
 	    }
 	  else if(actual_service->type==0x02) //service_type digital radio sound service
 	    {
-	      /**\todo : set this as an option (autoconfigure radios)*/
-	      log_message(MSG_DETAIL,"Service type digital radio sound service, no autoconfigure. Name \"%s\"\n", actual_service->name);
+	      log_message(MSG_DETAIL,"Service type digital radio sound service, no autoconfigure. (if you want add autoconf_radios=1 to your configuration file) Name \"%s\"\n", actual_service->name);
 	    }
 	  else if(actual_service->type==0x0c) //service_type data broadcast service
 	    {

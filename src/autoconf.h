@@ -61,6 +61,8 @@ Possible values for this variable
 
  2 or AUTOCONF_MODE_FULL : we have only the tuning parameters, we search the channels and their pmt pids*/
   int autoconfiguration;
+  /**do we autoconfigure the radios ?*/
+  int autoconf_radios;
   char autoconf_ip_header[10];
   long time_start_autoconfiguration; //When did we started autoconfiguration ?
 
@@ -77,7 +79,7 @@ Possible values for this variable
 int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel);
 int autoconf_read_sdt(unsigned char *buf, int len, mumudvb_service_t *services);
 int autoconf_read_pat(mumudvb_ts_packet_t *pat, mumudvb_service_t *services);
-int services_to_channels(mumudvb_service_t *services, mumudvb_channel_t *channels, int cam_support, int port, int card);
+int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int cam_support, int port, int card);
 void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, uint8_t *asked_pid, fds_t *fds);
 void autoconf_free_services(mumudvb_service_t *services);
 
