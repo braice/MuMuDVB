@@ -40,7 +40,7 @@ do_start() {
 		if [ ! -f $CONFIG_FILE ]; then
                    log_warning_msg "        Config file $CONFIG_FILE not found."
 		else
-		   start-stop-daemon --start --oknodo --pidfile "$PIDDIR/mumudvb_carte$ADAPTER.pid"\ 
+		   start-stop-daemon --start --oknodo --pidfile "$PIDDIR/mumudvb_carte$ADAPTER.pid"\
                		 --chuid $DAEMONUSER --exec $DAEMON -- $DAEMON_OPTS -c $CONFIG_FILE
 		fi
 	done
