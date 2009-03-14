@@ -234,6 +234,9 @@ usage (char *name)
 	   "%s Version "
 	   VERSION
 	   "\n"
+#ifndef LIBDVBEN50221
+	   "Builded without cam support.\n"
+#endif
 	   "Based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
 	   "Released under the GPL.\n"
 	   "Latest version available from http://mumudvb.braice.net/\n"
@@ -300,8 +303,6 @@ main (int argc, char **argv)
       lo_mappids[k] = (k & 0xff);
     }
 
-
-
   /******************************************************/
   //Getopt
   /******************************************************/
@@ -322,6 +323,15 @@ main (int argc, char **argv)
       usage (argv[0]);
       exit(ERROR_ARGS);
     }
+
+  fprintf (stderr, "%s Version "
+	   VERSION
+	   "\n"
+#ifndef LIBDVBEN50221
+	   "Builded without cam support.\n"
+#endif
+	   "Latest version available from http://mumudvb.braice.net/\n\n", argv[0]);
+
   while (1)
     {
       c = getopt_long (argc, argv, short_options,
