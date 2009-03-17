@@ -291,7 +291,7 @@ main (int argc, char **argv)
   int alarm_count = 0;
   int non_transmitted_counter = 0;
   int tune_retval=0;
-
+  int partial_packet_number=0;
 
   //do we rewrite the pat pid ?
   int rewrite_pat = 0;
@@ -1238,8 +1238,8 @@ main (int argc, char **argv)
 	{
 	  if (bytes_read != TS_PACKET_SIZE)
 	    {
-	      log_message( MSG_ERROR, "No bytes left to read - aborting\n");
-	      Interrupted=errno<<8; //the <<8 is to make difference beetween signals and errors;
+	      log_message( MSG_WARN, "Warning : partial packet received\n");
+	      partial_packet_number++;
 	      continue;
 	    }
 
@@ -1496,6 +1496,10 @@ main (int argc, char **argv)
   gettimeofday (&tv, (struct timezone *) NULL);
   log_message( MSG_INFO,
 	       "\nEnd of streaming. We streamed during %d:%02d:%02d\n",(tv.tv_sec - real_start_time)/3600,((tv.tv_sec - real_start_time) % 3600)/60,(tv.tv_sec - real_start_time) %60 );
+
+  if(partial_packet_number)
+    log_message( MSG_INFO,
+		 "We received %d partial packets :-( \n",partial_packet_number );
 
   return mumudvb_close(Interrupted);
   
