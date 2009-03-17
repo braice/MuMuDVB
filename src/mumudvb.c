@@ -330,7 +330,7 @@ main (int argc, char **argv)
 #ifndef LIBDVBEN50221
 	   "Builded without cam support.\n"
 #endif
-	   "Latest version available from http://mumudvb.braice.net/\n\n", argv[0]);
+	   "Latest version available from http://mumudvb.braice.net/\n\n", program_invocation_short_name);
 
   while (1)
     {
