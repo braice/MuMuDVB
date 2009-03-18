@@ -1,9 +1,20 @@
 -- Mumudvb 1.5.4 --
 
-New features : 
+New features / improvements : 
+ * New stack for cam support, based on libdvben50221 from dvb_apps
  * Option dont_tune to avoid mumudvb to try to tune the card (can be used to test dvb-s2)
-
-
+ * Non ascii channels names are now well handled by autoconf
+ * Autoconfiguration : Better pid selection (new descriptor types added), can correct issues with some nondetected audio/video pids
+ * Autoconfiguration ; Detection of the PCR PID, this solves problem with vlc and the absence of sound on certain channels
+ * A configuration file is generated after autoconfiguration
+	
+Bugs corrected :
+ * We don't set the filters multiple times
+ * Better reading of the config file
+ * Segmentation faults with some particular configuration files
+ * Bug in intialisation scripts
+ * Better handling of partial packets. Mumudvb doesn't exit anymore.
+	
 -- Mumudvb 1.5.3 --
 
 New features : 
