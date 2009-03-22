@@ -12,11 +12,12 @@
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/bin/mumudvb
 PIDDIR=/var/run/mumudvb
+DEFAULT_FILE=/etc/default/mumudvb
 NAME=Mumudvb
 
 #Reading of the config file
-if [ -f /etc/default/mumudvb ] ; then
-        . /etc/default/mumudvb
+if [ -f "$DEFAULT_FILE" ] ; then
+        . "$DEFAULT_FILE"
 fi
 
 if [ "$DONTSTARTMUMU" = "true" ]; then exit 0; fi
@@ -55,8 +56,8 @@ do_stop() {
 
 case "$1" in
   start)
-        if [ ! -f /etc/default/mumudvb ]; then
-                log_failure_msg "/etc/default/mumudvb not found, Can't start $NAME"
+        if [ ! -f "$DEFAULT_FILE" ]; then
+                log_failure_msg "$DEFAULT_FILE not found, Can't start $NAME"
                 exit 0
         fi
 
