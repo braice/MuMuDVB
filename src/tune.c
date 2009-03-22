@@ -302,7 +302,7 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
     feparams.u.qam.modulation = tuneparams.modulation;
     break;
   default:
-    log_message( MSG_ERROR, "Unknown FE type. Aborting\n");
+    log_message( MSG_ERROR, "Unknown FE type : %x. Aborting\n" % fe_info.type);
     exit(-1);
   }
   usleep(100000);
