@@ -6,42 +6,42 @@ mumudvb must use a file de configuration to give him all the different reception
 
 Mumudvb does not worry to the parameter's order except for chanels where pids must be put after the ip and the port
 
-You can put comments everywhere in the configuration file : just start the line with #
+You can put comments everywhere in the configuration file: just start the line with #
 
-All parameters are in the form : name=value
+All parameters are in the form: name=value
 
 
 '''List of parameters and their description '''
 ----
-||'''Name :'''                          ||'''value:'''                                ||
+||'''Name:'''                          ||'''value:'''                                ||
 ||freq                           ||transponder's frequency in MHz ||
 ||pol                            ||transponder's polarisation (a char) v or h (not case sensitive) ||
 ||srate                          ||transponder's strate ||
 ||sat_number                     ||The satellite number (for diseqc users) ||
 ||dont_tune                      ||We do not try to tune the card (another program,like tzap, did it for us) ||
-||card                           ||card number (defalut : 0) ||
-||timeout_accord                 ||tuning timeout (in seconds) (default : 300 (5min)) ||
-||timeout_no_diff                ||if the program doesn't stream any chanels, he will kill himself at the end of this time (in seconds) (default : 600 (10min)) ||
-||common_port                    ||If you don't want to specify the port for each channel, it will be the default port (if you use autoconfiguration=2 default : 1234) ||
+||card                           ||card number (defalut: 0) ||
+||timeout_accord                 ||tuning timeout (in seconds) (default: 300 (5min)) ||
+||timeout_no_diff                ||if the program doesn't stream any chanels, he will kill himself at the end of this time (in seconds) (default: 600 (10min)) ||
+||common_port                    ||If you don't want to specify the port for each channel, it will be the default port (if you use autoconfiguration=2 default: 1234) ||
 ||multicast_ttl                  ||If you want to override the default multicast ttl, use this option. ||
 ||rewrite_pat                    ||specify if we wants the PAT rewriting feature ||
 ||cam_support                    ||specify if we wants the support for scrambled channels ||
 ||cam_number                     ||the number of the CAM we want to use (default 0) ||
 ||autoconfiguration              ||autoconfiguration 1: find audio and video, 2: full autoconfiguration, see README ||
-||autoconf_ip_header             ||For full autoconfiguration, the first part of the ip for streamed channel : ip = header.card.channel Default : 239.100 ||
+||autoconf_ip_header             ||For full autoconfiguration, the first part of the ip for streamed channel: ip = header.card.channel Default: 239.100 ||
 ||autoconf_radios                ||If it's different from 0 add also radio channels during full autoconfiguration ||
-||sap                            ||generation of sap announces : 0 no, 1 yes ||
-||sap_organisation               ||Organisation sent in the sap announces (optionnal, default : mumudvb) ||
-||sap_sending_ip                 ||The sender Ip adress (optionnal, default : 0.0.0.0) ||
-||sap_interval                   ||Interval in seconds between sap announces (optionnal, default : 5) ||
+||sap                            ||generation of sap announces: 0 no, 1 yes ||
+||sap_organisation               ||Organisation sent in the sap announces (optionnal, default: mumudvb) ||
+||sap_sending_ip                 ||The sender Ip adress (optionnal, default: 0.0.0.0) ||
+||sap_interval                   ||Interval in seconds between sap announces (optionnal, default: 5) ||
 ||sap_default_group              ||The default playlist group for sap announces (optionnal) ||
 || For DVB-T                     ||
-||qam                            ||quadrature amplitude modulation, possible values : qpsk,16,32,64,128,256,auto ||
-||trans_mode                     ||transmission mode, possible values : 2k,8k,auto ||
-||bandwidth                      ||bandwith, possible values : 8MHz,7MHz,6MHz,auto ||
-||guardinterval                  ||guard interval, possible values : 1/32,1/16,1/8,1/4,auto ||
-||coderate                       ||coderate, possible values : none,1/2,2/3,3/4,4/5,5/6,6/7,7/8,8/9,auto ||
-||'''For each channel (this order is mandatory : ip, ...,  pids)'''||
+||qam                            ||quadrature amplitude modulation, possible values: qpsk,16,32,64,128,256,auto ||
+||trans_mode                     ||transmission mode, possible values: 2k,8k,auto ||
+||bandwidth                      ||bandwith, possible values: 8MHz,7MHz,6MHz,auto ||
+||guardinterval                  ||guard interval, possible values: 1/32,1/16,1/8,1/4,auto ||
+||coderate                       ||coderate, possible values: none,1/2,2/3,3/4,4/5,5/6,6/7,7/8,8/9,auto ||
+||'''For each channel (this order is mandatory: ip, ...,  pids)'''||
 ||ip                             ||multicast (can also be unicast) ip where the chanel will be streamed ||
 ||port                           ||port (optionnal if common_port is used)||
 ||sap_group                      ||The playlist group for sap announces (optionnal) ||
@@ -51,7 +51,7 @@ All parameters are in the form : name=value
 
 
 == Note ==
-You must specify (except with autoconfiguration, see README): 
+You must specify (except with autoconfiguration, see README):
  * audio pid
  * video pid
  * PMT pid
@@ -65,10 +65,10 @@ If you don't use autoconfiguration (see the README), you have to get the PIDs (P
 In order to get the pids numbers, the easier way is to use linuxtv-dvb-apps.
 You tune the card on the wanted frequency (with """tune""" for example).
 
-After you use the scan utility : 
+After you use the scan utility:
 {{{scan -c -a """Card number"""}}} ( This exemple is for the case of an already tuned card. You can tune your card with szap or tzap for example. Refer to the scan' documentation for more details )
 
-And you'll get a result like  : 
+And you'll get a result like :
 
 {{{
 using '/dev/dvb/adapter2/frontend0' and '/dev/dvb/adapter2/demux0'
@@ -87,4 +87,3 @@ LCP                      (0x0106) 01: PCR == V   V 0x026c A 0x0276 (fra) SUB 0x0
 France 3                 (0x0111) 01: PCR == V   V 0x00dc A 0x00e6 (fra) SUB 0x00f0
 Done.
 }}}
-

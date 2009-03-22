@@ -19,7 +19,7 @@ else
 endif
 
 ifdef GCOV
-  CFLAGS += -fprofile-arcs -ftest-coverage 
+  CFLAGS += -fprofile-arcs -ftest-coverage
 endif
 
 ifdef GPROF
