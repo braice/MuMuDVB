@@ -39,6 +39,7 @@
 #include <unistd.h>
 #include <error.h>
 #include <errno.h>
+#include <string.h>
 
 #include <linux/dvb/dmx.h>
 #include <linux/dvb/frontend.h>
@@ -156,7 +157,7 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
   }
   
   if (ioctl(fd_frontend,FE_SET_FRONTEND,feparams) < 0) {
-    perror("ERROR tuning channel\n");
+    log_message( MSG_ERROR, "ERROR tuning channel : %s \n", strerror(errno));
     return -1;
   }
 
@@ -171,9 +172,7 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
         log_message( MSG_DETAIL, "Getting frontend event\n");
         if ((status = ioctl(fd_frontend, FE_GET_EVENT, &event)) < 0){
 	  if (errno != EOVERFLOW) {
-	    perror("FE_GET_EVENT");
-	    log_message( MSG_ERROR, "status = %d\n", status);
-	    log_message( MSG_ERROR, "errno = %d\n", errno);
+	    log_message( MSG_ERROR, "FE_GET_EVENT %s. status = %s\n", strerror(errno), status);
 	    return -1;
 	  }
 	  else log_message( MSG_WARN, "Overflow error, trying again (status = %d, errno = %d)", status, errno);
@@ -246,8 +245,8 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
   hi_lo = 0;
 
   if ( (res = ioctl(fd_frontend,FE_GET_INFO, &fe_info) < 0)){
-     perror("FE_GET_INFO: ");
-     return -1;
+    log_message( MSG_ERROR, "FE_GET_INFO: %s \n", strerror(errno));
+    return -1;
   }
 
   /**\todo here check the capabilities of the card*/

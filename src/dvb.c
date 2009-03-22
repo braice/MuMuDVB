@@ -33,7 +33,8 @@
 #include "dvb.h"
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <errno.h> 
+#include <string.h> 
 
 /**
  * @brief Open the frontend associated with card
@@ -53,7 +54,7 @@ open_fe (int *fd_frontend, int card)
     return -1;
   if ((*fd_frontend = open (frontend_name, O_RDWR | O_NONBLOCK)) < 0)
     {
-      perror ("FRONTEND DEVICE: ");
+      log_message( MSG_ERROR, "FRONTEND DEVICE: %s : %s\n", frontend_name, strerror(errno));
       free(frontend_name);
       return -1;
     }
@@ -83,7 +84,7 @@ set_ts_filt (int fd, uint16_t pid)
   if (ioctl (fd, DMX_SET_PES_FILTER, &pesFilterParams) < 0)
     {
       log_message( MSG_ERROR, "FILTER %i: ", pid);
-      perror ("DMX SET PES FILTER");
+      log_message( MSG_ERROR, "DMX SET PES FILTER : %s\n", strerror(errno));
     }
 }
 
@@ -135,7 +136,7 @@ create_card_fd(int card, uint8_t *asked_pid, fds_t *fds)
       if((fds->fd_demuxer[curr_pid] = open (demuxdev_name, O_RDWR)) < 0)
 	{
 	  log_message( MSG_ERROR, "FD PID %i: ", curr_pid);
-	  perror ("DEMUX DEVICE: ");
+	  log_message( MSG_ERROR, "DEMUX DEVICE: %s : %s\n", demuxdev_name, strerror(errno));
 	  free(demuxdev_name);
 	  return -1;
 	}
@@ -147,7 +148,7 @@ create_card_fd(int card, uint8_t *asked_pid, fds_t *fds)
   if (fds->fd_dvr==0)  //this function can be called more than one time, we check if we opened it before
     if ((fds->fd_dvr = open (dvrdev_name, O_RDONLY | O_NONBLOCK)) < 0)
       {
-	perror ("DVR DEVICE: ");
+	log_message( MSG_ERROR, "DVR DEVICE: %s : %s\n", dvrdev_name, strerror(errno));
 	free(dvrdev_name);
 	return -1;
       }

@@ -30,6 +30,8 @@
  */
 
 #include "udp.h"
+#include <string.h>
+#include <errno.h> 
 
 /**@brief Send data
  *@todo document
@@ -111,8 +113,7 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL,
   sin.sin_addr.s_addr = inet_addr (szAddr);
   if (bind (socket, (struct sockaddr *) &sin, sizeof (sin)))
     {
-      log_message( MSG_ERROR,"bind failed");
-      perror ("bind failed");
+      log_message( MSG_ERROR, "bind failed : %s\n", strerror(errno));
       exit (1);
     }
   tempaddr = inet_addr (szAddr);
@@ -123,8 +124,7 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL,
       if (setsockopt
 	  (socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &blub, sizeof (blub)))
 	{
-	  log_message( MSG_ERROR,"setsockopt IP_ADD_MEMBERSHIP failed (multicast kernel?)");
-	  perror ("setsockopt IP_ADD_MEMBERSHIP failed (multicast kernel?)");
+	  log_message( MSG_ERROR, "setsockopt IP_ADD_MEMBERSHIP failed (multicast kernel?) : %s\n", strerror(errno));
 	  exit (1);
 	}
     }
