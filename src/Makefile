@@ -28,6 +28,7 @@ endif
 
 ifndef NOCAMSUPPORT
   CFLAGS += -DLIBDVBEN50221
+  LFLAGS += -ldvben50221 -ldvbapi -lucsi -lpthread
 endif
 
 
@@ -36,11 +37,7 @@ endif
 all: $(OUT)
 
 mumudvb: $(OBJ_FILES)
-ifndef NOCAMSUPPORT
-	$(CC) $(INCS) $(CFLAGS) -ldvben50221 -ldvbapi -lucsi -lpthread -o $@ $^
-else
-	$(CC) $(INCS) $(CFLAGS) -o $@ $^
-endif
+	$(CC) $(INCS) $(CFLAGS) $(LFLAGS) -o $@ $^
 
 clean: clean_objs
 	-rm -f  $(OUT)
