@@ -340,14 +340,6 @@ main (int argc, char **argv)
       exit(ERROR_ARGS);
     }
 
-  fprintf (stderr, "%s Version "
-	   VERSION
-	   "\n"
-#ifndef LIBDVBEN50221
-	   "Builded without cam support.\n"
-#endif
-	   "Latest version available from http://mumudvb.braice.net/\n\n", program_invocation_short_name);
-
   while (1)
     {
       c = getopt_long (argc, argv, short_options,
@@ -409,6 +401,17 @@ main (int argc, char **argv)
   if (!no_daemon)
     openlog ("MUMUDVB", LOG_PID, 0);
   log_initialised=1;
+
+
+  log_message( MSG_INFO, "MumuDVB Version "
+	   VERSION
+	   "\n"
+#ifndef LIBDVBEN50221
+	   "Builded without cam support.\n"
+#endif
+	   "Latest version available from http://mumudvb.braice.net/\n\n");
+
+
 
   /******************************************************/
   // config file reading
