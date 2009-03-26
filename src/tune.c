@@ -43,9 +43,20 @@
 
 #include <linux/dvb/dmx.h>
 #include <linux/dvb/frontend.h>
+#include <linux/dvb/version.h>
 
 #include "tune.h"
 #include "mumudvb.h"
+
+
+/*Do we support ATSC ?*/
+#undef ATSC
+#if defined(DVB_API_VERSION_MINOR)
+#if DVB_API_VERSION == 3 && DVB_API_VERSION_MINOR >= 1
+#define ATSC 1
+#endif
+#endif
+
 
 /** @ brief Print the status 
  * Print the status contained in festatus, this status says if the card is lock, sync etc.
@@ -300,6 +311,13 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
     feparams.u.qam.fec_inner = FEC_AUTO;
     feparams.u.qam.modulation = tuneparams.modulation;
     break;
+#ifdef ATSC
+  case FE_ATSC: //ATSC
+    log_message( MSG_INFO, "tuning ATSC to %d, modulation=%d\n",tuneparams.freq,tuneparams.atsc_modulation);
+    feparams.frequency=tuneparams.freq;
+    feparams.u.vsb.modulation = tuneparams.atsc_modulation;
+    break;
+#endif
   default:
     log_message( MSG_ERROR, "Unknown FE type : %x. Aborting\n", fe_info.type);
     exit(-1);

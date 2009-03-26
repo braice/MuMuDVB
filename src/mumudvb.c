@@ -93,6 +93,8 @@
 #include <syslog.h>
 #include <getopt.h>
 #include <errno.h>		// in order to use program_invocation_short_name (gnu extension)
+#include <linux/dvb/version.h>
+
 
 #include "mumudvb.h"
 #include "tune.h"
@@ -105,6 +107,16 @@
 #include "errors.h"
 #include "autoconf.h"
 #include "sap.h"
+
+/*Do we support ATSC ?*/
+#undef ATSC
+#if defined(DVB_API_VERSION_MINOR)
+#if DVB_API_VERSION == 3 && DVB_API_VERSION_MINOR >= 1
+#define ATSC 1
+#endif
+#endif
+
+
 
 /** the table for crc32 claculations */
 extern uint32_t       crc32_table[256];
@@ -166,6 +178,7 @@ tuning_parameters_t tuneparams={
   .guardInterval = GUARD_INTERVAL_DEFAULT,
   .bandwidth = BANDWIDTH_DEFAULT,
   .hier = HIERARCHY_DEFAULT,
+  .atsc_modulation = VSB_8,
 };
 
 
@@ -236,6 +249,9 @@ usage (char *name)
 	   "\n"
 #ifndef LIBDVBEN50221
 	   "Builded without cam support.\n"
+#endif
+#ifdef ATSC
+	   "Builded with ATSC support.\n"
 #endif
 	   "Based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
 	   "Released under the GPL.\n"
@@ -470,6 +486,27 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  tuneparams.sat_number = atoi (substring);
 	}
+#ifdef ATSC
+      else if (!strcmp (substring, "atsc_modulation"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  if (!strcmp (substring, "vsb8"))
+	    tuneparams.atsc_modulation = VSB_8;
+	  else if (!strcmp (substring, "vsb16"))
+	    tuneparams.atsc_modulation = VSB_16;
+	  else if (!strcmp (substring, "qam256"))
+	    tuneparams.atsc_modulation = QAM_256;
+	  else if (!strcmp (substring, "qam64"))
+	    tuneparams.atsc_modulation = QAM_64;
+	  else if (!strcmp (substring, "qamauto"))
+	    tuneparams.atsc_modulation = QAM_AUTO;
+	  else 
+	    {
+	      log_message( MSG_WARN,
+			   "Bad value for atsc_modulation, will try VSB_8 (usual modulation for terrestrial)\n"); //Note : see the initialisation of tuneparams for the default value
+    }
+	}
+#endif
       else if (!strcmp (substring, "dont_tune"))
 	{
 	  substring = strtok (NULL, delimiteurs);

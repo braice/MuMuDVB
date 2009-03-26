@@ -72,6 +72,8 @@ typedef struct tuning_parameters_t{
   fe_hierarchy_t hier;
   /** do we periodically display the strenght of the signal ?*/
   int display_strenght;
+  /** The modulation for ATSC cards */
+  fe_modulation_t atsc_modulation;
 }tuning_parameters_t;
 
 

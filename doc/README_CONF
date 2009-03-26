@@ -41,6 +41,8 @@ All parameters are in the form: name=value
 ||bandwidth                      ||bandwith, possible values: 8MHz,7MHz,6MHz,auto ||
 ||guardinterval                  ||guard interval, possible values: 1/32,1/16,1/8,1/4,auto ||
 ||coderate                       ||coderate, possible values: none,1/2,2/3,3/4,4/5,5/6,6/7,7/8,8/9,auto ||
+|| For ATSC                      ||
+||atsc_modulation                ||the modulation for atsc. possible values: vsb8, vsb16, qam256, qam64, qamauto ||
 ||'''For each channel (this order is mandatory: ip, ...,  pids)'''||
 ||ip                             ||multicast (can also be unicast) ip where the chanel will be streamed ||
 ||port                           ||port (optionnal if common_port is used)||
