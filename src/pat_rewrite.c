@@ -115,10 +115,10 @@ pat_rewrite(unsigned char *buf,int num_pids, int *pids)
 
   //sounds good, lets start the copy
   //we copy the ts header
-  for(i=0;i<TS_HEADER_LEN;i++)
+  for(i=0;i<TS_HEADER_LEN;i++) /**@todo : use memcpy*/
     buf_dest[i]=buf[i];
   //we copy the PAT header
-  for(i=TS_HEADER_LEN;i<TS_HEADER_LEN+PAT_LEN;i++)
+  for(i=TS_HEADER_LEN;i<TS_HEADER_LEN+PAT_LEN;i++) /**@todo : use memcpy*/
     buf_dest[i]=buf[i];
 
   buf_dest_pos=TS_HEADER_LEN+PAT_LEN;
