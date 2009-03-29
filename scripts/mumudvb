@@ -13,7 +13,7 @@
 DAEMON_OPTS=""
 
 #The user to launch mumudvb
-DAEMONUSER=mumudvb
+DAEMONUSER=_mumudvb
 
 #Change this line to reflect your configuration
 #Ex : ADAPTERS="0 1 2 4"

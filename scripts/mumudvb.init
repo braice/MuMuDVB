@@ -32,7 +32,7 @@ do_start() {
         if [ ! -d $PIDDIR ]; then
                 mkdir -p $PIDDIR
         fi
-        chown $DAEMONUSER:$DAEMONUSER $PIDDIR
+        chown $DAEMONUSER $PIDDIR
 	eval $LAUNCH_BEFORE_MUMU
 	for ADAPTER in $ADAPTERS; do
 		#Todo : fails if all card fails
