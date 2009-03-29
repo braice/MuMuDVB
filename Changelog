@@ -7,7 +7,7 @@ New features / improvements :
  * Autoconfiguration : Better pid selection (new descriptor types added), can correct issues with some nondetected audio/video pids
  * Autoconfiguration ; Detection of the PCR PID, this solves problem with vlc and the absence of sound on certain channels
  * A configuration file is generated after autoconfiguration
- * Support for ATSC cards, new option atsc_modulation
+ * Preliminary support for ATSC cards, new option atsc_modulation
 	
 Bugs corrected :
  * We don't set the filters multiple times

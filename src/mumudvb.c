@@ -990,22 +990,12 @@ main (int argc, char **argv)
       // We tune the card
       tune_retval =-1;
       
-      if ((tuneparams.freq > 100000000))
-      {
-        if (open_fe (&fds.fd_frontend, card))
-          {
-            tune_retval = 
-              tune_it (fds.fd_frontend, tuneparams);
-          }
-      }
-    else if ((tuneparams.freq != 0) && (tuneparams.pol != 0) && (tuneparams.srate != 0))
-      {
-        if (open_fe (&fds.fd_frontend, card))
-          {
-            tune_retval =
-              tune_it (fds.fd_frontend, tuneparams);
-          }
-      }
+      if (open_fe (&fds.fd_frontend, card))
+	{
+	  tune_retval = 
+	    tune_it (fds.fd_frontend, tuneparams);
+	}
+
     if (tune_retval < 0)
       {
         log_message( MSG_INFO, "Tunning issue, card %d\n", card);
