@@ -67,6 +67,8 @@ Others programs are joined with mumudvb:
 
 = Installation =
 
+== From sources ==
+
 In order to install mumudvb type:
 
 make
@@ -76,6 +78,18 @@ For DVB-T the default values are Auto for everything excepted the banwith wich i
 
 Note: The cam support depends on libdvben50221 (from dvb-apps) if you don't to compile mumudvb with cam support,
  type "make NOCAMSUPPORT=1" instead of make.
+
+In order to install startin scripts (debian flavor) type : 
+
+cp scripts/mumudvb /etc/default/mumudvb
+cp scripts/mumudvb.init /etc/init.d/mumudvb
+
+== From debian package ==
+
+If you want to install a version wich is not in your repositories, you can install it by han by typing
+
+dpkg -i mumudvb*.deb
+
 
 = Usage =
 
@@ -145,7 +159,7 @@ By default sap announces are activated if you use this autoconfiguration mode. T
 
 == Simple autoconfiguration ==
 
-Use this when you want ton control the name of the channels, and wich channel you want to stream.
+Use this when you want to control the name of the channels, and wich channel you want to stream.
 
 In this case for each channel, you have to set:
  * the Ip adress
@@ -155,7 +169,7 @@ In this case for each channel, you have to set:
 
 And you have to add "autoconfiguration=1" in the head of your config file.
 
-Mumudvb will find the audio, video, teletext, subtitling and ac3 pids for you before streaming.
+Mumudvb will find the audio, video, PCR, teletext, subtitling and ac3 pids for you before streaming.
 
 Note: if you put more than one pid for a channel, mumudvb will desactivate autoconfiguration for this channel.
 
@@ -188,7 +202,7 @@ For more detailled information, refer to the monit website
 
 = Technical details (not sorted) =
 
- * mumudvb can receive DVB-S (sattellite) or DVB-T (terrestrial). It is also reported to work with DVB-C (cable).
+ * mumudvb can receive DVB-S (sattellite) or DVB-T (terrestrial). It is also reported to work with DVB-C (cable). There is now preliminary support for ATSC.
 
  * The mandatory pids are sent with all channels
   * Mandatory pids are:
@@ -204,7 +218,7 @@ For more detailled information, refer to the monit website
 
  * When the program starts, he writes the channel list on /var/run/mumudvb/chaines_diffusees_carte%d (where %d is the card number). This file contains streamed channels (updated every 5 seconds) in the form: "name:ip:port"
 
- * mumudvb can deal with more than 4 cards. You must use a kernel >= 2.6.11 and udev statically compiled witch klibc (04/2005) waiting for glibc update... Note: this issue seems to be solved now ( udev 104 and libc6 2.7 )
+ * mumudvb can deal with more than 4 cards. You must use a kernel >= 2.6.11 and udev statically compiled witch klibc (04/2005) waiting for glibc update... Note: this issue is solved now ( with udev 104 and libc6 2.7 )
 
 = Known issues =
 

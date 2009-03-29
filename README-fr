@@ -66,7 +66,9 @@ D'autres programmes sont joints dans les sources de mumudvb:
 
 = Installation =
 
-Pour installer mumudvb tapez:
+== A partir des sources ==
+
+Pour installer mumudvb à partir des sources tapez:
 
 make
 make install (en root)
@@ -78,6 +80,18 @@ Pour la TNT, les valeurs par défaut sont auto pour tous les paramètres, except
 Note : Le support des cartes CAM dépends de libdvben50221 (fourni avec dvb-apps). Si vous ne voulez pas compiler le support des cartes CAM, vous devez taper 
 "make NOCAMSUPPORT=1" au lieu de make.
 
+Pour installer les scripts de démarrage (version debian), il faut copier les fichiers suivants
+
+cp scripts/mumudvb /etc/default/mumudvb
+cp scripts/mumudvb.init /etc/init.d/mumudvb
+
+== A partir du paquet debian ==
+
+Si vous voulez installer une version qui n'est pas encore dans les dépots, un
+
+dpkg -i mumudvb*.deb
+
+ suffira
 
 = Utilisation =
 
@@ -121,7 +135,7 @@ C'est la manière la plus simple d'utiliser mumudvb
 
 Utilisez ce mode lorsque vous voulez diffuser un transpondeur complet.
 
-Dans ce mode, mumudvb va trouver pour vous, les différentes chaînes, leurs noms et leurs PIDs (PMT, Audio, Vidéo, Sous-titres, Télétexte et AC3).
+Dans ce mode, mumudvb va trouver pour vous, les différentes chaînes, leurs noms et leurs PIDs (PMT, Audio, Vidéo, PCR, Sous-titres, Télétexte et AC3).
 
 Pour utiliser ce mode vous devez : 
  * Définir les parametres pour l'accord de la carte (fréquence polarisation etc) dans le fichier de configuration
@@ -157,7 +171,7 @@ Dans ce cas, vous avez a préciser pour chaque chaîne :
 
 Et vous avez a ajouter "autoconfiguration=1" au début de votre fichier de configuration.
 
-Mumudvb trouvera les autres PIDs de chaque chaîne (Audio, Vidéo, Sous-titres, Télétexte et AC3) avant de les diffuser.
+Mumudvb trouvera les autres PIDs de chaque chaîne (Audio, Vidéo, PCR, Sous-titres, Télétexte et AC3) avant de les diffuser.
 
 Note : si vous précisez plus d'un PID pour une chaine, mumudvb désactivera l'autoconfiguration pour cette chaîne.
 
@@ -190,7 +204,7 @@ Pour plus d'informations consultez le site de monit
 
 = Détails techniques (en vrac) =
 
- * mumudvb permet de recevoir un signal satellite (DVB-S), Terrestre (DVB-T) ou cable (DVB-C)
+ * mumudvb permet de recevoir un signal satellite (DVB-S), Terrestre (DVB-T) ou cable (DVB-C). Il y a aussi un support préliminaire de l'ATSC.
 
  * mumudvb diffuse les Pids suivants avec toutes les chaînes (conformément à la norme MPEG2-TS)
    * PAT (0): Program Association Table
@@ -207,8 +221,8 @@ Pour plus d'informations consultez le site de monit
 
  * Lors de l'exécution le programme écrit la liste des chaînes diffusées dans le fichier /var/run/mumudvb/chaines_diffusees_carte%d le %d est remplacé par le numéro de carte, le chemin n'est pas paramétrable mais cela est facile à implémenter, envoyez moi un mail si vous en avez besoin. Ce fichier contient la liste des chaînes diffusées (actualisée toute les 5 secondes) de la forme suivante (pour chaque ligne) : "nom:ip:port"
 
- * mumudvb a été testé avec 6 cartes, et peut en supporter plus.
-  * au (04/2005) pour utiliser plus de 4 cartes, les possibilités sont d'utiliser un noyau 2.4.* avec devfs :-( ou d'utiliser un noyau > 2.6.11 avec udev compilé statiquement avec klibc en attendant la mise a jour de la glibc. Note : ce probleme a l'air d'etre resolu désormais (testé avec udev 104 et libc6 2.7 ie debian etch).
+ * mumudvb a été testé avec plus de 6 cartes, et peut en supporter plus.
+  * au (04/2005) pour utiliser plus de 4 cartes, les possibilités sont d'utiliser un noyau 2.4.* avec devfs :-( ou d'utiliser un noyau > 2.6.11 avec udev compilé statiquement avec klibc en attendant la mise a jour de la glibc. Note : ce probleme est resolu désormais (testé avec udev 104 et libc6 2.7 ie debian etch).
 
 = Problèmes connus =
 
