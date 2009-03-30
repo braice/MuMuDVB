@@ -49,6 +49,8 @@ extern uint32_t       crc32_table[256];
  * @param num_pids : the number of pids in the channel
  * @param pids : the array of pids of the channel
  */
+
+/*TODO : modify it to generate from the full pat and put the result in buf*/
 int
 pat_rewrite(unsigned char *buf,int num_pids, int *pids)
 {
@@ -195,3 +197,4 @@ pat_rewrite(unsigned char *buf,int num_pids, int *pids)
 
 }
 
+/*Todo : a function wich take the actual version and a buffer and tells if the version are different*/
