@@ -28,7 +28,7 @@
 #ifndef _MUMUDVB_H
 #define _MUMUDVB_H
 
-#define VERSION "1.5.4"
+#define VERSION "1.5.5b"
 
 //#include "ts.h"
 #include "udp.h"  //for the sockaddr
