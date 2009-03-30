@@ -63,7 +63,7 @@
  *
  * log.c logging functions
  *
- * pat_rewrite.c : the functions associated with the rewrite of the PAT pid
+ * pat_rewrite.c pat_rewrite.h : the functions associated with the rewrite of the PAT pid
  *
  * sap.c sap.h : sap announces
  *
@@ -107,6 +107,7 @@
 #include "errors.h"
 #include "autoconf.h"
 #include "sap.h"
+#include "pat_rewrite.h"
 
 /*Do we support ATSC ?*/
 #undef ATSC
@@ -220,6 +221,9 @@ cam_parameters_t cam_vars={
 };
 #endif
 
+pat_rewrite_parameters_t rewrite_vars={
+  .rewrite_pat = 0,
+};
 
 //logging
 int log_initialised=0; /**say if we opened the syslog ressource*/
@@ -309,8 +313,6 @@ main (int argc, char **argv)
   int tune_retval=0;
   int partial_packet_number=0;
 
-  //do we rewrite the pat pid ?
-  int rewrite_pat = 0;
 
   // Initialise PID map
   for (k = 0; k < 8192; k++)
@@ -463,8 +465,8 @@ main (int argc, char **argv)
       else if (!strcmp (substring, "rewrite_pat"))
 	{
 	  substring = strtok (NULL, delimiteurs);
-	  rewrite_pat = atoi (substring);
-	  if(rewrite_pat)
+	  rewrite_vars.rewrite_pat = atoi (substring);
+	  if(rewrite_vars.rewrite_pat)
 	    {
 	      log_message( MSG_INFO,
 			"You have enabled the Pat Rewriting, it has still some limitations please contact if you have some issues\n");
@@ -1409,7 +1411,7 @@ main (int argc, char **argv)
 	  //we save the full pat before otherwise only the first channel will be rewritten with a full PAT
 	  //in other words, we need a full pat for all the channels
 	  if( (pid == 0) && //This is a PAT PID
-	      rewrite_pat ) //AND we asked for rewrite
+	      rewrite_vars.rewrite_pat ) //AND we asked for rewrite
 	    memcpy(saved_pat_buffer,temp_buffer_from_dvr,TS_PACKET_SIZE); //We save the full pat
 	  
 
@@ -1460,7 +1462,7 @@ main (int argc, char **argv)
 	      /******************************************************/
 	      if(send_packet==1)  //no need to check paquets we don't send
 		if( (pid == 0) && //This is a PAT PID
-		     rewrite_pat ) //AND we asked for rewrite
+		     rewrite_vars.rewrite_pat ) //AND we asked for rewrite
 		  {
 		    memcpy(temp_buffer_from_dvr,saved_pat_buffer,TS_PACKET_SIZE); //We restore the full PAT
 		    //and we try to rewrite it

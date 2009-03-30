@@ -117,7 +117,4 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename);
 void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *saving_filename);
 
 
-//pat_rewrite
-int pat_rewrite(unsigned char *buf,int num_pids, int *pids);
-
 #endif
