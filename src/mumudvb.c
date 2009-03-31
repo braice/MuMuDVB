@@ -1112,8 +1112,9 @@ main (int argc, char **argv)
     {
       for (curr_channel = 0; curr_channel < MAX_CHANNELS; curr_channel++)
 	{
-	  rewrite_vars.generated_pats[curr_channel]=NULL;
+	  /*rewrite_vars.generated_pats[curr_channel]=NULL;*/
 	  rewrite_vars.generated_pat_version[curr_channel]=-1;
+	  rewrite_vars.continuity_counter[curr_channel]=0;
 	}
 
       rewrite_vars.full_pat=malloc(sizeof(mumudvb_ts_packet_t));
@@ -1434,15 +1435,14 @@ main (int argc, char **argv)
 	  /******************************************************/
 	  //Pat rewrite 
 	  /******************************************************/
-	  //we save the full pat before otherwise only the first channel will be rewritten with a full PAT
-	  //in other words, we need a full pat for all the channels
+	  //we save the full pat wich will be the source pat for all the channels
 	  if( (pid == 0) && //This is a PAT PID
 	      rewrite_vars.rewrite_pat ) //AND we asked for rewrite
 	    {
 	      /*Check the version before getting the full packet*/
 	      if(!rewrite_vars.needs_update)
 		{
-			//rewrite_vars.needs_update=
+		  rewrite_vars.needs_update=pat_need_update(&rewrite_vars,temp_buffer_from_dvr);
 		}
 	      /*We need to update the full packet, we download it*/
 	      if(rewrite_vars.needs_update)
@@ -1450,10 +1450,8 @@ main (int argc, char **argv)
 		  if(get_ts_packet(temp_buffer_from_dvr,rewrite_vars.full_pat))
 		    {
 		      /*We've got the FULL PAT packet*/
-		      log_message(MSG_DEBUG,"Pat rewrite : New pat version : %x\n", rewrite_vars.pat_version);
-		      /*
-			Update the version
-		      */
+		      update_version(&rewrite_vars);
+		      log_message(MSG_DEBUG,"Pat rewrite : New pat, version %d\n", rewrite_vars.pat_version);
 		      rewrite_vars.needs_update=0;
 		    }
 		}
@@ -1507,23 +1505,52 @@ main (int argc, char **argv)
 	      /******************************************************/
 	      if(send_packet==1)  //no need to check paquets we don't send
 		if( (pid == 0) && //This is a PAT PID
-		    rewrite_vars.rewrite_pat  //AND we asked for rewrite
-		    && !rewrite_vars.needs_update ) //AND the global full pat doesn't need to be updated
+		    rewrite_vars.rewrite_pat)  //AND we asked for rewrite
 		  {
-		    /*We check if it's the first pat packet ? or we send it each time ?*/
-		    /*We check if the versions corresponds*/
-		    if(rewrite_vars.generated_pat_version[curr_channel]!=rewrite_vars.pat_version)
+		    if(!rewrite_vars.needs_update ) //AND the global full pat doesn't need to be updated
 		      {
-			/*They mismatch*/
-			/*We generate the rewritten packet*/
-			/*We store it in   rewrite_vars.generated_pats[curr_channel]*/
-			//pat_rewrite(temp_buffer_from_dvr,rewrite_vars,channels[curr_channel].num_pids,channels[curr_channel].pids)) 
-			/*We update the version*/
-			rewrite_vars.generated_pat_version[curr_channel]=rewrite_vars.pat_version;
+			/*We check if it's the first pat packet ? or we send it each time ?*/
+			/*We check if the versions corresponds*/
+			if(rewrite_vars.generated_pat_version[curr_channel]!=rewrite_vars.pat_version)
+			  {
+			    log_message(MSG_DEBUG,"Pat rewrite : We need to rewrite the PAT for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
+			    /*They mismatch*/
+			    /*We generate the rewritten packet*/
+			    if(pat_channel_rewrite(&rewrite_vars, channels, curr_channel,temp_buffer_from_dvr))
+			      {
+				/*We update the version*/
+				rewrite_vars.generated_pat_version[curr_channel]=rewrite_vars.pat_version;
+			      }
+			    else
+			      {
+				log_message(MSG_DEBUG,"Pat rewrite : ERROR with the pat for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
+			      }			    
+			  }
+			if(rewrite_vars.generated_pat_version[curr_channel]==rewrite_vars.pat_version)
+			  {
+			    /*We send the rewrited PAT from rewrite_vars.generated_pats[curr_channel]*/
+			    memcpy(temp_buffer_from_dvr,rewrite_vars.generated_pats[curr_channel],TS_PACKET_SIZE);
+			    //To avoid the duplicates, we have to update the continuity counter
+			    /**@todo replace by a modulo*/
+			    if(rewrite_vars.continuity_counter[curr_channel]==31)
+			      rewrite_vars.continuity_counter[curr_channel]=0;
+			    else
+			      rewrite_vars.continuity_counter[curr_channel]++;
+			    pat_rewrite_set_continuity_counter(temp_buffer_from_dvr,rewrite_vars.continuity_counter[curr_channel]);
+			  }
+			else
+			  {
+			    send_packet=0;
+			  log_message(MSG_DEBUG,"Pat rewrite : we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
+			  }
 		      }
-		    /*We send the rewrited PAT from rewrite_vars.generated_pats[curr_channel]*/
-		    //memcpy(temp_buffer_from_dvr,rewrite_vars.generated_pats[curr_channel],TS_PACKET_SIZE);
+		    else
+		      {
+			send_packet=0;
+			log_message(MSG_DEBUG,"Pat rewrite : we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
+		      }
 		  }
+	    
 
 	      /******************************************************/
 	      //Ok we must send this packet,

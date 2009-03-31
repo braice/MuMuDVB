@@ -51,11 +51,15 @@ typedef struct pat_rewrite_parameters_t{
   /** The Complete PAT PID */
   mumudvb_ts_packet_t *full_pat;
   /**The generated pats to be sent*/
-  unsigned char *generated_pats[TS_PACKET_SIZE];
+  unsigned char generated_pats[MAX_CHANNELS][TS_PACKET_SIZE]; /**@todo: allocate dynamically*/
   /** The version of the generated pats */
   int generated_pat_version[MAX_CHANNELS];
+  /** The continuity counter of the sent PAT*/
+  int continuity_counter[MAX_CHANNELS];
 }pat_rewrite_parameters_t;
 
 
-int
-pat_rewrite(unsigned char *buf,int num_pids, int *pids);
+int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channels, int curr_channel, unsigned char *buf);
+int pat_need_update(pat_rewrite_parameters_t *rewrite_vars, unsigned char *buf);
+void update_version(pat_rewrite_parameters_t *rewrite_vars);
+void pat_rewrite_set_continuity_counter(unsigned char *buf,int continuity_counter);
