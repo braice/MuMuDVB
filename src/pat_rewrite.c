@@ -46,8 +46,8 @@ extern uint32_t       crc32_table[256];
  * This function check if it has changed (in order to rewrite the pat only once)
  * General Note : in case it change during streaming it can be a problem ane we would have to deal with re-autoconfiguration
  *
- *@param 
- *@param
+ *@param rewrite_vars the parameters for pat rewriting 
+ *@param buf : the received buffer
  */
 int pat_need_update(pat_rewrite_parameters_t *rewrite_vars, unsigned char *buf)
 {
@@ -82,9 +82,10 @@ void pat_rewrite_set_continuity_counter(unsigned char *buf,int continuity_counte
  * the pmt pid of the channel in the given pid list. if found it keeps it otherwise it drops.
  * At the end, a new CRC32 is computed. The buffer is overwritten, so the caller have to save it before.
  *
- * @param 
- * @param 
- * @param 
+ * @param rewrite_vars the parameters for pat rewriting
+ * @param channels The array of channels
+ * @param curr_channel the channel for wich we want to generate a PAT
+ * @param buf : the received buffer, to get the TS header
  */
 int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channels, int curr_channel, unsigned char *buf)
 {
@@ -140,13 +141,16 @@ int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_
 		//we found a announce for a PMT pid in our stream, we keep it
 		memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->packet+delta,PAT_PROG_LEN);
 		buf_dest_pos+=PAT_PROG_LEN;
-		/** @todo : check if we don't go OVER 188 bytes*/
+		if(buf_dest_pos+4>TS_PACKET_SIZE) //The +4 is for CRC32
+		  {
+		    log_message(MSG_WARN,"Pat rewrite : The generated PAT is too big for channel %d : \"%s\", we skip the other pids\n", curr_channel, channels[curr_channel].name);
+		    i=channels[curr_channel].num_pids;
+		  }
 	      }
 	}
       delta+=PAT_PROG_LEN;
     }
  
-
   //we compute the new section length
   //section lenght is the size of the section after section_length (crc32 included : 4 bytes)
   //so it's size of the crc32 + size of the pat prog + size of the pat header - 3 first bytes (the pat header until section length included)
@@ -158,7 +162,7 @@ int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_
   buf_dest[2+TS_HEADER_LEN]=new_section_length & 0xff;
 
 
-  //CRC32 calculation taken from the xine project
+  //CRC32 calculation inspired by the xine project
   //Now we must adjust the CRC32
   //we compute the CRC32
   crc32=0xffffffff;
@@ -168,6 +172,7 @@ int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_
 
 
   //We write the CRC32 to the buffer
+  //Is this one safe with little/big endian ?
   buf_dest[buf_dest_pos]=(crc32>>24) & 0xff;
   buf_dest_pos+=1;
   buf_dest[buf_dest_pos]=(crc32>>16) & 0xff;

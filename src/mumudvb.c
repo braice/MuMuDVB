@@ -1666,6 +1666,10 @@ int mumudvb_close(int Interrupted)
   if(sap_vars.sap_messages)
     free(sap_vars.sap_messages);
   
+  //Pat rewrite freeing
+  if(rewrite_vars.full_pat)
+    free(rewrite_vars.full_pat);
+
   if ((write_streamed_channels)&&remove (nom_fich_chaines_diff)) 
     {
       log_message( MSG_WARN,

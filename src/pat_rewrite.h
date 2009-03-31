@@ -54,7 +54,7 @@ typedef struct pat_rewrite_parameters_t{
   unsigned char generated_pats[MAX_CHANNELS][TS_PACKET_SIZE]; /**@todo: allocate dynamically*/
   /** The version of the generated pats */
   int generated_pat_version[MAX_CHANNELS];
-  /** The continuity counter of the sent PAT*/
+  /** The continuity counter of the sent PAT for each channel*/
   int continuity_counter[MAX_CHANNELS];
 }pat_rewrite_parameters_t;
 
