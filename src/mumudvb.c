@@ -221,11 +221,13 @@ cam_parameters_t cam_vars={
 };
 #endif
 
+//Parameters for PAT rewriting
 pat_rewrite_parameters_t rewrite_vars={
   .rewrite_pat = 0,
   .pat_version=-1,
   .full_pat=NULL,
   .needs_update=1,
+  .continuity_counter=0,
 };
 
 //logging
@@ -471,7 +473,7 @@ main (int argc, char **argv)
 	  if(rewrite_vars.rewrite_pat)
 	    {
 	      log_message( MSG_INFO,
-			"You have enabled the Pat Rewriting, it has still some limitations please contact if you have some issues\n");
+			"You have enabled the Pat Rewriting\n");
 	    }
 	}
 #ifdef LIBDVBEN50221
@@ -482,9 +484,7 @@ main (int argc, char **argv)
 	  if(cam_vars.cam_support)
 	    {
 	      log_message( MSG_WARN,
-			"!!! You have enabled the support for conditionnal acces modules (scrambled channels), this is a beta feature.Please report any bug/comment\n");
-	      log_message( MSG_DEBUG,
-			"       You will use libdvben50221 for cam support\n");
+			"You have enabled the support for conditionnal acces modules (scrambled channels). Please report any bug/comment\n");
 	    }
 	}
 #endif
@@ -1114,7 +1114,7 @@ main (int argc, char **argv)
 	{
 	  /*rewrite_vars.generated_pats[curr_channel]=NULL;*/
 	  rewrite_vars.generated_pat_version[curr_channel]=-1;
-	  rewrite_vars.continuity_counter[curr_channel]=0;
+	  /*rewrite_vars.continuity_counter[curr_channel]=0;*/
 	}
 
       rewrite_vars.full_pat=malloc(sizeof(mumudvb_ts_packet_t));
@@ -1455,6 +1455,9 @@ main (int argc, char **argv)
 		      rewrite_vars.needs_update=0;
 		    }
 		}
+	      //To avoid the duplicates, we have to update the continuity counter
+	      rewrite_vars.continuity_counter++;
+	      rewrite_vars.continuity_counter= rewrite_vars.continuity_counter % 32;
 	    }
 	  
 
@@ -1531,12 +1534,7 @@ main (int argc, char **argv)
 			    /*We send the rewrited PAT from rewrite_vars.generated_pats[curr_channel]*/
 			    memcpy(temp_buffer_from_dvr,rewrite_vars.generated_pats[curr_channel],TS_PACKET_SIZE);
 			    //To avoid the duplicates, we have to update the continuity counter
-			    /**@todo replace by a modulo*/
-			    if(rewrite_vars.continuity_counter[curr_channel]==31)
-			      rewrite_vars.continuity_counter[curr_channel]=0;
-			    else
-			      rewrite_vars.continuity_counter[curr_channel]++;
-			    pat_rewrite_set_continuity_counter(temp_buffer_from_dvr,rewrite_vars.continuity_counter[curr_channel]);
+			    pat_rewrite_set_continuity_counter(temp_buffer_from_dvr,rewrite_vars.continuity_counter);
 			  }
 			else
 			  {

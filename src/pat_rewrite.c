@@ -26,8 +26,8 @@
 /**@file
  * @brief This file contains the function for rewriting the pat pid
  *
- * The pat rewrite is made to announce only the video stram associated with the channel in the PAT pid
- * Some set top boxes need it
+ * The pat rewrite is made to announce only the video stream associated with the channel in the PAT pid
+ * Some set top boxes need it.
  */
 
 #include <stdlib.h>
@@ -69,7 +69,10 @@ void update_version(pat_rewrite_parameters_t *rewrite_vars)
   rewrite_vars->pat_version=pat->version_number;
 }
 
-/** @brief Just a small function to change the continuity counter of a packet*/
+/** @brief Just a small function to change the continuity counter of a packet
+ * This function will overwrite the continuity counter of the packet with the one given in argument
+ *
+ */
 void pat_rewrite_set_continuity_counter(unsigned char *buf,int continuity_counter)
 {
   ts_header_t *ts_header=(ts_header_t *)buf;
@@ -128,7 +131,6 @@ int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_
       if(HILO(prog->program_number)==0)
 	{
 	  //we found the announce for the EIT pid
-	  log_message(MSG_DEBUG,"Pat rewrite : EIT for channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
 	  memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->packet+delta,PAT_PROG_LEN);
 	  buf_dest_pos+=PAT_PROG_LEN;
 	}
@@ -137,7 +139,7 @@ int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_
 	  for(i=0;i<channels[curr_channel].num_pids;i++)
 	    if(channels[curr_channel].pids[i]==HILO(prog->network_pid))
 	      {
-		log_message(MSG_DEBUG,"Pat rewrite : NEW program for channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
+		log_message(MSG_DEBUG,"Pat rewrite : NEW program for channel %d : \"%s\". PTM pid : %d\n", curr_channel, channels[curr_channel].name,channels[curr_channel].pids[i]);
 		//we found a announce for a PMT pid in our stream, we keep it
 		memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->packet+delta,PAT_PROG_LEN);
 		buf_dest_pos+=PAT_PROG_LEN;
@@ -172,7 +174,7 @@ int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_
 
 
   //We write the CRC32 to the buffer
-  //Is this one safe with little/big endian ?
+  /** @todo check if Is this one safe with little/big endian ?*/
   buf_dest[buf_dest_pos]=(crc32>>24) & 0xff;
   buf_dest_pos+=1;
   buf_dest[buf_dest_pos]=(crc32>>16) & 0xff;
