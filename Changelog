@@ -1,3 +1,8 @@
+-- Mumudvb 1.5.5 --
+
+New features / improvements : 
+ * The limit in the size of the PAT pid for pat rewriting has been removed
+
 -- Mumudvb 1.5.4 --
 
 New features / improvements : 
