@@ -63,7 +63,7 @@
  *
  * log.c logging functions
  *
- * pat_rewrite.c : the functions associated with the rewrite of the PAT pid
+ * pat_rewrite.c pat_rewrite.h : the functions associated with the rewrite of the PAT pid
  *
  * sap.c sap.h : sap announces
  *
@@ -107,6 +107,7 @@
 #include "errors.h"
 #include "autoconf.h"
 #include "sap.h"
+#include "pat_rewrite.h"
 
 /*Do we support ATSC ?*/
 #undef ATSC
@@ -220,6 +221,14 @@ cam_parameters_t cam_vars={
 };
 #endif
 
+//Parameters for PAT rewriting
+pat_rewrite_parameters_t rewrite_vars={
+  .rewrite_pat = 0,
+  .pat_version=-1,
+  .full_pat=NULL,
+  .needs_update=1,
+  .continuity_counter=0,
+};
 
 //logging
 int log_initialised=0; /**say if we opened the syslog ressource*/
@@ -275,7 +284,6 @@ main (int argc, char **argv)
   int bytes_read;		/** number of bytes actually read */
   //temporary buffers
   unsigned char temp_buffer_from_dvr[TS_PACKET_SIZE];
-  unsigned char saved_pat_buffer[TS_PACKET_SIZE];
 
   /** List of mandatory pids */
   uint8_t mandatory_pid[MAX_MANDATORY_PID_NUMBER];
@@ -309,8 +317,6 @@ main (int argc, char **argv)
   int tune_retval=0;
   int partial_packet_number=0;
 
-  //do we rewrite the pat pid ?
-  int rewrite_pat = 0;
 
   // Initialise PID map
   for (k = 0; k < 8192; k++)
@@ -463,11 +469,11 @@ main (int argc, char **argv)
       else if (!strcmp (substring, "rewrite_pat"))
 	{
 	  substring = strtok (NULL, delimiteurs);
-	  rewrite_pat = atoi (substring);
-	  if(rewrite_pat)
+	  rewrite_vars.rewrite_pat = atoi (substring);
+	  if(rewrite_vars.rewrite_pat)
 	    {
 	      log_message( MSG_INFO,
-			"You have enabled the Pat Rewriting, it has still some limitations please contact if you have some issues\n");
+			"You have enabled the Pat Rewriting\n");
 	    }
 	}
 #ifdef LIBDVBEN50221
@@ -478,9 +484,7 @@ main (int argc, char **argv)
 	  if(cam_vars.cam_support)
 	    {
 	      log_message( MSG_WARN,
-			"!!! You have enabled the support for conditionnal acces modules (scrambled channels), this is a beta feature.Please report any bug/comment\n");
-	      log_message( MSG_DEBUG,
-			"       You will use libdvben50221 for cam support\n");
+			"You have enabled the support for conditionnal acces modules (scrambled channels). Please report any bug/comment\n");
 	    }
 	}
 #endif
@@ -1098,6 +1102,31 @@ main (int argc, char **argv)
 	}
     }
 
+  /*****************************************************/
+  //Pat rewriting
+  //memory allocation for MPEG2-TS
+  //packet structures
+  /*****************************************************/
+
+  if(rewrite_vars.rewrite_pat)
+    {
+      for (curr_channel = 0; curr_channel < MAX_CHANNELS; curr_channel++)
+	{
+	  /*rewrite_vars.generated_pats[curr_channel]=NULL;*/
+	  rewrite_vars.generated_pat_version[curr_channel]=-1;
+	  /*rewrite_vars.continuity_counter[curr_channel]=0;*/
+	}
+
+      rewrite_vars.full_pat=malloc(sizeof(mumudvb_ts_packet_t));
+      if(rewrite_vars.full_pat==NULL)
+	{
+	  log_message( MSG_ERROR,"MALLOC\n");
+	  return mumudvb_close(100<<8);
+	}
+      memset (rewrite_vars.full_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+      
+    }
+
 
   /*****************************************************/
   //daemon part two, we write our PID
@@ -1406,11 +1435,30 @@ main (int argc, char **argv)
 	  /******************************************************/
 	  //Pat rewrite 
 	  /******************************************************/
-	  //we save the full pat before otherwise only the first channel will be rewritten with a full PAT
-	  //in other words, we need a full pat for all the channels
+	  //we save the full pat wich will be the source pat for all the channels
 	  if( (pid == 0) && //This is a PAT PID
-	      rewrite_pat ) //AND we asked for rewrite
-	    memcpy(saved_pat_buffer,temp_buffer_from_dvr,TS_PACKET_SIZE); //We save the full pat
+	      rewrite_vars.rewrite_pat ) //AND we asked for rewrite
+	    {
+	      /*Check the version before getting the full packet*/
+	      if(!rewrite_vars.needs_update)
+		{
+		  rewrite_vars.needs_update=pat_need_update(&rewrite_vars,temp_buffer_from_dvr);
+		}
+	      /*We need to update the full packet, we download it*/
+	      if(rewrite_vars.needs_update)
+		{
+		  if(get_ts_packet(temp_buffer_from_dvr,rewrite_vars.full_pat))
+		    {
+		      /*We've got the FULL PAT packet*/
+		      update_version(&rewrite_vars);
+		      log_message(MSG_DEBUG,"Pat rewrite : New pat, version %d\n", rewrite_vars.pat_version);
+		      rewrite_vars.needs_update=0;
+		    }
+		}
+	      //To avoid the duplicates, we have to update the continuity counter
+	      rewrite_vars.continuity_counter++;
+	      rewrite_vars.continuity_counter= rewrite_vars.continuity_counter % 32;
+	    }
 	  
 
 	  /******************************************************/
@@ -1460,13 +1508,47 @@ main (int argc, char **argv)
 	      /******************************************************/
 	      if(send_packet==1)  //no need to check paquets we don't send
 		if( (pid == 0) && //This is a PAT PID
-		     rewrite_pat ) //AND we asked for rewrite
+		    rewrite_vars.rewrite_pat)  //AND we asked for rewrite
 		  {
-		    memcpy(temp_buffer_from_dvr,saved_pat_buffer,TS_PACKET_SIZE); //We restore the full PAT
-		    //and we try to rewrite it
-		    if(pat_rewrite(temp_buffer_from_dvr,channels[curr_channel].num_pids,channels[curr_channel].pids)) //We try rewrite and if there's an error...
-		      send_packet=0;//... we don't send it anyway
+		    if(!rewrite_vars.needs_update ) //AND the global full pat doesn't need to be updated
+		      {
+			/*We check if it's the first pat packet ? or we send it each time ?*/
+			/*We check if the versions corresponds*/
+			if(rewrite_vars.generated_pat_version[curr_channel]!=rewrite_vars.pat_version)
+			  {
+			    log_message(MSG_DEBUG,"Pat rewrite : We need to rewrite the PAT for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
+			    /*They mismatch*/
+			    /*We generate the rewritten packet*/
+			    if(pat_channel_rewrite(&rewrite_vars, channels, curr_channel,temp_buffer_from_dvr))
+			      {
+				/*We update the version*/
+				rewrite_vars.generated_pat_version[curr_channel]=rewrite_vars.pat_version;
+			      }
+			    else
+			      {
+				log_message(MSG_DEBUG,"Pat rewrite : ERROR with the pat for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
+			      }			    
+			  }
+			if(rewrite_vars.generated_pat_version[curr_channel]==rewrite_vars.pat_version)
+			  {
+			    /*We send the rewrited PAT from rewrite_vars.generated_pats[curr_channel]*/
+			    memcpy(temp_buffer_from_dvr,rewrite_vars.generated_pats[curr_channel],TS_PACKET_SIZE);
+			    //To avoid the duplicates, we have to update the continuity counter
+			    pat_rewrite_set_continuity_counter(temp_buffer_from_dvr,rewrite_vars.continuity_counter);
+			  }
+			else
+			  {
+			    send_packet=0;
+			  log_message(MSG_DEBUG,"Pat rewrite : we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
+			  }
+		      }
+		    else
+		      {
+			send_packet=0;
+			log_message(MSG_DEBUG,"Pat rewrite : we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
+		      }
 		  }
+	    
 
 	      /******************************************************/
 	      //Ok we must send this packet,
@@ -1582,6 +1664,10 @@ int mumudvb_close(int Interrupted)
   if(sap_vars.sap_messages)
     free(sap_vars.sap_messages);
   
+  //Pat rewrite freeing
+  if(rewrite_vars.full_pat)
+    free(rewrite_vars.full_pat);
+
   if ((write_streamed_channels)&&remove (nom_fich_chaines_diff)) 
     {
       log_message( MSG_WARN,

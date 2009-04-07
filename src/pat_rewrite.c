@@ -26,8 +26,8 @@
 /**@file
  * @brief This file contains the function for rewriting the pat pid
  *
- * The pat rewrite is made to announce only the video stram associated with the channel in the PAT pid
- * Some set top boxes need it
+ * The pat rewrite is made to announce only the video stream associated with the channel in the PAT pid
+ * Some set top boxes need it.
  */
 
 #include <stdlib.h>
@@ -35,121 +35,124 @@
 
 #include "mumudvb.h"
 #include "ts.h"
+#include "pat_rewrite.h"
 #include <stdint.h>
 
 extern uint32_t       crc32_table[256];
 
+
+/** @Brief, tell if the pat have a newer version than the one recorded actually
+ * In the PAT pid there is a field to say if the PAT was updated
+ * This function check if it has changed (in order to rewrite the pat only once)
+ * General Note : in case it change during streaming it can be a problem ane we would have to deal with re-autoconfiguration
+ *
+ *@param rewrite_vars the parameters for pat rewriting 
+ *@param buf : the received buffer
+ */
+int pat_need_update(pat_rewrite_parameters_t *rewrite_vars, unsigned char *buf)
+{
+  pat_t       *pat=(pat_t*)(buf+TS_HEADER_LEN);
+  if(pat->version_number!=rewrite_vars->pat_version)
+    {
+      log_message(MSG_DEBUG,"Pat rewrite : New pat version. Old : %d, new: %d\n",rewrite_vars->pat_version,pat->version_number);
+      return 1;
+    }
+  return 0;
+
+}
+
+/** @brief update the version using the dowloaded pat*/
+void update_version(pat_rewrite_parameters_t *rewrite_vars)
+{
+  pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->packet);
+  
+  rewrite_vars->pat_version=pat->version_number;
+}
+
+/** @brief Just a small function to change the continuity counter of a packet
+ * This function will overwrite the continuity counter of the packet with the one given in argument
+ *
+ */
+void pat_rewrite_set_continuity_counter(unsigned char *buf,int continuity_counter)
+{
+  ts_header_t *ts_header=(ts_header_t *)buf;
+  ts_header->continuity_counter=continuity_counter;
+}
+
 /** @brief Main function for pat rewriting 
  * The goal of this function is to make a new pat with only the announement for the streamed channel
  * by default it contains all the channels of the transponder. For each channel descriptor this function will search
- * the pmt pid of the channel in the given pid list. if foud it keeps it otherwise it drops.
+ * the pmt pid of the channel in the given pid list. if found it keeps it otherwise it drops.
  * At the end, a new CRC32 is computed. The buffer is overwritten, so the caller have to save it before.
  *
- * @param buf The packet to rewrite (must be less than 188bytes)
- * @param num_pids : the number of pids in the channel
- * @param pids : the array of pids of the channel
+ * @param rewrite_vars the parameters for pat rewriting
+ * @param channels The array of channels
+ * @param curr_channel the channel for wich we want to generate a PAT
+ * @param buf : the received buffer, to get the TS header
  */
-int
-pat_rewrite(unsigned char *buf,int num_pids, int *pids)
+int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channels, int curr_channel, unsigned char *buf)
 {
-  int i,pos_buf,buf_pos;
-  
+  ts_header_t *ts_header=(ts_header_t *)buf;
+  pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->packet);
+  pat_prog_t  *prog;
+  unsigned long crc32;
 
   //destination buffer
   unsigned char buf_dest[188];
   int buf_dest_pos=0;
+  int delta=PAT_LEN;
 
-  pat_t       *pat=(pat_t*)(buf+TS_HEADER_LEN);
-  pat_prog_t  *prog;
-  int delta=PAT_LEN+TS_HEADER_LEN;
   int section_length=0;
+  int i;
   int new_section_length;
-  unsigned long crc32;
-  unsigned long calc_crc32;
 
 
-  //PAT reading
   section_length=HILO(pat->section_length);
-  if((section_length>(TS_PACKET_SIZE-TS_HEADER_LEN)) && section_length)
-    {
-      if (section_length)
-	{
-	  log_message( MSG_INFO,"PAT too big : %d, don't know how rewrite, sent as is\n", section_length);
-	}
-      else //empty PAT
-	{
-	  return 1;
-	}
-      return 0; //we sent as is
-    }
-  //CRC32
-  //CRC32 calculation taken from the xine project
-  //Test of the crc32
-  calc_crc32=0xffffffff;
-  //we compute the CRC32
-  for(i = 0; i < section_length-1; i++) {
-    calc_crc32 = (calc_crc32 << 8) ^ crc32_table[((calc_crc32 >> 24) ^ buf[i+TS_HEADER_LEN])&0xff];
-  }
- 
-  crc32=0x00000000;
 
-  crc32|=buf[TS_HEADER_LEN+section_length+3-4]<<24;
-  crc32|=buf[TS_HEADER_LEN+section_length+3-4+1]<<16;
-  crc32|=buf[TS_HEADER_LEN+section_length+3-4+2]<<8;
-  crc32|=buf[TS_HEADER_LEN+section_length+3-4+3];
-  
-  if((calc_crc32-crc32)!=0)
-    {
-      //Bad CRC32
-      return 1; //We don't send this PAT
-    }
-
-/*   fprintf (stderr, "table_id %x ",pat->table_id); */
-/*   fprintf (stderr, "dummy %x ",pat->dummy); */
-/*   fprintf (stderr, "ts_id 0x%04x ",HILO(pat->transport_stream_id)); */
-/*   fprintf (stderr, "section_length %d ",HILO(pat->section_length)); */
-/*   fprintf (stderr, "version %i ",pat->version_number); */
-/*   fprintf (stderr, "last_section_number %x ",pat->last_section_number); */
-/*   fprintf (stderr, "\n"); */
-
-
-  //sounds good, lets start the copy
-  //we copy the ts header
-  for(i=0;i<TS_HEADER_LEN;i++) /**@todo : use memcpy*/
-    buf_dest[i]=buf[i];
-  //we copy the PAT header
-  for(i=TS_HEADER_LEN;i<TS_HEADER_LEN+PAT_LEN;i++) /**@todo : use memcpy*/
-    buf_dest[i]=buf[i];
-
+  //lets start the copy
+  //we copy the ts header and adapt it a bit
+  //the continuity counter is updated elswhere
+  ts_header->payload_unit_start_indicator=1;
+  memcpy(buf_dest,ts_header,TS_HEADER_LEN);
+  //we copy the modified PAT header
+  pat->current_next_indicator=1; //applicable immediately
+  pat->section_number=0;         //only one pat
+  pat->last_section_number=0;
+  memcpy(buf_dest+TS_HEADER_LEN,pat,PAT_LEN);
+	   
   buf_dest_pos=TS_HEADER_LEN+PAT_LEN;
+
 
   //We copy what we need : EIT announce and present PMT announce
   //strict comparaison due to the calc of section len cf down
-  while((delta+PAT_PROG_LEN)<(section_length+TS_HEADER_LEN))
+  while((delta+PAT_PROG_LEN)<(section_length))
     {
-      prog=(pat_prog_t*)((char*)buf+delta);
+      prog=(pat_prog_t*)((char*)rewrite_vars->full_pat->packet+delta);
       if(HILO(prog->program_number)==0)
 	{
 	  //we found the announce for the EIT pid
-	  for(pos_buf=0;pos_buf<PAT_PROG_LEN;pos_buf++)
-	    buf_dest[buf_dest_pos+pos_buf]=buf[pos_buf+delta];
+	  memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->packet+delta,PAT_PROG_LEN);
 	  buf_dest_pos+=PAT_PROG_LEN;
 	}
       else
 	{
-	  for(i=0;i<num_pids;i++)
-	    if(pids[i]==HILO(prog->network_pid))
+	  for(i=0;i<channels[curr_channel].num_pids;i++)
+	    if(channels[curr_channel].pids[i]==HILO(prog->network_pid))
 	      {
+		log_message(MSG_DEBUG,"Pat rewrite : NEW program for channel %d : \"%s\". PTM pid : %d\n", curr_channel, channels[curr_channel].name,channels[curr_channel].pids[i]);
 		//we found a announce for a PMT pid in our stream, we keep it
-		for(pos_buf=0;pos_buf<PAT_PROG_LEN;pos_buf++)
-		  buf_dest[buf_dest_pos+pos_buf]=buf[pos_buf+delta];
+		memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->packet+delta,PAT_PROG_LEN);
 		buf_dest_pos+=PAT_PROG_LEN;
+		if(buf_dest_pos+4>TS_PACKET_SIZE) //The +4 is for CRC32
+		  {
+		    log_message(MSG_WARN,"Pat rewrite : The generated PAT is too big for channel %d : \"%s\", we skip the other pids\n", curr_channel, channels[curr_channel].name);
+		    i=channels[curr_channel].num_pids;
+		  }
 	      }
 	}
       delta+=PAT_PROG_LEN;
     }
-
-
+ 
   //we compute the new section length
   //section lenght is the size of the section after section_length (crc32 included : 4 bytes)
   //so it's size of the crc32 + size of the pat prog + size of the pat header - 3 first bytes (the pat header until section length included)
@@ -161,7 +164,7 @@ pat_rewrite(unsigned char *buf,int num_pids, int *pids)
   buf_dest[2+TS_HEADER_LEN]=new_section_length & 0xff;
 
 
-  //CRC32 calculation taken from the xine project
+  //CRC32 calculation inspired by the xine project
   //Now we must adjust the CRC32
   //we compute the CRC32
   crc32=0xffffffff;
@@ -171,6 +174,7 @@ pat_rewrite(unsigned char *buf,int num_pids, int *pids)
 
 
   //We write the CRC32 to the buffer
+  /** @todo check if Is this one safe with little/big endian ?*/
   buf_dest[buf_dest_pos]=(crc32>>24) & 0xff;
   buf_dest_pos+=1;
   buf_dest[buf_dest_pos]=(crc32>>16) & 0xff;
@@ -179,19 +183,19 @@ pat_rewrite(unsigned char *buf,int num_pids, int *pids)
   buf_dest_pos+=1;
   buf_dest[buf_dest_pos]=crc32 & 0xff;
   buf_dest_pos+=1;
-
+  
 
   //Padding with 0xFF 
   memset(buf_dest+buf_dest_pos,0xFF,TS_PACKET_SIZE-buf_dest_pos);
 
-
-  //We copy the result to the original buffer 
-  /**@todo use memcopy*/
-  for(buf_pos=0;buf_pos<TS_PACKET_SIZE;buf_pos++)
-    buf[buf_pos]=buf_dest[buf_pos];
+  //We copy the result to the intended buffer
+  memcpy(rewrite_vars->generated_pats[curr_channel],buf_dest,TS_PACKET_SIZE);
 
   //Everything is Ok ....
-  return 0;
+  return 1;
+
 
 }
+
+
 
