@@ -41,7 +41,7 @@
 /** @brief Parameters for tuning the card*/
 typedef struct tuning_parameters_t{
   /** the frequency (in MHz for dvb-s in kHz for dvb-t) */
-  unsigned long freq;
+  uint32_t freq;
   /** The symbol rate (QPSK and QAM modulation ie cable and satellite) in symbols per second*/
   unsigned int srate;
   /**The polarisation H or V ( for satellite)*/

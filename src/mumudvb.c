@@ -971,7 +971,7 @@ main (int argc, char **argv)
   else
     fclose (chaines_non_diff);
 
-  log_message( MSG_INFO, "Streaming. Freq %lu\n",
+  log_message( MSG_INFO, "Streaming. Freq %d\n",
 	       tuneparams.freq);
 
 
