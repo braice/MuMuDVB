@@ -75,7 +75,7 @@ void print_status(fe_status_t festatus) {
 }
 
 
-/** @todo document*/
+/** The structure for a diseqc cmd*/
 struct diseqc_cmd {
    struct dvb_diseqc_master_cmd cmd;
    uint32_t wait;
@@ -155,7 +155,7 @@ static int do_diseqc(int fd, unsigned char sat_no, int polv, int hi_lo)
 }
 
 /** @todo document*/
-int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* feparams,int hi_lo, int display_strength) {
+int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* feparams,uint32_t lo_frequency, int display_strength) {
   int32_t strength;
   fe_status_t festatus;
   struct dvb_frontend_event event;
@@ -210,7 +210,7 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
 	   /**\todo : display the other parameters*/
            break;
          case FE_QPSK:
-           log_message( MSG_INFO, "Event:  Frequency: %d\n",(unsigned int)((event.parameters.frequency)+(hi_lo ? LOF2 : LOF1)));
+           log_message( MSG_INFO, "Event:  Frequency: %d\n",(unsigned int)((event.parameters.frequency)+lo_frequency));
            log_message( MSG_INFO, "        SymbolRate: %d\n",event.parameters.u.qpsk.symbol_rate);
            log_message( MSG_INFO, "        FEC_inner:  %d\n",event.parameters.u.qpsk.fec_inner);
            log_message( MSG_INFO, "\n");
@@ -251,6 +251,7 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
   int res, hi_lo, dfd;
   struct dvb_frontend_parameters feparams;
   struct dvb_frontend_info fe_info;
+  uint32_t lo_frequency;
 
   //no warning
   hi_lo = 0;
@@ -280,14 +281,24 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
 		 tuneparams.bandwidth==BANDWIDTH_8_MHZ ? 8 : (tuneparams.bandwidth==BANDWIDTH_7_MHZ ? 7 : 6));
     break;
   case FE_QPSK: //DVB-S
-    tuneparams.pol = toupper(tuneparams.pol);
-    if (tuneparams.freq < SLOF) {
-      feparams.frequency=(tuneparams.freq-LOF1);
-      hi_lo = 0;
-    } else {
-      feparams.frequency=(tuneparams.freq-LOF2);
-      hi_lo = 1;
-    }
+    //Universal lnb : two bands, hi and low one and two local oscilators
+    if(tuneparams.lnb_type==LNB_UNIVERSAL)
+      {
+	if (tuneparams.freq < SLOF) {
+	  lo_frequency=LOF1_UNIVERSAL;
+	  hi_lo = 0;
+	} else {
+	  lo_frequency=LOF1_UNIVERSAL;
+	  hi_lo = 1;
+	}
+      }
+    else //LNB_STANDARD one band and one local oscillator
+      {
+	hi_lo=0;
+	lo_frequency=LOF_STANDARD;
+      }
+    feparams.frequency=tuneparams.freq-lo_frequency;
+
     
     log_message( MSG_INFO, "tuning DVB-S to Freq: %u, Pol:%c Srate=%d, LNB: %d\n",feparams.frequency,tuneparams.pol,
 		 tuneparams.srate, tuneparams.sat_number);
@@ -296,7 +307,8 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
     feparams.u.qpsk.fec_inner=FEC_AUTO;
     dfd = fd_frontend;
     
-    if(do_diseqc(dfd, tuneparams.sat_number, (tuneparams.pol == 'V' ? 1 : 0), hi_lo) == 0)
+    //For diseqc vertical==circular right and horizontal == circular left
+    if(do_diseqc(dfd, tuneparams.sat_number, (tuneparams.pol == 'V' ? 1 : 0) + (tuneparams.pol == 'R' ? 1 : 0), hi_lo) == 0)
       log_message( MSG_INFO, "DISEQC SETTING SUCCEDED\n");
     else  {
       log_message( MSG_INFO, "DISEQC SETTING FAILED\n");
@@ -324,5 +336,5 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
   }
   usleep(100000);
 
-  return(check_status(fd_frontend,fe_info.type,&feparams,hi_lo,tuneparams.display_strenght));
+  return(check_status(fd_frontend,fe_info.type,&feparams,lo_frequency,tuneparams.display_strenght));
 }

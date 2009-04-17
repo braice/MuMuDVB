@@ -165,6 +165,7 @@ tuning_parameters_t tuneparams={
   .freq = 0,  
   .srate = 0, 
   .pol = 0,
+  .lnb_type=LNB_UNIVERSAL,
   //The 22KHz tone burst is usually used with non-DiSEqC capable switches to select
   //between two connected LNBs/satellites. When using DiSEqC epuipment this voltage
   //has to be switched consistently to the DiSEqC commands as described in the DiSEqC
@@ -612,10 +613,60 @@ main (int argc, char **argv)
 	    {
 	      tuneparams.pol = 'H';
 	    }
+	  if (tolower (substring[0]) == 'l')
+	    {
+	      tuneparams.pol = 'L';
+	    }
+	  else if (tolower (substring[0]) == 'r')
+	    {
+	      tuneparams.pol = 'R';
+	    }
 	  else
 	    {
 	      log_message( MSG_ERROR,
 			   "Config issue : %s polarisation\n",
+			   conf_filename);
+	      exit(ERROR_CONF);
+	    }
+	}
+      else if (!strcmp (substring, "pol"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  if (tolower (substring[0]) == 'v')
+	    {
+	      tuneparams.pol = 'V';
+	    }
+	  else if (tolower (substring[0]) == 'h')
+	    {
+	      tuneparams.pol = 'H';
+	    }
+	  if (tolower (substring[0]) == 'l')
+	    {
+	      tuneparams.pol = 'L';
+	    }
+	  else if (tolower (substring[0]) == 'r')
+	    {
+	      tuneparams.pol = 'R';
+	    }
+	  else
+	    {
+	      log_message( MSG_ERROR,
+			   "Config issue : %s polarisation\n",
+			   conf_filename);
+	      exit(ERROR_CONF);
+	    }
+	}
+      else if (!strcmp (substring, "lnb_type"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  if(!strcmp (substring, "universal"))
+	    tuneparams.lnb_type=LNB_UNIVERSAL;
+	  else if(!strcmp (substring, "standard"))
+	    tuneparams.lnb_type=LNB_STANDARD;
+	  else
+	    {
+	      log_message( MSG_ERROR,
+			   "Config issue : %s lnb_type\n",
 			   conf_filename);
 	      exit(ERROR_CONF);
 	    }

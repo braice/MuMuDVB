@@ -32,14 +32,15 @@
 #define _DVB_DEFAULTS_H
 
 /* DVB-S */
-// With a diseqc system you may need different values per LNB.  I hope
-// no-one ever asks for that :-)
 /** lnb_slof: switch frequency of LNB */
 #define SLOF (11700*1000UL)
 /** lnb_lof1: local frequency of lower LNB band */
-#define LOF1 (9750*1000UL)
+#define LOF1_UNIVERSAL (9750*1000UL)
 /** lnb_lof2: local frequency of upper LNB band */
-#define LOF2 (10600*1000UL)
+#define LOF2_UNIVERSAL (10600*1000UL)
+/** Lnb standard Local oscillator frequency*/
+#define LOF_STANDARD (10750*1000UL)
+
 
 /* DVB-T */
 /* default option : full auto except bandwith = 8MHz*/

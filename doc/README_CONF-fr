@@ -14,9 +14,10 @@ Tous les paramètres sont de la forme suivante : nom=valeur
 ----
 ||'''Nom :'''                    ||'''valeur:'''                                ||
 ||freq                           ||la fréquence du transpondeur en MHz ||
-||pol                            ||la polarisation (un caractère) v ou h (insensible à la casse) ||
+||pol                            ||la polarisation (un caractère) v (verticale), h (horizontale), l (circulaire gauche), r (circulaire droite)  (insensible à la casse) ||
 ||srate                          ||le srate du transpondeur ||
 ||sat_number                     ||le numéro du satellite (pour les utilisateurs de switchs diseqc) ||
+||lnb_type			 ||Le type de lnb, peux prendre les valeurs "universal" ou "standard". La valeur par défaut est universal (Satellite seulement)||
 ||dont_tune                      ||Mumudvb n'essaiera pas d'accorder la carte ( ex : un autre programme comme tzap, l'a fait avant) ||
 ||card                           ||le numéro de la carte (défaut : 0) ||
 ||timeout_accord                 ||temps que l'on laisse à la carte pour s'accorder sur la fréquence (en secondes) (défaut : 300 (5min)) ||

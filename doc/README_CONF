@@ -15,9 +15,10 @@ All parameters are in the form: name=value
 ----
 ||'''Name:'''                          ||'''value:'''                                ||
 ||freq                           ||transponder's frequency in MHz ||
-||pol                            ||transponder's polarisation (a char) v or h (not case sensitive) ||
+||pol                            ||transponder's polarisation (a char) : 'v' (vertical), 'h' (horizontal), 'l' (left circular), 'r' (right circular) (not case sensitive) ||
 ||srate                          ||transponder's strate ||
 ||sat_number                     ||The satellite number (for diseqc users) ||
+||lnb_type			 ||The lnb type, can be "universal" or "standard". The default value is universal (for satellite users)||
 ||dont_tune                      ||We do not try to tune the card (another program,like tzap, did it for us) ||
 ||card                           ||card number (defalut: 0) ||
 ||timeout_accord                 ||tuning timeout (in seconds) (default: 300 (5min)) ||

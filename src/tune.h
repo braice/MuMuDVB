@@ -38,14 +38,21 @@
 
 #include "dvb_defaults.h"
 
+/* The lnb type*/
+#define LNB_UNIVERSAL 0
+#define LNB_STANDARD 1
+
+
 /** @brief Parameters for tuning the card*/
 typedef struct tuning_parameters_t{
   /** the frequency (in MHz for dvb-s in kHz for dvb-t) */
   uint32_t freq;
   /** The symbol rate (QPSK and QAM modulation ie cable and satellite) in symbols per second*/
   unsigned int srate;
-  /**The polarisation H or V ( for satellite)*/
+  /**The polarisation H, V, L or R ( for satellite)*/
   char pol;
+  /**The lnb type : universal (two local oscilator frequencies) or standard (one)*/
+  int lnb_type;
   //int tone;
   /**spectral inversion. AUTO seems to work with all the hardware
      @todo : catch more information about this*/
