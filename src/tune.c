@@ -81,7 +81,8 @@ struct diseqc_cmd {
    uint32_t wait;
 };
 
-/** @todo document*/
+/** @brief Send a diseqc message
+@todo document more*/
 static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd,
 		     fe_sec_tone_mode_t t, unsigned char sat_no)
 {
@@ -251,7 +252,7 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
   int res, hi_lo, dfd;
   struct dvb_frontend_parameters feparams;
   struct dvb_frontend_info fe_info;
-  uint32_t lo_frequency;
+  uint32_t lo_frequency=0;
 
   //no warning
   hi_lo = 0;

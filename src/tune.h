@@ -36,7 +36,31 @@
 
 #include <linux/dvb/frontend.h>
 
-#include "dvb_defaults.h"
+/* DVB-S */
+/** lnb_slof: switch frequency of LNB */
+#define SLOF (11700*1000UL)
+/** lnb_lof1: local frequency of lower LNB band */
+#define LOF1_UNIVERSAL (9750*1000UL)
+/** lnb_lof2: local frequency of upper LNB band */
+#define LOF2_UNIVERSAL (10600*1000UL)
+/** Lnb standard Local oscillator frequency*/
+#define LOF_STANDARD (10750*1000UL)
+
+
+/* DVB-T */
+/* default option : full auto except bandwith = 8MHz*/
+/* AUTO settings */
+#define BANDWIDTH_DEFAULT           BANDWIDTH_8_MHZ
+#define HP_CODERATE_DEFAULT         FEC_AUTO
+#define MODULATION_DEFAULT          QAM_AUTO
+#define TRANSMISSION_MODE_DEFAULT   TRANSMISSION_MODE_AUTO
+#define GUARD_INTERVAL_DEFAULT      GUARD_INTERVAL_AUTO
+#define HIERARCHY_DEFAULT           HIERARCHY_NONE
+
+#if HIERARCHY_DEFAULT == HIERARCHY_NONE && !defined (LP_CODERATE_DEFAULT)
+#define LP_CODERATE_DEFAULT (FEC_NONE) /* unused if HIERARCHY_NONE */
+#endif
+
 
 /* The lnb type*/
 #define LNB_UNIVERSAL 0

@@ -173,7 +173,7 @@ tuning_parameters_t tuneparams={
   //.tone = -1; //not used, only diseqc is supported
   .specInv = INVERSION_AUTO,
   .sat_number = 0, 
-  .modulation = MODULATION_DEFAULT, //cf dvb defaults
+  .modulation = MODULATION_DEFAULT, //cf tune.h
   .HP_CodeRate = HP_CODERATE_DEFAULT,
   .LP_CodeRate = LP_CODERATE_DEFAULT,
   .TransmissionMode = TRANSMISSION_MODE_DEFAULT,
@@ -493,6 +493,13 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  tuneparams.sat_number = atoi (substring);
+	  if (tuneparams.sat_number > 4)
+	    {
+	      log_message( MSG_ERROR,
+			   "Config issue : %s sat_number. The satellite number must be lower than 4. Please report if you have an equipment wich support more\n",
+			   conf_filename);
+	      exit(ERROR_CONF);
+	    }
 	}
 #ifdef ATSC
       else if (!strcmp (substring, "atsc_modulation"))
