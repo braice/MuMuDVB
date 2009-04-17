@@ -98,7 +98,8 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
 					uint8_t blind_answer, uint8_t expected_answer_length,
 					uint8_t *text, uint32_t text_size);
 
-
+/** @brief start the cam
+ * This function will create the communication layers and set the callbacks*/
 int cam_start(cam_parameters_t *cam_params, int adapter_id)
 {
   // create transport layer
@@ -158,6 +159,7 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id)
   return 0;
 }
 
+/**@brief Stops the CAM*/
 void cam_stop(cam_parameters_t *cam_params)
 {
   if (cam_params->stdcam == NULL)
@@ -180,12 +182,13 @@ void cam_stop(cam_parameters_t *cam_params)
 
 }
 
+/**@brief The thread for polling the cam */
 static void *camthread_func(void* arg)
 {
   cam_parameters_t *cam_params;
   cam_params= (cam_parameters_t *) arg;
   while(!cam_params->camthread_shutdown) { 
-    usleep(100000); //some waiting
+    usleep(500000); //some waiting
     cam_params->stdcam->poll(cam_params->stdcam);
   }
 
@@ -197,7 +200,10 @@ static void *camthread_func(void* arg)
 
 
 
-
+/** @brief PMT sending to the cam
+ * This function if called when mumudvb receive a new PMT pid. 
+ * This function will ask the cam to decrypt the associated channel
+ */
 int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_pmt_ptr)
 {
   uint8_t capmt[4096];
