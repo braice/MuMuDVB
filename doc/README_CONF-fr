@@ -18,6 +18,7 @@ Tous les paramètres sont de la forme suivante : nom=valeur
 ||srate                          ||le srate du transpondeur ||
 ||sat_number                     ||le numéro du satellite (pour les utilisateurs de switchs diseqc) ||
 ||lnb_type			 ||Le type de lnb, peux prendre les valeurs "universal" ou "standard". La valeur par défaut est universal (Satellite seulement)||
+||lnb_voltage_off		 ||Force la tension pour le LNB à 0V (au lieu de 13V ou 18V). Ceci est utile lorsque le LNB a sa propre alimentation. La valeur par défaut est 0 (Satellite seulement)||
 ||dont_tune                      ||Mumudvb n'essaiera pas d'accorder la carte ( ex : un autre programme comme tzap, l'a fait avant) ||
 ||card                           ||le numéro de la carte (défaut : 0) ||
 ||timeout_accord                 ||temps que l'on laisse à la carte pour s'accorder sur la fréquence (en secondes) (défaut : 300 (5min)) ||

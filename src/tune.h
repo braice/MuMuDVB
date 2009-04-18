@@ -73,10 +73,12 @@ typedef struct tuning_parameters_t{
   uint32_t freq;
   /** The symbol rate (QPSK and QAM modulation ie cable and satellite) in symbols per second*/
   unsigned int srate;
-  /**The polarisation H, V, L or R ( for satellite)*/
+  /**The polarisation H, V, L or R (for satellite)*/
   char pol;
   /**The lnb type : universal (two local oscilator frequencies) or standard (one)*/
   int lnb_type;
+  /** Do we force the lnb voltage to be 0 ? (in case the LNB have it's own power supply (satellite only))*/
+  int lnb_voltage_off;
   //int tone;
   /**spectral inversion. AUTO seems to work with all the hardware
      @todo : catch more information about this*/

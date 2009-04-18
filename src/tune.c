@@ -114,13 +114,36 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd,
    return 0;
 }
 
-/** digital satellite equipment control,
+/** @brief generate and sent the digital satellite equipment control "message",
  * specification is available from http://www.eutelsat.com/ 
+ *
+ * This function will set the LNB voltage and the 22kHz tone. If a satellite switching is asked
+ * it will send a "full" diseqc message
  * @todo document more
  */
-static int do_diseqc(int fd, unsigned char sat_no, int polv, int hi_lo)
+static int do_diseqc(int fd, unsigned char sat_no, int pol_v_r, int hi_lo, int lnb_voltage_off)
 {
-    struct diseqc_cmd cmd =  { {{0xe0, 0x10, 0x38, 0xf0, 0x00, 0x00}, 4}, 0 };
+
+  fe_sec_voltage_t lnb_voltage;
+  struct diseqc_cmd cmd =  { {{0xe0, 0x10, 0x38, 0xf0, 0x00, 0x00}, 4}, 0 };
+
+  //Compute the lnb voltage : 0 if we asked, of 13V for vertical and circular right, 18 for horizontal and circular left
+  if (lnb_voltage_off)
+    {
+      lnb_voltage=SEC_VOLTAGE_OFF;
+      log_message( MSG_INFO, "LNB voltage 0V\n");
+    }
+  else if(pol_v_r)
+    {
+      lnb_voltage=SEC_VOLTAGE_13;
+      log_message( MSG_INFO, "LNB voltage 13V\n");
+    }
+  else
+    {
+      lnb_voltage=SEC_VOLTAGE_18;
+      log_message( MSG_INFO, "LNB voltage 18V\n");
+    }
+
 
     if(sat_no != 0)
     {
@@ -131,23 +154,28 @@ static int do_diseqc(int fd, unsigned char sat_no, int polv, int hi_lo)
 	*/
 	sat_no--;
 	cmd.cmd.msg[3] =
-    	    0xf0 | (((sat_no * 4) & 0x0f) | (polv ? 0 : 2) | (hi_lo ? 1 : 0));
+    	    0xf0 | (((sat_no * 4) & 0x0f) | (pol_v_r ? 0 : 2) | (hi_lo ? 1 : 0));
 
 	return diseqc_send_msg(fd, 
-		    polv ? SEC_VOLTAGE_13 : SEC_VOLTAGE_18,
-		    &cmd, 
-		    hi_lo ? SEC_TONE_ON : SEC_TONE_OFF, 
-		    d);
+			       lnb_voltage,
+			       &cmd, 
+			       hi_lo ? SEC_TONE_ON : SEC_TONE_OFF, 
+			       d);
     }
     else 	//only tone and voltage
     {
-	log_message( MSG_INFO, "Setting only tone %s and voltage %dV\n", (hi_lo ? "ON" : "OFF"), (polv ? 13 : 18));
 	
-	if(ioctl(fd, FE_SET_VOLTAGE, (polv ? SEC_VOLTAGE_13 : SEC_VOLTAGE_18)) < 0)
+	if(ioctl(fd, FE_SET_VOLTAGE, lnb_voltage) < 0)
+	  {
+	    log_message( MSG_WARN, "Warning : problem to set the LNB voltage");
    	    return -1;
+	  }
 	    
 	if(ioctl(fd, FE_SET_TONE, (hi_lo ? SEC_TONE_ON : SEC_TONE_OFF)) < 0)
+	  {
+	    log_message( MSG_WARN, "Warning : problem to set the 22kHz tone");
    	    return -1;
+	  }
 	
 	usleep(15 * 1000);
 	
@@ -301,7 +329,7 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
     feparams.frequency=tuneparams.freq-lo_frequency;
 
     
-    log_message( MSG_INFO, "tuning DVB-S to Freq: %u, Pol:%c Srate=%d, LNB: %d\n",feparams.frequency,tuneparams.pol,
+    log_message( MSG_INFO, "Tuning DVB-S to Freq: %u, Pol:%c Srate=%d, LNB number: %d\n",feparams.frequency,tuneparams.pol,
 		 tuneparams.srate, tuneparams.sat_number);
     feparams.inversion=tuneparams.specInv;
     feparams.u.qpsk.symbol_rate=tuneparams.srate;
@@ -309,10 +337,14 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
     dfd = fd_frontend;
     
     //For diseqc vertical==circular right and horizontal == circular left
-    if(do_diseqc(dfd, tuneparams.sat_number, (tuneparams.pol == 'V' ? 1 : 0) + (tuneparams.pol == 'R' ? 1 : 0), hi_lo) == 0)
+    if(do_diseqc( dfd, 
+		  tuneparams.sat_number,
+		  (tuneparams.pol == 'V' ? 1 : 0) + (tuneparams.pol == 'R' ? 1 : 0),
+		  hi_lo,
+		  tuneparams.lnb_voltage_off) == 0)
       log_message( MSG_INFO, "DISEQC SETTING SUCCEDED\n");
     else  {
-      log_message( MSG_INFO, "DISEQC SETTING FAILED\n");
+      log_message( MSG_WARN, "DISEQC SETTING FAILED\n");
       return -1;
     }
     break;

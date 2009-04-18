@@ -19,6 +19,7 @@ All parameters are in the form: name=value
 ||srate                          ||transponder's strate ||
 ||sat_number                     ||The satellite number (for diseqc users) ||
 ||lnb_type			 ||The lnb type, can be "universal" or "standard". The default value is universal (for satellite users)||
+||lnb_voltage_off		 ||Force the LNB voltage to be 0V (instead of 13V or 18V) this is useful when your LNB have it's own power supply. The default value is 0 (for satellite users)||
 ||dont_tune                      ||We do not try to tune the card (another program,like tzap, did it for us) ||
 ||card                           ||card number (defalut: 0) ||
 ||timeout_accord                 ||tuning timeout (in seconds) (default: 300 (5min)) ||
