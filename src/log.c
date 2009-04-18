@@ -109,7 +109,7 @@ void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels)
     {
       log_message( MSG_INFO, "Channel number : %3d, ip : %s:%d, name : \"%s\"\n",
 		   curr_channel, channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
-      log_message( MSG_DETAIL, "        pids : ");
+      log_message( MSG_DETAIL, "        pids : ");/**@todo Generate a strind and call log_message after, in syslog it generates one line per pid*/
       for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
 	log_message( MSG_DETAIL, "%d ", channels[curr_channel].pids[curr_pid]);
       log_message( MSG_DETAIL, "\n");
