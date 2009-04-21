@@ -1488,7 +1488,6 @@ main (int argc, char **argv)
 		    {
 		      /*We've got the FULL PAT packet*/
 		      update_version(&rewrite_vars);
-		      log_message(MSG_DEBUG,"Pat rewrite : New pat, version %d\n", rewrite_vars.pat_version);
 		      rewrite_vars.needs_update=0;
 		    }
 		}

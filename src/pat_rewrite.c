@@ -45,6 +45,7 @@ extern uint32_t       crc32_table[256];
  * In the PAT pid there is a field to say if the PAT was updated
  * This function check if it has changed (in order to rewrite the pat only once)
  * General Note : in case it change during streaming it can be a problem ane we would have to deal with re-autoconfiguration
+ * Note this function can give flase positive since it doesn't check the CRC32
  *
  *@param rewrite_vars the parameters for pat rewriting 
  *@param buf : the received buffer
@@ -54,7 +55,6 @@ int pat_need_update(pat_rewrite_parameters_t *rewrite_vars, unsigned char *buf)
   pat_t       *pat=(pat_t*)(buf+TS_HEADER_LEN);
   if(pat->version_number!=rewrite_vars->pat_version)
     {
-      log_message(MSG_DEBUG,"Pat rewrite : New pat version. Old : %d, new: %d\n",rewrite_vars->pat_version,pat->version_number);
       return 1;
     }
   return 0;
@@ -65,6 +65,8 @@ int pat_need_update(pat_rewrite_parameters_t *rewrite_vars, unsigned char *buf)
 void update_version(pat_rewrite_parameters_t *rewrite_vars)
 {
   pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->packet);
+  if(rewrite_vars->pat_version!=pat->version_number)
+    log_message(MSG_DEBUG,"Pat rewrite : New pat version. Old : %d, new: %d\n",rewrite_vars->pat_version,pat->version_number);
   
   rewrite_vars->pat_version=pat->version_number;
 }
