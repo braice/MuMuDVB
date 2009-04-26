@@ -80,7 +80,6 @@ typedef struct cam_parameters_t{
   int ca_resource_connected;
   int camthread_shutdown;
   pthread_t camthread;
-  int seenpmt;
   int moveca;
   int delay; //used to get the menu answer
   int mmi_state;

@@ -250,14 +250,8 @@ int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_p
   if (cam_params->ca_resource_connected) {
     log_message( MSG_INFO, "CAM : Received new PMT - sending to CAM...\n");
 
-    // translate it into a CA PMT
-    int listmgmt = CA_LIST_MANAGEMENT_ONLY;
-    if (cam_params->seenpmt) {
-      listmgmt = CA_LIST_MANAGEMENT_UPDATE;
-    }
-    cam_params->seenpmt = 1;
-
-    if ((size = en50221_ca_format_pmt(pmt, capmt, sizeof(capmt), cam_params->moveca, listmgmt,
+    // translate it into a CA PMT //Mumudvb initialise the cam one, so only CA_LIST_MANAGEMENT_ADD, if we can update, we'll have to update this
+    if ((size = en50221_ca_format_pmt(pmt, capmt, sizeof(capmt), cam_params->moveca, CA_LIST_MANAGEMENT_ADD,
 				      CA_PMT_CMD_ID_OK_DESCRAMBLING)) < 0) {
 				      //CA_PMT_CMD_ID_QUERY)) < 0) {// We don't do query, My cam (powercam PRO) never give good answers
       log_message( MSG_WARN, "Failed to format PMT\n");
