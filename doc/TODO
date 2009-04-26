@@ -1,0 +1,4 @@
+ * support for DVB-S2
+ * support for IPv6
+ * support for diseqc > 1
+ * Http unicast
