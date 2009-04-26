@@ -31,7 +31,10 @@
 
 
 #include <sys/types.h>
+#include <stdint.h>
 
+//0x1ffb=8187 It's the pid for the information tables in ATSC
+#define PSIP_PID 8187
 
 //Part of this conde comes from libsi
 //   (C) 2001-03 Rolf Hakenes <hakenes@hippomi.de>, under the
@@ -109,7 +112,7 @@ typedef struct {
 } pat_prog_t;
 
 
-//Used to generate the CA_PMT message
+//Used to generate the CA_PMT message and for autoconfiguration
 /** @brief Mpeg2-TS header*/
 typedef struct {
   u_char sync_byte                              :8;
@@ -139,9 +142,10 @@ typedef struct {
 
 //For cam support and autoconfigure
 
-/**
- *
- * @brief  Program Map Table (PMT):
+/** length of the PMT header */
+#define PMT_LEN 12
+
+/**@brief  Program Map Table (PMT):
  *
  *       - the PMT identifies and indicates the locations of the streams that
  *         make up each service, and the location of the Program Clock
@@ -149,8 +153,6 @@ typedef struct {
  *
  */
 
-#define PMT_LEN 12
-/** @brief  Program Map Table (PMT)*/
 typedef struct {
    u_char table_id                               :8;
 #if BYTE_ORDER == BIG_ENDIAN
@@ -197,8 +199,9 @@ typedef struct {
    //descriptors
 } pmt_t;
 
+/** length of the PMT program information section header */
 #define PMT_INFO_LEN 5
-/** @brief  Program Map Table (PMT)*/
+/** @brief  Program Map Table (PMT) : program information section*/
 typedef struct {
    u_char stream_type                            :8;
 #if BYTE_ORDER == BIG_ENDIAN
@@ -240,17 +243,16 @@ typedef struct {
 
 
 
-/*
- *
- *     Service Description Table (SDT):
+
+/** length of the SDT header */
+#define SDT_LEN 11
+
+/** @brief Service Description Table (SDT):
  *
  *       - the SDT contains data describing the services in the system e.g.
  *         names of services, the service provider, etc.
  *
  */
-
-#define SDT_LEN 11
-/**@brief  Service Description Table (SDT) */
 typedef struct {
    u_char table_id                               :8;
 #if BYTE_ORDER == BIG_ENDIAN
@@ -308,6 +310,134 @@ typedef struct {
 } sdt_descr_t;
 
 
+/***************************************************
+ *                ATSC PSIP tables                 *
+ * See A/65C                                       *
+ *              Atsc standard :                    *
+ *   Program and System Information Protocol for   *
+ *  Terrestrial Broadcast and Cable (revision C).  *
+ ***************************************************/
+
+#define PSIP_HEADER_LEN 9
+
+/**@brief Header of an ATSC PSIP (Program and System Information Protocol) table*/
+typedef struct {
+   u_char table_id                               :8;
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char section_syntax_indicator               :1;
+   u_char private_indicator                      :1;
+   u_char                                        :2;
+   u_char section_length_hi                      :4;
+#else
+   u_char section_length_hi                      :4;
+   u_char                                        :2;
+   u_char private_indicator                      :1;
+   u_char section_syntax_indicator               :1;
+#endif
+   u_char section_length_lo                      :8;
+   u_char transport_stream_id_hi                 :8;
+   u_char transport_stream_id_lo                 :8;
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char                                        :2;
+   u_char version_number                         :5;
+   u_char current_next_indicator                 :1;
+#else
+   u_char current_next_indicator                 :1;
+   u_char version_number                         :5;
+   u_char                                        :2;
+#endif
+   u_char section_number                         :8;
+   u_char last_section_number                    :8;
+   u_char protocol_version                       :8;
+// u_char num_channels_in_section                :8; //For information, in case of TVCT or CVCT
+} psip_t;
+
+/**@Brief PSIP (TC)VCT (Terrestrial/Cable Virtual Channel Table) channels descriptors*/
+/* The bits here are poorly aligned. So I assume big endian and the bits will have to be swapped correctly*/
+
+#define PSIP_VCT_LEN 32
+
+typedef struct {
+  uint8_t short_name[14];//The channel short name in UTF-16
+
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char                                        :4; //reserved
+   u_char major_channel_number_hi4               :4;
+#else
+   u_char major_channel_number_hi4               :4;
+   u_char                                        :4; //reserved
+#endif  
+
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char major_channel_number_lo6               :6;
+   u_char minor_channel_number_hi                :2;
+#else
+   u_char minor_channel_number_hi                :2;
+   u_char major_channel_number_lo6               :6;
+#endif  
+
+   u_char minor_channel_number_lo                :8;
+
+   u_char modulation_mode                        :8;
+
+  u_int8_t carrier_frequency[4]; //deprecated
+
+   u_char channel_tsid_hi                        :8;
+
+   u_char channel_tsid_lo                        :8;
+
+   u_char program_number_hi                      :8;
+
+   u_char program_number_lo                      :8;
+
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char ETM_location                           :2;
+   u_char access_controlled                      :1;
+   u_char hidden                                 :1;
+   u_char path_select                            :1; //Only cable
+   u_char out_of_band                            :1; //Only cable
+   u_char hide_guide                             :1;
+   u_char                                        :1; //reserved
+#else
+   u_char                                        :1; //reserved
+   u_char hide_guide                             :1;
+   u_char out_of_band                            :1; //Only cable
+   u_char path_select                            :1; //Only cable
+   u_char hidden                                 :1;
+   u_char access_controlled                      :1;
+   u_char ETM_location                           :2;
+#endif  
+
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char                                        :2; //reserved
+   u_char service_type                           :6;
+#else
+   u_char service_type                           :6;
+   u_char                                        :2; //reserved
+#endif  
+
+   u_char source_id_hi                           :8;
+
+   u_char source_id_lo                           :8;
+
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char                                        :6;
+   u_char descriptor_length_hi                   :2;
+#else
+   u_char descriptor_length_hi                   :2;
+   u_char                                        :6;
+#endif  
+   u_char descriptor_length_lo                   :8;
+} psip_vct_channel_t;
+
+//1 for number strings, 3 for language code,1 for number of segments
+#define MULTIPLE_STRING_STRUCTURE_HEADER 5
+
+/*****************************
+ *  End of ATSC PSIP tables  *
+ *****************************/
+
+
 /**@brief structure for the build of a ts packet*/
 typedef struct {
   /**say if the packet is empty*/
@@ -321,6 +451,7 @@ typedef struct {
   /**the buffer*/
   unsigned char packet[4096];
 #ifndef LIBDVBEN50221 //useful only if we don't use the libdvben50221 from dvb_apps 
+  /**@todo remove*/
   /** do we need to descramble ? for vlc cam support*/
   int need_descr;
   /** program number for vlc cam support*/

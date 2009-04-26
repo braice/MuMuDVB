@@ -275,7 +275,7 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
   return 0;
 }
 
-int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
+int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
 {
   int res, hi_lo, dfd;
   struct dvb_frontend_parameters feparams;
@@ -294,26 +294,28 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
 
   log_message( MSG_INFO, "Using DVB card \"%s\"\n",fe_info.name);
 
+  tuneparams->fe_type=fe_info.type;
+
   switch(fe_info.type) {
   case FE_OFDM: //DVB-T
-    if (tuneparams.freq < 1000000) tuneparams.freq*=1000UL;
-    feparams.frequency=tuneparams.freq;
+    if (tuneparams->freq < 1000000) tuneparams->freq*=1000UL;
+    feparams.frequency=tuneparams->freq;
     feparams.inversion=INVERSION_AUTO;
-    feparams.u.ofdm.bandwidth=tuneparams.bandwidth;
-    feparams.u.ofdm.code_rate_HP=tuneparams.HP_CodeRate;
-    feparams.u.ofdm.code_rate_LP=tuneparams.LP_CodeRate;
-    feparams.u.ofdm.constellation=tuneparams.modulation;
-    feparams.u.ofdm.transmission_mode=tuneparams.TransmissionMode;
-    feparams.u.ofdm.guard_interval=tuneparams.guardInterval;
-    feparams.u.ofdm.hierarchy_information=tuneparams.hier;
-    log_message( MSG_INFO, "tuning DVB-T to %d Hz, Bandwidth: %d\n", tuneparams.freq, 
-		 tuneparams.bandwidth==BANDWIDTH_8_MHZ ? 8 : (tuneparams.bandwidth==BANDWIDTH_7_MHZ ? 7 : 6));
+    feparams.u.ofdm.bandwidth=tuneparams->bandwidth;
+    feparams.u.ofdm.code_rate_HP=tuneparams->HP_CodeRate;
+    feparams.u.ofdm.code_rate_LP=tuneparams->LP_CodeRate;
+    feparams.u.ofdm.constellation=tuneparams->modulation;
+    feparams.u.ofdm.transmission_mode=tuneparams->TransmissionMode;
+    feparams.u.ofdm.guard_interval=tuneparams->guardInterval;
+    feparams.u.ofdm.hierarchy_information=tuneparams->hier;
+    log_message( MSG_INFO, "tuning DVB-T to %d Hz, Bandwidth: %d\n", tuneparams->freq, 
+		 tuneparams->bandwidth==BANDWIDTH_8_MHZ ? 8 : (tuneparams->bandwidth==BANDWIDTH_7_MHZ ? 7 : 6));
     break;
   case FE_QPSK: //DVB-S
     //Universal lnb : two bands, hi and low one and two local oscilators
-    if(tuneparams.lnb_type==LNB_UNIVERSAL)
+    if(tuneparams->lnb_type==LNB_UNIVERSAL)
       {
-	if (tuneparams.freq < SLOF) {
+	if (tuneparams->freq < SLOF) {
 	  lo_frequency=LOF1_UNIVERSAL;
 	  hi_lo = 0;
 	} else {
@@ -326,22 +328,22 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
 	hi_lo=0;
 	lo_frequency=LOF_STANDARD;
       }
-    feparams.frequency=tuneparams.freq-lo_frequency;
+    feparams.frequency=tuneparams->freq-lo_frequency;
 
     
-    log_message( MSG_INFO, "Tuning DVB-S to Freq: %u, Pol:%c Srate=%d, LNB number: %d\n",feparams.frequency,tuneparams.pol,
-		 tuneparams.srate, tuneparams.sat_number);
-    feparams.inversion=tuneparams.specInv;
-    feparams.u.qpsk.symbol_rate=tuneparams.srate;
+    log_message( MSG_INFO, "Tuning DVB-S to Freq: %u, Pol:%c Srate=%d, LNB number: %d\n",feparams.frequency,tuneparams->pol,
+		 tuneparams->srate, tuneparams->sat_number);
+    feparams.inversion=tuneparams->specInv;
+    feparams.u.qpsk.symbol_rate=tuneparams->srate;
     feparams.u.qpsk.fec_inner=FEC_AUTO;
     dfd = fd_frontend;
     
     //For diseqc vertical==circular right and horizontal == circular left
     if(do_diseqc( dfd, 
-		  tuneparams.sat_number,
-		  (tuneparams.pol == 'V' ? 1 : 0) + (tuneparams.pol == 'R' ? 1 : 0),
+		  tuneparams->sat_number,
+		  (tuneparams->pol == 'V' ? 1 : 0) + (tuneparams->pol == 'R' ? 1 : 0),
 		  hi_lo,
-		  tuneparams.lnb_voltage_off) == 0)
+		  tuneparams->lnb_voltage_off) == 0)
       log_message( MSG_INFO, "DISEQC SETTING SUCCEDED\n");
     else  {
       log_message( MSG_WARN, "DISEQC SETTING FAILED\n");
@@ -349,18 +351,18 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
     }
     break;
   case FE_QAM: //DVB-C
-    log_message( MSG_INFO, "tuning DVB-C to %d, srate=%d\n",tuneparams.freq,tuneparams.srate);
-    feparams.frequency=tuneparams.freq;
+    log_message( MSG_INFO, "tuning DVB-C to %d, srate=%d\n",tuneparams->freq,tuneparams->srate);
+    feparams.frequency=tuneparams->freq;
     feparams.inversion=INVERSION_OFF;
-    feparams.u.qam.symbol_rate = tuneparams.srate;
+    feparams.u.qam.symbol_rate = tuneparams->srate;
     feparams.u.qam.fec_inner = FEC_AUTO;
-    feparams.u.qam.modulation = tuneparams.modulation;
+    feparams.u.qam.modulation = tuneparams->modulation;
     break;
 #ifdef ATSC
   case FE_ATSC: //ATSC
-    log_message( MSG_INFO, "tuning ATSC to %d, modulation=%d\n",tuneparams.freq,tuneparams.atsc_modulation);
-    feparams.frequency=tuneparams.freq;
-    feparams.u.vsb.modulation = tuneparams.atsc_modulation;
+    log_message( MSG_INFO, "tuning ATSC to %d, modulation=%d\n",tuneparams->freq,tuneparams->atsc_modulation);
+    feparams.frequency=tuneparams->freq;
+    feparams.u.vsb.modulation = tuneparams->atsc_modulation;
     break;
 #endif
   default:
@@ -369,5 +371,5 @@ int tune_it(int fd_frontend, tuning_parameters_t tuneparams)
   }
   usleep(100000);
 
-  return(check_status(fd_frontend,fe_info.type,&feparams,lo_frequency,tuneparams.display_strenght));
+  return(check_status(fd_frontend,fe_info.type,&feparams,lo_frequency,tuneparams->display_strenght));
 }

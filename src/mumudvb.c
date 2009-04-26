@@ -182,6 +182,7 @@ tuning_parameters_t tuneparams={
   .bandwidth = BANDWIDTH_DEFAULT,
   .hier = HIERARCHY_DEFAULT,
   .atsc_modulation = VSB_8,
+  .fe_type=FE_QPSK, //sat by default
 };
 
 
@@ -201,9 +202,11 @@ autoconf_parameters_t autoconf_vars={
   .autoconf_radios=0,
   .autoconf_ip_header="239.100",
   .time_start_autoconfiguration=0,
+  .transport_stream_id=-1,
   .autoconf_temp_pmt=NULL,
   .autoconf_temp_pat=NULL,
   .autoconf_temp_sdt=NULL,
+  .autoconf_temp_psip=NULL,
   .services=NULL,
   };
 
@@ -1034,7 +1037,7 @@ main (int argc, char **argv)
       if (open_fe (&fds.fd_frontend, card))
 	{
 	  tune_retval = 
-	    tune_it (fds.fd_frontend, tuneparams);
+	    tune_it (fds.fd_frontend, &tuneparams);
 	}
 
     if (tune_retval < 0)
@@ -1117,6 +1120,14 @@ main (int argc, char **argv)
 	  
 	}
       memset (autoconf_vars.autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+      autoconf_vars.autoconf_temp_psip=malloc(sizeof(mumudvb_ts_packet_t));
+      if(autoconf_vars.autoconf_temp_psip==NULL)
+	{
+	  log_message( MSG_ERROR,"MALLOC\n");
+	  return mumudvb_close(100<<8);
+	  
+	}
+      memset (autoconf_vars.autoconf_temp_psip, 0, sizeof( mumudvb_ts_packet_t));//we clear it
       autoconf_vars.services=malloc(sizeof(mumudvb_service_t));
       if(autoconf_vars.services==NULL)
 	{
@@ -1221,6 +1232,11 @@ main (int argc, char **argv)
   //This information is given in a separate table due to the frequent updating of this information.
   mandatory_pid[20]=1;
   asked_pid[20]=PID_ASKED;
+
+  //PSIP : Program and System Information Protocol
+  //Specific to ATSC, this is more or less the equivalent of sdt plus other stuff
+  if(tuneparams.fe_type==FE_ATSC)
+    asked_pid[PSIP_PID]=PID_ASKED;
 
   /*****************************************************/
   //We open the file descriptors and
@@ -1352,7 +1368,7 @@ main (int argc, char **argv)
 		  if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_pat))
 		    {
 		      //log_message(MSG_DEBUG,"Autoconf : New PAT pid\n");
-		      if(autoconf_read_pat(autoconf_vars.autoconf_temp_pat,autoconf_vars.services))
+		      if(autoconf_read_pat(&autoconf_vars))
 			{
 			  log_message(MSG_DEBUG,"Autoconf : It seems that we have finished to get the services list\n");
 			  //Interrupted=1;
@@ -1361,11 +1377,6 @@ main (int argc, char **argv)
 #else
 			  number_of_channels=services_to_channels(autoconf_vars, channels, 0,common_port, card); //Convert the list of services into channels
 #endif
-			  if(autoconf_vars.services)
-			    {
-			      autoconf_free_services(autoconf_vars.services);
-			      autoconf_vars.services=NULL;
-			    }
 			  //we got the pmt pids for the channels, we open the filters
 			  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 			    {
@@ -1390,10 +1401,9 @@ main (int argc, char **argv)
 			    }
 
 			  log_message(MSG_DEBUG,"Autoconf : Step TWO, we get the video and audio PIDs\n");
-			  free(autoconf_vars.autoconf_temp_sdt);
-			  autoconf_vars.autoconf_temp_sdt=NULL;
-			  free(autoconf_vars.autoconf_temp_pat);
-			  autoconf_vars.autoconf_temp_pat=NULL;
+			  //We free autoconf memory except PMT
+			  autoconf_freeing(&autoconf_vars,DONT_FREE_PMT);
+
 			  autoconf_vars.autoconfiguration=AUTOCONF_MODE_PIDS; //Next step add video and audio pids
 			}
 		      else
@@ -1407,7 +1417,16 @@ main (int argc, char **argv)
 		      autoconf_read_sdt(autoconf_vars.autoconf_temp_sdt->packet,autoconf_vars.autoconf_temp_sdt->len,autoconf_vars.services);
 		      memset (autoconf_vars.autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 		    }
+		}	 
+	      if(pid==PSIP_PID && tuneparams.fe_type==FE_ATSC) //PSIP : contains the names of the services
+		{
+		  if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_psip))
+		    {
+		      autoconf_read_psip(&autoconf_vars);
+		      memset (autoconf_vars.autoconf_temp_psip, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+		    }
 		}
+	      
 	      continue;
 	    }
 	  if( autoconf_vars.autoconfiguration==AUTOCONF_MODE_PIDS) //We have the channels and their PMT, we search the other pids
@@ -1439,26 +1458,7 @@ main (int argc, char **argv)
 			    {
 			      autoconf_end(card, number_of_channels, channels, asked_pid, &fds);
 			      //We free autoconf memory
-			      if(autoconf_vars.autoconf_temp_sdt)
-				{
-				  free(autoconf_vars.autoconf_temp_sdt);
-				  autoconf_vars.autoconf_temp_sdt=NULL;
-				}
-			      if(autoconf_vars.autoconf_temp_pmt)
-				{
-				  free(autoconf_vars.autoconf_temp_pmt);
-				  autoconf_vars.autoconf_temp_pmt=NULL;
-				}
-			      if(autoconf_vars.autoconf_temp_pat)
-				{
-				  free(autoconf_vars.autoconf_temp_pat);
-				  autoconf_vars.autoconf_temp_pat=NULL;
-				}
-			      if(autoconf_vars.services)
-				{
-				  autoconf_free_services(autoconf_vars.services);
-				  autoconf_vars.services=NULL;
-				}
+			      autoconf_freeing(&autoconf_vars,0);
 			    }
 			}
 		    }
@@ -1506,7 +1506,11 @@ main (int argc, char **argv)
 	      send_packet=0;
 	      
 	      //If it's a mandatory pid we send it
+	      
 	      if((pid<MAX_MANDATORY_PID_NUMBER) && (mandatory_pid[pid]==1))
+		send_packet=1;
+
+	      if ((pid == PSIP_PID) && (tuneparams.fe_type==FE_ATSC))
 		send_packet=1;
 	      
 	      //if it isn't mandatory wee see if it is in the channel list
@@ -1687,14 +1691,7 @@ int mumudvb_close(int Interrupted)
 #endif
 
   //autoconf variables freeing
-  if(autoconf_vars.services)
-    autoconf_free_services(autoconf_vars.services);
-  if(autoconf_vars.autoconf_temp_sdt)
-    free(autoconf_vars.autoconf_temp_sdt);
-  if(autoconf_vars.autoconf_temp_pmt)
-    free(autoconf_vars.autoconf_temp_pmt);
-  if(autoconf_vars.autoconf_temp_pat)
-    free(autoconf_vars.autoconf_temp_pat);
+  autoconf_freeing(&autoconf_vars,0);
 
   //sap variables freeing
   if(sap_vars.sap_messages)
@@ -1790,26 +1787,7 @@ static void SignalHandler (int signum)
 	      autoconf_vars.autoconfiguration=0;
 	      autoconf_end(card, number_of_channels, channels, asked_pid, &fds);
 	      //We free autoconf memory
-	      if(autoconf_vars.autoconf_temp_sdt)
-		{
-		  free(autoconf_vars.autoconf_temp_sdt);
-		  autoconf_vars.autoconf_temp_sdt=NULL;
-		}
-	      if(autoconf_vars.autoconf_temp_pmt)
-		{
-		  free(autoconf_vars.autoconf_temp_pmt);
-		  autoconf_vars.autoconf_temp_pmt=NULL;
-		}
-	      if(autoconf_vars.autoconf_temp_pat)
-		{
-		  free(autoconf_vars.autoconf_temp_pat);
-		  autoconf_vars.autoconf_temp_pat=NULL;
-		}
-	      if(autoconf_vars.services)
-		{
-		  autoconf_free_services(autoconf_vars.services);
- 		  autoconf_vars.services=NULL;
-		}
+	      autoconf_freeing(&autoconf_vars,0);
 	    }
 	}
       //end of autoconfiguration

@@ -107,10 +107,12 @@ typedef struct tuning_parameters_t{
   int display_strenght;
   /** The modulation for ATSC cards */
   fe_modulation_t atsc_modulation;
+  /**The frontend type*/
+  fe_type_t fe_type;
 }tuning_parameters_t;
 
 
 
-int tune_it(int, tuning_parameters_t);
+int tune_it(int, tuning_parameters_t *);
 
 #endif

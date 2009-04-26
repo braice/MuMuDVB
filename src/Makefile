@@ -26,6 +26,20 @@ ifdef GPROF
   CFLAGS += -pg
 endif
 
+
+#Test if we do not asked the libusci
+ifndef LIBUCSI
+  CFLAGS += -DLIBUCSI
+  LFLAGS += -lucsi
+else
+ifneq ($(LIBUCSI),0)
+  CFLAGS += -DLIBUCSI
+  LFLAGS += -lucsi
+else
+  NOCAMSUPPORT=1
+endif
+endif
+
 ifndef NOCAMSUPPORT
   CFLAGS += -DLIBDVBEN50221
   LFLAGS += -ldvben50221 -ldvbapi -lucsi -lpthread

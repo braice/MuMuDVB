@@ -37,10 +37,21 @@
 /**find the pmt pids and the channels from the pat, and go to AUTOCONF_MODE_PIDS*/
 #define AUTOCONF_MODE_FULL 2
 
-/**@brief chained list of services for autoconfiguration*/
+/**Flag for memory freeing*/
+#define DONT_FREE_PMT 0x01
+
+/**@brief chained list of services for autoconfiguration
+ *
+ * @name - The channel name
+ * @running_status - Is the channel running ? Not used for the moment
+ * @type - The service type : television, radio, data, ...
+ * @pmt_pit - The PMT pid of the service
+ * @id - The program ID, also called program number in the PAT or in ATSC
+ * @free_ca_mode - Tell if this service is scrambled
+ * @next - The next service in the chained list
+*/
 typedef struct mumudvb_service_t{
   char name[MAX_NAME_LEN];  //the channel name
-
   int running_status;
   int type;
   int pmt_pid;
@@ -63,13 +74,19 @@ Possible values for this variable
   int autoconfiguration;
   /**do we autoconfigure the radios ?*/
   int autoconf_radios;
+  /** The beginning of autoconfigured multicast adresses*/
   char autoconf_ip_header[10];
-  long time_start_autoconfiguration; //When did we started autoconfiguration ?
+  /**When did we started autoconfiguration ?*/
+  long time_start_autoconfiguration; 
+  /**The transport stream id (used to read ATSC PSIP tables)*/
+  int transport_stream_id;
 
   //Different packets used by autoconfiguration
   mumudvb_ts_packet_t *autoconf_temp_pmt;
   mumudvb_ts_packet_t *autoconf_temp_pat;
   mumudvb_ts_packet_t *autoconf_temp_sdt;
+  /**For ATSC Program and System Information Protocol*/
+  mumudvb_ts_packet_t *autoconf_temp_psip; /**@todo : see if it's really necesarry to split it from the sdt*/
   mumudvb_service_t   *services;
 
 }autoconf_parameters_t;
@@ -78,7 +95,9 @@ Possible values for this variable
 
 int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel);
 int autoconf_read_sdt(unsigned char *buf, int len, mumudvb_service_t *services);
-int autoconf_read_pat(mumudvb_ts_packet_t *pat, mumudvb_service_t *services);
+int autoconf_read_psip(autoconf_parameters_t *);
+void autoconf_freeing(autoconf_parameters_t *, int);
+int autoconf_read_pat(autoconf_parameters_t *);
 int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int cam_support, int port, int card);
 void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, uint8_t *asked_pid, fds_t *fds);
 void autoconf_free_services(mumudvb_service_t *services);

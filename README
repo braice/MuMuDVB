@@ -46,7 +46,7 @@ Mailing list:
  * Mumudvb use a config file
  * The program can kill himself if it receives no data from the card
  * The program stops trying tuning after a configurable timeout
- * Functionnal support of DVB-T
+ * Support of DVB-S, DVB-C, DVB-T and ATSC
  * Always send mandatory pids
   * Mandatory pids are:
    * PAT (0): Program Association Table
@@ -202,7 +202,7 @@ For more detailled information, refer to the monit website
 
 = Technical details (not sorted) =
 
- * mumudvb can receive DVB-S (sattellite) or DVB-T (terrestrial). It is also reported to work with DVB-C (cable). There is now preliminary support for ATSC.
+ * mumudvb can receive DVB-S (sattellite), DVB-T (terrestrial), DVB-C (cable) and ATSC.
 
  * The mandatory pids are sent with all channels
   * Mandatory pids are:

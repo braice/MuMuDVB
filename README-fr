@@ -45,7 +45,7 @@ Mailing-liste :
  * Mumudvb est capable de se tuer tout seul si la carte ne diffuse plus rien au bout d'un temps paramétrable
  * Mumudvb arrête de tenter d'accorder la carte au bout d'un temps paramétrable.
  * Permet de diffuser le meme pid sur plusieurs chaines (permet de creer des chaines avec plusieurs langues)
- * Support fonctionnel du DVB-T
+ * Support pour DVB-S, DVB-C, DVB-T et ATSC
  * Diffusion des pids obligatoires systématique
   * Les pids obligatoires sont les suivants :
    * PAT (0): Program Association Table
@@ -204,7 +204,7 @@ Pour plus d'informations consultez le site de monit
 
 = Détails techniques (en vrac) =
 
- * mumudvb permet de recevoir un signal satellite (DVB-S), Terrestre (DVB-T) ou cable (DVB-C). Il y a aussi un support préliminaire de l'ATSC.
+ * mumudvb permet de recevoir un signal satellite (DVB-S), Terrestre (DVB-T), cable (DVB-C) ou ATSC.
 
  * mumudvb diffuse les Pids suivants avec toutes les chaînes (conformément à la norme MPEG2-TS)
    * PAT (0): Program Association Table
