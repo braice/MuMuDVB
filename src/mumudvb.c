@@ -220,7 +220,6 @@ cam_parameters_t cam_vars={
   .sl=NULL,
   .stdcam=NULL,
   .ca_resource_connected=0,
-  .seenpmt=0,
   .delay=0,
   .mmi_state = MMI_STATE_CLOSED,
 };
