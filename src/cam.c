@@ -250,10 +250,21 @@ int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_p
   if (cam_params->ca_resource_connected) {
     log_message( MSG_INFO, "CAM : Received new PMT - sending to CAM...\n");
 
-    // translate it into a CA PMT //Mumudvb initialise the cam one, so only CA_LIST_MANAGEMENT_ADD, if we can update, we'll have to update this
+    // translate it into a CA PMT 
+    // Concerning the list managment the simplest (since we don't want to remove channels is to do a CA_LIST_MANAGEMENT_ADD 
+    //Always. Doing FIRST, MORE ,MORE ... LAST is more complicated because the CAM will wait for the LAST
+    // If the an update is needed the Aston cams will be happy with a ADD (it detects that the channel is already present and updates
+    //It seems that the power cam don't really follow the norm (ie accept almost everything)
+    // Doing also only update should work
     if ((size = en50221_ca_format_pmt(pmt, capmt, sizeof(capmt), cam_params->moveca, CA_LIST_MANAGEMENT_ADD,
 				      CA_PMT_CMD_ID_OK_DESCRAMBLING)) < 0) {
-				      //CA_PMT_CMD_ID_QUERY)) < 0) {// We don't do query, My cam (powercam PRO) never give good answers
+
+      /*CA_PMT_CMD_ID_QUERY)) < 0) {
+	We don't do query, the query is never working very well. This is because the CAM cannot ask the card if 
+	you have the rights for the channel. So this answer is often not reliable.
+
+	Much thanks to Aston www.aston-france.com for the explanation
+      */
       log_message( MSG_WARN, "Failed to format PMT\n");
       return -1;
     }

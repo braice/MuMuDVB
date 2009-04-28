@@ -199,6 +199,9 @@ check process mumudvb with pidfile /var/run/mumudvb/mumudvb_carte0.pid
 
 For more detailled information, refer to the monit website
 
+= Cam support =
+
+TODO
 
 = Technical details (not sorted) =
 
@@ -241,3 +244,7 @@ For more detailled information, refer to the monit website
 == Tuning issues with DVB-T ==
 
  * You must check tuning settings, knowing that auto bandwidth does'nt work.
+
+== The set top box display a blank screen ==
+
+TODO
