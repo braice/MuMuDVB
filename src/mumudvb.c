@@ -623,7 +623,7 @@ main (int argc, char **argv)
 	    {
 	      tuneparams.pol = 'H';
 	    }
-	  if (tolower (substring[0]) == 'l')
+	  else if (tolower (substring[0]) == 'l')
 	    {
 	      tuneparams.pol = 'L';
 	    }
