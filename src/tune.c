@@ -319,7 +319,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
 	  lo_frequency=LOF1_UNIVERSAL;
 	  hi_lo = 0;
 	} else {
-	  lo_frequency=LOF1_UNIVERSAL;
+	  lo_frequency=LOF2_UNIVERSAL;
 	  hi_lo = 1;
 	}
       }
