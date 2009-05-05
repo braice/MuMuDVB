@@ -335,7 +335,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
 		 tuneparams->srate, tuneparams->sat_number);
     feparams.inversion=tuneparams->specInv;
     feparams.u.qpsk.symbol_rate=tuneparams->srate;
-    feparams.u.qpsk.fec_inner=FEC_AUTO;
+    feparams.u.qpsk.fec_inner=tuneparams->HP_CodeRate;
     dfd = fd_frontend;
     
     //For diseqc vertical==circular right and horizontal == circular left
@@ -355,7 +355,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     feparams.frequency=tuneparams->freq;
     feparams.inversion=INVERSION_OFF;
     feparams.u.qam.symbol_rate = tuneparams->srate;
-    feparams.u.qam.fec_inner = FEC_AUTO;
+    feparams.u.qam.fec_inner = tuneparams->HP_CodeRate;
     feparams.u.qam.modulation = tuneparams->modulation;
     break;
 #ifdef ATSC
