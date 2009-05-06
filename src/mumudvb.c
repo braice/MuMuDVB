@@ -193,7 +193,7 @@ sap_parameters_t sap_vars={
   .sap_interval=SAP_DEFAULT_INTERVAL,
   .sap_sending_ip="0.0.0.0",
   .sap_default_group="",
-  .sap_organisation="none",
+  .sap_organisation="MuMuDVB",
 };
 
 //autoconfiguration. C99 initialisation
@@ -266,6 +266,9 @@ usage (char *name)
 #ifdef ATSC
 	   "Builded with ATSC support.\n"
 #endif
+#ifdef LIBUCSI
+	   "Builded with ATSC long channel names support.\n"
+#endif
 	   "Based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
 	   "Released under the GPL.\n"
 	   "Latest version available from http://mumudvb.braice.net/\n"
@@ -305,7 +308,7 @@ main (int argc, char **argv)
   int curr_channel = 0;
   int curr_pid = 0;
   int send_packet=0;
-  int common_port = 0;
+  int common_port = 1234;
   int ip_ok = 0;
   char current_line[CONF_LINELEN];
   char *substring=NULL;
@@ -460,7 +463,7 @@ main (int argc, char **argv)
       if (substring[0] == '#')
 	continue; 
 
-      if (!strcmp (substring, "timeout_accord"))
+      if ((!strcmp (substring, "timeout_accord"))||(!strcmp (substring, "tuning_timeout")))
 	{
 	  substring = strtok (NULL, delimiteurs);	//we extract the substring
 	  tuning_timeout = atoi (substring);
@@ -1022,11 +1025,14 @@ main (int argc, char **argv)
   // Card tuning
   /******************************************************/
   // alarm for tuning timeout
-  if (signal (SIGALRM, SignalHandler) == SIG_IGN)
-    signal (SIGALRM, SIG_IGN);
-  if (signal (SIGUSR1, SignalHandler) == SIG_IGN)
-    signal (SIGUSR1, SIG_IGN);
-  alarm (tuning_timeout);
+  if(tuning_timeout)
+    {
+      if (signal (SIGALRM, SignalHandler) == SIG_IGN)
+	signal (SIGALRM, SIG_IGN);
+      if (signal (SIGUSR1, SignalHandler) == SIG_IGN)
+	signal (SIGUSR1, SIG_IGN);
+      alarm (tuning_timeout);
+    }
 
   if(!dont_tune)
     {
@@ -1102,8 +1108,6 @@ main (int argc, char **argv)
 
   if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)
     {
-      if(common_port==0)
-	common_port=1234;
       autoconf_vars.autoconf_temp_pat=malloc(sizeof(mumudvb_ts_packet_t));
       if(autoconf_vars.autoconf_temp_pat==NULL)
 	{
@@ -1294,8 +1298,6 @@ main (int argc, char **argv)
       memset (sap_vars.sap_messages, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
       //For sap announces, we open the socket
       sap_vars.sap_socketOut =  makeclientsocket (SAP_IP, SAP_PORT, SAP_TTL, &sap_vars.sap_sOut);
-      if(!strlen(sap_vars.sap_organisation))
-	sprintf(sap_vars.sap_organisation,"mumudvb");
       sap_vars.sap_serial= 1 + (int) (424242.0 * (rand() / (RAND_MAX + 1.0)));
       sap_vars.sap_last_time_sent = 0;
       //todo : loop to create the version
