@@ -1,76 +1,90 @@
-Quickstart guide for mumudvb
-----------------------------
+Quickstart guide for MuMuDVB
+============================
+Brice Dubost
+
+What is this quickstart guide ?
+-------------------------------
 
 It this guide I'll explain how to stream a full transponder (all the channels
 multiplexed on the same carrier frequency) over a network, by assigning each
-channel to a different multicast IP. The sap announces will automatically be generated.
+channel to a different multicast IP. The SAP announces will automatically be generated.
 
 I'll take an example for DVB-S (satellite) and DVB-T (terrestrial)
 
 I suppose you have one DVB card wich is already working, if you have more than
 one card refer to the full doc.
 
-= DVB-s =
+DVB-S
+-----
 
- * First install mumudvb
-  * type "make" in the mumudvb directory and, as root, "make install"
+- First install mumudvb
+ * Use the debian package, or 
+ * type `make` in the mumudvb directory and, as root, `make install`
 
- * You have to find wich transponder you want to stream.
-  * For European users you can use http://www.kingofsat.net/
-  * You need : the frequency, the polarisation and the symbol rate (srate)
+- You have to find wich transponder you want to stream.
+ * For European users you can use http://www.kingofsat.net/[King Of Sat]
+ * You need : the frequency, the polarisation and the symbol rate (srate)
 
- * Now create a config file, wich contains : 
+- Now create a config file, wich contains : 
 
-"""
+------------------------------------
 autoconfiguration=2
 freq=__tranponder frequency in MHz__
-pol=__polarisation H or V__
+pol=__polarisation H, V, L or R__
 srate=__symbol rate__
-"""
+------------------------------------
 
-Example : 
-
-"""
+.Example : 
+------------------------------------
 autoconfiguration=2
 freq=11785
 pol=h
 srate=27500
-"""
+------------------------------------
 
- * Now launch mumudvb with :
-	"""mumudvb -d -c __path to config file__""
+- Now launch MuMuDVB with :
 
- * That's all, you should get a list of the streamed channels with their IP
+------------------------------------
+mumudvb -d -c __path to config file__
+------------------------------------
+
+
+- That's all, you should get a list of the streamed channels with their IP
 adress
 
- * The SAP (session announcement protocol) announces will be sent automatically
+[NOTE]
+The SAP (session announcement protocol) announces will be sent automatically
 
-= DVB-t =
+DVB-T
+-----
 
- * It's the same way as DVB-s excepted that you need other informations for
+- It's the same way as DVB-s excepted that you need other informations for
 tuning your card.
-You can find these informations in : 
-"/usr/share/doc/dvb-utils/examples/scan/dvb-t/" if you installed the dvb-utils
+
+You can find these informations in : `/usr/share/doc/dvb-utils/examples/scan/dvb-t/` if you installed the dvb-utils
 package
 
 Your config file will be : 
-"""
+
+-------------------------------------
 autoconfiguration=2
 freq=__frequency in kHz__
-"""
+-------------------------------------
 
+[NOTE]
 If your bandwith is different from 8Mhz or if you experience tuning issues,
 look for the following parameters in README_CONF : bandwidth, qam, trans_mode,
 guardinterval, coderate
 
- * The SAP (session announcement protocol) announces will be sent automatically
+[NOTE]
+The SAP (session announcement protocol) announces will be sent automatically
 
-= Troubleshooting =
+Troubleshooting
+---------------
 
- * Try adding -v to the mumudvb command line to have more detailled messages
- * If you experience tuning issues, try with other dvb software like scan or
+- Try adding -v to the mumudvb command line to have more detailled messages
+- If you experience tuning issues, try with other dvb software like scan or
 szap and check your parameters
- * If it still don't work, look at common issues in the README and you can
-write a mail at mumudvb _AT_ braice _DOT_ net or 
-"mumudvb-dev _AT_ lists DOT crans DOT org"
+- If it still don't work, look at common issues in the README and you can
+contact (see the README for getting the e-mail addresses)
 

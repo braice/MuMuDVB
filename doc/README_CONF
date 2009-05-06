@@ -1,93 +1,317 @@
-README for config file of mumudvb
+MuMuDVB - README for the configuration file
+===========================================
+Brice Dubost <mumudvb@braice.net>
+Version 1.5.5
 
-= General config =
+General behavior
+----------------
 
-mumudvb must use a file de configuration to give him all the different reception parameters and the pid repartition aver the different channels. You will find an example in the file conf.example attached with mumudvb sources in the doc directory.
+MuMuDVB needs a configuration file in order to run properly.
 
-Mumudvb does not worry to the parameter's order except for chanels where pids must be put after the ip and the port
+The order of the parameters is most of the times not relevant.
 
-You can put comments everywhere in the configuration file: just start the line with #
+You can put comments everywhere in the configuration file: just start the line with `#`. In line comments are not allowed i.e. `port=1234 #The multicast port` is *not* a valid line.
 
-All parameters are in the form: name=value
+All parameters are in the form: `name=value`
+
+.Example
+--------------------------
+#The tuning frequency
+freq=11987
+--------------------------
+
+This configuration file contains two parts
+
+Common part
+~~~~~~~~~~~
+
+This is the first part of the configuration file, it contains the parameters needed for tuning the DVB card and the global parameters.
+
+See the <<tuning,tuning>> section for the list of parameters used to tune the card. and <<other_global,other global parameters>> section for parameters like autoconfiguration, cam support etc ...
+
+Channels part
+~~~~~~~~~~~~~
+
+If you are not using full autoconfiguration you need to set the list of the channels you want to stream.
+Each channel start with an `ip=` line and ends with a `pids=` line.
+
+See <<channel_parameters,channel parameters>> section for a list of detailled parameters.
+
+Example config files
+--------------------
+
+You can find documented examples in the directory `doc/configuration_examples`
+
+[[tuning]]
+Parameters concerning the tuning of the card
+--------------------------------------------
+
+[NOTE]
+For terrestrial and cable, you can use w_scan to see the channels you can receive see <<w_scan, w_scan section>>.
+Otherwise you can have a look at the initial tuning files given with linuxtv's dvb-apps.
+For european satellite users, you can have a look at http://www.kingofsat.net[King Of Sat]
+
+Parameters concerning all modes (terrestrial, satellite, cable)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the following list, only the parameter `freq` is mandatory
+
+[width="80%",cols="2,8,1,3",options="header"]
+|==================================================================================================================
+|Parameter name |Description | Default value | Comments
+|freq | transponder's frequency in MHz  | | Mandatory
+|card | The DVB/ATSC card number | 0 | only limited by your OS
+|tuning_timeout |tuning timeout in seconds. | 300 | 0 = no timeout
+|timeout_no_diff |If no channels are streamed, MuMuDVB will kill himself after this time (specified in seconds) | 600 |
+|dont_tune |We do not try to tune the card (another program,like tzap, did it for us) | | This is a workaround for DVB-S2
+|==================================================================================================================
 
 
-'''List of parameters and their description '''
-----
-||'''Name:'''                          ||'''value:'''                                ||
-||freq                           ||transponder's frequency in MHz ||
-||pol                            ||transponder's polarisation (a char) : 'v' (vertical), 'h' (horizontal), 'l' (left circular), 'r' (right circular) (not case sensitive) ||
-||srate                          ||transponder's strate ||
-||sat_number                     ||The satellite number (for diseqc users) ||
-||lnb_type			 ||The lnb type, can be "universal" or "standard". The default value is universal (for satellite users)||
-||lnb_voltage_off		 ||Force the LNB voltage to be 0V (instead of 13V or 18V) this is useful when your LNB have it's own power supply. The default value is 0 (for satellite users)||
-||dont_tune                      ||We do not try to tune the card (another program,like tzap, did it for us) ||
-||card                           ||card number (defalut: 0) ||
-||timeout_accord                 ||tuning timeout (in seconds) (default: 300 (5min)) ||
-||timeout_no_diff                ||if the program doesn't stream any chanels, he will kill himself at the end of this time (in seconds) (default: 600 (10min)) ||
-||common_port                    ||If you don't want to specify the port for each channel, it will be the default port (if you use autoconfiguration=2 default: 1234) ||
-||multicast_ttl                  ||If you want to override the default multicast ttl, use this option. ||
-||rewrite_pat                    ||specify if we wants the PAT rewriting feature ||
-||cam_support                    ||specify if we wants the support for scrambled channels ||
-||cam_number                     ||the number of the CAM we want to use (default 0) ||
-||autoconfiguration              ||autoconfiguration 1: find audio and video, 2: full autoconfiguration, see README ||
-||autoconf_ip_header             ||For full autoconfiguration, the first part of the ip for streamed channel: ip = header.card.channel Default: 239.100 ||
-||autoconf_radios                ||If it's different from 0 add also radio channels during full autoconfiguration ||
-||sap                            ||generation of sap announces: 0 no, 1 yes ||
-||sap_organisation               ||Organisation sent in the sap announces (optionnal, default: mumudvb) ||
-||sap_sending_ip                 ||The sender Ip adress (optionnal, default: 0.0.0.0) ||
-||sap_interval                   ||Interval in seconds between sap announces (optionnal, default: 5) ||
-||sap_default_group              ||The default playlist group for sap announces (optionnal) ||
-|| For DVB-T                     ||
-||qam                            ||quadrature amplitude modulation, possible values: qpsk,16,32,64,128,256,auto ||
-||trans_mode                     ||transmission mode, possible values: 2k,8k,auto ||
-||bandwidth                      ||bandwith, possible values: 8MHz,7MHz,6MHz,auto ||
-||guardinterval                  ||guard interval, possible values: 1/32,1/16,1/8,1/4,auto ||
-||coderate                       ||coderate, possible values: none,1/2,2/3,3/4,4/5,5/6,6/7,7/8,8/9,auto ||
-|| For ATSC                      ||
-||atsc_modulation                ||the modulation for atsc. possible values: vsb8, vsb16, qam256, qam64, qamauto ||
-||'''For each channel (this order is mandatory: ip, ...,  pids)'''||
-||ip                             ||multicast (can also be unicast) ip where the chanel will be streamed ||
-||port                           ||port (optionnal if common_port is used)||
-||sap_group                      ||The playlist group for sap announces (optionnal) ||
-||cam_pmt_pid                    ||(only for scrambled channels) the PMT PID for CAM support ||
-||name                           ||the name given to the chanel in /var/run/mumudvb/chaines_diffusees%d (used to generate  SAP announces) ||
-||pids                           ||a pid list space separeted (any number, some pids are always sent (PAD EIT SDT TDT NIT) see README for more details) ||
+
+Parameters specific to satellite
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[width="80%",cols="2,6,1,3,2",options="header"]
+|==================================================================================================================
+|Parameter name |Description | Default value | Possible values | Comments
+|pol |transponder's polarisation. One char. 'v' (vertical), 'h' (horizontal), 'l' (left circular), 'r' (right circular) | | h, H, v, V, l, L, r or R | Mandatory
+|srate  |transponder's symbol rate | | | Mandatory
+|lnb_type |The LNB type | universal | universal or standard | Most of the LNBs are universal
+|lnb_voltage_off |Force the LNB voltage to be 0V (instead of 13V or 18V). This is useful when your LNB have it's own power supply. | 0 | 0 or 1 | 
+|coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto | 
+|==================================================================================================================
 
 
-== Note ==
-You must specify (except with autoconfiguration, see README):
- * audio pid
- * video pid
- * PMT pid
+Parameters specific to terrestrial (DVB-T)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-It's advised to set the PCR pid (usually the same as audio or video pid)
+[NOTE]
+`auto` usually works fine for all the parameters except `bandwidth`
 
-= Get the PID numbers =
+[width="80%",cols="2,8,1,4",options="header"]
+|==================================================================================================================
+|Parameter name |Description | Default value | Possible values
+|bandwidth |bandwidth | 8MHz | 8MHz, 7MHz, 6MHz, auto 
+|trans_mode |transmission mode | auto | 2k, 8k, auto 
+|guardinterval |guard interval | auto |  1/32, 1/16, 1/8, 1/4, auto 
+|coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto 
+|==================================================================================================================
 
-If you don't use autoconfiguration (see the README), you have to get the PIDs (Program Identifier) for each channel
+Parameters specific to cable (DVB-C)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In order to get the pids numbers, the easier way is to use linuxtv-dvb-apps.
-You tune the card on the wanted frequency (with """tune""" for example).
+[width="80%",cols="2,6,1,3,2",options="header"]
+|==================================================================================================================
+|Parameter name |Description | Default value | Possible values | Comments
+|srate  |transponder's symbol rate | | | Mandatory
+|qam |quadrature amplitude modulation | auto | qpsk, 16, 32, 64, 128, 256, auto |
+|coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto  |
+|==================================================================================================================
+
+[NOTE]
+The http://www.rfcafe.com/references/electrical/spectral-inv.htm[spectral inversion] is fixed to OFF, it should work for most of the people, if you need to change this parameter, please contact.
+
+
+Parameters specific to ATSC (Cable or Terrestrial)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[width="80%",cols="1,3,1,2",options="header"]
+|==================================================================================================================
+|Parameter name |Description | Default value | Possible values 
+|atsc_modulation | the modulation for ATSC | vsb8 | vsb8, vsb16, qam256, qam64, qamauto 
+|==================================================================================================================
+
+[NOTE]
+VSB 8 is the default modulation for most of the terrestrial ATSC transmission
+
+
+[[other_global]]
+Other global parameters
+-----------------------
+
+[width="80%",cols="2,8,1,2,3",options="header"]
+|==================================================================================================================
+|Parameter name |Description | Default value | Possible values | Comments
+|common_port | Default port for the streaming | 1234 | | 
+|multicast_ttl |The multicast Time To Live | 2 | |
+5+^s|CAM support parameters
+|cam_support |Specify if we wants the support for scrambled channels | 0 | 0 or 1 |
+|cam_number |the number of the CAM we want to use | 0 | | In case you have multiple CAMs on one DVB card
+5+^s|Autoconfiguration parameters
+|autoconfiguration |autoconfiguration 1: find audio and video PIDs, 2: full autoconfiguration | 0 | 0, 1 or 2 | see the README for more details
+|autoconf_ip_header |For full autoconfiguration, the first part of the ip for streamed channel | 239.100 | |  see the README for more details
+|autoconf_radios |Do we consider radios as valid channels during full autoconfiguration ? | 0 | 0 or 1 | 
+5+^s|SAP announces parameters  
+|sap | Generation of SAP announces | 0 (1 if full autoconfiguration) | 0 or 1 | 
+|sap_organisation |Organisation field sent in the SAP announces | MuMuDVB | | Optionnal
+|sap_sending_ip |The SAP sender IP address | 0.0.0.0 | | Optionnal, not autodetected
+|sap_interval |Interval in seconds between sap announces | 5 | positive integers | 
+|sap_default_group | The default playlist group for sap announces | | string | Optionnal 
+|==================================================================================================================
+
+
+[[channel_parameters]]
+Channel parameters
+------------------
+
+Each channel must start with a `ip=` line and ends with a `pids=` line. The only other mandatory parameter is the `name` of the channel.
+
+Concerning the PIDs see the <<getpids,getting the PIDs>> section
+
+
+[width="80%",cols="2,8,1,1,3",options="header"]
+|==================================================================================================================
+|Parameter name |Description | Default value | Possible values | Comments
+|ip |multicast (can also be unicast) ip where the chanel will be streamed | | | Mandatory
+|port | The port | 1234 or common_port | | 
+|sap_group |The playlist group for SAP announces | | string | optionnal
+|cam_pmt_pid |Only for scrambled channels. The PMT PID for CAM support | | | 
+|name | The name of the channel. Will be used for /var/run/mumudvb/chaines_diffusees%d, logging and SAP announces | | | Mandatory
+|pids | The PIDs list, separated by spaces | | | some pids are always sent (PAD EIT SDT TDT NIT), see README for more details
+|==================================================================================================================
+
+
+
+[[getpids]]
+Get the PID numbers
+-------------------
+
+The simplest way is to use autoconfiguration and modify the generated configuration file : `/var/run/mumudvb/mumudvb_generated_conf`
+
+You use autoconfiguration
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you use full autoconfiguration, you don't need to specify any channel and don't need any PID, this section does not concern you.
+
+If you use partial autoconfiguration, you'll need the PMT PID for each channel.
+
+You do not use autoconfiguration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you don't use autoconfiguration (see the README), you have to get the PIDs (Program Identifier) for each channel.
+
+For each channel it is advised to specify at least :
+- One video PID (except for radios)
+- One audio PID
+- The PMT PID
+- The PCR PID (if different from video)
+
+If you don't have access to the PIDs via a website like http://www.kingofsat.net[King Of Sat], the easiest way is to use linuxtv's dvb-apps.
+
+
+You don't know on wich frequency to tune and the channels you can receive. In this case, you can use <<w_scan,w_scan>> or using <<scan_inital_tuning,scan>> from dvb-apps if you have an initial tuning config file.
+
+[[w_scan]]
+Using w_scan to get an initial tuning file
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[NOTE]
+w_scan works only for terrestrial or cable.
+
+You can find wscan in the http://edafe.org/vdr/w_scan/[w_scan website].
+
+Once you compiled it, you can lauch it using 
+---------------------------------------
+./w_scan -x >> inital_tuning_file.txt
+---------------------------------------
+
+[NOTE]
+If you are not scanning DVB-T you will have to set the option
+-------------------------------
+-f type	frontend type
+ What programs do you want to search for?
+  a = atsc (vsb/qam)
+  c = cable
+  t = terrestrian [default]
+-------------------------------
+
+Your `initial_tuning_file.txt` file should contain lines like 
+
+--------------------------------------------
+T 482000000 8MHz AUTO AUTO AUTO AUTO AUTO AUTO
+T 498000000 8MHz AUTO AUTO AUTO AUTO AUTO AUTO
+T 514000000 8MHz 2/3 2/3 QAM64 8k 1/4 NONE
+--------------------------------------------
+
+If you want to use full autoconfiguration, this file contains all the parameters you need. For example the second row is the frequency.
+
+The format is : 
+.Terrestrial
+----------------------------------------------------------------------------------------
+T freq bandwidth fec_hi fec_lo modulation transmission-mode guard-interval hierarchy
+----------------------------------------------------------------------------------------
+
+.Cable
+--------------------------------------------
+C freq symbol_rate fec modulation
+--------------------------------------------
+
+.ATSC
+--------------------------------------------
+A freq modulation
+--------------------------------------------
+
+If you don't plan to use full autoconfiguration you can use `scan` with this file, see <<scan_inital_tuning, using scan with an inital tuning file>>
+
+[[scan_inital_tuning]]
+Using scan with an initial tuning file
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+[NOTE]
+With satellite this allow you to find all the frequencies (if the broadcaster follow the norm). Because, every transponder announces the others.
+
+You need `scan` from linuxtv's dvb-apps
+
+If you have an initial tuning file from `w_scan`, the scan documentation or other type : 
+
+--------------------------------------------------------
+scan -o pids pathtoyourinitialtuningfile
+--------------------------------------------------------
+
+You'll first get blocks like 
+
+----------------------------------------------------------------------------------------------------------------
+>>> tune to: 514000000:INVERSION_AUTO:BANDWIDTH_8_MHZ:FEC_2_3:FEC_2_3:QAM_64:TRANSMISSION_MODE_8K:GUARD_INTERVAL_1_4:HIERARCHY_NONE
+0x0000 0x7850: pmt_pid 0x0110 Barcelona TV -- Barcelona TV (running)
+0x0000 0x7851: pmt_pid 0x0710 COM Radio -- COM Radio (running)
+0x0000 0x7855: pmt_pid 0x0210 TV L'Hospitalet -- TV L'Hospitalet (running)
+0x0000 0x7856: pmt_pid 0x0510 Radio Hospitalet -- Radio Hospitalet (running)
+0x0000 0x785a: pmt_pid 0x0310 Televisio Badalona -- Televisio Badalona (running)
+0x0000 0x785b: pmt_pid 0x0610 Radio Ciutat Badalona -- Radio Ciutat Badal
+----------------------------------------------------------------------------------------------------------------
+
+You have now acces to the PMT PID (in hexadecimal), you can convert it to decimal and use partial autoconfiguration.
+
+After this blocks, you'll get lines like
+
+----------------------------------------------------------------------------------------------------------------
+Sensacio FM              (0x273f) 02: PCR == A            A 0x0701      
+urBe TV                  (0x7864) 01: PCR == V   V 0x0300 A 0x0301 (cat)
+Canal Catala Barcelona   (0x7869) 01: PCR == V   V 0x0200 A 0x0201 (cat)
+25 TV                    (0x786e) 01: PCR == V   V 0x0400 A 0x0401 (spa) TT 0x0402
+ONDA RAMBLA PUNTO RADIO  (0x786f) 02: PCR == A            A 0x0601 (cat)
+Localia                  (0x7873) 01: PCR == V   V 0x0100 A 0x0101      
+ONA FM                   (0x7874) 02: PCR == A            A 0x0501      
+TV3                      (0x0321) 01: PCR == V   V 0x006f A 0x0070 (cat) 0x0072 (vo) 0x0074 (ad) TT 0x0071 AC3 0x0073 SUB 0x032b
+----------------------------------------------------------------------------------------------------------------
+
+You have now acces to the other PIDs
+
+MuMuDVB wants the PIDs in decimal, so you have to convert the pids from hexadecimal to decimal.
+
+
+Scan only one transponder
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You first have to tune the card on the wanted frequency (with `tune`, `szap` or `tzap` for example).
 
 After you use the scan utility:
-{{{scan -c -a """Card number"""}}} ( This exemple is for the case of an already tuned card. You can tune your card with szap or tzap for example. Refer to the scan' documentation for more details )
 
-And you'll get a result like :
+----------------------
+scan -o pids -c -a 0
+----------------------
 
-{{{
-using '/dev/dvb/adapter2/frontend0' and '/dev/dvb/adapter2/demux0'
-0x0000 0x0101: pmt_pid 0x006e GR1 -- France 2 (running)
-0x0000 0x0103: pmt_pid 0x019a GR1 -- France 4 (running)
-0x0000 0x0104: pmt_pid 0x0136 GR1 -- France 5 (running)
-0x0000 0x0105: pmt_pid 0x01fe GR1 -- ARTE (running)
-0x0000 0x0106: pmt_pid 0x0262 GR1 -- LCP (running)
-0x0000 0x0111: pmt_pid 0x00d2 Reg -- France 3 (running)
-dumping lists (6 services)
-France 2                 (0x0101) 01: PCR == V   V 0x0078 A 0x0082 (fra) SUB 0x008c
-France 4                 (0x0103) 01: PCR == V   V 0x01a4 A 0x01ae (fra) SUB 0x01b8
-France 5                 (0x0104) 01: PCR == V   V 0x0140 A 0x014a (fra) SUB 0x0154
-ARTE                     (0x0105) 01: PCR == V   V 0x0208 A 0x0212 (fra) 0x0213 (deu) SUB 0x021e
-LCP                      (0x0106) 01: PCR == V   V 0x026c A 0x0276 (fra) SUB 0x0280
-France 3                 (0x0111) 01: PCR == V   V 0x00dc A 0x00e6 (fra) SUB 0x00f0
-Done.
-}}}
+Where 0 is the card number
+
+And you'll get results like in the section <<scan_initial_tuning,scan with an initial tuning file>>
+
+
