@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH MUMUDVB 1 "23 september 2008" "Mumudvb v1.5.2"
+.TH MUMUDVB 1 "3 May 2009" "MuMuDVB v1.5.5"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -16,7 +16,7 @@
 .\" .sp <n>    insert n+1 empty lines
 .\" for manpage-specific macros, see man(7)
 .SH NAME
-mumudvb \- Multicast a DVB transponder over multiples ip addresses
+MuMuDVB \- Multicast a DVB transponder over multiples ip addresses
 
 .SH SYNOPSIS
 .B mumudvb
@@ -30,14 +30,12 @@ conf_file
 conf_file
 
 .SH DESCRIPTION
-\fBmumudvb\fP is a program who can redistribute stream from DVB on a network, in multicast. It's main feature is to take a whole transponder and put each channel on a different multicast IP. 
-
-\fBMumudvb\fP is based on dvbstream.
+\fBMuMuDVB\fP is a program who can redistribute stream from DVB on a network, in multicast. It's main feature is to take a whole transponder and put each channel on a different multicast IP. 
 
 Website : http://mumudvb.braice.net/
 
 .SH OPTIONS
-The following options are provided by mumudvb : 
+The following options are provided by MuMuDVB : 
 .TP
 .B \-c, \-\-config conf_file
 Path to the config file
@@ -58,16 +56,21 @@ More Verbose
 More quiet
 
 .SH SEE ALSO
-The program is documented in README and for french people in README-fr.
+The program is documented in README and for french speaking people in README-fr.
 
 .SH AUTHOR
 Upstream author:
+.br
 Brice DUBOST <mumudvb@braice.net>
 .br
-Contributor:
+Contributors:
+.br
+Stéphane Glondu <glondu@crans.ens-cachan.fr> (makefile cleaning, man page, debian package)
+.br
 Manuel SABBAN <manu@crans.ens-cachan.fr> (use of getopt)
 .br
 Acknowledgements:
+.br
 Dave CHAPMAN (for writing dvbstream)
 .PP
 This manual page was written by Stephane Glondu <stephane.glondu@crans.org> and Brice DUBOST <mumudvb@braice.net>.
