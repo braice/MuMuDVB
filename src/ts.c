@@ -68,7 +68,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
   //Sometimes there is some more data in the header, the adaptation field say it
   if (header->adaptation_field_control & 0x2)
     {
-      log_message( MSG_DEBUG, " parse PMT : Adaptation field \n");
+      log_message( MSG_DEBUG, "Read TS : Adaptation field \n");
       delta += buf[delta] ;        // add adapt.field.len
     }
   else if (header->adaptation_field_control & 0x1)
@@ -108,10 +108,10 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 	  log_message( MSG_DEBUG," TS parse. ERROR : PID change\n");
 	  ts_packet->empty=1;
 	}
-      // -- discontinuity error in packet ?                                                                                                          
+      // -- discontinuity error in packet ?
       if  ((ts_packet->continuity_counter+1)%16 != header->continuity_counter) 
 	{
-	  log_message( MSG_INFO," TS parse : Continuity ERROR\n\n");
+	  log_message( MSG_INFO," TS parse : Continuity ERROR\n");
 	  ts_packet->empty=1;
 	  return 0;
 	}
@@ -120,17 +120,15 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 	ts_packet->len=AddPacketContinue(ts_packet->packet,buf+delta,188-delta,ts_packet->len); //we add the packet to the buffer
       else
 	{
-	  log_message( MSG_INFO," TS parse ERROR : Packet to big\n\n");
+	  log_message( MSG_INFO," TS parse ERROR : Packet to big\n");
 	  ts_packet->empty=1;
 	  return 0;
 	}
 
-      //log_message( MSG_DEBUG," \t\t Len %d PMT_len %d\n",ts_packet->len,HILO(((pmt_t *)ts_packet->packet)->section_length));
     }      
-  //We check if the PMT is full
+  //We check if the TS is full
   if (ts_packet->len > ((HILO(((pmt_t *)ts_packet->packet)->section_length))+3)) //+3 is for the header
     {
-      //log_message( MSG_DEBUG," \t\t Len %d PMT_len %d\n",ts_packet->len,HILO(((pmt_t *)ts_packet->packet)->section_length));
       //Yes, it's full, I check the CRC32 to say it's valid
       parsed=ts_check_CRC(ts_packet); //TEST CRC32
     }

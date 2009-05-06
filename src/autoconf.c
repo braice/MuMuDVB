@@ -4,7 +4,7 @@
  * 
  * (C) 2008-2009 Brice DUBOST <mumudvb@braice.net>
  *  
- * Parts of this code come from libdvbpsi, modified for mumudvb
+ * Parts of this code come from libdvb, modified for mumudvb
  * by Brice DUBOST 
  * Libdvb part : Copyright (C) 2000 Klaus Schmidinger
  * 
