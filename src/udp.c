@@ -47,7 +47,7 @@ sendudp (int fd, struct sockaddr_in *sSockAddr, unsigned char *data, int len)
 
 /** @brief create a sender socket.
  *
- * @todo document
+ * Create a socket for sending data, the socket is multicast, udp, with the options REUSE_ADDR et MULTICAST_LOOP set to 1
  */
 int
 makesocket (char *szAddr, unsigned short port, int TTL,
@@ -56,7 +56,7 @@ makesocket (char *szAddr, unsigned short port, int TTL,
   int iRet, iLoop = 1;
   struct sockaddr_in sin;
   char cTtl = (char) TTL;
-  char cLoop = 0;
+  char cLoop = 1;
 
   int iSocket = socket (AF_INET, SOCK_DGRAM, 0);
 
@@ -85,7 +85,6 @@ makesocket (char *szAddr, unsigned short port, int TTL,
       exit (1);
     }
 
-  cLoop = 1;			/* !? */
   iRet = setsockopt (iSocket, IPPROTO_IP, IP_MULTICAST_LOOP,
 		     &cLoop, sizeof (char));
   if (iRet < 0)

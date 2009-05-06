@@ -36,7 +36,7 @@
 //0x1ffb=8187 It's the pid for the information tables in ATSC
 #define PSIP_PID 8187
 
-//Part of this conde comes from libsi
+//Part of this code comes from libsi
 //   (C) 2001-03 Rolf Hakenes <hakenes@hippomi.de>, under the
 //               GNU GPL with contribution of Oleg Assovski,
 //               www.satmania.com
