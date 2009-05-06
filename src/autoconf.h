@@ -37,6 +37,9 @@
 /**find the pmt pids and the channels from the pat, and go to AUTOCONF_MODE_PIDS*/
 #define AUTOCONF_MODE_FULL 2
 
+//timeout for autoconfiguration
+#define AUTOCONFIGURE_TIME 10
+
 /**Flag for memory freeing*/
 #define DONT_FREE_PMT 0x01
 

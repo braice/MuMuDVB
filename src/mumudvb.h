@@ -47,8 +47,6 @@
 #define ALARM_TIME_TIMEOUT 60
 #define ALARM_TIME_TIMEOUT_NO_DIFF 600
 
-//timeout for autoconfiguration
-#define AUTOCONFIGURE_TIME 10
 
 // seven dvb paquets in one UDP
 #define MAX_UDP_SIZE (TS_PACKET_SIZE*7)
