@@ -319,7 +319,8 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
   pat_prog_t  *prog;
   int delta=PAT_LEN;
   int section_length=0;
-  int found=0;
+  int number_of_services=0;
+  int channels_missing=0;
 
   log_message(MSG_DEBUG,"Autoconf : ---- New PAT ----\n");
 
@@ -350,7 +351,6 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
 	  actual_service=autoconf_find_service_for_modify(services,HILO(prog->program_number));
 	  if(actual_service)
 	    {
-	      found=1;
 	      if(!actual_service->pmt_pid)
 		{
 		  //We found a new service without the PMT, pid, we update this service
@@ -361,16 +361,22 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
 			      actual_service->name);
 		}
 	    }
+	  else
+	    channels_missing++;
 	}
       delta+=PAT_PROG_LEN;
+      number_of_services++;
     }
 
-  if(!found)
+  log_message(MSG_DEBUG,"Autoconf : This pat contains %d services\n",number_of_services);
+
+  if(channels_missing)
     {
-      log_message(MSG_DEBUG,"Autoconf : No services found, probably no SDT/PSIP for the moment, we skip this PAT\n");
+      log_message(MSG_DETAIL,"Autoconf : PAT read %d channels on %d are missing, we wait for others SDT/PSIP for the moment.\n",channels_missing,number_of_services);
+      return 0;
     }
 
-  return found;
+  return 1;
 }
 
 /** @brief Read the service description table (cf EN 300 468)
