@@ -83,7 +83,9 @@ Possible values for this variable
   long time_start_autoconfiguration; 
   /**The transport stream id (used to read ATSC PSIP tables)*/
   int transport_stream_id;
-
+  /** Do we autoconfigure scrambled channels ? */
+  int autoconf_scrambled;
+  
   //Different packets used by autoconfiguration
   mumudvb_ts_packet_t *autoconf_temp_pmt;
   mumudvb_ts_packet_t *autoconf_temp_pat;
@@ -101,7 +103,7 @@ int autoconf_read_sdt(unsigned char *buf, int len, mumudvb_service_t *services);
 int autoconf_read_psip(autoconf_parameters_t *);
 void autoconf_freeing(autoconf_parameters_t *, int);
 int autoconf_read_pat(autoconf_parameters_t *);
-int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int cam_support, int port, int card);
+int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card);
 void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, uint8_t *asked_pid, fds_t *fds);
 void autoconf_free_services(mumudvb_service_t *services);
 

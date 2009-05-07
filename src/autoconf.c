@@ -774,11 +774,10 @@ void autoconf_free_services(mumudvb_service_t *services)
  * After that we go in AUTOCONF_MODE_PIDS to get audio and video pids
  * @param services Chained list of services
  * @param channels Chained list of channels
- * @param cam_support Do we care about scrambled channels ?
  * @param port The mulicast port
  * @param card The card number for the ip address
  */
-int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int cam_support, int port, int card)
+int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card)
 {
 
   mumudvb_service_t *actual_service;
@@ -789,10 +788,10 @@ int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *ch
 
   do
     {
-      if(cam_support && actual_service->free_ca_mode)
+      if(parameters.autoconf_scrambled && actual_service->free_ca_mode)
 	  log_message(MSG_DETAIL,"Service scrambled. Name \"%s\"\n", actual_service->name);
-      //@todo : Some providers does not repport correctly free_ca_mode, add an option to ignore this
-      if(!cam_support && actual_service->free_ca_mode)
+
+      if(!parameters.autoconf_scrambled && actual_service->free_ca_mode)
 	log_message(MSG_DETAIL,"Service scrambled and no cam support. Name \"%s\"\n", actual_service->name);
       else
 	{
@@ -818,7 +817,7 @@ int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *ch
 	      strcpy(channels[channel_number].ipOut,ip);
 	      log_message(MSG_DEBUG,"Autoconf : Channel Ip : \"%s\" port : %d\n",channels[channel_number].ipOut,port);
 
-	      if(cam_support && actual_service->free_ca_mode)
+	      if(parameters.autoconf_scrambled && actual_service->free_ca_mode)
 		channels[channel_number].cam_pmt_pid=actual_service->pmt_pid;
 
 	      channel_number++;

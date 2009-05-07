@@ -200,6 +200,7 @@ sap_parameters_t sap_vars={
 autoconf_parameters_t autoconf_vars={
   .autoconfiguration=0,
   .autoconf_radios=0,
+  .autoconf_scrambled=0,
   .autoconf_ip_header="239.100",
   .time_start_autoconfiguration=0,
   .transport_stream_id=-1,
@@ -495,6 +496,11 @@ main (int argc, char **argv)
 	    }
 	}
 #endif
+      else if (!strcmp (substring, "autoconf_scrambled"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  autoconf_vars.autoconf_scrambled = atoi (substring);
+	}
       else if (!strcmp (substring, "sat_number"))
 	{
 	  substring = strtok (NULL, delimiteurs);
@@ -1080,11 +1086,17 @@ main (int argc, char **argv)
 #ifdef LIBDVBEN50221
   if(cam_vars.cam_support){
     cam_vars.cam_pmt_ptr=malloc(sizeof(mumudvb_ts_packet_t));
+    
     //We initialise the cam. If fail, we remove cam support
     if(cam_start(&cam_vars,card))
       {
 	log_message( MSG_ERROR,"Cannot initalise cam\n");
 	cam_vars.cam_support=0;
+      }
+    else
+      {
+	//If the cam is properly initialised, we autoconfigure scrambled channels
+	autoconf_vars.autoconf_scrambled=1;
       }
   }
 #endif  
@@ -1373,11 +1385,7 @@ main (int argc, char **argv)
 			{
 			  log_message(MSG_DEBUG,"Autoconf : It seems that we have finished to get the services list\n");
 			  //Interrupted=1;
-#ifdef LIBDVBEN50221 /**@todo : do it in a cleaner way*/
-			  number_of_channels=services_to_channels(autoconf_vars, channels, cam_vars.cam_support,common_port, card); //Convert the list of services into channels
-#else
-			  number_of_channels=services_to_channels(autoconf_vars, channels, 0,common_port, card); //Convert the list of services into channels
-#endif
+			  number_of_channels=services_to_channels(autoconf_vars, channels, common_port, card); //Convert the list of services into channels
 			  //we got the pmt pids for the channels, we open the filters
 			  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 			    {
