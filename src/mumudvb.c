@@ -1291,7 +1291,8 @@ main (int argc, char **argv)
     {
       //we use makeclientsocket in order to join the multicast group associated with the channel
       //Some switches (like HP Procurve 26xx) broadcast multicast traffic when there is no client to the group //Note, it seems that it's now corrected
-      channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
+      //channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
+      channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
     }
 
 
