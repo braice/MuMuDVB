@@ -1418,13 +1418,13 @@ main (int argc, char **argv)
 		  if((fds.pfds[actual_fd].revents&POLLIN)||(fds.pfds[actual_fd].revents&POLLPRI))
 		    {
 		      log_message(MSG_DEBUG,"Unicast : New message for socket %d\n", fds.pfds[actual_fd].fd);
-		      iRet=unicast_handle_message(&unicast_vars,fds.pfds[actual_fd].fd);  
+		      iRet=unicast_handle_message(&unicast_vars,fds.pfds[actual_fd].fd, channels, number_of_channels);
 		    }
-		  if (iRet==-2 || (fds.pfds[actual_fd].revents&POLLHUP)) //iRet==-2 --> 0 received data, we close the connection
+		  if (iRet==-2 || (fds.pfds[actual_fd].revents&POLLHUP)) //iRet==-2 --> 0 received data or 404, we close the connection
 		    {
 		      //This will have to be put in a function
 		      //closed connection on the temp socket
-		      log_message(MSG_DETAIL,"Unicast : The remote closed the connection\n");
+		      log_message(MSG_DETAIL,"Unicast : We close the connection\n");
 		      //We delete the client
 		      unicast_del_client(&unicast_vars, fds.pfds[actual_fd].fd, channels);
 		      //We move the last one to the actual one
@@ -1734,6 +1734,18 @@ main (int argc, char **argv)
 		    {
 		      sendudp (channels[curr_channel].socketOut, &channels[curr_channel].sOut, channels[curr_channel].buf,
 			       channels[curr_channel].nb_bytes);
+		      /*********** UNICAST **************/
+		      if(channels[curr_channel].clients)
+			{
+			  unicast_client_t *actual_client;
+			  actual_client=channels[curr_channel].clients;
+			  while(actual_client!=NULL)
+			    {
+			      write(actual_client->Socket,channels[curr_channel].buf, channels[curr_channel].nb_bytes);
+			      actual_client=actual_client->chan_next;
+			    }
+			}
+		      /********* END of UNICAST **********/
 		      channels[curr_channel].nb_bytes = 0;
 		    }
 		}

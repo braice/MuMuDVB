@@ -38,6 +38,14 @@
                       "Content-type: application/octet-stream\r\n"\
                       "\r\n"
 
+#define HTTP_404_REPLY "HTTP/1.0 404 Not found\r\n"\
+                      "\r\n"
+
+#define HTTP_501_REPLY "HTTP/1.0 501 Not implemented\r\n"\
+                      "\r\n"
+
+
+
 typedef struct unicast_client_t{
   /**HTTP socket*/
   struct sockaddr_in SocketAddr;
@@ -73,15 +81,10 @@ typedef struct unicast_client_t{
  * @clients The clients, contains all the clients, associated to a channel or not
 */
 typedef struct unicast_parameters_t{
-  /**The "HTML" ip address*/
   char ipOut[20];
-  /**The "HTML" port*/
   int portOut;
-  /**The HTTP input socket*/
   struct sockaddr_in sIn;
-  /**Temporary HTTP output socket*/
   int socketIn;
-  /**The clients*/
   unicast_client_t *clients;
 }unicast_parameters_t;
 
@@ -91,7 +94,8 @@ int unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in So
 int unicast_del_client(unicast_parameters_t *unicast_vars, int Socket, mumudvb_channel_t *channels);
 unicast_client_t *unicast_find_client(unicast_parameters_t *unicast_vars, int Socket);
 
-int unicast_handle_message(unicast_parameters_t *unicast_vars, int fd);
+int unicast_handle_message(unicast_parameters_t *unicast_vars, int fd, mumudvb_channel_t *channels, int num_of_channels);
+void channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *channel);
 
 
 #endif
