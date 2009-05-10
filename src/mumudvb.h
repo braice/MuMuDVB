@@ -30,8 +30,7 @@
 
 #define VERSION "1.5.5b"
 
-//#include "ts.h"
-#include "udp.h"  //for the sockaddr
+#include "network.h"  //for the sockaddr
 
 //the number of pids by channel
 #define MAX_PIDS_PAR_CHAINE     18
@@ -79,29 +78,64 @@ enum
     MSG_DEBUG
   };
 
+
+/**@brief file descriptors*/
+typedef struct {
+  /** the dvb dvr*/
+  int fd_dvr;
+  /** the dvb frontend*/
+  int fd_frontend;
+  /** demuxer file descriptors */
+  int fd_demuxer[8192];
+  /** poll file descriptors */
+  struct pollfd *pfds;	//  DVR device + unicast http clients
+  int pfdsnum;
+}fds_t;
+
+struct unicast_client_t;
+
 /**@brief Structure for storing channels
  *
  */
 typedef struct{
-  int streamed_channel;    //tell if this channel is actually streamed
-  int streamed_channel_old;//tell if this channel is actually streamed (precedent test, to see if it's changed)
+  /**tell if this channel is actually streamed*/
+  int streamed_channel;
+  /**tell if this channel is actually streamed (precedent test, to see if it's changed)*/
+  int streamed_channel_old;
 
-  char name[MAX_NAME_LEN];  //the channel name
+  /**the channel name*/
+  char name[MAX_NAME_LEN];
 
-  int pids[MAX_PIDS_PAR_CHAINE];   //the channel pids
-  int num_pids;                    //number of channel pids
-  int cam_pmt_pid;                 //pmt pid number for cam support
+  /**the channel pids*/
+  int pids[MAX_PIDS_PAR_CHAINE];
+  /**number of channel pids*/
+  int num_pids;
+  /**pmt pid number for cam support*/
+  int cam_pmt_pid;
 
-  unsigned char buf[MAX_UDP_SIZE]; //the buffer wich will be sent once it's full
-  int nb_bytes;                    //number of bytes actually in the buffer
+  /**the buffer wich will be sent once it's full*/
+  unsigned char buf[MAX_UDP_SIZE]; 
+  /**number of bytes actually in the buffer*/
+  int nb_bytes;
 
-  int autoconfigurated;            //is the channel autoconfigurated ?
+  /**is the channel autoconfigurated ?*/
+  int autoconfigurated;
 
+  /**The multicast ip address*/
   char ipOut[20];
-  char sap_group[20];
+  /**The multicast port*/
   int portOut;
+  /**The multicast output socket*/
   struct sockaddr_in sOut;
+  /**The multicast output socket*/
   int socketOut;
+
+  /**Unicast clients*/
+  struct unicast_client_t *clients;
+
+  /**The sap playlist group*/
+  char sap_group[20];
+
 
 }mumudvb_channel_t;
 

@@ -29,9 +29,10 @@
  * @brief Networking functions
  */
 
-#include "udp.h"
+#include "network.h"
 #include <string.h>
 #include <errno.h> 
+#include <fcntl.h>
 
 /**@brief Send data
  *@todo document
@@ -62,7 +63,7 @@ makesocket (char *szAddr, unsigned short port, int TTL,
 
   if (iSocket < 0)
     {
-      log_message( MSG_INFO, "socket() failed.\n");
+      log_message( MSG_WARN, "socket() failed : %s\n",strerror(errno));
       exit (1);
     }
 
@@ -73,7 +74,7 @@ makesocket (char *szAddr, unsigned short port, int TTL,
   iRet = setsockopt (iSocket, SOL_SOCKET, SO_REUSEADDR, &iLoop, sizeof (int));
   if (iRet < 0)
     {
-      log_message( MSG_ERROR,"setsockopt SO_REUSEADDR failed\n");
+      log_message( MSG_ERROR,"setsockopt SO_REUSEADDR failed : %s\n",strerror(errno));
       exit (1);
     }
 
@@ -81,7 +82,7 @@ makesocket (char *szAddr, unsigned short port, int TTL,
     setsockopt (iSocket, IPPROTO_IP, IP_MULTICAST_TTL, &cTtl, sizeof (char));
   if (iRet < 0)
     {
-      log_message( MSG_ERROR,"setsockopt IP_MULTICAST_TTL failed.  multicast in kernel?\n");
+      log_message( MSG_ERROR,"setsockopt IP_MULTICAST_TTL failed.  multicast in kernel? error : %s \n",strerror(errno));
       exit (1);
     }
 
@@ -89,7 +90,7 @@ makesocket (char *szAddr, unsigned short port, int TTL,
 		     &cLoop, sizeof (char));
   if (iRet < 0)
     {
-      log_message( MSG_ERROR,"setsockopt IP_MULTICAST_LOOP failed.  multicast in kernel?\n");
+      log_message( MSG_ERROR,"setsockopt IP_MULTICAST_LOOP failed.  multicast in kernel? error : %s\n",strerror(errno));
       exit (1);
     }
 
@@ -129,3 +130,63 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL,
     }
   return socket;
 }
+
+
+/** @brief create a TCP receiver socket.
+ *
+ * Create a socket for waiting the HTTP connection
+ */
+int
+makeTCPclientsocket (char *szAddr, unsigned short port, 
+	    struct sockaddr_in *sSockAddr)
+{
+  int iRet, iLoop = 1;
+
+  int iSocket = socket (AF_INET, SOCK_STREAM, 0); //TCP
+
+  if (iSocket < 0)
+    {
+      log_message( MSG_ERROR, "socket() failed.\n");
+      return -1;
+    }
+
+  sSockAddr->sin_family = AF_INET;
+  sSockAddr->sin_port = htons (port);
+  sSockAddr->sin_addr.s_addr = inet_addr (szAddr);/**@todo use inet_aton*/
+
+  iRet = setsockopt (iSocket, SOL_SOCKET, SO_REUSEADDR, &iLoop, sizeof (int));
+  if (iRet < 0)
+    {
+      log_message( MSG_ERROR,"setsockopt SO_REUSEADDR failed : %s\n", strerror(errno));
+      return -1;
+    }
+
+
+  if (bind (iSocket, (struct sockaddr *) sSockAddr, sizeof (*sSockAddr)))
+    {
+      log_message( MSG_ERROR, "bind failed : %s\n", strerror(errno));
+      return -1;
+    }
+
+  iRet = listen(iSocket,10);
+  if (iRet < 0)
+    {
+      log_message( MSG_ERROR,"listen failed : %s\n",strerror(errno));
+      return -1;
+    }
+
+  //Now we set this socket to be non blocking because we poll it
+  int flags;
+  flags = fcntl(iSocket, F_GETFL, 0);
+  flags |= O_NONBLOCK;
+  if (fcntl(iSocket, F_SETFL, flags) < 0)
+    {
+      log_message(MSG_ERROR,"Set non blocking failed : %s\n",strerror(errno));
+      return -1;
+    }
+
+
+  return iSocket;
+}
+
+
