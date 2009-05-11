@@ -1833,6 +1833,11 @@ int mumudvb_close(int Interrupted)
 
   // we close the file descriptors
   close_card_fd (fds);
+  free(fds.pfds);
+  fds.pfds=NULL;
+
+  //We close the unicast connections and free the clients
+  unicast_freeing(&unicast_vars, channels);
 
 #ifdef LIBDVBEN50221
   if(cam_vars.cam_support)

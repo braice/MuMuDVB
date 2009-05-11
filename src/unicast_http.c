@@ -137,7 +137,9 @@ int unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in So
 
 
 /** @brief Delete a client to the chained list of clients and in the associated channel
- * This function free the memory of the client, remove it from the associated channel if there is one, close the socket
+ * This function close the socket of the client
+ * remove it from the associated channel if there is one
+ * and free the memory of the client (including the buffer)
  *
  * @param unicast_vars the unicast parameters
  * @param Socket the socket nubmer of the client we want to delete
@@ -451,4 +453,22 @@ int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *chann
       client->chan_prev=last_client;
     }
   return 0;
+}
+
+
+/** @brief Delete all the clients
+ *
+ * @param unicast_vars the unicast parameters
+ * @param channels : the channels structure
+ */
+void unicast_freeing(unicast_parameters_t *unicast_vars, mumudvb_channel_t *channels)
+{
+  unicast_client_t *actual_client;
+  unicast_client_t *next_client;
+
+  for(actual_client=unicast_vars->clients; actual_client != NULL; actual_client=next_client)
+    {
+      next_client= actual_client->next;
+      unicast_del_client(unicast_vars, actual_client->Socket, channels);
+    }
 }

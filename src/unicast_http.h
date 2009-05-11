@@ -99,5 +99,6 @@ unicast_client_t *unicast_find_client(unicast_parameters_t *unicast_vars, int So
 int unicast_handle_message(unicast_parameters_t *unicast_vars, int fd, mumudvb_channel_t *channels, int num_of_channels);
 int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *channel);
 
+void unicast_freeing(unicast_parameters_t *unicast_vars, mumudvb_channel_t *channels);
 
 #endif
