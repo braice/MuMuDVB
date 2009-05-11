@@ -32,7 +32,7 @@
 #include "mumudvb.h"
 
 #define RECV_BUFFER_MULTIPLE 100
-
+#define UNICAST_CONSECUTIVE_ERROR_LIMIT 42
 
 #define HTTP_OK_REPLY "HTTP/1.0 200 OK\r\n"\
                       "Content-type: application/octet-stream\r\n"\
@@ -57,8 +57,8 @@ typedef struct unicast_client_t{
   int buffersize;
   /**Position in the buffer*/
   int bufferpos;
-  /**Number of errors*/
-
+  /**Number of consecutive errors*/
+  int consecutive_errors;
   /**Channel : -1 if not associated yet*/
   int channel;
   /**Next client*/
@@ -91,11 +91,13 @@ typedef struct unicast_parameters_t{
 
 int unicast_accept_connection(unicast_parameters_t *unicast_vars);
 int unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in SocketAddr, int Socket);
+void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, int Socket, mumudvb_channel_t *channels);
+
 int unicast_del_client(unicast_parameters_t *unicast_vars, int Socket, mumudvb_channel_t *channels);
 unicast_client_t *unicast_find_client(unicast_parameters_t *unicast_vars, int Socket);
 
 int unicast_handle_message(unicast_parameters_t *unicast_vars, int fd, mumudvb_channel_t *channels, int num_of_channels);
-void channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *channel);
+int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *channel);
 
 
 #endif

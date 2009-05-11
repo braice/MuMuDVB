@@ -1422,21 +1422,9 @@ main (int argc, char **argv)
 		    }
 		  if (iRet==-2 || (fds.pfds[actual_fd].revents&POLLHUP)) //iRet==-2 --> 0 received data or error, we close the connection
 		    {
-		      //This will have to be put in a function
-		      //closed connection on the temp socket
-		      log_message(MSG_DETAIL,"Unicast : We close the connection\n");
-		      //We delete the client
-		      unicast_del_client(&unicast_vars, fds.pfds[actual_fd].fd, channels);
-		      //We move the last one to the actual one
-		      fds.pfds[actual_fd].fd = fds.pfds[fds.pfdsnum-1].fd;
-		      fds.pfds[actual_fd].events = fds.pfds[fds.pfdsnum-1].events;
-		      fds.pfds[actual_fd].revents = fds.pfds[fds.pfdsnum-1].revents;
-		      fds.pfds[fds.pfdsnum-1].fd=0;
-		      fds.pfds[fds.pfdsnum-1].events=POLLIN|POLLPRI;
-		      fds.pfdsnum--;
-		      fds.pfds=realloc(fds.pfds,(fds.pfdsnum+1)*sizeof(struct pollfd));/**@todo check return value*/
-		      log_message(MSG_DEBUG,"Unicast : Number of clients : %d\n", fds.pfdsnum-2);
-		      //We check if we hage to parse fds.pfds[actual_fd].revents
+		      /** @todo This will have to be put in a function*/
+		      unicast_close_connection(&unicast_vars,&fds,fds.pfds[actual_fd].fd,channels);
+		      //We check if we hage to parse fds.pfds[actual_fd].revents (the last fd moved to the actual one)
 		      if(fds.pfds[actual_fd].revents)
 			actual_fd--;//Yes, we force the loop to see it again
 		    }
@@ -1739,10 +1727,37 @@ main (int argc, char **argv)
 		      if(channels[curr_channel].clients)
 			{
 			  unicast_client_t *actual_client;
+			  int written_len;
 			  actual_client=channels[curr_channel].clients;
 			  while(actual_client!=NULL)
 			    {
-			      write(actual_client->Socket,channels[curr_channel].buf, channels[curr_channel].nb_bytes);
+			      written_len=write(actual_client->Socket,channels[curr_channel].buf, channels[curr_channel].nb_bytes);
+			      //We check if all the data was successfully written
+			      if(written_len<channels[curr_channel].nb_bytes)
+				{
+				  //No ! 
+				  if(written_len==-1)
+				    log_message(MSG_INFO,"Error when writing to client %s:%d : %s\n",
+						inet_ntoa(actual_client->SocketAddr.sin_addr),
+						actual_client->SocketAddr.sin_port,
+						strerror(errno));
+				  else
+				    log_message(MSG_INFO,"Not all the data was written to %s:%d\n",
+						inet_ntoa(actual_client->SocketAddr.sin_addr),
+						actual_client->SocketAddr.sin_port);
+
+				  actual_client->consecutive_errors++;
+				  if(actual_client->consecutive_errors>UNICAST_CONSECUTIVE_ERROR_LIMIT)
+				    {
+				      log_message(MSG_INFO,"To much consecutive errors when writing to client %s:%d, we disconnect\n",
+						  inet_ntoa(actual_client->SocketAddr.sin_addr),
+						  actual_client->SocketAddr.sin_port);
+				      unicast_close_connection(&unicast_vars,&fds,actual_client->Socket,channels);
+				    }
+				}
+			      else if (actual_client->consecutive_errors)
+				actual_client->consecutive_errors--;
+
 			      actual_client=actual_client->chan_next;
 			    }
 			}
