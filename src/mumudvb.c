@@ -239,7 +239,7 @@ pat_rewrite_parameters_t rewrite_vars={
 //Parameters for HTTP unicast
 unicast_parameters_t unicast_vars={
   .ipOut="\0",
-  .portOut=0,
+  .portOut=4242,
 };
 
 //logging
