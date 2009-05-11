@@ -1776,6 +1776,7 @@ static void SignalHandler (int signum)
 		}
 	      else if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)
 		{
+		  log_message(MSG_WARN,"Autoconf : Warning : We were not able to get all the services, we continue with the partial service list\n");
 		  //This happend when we are not able to get all the services of the PAT,
 		  //We continue with the partial list of services
 		  autoconf_vars.time_start_autoconfiguration=now;
