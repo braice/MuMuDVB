@@ -124,6 +124,7 @@ extern uint32_t       crc32_table[256];
 
 /** Time to live of sent packets */
 int multicast_ttl=DEFAULT_TTL;
+int common_port = 1234;
 
 /* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
    - see http://www.cadsoft.de/people/kls/vdr/index.htm */
@@ -309,7 +310,6 @@ main (int argc, char **argv)
   int curr_channel = 0;
   int curr_pid = 0;
   int send_packet=0;
-  int common_port = 1234;
   int ip_ok = 0;
   char current_line[CONF_LINELEN];
   char *substring=NULL;
@@ -1381,40 +1381,11 @@ main (int argc, char **argv)
 		{
 		  if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_pat))
 		    {
-		      //log_message(MSG_DEBUG,"Autoconf : New PAT pid\n");
 		      if(autoconf_read_pat(&autoconf_vars))
 			{
 			  log_message(MSG_DEBUG,"Autoconf : It seems that we have finished to get the services list\n");
-			  //Interrupted=1;
-			  number_of_channels=services_to_channels(autoconf_vars, channels, common_port, card); //Convert the list of services into channels
-			  //we got the pmt pids for the channels, we open the filters
-			  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-			    {
-			      for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
-				asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
-			    }
-			  // we open the file descriptors
-			  if (create_card_fd (card, asked_pid, &fds) < 0)
-			    {
-			      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");
-			      Interrupted=666<<8; //the <<8 is to make difference beetween signals and errors;
-			      continue;
-			    }
-			  // we set the new filters
-			  set_filters( asked_pid, &fds);
-			    
-			  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-			    {
-			      // Init udp
-			      /**\todo explain*/
-			      channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
-			    }
-
-			  log_message(MSG_DEBUG,"Autoconf : Step TWO, we get the video and audio PIDs\n");
-			  //We free autoconf memory except PMT
-			  autoconf_freeing(&autoconf_vars,DONT_FREE_PMT);
-
-			  autoconf_vars.autoconfiguration=AUTOCONF_MODE_PIDS; //Next step add video and audio pids
+			  //we finish full autoconfiguration
+			  Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, common_port, card, &fds,asked_pid, multicast_ttl);
 			}
 		      else
 			memset (autoconf_vars.autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
@@ -1795,11 +1766,21 @@ static void SignalHandler (int signum)
 	    autoconf_vars.time_start_autoconfiguration=now;
 	  else if (now-autoconf_vars.time_start_autoconfiguration>AUTOCONFIGURE_TIME)
 	    {
-	      log_message(MSG_WARN,"Autoconf : Warning : Not all the channels were configured before timeout\n");
-	      autoconf_vars.autoconfiguration=0;
-	      autoconf_end(card, number_of_channels, channels, asked_pid, &fds);
-	      //We free autoconf memory
-	      autoconf_freeing(&autoconf_vars,0);
+	      if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_PIDS)
+		{
+		  log_message(MSG_WARN,"Autoconf : Warning : Not all the channels were configured before timeout\n");
+		  autoconf_vars.autoconfiguration=0;
+		  autoconf_end(card, number_of_channels, channels, asked_pid, &fds);
+		  //We free autoconf memory
+		  autoconf_freeing(&autoconf_vars,0);
+		}
+	      else if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)
+		{
+		  //This happend when we are not able to get all the services of the PAT,
+		  //We continue with the partial list of services
+		  autoconf_vars.time_start_autoconfiguration=now;
+		  Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, common_port, card, &fds,asked_pid, multicast_ttl);
+		}
 	    }
 	}
       //end of autoconfiguration

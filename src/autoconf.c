@@ -843,6 +843,54 @@ int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *ch
   return channel_number;
 }
 
+/** @brief Finish full autoconfiguration (set everything needed to go to partial autoconf)
+ * This function is called when FULL autoconfiguration is finished
+ * It fill the asked pid array
+ * It open the file descriptors for the new filters, and set the filters
+ * It open the new sockets 
+ * It free autoconfiguration memory wich will be not used anymore
+ *
+ * @param card the card number
+ * @param number_of_channels the number of channels
+ * @param channels the array of channels
+ * @param asked_pid the array containing the pids already asked
+ * @param fds the file descriptors
+*/
+int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, autoconf_parameters_t *autoconf_vars, int common_port, int card, fds_t *fds,uint8_t *asked_pid, int multicast_ttl)
+{
+  int curr_channel,curr_pid;
+  *number_of_channels=services_to_channels(*autoconf_vars, channels, common_port, card); //Convert the list of services into channels
+  //we got the pmt pids for the channels, we open the filters
+  for (curr_channel = 0; curr_channel < *number_of_channels; curr_channel++)
+    {
+      for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+	asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
+    }
+  // we open the file descriptors
+  if (create_card_fd (card, asked_pid, fds) < 0)
+    {
+      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");
+      return 666<<8; //the <<8 is to make difference beetween signals and errors;
+    }
+  // we set the new filters
+  set_filters( asked_pid, fds);
+  
+  for (curr_channel = 0; curr_channel < *number_of_channels; curr_channel++)
+    {
+      // Init udp
+      /**\todo explain*/
+      channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
+    }
+  
+  log_message(MSG_DEBUG,"Autoconf : Step TWO, we get the video and audio PIDs\n");
+  //We free autoconf memory except PMT
+  autoconf_freeing(autoconf_vars,DONT_FREE_PMT);
+  
+  autoconf_vars->autoconfiguration=AUTOCONF_MODE_PIDS; //Next step add video and audio pids
+  
+  return 0;
+}
+
 /** @brief Finish autoconf
  * This function is called when autoconfiguration is finished
  * It opens what is needed to stream the new channels
@@ -1121,3 +1169,6 @@ int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parame
   return PSIP_VCT_LEN + HILO(vct_channel->descriptor_length); //We return the length
 
 }
+
+
+
