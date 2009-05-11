@@ -355,14 +355,19 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
 		{
 		  //We found a new service without the PMT, pid, we update this service
 		  actual_service->pmt_pid=HILO(prog->network_pid);
-		  log_message(MSG_DEBUG,"Autoconf : service updated  pmt pid : %d\t id %d\t name \"%s\"\n",
+		  log_message(MSG_DEBUG,"Autoconf : service updated  pmt pid : %d\t id 0x%x\t name \"%s\"\n",
 			      actual_service->pmt_pid,
 			      actual_service->id,
 			      actual_service->name);
 		}
 	    }
 	  else
-	    channels_missing++;
+	    {
+	      log_message(MSG_DEBUG,"Autoconf : service missing  pmt pid : %d\t id 0x%x\t\n",
+			  HILO(prog->network_pid),
+			  HILO(prog->program_number));
+	      channels_missing++;
+	    }
 	}
       delta+=PAT_PROG_LEN;
       number_of_services++;
@@ -515,17 +520,17 @@ void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *service)
   switch(service->type)
     {
       case 0x01:
-	log_message(MSG_DEBUG, "Autoconf : service type : Television "); break;
+	log_message(MSG_DEBUG, "Autoconf : service type : Television\n"); break;
       case 0x02:
-	log_message(MSG_DEBUG, "Autoconf : service type : Radio "); break;
+	log_message(MSG_DEBUG, "Autoconf : service type : Radio\n"); break;
       case 0x03:
-	log_message(MSG_DEBUG, "Autoconf : service type : Teletext "); break;
+	log_message(MSG_DEBUG, "Autoconf : service type : Teletext\n"); break;
       case 0x06:
-	log_message(MSG_DEBUG, "Autoconf : service type : Mosaic service "); break;
+	log_message(MSG_DEBUG, "Autoconf : service type : Mosaic service\n"); break;
       case 0x0c:
-	log_message(MSG_DEBUG, "Autoconf : service type : Data braodcast service "); break;
+	log_message(MSG_DEBUG, "Autoconf : service type : Data braodcast service\n"); break;
       case 0x11:
-	log_message(MSG_DEBUG, "Autoconf : service type : Television MPEG2-HD"); break;
+	log_message(MSG_DEBUG, "Autoconf : service type : Television MPEG2-HD\n"); break;
     default:
       log_message(MSG_WARN, "Autoconf : Please report : Unknow service type (0x%02x), doc : EN 300 468 v1.9.1 table 81\n",
 		  service->type);
