@@ -174,7 +174,7 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, int Socket, mumudvb_c
     prev_client->next=client->next;
 
   //We delete the client in the channel
-  if(client->channel)
+  if(client->channel!=-1)
     {
       log_message(MSG_DEBUG,"Unicast : We remove the client from the channel \"%s\"\n",channels[client->channel].name);
 
@@ -339,9 +339,9 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, int fd, mumudvb_c
 	  //GET /bynumber/channelnumber
 	  if(strstr(client->buffer +pos ,"/bynumber/")==(client->buffer +pos))
 	    {
-	      if(client->channel)
+	      if(client->channel!=-1)
 		{
-		  log_message(MSG_INFO,"Unicast : A channel is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n");
+		  log_message(MSG_INFO,"Unicast : A channel (%d) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->channel);
 		  iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
 		  return -2; //to delete the client
 		}
@@ -367,7 +367,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, int fd, mumudvb_c
 	  //GET /byname/channelname
 	  else if(strstr(client->buffer +pos ,"/byname/")==(client->buffer +pos))
 	    {
-	      if(client->channel)
+	      if(client->channel!=-1)
 		{
 		  log_message(MSG_INFO,"Unicast : A channel is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n");
 		  iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY));//iRet is to make the copiler happy we will close the connection anyways
