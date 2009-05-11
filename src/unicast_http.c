@@ -148,7 +148,7 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, int Socket, mumudvb_c
       log_message(MSG_ERROR,"Unicast : This should never happend, please contact\n");
       return -1;
     }
-  log_message(MSG_DEBUG,"Unicast : We delete the client %s:%d, socket %d\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port, Socket);
+  log_message(MSG_DETAIL,"Unicast : We delete the client %s:%d, socket %d\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port, Socket);
 
   if (client->Socket >= 0)
     {			    
@@ -168,6 +168,8 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, int Socket, mumudvb_c
   //We delete the client in the channel
   if(client->channel)
     {
+      log_message(MSG_DEBUG,"Unicast : We remove the client from the channel \"%s\"\n",channels[client->channel].name);
+
       if(client->chan_prev==NULL)
 	channels[client->channel].clients=NULL;
       else
@@ -360,6 +362,8 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, int fd, mumudvb_c
 void channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *channel)
 {
   unicast_client_t *last_client;
+
+  log_message(MSG_INFO,"Unicast : We add the client %s:%d to the channel \"%s\"\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port,channel->name);
 
   write(client->Socket,HTTP_OK_REPLY, strlen(HTTP_OK_REPLY));
 

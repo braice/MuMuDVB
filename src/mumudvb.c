@@ -1420,7 +1420,7 @@ main (int argc, char **argv)
 		      log_message(MSG_DEBUG,"Unicast : New message for socket %d\n", fds.pfds[actual_fd].fd);
 		      iRet=unicast_handle_message(&unicast_vars,fds.pfds[actual_fd].fd, channels, number_of_channels);
 		    }
-		  if (iRet==-2 || (fds.pfds[actual_fd].revents&POLLHUP)) //iRet==-2 --> 0 received data or 404, we close the connection
+		  if (iRet==-2 || (fds.pfds[actual_fd].revents&POLLHUP)) //iRet==-2 --> 0 received data or error, we close the connection
 		    {
 		      //This will have to be put in a function
 		      //closed connection on the temp socket
@@ -1732,6 +1732,7 @@ main (int argc, char **argv)
 		  //The buffer is full, we send it
 		  if ((channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE)
 		    {
+		      /********** MULTICAST *************/
 		      sendudp (channels[curr_channel].socketOut, &channels[curr_channel].sOut, channels[curr_channel].buf,
 			       channels[curr_channel].nb_bytes);
 		      /*********** UNICAST **************/
