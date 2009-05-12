@@ -50,6 +50,9 @@ Todo list
 #include "mumudvb.h"
 
 
+int 
+unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *host);
+
 
 /** @brief Accept an incoming connection
  *
@@ -385,6 +388,22 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, int fd, mumudvb_c
 		  err404=1;//Temporary
 		}
 	    }
+	  //Channels list
+	  else if(strstr(client->buffer +pos ,"/channels_list.html")==(client->buffer +pos))
+	    {
+	      //We get the host name if availaible
+	      char *hoststr;
+	      hoststr=strstr(client->buffer ,"Host: ");
+	      if(hoststr)
+		{
+		  substring = strtok (hoststr+6, "\r");
+		}
+	      else 
+		substring=NULL;
+
+	      unicast_send_streamed_channels_list (number_of_channels, channels, client->Socket, substring);
+	      return -2; //We close the connection afterwards
+	    }
 	  //Not implemented path --> 404
 	  else
 	      err404=1;
@@ -393,6 +412,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, int fd, mumudvb_c
 	    {
 	      log_message(MSG_INFO,"Unicast : Path not found i.e. 404\n");
 	      iRet=write(client->Socket,HTTP_404_REPLY, strlen(HTTP_404_REPLY));//iRet is to make the copiler happy we will close the connection anyways
+	      iRet=write(client->Socket,HTTP_404_REPLY_HTML, strlen(HTTP_404_REPLY_HTML));//iRet is to make the copiler happy we will close the connection anyways
 	      return -2; //to delete the client
 	    }
 
@@ -471,4 +491,65 @@ void unicast_freeing(unicast_parameters_t *unicast_vars, mumudvb_channel_t *chan
       next_client= actual_client->next;
       unicast_del_client(unicast_vars, actual_client->Socket, channels);
     }
+}
+
+
+/** @brief Send a basic html file containig the list of streamed channels
+ *
+ * @param number_of_channels the number of channels
+ * @param channels the channels array
+ * @param Socket the socket on wich the information have to be sent
+ */
+int 
+unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *host)
+{
+  int curr_channel;
+  int iRet;
+  char buffer[255];
+
+
+  iRet=write(Socket,HTTP_OK_HTML_REPLY, strlen(HTTP_OK_HTML_REPLY));
+  if(iRet!=strlen(HTTP_OK_HTML_REPLY))
+    {
+      log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
+      return -1;
+    }
+  iRet=write(Socket,HTTP_CHANNELS_REPLY_START, strlen(HTTP_CHANNELS_REPLY_START));
+  if(iRet!=strlen(HTTP_CHANNELS_REPLY_START))
+    {
+      log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
+      return -1;
+    }
+
+
+  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+    if (channels[curr_channel].streamed_channel_old)
+      {
+	if(host)
+	  iRet=snprintf(buffer, 255, "Channel number %d : %s<br>Unicast link : <a href=\"http://%s/bynumber/%d\">http://%s/bynumber/%d</a><br>Multicast ip : %s:%d<br><br>\r\n",
+			curr_channel,
+			channels[curr_channel].name,
+			host,curr_channel+1,
+			host,curr_channel+1,
+			channels[curr_channel].ipOut,channels[curr_channel].portOut);
+	else
+	  iRet=snprintf(buffer, 255, "Channel number %d : \"%s\"<br>Multicast ip : %s:%d<br><br>\r\n",curr_channel,channels[curr_channel].name,channels[curr_channel].ipOut,channels[curr_channel].portOut);
+     
+	iRet=write(Socket,buffer, strlen(buffer));
+	if(iRet!=(int)strlen(buffer)) //Cast to make compiler happy
+	  {
+	    log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
+	    return -1;
+	  }
+      }
+
+  iRet=write(Socket,HTTP_CHANNELS_REPLY_END, strlen(HTTP_CHANNELS_REPLY_END));
+  if(iRet!=strlen(HTTP_CHANNELS_REPLY_END))
+    {
+      log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
+      return -1;
+    }
+
+
+  return 0;
 }

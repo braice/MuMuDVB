@@ -38,8 +38,49 @@
                       "Content-type: application/octet-stream\r\n"\
                       "\r\n"
 
-#define HTTP_404_REPLY "HTTP/1.0 404 Not found\r\n"\
+#define HTTP_OK_TEXT_REPLY "HTTP/1.0 200 OK\r\n"\
+                      "Content-type: text/plain\r\n"\
                       "\r\n"
+
+#define HTTP_OK_HTML_REPLY "HTTP/1.0 200 OK\r\n"\
+                      "Content-type: text/html\r\n"\
+                      "\r\n"
+
+#define HTTP_404_REPLY "HTTP/1.0 404 Not found\r\n"\
+                      "Content-type: text/html\r\n"\
+                      "\r\n"
+
+
+#define HTTP_404_REPLY_HTML "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml10/DTD/xhtml10strict.dtd\">\r\n"\
+                            "<html lang=\"en\">\r\n"\
+                            "<head>\r\n"\
+                            "<title>Not found</title>\r\n"\
+                            "</head>\r\n"\
+                            "<body>\r\n"\
+                            "   <h1>404 Not found</h1>\r\n"\
+                            "<hr />\r\n"\
+                            "<a href=\"http://mumudvb.braice.net\">MuMuDVB</a>\r\n"\
+                            "</body>\r\n"\
+                            "</html>\r\n"\
+                            "\r\n"
+
+#define HTTP_CHANNELS_REPLY_START "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml10/DTD/xhtml10strict.dtd\">\r\n"\
+                            "<html lang=\"en\">\r\n"\
+                            "<head>\r\n"\
+                            "<title>Channels list</title>\r\n"\
+                            "</head>\r\n"\
+                            "<body>\r\n"\
+                            "   <h1>Channel list</h1>\r\n"\
+                            "<hr />\r\n"\
+                            "This is the list of actually streamed channels by the MuMuDVB server. To open a channel copy the link to your client or use multicast.\r\n"\
+                            "<hr />\r\n"\
+
+#define HTTP_CHANNELS_REPLY_END "<hr />\r\n"\
+                            "See <a href=\"http://mumudvb.braice.net\">MuMuDVB</a> website for more details.\r\n"\
+                            "</body>\r\n"\
+                            "</html>\r\n"\
+                            "\r\n"
+
 
 #define HTTP_501_REPLY "HTTP/1.0 501 Not implemented\r\n"\
                       "\r\n"
