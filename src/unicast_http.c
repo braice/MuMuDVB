@@ -77,7 +77,6 @@ int unicast_accept_connection(unicast_parameters_t *unicast_vars)
   if( unicast_add_client(unicast_vars, tempSocketAddrIn, tempSocket)<0)
     {
       //We cannot create the client, we close the socket cleanly
-      shutdown(tempSocket, SHUT_RDWR);
       close(tempSocket);                 
       return -1;
     }
@@ -116,7 +115,6 @@ int unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in So
   if(client==NULL)
     {
       log_message(MSG_ERROR,"Unicast : allocating a new client : MALLOC error");
-      shutdown(Socket, SHUT_RDWR);
       close(Socket);                 
       return -1;
     }
@@ -163,7 +161,6 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, int Socket, mumudvb_c
 
   if (client->Socket >= 0)
     {			    
-      shutdown(client->Socket, SHUT_RDWR);
       close(client->Socket);                 
     }
   

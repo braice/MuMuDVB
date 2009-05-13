@@ -38,6 +38,12 @@
                       "Content-type: application/octet-stream\r\n"\
                       "\r\n"
 
+/**@todo : Content length
+Applications should use this field to indicate the size of the
+   Entity-Body to be transferred, regardless of the media type of the
+   entity. A valid Content-Length field value is required on all
+   HTTP/1.0 request messages containing an entity body.
+*/
 #define HTTP_OK_TEXT_REPLY "HTTP/1.0 200 OK\r\n"\
                       "Content-type: text/plain\r\n"\
                       "\r\n"
