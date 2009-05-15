@@ -152,7 +152,7 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
     }
 
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-    // on envoie le old pour annoncer que les chaines qui diffusent au dessus du quota de pauqets
+    //We store the old to be sure that we store only channels over the minimum packets limit
     if (channels[curr_channel].streamed_channel_old)
       {
 	fprintf (file_streamed_channels, "%s:%d:%s\n", channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
@@ -210,7 +210,7 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
     }
   
 
-  fprintf ( config_file, "# !!!!!!! This is a generated configuration file for mumudvb !!!!!!!!!!!\n");
+  fprintf ( config_file, "# !!!!!!! This is a generated configuration file for MuMuDVB !!!!!!!!!!!\n");
   fprintf ( config_file, "#\n");
 
 
@@ -219,12 +219,14 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
       strcpy(current_line_temp,current_line);
       substring = strtok (current_line_temp, delimiteurs);
       
-      //We remove useless parts
-      //if (substring[0] == '#')
-      //continue; 
+      //We remove the channels and parameters concerning autoconfiguration
       if (!strcmp (substring, "autoconfiguration"))
 	continue;
       else if (!strcmp (substring, "autoconf_ip_header"))
+	continue;
+      else if (!strcmp (substring, "autoconf_scrambled"))
+	continue;
+      else if (!strcmp (substring, "autoconf_radios"))
 	continue;
       else if (!strcmp (substring, "ip"))
 	continue;

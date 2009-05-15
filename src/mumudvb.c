@@ -156,10 +156,10 @@ fds_t fds; /** File descriptors associated with the card */
 
 
 int Interrupted = 0;
-char nom_fich_chaines_diff[256];
-char nom_fich_chaines_non_diff[256];
-char nom_fich_cam_info[256];
-char nom_fich_pid[256];
+char filename_channels_diff[256];
+char filename_channels_non_diff[256];
+char filename_cam_info[256];
+char filename_pid[256];
 int  write_streamed_channels=1;
 
 //tuning parameters C99 initialisation
@@ -304,8 +304,8 @@ main (int argc, char **argv)
   //files
   char *conf_filename = NULL;
   FILE *conf_file;
-  FILE *chaines_diff;
-  FILE *chaines_non_diff;
+  FILE *channels_diff;
+  FILE *channels_non_diff;
   FILE *cam_info;
   FILE *pidfile;
 
@@ -1000,44 +1000,44 @@ main (int argc, char **argv)
     }
 
   // we clear it by paranoia
-  sprintf (nom_fich_chaines_diff, STREAMED_LIST_PATH,
+  sprintf (filename_channels_diff, STREAMED_LIST_PATH,
 	   card);
-  sprintf (nom_fich_chaines_non_diff, NOT_STREAMED_LIST_PATH,
+  sprintf (filename_channels_non_diff, NOT_STREAMED_LIST_PATH,
 	   card);
-  sprintf (nom_fich_cam_info, CAM_INFO_LIST_PATH,
+  sprintf (filename_cam_info, CAM_INFO_LIST_PATH,
 	   card);
-  chaines_diff = fopen (nom_fich_chaines_diff, "w");
-  if (chaines_diff == NULL)
+  channels_diff = fopen (filename_channels_diff, "w");
+  if (channels_diff == NULL)
     {
       write_streamed_channels=0;
       log_message( MSG_WARN,
 		   "WARNING : Can't create %s: %s\n",
-		   nom_fich_chaines_diff, strerror (errno));
+		   filename_channels_diff, strerror (errno));
     }
   else
-    fclose (chaines_diff);
+    fclose (channels_diff);
 
-  chaines_non_diff = fopen (nom_fich_chaines_non_diff, "w");
-  if (chaines_diff == NULL)
+  channels_non_diff = fopen (filename_channels_non_diff, "w");
+  if (channels_diff == NULL)
     {
       write_streamed_channels=0;
       log_message( MSG_WARN,
 		   "WARNING : Can't create %s: %s\n",
-		   nom_fich_chaines_non_diff, strerror (errno));
+		   filename_channels_non_diff, strerror (errno));
     }
   else
-    fclose (chaines_non_diff);
+    fclose (channels_non_diff);
 
 
 #ifdef LIBDVBEN50221
   if(cam_vars.cam_support)
     {
-      cam_info = fopen (nom_fich_cam_info, "w");
+      cam_info = fopen (filename_cam_info, "w");
       if (cam_info == NULL)
 	{
 	  log_message( MSG_WARN,
 		       "WARNING : Can't create %s: %s\n",
-		       nom_fich_cam_info, strerror (errno));
+		       filename_cam_info, strerror (errno));
 	}
       else
 	fclose (cam_info);
@@ -1110,7 +1110,7 @@ main (int argc, char **argv)
     cam_vars.cam_pmt_ptr=malloc(sizeof(mumudvb_ts_packet_t));
     
     //We initialise the cam. If fail, we remove cam support
-    if(cam_start(&cam_vars,card,nom_fich_cam_info))
+    if(cam_start(&cam_vars,card,filename_cam_info))
       {
 	log_message( MSG_ERROR,"Cannot initalise cam\n");
 	cam_vars.cam_support=0;
@@ -1220,12 +1220,12 @@ main (int argc, char **argv)
   // We write our pid in a file if we deamonize
   if (!no_daemon)
     {
-      sprintf (nom_fich_pid, "/var/run/mumudvb/mumudvb_carte%d.pid", card);
-      pidfile = fopen (nom_fich_pid, "w");
+      sprintf (filename_pid, "/var/run/mumudvb/mumudvb_carte%d.pid", card);
+      pidfile = fopen (filename_pid, "w");
       if (pidfile == NULL)
 	{
 	  log_message( MSG_INFO,"%s: %s\n",
-		  nom_fich_pid, strerror (errno));
+		  filename_pid, strerror (errno));
 	  exit(ERROR_CREATE_FILE);
 	}
       fprintf (pidfile, "%d\n", getpid ());
@@ -1703,11 +1703,11 @@ int mumudvb_close(int Interrupted)
       // stop CAM operation
       cam_stop(&cam_vars);
       // delete cam_info file
-      if (remove (nom_fich_cam_info))
+      if (remove (filename_cam_info))
 	{
 	  log_message( MSG_WARN,
 		       "%s: %s\n",
-		       nom_fich_cam_info, strerror (errno));
+		       filename_cam_info, strerror (errno));
 	}
     }
 #endif
@@ -1723,29 +1723,29 @@ int mumudvb_close(int Interrupted)
   if(rewrite_vars.full_pat)
     free(rewrite_vars.full_pat);
 
-  if ((write_streamed_channels)&&remove (nom_fich_chaines_diff)) 
+  if ((write_streamed_channels)&&remove (filename_channels_diff)) 
     {
       log_message( MSG_WARN,
 		   "%s: %s\n",
-		   nom_fich_chaines_diff, strerror (errno));
+		   filename_channels_diff, strerror (errno));
       exit(ERROR_DEL_FILE);
     }
 
-  if ((write_streamed_channels)&&remove (nom_fich_chaines_non_diff))
+  if ((write_streamed_channels)&&remove (filename_channels_non_diff))
     {
       log_message( MSG_WARN,
 		   "%s: %s\n",
-		   nom_fich_chaines_non_diff, strerror (errno));
+		   filename_channels_non_diff, strerror (errno));
       exit(ERROR_DEL_FILE);
     }
 
 
   if (!no_daemon)
     {
-      if (remove (nom_fich_pid))
+      if (remove (filename_pid))
 	{
 	  log_message( MSG_INFO, "%s: %s\n",
-		       nom_fich_pid, strerror (errno));
+		       filename_pid, strerror (errno));
 	  exit(ERROR_DEL_FILE);
 	}
     }
@@ -1930,7 +1930,7 @@ static void SignalHandler (int signum)
 
 	  //generation of the files wich says the streamed channels
 	  if (write_streamed_channels)
-	    gen_file_streamed_channels(nom_fich_chaines_diff, nom_fich_chaines_non_diff, number_of_channels, channels);
+	    gen_file_streamed_channels(filename_channels_diff, filename_channels_non_diff, number_of_channels, channels);
 
 	  // reinit
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
