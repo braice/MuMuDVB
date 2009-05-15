@@ -24,41 +24,45 @@
  *     
  */
 
+/**@file
+ * @brief Global parameters and structures
+ */
+
 
 #ifndef _MUMUDVB_H
 #define _MUMUDVB_H
 
 #define VERSION "1.5.5b"
 
-//#include "ts.h"
 #include "udp.h"  //for the sockaddr
 
-//the number of pids by channel
+/**the number of pids by channel*/
 #define MAX_PIDS_PAR_CHAINE     18
 
-//the maximum channel number
+/**the maximum channel number*/
 #define MAX_CHANNELS		128
 
-//Size of an MPEG2-TS packet
+/**Size of an MPEG2-TS packet*/
 #define TS_PACKET_SIZE 188
 
-// How often (in seconds) to update the "now" variable
-#define ALARM_TIME 2 //Temporary change for CAM support, value before : 5
+/** How often (in seconds) to update the "now" variable*/
+#define ALARM_TIME 2
 #define ALARM_TIME_TIMEOUT 60
 #define ALARM_TIME_TIMEOUT_NO_DIFF 600
 
 
-// seven dvb paquets in one UDP
+/** seven dvb paquets in one UDP*/
 #define MAX_UDP_SIZE (TS_PACKET_SIZE*7)
 
-//the max mandatory pid number
+/**the max mandatory pid number*/
 #define MAX_MANDATORY_PID_NUMBER   32
-//config line length
+/**config line length*/
 #define CONF_LINELEN 	        512
+/**@todo : check if it is really useful*/
 #define ALARM_COUNT_LIMIT	1024
 #define MAX_NAME_LEN		256
 
-//Maximum number of polling tries
+//Maximum number of polling tries (excepted EINTR)
 #define MAX_POLL_TRIES		5
 
 //The path for the auto generated config file
@@ -84,31 +88,48 @@ enum
 
 /**@brief Structure for storing channels
  *
+ * @todo : uses streamed_channel values to compute the used bandwith
  */
 typedef struct{
-  /**@todo : uses these values to compute the used bandwith*/
-  int streamed_channel;    //tell if this channel is actually streamed
-  int streamed_channel_old;//tell if this channel is actually streamed (precedent test, to see if it's changed)
+  /**tell if this channel is actually streamed*/
+  int streamed_channel;
+  /**tell if this channel is actually streamed (precedent test, to see if it's changed)*/
+  int streamed_channel_old;
 
-  int scrambled_channel;// Tell if at least one of the PID related to the chanel is scrambled
-  int scrambled_channel_old;// Old state to manage state change display
+  /**Tell if at least one of the PID related to the chanel is scrambled*/
+  int scrambled_channel;
+  /** Old state to manage state change display*/
+  int scrambled_channel_old;
 
-  char name[MAX_NAME_LEN];  //the channel name
+  /**the channel name*/
+  char name[MAX_NAME_LEN];
 
-  int pids[MAX_PIDS_PAR_CHAINE];   //the channel pids
-  int num_pids;                    //number of channel pids
-  int cam_pmt_pid;                 //pmt pid number for cam support
+  /**the channel pids*/
+  int pids[MAX_PIDS_PAR_CHAINE];
+  /**number of channel pids*/
+  int num_pids;
 
-  unsigned char buf[MAX_UDP_SIZE]; //the buffer wich will be sent once it's full
-  int nb_bytes;                    //number of bytes actually in the buffer
+  /**pmt pid number for cam support*/
+  int cam_pmt_pid;/**@todo : move it to pmt_pid and add a field need_descramble*/
 
-  int autoconfigurated;            //is the channel autoconfigurated ?
+  /**the buffer wich will be sent once it's full*/
+  unsigned char buf[MAX_UDP_SIZE];
+  /**number of bytes actually in the buffer*/
+  int nb_bytes;
 
+  /**is the channel autoconfigurated ?*/
+  int autoconfigurated;
+
+  /**The multicast ip address*/
   char ipOut[20];
-  char sap_group[20];
+  /**The multicast group*/
   int portOut;
+  /**The output socket address*/
   struct sockaddr_in sOut;
+  /**The output socket file descriptor*/
   int socketOut;
+  /**The playlist sap group*/
+  char sap_group[20];
 
 }mumudvb_channel_t;
 

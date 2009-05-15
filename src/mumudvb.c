@@ -53,6 +53,8 @@
  * Generation of SAP announces
 
  *@section files
+ * mumudvb.h header containing global information 
+ *
  * autoconf.c autoconf.h code related to autoconfiguration
  *
  * cam.c cam.h : code related to the support of scrambled channels
@@ -143,13 +145,10 @@ int no_daemon = 0; /** do we deamonize mumudvb ? */
 int number_of_channels; /** The number of channels ... */
 mumudvb_channel_t channels[MAX_CHANNELS]; /** The channels array */ /**@todo use realloc*/
 //Asked pids //used for filtering
-uint8_t asked_pid[8192]; /** this array contains the pids we want to filter @todo malloc it ?*/
+uint8_t asked_pid[8192]; /** this array contains the pids we want to filter*/
 
 
-int card = 0;
-int card_tuned = 0;
-int dont_tune = 0;
-int tuning_timeout = ALARM_TIME_TIMEOUT;
+
 int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
 // file descriptors
 fds_t fds; /** File descriptors associated with the card */
@@ -157,13 +156,17 @@ fds_t fds; /** File descriptors associated with the card */
 
 int Interrupted = 0;
 char filename_channels_diff[256];
-char filename_channels_non_diff[256];
+char filename_channels_not_streamed[256];
 char filename_cam_info[256];
 char filename_pid[256];
 int  write_streamed_channels=1;
 
 //tuning parameters C99 initialisation
 tuning_parameters_t tuneparams={
+  .card = 0,
+  .card_tuned = 0,
+  .dont_tune = 0,
+  .tuning_timeout = ALARM_TIME_TIMEOUT,
   .freq = 0,  
   .srate = 0, 
   .pol = 0,
@@ -305,7 +308,7 @@ main (int argc, char **argv)
   char *conf_filename = NULL;
   FILE *conf_file;
   FILE *channels_diff;
-  FILE *channels_non_diff;
+  FILE *channels_not_streamed;
   FILE *cam_info;
   FILE *pidfile;
 
@@ -470,7 +473,7 @@ main (int argc, char **argv)
       if ((!strcmp (substring, "timeout_accord"))||(!strcmp (substring, "tuning_timeout")))
 	{
 	  substring = strtok (NULL, delimiteurs);	//we extract the substring
-	  tuning_timeout = atoi (substring);
+	  tuneparams.tuning_timeout = atoi (substring);
 	}
       else if (!strcmp (substring, "timeout_no_diff"))
 	{
@@ -540,7 +543,7 @@ main (int argc, char **argv)
       else if (!strcmp (substring, "dont_tune"))
 	{
 	  substring = strtok (NULL, delimiteurs);
-	  dont_tune = atoi (substring);
+	  tuneparams.dont_tune = atoi (substring);
 	}
       else if (!strcmp (substring, "autoconfiguration"))
 	{
@@ -680,7 +683,7 @@ main (int argc, char **argv)
       else if (!strcmp (substring, "card"))
 	{
 	  substring = strtok (NULL, delimiteurs);
-	  card = atoi (substring);
+	  tuneparams.card = atoi (substring);
 	}
 #ifdef LIBDVBEN50221
       else if (!strcmp (substring, "cam_number"))
@@ -1001,11 +1004,11 @@ main (int argc, char **argv)
 
   // we clear it by paranoia
   sprintf (filename_channels_diff, STREAMED_LIST_PATH,
-	   card);
-  sprintf (filename_channels_non_diff, NOT_STREAMED_LIST_PATH,
-	   card);
+	   tuneparams.card);
+  sprintf (filename_channels_not_streamed, NOT_STREAMED_LIST_PATH,
+	   tuneparams.card);
   sprintf (filename_cam_info, CAM_INFO_LIST_PATH,
-	   card);
+	   tuneparams.card);
   channels_diff = fopen (filename_channels_diff, "w");
   if (channels_diff == NULL)
     {
@@ -1017,16 +1020,16 @@ main (int argc, char **argv)
   else
     fclose (channels_diff);
 
-  channels_non_diff = fopen (filename_channels_non_diff, "w");
+  channels_not_streamed = fopen (filename_channels_not_streamed, "w");
   if (channels_diff == NULL)
     {
       write_streamed_channels=0;
       log_message( MSG_WARN,
 		   "WARNING : Can't create %s: %s\n",
-		   filename_channels_non_diff, strerror (errno));
+		   filename_channels_not_streamed, strerror (errno));
     }
   else
-    fclose (channels_non_diff);
+    fclose (channels_not_streamed);
 
 
 #ifdef LIBDVBEN50221
@@ -1053,21 +1056,21 @@ main (int argc, char **argv)
   // Card tuning
   /******************************************************/
   // alarm for tuning timeout
-  if(tuning_timeout)
+  if(tuneparams.tuning_timeout)
     {
       if (signal (SIGALRM, SignalHandler) == SIG_IGN)
 	signal (SIGALRM, SIG_IGN);
       if (signal (SIGUSR1, SignalHandler) == SIG_IGN)
 	signal (SIGUSR1, SIG_IGN);
-      alarm (tuning_timeout);
+      alarm (tuneparams.tuning_timeout);
     }
 
-  if(!dont_tune)
+  if(!tuneparams.dont_tune)
     {
       // We tune the card
       tune_retval =-1;
       
-      if (open_fe (&fds.fd_frontend, card))
+      if (open_fe (&fds.fd_frontend, tuneparams.card))
 	{
 	  tune_retval = 
 	    tune_it (fds.fd_frontend, &tuneparams);
@@ -1075,18 +1078,18 @@ main (int argc, char **argv)
 
     if (tune_retval < 0)
       {
-        log_message( MSG_INFO, "Tunning issue, card %d\n", card);
+        log_message( MSG_INFO, "Tunning issue, card %d\n", tuneparams.card);
         // we close the file descriptors
         close_card_fd (fds);
         exit(ERROR_TUNE);
       }
-      log_message( MSG_INFO, "Card %d tuned\n", card);
-      card_tuned = 1;
+      log_message( MSG_INFO, "Card %d tuned\n", tuneparams.card);
+      tuneparams.card_tuned = 1;
     }
   else
   {
-    log_message( MSG_INFO, "We don't tune card %d\n", card);
-    card_tuned = 1;
+    log_message( MSG_INFO, "We don't tune card %d\n", tuneparams.card);
+    tuneparams.card_tuned = 1;
   }
   /******************************************************/
   //card tuned
@@ -1110,7 +1113,7 @@ main (int argc, char **argv)
     cam_vars.cam_pmt_ptr=malloc(sizeof(mumudvb_ts_packet_t));
     
     //We initialise the cam. If fail, we remove cam support
-    if(cam_start(&cam_vars,card,filename_cam_info))
+    if(cam_start(&cam_vars,tuneparams.card,filename_cam_info))
       {
 	log_message( MSG_ERROR,"Cannot initalise cam\n");
 	cam_vars.cam_support=0;
@@ -1220,7 +1223,7 @@ main (int argc, char **argv)
   // We write our pid in a file if we deamonize
   if (!no_daemon)
     {
-      sprintf (filename_pid, "/var/run/mumudvb/mumudvb_carte%d.pid", card);
+      sprintf (filename_pid, "/var/run/mumudvb/mumudvb_carte%d.pid", tuneparams.card);
       pidfile = fopen (filename_pid, "w");
       if (pidfile == NULL)
 	{
@@ -1291,7 +1294,7 @@ main (int argc, char **argv)
     }
 
   // we open the file descriptors
-  if (create_card_fd (card, asked_pid, &fds) < 0)
+  if (create_card_fd (tuneparams.card, asked_pid, &fds) < 0)
     return mumudvb_close(100<<8);
 
   set_filters(asked_pid, &fds);
@@ -1395,6 +1398,10 @@ main (int argc, char **argv)
 
 	  pid = ((temp_buffer_from_dvr[1] & 0x1f) << 8) | (temp_buffer_from_dvr[2]);
 
+	  //Software filtering in case the card doesn't have hardware filtering
+	  if(asked_pid[pid]==PID_NOT_ASKED)
+	    continue;
+
 	  ScramblingControl = (temp_buffer_from_dvr[3] & 0xc0) >> 6;
 	  // 0 = Not scrambled
 	  // 1 = Reserved for future use
@@ -1415,7 +1422,7 @@ main (int argc, char **argv)
 			{
 			  log_message(MSG_DEBUG,"Autoconf : It seems that we have finished to get the services list\n");
 			  //we finish full autoconfiguration
-			  Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, common_port, card, &fds,asked_pid, multicast_ttl);
+			  Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, common_port, tuneparams.card, &fds,asked_pid, multicast_ttl);
 			}
 		      else
 			memset (autoconf_vars.autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
@@ -1467,7 +1474,7 @@ main (int argc, char **argv)
 			  //if it's finished, we open the new descriptors and add the new filters
 			  if(autoconf_vars.autoconfiguration==0)
 			    {
-			      autoconf_end(card, number_of_channels, channels, asked_pid, &fds);
+			      autoconf_end(tuneparams.card, number_of_channels, channels, asked_pid, &fds);
 			      //We free autoconf memory
 			      autoconf_freeing(&autoconf_vars,0);
 			    }
@@ -1731,11 +1738,11 @@ int mumudvb_close(int Interrupted)
       exit(ERROR_DEL_FILE);
     }
 
-  if ((write_streamed_channels)&&remove (filename_channels_non_diff))
+  if ((write_streamed_channels)&&remove (filename_channels_not_streamed))
     {
       log_message( MSG_WARN,
 		   "%s: %s\n",
-		   filename_channels_non_diff, strerror (errno));
+		   filename_channels_not_streamed, strerror (errno));
       exit(ERROR_DEL_FILE);
     }
 
@@ -1785,14 +1792,14 @@ static void SignalHandler (int signum)
       gettimeofday (&tv, (struct timezone *) NULL);
       now = tv.tv_sec - real_start_time;
 
-      if (display_signal_strenght && card_tuned)
+      if (display_signal_strenght && tuneparams.card_tuned)
 	show_power (fds);
 
-      if (!card_tuned)
+      if (!tuneparams.card_tuned)
 	{
 	  log_message( MSG_INFO,
 		       "Card not tuned after %ds - exiting\n",
-		       tuning_timeout);
+		       tuneparams.tuning_timeout);
 	  exit(ERROR_TUNE);
 	}
 
@@ -1809,7 +1816,7 @@ static void SignalHandler (int signum)
 		{
 		  log_message(MSG_WARN,"Autoconf : Warning : Not all the channels were configured before timeout\n");
 		  autoconf_vars.autoconfiguration=0;
-		  autoconf_end(card, number_of_channels, channels, asked_pid, &fds);
+		  autoconf_end(tuneparams.card, number_of_channels, channels, asked_pid, &fds);
 		  //We free autoconf memory
 		  autoconf_freeing(&autoconf_vars,0);
 		}
@@ -1819,7 +1826,7 @@ static void SignalHandler (int signum)
 		  //This happend when we are not able to get all the services of the PAT,
 		  //We continue with the partial list of services
 		  autoconf_vars.time_start_autoconfiguration=now;
-		  Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, common_port, card, &fds,asked_pid, multicast_ttl);
+		  Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, common_port, tuneparams.card, &fds,asked_pid, multicast_ttl);
 		}
 	    }
 	}
@@ -1852,7 +1859,7 @@ static void SignalHandler (int signum)
 	      {
 		log_message( MSG_INFO,
 			     "Channel \"%s\" back.Card %d\n",
-			     channels[curr_channel].name, card);
+			     channels[curr_channel].name, tuneparams.card);
 		channels[curr_channel].streamed_channel_old = 1;	// update
 		if(sap_vars.sap)
 		  sap_update(channels[curr_channel], &sap_vars.sap_messages[curr_channel]); //Channel status changed, we update the sap announces
@@ -1861,7 +1868,7 @@ static void SignalHandler (int signum)
 	      {
 		log_message( MSG_INFO,
 			     "Channel \"%s\" down.Card %d\n",
-			     channels[curr_channel].name, card);
+			     channels[curr_channel].name, tuneparams.card);
 		channels[curr_channel].streamed_channel_old = 0;	// update
 		if(sap_vars.sap)
 		  sap_update(channels[curr_channel], &sap_vars.sap_messages[curr_channel]); //Channel status changed, we update the sap announces
@@ -1883,7 +1890,7 @@ static void SignalHandler (int signum)
 		{
 		  log_message( MSG_INFO,
 			       "Channel \"%s\" is now fully unscrambled (%d%% of scrambled packets). Card %d\n",
-			       channels[curr_channel].name, ratio_scrambled, card);
+			       channels[curr_channel].name, ratio_scrambled, tuneparams.card);
 		  channels[curr_channel].scrambled_channel_old = 0;// update
 		}
 	      // Test if we have partiallay unscrambled packets (2%<=ratio<=95%) - scrambled_channel_old=1 : partially unscrambled
@@ -1891,7 +1898,7 @@ static void SignalHandler (int signum)
 		{
 		  log_message( MSG_INFO,
 			       "Channel \"%s\" is now partially unscrambled (%d%% of scrambled packets). Card %d\n",
-			       channels[curr_channel].name, ratio_scrambled, card);
+			       channels[curr_channel].name, ratio_scrambled, tuneparams.card);
 		  channels[curr_channel].scrambled_channel_old = 1;// update
 		}
 	      // Test if we have nearly only scrambled packets (>95%) - scrambled_channel_old=2 : highly scrambled
@@ -1899,7 +1906,7 @@ static void SignalHandler (int signum)
 		{
 		  log_message( MSG_INFO,
 			       "Channel \"%s\" is now higly scrambled (%d%% of scrambled packets). Card %d\n",
-			       channels[curr_channel].name, ratio_scrambled, card);
+			       channels[curr_channel].name, ratio_scrambled, tuneparams.card);
 		  channels[curr_channel].scrambled_channel_old = 2;// update
 		}
 	    }
@@ -1924,13 +1931,13 @@ static void SignalHandler (int signum)
 	    {
 	      log_message( MSG_INFO,
 			   "No data from card %d in %ds, exiting.\n",
-			   card, timeout_no_diff);
+			   tuneparams.card, timeout_no_diff);
 	      Interrupted=ERROR_NO_DIFF<<8; //the <<8 is to make difference beetween signals and errors
 	    }
 
 	  //generation of the files wich says the streamed channels
 	  if (write_streamed_channels)
-	    gen_file_streamed_channels(filename_channels_diff, filename_channels_non_diff, number_of_channels, channels);
+	    gen_file_streamed_channels(filename_channels_diff, filename_channels_not_streamed, number_of_channels, channels);
 
 	  // reinit
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)

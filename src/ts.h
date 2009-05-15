@@ -352,11 +352,10 @@ typedef struct {
 // u_char num_channels_in_section                :8; //For information, in case of TVCT or CVCT
 } psip_t;
 
-/**@Brief PSIP (TC)VCT (Terrestrial/Cable Virtual Channel Table) channels descriptors*/
-/* The bits here are poorly aligned. So I assume big endian and the bits will have to be swapped correctly*/
 
 #define PSIP_VCT_LEN 32
 
+/**@brief PSIP (TC)VCT (Terrestrial/Cable Virtual Channel Table) channels descriptors*/
 typedef struct {
   uint8_t short_name[14];//The channel short name in UTF-16
 

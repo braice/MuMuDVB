@@ -45,21 +45,21 @@
 
 /**@brief chained list of services for autoconfiguration
  *
- * @name - The channel name
- * @running_status - Is the channel running ? Not used for the moment
- * @type - The service type : television, radio, data, ...
- * @pmt_pit - The PMT pid of the service
- * @id - The program ID, also called program number in the PAT or in ATSC
- * @free_ca_mode - Tell if this service is scrambled
- * @next - The next service in the chained list
 */
 typedef struct mumudvb_service_t{
-  char name[MAX_NAME_LEN];  //the channel name
-  int running_status;
-  int type;
-  int pmt_pid;
+  /**The channel name*/
+  char name[MAX_NAME_LEN];  
+  /**Is the channel running ? Not used for the moment*/
+  int running_status; 
+  /**The service type : television, radio, data, ...*/
+  int type; 
+  /**The PMT pid of the service*/
+  int pmt_pid; 
+  /**The program ID, also called program number in the PAT or in ATSC*/
   int id;
+  /**Tell if this service is scrambled*/
   int free_ca_mode;
+  /**The next service in the chained list*/
   struct mumudvb_service_t *next;
 }mumudvb_service_t;
 
