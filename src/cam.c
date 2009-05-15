@@ -98,10 +98,15 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
 					uint8_t blind_answer, uint8_t expected_answer_length,
 					uint8_t *text, uint32_t text_size);
 
+static char *static_nom_fich_cam_info;
+
 /** @brief start the cam
  * This function will create the communication layers and set the callbacks*/
-int cam_start(cam_parameters_t *cam_params, int adapter_id)
+int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_info)
 {
+  // Copy the filename pointer into a static local pointer to be accessible from other threads
+  static_nom_fich_cam_info=nom_fich_cam_info;
+    
   // create transport layer
   cam_params->tl = en50221_tl_create(1, 16);
   if (cam_params->tl == NULL) {
@@ -293,10 +298,30 @@ static int mumudvb_cam_ai_callback(void *arg, uint8_t slot_id, uint16_t session_
   (void) slot_id;
   (void) session_number;
 
+  // Write information to log
   log_message( MSG_INFO, "CAM Application type: %02x\n", application_type);
   log_message( MSG_INFO, "CAM Application manufacturer: %04x\n", application_manufacturer);
   log_message( MSG_INFO, "CAM Manufacturer code: %04x\n", manufacturer_code);
   log_message( MSG_INFO, "CAM Menu string: %.*s\n", menu_string_length, menu_string);
+
+  // Try to append the information to the cam_info log file
+  FILE *file_cam_info;
+  file_cam_info = fopen (static_nom_fich_cam_info, "a");
+  if (file_cam_info == NULL)
+    {
+      log_message( MSG_WARN,
+		   "%s: %s\n",
+		   static_nom_fich_cam_info, strerror (errno));
+      exit(ERROR_CREATE_FILE);
+    }
+  else
+    {
+      fprintf (file_cam_info,"CAM_Application_Type=%02x\n",application_type);
+      fprintf (file_cam_info,"CAM_Application_Manufacturere=%04x\n",application_manufacturer);
+      fprintf (file_cam_info,"CAM_Manufacturer_Code=%04x\n",manufacturer_code);
+      fprintf (file_cam_info,"CAM_Menu_String=%.*s\n",menu_string_length, menu_string);
+      fclose (file_cam_info);
+    }  
 
   return 0;
 }
@@ -308,11 +333,32 @@ static int mumudvb_cam_ca_info_callback(void *arg, uint8_t slot_id, uint16_t ses
   (void) slot_id;
   (void) session_number;
 
+  // Write information to log
   log_message( MSG_INFO, "CAM supports the following ca system ids:\n");
   uint32_t i;
   for(i=0; i< ca_id_count; i++) {
     log_message( MSG_INFO, "  0x%04x\n", ca_ids[i]);
   }
+
+
+  // Try to append the information to the cam_info log file
+  FILE *file_cam_info;
+  file_cam_info = fopen (static_nom_fich_cam_info, "a");
+  if (file_cam_info == NULL)
+    {
+      log_message( MSG_WARN,
+		   "%s: %s\n",
+		   static_nom_fich_cam_info, strerror (errno));
+      exit(ERROR_CREATE_FILE);
+    }
+  else
+    {
+      for(i=0; i< ca_id_count; i++) 
+	fprintf (file_cam_info,"ID_CA_Supported=%04x\n",ca_ids[i]);
+      
+      fclose (file_cam_info);
+    }
+
   cam_params->ca_resource_connected = 1; 
   return 0;
 }

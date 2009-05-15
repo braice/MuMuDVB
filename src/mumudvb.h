@@ -68,6 +68,9 @@
 #define STREAMED_LIST_PATH "/var/run/mumudvb/chaines_diffusees_carte%d"
 //The path for the list of *not* streamed channels
 #define NOT_STREAMED_LIST_PATH "/var/run/mumudvb/chaines_non_diffusees_carte%d"
+//The path for the cam_info
+#define CAM_INFO_LIST_PATH "/var/run/mumudvb/caminfo_carte%d"
+
 
 //errors
 enum

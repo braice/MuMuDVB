@@ -158,6 +158,7 @@ fds_t fds; /** File descriptors associated with the card */
 int Interrupted = 0;
 char nom_fich_chaines_diff[256];
 char nom_fich_chaines_non_diff[256];
+char nom_fich_cam_info[256];
 char nom_fich_pid[256];
 int  write_streamed_channels=1;
 
@@ -305,6 +306,7 @@ main (int argc, char **argv)
   FILE *conf_file;
   FILE *chaines_diff;
   FILE *chaines_non_diff;
+  FILE *cam_info;
   FILE *pidfile;
 
   // configuration file parsing
@@ -1002,6 +1004,8 @@ main (int argc, char **argv)
 	   card);
   sprintf (nom_fich_chaines_non_diff, NOT_STREAMED_LIST_PATH,
 	   card);
+  sprintf (nom_fich_cam_info, CAM_INFO_LIST_PATH,
+	   card);
   chaines_diff = fopen (nom_fich_chaines_diff, "w");
   if (chaines_diff == NULL)
     {
@@ -1023,6 +1027,23 @@ main (int argc, char **argv)
     }
   else
     fclose (chaines_non_diff);
+
+
+#ifdef LIBDVBEN50221
+  if(cam_vars.cam_support)
+    {
+      cam_info = fopen (nom_fich_cam_info, "w");
+      if (cam_info == NULL)
+	{
+	  log_message( MSG_WARN,
+		       "WARNING : Can't create %s: %s\n",
+		       nom_fich_cam_info, strerror (errno));
+	}
+      else
+	fclose (cam_info);
+    }
+#endif
+
 
   log_message( MSG_INFO, "Streaming. Freq %d\n",
 	       tuneparams.freq);
@@ -1089,7 +1110,7 @@ main (int argc, char **argv)
     cam_vars.cam_pmt_ptr=malloc(sizeof(mumudvb_ts_packet_t));
     
     //We initialise the cam. If fail, we remove cam support
-    if(cam_start(&cam_vars,card))
+    if(cam_start(&cam_vars,card,nom_fich_cam_info))
       {
 	log_message( MSG_ERROR,"Cannot initalise cam\n");
 	cam_vars.cam_support=0;
@@ -1679,7 +1700,15 @@ int mumudvb_close(int Interrupted)
     {
       if(cam_vars.cam_pmt_ptr)
 	free(cam_vars.cam_pmt_ptr);
+      // stop CAM operation
       cam_stop(&cam_vars);
+      // delete cam_info file
+      if (remove (nom_fich_cam_info))
+	{
+	  log_message( MSG_WARN,
+		       "%s: %s\n",
+		       nom_fich_cam_info, strerror (errno));
+	}
     }
 #endif
 
