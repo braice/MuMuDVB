@@ -83,8 +83,12 @@ enum
  *
  */
 typedef struct{
+  /**@todo : uses these values to compute the used bandwith*/
   int streamed_channel;    //tell if this channel is actually streamed
   int streamed_channel_old;//tell if this channel is actually streamed (precedent test, to see if it's changed)
+
+  int scrambled_channel;// Tell if at least one of the PID related to the chanel is scrambled
+  int scrambled_channel_old;// Old state to manage state change display
 
   char name[MAX_NAME_LEN];  //the channel name
 

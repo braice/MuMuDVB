@@ -141,7 +141,7 @@ int no_daemon = 0; /** do we deamonize mumudvb ? */
 
 
 int number_of_channels; /** The number of channels ... */
-mumudvb_channel_t channels[MAX_CHANNELS]; /** The channels array */
+mumudvb_channel_t channels[MAX_CHANNELS]; /** The channels array */ /**@todo use realloc*/
 //Asked pids //used for filtering
 uint8_t asked_pid[8192]; /** this array contains the pids we want to filter @todo malloc it ?*/
 
@@ -290,6 +290,7 @@ main (int argc, char **argv)
 
   //MPEG2-TS reception and sort
   int pid;			/** pid of the current mpeg2 packet */
+  int ScramblingControl;
   int bytes_read;		/** number of bytes actually read */
   //temporary buffers
   unsigned char temp_buffer_from_dvr[TS_PACKET_SIZE];
@@ -1219,6 +1220,8 @@ main (int argc, char **argv)
     {
       channels[curr_channel].streamed_channel = 0;
       channels[curr_channel].streamed_channel_old = 1;
+      channels[curr_channel].scrambled_channel = 0;
+      channels[curr_channel].scrambled_channel_old = 0;
     }
 
   //We initialise asked pid table
@@ -1371,6 +1374,12 @@ main (int argc, char **argv)
 
 	  pid = ((temp_buffer_from_dvr[1] & 0x1f) << 8) | (temp_buffer_from_dvr[2]);
 
+	  ScramblingControl = (temp_buffer_from_dvr[3] & 0xc0) >> 6;
+	  // 0 = Not scrambled
+	  // 1 = Reserved for future use
+	  // 2 = Scrambled with even key
+	  // 3 = Scrambled with odd key
+	  
 
 	  /*************************************************************************************/
 	  /****              AUTOCONFIGURATION PART                                         ****/
@@ -1500,6 +1509,7 @@ main (int argc, char **argv)
 		  if ((channels[curr_channel].pids[curr_pid] == pid)) {
 		    send_packet=1;
 		    channels[curr_channel].streamed_channel++;
+		    if (ScramblingControl>0) channels[curr_channel].scrambled_channel++;
 		  }
 
 	      /******************************************************/
@@ -1807,6 +1817,7 @@ static void SignalHandler (int signum)
 	    }
 	  //end of sap announces
 
+	  // Check if the chanel stream state has changed
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	    if ((channels[curr_channel].streamed_channel >= 100) && (!channels[curr_channel].streamed_channel_old))
 	      {
@@ -1826,6 +1837,43 @@ static void SignalHandler (int signum)
 		if(sap_vars.sap)
 		  sap_update(channels[curr_channel], &sap_vars.sap_messages[curr_channel]); //Channel status changed, we update the sap announces
 	      }
+
+
+	  // Check if the chanel scrambling state has changed
+	  int ratio_scrambled = 0;
+	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+	    {
+	      // Calcultation of the ratio (percentage) of scrambled packets received
+	      if (channels[curr_channel].streamed_channel>0)
+		ratio_scrambled = (int)(channels[curr_channel].scrambled_channel*100/channels[curr_channel].streamed_channel);
+	      else
+		ratio_scrambled = 0;
+	      
+	      // Test if we have only unscrambled packets (<2%) - scrambled_channel_old=0 : fully unscrambled
+	      if ((ratio_scrambled < 2) && (channels[curr_channel].scrambled_channel_old != 0))
+		{
+		  log_message( MSG_INFO,
+			       "Channel \"%s\" is now fully unscrambled (%d%% of scrambled packets). Card %d\n",
+			       channels[curr_channel].name, ratio_scrambled, card);
+		  channels[curr_channel].scrambled_channel_old = 0;// update
+		}
+	      // Test if we have partiallay unscrambled packets (2%<=ratio<=95%) - scrambled_channel_old=1 : partially unscrambled
+	      if ((ratio_scrambled >= 2) && (ratio_scrambled <= 95) && (channels[curr_channel].scrambled_channel_old != 1))
+		{
+		  log_message( MSG_INFO,
+			       "Channel \"%s\" is now partially unscrambled (%d%% of scrambled packets). Card %d\n",
+			       channels[curr_channel].name, ratio_scrambled, card);
+		  channels[curr_channel].scrambled_channel_old = 1;// update
+		}
+	      // Test if we have nearly only scrambled packets (>95%) - scrambled_channel_old=2 : highly scrambled
+	      if ((ratio_scrambled > 95) && channels[curr_channel].scrambled_channel_old != 2)
+		{
+		  log_message( MSG_INFO,
+			       "Channel \"%s\" is now higly scrambled (%d%% of scrambled packets). Card %d\n",
+			       channels[curr_channel].name, ratio_scrambled, card);
+		  channels[curr_channel].scrambled_channel_old = 2;// update
+		}
+	    }
 
 	  /*******************************************/
 	  // we count active channels
@@ -1857,7 +1905,10 @@ static void SignalHandler (int signum)
 
 	  // reinit
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-	    channels[curr_channel].streamed_channel = 0;
+	    {
+	      channels[curr_channel].streamed_channel = 0;
+	      channels[curr_channel].scrambled_channel = 0;
+	    }
       
 #ifdef LIBDVBEN50221
 	  if(cam_vars.cam_support)
