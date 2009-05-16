@@ -883,8 +883,8 @@ int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, a
   for (curr_channel = 0; curr_channel < *number_of_channels; curr_channel++)
     {
       // Init udp
-      /**\todo explain*/
-      channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
+      //Open the multicast socket for the new channel
+      channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
     }
   
   log_message(MSG_DEBUG,"Autoconf : Step TWO, we get the video and audio PIDs\n");
