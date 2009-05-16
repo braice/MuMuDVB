@@ -16,7 +16,7 @@ MuMuDVB is originally a modification of dvbstream that http://www.crans.org[cr@n
 Now, it's a standalone project.
 
 Mumudvb is a program that redistributes streams from DVB on a network using
-multicasting. It can multicast a whole DVB transponder by assigning
+multicasting or HTTP unicast. It can multicast a whole DVB transponder by assigning
 each channel a different multicast IP.
 
 Website
@@ -35,6 +35,7 @@ Authors and contacts
 - mailto:manu@REMOVEMEcrans.ens-cachan.fr[Manuel Sabban] (getopt)
 - mailto:glondu@REMOVEMEcrans.ens-cachan.fr[Stéphane Glondu] (makefile cleaning, man page, debian package)
 - Special thanks to Dave Chapman (dvbstream author)
+- Pierre Gronlier, Sébastien Raillard
 
 
 .Mailing list:
@@ -52,10 +53,11 @@ Feature overview
 - Stream channels from a transponder on different multicast IPs
 - The program can rewrite the PAT PID in order to announce only present channels (useful for some set-top boxes)
 - Support for scrambled channels (if you don't have a CAM you can use sasc-ng, but check if it's allowed in you country/by your broadcaster)
-- Support for autoconfiguration, see <<autoconfiguration,Autoconfiguration>> section
+- Support for automatic configuration i.e channels discovery, see <<autoconfiguration,Autoconfiguration>> section
 - Generation of SAP announces, see <<sap,SAP>> section
 - Support of DVB-S, DVB-C, DVB-T and ATSC
 - Possibility to partially rewrite the stream for better compatibility with set-top boxes. See <<pat_rewrite,Pat Rewrite>> section.
+- Support for HTTP unicast see <<unicast,http unicast>> section
 
 Detailled feature list
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -262,6 +264,60 @@ VLC < 0.8.2
 
 Click on the "Settings" menu, then on "add interface" and choose SAP playlist. Then open you playlist, the SAP announces should appear automatically.
 
+
+
+[[unicast]]
+HTTP Unicast
+------------
+
+In addition to multicast, MuMuDVB also supports HTTP unicast. This make you able to use mumudvb on networks wich doesn't support multicast.
+
+There is one listening connection, the channel is selected via the HTTP path, see further.
+
+Be careful with unicast, it can eat a lot of bandwith.
+
+Activate HTTP unicast
+~~~~~~~~~~~~~~~~~~~~~
+
+To enable HTTP unicast you have to set the option """ip_http""". This option will set the ip adress on which you want to listen for incoming connections. If you want to listen on all your interfaces, put '''0.0.0.0'''.
+
+You can also define the listening port using '''port_http'''. If the port is not defined, the default port will be 4242.
+
+Client side, the different methods to get channels
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Get the channel by number
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can ask the channel by the channel number (starting at 1).
+
+If you server is listening on the ip 10.0.1 and the port 4242,
+
+------------------------------------
+vlc http://10.0.0.1:4242/bynumber/3
+------------------------------------
+
+will give you the channel number 3. This works also with xine and mplayer.
+
+Get the channel by name
+^^^^^^^^^^^^^^^^^^^^^^^
+
+[Note]
+This is not implemented for the moment
+
+You can also get the channel by name. You have to remove spaces.
+
+Get the channels list
+^^^^^^^^^^^^^^^^^^^^^
+
+To get the channel list (in basic html) just enter the adress '''http://10.0.0.1:4242/channels_list.html''' in your web browser.
+
+Other methods like test/plain can be easely implemented, please contact in this case.
+
+HTTP unicast and monitoring
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This HTTP connection can be used to monitor MuMuDVB. This feature will be implemented in a near future release. Please tell wich data can be interesting for you.
 
 
 Monitoring
