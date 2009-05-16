@@ -302,7 +302,7 @@ will give you the channel number 3. This works also with xine and mplayer.
 Get the channel by name
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-[Note]
+[NOTE]
 This is not implemented for the moment
 
 You can also get the channel by name. You have to remove spaces.
