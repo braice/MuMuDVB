@@ -125,8 +125,12 @@ typedef struct{
   /**number of channel pids*/
   int num_pids;
 
-  /**pmt pid number for cam support*/
-  int cam_pmt_pid;/**@todo : move it to pmt_pid and add a field need_descramble*/
+  /**Transport stream ID*/
+  int ts_id;
+  /**pmt pid number*/
+  int pmt_pid;
+  /**Say if we need to ask this channel to the cam*/
+  int need_cam_ask;
 
   /**the buffer wich will be sent once it's full*/
   unsigned char buf[MAX_UDP_SIZE];

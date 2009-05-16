@@ -820,8 +820,13 @@ int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *ch
 	      strcpy(channels[channel_number].ipOut,ip);
 	      log_message(MSG_DEBUG,"Autoconf : Channel Ip : \"%s\" port : %d\n",channels[channel_number].ipOut,port);
 
+	      //This is a scrambled channel, we will have to ask the cam for descrambling it
 	      if(parameters.autoconf_scrambled && actual_service->free_ca_mode)
-		channels[channel_number].cam_pmt_pid=actual_service->pmt_pid;
+		channels[channel_number].need_cam_ask=1;
+     
+	      //We store the PMT and the service id in the channel
+	      channels[channel_number].pmt_pid=actual_service->pmt_pid;
+	      channels[channel_number].ts_id=actual_service->id;
 
 	      channel_number++;
 	    }

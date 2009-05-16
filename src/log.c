@@ -291,8 +291,8 @@ void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *
 
       if (channels[curr_channel].sap_group[0])
 	fprintf ( config_file, "sap_group=%s\n", channels[curr_channel].sap_group);
-      if (channels[curr_channel].cam_pmt_pid)
-	fprintf ( config_file, "cam_pmt_pid=%d\n", channels[curr_channel].cam_pmt_pid);
+      if (channels[curr_channel].need_cam_ask)
+	fprintf ( config_file, "cam_pmt_pid=%d\n", channels[curr_channel].pmt_pid);
 
       fprintf ( config_file, "pids=");
       for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)

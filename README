@@ -3,7 +3,7 @@ MuMuDVB - README
 Brice Dubost <mumudvb@braice.net>
 Version 1.5.5
 
-image::doc/logo/logo_mumudvb.png[caption="logo MuMuDVB"]
+image::http://mumudvb.braice.net/mumudvbwiki/skins/common/images/logo_mumu_wiki.png[caption="logo MuMuDVB"]
 
 Presentation
 ------------
@@ -279,9 +279,9 @@ Be careful with unicast, it can eat a lot of bandwith.
 Activate HTTP unicast
 ~~~~~~~~~~~~~~~~~~~~~
 
-To enable HTTP unicast you have to set the option """ip_http""". This option will set the ip adress on which you want to listen for incoming connections. If you want to listen on all your interfaces, put '''0.0.0.0'''.
+To enable HTTP unicast you have to set the option `ip_http`. This option will set the ip adress on which you want to listen for incoming connections. If you want to listen on all your interfaces, put `0.0.0.0`.
 
-You can also define the listening port using '''port_http'''. If the port is not defined, the default port will be 4242.
+You can also define the listening port using `port_http`. If the port is not defined, the default port will be 4242.
 
 Client side, the different methods to get channels
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -310,7 +310,7 @@ You can also get the channel by name. You have to remove spaces.
 Get the channels list
 ^^^^^^^^^^^^^^^^^^^^^
 
-To get the channel list (in basic html) just enter the adress '''http://10.0.0.1:4242/channels_list.html''' in your web browser.
+To get the channel list (in basic html) just enter the adress `http://10.0.0.1:4242/channels_list.html` in your web browser.
 
 Other methods like test/plain can be easely implemented, please contact in this case.
 

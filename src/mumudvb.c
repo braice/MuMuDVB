@@ -818,13 +818,14 @@ main (int argc, char **argv)
 	      exit(ERROR_CONF);
 	    }
 	  substring = strtok (NULL, delimiteurs);
-      	  channels[curr_channel].cam_pmt_pid = atoi (substring);
-	  if (channels[curr_channel].cam_pmt_pid < 10 || channels[curr_channel].cam_pmt_pid > 8191){
+      	  channels[curr_channel].pmt_pid = atoi (substring);
+	  if (channels[curr_channel].pmt_pid < 10 || channels[curr_channel].pmt_pid > 8191){
 	      log_message( MSG_ERROR,
 		      "Config issue : %s in pids, given pid : %d\n",
-		      conf_filename, channels[curr_channel].cam_pmt_pid);
+		      conf_filename, channels[curr_channel].pmt_pid);
 	    exit(ERROR_CONF);
 	  }
+	  channels[curr_channel].need_cam_ask=1;
 	}
 #endif
       else if (!strcmp (substring, "pids"))
@@ -860,7 +861,6 @@ main (int argc, char **argv)
 	  channels[curr_channel].num_pids = curr_pid;
 	  curr_pid = 0;
 	  curr_channel++;
-      	  channels[curr_channel].cam_pmt_pid = 0; //paranoya
 	  ip_ok = 0;
 	}
       else if (!strcmp (substring, "name"))
@@ -1639,7 +1639,7 @@ main (int argc, char **argv)
 		  if ((channels[curr_channel].pids[curr_pid] == pid)) {
 		    send_packet=1;
 		    channels[curr_channel].streamed_channel++;
-		    if (ScramblingControl>0) channels[curr_channel].scrambled_channel++;
+		    if ((ScramblingControl>0) && (pid != channels[curr_channel].pmt_pid) ) channels[curr_channel].scrambled_channel++;
 		  }
 
 	      /******************************************************/
@@ -1651,7 +1651,7 @@ main (int argc, char **argv)
 	      if(cam_vars.cam_support && send_packet==1)  //no need to check paquets we don't send
 		if(cam_vars.ca_resource_connected && cam_vars.delay>=1 )
 		  {
-		    if ((channels[curr_channel].cam_pmt_pid)&& (channels[curr_channel].cam_pmt_pid == pid))
+		    if ((channels[curr_channel].need_cam_ask)&& (channels[curr_channel].pmt_pid == pid))
 		      {
 			if(get_ts_packet(temp_buffer_from_dvr,cam_vars.cam_pmt_ptr)) 
 			  {
@@ -1659,7 +1659,7 @@ main (int argc, char **argv)
 			    if(mumudvb_cam_new_pmt(&cam_vars, cam_vars.cam_pmt_ptr)==1)
 			      {
 				log_message( MSG_INFO,"CAM : CA PMT sent for channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name );
-				channels[curr_channel].cam_pmt_pid=0; //once we have asked the CAM for this PID, we clear it not to ask it again
+				channels[curr_channel].need_cam_ask=0; //once we have asked the CAM for this PID, we don't have to ask anymore
 			      }
 			  }
 		      }
