@@ -208,6 +208,7 @@ By default, SAP announces are activated if you use this autoconfiguration mode. 
 [NOTE]
 A detailled, documented example configuration file can be found in `doc/configuration_examples/autoconf_full.conf`
 
+[[autoconfiguration_simple]]
 Simple autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -229,6 +230,8 @@ If you put more than one pid for a channel, MuMuDVB will desactivate autoconfigu
 [NOTE]
 A detailled, documented example configuration file can be found in `doc/configuration_examples/autoconf1.conf`
 
+[NOTE]
+Simple autoconfiguration can fail finding the good pids if a PMT pid is shared within multiples channels. In this case you have to add the `ts_id` option to the channel to specify the transport stream id, also known as service id.
 
 [[sap]]
 SAP announces
@@ -427,6 +430,10 @@ This feature is intended for set-top boxes. This option will announce only the s
 
 To enable PAT rewriting, add `rewrite_pat=1` to your config file. This feature consumes few CPU, since the rewritten PAT is stored in memory and computed only once per channel.
 
+[NOTE]
+PAT rewrite can fail (i.e. doesn't solve the previous symptoms) for some channels if their PMT pid is shared. In this case you have to add the `ts_id` option to the channel to specify the transport stream id, also known as service id.
+
+
 Technical details (not sorted)
 ------------------------------
 
@@ -475,3 +482,8 @@ The set-top box display a blank screen
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
  * If the stream is working well when reading it with a computer and not with your set-top box, this is probably because your set-top box needs the PAT PID to be rewritten. To do this add `rewrite_pat=1` to your config file.
+
+Simple autoconfiguration fails finding the right pids
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ * This can happend if a PMT pid is shared among multiple channels, see <<autoconfiguration_simple,simple autoconfiguration>> section for more details.

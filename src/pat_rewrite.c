@@ -138,20 +138,23 @@ int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_
 	}
       else
 	{
-	  for(i=0;i<channels[curr_channel].num_pids;i++)
-	    if(channels[curr_channel].pids[i]==HILO(prog->network_pid))
-	      {
-		log_message(MSG_DEBUG,"Pat rewrite : NEW program for channel %d : \"%s\". PTM pid : %d\n", curr_channel, channels[curr_channel].name,channels[curr_channel].pids[i]);
-		//we found a announce for a PMT pid in our stream, we keep it
-		/**@todo : it probably doesn't work when a PMT is shared, check also the service_id if available*/
-		memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->packet+delta,PAT_PROG_LEN);
-		buf_dest_pos+=PAT_PROG_LEN;
-		if(buf_dest_pos+4>TS_PACKET_SIZE) //The +4 is for CRC32
-		  {
-		    log_message(MSG_WARN,"Pat rewrite : The generated PAT is too big for channel %d : \"%s\", we skip the other pids\n", curr_channel, channels[curr_channel].name);
-		    i=channels[curr_channel].num_pids;
-		  }
-	      }
+	  //We check the transport stream id if present
+	  if(!channels[curr_channel].ts_id || (channels[curr_channel].ts_id == HILO(prog->program_number)) )
+	  {
+	    for(i=0;i<channels[curr_channel].num_pids;i++)
+	      if(channels[curr_channel].pids[i]==HILO(prog->network_pid))
+		{
+		  log_message(MSG_DEBUG,"Pat rewrite : NEW program for channel %d : \"%s\". PTM pid : %d\n", curr_channel, channels[curr_channel].name,channels[curr_channel].pids[i]);
+		  //we found a announce for a PMT pid in our stream, we keep it
+		  memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->packet+delta,PAT_PROG_LEN);
+		  buf_dest_pos+=PAT_PROG_LEN;
+		  if(buf_dest_pos+4>TS_PACKET_SIZE) //The +4 is for CRC32
+		    {
+		      log_message(MSG_WARN,"Pat rewrite : The generated PAT is too big for channel %d : \"%s\", we skip the other pids\n", curr_channel, channels[curr_channel].name);
+		      i=channels[curr_channel].num_pids;
+		    }
+		}
+	  }
 	}
       delta+=PAT_PROG_LEN;
     }

@@ -828,6 +828,17 @@ main (int argc, char **argv)
 	  channels[curr_channel].need_cam_ask=1;
 	}
 #endif
+      else if (!strcmp (substring, "ts_id"))
+	{
+	  if ( ip_ok == 0)
+	    {
+	      log_message( MSG_ERROR,
+			"You must precise ip first\n");
+	      exit(ERROR_CONF);
+	    }
+	  substring = strtok (NULL, delimiteurs);
+      	  channels[curr_channel].ts_id = atoi (substring);
+	}
       else if (!strcmp (substring, "pids"))
 	{
 	  if ( ip_ok == 0)
@@ -1217,6 +1228,11 @@ main (int argc, char **argv)
 	  log_message( MSG_DETAIL, "Autoconf : Autoconfiguration desactivated for channel \"%s\" \n", channels[curr_channel].name);
 	  channels[curr_channel].autoconfigurated=1;
 	}
+      else
+	{
+	  //Only one pid with autoconfiguration=1, it's the PMT pid
+	  channels[curr_channel].pmt_pid=channels[curr_channel].pids[0];
+	}
     }
 
   /*****************************************************/
@@ -1554,31 +1570,33 @@ main (int argc, char **argv)
 	      //here we call the autoconfiguration function
 	      for(curr_channel=0;curr_channel<MAX_CHANNELS;curr_channel++)
 		{
-		  if((!channels[curr_channel].autoconfigurated) &&(channels[curr_channel].pids[0]==pid)&& pid)
+		  if((!channels[curr_channel].autoconfigurated) &&(channels[curr_channel].pmt_pid==pid)&& pid)
 		    {
 		      if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_pmt))
 			{
 			  //Now we have the PMT, we parse it
-			  log_message(MSG_DEBUG,"\nAutoconf : New PMT pid %d for channel %d\n",pid,curr_channel);
-			  autoconf_read_pmt(autoconf_vars.autoconf_temp_pmt,&channels[curr_channel]);
-			  log_message(MSG_DETAIL,"Autoconf : Final PIDs for channel %d \"%s\" : ",curr_channel, channels[curr_channel].name);
-			  for(i=0;i<channels[curr_channel].num_pids;i++)
-			    log_message(MSG_DETAIL," %d -",channels[curr_channel].pids[i]);
-			  log_message(MSG_DETAIL,"\n");
-			  channels[curr_channel].autoconfigurated=1;
-
-			  //We check if autoconfiguration is finished
-			  autoconf_vars.autoconfiguration=0;
-			  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-			    if(!channels[curr_channel].autoconfigurated)
-			      autoconf_vars.autoconfiguration=AUTOCONF_MODE_PIDS;
-
-			  //if it's finished, we open the new descriptors and add the new filters
-			  if(autoconf_vars.autoconfiguration==0)
+			  if(autoconf_read_pmt(autoconf_vars.autoconf_temp_pmt,&channels[curr_channel])==0)
 			    {
-			      autoconf_end(tuneparams.card, number_of_channels, channels, asked_pid, &fds);
-			      //We free autoconf memory
-			      autoconf_freeing(&autoconf_vars,0);
+			      log_message(MSG_DETAIL,"Autoconf : Final PIDs for channel %d \"%s\" : ",curr_channel, channels[curr_channel].name);
+			      for(i=0;i<channels[curr_channel].num_pids;i++)
+				log_message(MSG_DETAIL," %d -",channels[curr_channel].pids[i]);
+			      log_message(MSG_DETAIL,"\n");
+			      channels[curr_channel].autoconfigurated=1;
+			    
+
+			      //We check if autoconfiguration is finished
+			      autoconf_vars.autoconfiguration=0;
+			      for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+				if(!channels[curr_channel].autoconfigurated)
+				  autoconf_vars.autoconfiguration=AUTOCONF_MODE_PIDS;
+
+			      //if it's finished, we open the new descriptors and add the new filters
+			      if(autoconf_vars.autoconfiguration==0)
+				{
+				  autoconf_end(tuneparams.card, number_of_channels, channels, asked_pid, &fds);
+				  //We free autoconf memory
+				  autoconf_freeing(&autoconf_vars,0);
+				}
 			    }
 			}
 		    }

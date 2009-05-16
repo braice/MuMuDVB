@@ -170,6 +170,7 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 |port | The port | 1234 or common_port | | 
 |sap_group |The playlist group for SAP announces | | string | optionnal
 |cam_pmt_pid |Only for scrambled channels. The PMT PID for CAM support | | | 
+|ts_id |The transport stream id (program number), olny for autoconfiguration, or pat rewrite see README for more details | | | 
 |name | The name of the channel. Will be used for /var/run/mumudvb/chaines_diffusees%d, logging and SAP announces | | | Mandatory
 |pids | The PIDs list, separated by spaces | | | some pids are always sent (PAD EIT SDT TDT NIT), see README for more details
 |==================================================================================================================

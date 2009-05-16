@@ -144,10 +144,18 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 	if(header->table_id!=0x02)
 	  {
 	    log_message( MSG_DETAIL,"Autoconf : Packet PID %d for channel \"%s\" is not a PMT PID\n", pmt->pid, channel->name);
+	    channel->pmt_pid=0;
+	    return 1;
+	  }
+
+	//We check if this PMT belongs to the current channel. (Only works with autoconfiguration full for the moment because it stores the ts_id)
+	if(channel->ts_id && (channel->ts_id != HILO(header->program_number)) )
+	  {
+	    log_message( MSG_DETAIL,"Autoconf : The PMT %d not belongs to channel \"%s\"\n", pmt->pid, channel->name);
 	    return 1;
 	  }
 	
-	log_message( MSG_DEBUG,"Autoconf : PMT read for autoconfiguration of channel \"%s\"\n", channel->name);
+	log_message( MSG_DEBUG,"Autoconf : PMT (PID %d) read for autoconfiguration of channel \"%s\"\n", pmt->pid, channel->name);
 
 
 	program_info_length=HILO(header->program_info_length); //program_info_length
