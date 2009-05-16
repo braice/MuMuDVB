@@ -317,7 +317,7 @@ static int mumudvb_cam_ai_callback(void *arg, uint8_t slot_id, uint16_t session_
   else
     {
       fprintf (file_cam_info,"CAM_Application_Type=%02x\n",application_type);
-      fprintf (file_cam_info,"CAM_Application_Manufacturere=%04x\n",application_manufacturer);
+      fprintf (file_cam_info,"CAM_Application_Manufacturer=%04x\n",application_manufacturer);
       fprintf (file_cam_info,"CAM_Manufacturer_Code=%04x\n",manufacturer_code);
       fprintf (file_cam_info,"CAM_Menu_String=%.*s\n",menu_string_length, menu_string);
       fclose (file_cam_info);

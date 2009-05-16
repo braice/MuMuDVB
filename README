@@ -62,6 +62,7 @@ Detailled feature list
 
 - Streams channels from a transponder on different multicast IPs
 - Can show reception level when streaming
+- Show if channels are successfully descrambled by the CAM
 - Makes a list of streamed and down channels in real time
 - Can deamonize and write his own process id in a file
 - Supports standard and universals LNBs
@@ -301,6 +302,19 @@ The hardware descramblig uses almost no CPU, all the descrambling is made by the
 [NOTE]
 MuMuDVB doesn't query the cam before asking for descrambling. The query is not reliable. Most of CAMs answer a menu when the descrambling is not possible and MuMuDVB will display it on the standard error. In other words MuMuDVB cannot tell you cleary why a channel is not descrambled if the CAM doesn't reply a menu.
 
+The information concerning the cam is stored in '''/var/run/mumudvb/caminfo_carte%d''' where %d is the card number.
+
+.Example contents of '''/var/run/mumudvb/caminfo_carte%d''' 
+----------------------------------------------------
+CAM_Application_Type=01
+CAM_Application_Manufacturer=02ca
+CAM_Manufacturer_Code=3000
+CAM_Menu_String=PowerCam_HD V2.0
+ID_CA_Supported=0100
+ID_CA_Supported=0500
+----------------------------------------------------
+
+
 How to ask MuMuDVB for descrambling?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -325,6 +339,29 @@ Important note : this solution is not legal in all countries and it's not allowe
 MuMuDVB has been reported to work with software descrambling solutions ..
 
 TODO
+
+Scrambling status
+~~~~~~~~~~~~~~~~~
+
+The scrambling status is stored together with the streamed channel list. 
+
+.Example
+----------------------------------------------
+239.100.0.7:1234:ESCALES:PartiallyUnscrambled
+239.100.0.8:1234:Fit/Toute l'Histoire:PartiallyUnscrambled
+239.100.0.9:1234:NT1:PartiallyUnscrambled
+239.100.0.10:1234:ACTION:PartiallyUnscrambled
+239.100.0.11:1234:MANGAS:PartiallyUnscrambled
+239.100.0.12:1234:ENCYCLOPEDIA:PartiallyUnscrambled
+239.100.0.13:1234:XXL PL:PartiallyUnscrambled
+239.100.0.14:1234:France 5:HighlyScrambled
+239.100.0.16:1234:LCP:FullyUnscrambled
+239.100.0.17:1234:VIDEOCLICK:FullyUnscrambled
+----------------------------------------------
+
+ * FullyUnscrambled : less than 5% of scrambled packets
+ * PartiallyUnscrambled : between 5% and 95% of scrambled packets
+ * HighlyScrambled : more than 95% of scrambled packets
 
 [[pat_rewrite]]
 PAT (Program Allocation Table) Rewriting
