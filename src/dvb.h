@@ -57,18 +57,6 @@
 #define DVR_DEV_PATH      "/dev/dvb/adapter%d/dvr0"
 
 
-/**@brief file descriptors*/
-typedef struct {
-  /** the dvb dvr*/
-  int fd_dvr;
-  /** the dvb frontend*/
-  int fd_frontend;
-  /** demuxer file descriptors */
-  int fd_demuxer[8192];
-  /** poll file descriptors */
-  struct pollfd pfds[2];	//  DVR device
-}fds_t;
-
 
 int open_fe (int *fd_frontend, int card);
 void set_ts_filt (int fd,uint16_t pid);

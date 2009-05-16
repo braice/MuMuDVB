@@ -29,7 +29,7 @@
  */
 
 #include "sap.h"
-#include "udp.h"
+#include "network.h"
 #include <string.h>
 
 extern sap_parameters_t sap_vars; 

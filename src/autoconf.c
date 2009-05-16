@@ -764,8 +764,6 @@ void autoconf_free_services(mumudvb_service_t *services)
   mumudvb_service_t *actual_service;
   mumudvb_service_t *next_service;
 
-  actual_service=services;
-
   for(actual_service=services;actual_service != NULL; actual_service=next_service)
     {
       next_service= actual_service->next;

@@ -28,8 +28,8 @@
  * @brief Networking functions
  */
 
-#ifndef _UDP_H
-#define _UDP_H
+#ifndef _NETWORK_H
+#define _NETWORK_H
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -42,16 +42,13 @@
 
 #include "mumudvb.h"
 
-/* udp */
-/* Output: {uni,multi,broad}cast socket */
-
 /** The default time to live*/
 #define DEFAULT_TTL		2
 
 int makeclientsocket (char *szAddr, unsigned short port, int TTL, struct sockaddr_in *sSockAddr);
 int sendudp (int fd, struct sockaddr_in *sSockAddr, unsigned char *data, int len);
 int makesocket (char *szAddr, unsigned short port, int TTL, struct sockaddr_in *sSockAddr);
-
+int makeTCPclientsocket (char *szAddr, unsigned short port, struct sockaddr_in *sSockAddr);
 
 #endif
 

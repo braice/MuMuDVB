@@ -73,7 +73,7 @@
  *
  * tune.c tune.h : tuning of the dvb card
  *
- * udp.c udp.h : networking ie openning sockets, sending packets
+ * network.c network.h : networking ie openning sockets, sending packets
  */
 
 #define _GNU_SOURCE		//in order to use program_invocation_short_name (extension gnu)
@@ -100,7 +100,7 @@
 
 #include "mumudvb.h"
 #include "tune.h"
-#include "udp.h"
+#include "network.h"
 #include "dvb.h"
 #ifdef LIBDVBEN50221
 #include "cam.h"
@@ -110,6 +110,7 @@
 #include "autoconf.h"
 #include "sap.h"
 #include "pat_rewrite.h"
+#include "unicast_http.h"
 
 /*Do we support ATSC ?*/
 #undef ATSC
@@ -238,6 +239,12 @@ pat_rewrite_parameters_t rewrite_vars={
   .full_pat=NULL,
   .needs_update=1,
   .continuity_counter=0,
+};
+
+//Parameters for HTTP unicast
+unicast_parameters_t unicast_vars={
+  .ipOut="\0",
+  .portOut=4242,
 };
 
 //logging
@@ -711,6 +718,17 @@ main (int argc, char **argv)
 	  sscanf (substring, "%s\n", channels[curr_channel].ipOut);
 	  ip_ok = 1;
 	}
+      else if (!strcmp (substring, "ip_http"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+          if(strlen(substring)>19)
+            {
+              log_message( MSG_ERROR,
+                           "The Ip address %s is too long.\n", substring);
+              exit(ERROR_CONF);
+            }
+	  sscanf (substring, "%s\n", unicast_vars.ipOut);
+	}
       else if (!strcmp (substring, "sap_group"))
 	{
 	  if (sap_vars.sap==0)
@@ -778,6 +796,11 @@ main (int argc, char **argv)
 	    }
 	  substring = strtok (NULL, delimiteurs);
 	  channels[curr_channel].portOut = atoi (substring);
+	}
+      else if (!strcmp (substring, "port_http"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  unicast_vars.portOut = atoi (substring);
 	}
 #ifdef LIBDVBEN50221
       else if (!strcmp (substring, "cam_pmt_pid"))
@@ -1298,7 +1321,9 @@ main (int argc, char **argv)
     return mumudvb_close(100<<8);
 
   set_filters(asked_pid, &fds);
-
+  fds.pfds=NULL;
+  fds.pfdsnum=1;
+  fds.pfds=realloc(fds.pfds,(fds.pfdsnum+1)*sizeof(struct pollfd)); /**@todo check return value*/
   //File descriptor for polling
   fds.pfds[0].fd = fds.fd_dvr;
   //POLLIN : data available for read
@@ -1312,13 +1337,29 @@ main (int argc, char **argv)
   now = 0;
 
   /*****************************************************/
-  // Init udp, we open the sockets
+  // Init network, we open the sockets
   /*****************************************************/
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
       //we use makeclientsocket in order to join the multicast group associated with the channel
       //Some switches (like HP Procurve 26xx) broadcast multicast traffic when there is no client to the group //Note, it seems that it's now corrected
       channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
+    }
+  //We open the socket for the http unicast if needed and we update the poll structure
+  if(unicast_vars.ipOut)
+    {
+      log_message(MSG_DETAIL,"Unicast : We open the http socket for address %s:%d\n",unicast_vars.ipOut, unicast_vars.portOut);
+      unicast_vars.socketIn= makeTCPclientsocket(unicast_vars.ipOut, unicast_vars.portOut, &unicast_vars.sIn);
+      //We add them to the poll descriptors
+      if(unicast_vars.socketIn>0)
+	{
+	  fds.pfdsnum=2;
+	  fds.pfds=realloc(fds.pfds,(fds.pfdsnum+1)*sizeof(struct pollfd));/**@todo check return value*/
+	  fds.pfds[1].fd = unicast_vars.socketIn;
+	  fds.pfds[1].events = POLLIN | POLLPRI;
+	  fds.pfds[2].fd = 0;
+	  fds.pfds[2].events = POLLIN | POLLPRI;
+	}
     }
 
 
@@ -1336,7 +1377,9 @@ main (int argc, char **argv)
 	}
       memset (sap_vars.sap_messages, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
       //For sap announces, we open the socket
-      sap_vars.sap_socketOut =  makeclientsocket (SAP_IP, SAP_PORT, SAP_TTL, &sap_vars.sap_sOut);
+      //Some switches (like HP Procurve 26xx) broadcast multicast traffic when there is no client to the group //Note, it seems that it's now corrected
+      //sap_vars.sap_socketOut =  makeclientsocket (SAP_IP, SAP_PORT, SAP_TTL, &sap_vars.sap_sOut);
+      sap_vars.sap_socketOut =  makesocket (SAP_IP, SAP_PORT, SAP_TTL, &sap_vars.sap_sOut);
       sap_vars.sap_serial= 1 + (int) (424242.0 * (rand() / (RAND_MAX + 1.0)));
       sap_vars.sap_last_time_sent = 0;
       //todo : loop to create the version
@@ -1360,11 +1403,11 @@ main (int argc, char **argv)
   //Main loop where we get the packets and send them
   /******************************************************/
   while (!Interrupted)
-    {
+    {   
       /* Poll the open file descriptors : we wait for data*/
       poll_try=0;
       last_poll_error=0;
-      while((poll (fds.pfds, 1, 500)<0)&&(poll_try<MAX_POLL_TRIES))
+      while((poll (fds.pfds, fds.pfdsnum, 500)<0)&&(poll_try<MAX_POLL_TRIES))
 	{
 	  if(errno != EINTR) //EINTR means Interrupted System Call, it normally shouldn't matter so much so we don't count it for our Poll tries
 	    {
@@ -1384,6 +1427,60 @@ main (int argc, char **argv)
 	{
 	  log_message( MSG_WARN, "Poll : Warning : error when polling: %s\n", strerror (last_poll_error));
 	}
+
+      /**************************************************************/
+      /* UNICAST HTTP                                               */
+      /**************************************************************/ 
+      if((!(fds.pfds[0].revents&POLLIN)) && (!(fds.pfds[0].revents&POLLPRI))) //Priority to the DVB packets so if there is dvb packets and something else, we look first to dvb packets
+	{
+	  //If we have clients, we look if something happend for them
+	  if(fds.pfdsnum>2)
+	    {
+	      int actual_fd;
+	      int iRet;
+	      for(actual_fd=2;actual_fd<fds.pfdsnum;actual_fd++)
+		{
+		  iRet=0;
+		  if((fds.pfds[actual_fd].revents&POLLIN)||(fds.pfds[actual_fd].revents&POLLPRI))
+		    {
+		      log_message(MSG_DEBUG,"Unicast : New message for socket %d\n", fds.pfds[actual_fd].fd);
+		      iRet=unicast_handle_message(&unicast_vars,fds.pfds[actual_fd].fd, channels, number_of_channels);
+		    }
+		  if (iRet==-2 || (fds.pfds[actual_fd].revents&POLLHUP)) //iRet==-2 --> 0 received data or error, we close the connection
+		    {
+		      /** @todo This will have to be put in a function*/
+		      unicast_close_connection(&unicast_vars,&fds,fds.pfds[actual_fd].fd,channels);
+		      //We check if we hage to parse fds.pfds[actual_fd].revents (the last fd moved to the actual one)
+		      if(fds.pfds[actual_fd].revents)
+			actual_fd--;//Yes, we force the loop to see it again
+		    }
+		}
+	    }
+	  //Now we look if something happend with the master connection
+	  if((fds.pfds[1].revents&POLLIN)||(fds.pfds[1].revents&POLLPRI))
+	    {
+	      //New connection, we accept the connection
+	      int tempSocket;
+	      tempSocket=unicast_accept_connection(&unicast_vars);
+	      if(tempSocket!=-1)
+		{
+		  fds.pfdsnum++;
+		  fds.pfds=realloc(fds.pfds,(fds.pfdsnum+1)*sizeof(struct pollfd));/**@todo check return value*/
+		  //We poll the new socket
+		  fds.pfds[fds.pfdsnum-1].fd = tempSocket;
+		  fds.pfds[fds.pfdsnum-1].events = POLLIN | POLLPRI | POLLHUP; //We also poll the deconnections
+		  fds.pfds[fds.pfdsnum].fd = 0;
+		  fds.pfds[fds.pfdsnum].events = POLLIN | POLLPRI;
+		  log_message(MSG_DEBUG,"Unicast : Number of clients : %d\n", fds.pfdsnum-2);
+		}
+	    }
+
+	  //no DVB packet, we continue
+	  continue;
+	}
+      /**************************************************************/
+      /* END OF UNICAST HTTP                                        */
+      /**************************************************************/ 
 
       /* Attempt to read 188 bytes from /dev/____/dvr */
       if ((bytes_read = read (fds.fd_dvr, temp_buffer_from_dvr, TS_PACKET_SIZE)) > 0)
@@ -1627,8 +1724,48 @@ main (int argc, char **argv)
 		  //The buffer is full, we send it
 		  if ((channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE)
 		    {
+		      /********** MULTICAST *************/
 		      sendudp (channels[curr_channel].socketOut, &channels[curr_channel].sOut, channels[curr_channel].buf,
 			       channels[curr_channel].nb_bytes);
+		      /*********** UNICAST **************/
+		      if(channels[curr_channel].clients)
+			{
+			  unicast_client_t *actual_client;
+			  int written_len;
+			  actual_client=channels[curr_channel].clients;
+			  while(actual_client!=NULL)
+			    {
+			      written_len=write(actual_client->Socket,channels[curr_channel].buf, channels[curr_channel].nb_bytes);
+			      //We check if all the data was successfully written
+			      if(written_len<channels[curr_channel].nb_bytes)
+				{
+				  //No ! 
+				  if(written_len==-1)
+				    log_message(MSG_INFO,"Error when writing to client %s:%d : %s\n",
+						inet_ntoa(actual_client->SocketAddr.sin_addr),
+						actual_client->SocketAddr.sin_port,
+						strerror(errno));
+				  else
+				    log_message(MSG_INFO,"Not all the data was written to %s:%d\n",
+						inet_ntoa(actual_client->SocketAddr.sin_addr),
+						actual_client->SocketAddr.sin_port);
+
+				  actual_client->consecutive_errors++;
+				  if(actual_client->consecutive_errors>UNICAST_CONSECUTIVE_ERROR_LIMIT)
+				    {
+				      log_message(MSG_INFO,"To much consecutive errors when writing to client %s:%d, we disconnect\n",
+						  inet_ntoa(actual_client->SocketAddr.sin_addr),
+						  actual_client->SocketAddr.sin_port);
+				      unicast_close_connection(&unicast_vars,&fds,actual_client->Socket,channels);
+				    }
+				}
+			      else if (actual_client->consecutive_errors)
+				actual_client->consecutive_errors--;
+
+			      actual_client=actual_client->chan_next;
+			    }
+			}
+		      /********* END of UNICAST **********/
 		      channels[curr_channel].nb_bytes = 0;
 		    }
 		}
@@ -1700,6 +1837,11 @@ int mumudvb_close(int Interrupted)
 
   // we close the file descriptors
   close_card_fd (fds);
+  free(fds.pfds);
+  fds.pfds=NULL;
+
+  //We close the unicast connections and free the clients
+  unicast_freeing(&unicast_vars, channels);
 
 #ifdef LIBDVBEN50221
   if(cam_vars.cam_support)
@@ -1755,6 +1897,9 @@ int mumudvb_close(int Interrupted)
 	  exit(ERROR_DEL_FILE);
 	}
     }
+
+  /**@todo : free the file descriptors*/
+  /**@todo : free the unicast clients*/
 
   if(Interrupted<(1<<8))
     return (0);

@@ -34,7 +34,7 @@
 
 #define VERSION "1.5.5b"
 
-#include "udp.h"  //for the sockaddr
+#include "network.h"  //for the sockaddr
 
 /**the number of pids by channel*/
 #define MAX_PIDS_PAR_CHAINE     18
@@ -86,6 +86,22 @@ enum
     MSG_DEBUG
   };
 
+
+/**@brief file descriptors*/
+typedef struct {
+  /** the dvb dvr*/
+  int fd_dvr;
+  /** the dvb frontend*/
+  int fd_frontend;
+  /** demuxer file descriptors */
+  int fd_demuxer[8192];
+  /** poll file descriptors */
+  struct pollfd *pfds;	//  DVR device + unicast http clients
+  int pfdsnum;
+}fds_t;
+
+struct unicast_client_t;
+
 /**@brief Structure for storing channels
  *
  * @todo : uses streamed_channel values to compute the used bandwith
@@ -122,14 +138,19 @@ typedef struct{
 
   /**The multicast ip address*/
   char ipOut[20];
-  /**The multicast group*/
+  /**The multicast port*/
   int portOut;
-  /**The output socket address*/
+  /**The multicast output socket*/
   struct sockaddr_in sOut;
-  /**The output socket file descriptor*/
+  /**The multicast output socket*/
   int socketOut;
-  /**The playlist sap group*/
+
+  /**Unicast clients*/
+  struct unicast_client_t *clients;
+
+  /**The sap playlist group*/
   char sap_group[20];
+
 
 }mumudvb_channel_t;
 

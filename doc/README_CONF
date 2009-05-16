@@ -148,6 +148,9 @@ Other global parameters
 |sap_sending_ip |The SAP sender IP address | 0.0.0.0 | | Optionnal, not autodetected
 |sap_interval |Interval in seconds between sap announces | 5 | positive integers | 
 |sap_default_group | The default playlist group for sap announces | | string | Optionnal 
+5+^s|HTTP unicast parameter
+|ip_http |the listening ip for http unicast, if you want to listen to all interfaces put 0.0.0.0 | empty  |  | see the README for more details
+|port_http | The listening port for http unicast | 4242 | |  see the README for more details
 |==================================================================================================================
 
 

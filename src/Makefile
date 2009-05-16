@@ -3,7 +3,7 @@ CFLAGS	= -Wall -Wextra
 IFLAGS	= -g root -o root
 
 OUT		= mumudvb
-OBJ_FILES	= mumudvb.o tune.o udp.o dvb.o pat_rewrite.o cam.o log.o ts.o autoconf.o sap.o crc32.o
+OBJ_FILES	= mumudvb.o tune.o network.o dvb.o pat_rewrite.o cam.o log.o ts.o autoconf.o sap.o crc32.o unicast_http.o
 SRC_FILES	= $(OBJ_FILES:.o=.c)
 
 ifdef DESTDIR
