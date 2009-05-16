@@ -429,6 +429,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, int fd, mumudvb_c
 	    }
 
 	  //We have found a channel, we add the client
+	  /**@todo : add a limit in the number of simultaneous clients*/
 	  if(requested_channel)
 	    {
 	      if(!channel_add_unicast_client(client,&channels[requested_channel-1]))
@@ -440,9 +441,18 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, int fd, mumudvb_c
 	}
       else
 	{
-	  log_message(MSG_INFO,"Unicast : Unhandled HTTP method : \"%s\", error 501\n",  strtok (client->buffer+pos, " "));
-	  iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY));//iRet is to make the copiler happy we will close the connection anyways
-	  return -2; //to delete the client
+	  //We don't implement this http method, but if the client is already connected, we keep the connection
+	  if(client->channel==-1)
+	    {
+	      log_message(MSG_INFO,"Unicast : Unhandled HTTP method : \"%s\", error 501\n",  strtok (client->buffer+pos, " "));
+	      iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY));//iRet is to make the copiler happy we will close the connection anyways
+	      return -2; //to delete the client
+	    }
+	  else
+	    {
+	      log_message(MSG_INFO,"Unicast : Unhandled HTTP method : \"%s\", error 501 but we keep the client connected\n",  strtok (client->buffer+pos, " "));
+	      return 0;
+	    }
 	}
       //We don't need the buffer anymore
       free(client->buffer);

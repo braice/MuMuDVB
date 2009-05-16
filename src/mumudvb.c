@@ -728,6 +728,12 @@ main (int argc, char **argv)
               exit(ERROR_CONF);
             }
 	  sscanf (substring, "%s\n", unicast_vars.ipOut);
+	  if(unicast_vars.ipOut)
+	    {
+	      log_message( MSG_WARN,
+			"You have enabled the support for HTTP Unicast. Please report any bug/comment\n");
+	    }
+
 	}
       else if (!strcmp (substring, "sap_group"))
 	{
