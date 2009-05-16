@@ -45,6 +45,9 @@ Todo list
 #include <errno.h>
 #include <string.h>
 #include <poll.h>
+#include <fcntl.h>
+
+
 
 #include "unicast_http.h"
 #include "mumudvb.h"
@@ -80,6 +83,18 @@ int unicast_accept_connection(unicast_parameters_t *unicast_vars)
       close(tempSocket);                 
       return -1;
     }
+
+  //Now we set this socket to be non blocking because we poll it
+  int flags;
+  flags = fcntl(tempSocket, F_GETFL, 0);
+  flags |= O_NONBLOCK;
+  if (fcntl(tempSocket, F_SETFL, flags) < 0)
+    {
+      log_message(MSG_ERROR,"Set non blocking failed : %s\n",strerror(errno));
+      return -1;
+    }
+
+
   return tempSocket;
 
 }
@@ -425,7 +440,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, int fd, mumudvb_c
 	}
       else
 	{
-	  log_message(MSG_INFO,"Unicast : Unhandled HTTP method, error 501\n");
+	  log_message(MSG_INFO,"Unicast : Unhandled HTTP method : \"%s\", error 501\n",  strtok (client->buffer+pos, " "));
 	  iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY));//iRet is to make the copiler happy we will close the connection anyways
 	  return -2; //to delete the client
 	}

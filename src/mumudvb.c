@@ -1746,9 +1746,11 @@ main (int argc, char **argv)
 						actual_client->SocketAddr.sin_port,
 						strerror(errno));
 				  else
-				    log_message(MSG_INFO,"Not all the data was written to %s:%d\n",
+				    log_message(MSG_INFO,"Not all the data was written to %s:%d. Asked len : %d, written len %d\n",
 						inet_ntoa(actual_client->SocketAddr.sin_addr),
-						actual_client->SocketAddr.sin_port);
+						actual_client->SocketAddr.sin_port,
+						channels[curr_channel].nb_bytes,
+						written_len);
 
 				  actual_client->consecutive_errors++;
 				  if(actual_client->consecutive_errors>UNICAST_CONSECUTIVE_ERROR_LIMIT)
