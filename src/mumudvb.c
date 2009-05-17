@@ -37,7 +37,7 @@
 /** @mainpage Documentation for the mumudvb project
  * @section introduction
  * Mumudvb is a program that can redistribute streams from DVB on a network using
- * multicasting. It is able to multicast a whole DVB transponder by assigning
+ * multicasting or HTTP unicast. It is able to multicast a whole DVB transponder by assigning
  * each channel to a different multicast IP.
  *
  * @section Main features
@@ -1366,7 +1366,7 @@ main (int argc, char **argv)
       channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
     }
   //We open the socket for the http unicast if needed and we update the poll structure
-  if(unicast_vars.ipOut)
+  if(strlen(unicast_vars.ipOut))
     {
       log_message(MSG_DETAIL,"Unicast : We open the http socket for address %s:%d\n",unicast_vars.ipOut, unicast_vars.portOut);
       unicast_vars.socketIn= makeTCPclientsocket(unicast_vars.ipOut, unicast_vars.portOut, &unicast_vars.sIn);
