@@ -2044,38 +2044,38 @@ static void SignalHandler (int signum)
 
 
 	  // Check if the chanel scrambling state has changed
-	  int ratio_scrambled = 0;
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	    {
 	      // Calcultation of the ratio (percentage) of scrambled packets received
 	      if (channels[curr_channel].streamed_channel>0)
-		ratio_scrambled = (int)(channels[curr_channel].scrambled_channel*100/channels[curr_channel].streamed_channel);
+		channels[curr_channel].ratio_scrambled = (int)(channels[curr_channel].scrambled_channel*100/channels[curr_channel].streamed_channel);
 	      else
-		ratio_scrambled = 0;
+		channels[curr_channel].ratio_scrambled = 0;
 	      
-	      // Test if we have only unscrambled packets (<2%) - scrambled_channel_old=0 : fully unscrambled
-	      if ((ratio_scrambled < 2) && (channels[curr_channel].scrambled_channel_old != 0))
+	      
+	      // Test if we have only unscrambled packets (<2%) - scrambled_channel_old=FULLY_UNSCRAMBLED : fully unscrambled
+	      if ((channels[curr_channel].ratio_scrambled < 2) && (channels[curr_channel].scrambled_channel_old != FULLY_UNSCRAMBLED))
 		{
 		  log_message( MSG_INFO,
 			       "Channel \"%s\" is now fully unscrambled (%d%% of scrambled packets). Card %d\n",
-			       channels[curr_channel].name, ratio_scrambled, tuneparams.card);
-		  channels[curr_channel].scrambled_channel_old = 0;// update
+			       channels[curr_channel].name, channels[curr_channel].ratio_scrambled, tuneparams.card);
+		  channels[curr_channel].scrambled_channel_old = FULLY_UNSCRAMBLED;// update
 		}
-	      // Test if we have partiallay unscrambled packets (2%<=ratio<=95%) - scrambled_channel_old=1 : partially unscrambled
-	      if ((ratio_scrambled >= 2) && (ratio_scrambled <= 95) && (channels[curr_channel].scrambled_channel_old != 1))
+	      // Test if we have partiallay unscrambled packets (2%<=ratio<=95%) - scrambled_channel_old=PARTIALLY_UNSCRAMBLED : partially unscrambled
+	      if ((channels[curr_channel].ratio_scrambled >= 2) && (channels[curr_channel].ratio_scrambled <= 95) && (channels[curr_channel].scrambled_channel_old != PARTIALLY_UNSCRAMBLED))
 		{
 		  log_message( MSG_INFO,
 			       "Channel \"%s\" is now partially unscrambled (%d%% of scrambled packets). Card %d\n",
-			       channels[curr_channel].name, ratio_scrambled, tuneparams.card);
-		  channels[curr_channel].scrambled_channel_old = 1;// update
+			       channels[curr_channel].name, channels[curr_channel].ratio_scrambled, tuneparams.card);
+		  channels[curr_channel].scrambled_channel_old = PARTIALLY_UNSCRAMBLED;// update
 		}
-	      // Test if we have nearly only scrambled packets (>95%) - scrambled_channel_old=2 : highly scrambled
-	      if ((ratio_scrambled > 95) && channels[curr_channel].scrambled_channel_old != 2)
+	      // Test if we have nearly only scrambled packets (>95%) - scrambled_channel_old=HIGHLY_SCRAMBLED : highly scrambled
+	      if ((channels[curr_channel].ratio_scrambled > 95) && channels[curr_channel].scrambled_channel_old != HIGHLY_SCRAMBLED)
 		{
 		  log_message( MSG_INFO,
 			       "Channel \"%s\" is now higly scrambled (%d%% of scrambled packets). Card %d\n",
-			       channels[curr_channel].name, ratio_scrambled, tuneparams.card);
-		  channels[curr_channel].scrambled_channel_old = 2;// update
+			       channels[curr_channel].name, channels[curr_channel].ratio_scrambled, tuneparams.card);
+		  channels[curr_channel].scrambled_channel_old = HIGHLY_SCRAMBLED;// update
 		}
 	    }
 

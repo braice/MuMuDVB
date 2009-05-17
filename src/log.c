@@ -156,11 +156,11 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
     if (channels[curr_channel].streamed_channel_old)
       {
 	fprintf (file_streamed_channels, "%s:%d:%s", channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
-	if (channels[curr_channel].scrambled_channel_old == 0)
+	if (channels[curr_channel].scrambled_channel_old == FULLY_UNSCRAMBLED)
 	  fprintf (file_streamed_channels, ":FullyUnscrambled\n");
-	else if (channels[curr_channel].scrambled_channel_old == 1)
+	else if (channels[curr_channel].scrambled_channel_old == PARTIALLY_UNSCRAMBLED)
 	  fprintf (file_streamed_channels, ":PartiallyUnscrambled\n");
-	else
+	else //HIGHLY_SCRAMBLED
 	  fprintf (file_streamed_channels, ":HighlyScrambled\n");
       }
     else

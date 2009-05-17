@@ -86,6 +86,13 @@ enum
     MSG_DEBUG
   };
 
+enum
+  {
+    FULLY_UNSCRAMBLED=0,
+    PARTIALLY_UNSCRAMBLED,
+    HIGHLY_SCRAMBLED
+  };
+
 
 /**@brief file descriptors*/
 typedef struct {
@@ -111,6 +118,8 @@ typedef struct{
   int streamed_channel;
   /**tell if this channel is actually streamed (precedent test, to see if it's changed)*/
   int streamed_channel_old;
+  /**Ratio of scrambled packet versus all packets*/
+  int ratio_scrambled;
 
   /**Tell if at least one of the PID related to the chanel is scrambled*/
   int scrambled_channel;

@@ -313,9 +313,11 @@ You can also get the channel by name. You have to remove spaces.
 Get the channels list
 ^^^^^^^^^^^^^^^^^^^^^
 
-To get the channel list (in basic html) just enter the adress `http://10.0.0.1:4242/channels_list.html` in your web browser.
+If you server is listening on the ip 10.0.1 and the port 4242,
 
-Other methods like test/plain can be easely implemented, please contact in this case.
+to get the channel list (in basic html) just enter the adress `http://10.0.0.1:4242/channels_list.html` in your web browser. 
+
+to get the channel list (in basic plain text with more informations) just enter the adress `http://10.0.0.1:4242/channels_list.txt` in your web browser.
 
 HTTP unicast and monitoring
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
