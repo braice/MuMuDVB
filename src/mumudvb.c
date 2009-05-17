@@ -1363,8 +1363,6 @@ main (int argc, char **argv)
   /*****************************************************/
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
-      //we use makeclientsocket in order to join the multicast group associated with the channel
-      //Some switches (like HP Procurve 26xx) broadcast multicast traffic when there is no client to the group //Note, it seems that it's now corrected
       channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
     }
   //We open the socket for the http unicast if needed and we update the poll structure
