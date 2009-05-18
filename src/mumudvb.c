@@ -2051,7 +2051,7 @@ static void SignalHandler (int signum)
 	    {
 	      // Calcultation of the ratio (percentage) of scrambled packets received
 	      if (channels[curr_channel].streamed_channel>0)
-		channels[curr_channel].ratio_scrambled = (int)(channels[curr_channel].scrambled_channel*100/(channels[curr_channel].streamed_channel-channels[curr_channel].num_pmt));
+		channels[curr_channel].ratio_scrambled = (int)(channels[curr_channel].scrambled_channel*100/(channels[curr_channel].streamed_channel-channels[curr_channel].num_pmt+1));//+1 to avoid divide by 0 in some cases
 	      else
 		channels[curr_channel].ratio_scrambled = 0;
 	      
