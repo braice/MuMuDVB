@@ -1289,8 +1289,10 @@ main (int argc, char **argv)
     {
       channels[curr_channel].streamed_channel = 0;
       channels[curr_channel].streamed_channel_old = 1;
+      channels[curr_channel].num_pmt = 0;
       channels[curr_channel].scrambled_channel = 0;
       channels[curr_channel].scrambled_channel_old = 0;
+
     }
 
   //We initialise asked pid table
@@ -1656,6 +1658,7 @@ main (int argc, char **argv)
 		    send_packet=1;
 		    channels[curr_channel].streamed_channel++;
 		    if ((ScramblingControl>0) && (pid != channels[curr_channel].pmt_pid) ) channels[curr_channel].scrambled_channel++;
+		    if (pid == channels[curr_channel].pmt_pid) channels[curr_channel].num_pmt++;
 		  }
 
 	      /******************************************************/
@@ -2048,7 +2051,7 @@ static void SignalHandler (int signum)
 	    {
 	      // Calcultation of the ratio (percentage) of scrambled packets received
 	      if (channels[curr_channel].streamed_channel>0)
-		channels[curr_channel].ratio_scrambled = (int)(channels[curr_channel].scrambled_channel*100/channels[curr_channel].streamed_channel);
+		channels[curr_channel].ratio_scrambled = (int)(channels[curr_channel].scrambled_channel*100/(channels[curr_channel].streamed_channel-channels[curr_channel].num_pmt));
 	      else
 		channels[curr_channel].ratio_scrambled = 0;
 	      
@@ -2112,6 +2115,7 @@ static void SignalHandler (int signum)
 	    {
 	      channels[curr_channel].streamed_channel = 0;
 	      channels[curr_channel].scrambled_channel = 0;
+	      channels[curr_channel].num_pmt = 0;
 	    }
       
 #ifdef LIBDVBEN50221

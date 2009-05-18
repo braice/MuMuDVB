@@ -121,6 +121,8 @@ typedef struct{
   /**Ratio of scrambled packet versus all packets*/
   int ratio_scrambled;
 
+  /**The number of pmt pids seen*/
+  int num_pmt;
   /**Tell if at least one of the PID related to the chanel is scrambled*/
   int scrambled_channel;
   /** Old state to manage state change display*/
