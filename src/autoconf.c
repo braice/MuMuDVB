@@ -804,6 +804,8 @@ int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *ch
 
       if(!parameters.autoconf_scrambled && actual_service->free_ca_mode)
 	log_message(MSG_DETAIL,"Service scrambled and no cam support. Name \"%s\"\n", actual_service->name);
+      else if(!actual_service->pmt_pid)
+	log_message(MSG_DETAIL,"Service without a PMT pid, we skip. Name \"%s\"\n", actual_service->name);
       else
 	{
 	  //Cf EN 300 468 v1.9.1 Table 81
