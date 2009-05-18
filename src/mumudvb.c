@@ -1718,13 +1718,13 @@ main (int argc, char **argv)
 			else
 			  {
 			    send_packet=0;
-			  log_message(MSG_DEBUG,"Pat rewrite : we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
+			  log_message(MSG_DEBUG,"Pat rewrite : Bad pat channel version, we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
 			  }
 		      }
 		    else
 		      {
 			send_packet=0;
-			log_message(MSG_DEBUG,"Pat rewrite : we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
+			log_message(MSG_DEBUG,"Pat rewrite : We need a global pat update, we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
 		      }
 		  }
 	    
