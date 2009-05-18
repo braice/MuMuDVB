@@ -111,7 +111,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
       // -- discontinuity error in packet ?
       if  ((ts_packet->continuity_counter+1)%16 != header->continuity_counter) 
 	{
-	  log_message( MSG_INFO," TS parse : Continuity ERROR\n");
+	  log_message( MSG_DETAIL," TS parse : Continuity ERROR : ts_packet->continuity_counter %d header->continuity_counter %d\n",ts_packet->continuity_counter,header->continuity_counter);
 	  ts_packet->empty=1;
 	  return 0;
 	}
