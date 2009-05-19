@@ -13,9 +13,13 @@ else
 endif
 
 ifdef DEBUG
-  CFLAGS += -g -ggdb -lduma
+  CFLAGS += -g -ggdb
 else
   CFLAGS += -O2
+endif
+
+ifdef DUMA
+  CFLAGS += -lduma
 endif
 
 ifdef GCOV
