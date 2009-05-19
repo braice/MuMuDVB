@@ -13,7 +13,7 @@ else
 endif
 
 ifdef DEBUG
-  CFLAGS += -g -ggdb
+  CFLAGS += -g -ggdb -lduma
 else
   CFLAGS += -O2
 endif

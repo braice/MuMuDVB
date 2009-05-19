@@ -46,8 +46,10 @@ typedef struct pat_rewrite_parameters_t{
   int rewrite_pat;
   /**The actual version of the pat pid*/
   int pat_version;
-  /**Do the actual full pat needs to ve updated ?*/
+  /**Do the actual full pat needs to be updated ?*/
   int needs_update;
+  /**Do the full pat is ok ?*/
+  int full_pat_ok;
   /** The Complete PAT PID */
   mumudvb_ts_packet_t *full_pat;
   /**The generated pats to be sent*/

@@ -238,6 +238,7 @@ pat_rewrite_parameters_t rewrite_vars={
   .pat_version=-1,
   .full_pat=NULL,
   .needs_update=1,
+  .full_pat_ok=0,
   .continuity_counter=0,
 };
 
@@ -1624,9 +1625,11 @@ main (int argc, char **argv)
 		{
 		  if(get_ts_packet(temp_buffer_from_dvr,rewrite_vars.full_pat))
 		    {
+		      log_message(MSG_DEBUG,"Pat rewrite : Full pat updated\n");
 		      /*We've got the FULL PAT packet*/
 		      update_version(&rewrite_vars);
 		      rewrite_vars.needs_update=0;
+		      rewrite_vars.full_pat_ok=1;
 		    }
 		}
 	      //To avoid the duplicates, we have to update the continuity counter
@@ -1692,7 +1695,7 @@ main (int argc, char **argv)
 		if( (pid == 0) && //This is a PAT PID
 		    rewrite_vars.rewrite_pat)  //AND we asked for rewrite
 		  {
-		    if(!rewrite_vars.needs_update ) //AND the global full pat doesn't need to be updated
+		    if(rewrite_vars.full_pat_ok ) //AND the global full pat is ok
 		      {
 			/*We check if it's the first pat packet ? or we send it each time ?*/
 			/*We check if the versions corresponds*/

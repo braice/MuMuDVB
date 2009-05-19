@@ -53,10 +53,14 @@ extern uint32_t       crc32_table[256];
 int pat_need_update(pat_rewrite_parameters_t *rewrite_vars, unsigned char *buf)
 {
   pat_t       *pat=(pat_t*)(buf+TS_HEADER_LEN);
-  if(pat->version_number!=rewrite_vars->pat_version)
-    {
-      return 1;
-    }
+  ts_header_t *header=(ts_header_t *)buf;
+
+  if(header->payload_unit_start_indicator) //It's the beginning of a new packet
+    if(pat->version_number!=rewrite_vars->pat_version)
+      {
+	log_message(MSG_DEBUG,"Pat rewrite : Need update. stored version : %d, new: %d\n",rewrite_vars->pat_version,pat->version_number);
+	return 1;
+      }
   return 0;
 
 }

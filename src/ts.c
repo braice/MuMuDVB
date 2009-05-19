@@ -104,7 +104,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
     {
       if(ts_packet->empty)
 	{
-	  log_message( MSG_DEBUG," TS parse : Kind of Continuity ERROR packet empty and payload start\n");
+	  //log_message( MSG_DEBUG," TS parse : Kind of Continuity ERROR packet empty and payload start\n");
           return 0;
 	}
       // -- pid change in stream? (without packet start). This is not supported
