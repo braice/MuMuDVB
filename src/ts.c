@@ -100,8 +100,13 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 	  ts_packet->len=AddPacketStart(ts_packet->packet,buf+delta+1,188-delta-1); //we add the packet to the buffer
 	}
     }
-  else if(header->payload_unit_start_indicator==0) //Not the first, we check if che already registered packet corresponds
+  else if(header->payload_unit_start_indicator==0) //Not the first, we check if the already registered packet corresponds
     {
+      if(ts_packet->empty)
+	{
+	  log_message( MSG_DEBUG," TS parse : Kind of Continuity ERROR packet empty and payload start\n");
+          return 0;
+	}
       // -- pid change in stream? (without packet start). This is not supported
       if (ts_packet->pid != pid)
 	{
