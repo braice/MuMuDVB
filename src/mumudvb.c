@@ -1619,6 +1619,8 @@ main (int argc, char **argv)
 	      if(!rewrite_vars.needs_update)
 		{
 		  rewrite_vars.needs_update=pat_need_update(&rewrite_vars,temp_buffer_from_dvr);
+		  if(rewrite_vars.needs_update) //It needs update we mark the packet as empty
+		    rewrite_vars.full_pat->empty=1;
 		}
 	      /*We need to update the full packet, we download it*/
 	      if(rewrite_vars.needs_update)
@@ -1699,7 +1701,7 @@ main (int argc, char **argv)
 		      {
 			/*We check if it's the first pat packet ? or we send it each time ?*/
 			/*We check if the versions corresponds*/
-			if(rewrite_vars.generated_pat_version[curr_channel]!=rewrite_vars.pat_version)
+			if(!rewrite_vars.needs_update && rewrite_vars.generated_pat_version[curr_channel]!=rewrite_vars.pat_version)//We check the version only if the PAT is not currently updated
 			  {
 			    log_message(MSG_DEBUG,"Pat rewrite : We need to rewrite the PAT for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
 			    /*They mismatch*/
