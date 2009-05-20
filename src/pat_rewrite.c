@@ -201,7 +201,7 @@ int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_
   memset(buf_dest+buf_dest_pos,0xFF,TS_PACKET_SIZE-buf_dest_pos);
 
   //We copy the result to the intended buffer
-  memcpy(rewrite_vars->generated_pats[curr_channel],buf_dest,TS_PACKET_SIZE);
+  memcpy(channels[curr_channel].generated_pat,buf_dest,TS_PACKET_SIZE);
 
   //Everything is Ok ....
   return 1;

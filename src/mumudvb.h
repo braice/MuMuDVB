@@ -166,6 +166,12 @@ typedef struct{
   /**The sap playlist group*/
   char sap_group[20];
 
+  /**The generated pat to be sent*/
+  unsigned char generated_pat[TS_PACKET_SIZE]; /**@todo: allocate dynamically*/
+  /** The version of the generated pat */
+  int generated_pat_version;
+
+
 
 }mumudvb_channel_t;
 

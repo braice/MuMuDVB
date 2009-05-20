@@ -1246,8 +1246,7 @@ main (int argc, char **argv)
     {
       for (curr_channel = 0; curr_channel < MAX_CHANNELS; curr_channel++)
 	{
-	  /*rewrite_vars.generated_pats[curr_channel]=NULL;*/
-	  rewrite_vars.generated_pat_version[curr_channel]=-1;
+	  channels[curr_channel].generated_pat_version=-1;
 	  /*rewrite_vars.continuity_counter[curr_channel]=0;*/
 	}
 
@@ -1701,7 +1700,7 @@ main (int argc, char **argv)
 		      {
 			/*We check if it's the first pat packet ? or we send it each time ?*/
 			/*We check if the versions corresponds*/
-			if(!rewrite_vars.needs_update && rewrite_vars.generated_pat_version[curr_channel]!=rewrite_vars.pat_version)//We check the version only if the PAT is not currently updated
+			if(!rewrite_vars.needs_update && channels[curr_channel].generated_pat_version!=rewrite_vars.pat_version)//We check the version only if the PAT is not currently updated
 			  {
 			    log_message(MSG_DEBUG,"Pat rewrite : We need to rewrite the PAT for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
 			    /*They mismatch*/
@@ -1709,17 +1708,17 @@ main (int argc, char **argv)
 			    if(pat_channel_rewrite(&rewrite_vars, channels, curr_channel,temp_buffer_from_dvr))
 			      {
 				/*We update the version*/
-				rewrite_vars.generated_pat_version[curr_channel]=rewrite_vars.pat_version;
+				channels[curr_channel].generated_pat_version=rewrite_vars.pat_version;
 			      }
 			    else
 			      {
 				log_message(MSG_DEBUG,"Pat rewrite : ERROR with the pat for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
 			      }			    
 			  }
-			if(rewrite_vars.generated_pat_version[curr_channel]==rewrite_vars.pat_version)
+			if(channels[curr_channel].generated_pat_version==rewrite_vars.pat_version)
 			  {
-			    /*We send the rewrited PAT from rewrite_vars.generated_pats[curr_channel]*/
-			    memcpy(temp_buffer_from_dvr,rewrite_vars.generated_pats[curr_channel],TS_PACKET_SIZE);
+			    /*We send the rewrited PAT from channels[curr_channel].generated_pat*/
+			    memcpy(temp_buffer_from_dvr,channels[curr_channel].generated_pat,TS_PACKET_SIZE);
 			    //To avoid the duplicates, we have to update the continuity counter
 			    pat_rewrite_set_continuity_counter(temp_buffer_from_dvr,rewrite_vars.continuity_counter);
 			  }
