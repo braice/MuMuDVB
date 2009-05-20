@@ -140,6 +140,8 @@ typedef struct{
   int ts_id;
   /**pmt pid number*/
   int pmt_pid;
+  /** The version of the pmt */
+  int pmt_version;
   /**Say if we need to ask this channel to the cam*/
   int need_cam_ask;
 

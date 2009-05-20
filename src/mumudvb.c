@@ -1020,6 +1020,14 @@ main (int argc, char **argv)
 			 "Config issue : unknow symbol : %s\n\n", substring);
 	  continue;
 	}
+
+      if (curr_channel > MAX_CHANNELS)
+	{
+	  log_message( MSG_ERROR, "Too many channels : %d limit : %d\n",
+		       curr_channel, MAX_CHANNELS);
+	  exit(ERROR_TOO_CHANNELS);
+	}
+
     }
   fclose (conf_file);
   /******************************************************/
@@ -1036,12 +1044,6 @@ main (int argc, char **argv)
   free(conf_filename);
 
   number_of_channels = curr_channel;
-  if (curr_channel > MAX_CHANNELS)
-    {
-      log_message( MSG_ERROR, "Too many channels : %d limit : %d\n",
-		   curr_channel, MAX_CHANNELS);
-      exit(ERROR_TOO_CHANNELS);
-    }
 
   // we clear it by paranoia
   sprintf (filename_channels_diff, STREAMED_LIST_PATH,
