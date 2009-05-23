@@ -35,7 +35,7 @@
 #include <fcntl.h>
 
 /**@brief Send data
- *@todo document
+ * just send the data over the socket fd
  */
 int
 sendudp (int fd, struct sockaddr_in *sSockAddr, unsigned char *data, int len)
@@ -69,7 +69,12 @@ makesocket (char *szAddr, unsigned short port, int TTL,
 
   sSockAddr->sin_family = sin.sin_family = AF_INET;
   sSockAddr->sin_port = sin.sin_port = htons (port);
-  sSockAddr->sin_addr.s_addr = inet_addr (szAddr);
+  iRet=inet_aton (szAddr,&sSockAddr->sin_addr);
+  if (iRet == 0)
+    {
+      log_message( MSG_ERROR,"inet_aton failed : %s\n", strerror(errno));
+      exit(1);
+    }
 
   iRet = setsockopt (iSocket, SOL_SOCKET, SO_REUSEADDR, &iLoop, sizeof (int));
   if (iRet < 0)
@@ -118,7 +123,12 @@ makeTCPclientsocket (char *szAddr, unsigned short port,
 
   sSockAddr->sin_family = AF_INET;
   sSockAddr->sin_port = htons (port);
-  sSockAddr->sin_addr.s_addr = inet_addr (szAddr);/**@todo use inet_aton*/
+  iRet=inet_aton (szAddr,&sSockAddr->sin_addr);
+  if (iRet == 0)
+    {
+      log_message( MSG_ERROR,"inet_aton failed : %s\n", strerror(errno));
+      return -1;
+    }
 
   iRet = setsockopt (iSocket, SOL_SOCKET, SO_REUSEADDR, &iLoop, sizeof (int));
   if (iRet < 0)

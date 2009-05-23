@@ -1349,7 +1349,12 @@ main (int argc, char **argv)
   set_filters(asked_pid, &fds);
   fds.pfds=NULL;
   fds.pfdsnum=1;
-  fds.pfds=realloc(fds.pfds,(fds.pfdsnum+1)*sizeof(struct pollfd)); /**@todo check return value*/
+  fds.pfds=realloc(fds.pfds,(fds.pfdsnum+1)*sizeof(struct pollfd));
+  if (fds.pfds==NULL)
+    {
+      log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+      return mumudvb_close(100<<8);
+    }
   //File descriptor for polling
   fds.pfds[0].fd = fds.fd_dvr;
   //POLLIN : data available for read
@@ -1378,7 +1383,12 @@ main (int argc, char **argv)
       if(unicast_vars.socketIn>0)
 	{
 	  fds.pfdsnum=2;
-	  fds.pfds=realloc(fds.pfds,(fds.pfdsnum+1)*sizeof(struct pollfd));/**@todo check return value*/
+	  fds.pfds=realloc(fds.pfds,(fds.pfdsnum+1)*sizeof(struct pollfd));
+	  if (fds.pfds==NULL)
+	    {
+	      log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+	      return mumudvb_close(100<<8);
+	    }
 	  fds.pfds[1].fd = unicast_vars.socketIn;
 	  fds.pfds[1].events = POLLIN | POLLPRI;
 	  fds.pfds[2].fd = 0;
@@ -1401,8 +1411,6 @@ main (int argc, char **argv)
 	}
       memset (sap_vars.sap_messages, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
       //For sap announces, we open the socket
-      //Some switches (like HP Procurve 26xx) broadcast multicast traffic when there is no client to the group //Note, it seems that it's now corrected
-      //sap_vars.sap_socketOut =  makeclientsocket (SAP_IP, SAP_PORT, SAP_TTL, &sap_vars.sap_sOut);
       sap_vars.sap_socketOut =  makesocket (SAP_IP, SAP_PORT, SAP_TTL, &sap_vars.sap_sOut);
       sap_vars.sap_serial= 1 + (int) (424242.0 * (rand() / (RAND_MAX + 1.0)));
       sap_vars.sap_last_time_sent = 0;
@@ -1438,7 +1446,7 @@ main (int argc, char **argv)
 	      poll_try++;
 	      last_poll_error=errno;
 	    }
-	  /**\todo : put a maximum number of interrupted system calls*/
+	  /**\todo : put a maximum number of interrupted system calls per unit time*/
 	}
 
       if(poll_try==MAX_POLL_TRIES)
@@ -1472,7 +1480,6 @@ main (int argc, char **argv)
 		    }
 		  if (iRet==-2 || (fds.pfds[actual_fd].revents&POLLHUP)) //iRet==-2 --> 0 received data or error, we close the connection
 		    {
-		      /** @todo This will have to be put in a function*/
 		      unicast_close_connection(&unicast_vars,&fds,fds.pfds[actual_fd].fd,channels);
 		      //We check if we hage to parse fds.pfds[actual_fd].revents (the last fd moved to the actual one)
 		      if(fds.pfds[actual_fd].revents)
@@ -1489,7 +1496,12 @@ main (int argc, char **argv)
 	      if(tempSocket!=-1)
 		{
 		  fds.pfdsnum++;
-		  fds.pfds=realloc(fds.pfds,(fds.pfdsnum+1)*sizeof(struct pollfd));/**@todo check return value*/
+		  fds.pfds=realloc(fds.pfds,(fds.pfdsnum+1)*sizeof(struct pollfd));
+		  if (fds.pfds==NULL)
+		    {
+		      log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+		      return mumudvb_close(100<<8);
+		    }
 		  //We poll the new socket
 		  fds.pfds[fds.pfdsnum-1].fd = tempSocket;
 		  fds.pfds[fds.pfdsnum-1].events = POLLIN | POLLPRI | POLLHUP; //We also poll the deconnections
@@ -1931,8 +1943,10 @@ int mumudvb_close(int Interrupted)
 	}
     }
 
-  /**@todo : free the file descriptors*/
-  /**@todo : free the unicast clients*/
+  /*free the file descriptors*/
+  if(fds.pfds)
+    free(fds.pfds);
+  fds.pfds=NULL;
 
   if(Interrupted<(1<<8))
     return (0);
