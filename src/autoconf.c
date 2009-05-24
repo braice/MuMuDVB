@@ -258,6 +258,10 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 	    channel->num_pids++;
 	    log_message( MSG_DEBUG, "Autoconf : Added PCR pid %d\n",pcr_pid);
 	  }
+
+	//We store the PMT version
+	channel->pmt_version=header->version_number;
+
 	log_message( MSG_DEBUG,"Autoconf : Number of pids after autoconf %d\n", channel->num_pids);
 	return 0; 
 }
@@ -1116,7 +1120,7 @@ int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parame
       if(buf[PSIP_VCT_LEN+descriptor_delta]==0xA0) //Extended channel name descriptor
 	{
 	  log_message(MSG_DEBUG, "Autoconf : Extended channel name descriptor, we try to decode long channel name\n");
-	  dest8=(uint8_t *)long_name; //same type size, just the sign change but we don't care//plop
+	  dest8=(uint8_t *)long_name; //same type size, just the sign change but we don't care
 	  //check 
 	  delta_multiple_string_structure=PSIP_VCT_LEN+descriptor_delta+2;//+2 to skip descriptor tag and descriptor len
 	  if (atsc_text_validate(((uint8_t*)(buf + delta_multiple_string_structure) ),
@@ -1189,4 +1193,39 @@ int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parame
 }
 
 
+/********************************************************************
+ * Autoconfiguration auto update
+ ********************************************************************/
 
+/** @Brief, tell if the pmt have a newer version than the one recorded actually
+ * In the PMT pid there is a field to say if the PMT was updated
+ * This function check if it has changed 
+ *
+ *@param channel the channel for which we have to check
+ *@param buf : the received buffer
+ */
+int pmt_need_update(mumudvb_channel_t *channel, unsigned char *buf)
+{
+  pmt_t       *pmt=(pmt_t*)(buf+TS_HEADER_LEN);
+  ts_header_t *header=(ts_header_t *)buf;
+
+  if(header->payload_unit_start_indicator) //It's the beginning of a new packet
+    if(pmt->version_number!=channel->pmt_version)
+      {
+	log_message(MSG_DEBUG,"Autoconfiguration : PMT version changed, channel %s . stored version : %d, new: %d. The CRC have to be checked\n",channel->name,channel->pmt_version,pmt->version_number);
+	return 1;
+      }
+  return 0;
+
+}
+
+
+/** @brief update the version using the dowloaded pmt*/
+void update_pmt_version(mumudvb_channel_t *channel)
+{
+  pmt_t       *pmt=(pmt_t*)(channel->pmt_packet->packet);
+  if(channel->pmt_version!=pmt->version_number)
+    log_message(MSG_INFO,"Autoconfiguration : New PMT version for channel %s. Old : %d, new: %d\n",channel->name,channel->pmt_version,pmt->version_number);
+
+  channel->pmt_version=pmt->version_number;
+}

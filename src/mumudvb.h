@@ -35,6 +35,7 @@
 #define VERSION "1.5.5b"
 
 #include "network.h"  //for the sockaddr
+#include "ts.h"
 
 /**the number of pids by channel*/
 #define MAX_PIDS_PAR_CHAINE     18
@@ -140,10 +141,14 @@ typedef struct{
   int ts_id;
   /**pmt pid number*/
   int pmt_pid;
-  /** The version of the pmt */
-  int pmt_version;
   /**Say if we need to ask this channel to the cam*/
   int need_cam_ask;
+  /** The version of the pmt */
+  int pmt_version;
+  /** Do the pmt needs to be updated ? */
+  int pmt_needs_update;
+  /**The PMT packet*/
+  mumudvb_ts_packet_t *pmt_packet;
 
   /**the buffer wich will be sent once it's full*/
   unsigned char buf[MAX_UDP_SIZE];

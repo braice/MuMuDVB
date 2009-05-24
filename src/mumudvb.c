@@ -207,6 +207,7 @@ autoconf_parameters_t autoconf_vars={
   .autoconfiguration=0,
   .autoconf_radios=0,
   .autoconf_scrambled=0,
+  .autoconf_pid_update=0,
   .autoconf_ip_header="239.100",
   .time_start_autoconfiguration=0,
   .transport_stream_id=-1,
@@ -514,6 +515,16 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  autoconf_vars.autoconf_scrambled = atoi (substring);
+	}
+      else if (!strcmp (substring, "autoconf_pid_update"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  autoconf_vars.autoconf_pid_update = atoi (substring);
+	  if(autoconf_vars.autoconf_pid_update)
+	    {
+	      log_message( MSG_WARN,
+			"You have enabled the autoconfiguration auto update, this feature is quite young. Please report any bug/comment\n");
+	    }
 	}
       else if (!strcmp (substring, "sat_number"))
 	{
@@ -1693,7 +1704,7 @@ main (int argc, char **argv)
 			if(get_ts_packet(temp_buffer_from_dvr,cam_vars.cam_pmt_ptr)) 
 			  {
 			    cam_vars.delay=0;
-			    if(mumudvb_cam_new_pmt(&cam_vars, cam_vars.cam_pmt_ptr)==1)
+			    if(mumudvb_cam_new_pmt(&cam_vars, cam_vars.cam_pmt_ptr)==1)/**@todo : check ts_id*/
 			      {
 				log_message( MSG_INFO,"CAM : CA PMT sent for channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name );
 				channels[curr_channel].need_cam_ask=0; //once we have asked the CAM for this PID, we don't have to ask anymore
@@ -1703,6 +1714,47 @@ main (int argc, char **argv)
 		  }
 #endif
 
+	  /******************************************************/
+	  //PMT follow (ie we check if the pids announced in the pmt changed)
+	  /******************************************************/
+	      if( (autoconf_vars.autoconf_pid_update) && (send_packet==1) && (channels[curr_channel].autoconfigurated) &&(channels[curr_channel].pmt_pid==pid))  //no need to check paquets we don't send
+		{
+		  /**@todo: check ts_id -> do it with send_packet*/
+		  /*Note : the pmt version is initialised during autoconfiguration*/
+		  /*Check the version stored in the channel*/
+		  if(!channels[curr_channel].pmt_needs_update)
+		    {
+		      //Checking without crc32, it there is a change we get the full packet for crc32 checking
+		      channels[curr_channel].pmt_needs_update=pmt_need_update(&channels[curr_channel],temp_buffer_from_dvr);
+		      
+		      if(channels[curr_channel].pmt_needs_update&&channels[curr_channel].pmt_packet) //It needs update we mark the packet as empty
+			channels[curr_channel].pmt_packet->empty=1;
+		    }
+		  /*We need to update the full packet, we download it*/
+		  if(channels[curr_channel].pmt_needs_update)
+		    {
+		      if(channels[curr_channel].pmt_packet==NULL)
+			{
+			  channels[curr_channel].pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
+			  if(channels[curr_channel].pmt_packet==NULL)
+			    {
+			      log_message( MSG_ERROR,"MALLOC channels[curr_channel].pmt_packet\n");
+			      return mumudvb_close(100<<8);
+			    }
+			  memset (channels[curr_channel].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+			}
+
+			if(get_ts_packet(temp_buffer_from_dvr,channels[curr_channel].pmt_packet))
+			  {
+			    log_message(MSG_DEBUG,"Autoconfiguration : PMT packet updated, we have now to check if there is new things\n");
+			    /*We've got the FULL PMT packet*/
+			    update_pmt_version(&channels[curr_channel]);
+			    channels[curr_channel].pmt_needs_update=0;
+			    /**@todo : read the new pmt, update the pid list and the filters*/
+			  }
+		    }
+		}
+	  
 	      /******************************************************/
 	      //Rewrite PAT
 	      /******************************************************/
@@ -1878,7 +1930,13 @@ int mumudvb_close(int Interrupted)
 
 
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-    close (channels[curr_channel].socketOut);
+    {
+      close (channels[curr_channel].socketOut);
+      //Free the channel structures
+      if(channels[curr_channel].pmt_packet)
+	free(channels[curr_channel].pmt_packet);
+      channels[curr_channel].pmt_packet=NULL;
+    }
 
   // we close the file descriptors
   close_card_fd (fds);

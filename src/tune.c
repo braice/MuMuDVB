@@ -144,7 +144,7 @@ static int do_diseqc(int fd, unsigned char sat_no, int pol_v_r, int hi_lo, int l
       log_message( MSG_INFO, "LNB voltage 18V\n");
     }
 
-
+  /** @todo : always send diseqc ?*/
     if(sat_no != 0)
     {
 	unsigned char d = sat_no;
