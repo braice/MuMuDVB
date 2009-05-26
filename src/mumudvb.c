@@ -146,7 +146,8 @@ int no_daemon = 0; /** do we deamonize mumudvb ? */
 int number_of_channels; /** The number of channels ... */
 mumudvb_channel_t channels[MAX_CHANNELS]; /** The channels array */ /**@todo use realloc*/
 //Asked pids //used for filtering
-uint8_t asked_pid[8192]; /** this array contains the pids we want to filter*/
+uint8_t asked_pid[8192]; /** this array contains the pids we want to filter,*/
+uint8_t number_chan_asked_pid[8192]; /** the number of channels who want this pid*/
 
 
 
@@ -1310,6 +1311,8 @@ main (int argc, char **argv)
 
   //We initialise asked pid table
   memset (asked_pid, 0, sizeof( uint8_t)*8192);//we clear it
+  memset (number_chan_asked_pid, 0, sizeof( uint8_t)*8192);//we clear it
+
   //We initialise mandatory pid table
   memset (mandatory_pid, 0, sizeof( uint8_t)*MAX_MANDATORY_PID_NUMBER);//we clear it
 
@@ -1350,7 +1353,10 @@ main (int argc, char **argv)
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
       for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
-	asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
+	{
+	  asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
+	  number_chan_asked_pid[channels[curr_channel].pids[curr_pid]]++;
+	}
     }
 
   // we open the file descriptors
@@ -1565,7 +1571,7 @@ main (int argc, char **argv)
 			{
 			  log_message(MSG_DEBUG,"Autoconf : It seems that we have finished to get the services list\n");
 			  //we finish full autoconfiguration
-			  Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, common_port, tuneparams.card, &fds,asked_pid, multicast_ttl);
+			  Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, common_port, tuneparams.card, &fds,asked_pid, number_chan_asked_pid, multicast_ttl);
 			}
 		      else
 			memset (autoconf_vars.autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
@@ -1600,7 +1606,7 @@ main (int argc, char **argv)
 		      if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_pmt))
 			{
 			  //Now we have the PMT, we parse it
-			  if(autoconf_read_pmt(autoconf_vars.autoconf_temp_pmt,&channels[curr_channel])==0)
+			  if(autoconf_read_pmt(autoconf_vars.autoconf_temp_pmt, &channels[curr_channel], tuneparams.card, asked_pid, number_chan_asked_pid, &fds)==0)
 			    {
 			      log_message(MSG_DETAIL,"Autoconf : Final PIDs for channel %d \"%s\" : ",curr_channel, channels[curr_channel].name);
 			      for(i=0;i<channels[curr_channel].num_pids;i++)
@@ -1618,7 +1624,7 @@ main (int argc, char **argv)
 			      //if it's finished, we open the new descriptors and add the new filters
 			      if(autoconf_vars.autoconfiguration==0)
 				{
-				  autoconf_end(tuneparams.card, number_of_channels, channels, asked_pid, &fds);
+				  autoconf_end(tuneparams.card, number_of_channels, channels, asked_pid, number_chan_asked_pid, &fds);
 				  //We free autoconf memory
 				  autoconf_freeing(&autoconf_vars,0);
 				}
@@ -1748,9 +1754,16 @@ main (int argc, char **argv)
 			  {
 			    log_message(MSG_DEBUG,"Autoconfiguration : PMT packet updated, we have now to check if there is new things\n");
 			    /*We've got the FULL PMT packet*/
-			    update_pmt_version(&channels[curr_channel]);
-			    channels[curr_channel].pmt_needs_update=0;
-			    /**@todo : read the new pmt, update the pid list and the filters*/
+			    if(autoconf_read_pmt(channels[curr_channel].pmt_packet, &channels[curr_channel], tuneparams.card, asked_pid, number_chan_asked_pid, &fds)==0)
+			    {
+			      //plop
+			      /**@todo cam update*/
+			      //channels[curr_channel].need_cam_ask
+			      update_pmt_version(&channels[curr_channel]);
+			      channels[curr_channel].pmt_needs_update=0;
+			    }
+			    else
+			      channels[curr_channel].pmt_packet->empty=1;
 			  }
 		    }
 		}
@@ -2065,7 +2078,7 @@ static void SignalHandler (int signum)
 		{
 		  log_message(MSG_WARN,"Autoconf : Warning : Not all the channels were configured before timeout\n");
 		  autoconf_vars.autoconfiguration=0;
-		  autoconf_end(tuneparams.card, number_of_channels, channels, asked_pid, &fds);
+		  autoconf_end(tuneparams.card, number_of_channels, channels, asked_pid, number_chan_asked_pid, &fds);
 		  //We free autoconf memory
 		  autoconf_freeing(&autoconf_vars,0);
 		}
@@ -2075,7 +2088,7 @@ static void SignalHandler (int signum)
 		  //This happend when we are not able to get all the services of the PAT,
 		  //We continue with the partial list of services
 		  autoconf_vars.time_start_autoconfiguration=now;
-		  Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, common_port, tuneparams.card, &fds,asked_pid, multicast_ttl);
+		  Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, common_port, tuneparams.card, &fds,asked_pid, number_chan_asked_pid, multicast_ttl);
 		}
 	    }
 	}

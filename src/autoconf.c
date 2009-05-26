@@ -127,15 +127,21 @@ char *encodings_en300468[] ={
  * @param pmt the pmt packet
  * @param channel the associated channel
  */
-int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
+int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int card, uint8_t *asked_pid, uint8_t *number_chan_asked_pid,fds_t *fds)
 {
-	int section_len, descr_section_len, i;
+  int section_len, descr_section_len, i,j;
 	int pid,pcr_pid;
 	int found=0;
 	pmt_t *header;
 	pmt_info_t *descr_header;
 
 	int program_info_length;
+	int channel_update;
+	
+	//For channel update
+	int temp_pids[MAX_PIDS_PAR_CHAINE];
+	//For channel update
+	int temp_num_pids=0;
 
 
 	section_len=pmt->len;
@@ -157,7 +163,14 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 	
 	log_message( MSG_DEBUG,"Autoconf : PMT (PID %d) read for autoconfiguration of channel \"%s\"\n", pmt->pid, channel->name);
 
-
+	channel_update=channel->num_pids>1?1:0;
+	if(channel_update)
+	  {
+	    log_message( MSG_DEBUG,"Autoconf : This is a channel update\n");
+	    temp_pids[0]=pmt->pid;
+	    temp_num_pids++;
+	  }
+	
 	program_info_length=HILO(header->program_info_length); //program_info_length
 
 	//we read the different descriptors included in the pmt
@@ -240,8 +253,16 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 	      }
 	    
 	    //log_message( MSG_DEBUG,"Autoconf  PID %d added\n", pid);
-	    channel->pids[channel->num_pids]=pid;
-	    channel->num_pids++;
+	    if(channel_update)
+	      {
+		temp_pids[temp_num_pids]=pid;
+		temp_num_pids++;
+	      }
+	    else
+	      {
+		channel->pids[channel->num_pids]=pid;
+		channel->num_pids++;
+	      }
 	  }
 
 	pcr_pid=HILO(header->PCR_PID); //The PCR pid.
@@ -254,13 +275,95 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 	  }
 	if(!found)
 	  {
-	    channel->pids[channel->num_pids]=pcr_pid;
-	    channel->num_pids++;
+	    if(channel_update)
+	      {
+		temp_pids[temp_num_pids]=pcr_pid;
+		temp_num_pids++;
+	      }
+	    else
+	      {
+		channel->pids[channel->num_pids]=pcr_pid;
+		channel->num_pids++;
+	      }
 	    log_message( MSG_DEBUG, "Autoconf : Added PCR pid %d\n",pcr_pid);
 	  }
 
-	//We store the PMT version
+	//We store the PMT version useful to check for updates
 	channel->pmt_version=header->version_number;
+
+	//If it's a channel update we will have to update the filters
+	if(channel_update)
+	  {
+	    log_message( MSG_DEBUG,"Autoconf : Channel update new number of pids %d old %d we check for changes\n", temp_num_pids, channel->num_pids);
+	    
+	    //We search for added pids
+	    for(i=0;i<temp_num_pids;i++)
+	      {
+		found=0;
+		for(j=0;j<channel->num_pids;j++)
+		  {
+		    if(channel->pids[j]==temp_pids[i])
+		      found=1;
+		  }
+		if(!found)
+		  {
+		    log_message( MSG_DEBUG, "Autoconf : Update : pid %d added \n",temp_pids[i]);
+		    //If the pid is not on the list we add it for the filters
+		    if(asked_pid[temp_pids[i]]==PID_NOT_ASKED)
+		      asked_pid[temp_pids[i]]=PID_ASKED;
+
+		    number_chan_asked_pid[temp_pids[i]]++;
+		    channel->pids[channel->num_pids]=temp_pids[i];
+		    channel->num_pids++;
+
+		    log_message(MSG_DETAIL,"Autoconf : Add the new filters\n");
+		    // we open the file descriptors
+		    if (create_card_fd (card, asked_pid, fds) < 0)
+		      {
+			log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors. Some channels will probably not work\n");
+			//return; //FIXME : what do we do here ?
+		      }
+		    //open the new filters
+		    set_filters(asked_pid, fds);
+
+		  }
+	      }
+	    //We search for suppressed pids
+	    for(i=0;i<channel->num_pids;i++)
+	      {
+		found=0;
+		for(j=0;j<temp_num_pids;j++)
+		  {
+		    if(channel->pids[i]==temp_pids[j])
+		      found=1;
+		  }
+		if(!found)
+		  {
+		    log_message( MSG_DEBUG, "Autoconf : Update : pid %d supressed \n",channel->pids[i]);
+
+		    //We check the number of channels on wich this pid is registered, if 0 it's strange we warn
+		    if((channel->pids[i]>MAX_MANDATORY_PID_NUMBER )&& (number_chan_asked_pid[channel->pids[i]]))
+		      {
+			//We decrease the number of channels with this pid
+			number_chan_asked_pid[channel->pids[i]]--;
+			//If no channel need this pid anymore, we remove the filter (closing the file descriptor remove the filter associated)
+			if(number_chan_asked_pid[channel->pids[i]]==0)
+			  {			    
+			    log_message( MSG_DEBUG, "Autoconf : Update : pid %d does not belong to any channel anymore, we close the filter \n",channel->pids[i]);
+			    close(fds->fd_demuxer[channel->pids[i]]);
+			    fds->fd_demuxer[channel->pids[i]]=0;
+			  }
+		      }
+		    else
+		      log_message( MSG_WARN, "Autoconf : Update : We tried to suppressed pid %d in a strange way, please contact if you can reproduce\n",channel->pids[i]);
+		    
+		    //We remove the pid from this channel by swapping with the last one and decreasing the pid number
+		    channel->pids[i]=channel->pids[channel->num_pids-1];
+		    channel->num_pids--;
+
+		  }
+	      }
+	  }
 
 	log_message( MSG_DEBUG,"Autoconf : Number of pids after autoconf %d\n", channel->num_pids);
 	return 0; 
@@ -878,7 +981,7 @@ int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *ch
  * @param asked_pid the array containing the pids already asked
  * @param fds the file descriptors
 */
-int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, autoconf_parameters_t *autoconf_vars, int common_port, int card, fds_t *fds,uint8_t *asked_pid, int multicast_ttl)
+int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, autoconf_parameters_t *autoconf_vars, int common_port, int card, fds_t *fds,uint8_t *asked_pid, uint8_t *number_chan_asked_pid,int multicast_ttl)
 {
   int curr_channel,curr_pid;
   *number_of_channels=services_to_channels(*autoconf_vars, channels, common_port, card); //Convert the list of services into channels
@@ -886,7 +989,10 @@ int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, a
   for (curr_channel = 0; curr_channel < *number_of_channels; curr_channel++)
     {
       for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
-	asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
+	{
+	  asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
+	  number_chan_asked_pid[channels[curr_channel].pids[curr_pid]]++;
+	}
     }
   // we open the file descriptors
   if (create_card_fd (card, asked_pid, fds) < 0)
@@ -925,7 +1031,7 @@ int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, a
  * @param asked_pid the array containing the pids already asked
  * @param fds the file descriptors
 */
-void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, uint8_t *asked_pid, fds_t *fds)
+void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, uint8_t *asked_pid, uint8_t *number_chan_asked_pid, fds_t *fds)
 {
   int curr_channel;
   int curr_pid;
@@ -935,7 +1041,10 @@ void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels,
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
       for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
-	asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
+	{
+	  asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
+	  number_chan_asked_pid[channels[curr_channel].pids[curr_pid]]++;
+	}
     }
   // we open the file descriptors
   if (create_card_fd (card, asked_pid, fds) < 0)
