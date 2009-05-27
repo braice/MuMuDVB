@@ -1753,19 +1753,25 @@ main (int argc, char **argv)
 
 			if(get_ts_packet(temp_buffer_from_dvr,channels[curr_channel].pmt_packet))
 			  {
-			    log_message(MSG_DEBUG,"Autoconfiguration : PMT packet updated, we have now to check if there is new things\n");
-			    /*We've got the FULL PMT packet*/
-			    if(autoconf_read_pmt(channels[curr_channel].pmt_packet, &channels[curr_channel], tuneparams.card, asked_pid, number_chan_asked_pid, &fds)==0)
-			    {
-			      //plop
-			      /**@todo cam update*/
-			      if(channels[curr_channel].need_cam_ask==CAM_ASKED)
-				channels[curr_channel].need_cam_ask=CAM_NEED_ASK;
-			      update_pmt_version(&channels[curr_channel]);
-			      channels[curr_channel].pmt_needs_update=0;
-			    }
+			    if(pmt_need_update(&channels[curr_channel],channels[curr_channel].pmt_packet->packet))
+			      {
+				log_message(MSG_DEBUG,"Autoconfiguration : PMT packet updated, we have now to check if there is new things\n");
+				/*We've got the FULL PMT packet*/
+				if(autoconf_read_pmt(channels[curr_channel].pmt_packet, &channels[curr_channel], tuneparams.card, asked_pid, number_chan_asked_pid, &fds)==0)
+				  {
+				    if(channels[curr_channel].need_cam_ask==CAM_ASKED)
+				      channels[curr_channel].need_cam_ask=CAM_NEED_ASK;
+				    update_pmt_version(&channels[curr_channel]);
+				    channels[curr_channel].pmt_needs_update=0;
+				  }
+				else
+				  channels[curr_channel].pmt_packet->empty=1;
+			      }
 			    else
-			      channels[curr_channel].pmt_packet->empty=1;
+			      {
+				log_message(MSG_DEBUG,"Autoconfiguration : False alert, nothing to do\n");
+				channels[curr_channel].pmt_needs_update=0;
+			      }
 			  }
 		    }
 		}

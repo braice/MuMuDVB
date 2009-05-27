@@ -449,15 +449,6 @@ typedef struct {
   int len;
   /**the buffer*/
   unsigned char packet[4096];
-#ifndef LIBDVBEN50221 //useful only if we don't use the libdvben50221 from dvb_apps 
-  /**@todo remove*/
-  /** do we need to descramble ? for vlc cam support*/
-  int need_descr;
-  /** program number for vlc cam support*/
-  int i_program_number; 
-  /**the buffer for the cam (for cam_support)*/
-  unsigned char converted_packet[4096]; 
-#endif
 }mumudvb_ts_packet_t;
 
 
