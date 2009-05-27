@@ -1157,6 +1157,8 @@ main (int argc, char **argv)
     signal (SIGINT, SIG_IGN);
   if (signal (SIGTERM, SignalHandler) == SIG_IGN)
     signal (SIGTERM, SIG_IGN);
+  if (signal (SIGPIPE, SignalHandler) == SIG_IGN)
+    signal (SIGPIPE, SIG_IGN);
   alarm (ALARM_TIME);
 
   /*****************************************************/
