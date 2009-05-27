@@ -838,7 +838,7 @@ main (int argc, char **argv)
 		      conf_filename, channels[curr_channel].pmt_pid);
 	    exit(ERROR_CONF);
 	  }
-	  channels[curr_channel].need_cam_ask=1;
+	  channels[curr_channel].need_cam_ask=CAM_NEED_ASK;
 	}
 #endif
       else if (!strcmp (substring, "ts_id"))
@@ -1706,7 +1706,7 @@ main (int argc, char **argv)
 	      if(cam_vars.cam_support && send_packet==1)  //no need to check paquets we don't send
 		if(cam_vars.ca_resource_connected && cam_vars.delay>=1 )
 		  {
-		    if ((channels[curr_channel].need_cam_ask)&& (channels[curr_channel].pmt_pid == pid))
+		    if ((channels[curr_channel].need_cam_ask==CAM_NEED_ASK)&& (channels[curr_channel].pmt_pid == pid))
 		      {
 			if(get_ts_packet(temp_buffer_from_dvr,cam_vars.cam_pmt_ptr)) 
 			  {
@@ -1714,7 +1714,7 @@ main (int argc, char **argv)
 			    if(mumudvb_cam_new_pmt(&cam_vars, cam_vars.cam_pmt_ptr)==1)/**@todo : check ts_id*/
 			      {
 				log_message( MSG_INFO,"CAM : CA PMT sent for channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name );
-				channels[curr_channel].need_cam_ask=0; //once we have asked the CAM for this PID, we don't have to ask anymore
+				channels[curr_channel].need_cam_ask=CAM_ASKED; //once we have asked the CAM for this PID, we don't have to ask anymore
 			      }
 			  }
 		      }
@@ -1759,7 +1759,8 @@ main (int argc, char **argv)
 			    {
 			      //plop
 			      /**@todo cam update*/
-			      //channels[curr_channel].need_cam_ask
+			      if(channels[curr_channel].need_cam_ask==CAM_ASKED)
+				channels[curr_channel].need_cam_ask=CAM_NEED_ASK;
 			      update_pmt_version(&channels[curr_channel]);
 			      channels[curr_channel].pmt_needs_update=0;
 			    }

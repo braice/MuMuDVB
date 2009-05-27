@@ -228,13 +228,6 @@ int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_p
     return -1;
   }
 
-#if 0
-  if ((section_ext->table_id_ext != cam_pmt_ptr->i_program_number) || //program number "already checked" by the pmt pid attribution
-      (section_ext->version_number == cam_params->ca_pmt_version)) { //cam_pmt_version allow to see if there is new information, not implemented for the moment (to be attached to the channel)
-    return;
-  }
-#endif
-
   // parse PMT
   struct mpeg_pmt_section *pmt = mpeg_pmt_section_codec(section_ext);
   if (pmt == NULL) {
@@ -245,7 +238,7 @@ int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_p
   if(pmt->head.table_id!=0x02)
     {
       log_message( MSG_WARN,"CAM : == Packet PID %d is not a PMT PID\n", cam_pmt_ptr->pid);
-      return 1;
+      return -1;
     }
 
 
@@ -261,7 +254,7 @@ int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_p
     // If the an update is needed the Aston cams will be happy with a ADD (it detects that the channel is already present and updates
     //It seems that the power cam don't really follow the norm (ie accept almost everything)
     // Doing also only update should work
-    if ((size = en50221_ca_format_pmt(pmt, capmt, sizeof(capmt), cam_params->moveca, CA_LIST_MANAGEMENT_ADD,
+    if ((size = en50221_ca_format_pmt(pmt, capmt, sizeof(capmt), cam_params->moveca, CA_LIST_MANAGEMENT_UPDATE, //an update should be equivalent to an add when the channel is not present
 				      CA_PMT_CMD_ID_OK_DESCRAMBLING)) < 0) {
 
       /*CA_PMT_CMD_ID_QUERY)) < 0) {

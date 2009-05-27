@@ -964,7 +964,7 @@ int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *ch
 
 	      //This is a scrambled channel, we will have to ask the cam for descrambling it
 	      if(parameters.autoconf_scrambled && actual_service->free_ca_mode)
-		channels[channel_number].need_cam_ask=1;
+		channels[channel_number].need_cam_ask=CAM_NEED_ASK;
      
 	      //We store the PMT and the service id in the channel
 	      channels[channel_number].pmt_pid=actual_service->pmt_pid;

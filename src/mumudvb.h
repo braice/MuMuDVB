@@ -94,6 +94,14 @@ enum
     HIGHLY_SCRAMBLED
   };
 
+//for need_cam_ask
+enum
+  {
+    CAM_NO_ASK=0,
+    CAM_NEED_ASK,
+    CAM_ASKED
+  };
+
 
 /**@brief file descriptors*/
 typedef struct {
