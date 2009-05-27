@@ -369,7 +369,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 			    log_message( MSG_DEBUG, "Autoconf : Update : pid %d does not belong to any channel anymore, we close the filter \n",channel->pids[i]);
 			    close(fds->fd_demuxer[channel->pids[i]]);
 			    fds->fd_demuxer[channel->pids[i]]=0;
-			    asked_pid[channel->pids[i]]==PID_NOT_ASKED;
+			    asked_pid[channel->pids[i]]=PID_NOT_ASKED;
 			  }
 		      }
 		    else
