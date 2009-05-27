@@ -1354,7 +1354,8 @@ main (int argc, char **argv)
     {
       for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
 	{
-	  asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
+	  if(asked_pid[channels[curr_channel].pids[curr_pid]]==PID_NOT_ASKED)
+	    asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
 	  number_chan_asked_pid[channels[curr_channel].pids[curr_pid]]++;
 	}
     }

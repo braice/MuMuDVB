@@ -1014,7 +1014,8 @@ int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, a
     {
       for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
 	{
-	  asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
+	  if(asked_pid[channels[curr_channel].pids[curr_pid]]==PID_NOT_ASKED)
+	    asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
 	  number_chan_asked_pid[channels[curr_channel].pids[curr_pid]]++;
 	}
     }
@@ -1066,7 +1067,8 @@ void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels,
     {
       for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
 	{
-	  asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
+	  if(asked_pid[channels[curr_channel].pids[curr_pid]]==PID_NOT_ASKED)
+	    asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
 	  number_chan_asked_pid[channels[curr_channel].pids[curr_pid]]++;
 	}
     }
