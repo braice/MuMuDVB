@@ -84,7 +84,7 @@ void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *services);
 void autoconf_show_CA_identifier_descriptor(unsigned char *buf);
 mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int service_id);
 mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,int service_id);
-int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_len);
+int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_len, int *pos);
 void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len);
 int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parameters);
 
@@ -205,19 +205,19 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 	      case 0x06: /* Descriptor defined in EN 300 468 */
 		if(descr_section_len) //If we have an accociated descriptor, we'll search inforation in it
 		  {
-		    if(pmt_find_descriptor(0x46,pmt->packet+i+PMT_INFO_LEN,descr_section_len))
+		    if(pmt_find_descriptor(0x46,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL))
 		      log_message( MSG_DEBUG,"Autoconf :   VBI Teletext \tpid %d\n",pid);
-		    else if(pmt_find_descriptor(0x56,pmt->packet+i+PMT_INFO_LEN,descr_section_len))
+		    else if(pmt_find_descriptor(0x56,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL))
 		      log_message( MSG_DEBUG,"Autoconf :   Teletext \tpid %d\n",pid);
-		    else if(pmt_find_descriptor(0x59,pmt->packet+i+PMT_INFO_LEN,descr_section_len))
+		    else if(pmt_find_descriptor(0x59,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL))
 		      log_message( MSG_DEBUG,"Autoconf :   Subtitling \tpid %d\n",pid);
-		    else if(pmt_find_descriptor(0x6a,pmt->packet+i+PMT_INFO_LEN,descr_section_len))
+		    else if(pmt_find_descriptor(0x6a,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL))
 		      log_message( MSG_DEBUG,"Autoconf :   AC3 (audio) \tpid %d\n",pid);
-		    else if(pmt_find_descriptor(0x7a,pmt->packet+i+PMT_INFO_LEN,descr_section_len))
+		    else if(pmt_find_descriptor(0x7a,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL))
 		      log_message( MSG_DEBUG,"Autoconf :   Enhanced AC3 (audio) \tpid %d\n",pid);
-		    else if(pmt_find_descriptor(0x7b,pmt->packet+i+PMT_INFO_LEN,descr_section_len))
+		    else if(pmt_find_descriptor(0x7b,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL))
 		      log_message( MSG_DEBUG,"Autoconf :   DTS (audio) \tpid %d\n",pid);
-		    else if(pmt_find_descriptor(0x7c,pmt->packet+i+PMT_INFO_LEN,descr_section_len))
+		    else if(pmt_find_descriptor(0x7c,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL))
 		      log_message( MSG_DEBUG,"Autoconf :   AAC (audio) \tpid %d\n",pid);
 		    else
 		      {
@@ -251,6 +251,23 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 		log_message( MSG_INFO, "Autoconf : !!!!Unknown stream type : 0x%02x, PID : %d cf ITU-T Rec. H.222.0 | ISO/IEC 13818\n",descr_header->stream_type,pid);
 		continue;
 	      }
+
+	    //We keep this pid
+
+	    //For cam debugging purposes, we look if we can find a ca descriptor
+	    if(descr_section_len)
+	      {
+		int pos;
+		pos=0;
+		while(pmt_find_descriptor(0x09,pmt->packet+i+PMT_INFO_LEN,descr_section_len,&pos))
+		  {
+		    descr_ca_t *ca_descriptor;
+		    ca_descriptor=(descr_ca_t *)(pmt->packet+i+PMT_INFO_LEN+pos);
+		    log_message( MSG_DEBUG,"Autoconf : Pid %d, Ca_descriptor found Ca system id 0x%04x\n",pid, HILO(ca_descriptor->CA_type));
+		    pos+=ca_descriptor->descriptor_length+2;
+		  }
+	      }
+
 	    
 	    //log_message( MSG_DEBUG,"Autoconf  PID %d added\n", pid);
 	    if(channel_update)
@@ -378,8 +395,13 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
  * @param buf the decriptors buffer (part of the PMT)
  * @param descriptors_loop_len the length of the descriptors
  */
-int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_len)
+int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_len, int *pos)
 {
+  if(pos!=NULL)
+    {
+      buf+=*pos;
+      descriptors_loop_len -= *pos;
+    }
   while (descriptors_loop_len > 0) 
     {
       unsigned char descriptor_tag = buf[0];
@@ -388,6 +410,8 @@ int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_le
       if (tag == descriptor_tag) 
 	return 1;
 
+      if(pos!=NULL)
+	*pos += descriptor_len;
       buf += descriptor_len;
       descriptors_loop_len -= descriptor_len;
     }
