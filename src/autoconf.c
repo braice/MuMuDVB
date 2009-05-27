@@ -116,6 +116,7 @@ char *encodings_en300468[] ={
 };
 
 
+
 /****************************************************************************/
 //Parts of this code (read of the pmt and read of the pat)
 // from libdvb, strongly modified, with commentaries added
@@ -254,16 +255,24 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 
 	    //We keep this pid
 
-	    //For cam debugging purposes, we look if we can find a ca descriptor
+	    //For cam debugging purposes, we look if we can find a ca descriptor to display ca system ids
 	    if(descr_section_len)
 	      {
 		int pos;
+		int casysid;
 		pos=0;
 		while(pmt_find_descriptor(0x09,pmt->packet+i+PMT_INFO_LEN,descr_section_len,&pos))
 		  {
 		    descr_ca_t *ca_descriptor;
 		    ca_descriptor=(descr_ca_t *)(pmt->packet+i+PMT_INFO_LEN+pos);
-		    log_message( MSG_DEBUG,"Autoconf : Pid %d, Ca_descriptor found Ca system id 0x%04x\n",pid, HILO(ca_descriptor->CA_type));
+		    casysid=0;
+		    while(channel->ca_sys_id[casysid] && channel->ca_sys_id[casysid]!=HILO(ca_descriptor->CA_type)&& casysid<32 )
+		      casysid++;
+		    if(!channel->ca_sys_id[casysid])
+		      {
+			channel->ca_sys_id[casysid]=HILO(ca_descriptor->CA_type);
+			display_ca_sys_id(HILO(ca_descriptor->CA_type)); //we display it with the description
+		      }
 		    pos+=ca_descriptor->descriptor_length+2;
 		  }
 	      }

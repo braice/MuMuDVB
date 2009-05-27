@@ -151,6 +151,8 @@ typedef struct{
   int pmt_pid;
   /**Say if we need to ask this channel to the cam*/
   int need_cam_ask;
+  /**The ca system ids*/
+  int ca_sys_id[32];
   /** The version of the pmt */
   int pmt_version;
   /** Do the pmt needs to be updated ? */
@@ -198,6 +200,6 @@ void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels);
 
 void gen_config_file_header(char *orig_conf_filename, char *saving_filename);
 void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *saving_filename);
-
+void display_ca_sys_id(int id);
 
 #endif
