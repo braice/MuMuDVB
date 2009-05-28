@@ -296,7 +296,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 	found=0;
 	for(i=0;i<channel->num_pids;i++)
 	  {
-	    if(channel->pids[i]==pcr_pid)
+	    if((channel_update && temp_pids[i]==pcr_pid) || (!channel_update && channel->pids[i]==pcr_pid))
 	       found=1;
 	  }
 	if(!found)
