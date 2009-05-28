@@ -330,7 +330,7 @@ static int mumudvb_cam_ca_info_callback(void *arg, uint8_t slot_id, uint16_t ses
   log_message( MSG_INFO, "CAM supports the following ca system ids:\n");
   uint32_t i;
   for(i=0; i< ca_id_count; i++) {
-    log_message( MSG_INFO, "  0x%04x\n", ca_ids[i]);
+    display_ca_sys_id(ca_ids[i]); //we display it with the description
   }
 
 

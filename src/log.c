@@ -316,54 +316,54 @@ void display_ca_sys_id(int id)
   //cf ETR 162
 
   if(id<=0xFF)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : Standardized systems\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : Standardized systems\n",id);
   else if(id>=0x0100&&id<0x01ff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : Canal Plus\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : Canal Plus\n",id);
   else if(id>=0x0200&&id<0x02ff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : CCETT\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : CCETT\n",id);
   else if(id>=0x0300&&id<0x03ff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : Deutsche Telecom\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : Deutsche Telecom\n",id);
   else if(id>=0x0400&&id<0x04ff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : Eurodec\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : Eurodec\n",id);
   else if(id>=0x0500&&id<0x05ff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : France Telecom\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : France Telecom\n",id);
   else if(id>=0x0600&&id<0x06ff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : Irdeto\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : Irdeto\n",id);
   else if(id>=0x0700&&id<0x07ff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : Jerrold/GI\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : Jerrold/GI\n",id);
   else if(id>=0x0800&&id<0x08ff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : Matra Communication\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : Matra Communication\n",id);
   else if(id>=0x0900&&id<0x09ff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : News Datacom\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : News Datacom\n",id);
   else if(id>=0x0A00&&id<0x0Aff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : Nokia\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : Nokia\n",id);
   else if(id>=0x0B00&&id<0x0Bff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : Norwegian Telekom\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : Norwegian Telekom\n",id);
   else if(id>=0x0C00&&id<0x0Cff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : NTL\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : NTL\n",id);
   else if(id>=0x0D00&&id<0x0Dff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : Philips\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : Philips\n",id);
   else if(id>=0x0E00&&id<0x0Eff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : Scientific Atlanta\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : Scientific Atlanta\n",id);
   else if(id>=0x0F00&&id<0x0Fff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : Sony\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : Sony\n",id);
   else if(id>=0x1000&&id<0x10ff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : Tandberg Television\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : Tandberg Television\n",id);
   else if(id>=0x1100&&id<0x11ff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : Thomson\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : Thomson\n",id);
   else if(id>=0x1200&&id<0x12ff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : TV/Com\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : TV/Com\n",id);
   else if(id>=0x1300&&id<0x13ff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : HPT - Croatian Post and Telecommunications\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : HPT - Croatian Post and Telecommunications\n",id);
   else if(id>=0x1400&&id<0x14ff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : HRT - Croatian Radio and Television\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : HRT - Croatian Radio and Television\n",id);
   else if(id>=0x1500&&id<0x15ff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : IBM\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : IBM\n",id);
   else if(id>=0x1600&&id<0x16ff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : Nera\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : Nera\n",id);
   else if(id>=0x1700&&id<0x17ff)
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : BetaTechnik\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : BetaTechnik\n",id);
   else
-    log_message( MSG_DETAIL,"Autoconf : New ca system id 0x%04x : UNKNOWN\n",id);
+    log_message( MSG_DETAIL,"Ca system id 0x%04x : UNKNOWN\n",id);
 
 }
