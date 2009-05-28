@@ -109,7 +109,7 @@ int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *ch
 int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, autoconf_parameters_t *autoconf_vars, int common_port, int card, fds_t *fds,uint8_t *asked_pid, uint8_t *number_chan_asked_pid, int multicast_ttl);
 void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, uint8_t *asked_pid, uint8_t *number_chan_asked_pid, fds_t *fds);
 void autoconf_free_services(mumudvb_service_t *services);
-int pmt_need_update(mumudvb_channel_t *channel, unsigned char *buf);
+int pmt_need_update(mumudvb_channel_t *channel, unsigned char *buf, int ts_header);
 void update_pmt_version(mumudvb_channel_t *channel);
 
 

@@ -1734,7 +1734,7 @@ main (int argc, char **argv)
 		  if(!channels[curr_channel].pmt_needs_update)
 		    {
 		      //Checking without crc32, it there is a change we get the full packet for crc32 checking
-		      channels[curr_channel].pmt_needs_update=pmt_need_update(&channels[curr_channel],temp_buffer_from_dvr);
+		      channels[curr_channel].pmt_needs_update=pmt_need_update(&channels[curr_channel],temp_buffer_from_dvr,1);
 		      
 		      if(channels[curr_channel].pmt_needs_update&&channels[curr_channel].pmt_packet) //It needs update we mark the packet as empty
 			channels[curr_channel].pmt_packet->empty=1;
@@ -1755,9 +1755,9 @@ main (int argc, char **argv)
 
 			if(get_ts_packet(temp_buffer_from_dvr,channels[curr_channel].pmt_packet))
 			  {
-			    if(pmt_need_update(&channels[curr_channel],channels[curr_channel].pmt_packet->packet))
+			    if(pmt_need_update(&channels[curr_channel],channels[curr_channel].pmt_packet->packet,0))
 			      {
-				log_message(MSG_DEBUG,"Autoconfiguration : PMT packet updated, we have now to check if there is new things\n");
+				log_message(MSG_DETAIL,"Autoconfiguration : PMT packet updated, we have now to check if there is new things\n");
 				/*We've got the FULL PMT packet*/
 				if(autoconf_read_pmt(channels[curr_channel].pmt_packet, &channels[curr_channel], tuneparams.card, asked_pid, number_chan_asked_pid, &fds)==0)
 				  {

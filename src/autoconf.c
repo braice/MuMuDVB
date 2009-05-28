@@ -1349,15 +1349,23 @@ int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parame
  *@param channel the channel for which we have to check
  *@param buf : the received buffer
  */
-int pmt_need_update(mumudvb_channel_t *channel, unsigned char *buf)
+int pmt_need_update(mumudvb_channel_t *channel, unsigned char *buf,int ts_header)
 {
-  pmt_t       *pmt=(pmt_t*)(buf+TS_HEADER_LEN);
-  ts_header_t *header=(ts_header_t *)buf;
+  pmt_t       *pmt;
+  ts_header_t *header;
 
-  if(header->payload_unit_start_indicator) //It's the beginning of a new packet
+  if(ts_header)
+    {
+      pmt=(pmt_t*)(buf+TS_HEADER_LEN);
+      header=(ts_header_t *)buf;
+    }
+  else
+      pmt=(pmt_t*)(buf);
+
+  if(!ts_header || header->payload_unit_start_indicator) //It's a packet without header or the beginning of a new packet 
     if(pmt->version_number!=channel->pmt_version)
       {
-	log_message(MSG_DEBUG,"Autoconfiguration : PMT version changed, channel %s . stored version : %d, new: %d. The CRC have to be checked\n",channel->name,channel->pmt_version,pmt->version_number);
+	log_message(MSG_DEBUG,"Autoconfiguration : PMT version changed, channel %s . stored version : %d, new: %d.\n",channel->name,channel->pmt_version,pmt->version_number);
 	return 1;
       }
   return 0;
