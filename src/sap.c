@@ -54,8 +54,6 @@ void sap_send(mumudvb_sap_message_t *sap_messages, int num_messages)
 	  sent_messages++;
 	}
     }
-  log_message(MSG_DEBUG,"DEBUG : SAP sending. %d message(s) sent\n", sent_messages);
-
   return;
 }
 
