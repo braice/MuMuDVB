@@ -77,6 +77,7 @@ Parameters specific to satellite
 |pol |transponder's polarisation. One char. 'v' (vertical), 'h' (horizontal), 'l' (left circular), 'r' (right circular) | | h, H, v, V, l, L, r or R | Mandatory
 |srate  |transponder's symbol rate | | | Mandatory
 |lnb_type |The LNB type | universal | universal or standard | Most of the LNBs are universal
+|sat_number |The satellite number in case you have multiples lnb | 0 | 0 to 3 | If you need support for DiSEqC > 1.1 please contact
 |lnb_voltage_off |Force the LNB voltage to be 0V (instead of 13V or 18V). This is useful when your LNB have it's own power supply. | 0 | 0 or 1 | 
 |coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto | 
 |==================================================================================================================
