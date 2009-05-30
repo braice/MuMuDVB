@@ -161,6 +161,7 @@ char filename_channels_diff[256];
 char filename_channels_not_streamed[256];
 char filename_cam_info[256];
 char filename_pid[256];
+char filename_gen_conf[256];
 int  write_streamed_channels=1;
 
 //tuning parameters C99 initialisation
@@ -1050,7 +1051,9 @@ main (int argc, char **argv)
     {
       //In case of autoconfiguration, we generate a config file with the channels discovered
       //Here we generate the header, ie we take the actual config file and copy it removing the channels
-      gen_config_file_header(conf_filename, GEN_CONF_PATH);
+      sprintf (filename_gen_conf, GEN_CONF_PATH,
+	       tuneparams.card);
+      gen_config_file_header(conf_filename, filename_gen_conf);
     }
   
   free(conf_filename);

@@ -182,7 +182,7 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 Get the PID numbers
 -------------------
 
-The simplest way is to use autoconfiguration and modify the generated configuration file : `/var/run/mumudvb/mumudvb_generated_conf`
+The simplest way is to use autoconfiguration and modify the generated configuration file : `/var/run/mumudvb/mumudvb_generated_conf_card%d`
 
 You use autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~~

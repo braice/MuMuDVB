@@ -170,7 +170,7 @@ MuMuDVB is able to find the channels in the transponder and their PIDs (Program 
 
 Without autoconfiguration, you have to set the transponder parameters, and for each channel, the multicast ip, the name and the PIDs (PMT, audio video)
 
-At the end of autoconfiguration MuMuDVB, generates a config file with the discovered parameters. You can find this file in: `/var/run/mumudvb/mumudvb_generated_conf`
+At the end of autoconfiguration MuMuDVB, generates a config file with the discovered parameters. You can find this file in: `/var/run/mumudvb/mumudvb_generated_conf_card%d`
 
 MuMuDVB is able to do two kinds of autoconfiguration:
 
@@ -489,3 +489,10 @@ Simple autoconfiguration fails finding the right pids
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
  * This can happend if a PMT pid is shared among multiple channels, see <<autoconfiguration_simple,simple autoconfiguration>> section for more details.
+
+The CAM is complaining about locked channels
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ * Some via access cam can have a lock for "mature" channels. To desactivate this lock go on the cam menu using "gnutv -cammenu" for example (from linuxtv dvb-apps)
+
+You have to set the maturity rating to maximum and unlock Maturity rating in Bolts submenu

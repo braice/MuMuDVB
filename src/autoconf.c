@@ -291,6 +291,10 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 	      }
 	  }
 
+	/**************************
+	 * PCR PID
+	 **************************/
+
 	pcr_pid=HILO(header->PCR_PID); //The PCR pid.
 	//we check if it's not already included (ie the pcr is carried with the video)
 	found=0;
@@ -314,9 +318,15 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 	    log_message( MSG_DEBUG, "Autoconf : Added PCR pid %d\n",pcr_pid);
 	  }
 
+	/**************************
+	 * PCR PID - END
+	 **************************/
 	//We store the PMT version useful to check for updates
 	channel->pmt_version=header->version_number;
 
+	/**************************
+	 * Channel update 
+	 **************************/
 	//If it's a channel update we will have to update the filters
 	if(channel_update)
 	  {
@@ -391,6 +401,10 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 		  }
 	      }
 	  }
+	/**@todo : update generated conf file*/
+	/**************************
+	 * Channel update END
+	 **************************/
 
 	log_message( MSG_DEBUG,"Autoconf : Number of pids after autoconf %d\n", channel->num_pids);
 	return 0; 
@@ -1071,6 +1085,7 @@ void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels,
   int curr_channel;
   int curr_pid;
 
+
   log_message(MSG_DETAIL,"Autoconfiguration almost done\n");
   log_message(MSG_DETAIL,"Autoconf : We open the new file descriptors\n");
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
@@ -1097,7 +1112,10 @@ void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels,
   log_streamed_channels(number_of_channels, channels);
 
   /**\todo : make an option to generate it or not ?*/
-  gen_config_file(number_of_channels, channels, GEN_CONF_PATH);
+  char filename_gen_conf[256];
+  sprintf (filename_gen_conf, GEN_CONF_PATH,
+	   card);
+  gen_config_file(number_of_channels, channels, filename_gen_conf);
 
 }
 

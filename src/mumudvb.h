@@ -67,7 +67,7 @@
 #define MAX_POLL_TRIES		5
 
 //The path for the auto generated config file
-#define GEN_CONF_PATH "/var/run/mumudvb/mumudvb_generated_conf"
+#define GEN_CONF_PATH "/var/run/mumudvb/mumudvb_generated_conf_card%d"
 
 //The path for the list of streamed channels
 #define STREAMED_LIST_PATH "/var/run/mumudvb/chaines_diffusees_carte%d"
