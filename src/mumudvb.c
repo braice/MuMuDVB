@@ -1729,7 +1729,7 @@ main (int argc, char **argv)
 	  /******************************************************/
 	  //PMT follow (ie we check if the pids announced in the pmt changed)
 	  /******************************************************/
-	      if( (autoconf_vars.autoconf_pid_update) && (send_packet==1) && (channels[curr_channel].autoconfigurated) &&(channels[curr_channel].pmt_pid==pid))  //no need to check paquets we don't send
+	      if( (autoconf_vars.autoconf_pid_update) && (send_packet==1) && (channels[curr_channel].autoconfigurated) &&(channels[curr_channel].pmt_pid==pid) && pid)  //no need to check paquets we don't send
 		{
 		  /**@todo: check ts_id -> do it with send_packet*/
 		  /*Note : the pmt version is initialised during autoconfiguration*/

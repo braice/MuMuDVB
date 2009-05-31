@@ -150,8 +150,8 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 
 	if(header->table_id!=0x02)
 	  {
-	    log_message( MSG_DETAIL,"Autoconf : Packet PID %d for channel \"%s\" is not a PMT PID\n", pmt->pid, channel->name);
-	    channel->pmt_pid=0;
+	    log_message( MSG_INFO,"Autoconf : Packet PID %d for channel \"%s\" is not a PMT PID. We remove the pmt pid for this channel\n", pmt->pid, channel->name);
+	    channel->pmt_pid=0; /** todo : put a threshold, */
 	    return 1;
 	  }
 
@@ -1378,14 +1378,19 @@ int pmt_need_update(mumudvb_channel_t *channel, unsigned char *buf,int ts_header
       header=(ts_header_t *)buf;
     }
   else
+    {
       pmt=(pmt_t*)(buf);
+      header=NULL;
+    }
 
-  if(!ts_header || header->payload_unit_start_indicator) //It's a packet without header or the beginning of a new packet 
-    if(pmt->version_number!=channel->pmt_version)
-      {
-	log_message(MSG_DEBUG,"Autoconfiguration : PMT version changed, channel %s . stored version : %d, new: %d.\n",channel->name,channel->pmt_version,pmt->version_number);
-	return 1;
-      }
+  
+  if(pmt->table_id==0x02)
+    if(!ts_header || header->payload_unit_start_indicator) //It's a packet without header or the beginning of a new packet 
+      if(pmt->version_number!=channel->pmt_version)
+	{
+	  log_message(MSG_DEBUG,"Autoconfiguration : PMT version changed, channel %s . stored version : %d, new: %d.\n",channel->name,channel->pmt_version,pmt->version_number);
+	  return 1;
+	}
   return 0;
 
 }
