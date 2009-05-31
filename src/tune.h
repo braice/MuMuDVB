@@ -65,6 +65,7 @@
 /* The lnb type*/
 #define LNB_UNIVERSAL 0
 #define LNB_STANDARD 1
+#define LNB_OTHER 2
 
 
 /** @brief Parameters for tuning the card*/
@@ -83,8 +84,10 @@ typedef struct tuning_parameters_t{
   unsigned int srate;
   /**The polarisation H, V, L or R (for satellite)*/
   char pol;
-  /**The lnb type : universal (two local oscilator frequencies) or standard (one)*/
+  /**The lnb type : universal (two local oscilator frequencies), standard (one) or other (in this case the lo_frequency is provided by the user)*/
   int lnb_type;
+  /**The lo frequency provided by the user (in MHz)*/
+  int lo_frequency;
   /** Do we force the lnb voltage to be 0 ? (in case the LNB have it's own power supply (satellite only))*/
   int lnb_voltage_off;
   //int tone;

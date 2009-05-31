@@ -175,6 +175,7 @@ tuning_parameters_t tuneparams={
   .pol = 0,
   .lnb_voltage_off=0,
   .lnb_type=LNB_UNIVERSAL,
+  .lo_frequency=0,
   //The 22KHz tone burst is usually used with non-DiSEqC capable switches to select
   //between two connected LNBs/satellites. When using DiSEqC epuipment this voltage
   //has to be switched consistently to the DiSEqC commands as described in the DiSEqC
@@ -535,7 +536,7 @@ main (int argc, char **argv)
 	  if (tuneparams.sat_number > 4)
 	    {
 	      log_message( MSG_ERROR,
-			   "Config issue : %s sat_number. The satellite number must be lower than 4. Please report if you have an equipment wich support more\n",
+			   "Config issue : %s sat_number. The satellite number must be between 0 and 4. Please report if you have an equipment wich support more\n",
 			   conf_filename);
 	      exit(ERROR_CONF);
 	    }
@@ -687,6 +688,8 @@ main (int argc, char **argv)
 	    tuneparams.lnb_type=LNB_UNIVERSAL;
 	  else if(!strcmp (substring, "standard"))
 	    tuneparams.lnb_type=LNB_STANDARD;
+	  else if(!strcmp (substring, "other"))
+	    tuneparams.lnb_type=LNB_OTHER;
 	  else
 	    {
 	      log_message( MSG_ERROR,
@@ -694,6 +697,11 @@ main (int argc, char **argv)
 			   conf_filename);
 	      exit(ERROR_CONF);
 	    }
+	}
+      else if (!strcmp (substring, "lo_frequency"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  tuneparams.lo_frequency = atoi(substring);
 	}
       else if (!strcmp (substring, "srate"))
 	{
