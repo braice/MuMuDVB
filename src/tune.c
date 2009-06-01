@@ -75,7 +75,7 @@ void print_status(fe_status_t festatus) {
 }
 
 
-/** The structure for a diseqc cmd*/
+/** The structure for a diseqc command*/
 struct diseqc_cmd {
    struct dvb_diseqc_master_cmd cmd;
    uint32_t wait;
@@ -83,9 +83,9 @@ struct diseqc_cmd {
 
 /** @brief Send a diseqc message
  *
+ * As defined in the DiseqC norm, we stop the 22kHz tone, we set the voltage. Wait. send the command. Wait. put back the 22kHz tone
  *
- *
-@todo document more*/
+ */
 static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd,
 		     fe_sec_tone_mode_t t)
 {
@@ -127,6 +127,10 @@ static int do_diseqc(int fd, unsigned char sat_no, int pol_v_r, int hi_lo, int l
 
   fe_sec_voltage_t lnb_voltage;
   struct diseqc_cmd cmd =  { {{0xe0, 0x10, 0x38, 0xf0, 0x00, 0x00}, 4}, 0 };
+  //Framing byte : Command from master, no reply required, first transmission : 0xe0
+  //Address byte : Any LNB, switcher or SMATV
+  //Command byte : Write to port group 0 (Committed switches)
+
 
   //Compute the lnb voltage : 0 if we asked, of 13V for vertical and circular right, 18 for horizontal and circular left
   if (lnb_voltage_off)
@@ -233,7 +237,6 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
       switch(type) {
          case FE_OFDM:
            log_message( MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);
-	   /**\todo : display the other parameters*/
            break;
          case FE_QPSK:
            log_message( MSG_INFO, "Event:  Frequency: %d\n",(unsigned int)((event.parameters.frequency)+lo_frequency));
@@ -246,6 +249,11 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
            log_message( MSG_INFO, "        SymbolRate: %d\n",event.parameters.u.qpsk.symbol_rate);
            log_message( MSG_INFO, "        FEC_inner:  %d\n",event.parameters.u.qpsk.fec_inner);
            break;
+#ifdef ATSC
+         case FE_ATSC:
+           log_message( MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);
+           break;
+#endif
          default:
            break;
       }
@@ -272,6 +280,9 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
   return 0;
 }
 
+/** @brief Tune the card
+ *
+ */
 int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
 {
   int res, hi_lo, dfd;
