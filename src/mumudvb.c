@@ -2210,7 +2210,7 @@ static void SignalHandler (int signum)
 	    time_no_diff=now;
 
 	  //If we don't stream data for a too long time, we exit
-	  if(time_no_diff&&((now-time_no_diff)>timeout_no_diff))
+	  if((timeout_no_diff)&& (time_no_diff&&((now-time_no_diff)>timeout_no_diff)))
 	    {
 	      log_message( MSG_INFO,
 			   "No data from card %d in %ds, exiting.\n",
