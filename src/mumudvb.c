@@ -343,6 +343,7 @@ main (int argc, char **argv)
   int non_transmitted_counter = 0;
   int tune_retval=0;
   int partial_packet_number=0;
+  int dont_send_sdt =0;
 
 
   // Initialise PID map
@@ -567,6 +568,12 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  tuneparams.dont_tune = atoi (substring);
+	}
+      else if (!strcmp (substring, "dont_send_sdt"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  dont_send_sdt = atoi (substring);
+	  log_message( MSG_INFO, "You decided not to send the SDT pid. This is a VLC workaround.\n");
 	}
       else if (!strcmp (substring, "autoconfiguration"))
 	{
@@ -1705,6 +1712,10 @@ main (int argc, char **argv)
 
 	      if ((pid == PSIP_PID) && (tuneparams.fe_type==FE_ATSC))
 		send_packet=1;
+	      
+	      //VLC workaround
+	      if(dont_send_sdt && pid==17)
+		send_packet=0;
 	      
 	      //if it isn't mandatory wee see if it is in the channel list
 	      if(!send_packet)

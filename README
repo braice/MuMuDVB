@@ -496,3 +496,13 @@ The CAM is complaining about locked channels
  * Some via access cam can have a lock for "mature" channels. To desactivate this lock go on the cam menu using "gnutv -cammenu" for example (from linuxtv dvb-apps)
 
 You have to set the maturity rating to maximum and unlock Maturity rating in Bolts submenu
+
+VLC doesn't select the good program even with pat rewrite
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is a VLC bug https://trac.videolan.org/vlc/ticket/2782
+
+The pat rewrite announces only the streamed channel in the PAT, but VLC also read the SDT to find channels (it should only refer to the pat) and sometimes select the bad program.
+A temporary workaround is avoid sending the SDT PID. You can do this using the "dont_send_sdt" option
+
+This option will be replaced by a SDT rewrite.
