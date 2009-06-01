@@ -39,7 +39,7 @@
 /**refer to  RFC 2974 : sap port*/
 #define SAP_PORT 9875
 /**refer to  RFC 2974 : sap time to live*/
-#define SAP_TTL 255 
+#define SAP_DEFAULT_TTL 255 
 
 /**intervall between sap announces*/
 #define SAP_DEFAULT_INTERVAL 5
@@ -82,6 +82,8 @@ typedef struct sap_parameters_t{
   int sap_serial;
   /** The time when the last sap announces have been sent*/
   long sap_last_time_sent;
+  /** The sap ttl (the norm ask it to be 255)*/
+  int sap_ttl;
 }sap_parameters_t;
 
 

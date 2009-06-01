@@ -203,6 +203,7 @@ sap_parameters_t sap_vars={
   .sap_sending_ip="0.0.0.0",
   .sap_default_group="",
   .sap_organisation="MuMuDVB",
+  .sap_ttl=SAP_DEFAULT_TTL,
 };
 
 //autoconfiguration. C99 initialisation
@@ -619,6 +620,11 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  sap_vars.sap_interval = atoi (substring);
+	}
+      else if (!strcmp (substring, "sap_ttl"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  sap_vars.sap_ttl = atoi (substring);
 	}
       else if (!strcmp (substring, "sap_organisation"))
 	{
@@ -1442,7 +1448,7 @@ main (int argc, char **argv)
 	}
       memset (sap_vars.sap_messages, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
       //For sap announces, we open the socket
-      sap_vars.sap_socketOut =  makesocket (SAP_IP, SAP_PORT, SAP_TTL, &sap_vars.sap_sOut);
+      sap_vars.sap_socketOut =  makesocket (SAP_IP, SAP_PORT, sap_vars.sap_ttl, &sap_vars.sap_sOut);
       sap_vars.sap_serial= 1 + (int) (424242.0 * (rand() / (RAND_MAX + 1.0)));
       sap_vars.sap_last_time_sent = 0;
       //todo : loop to create the version
