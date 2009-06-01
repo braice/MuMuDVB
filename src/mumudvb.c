@@ -768,7 +768,7 @@ main (int argc, char **argv)
 	  if ( ip_ok == 0)
 	    {
 	      log_message( MSG_ERROR,
-			   "You must precise ip first\n");
+			   "sap_group : this is a channel option, You must precise ip first\n");
 	      exit(ERROR_CONF);
 	    }
 
@@ -819,7 +819,7 @@ main (int argc, char **argv)
 	  if ( ip_ok == 0)
 	    {
 	      log_message( MSG_ERROR,
-			   "You must precise ip first\n");
+			   "port : You must precise ip first\n");
 	      exit(ERROR_CONF);
 	    }
 	  substring = strtok (NULL, delimiteurs);
@@ -836,7 +836,7 @@ main (int argc, char **argv)
 	  if ( ip_ok == 0)
 	    {
 	      log_message( MSG_ERROR,
-			"You must precise ip first\n");
+			"cam_pmt_pid : You must precise ip first\n");
 	      exit(ERROR_CONF);
 	    }
 	  substring = strtok (NULL, delimiteurs);
@@ -855,7 +855,7 @@ main (int argc, char **argv)
 	  if ( ip_ok == 0)
 	    {
 	      log_message( MSG_ERROR,
-			"You must precise ip first\n");
+			"ts_id : You must precise ip first\n");
 	      exit(ERROR_CONF);
 	    }
 	  substring = strtok (NULL, delimiteurs);
@@ -866,7 +866,7 @@ main (int argc, char **argv)
 	  if ( ip_ok == 0)
 	    {
 		log_message( MSG_ERROR,
-			"You must precise ip first\n");
+			"pids : You must precise ip first\n");
 	      exit(ERROR_CONF);
 	    }
 	  if (common_port!=0)
@@ -901,7 +901,7 @@ main (int argc, char **argv)
 	  if ( ip_ok == 0)
 	    {
 	      log_message( MSG_ERROR,
-			   "You must precise ip first\n");
+			   "name : You must precise ip first\n");
 	      exit(ERROR_CONF);
 	    }
 	  // other substring extraction method in order to keep spaces
