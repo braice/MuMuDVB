@@ -117,11 +117,13 @@ int unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in So
   //We allocate a new client
   if(unicast_vars->clients==NULL)
     {
+      log_message(MSG_DEBUG,"Unicast : first client\n");
       client=unicast_vars->clients=malloc(sizeof(unicast_client_t));
       prev_client=NULL;
     }
   else
     {
+      log_message(MSG_DEBUG,"Unicast : already clients\n");
       client=unicast_vars->clients;
       while(client->next!=NULL)
 	client=client->next;
@@ -167,14 +169,48 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, int Socket, mumudvb_c
 {
   unicast_client_t *client;
   unicast_client_t *prev_client,*next_client;
+  unicast_client_t *clienttmp;
 
   client=unicast_find_client(unicast_vars,Socket);
   if(client==NULL)
     {
-      log_message(MSG_ERROR,"Unicast : delete client : This should never happend, please contact\n");
+      log_message(MSG_ERROR,"Unicast : delete client : client not found : This should never happend, please contact\n");
+      
+      if(unicast_vars->clients==NULL)
+	log_message(MSG_ERROR,"Unicast : 0 client\n");
+      else
+	{
+	  clienttmp=unicast_vars->clients;
+	  while(clienttmp!=NULL)
+	    {
+	      log_message(MSG_ERROR,"We search the socket %d, we see socket %d\n",Socket,clienttmp->Socket);
+	      clienttmp=clienttmp->next;
+	    }
+	}
+
       return -1;
     }
   log_message(MSG_DETAIL,"Unicast : We delete the client %s:%d, socket %d\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port, Socket);
+
+  log_message(MSG_DEBUG,"Unicast : ---------------Before-------------\n");
+  if(unicast_vars->clients==NULL)
+    log_message(MSG_ERROR,"Unicast : 0 client\n");
+  else
+    {
+      int i;
+      i=0;
+      clienttmp=unicast_vars->clients;
+      while(clienttmp!=NULL)
+	{
+	  log_message(MSG_ERROR,"We see socket %d\n",clienttmp->Socket);
+	  clienttmp=clienttmp->next;
+	  i++;
+	  if(i>30)
+	    exit(1);
+	}
+    }
+  
+
 
   if (client->Socket >= 0)
     {			    
@@ -185,10 +221,14 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, int Socket, mumudvb_c
   next_client=client->next;
   if(prev_client==NULL)
     {
-      unicast_vars->clients=NULL;
+      log_message(MSG_DEBUG,"Unicast : We delete the first client\n");
+      unicast_vars->clients=client->next;
     }
   else
     prev_client->next=client->next;
+
+  if(next_client)
+    next_client->prev=prev_client;
 
   //We delete the client in the channel
   if(client->channel!=-1)
@@ -196,15 +236,42 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, int Socket, mumudvb_c
       log_message(MSG_DEBUG,"Unicast : We remove the client from the channel \"%s\"\n",channels[client->channel].name);
 
       if(client->chan_prev==NULL)
-	channels[client->channel].clients=client->chan_next;
+	{
+          channels[client->channel].clients=client->chan_next;
+	  if(channels[client->channel].clients)
+	    channels[client->channel].clients->chan_prev=NULL;
+	}
       else
-	client->chan_prev->chan_next=client->chan_next;
+	{
+          client->chan_prev->chan_next=client->chan_next;
+          if(client->chan_next)
+            client->chan_next->chan_prev=client->chan_prev;
+        }
     }
 
 
   if(client->buffer)
     free(client->buffer);
   free(client);
+
+  log_message(MSG_DEBUG,"Unicast : --------------- After -------------\n");
+  if(unicast_vars->clients==NULL)
+    log_message(MSG_ERROR,"Unicast : 0 client\n");
+  else
+    {
+      int i;
+      i=0;
+      clienttmp=unicast_vars->clients;
+      while(clienttmp!=NULL)
+	{
+	  log_message(MSG_ERROR,"We see socket %d\n",clienttmp->Socket);
+	  clienttmp=clienttmp->next;
+	  i++;
+	  if(i>30)
+	    exit(1);
+	}
+    }
+  
 
   return 0;
 }
@@ -257,7 +324,14 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
 
   if(actual_fd==fds->pfdsnum)
     {
-      log_message(MSG_ERROR,"Unicast : close connection : this should never happend, please contact\n");
+      log_message(MSG_ERROR,"Unicast : close connection : we did't find the file descriptor this should never happend, please contact\n");
+      actual_fd=0;
+      //We find the FD correspondig to this client
+      while(actual_fd<fds->pfdsnum) 
+	{
+	  log_message(MSG_ERROR,"Unicast : fds->pfds[actual_fd].fd %d Socket %d \n", fds->pfds[actual_fd].fd,Socket);
+	  actual_fd++;
+	}
       return;
     }
 
@@ -294,7 +368,21 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, int fd, mumudvb_c
   client=unicast_find_client(unicast_vars,fd);
   if(client==NULL)
     {
-      log_message(MSG_ERROR,"Unicast : This should never happend, please contact\n");
+      log_message(MSG_ERROR,"Unicast : Handle message, client not found, This should never happend, please contact\n");
+      unicast_client_t *clienttmp;
+      
+      if(unicast_vars->clients==NULL)
+	log_message(MSG_ERROR,"Unicast : 0 client\n");
+      else
+	{
+	  clienttmp=unicast_vars->clients;
+	  while(clienttmp!=NULL)
+	    {
+	      log_message(MSG_ERROR,"We search the socket %d, we see socket %d\n",fd,clienttmp->Socket);
+	      clienttmp=clienttmp->next;
+	    }
+	}
+
       return -1;
     }
 
@@ -495,8 +583,13 @@ int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *chann
       return -1;
     }
 
+  client->chan_next=NULL;
+
   if(channel->clients==NULL)
-    channel->clients=client;
+    {
+      channel->clients=client;
+      client->chan_prev=NULL;
+    }
   else
     {
       last_client=channel->clients;

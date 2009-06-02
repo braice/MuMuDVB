@@ -1181,8 +1181,15 @@ main (int argc, char **argv)
     signal (SIGINT, SIG_IGN);
   if (signal (SIGTERM, SignalHandler) == SIG_IGN)
     signal (SIGTERM, SIG_IGN);
-  if (signal (SIGPIPE, SignalHandler) == SIG_IGN)
-    signal (SIGPIPE, SIG_IGN); /**@todo : use sigaction*/
+  //  if (signal (SIGPIPE, SignalHandler) == SIG_IGN)
+  //    signal (SIGPIPE, SIG_IGN); /**@todo : use sigaction*/
+  struct sigaction act;
+  act.sa_handler = SIG_IGN;
+  sigemptyset (&act.sa_mask);
+  act.sa_flags = 0;
+  if(sigaction (SIGPIPE, &act, NULL)<0)
+    log_message( MSG_ERROR,"ErrorSigaction\n");
+
   alarm (ALARM_TIME);
 
   /*****************************************************/
@@ -1877,6 +1884,7 @@ main (int argc, char **argv)
 		      if(channels[curr_channel].clients)
 			{
 			  unicast_client_t *actual_client;
+			  unicast_client_t *temp_client;
 			  int written_len;
 			  actual_client=channels[curr_channel].clients;
 			  while(actual_client!=NULL)
@@ -1901,16 +1909,19 @@ main (int argc, char **argv)
 				  actual_client->consecutive_errors++;
 				  if(actual_client->consecutive_errors>UNICAST_CONSECUTIVE_ERROR_LIMIT)
 				    {
-				      log_message(MSG_INFO,"To much consecutive errors when writing to client %s:%d, we disconnect\n",
+				      log_message(MSG_INFO,"Too much consecutive errors when writing to client %s:%d, we disconnect\n",
 						  inet_ntoa(actual_client->SocketAddr.sin_addr),
 						  actual_client->SocketAddr.sin_port);
+				      temp_client=actual_client->chan_next;
 				      unicast_close_connection(&unicast_vars,&fds,actual_client->Socket,channels);
+				      actual_client=temp_client;
 				    }
 				}
 			      else if (actual_client->consecutive_errors)
 				actual_client->consecutive_errors--;
-
-			      actual_client=actual_client->chan_next;
+			     
+			      if(actual_client) //Can be null if the client was destroyed
+				actual_client=actual_client->chan_next;
 			    }
 			}
 		      /********* END of UNICAST **********/
