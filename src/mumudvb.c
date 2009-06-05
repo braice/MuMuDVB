@@ -381,8 +381,6 @@ main (int argc, char **argv)
   uint8_t lo_mappids[8192];
 
 
-  int alarm_count = 0;
-  int non_transmitted_counter = 0;
   int tune_retval=0;
   int partial_packet_number=0;
   int dont_send_sdt =0;
@@ -1446,11 +1444,8 @@ main (int argc, char **argv)
   /*****************************************************/
 
   if(autoconf_vars.autoconfiguration!=AUTOCONF_MODE_FULL)
-    {
-      log_streamed_channels(number_of_channels, channels);
-    }
-
-
+    log_streamed_channels(number_of_channels, channels);
+  
   if(autoconf_vars.autoconfiguration)
     log_message(MSG_INFO,"Autoconfiguration Start\n");
 
@@ -1471,11 +1466,11 @@ main (int argc, char **argv)
       /**************************************************************/ 
       if((!(fds.pfds[0].revents&POLLIN)) && (!(fds.pfds[0].revents&POLLPRI))) //Priority to the DVB packets so if there is dvb packets and something else, we look first to dvb packets
 	{
+	  /**@todo : put this in a function*/
 	  //If we have clients, we look if something happend for them
 	  if(fds.pfdsnum>2)
 	    {
 	      int actual_fd;
-	      int iRet;
 	      for(actual_fd=2;actual_fd<fds.pfdsnum;actual_fd++)
 		{
 		  iRet=0;
@@ -1550,7 +1545,7 @@ main (int argc, char **argv)
 	  /*************************************************************************************/
 	  /****              AUTOCONFIGURATION PART                                         ****/
 	  /*************************************************************************************/
-	  if( autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL) //Full autoconfiguration, we search the channels and their names
+	  if(!ScramblingControl &&  autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL) //Full autoconfiguration, we search the channels and their names
 	    {
 	      if(pid==0) //PAT : contains the services identifiers and the pmt pid for each service
 		{
@@ -1587,7 +1582,7 @@ main (int argc, char **argv)
 	    }
 
 
-	  if( autoconf_vars.autoconfiguration==AUTOCONF_MODE_PIDS) //We have the channels and their PMT, we search the other pids
+	  if(!ScramblingControl &&  autoconf_vars.autoconfiguration==AUTOCONF_MODE_PIDS) //We have the channels and their PMT, we search the other pids
 	    {
 	      //here we call the autoconfiguration function
 	      for(curr_channel=0;curr_channel<MAX_CHANNELS;curr_channel++)
@@ -1727,6 +1722,7 @@ main (int argc, char **argv)
 	  /******************************************************/
 	  //PMT follow (ie we check if the pids announced in the pmt changed)
 	  /******************************************************/
+	      /**@todo : put this in a function*/
 	      if( (autoconf_vars.autoconf_pid_update) && (send_packet==1) && (channels[curr_channel].autoconfigurated) &&(channels[curr_channel].pmt_pid==pid) && pid)  //no need to check paquets we don't send
 		{
 		  /**@todo: check ts_id -> do it with send_packet*/
@@ -1815,7 +1811,7 @@ main (int argc, char **argv)
 			else
 			  {
 			    send_packet=0;
-			  log_message(MSG_DEBUG,"Pat rewrite : Bad pat channel version, we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
+			    log_message(MSG_DEBUG,"Pat rewrite : Bad pat channel version, we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
 			  }
 		      }
 		    else
@@ -1894,32 +1890,6 @@ main (int argc, char **argv)
 		      channels[curr_channel].nb_bytes = 0;
 		    }
 		}
-
-	      //The idea is the following, when we send a packet we reinit non_transmitted_counter, wich count the number of packets
-	      //which are not sent
-	      //this number is increased for each new packet from the card
-	      //Normally this number should never increase a lot since we asked the card to give us only interesting PIDs
-	      //When it increases it means that the card give us crap, so we put a warning on the log.
-	      non_transmitted_counter = 0;
-	      if (alarm_count == 1)
-		{
-		  alarm_count = 0;
-		  log_message( MSG_INFO,
-			       "Good, we receive back significant data\n");
-		}
-	    }
-	  //when we do autoconfiguration, we didn't set all the filters etc, so we don't care about non_transmitted_counter
-	  if(!autoconf_vars.autoconfiguration)
-	    {
-	      non_transmitted_counter++;
-	      if (non_transmitted_counter > ALARM_COUNT_LIMIT)
-		if (alarm_count == 0)
-		  {
-		    log_message( MSG_INFO,
-				 "Error : less than one paquet on %d sent\n",
-				 ALARM_COUNT_LIMIT);
-		    alarm_count = 1;
-		  }
 	    }
 	}
     }

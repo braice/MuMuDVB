@@ -59,8 +59,6 @@
 #define MAX_MANDATORY_PID_NUMBER   32
 /**config line length*/
 #define CONF_LINELEN 	        512
-/**@todo : check if it is really useful*/
-#define ALARM_COUNT_LIMIT	1024
 #define MAX_NAME_LEN		256
 
 //Maximum number of polling tries (excepted EINTR)
