@@ -619,7 +619,8 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  dont_send_sdt = atoi (substring);
-	  log_message( MSG_INFO, "You decided not to send the SDT pid. This is a VLC workaround.\n");
+	  if(dont_send_sdt)
+	    log_message( MSG_INFO, "You decided not to send the SDT pid. This is a VLC workaround.\n");
 	}
       else if (!strcmp (substring, "autoconfiguration"))
 	{
