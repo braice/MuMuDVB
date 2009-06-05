@@ -1382,8 +1382,8 @@ main (int argc, char **argv)
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
       channels[curr_channel].streamed_channel = 0;
+      channels[curr_channel].num_packet = 0;
       channels[curr_channel].streamed_channel_old = 1;
-      channels[curr_channel].num_pmt = 0;
       channels[curr_channel].scrambled_channel = 0;
       channels[curr_channel].scrambled_channel_old = 0;
 
@@ -1759,18 +1759,19 @@ main (int argc, char **argv)
 	      //if it isn't mandatory wee see if it is in the channel list
 	      if(!send_packet)
 		for (curr_pid = 0; (curr_pid < channels[curr_channel].num_pids)&& !send_packet; curr_pid++)
-		  if ((channels[curr_channel].pids[curr_pid] == pid)) {
-		    send_packet=1;
-		    //avoid sending of scrambled channels if we asked to
-		    if(dont_send_scrambled && (ScramblingControl>0)&& (pid != channels[curr_channel].pmt_pid) )
-		      send_packet=0;
-		    if ((ScramblingControl>0) && (pid != channels[curr_channel].pmt_pid) )
-		      channels[curr_channel].scrambled_channel++;
-		    if (pid == channels[curr_channel].pmt_pid)
-		      channels[curr_channel].num_pmt++;
-		    //we don't count the PMT pid for up channels
-		    if(send_packet && (pid != channels[curr_channel].pmt_pid))
-		      channels[curr_channel].streamed_channel++;
+		  if ((channels[curr_channel].pids[curr_pid] == pid))
+		    {
+		      send_packet=1;
+		      //avoid sending of scrambled channels if we asked to
+		      if(dont_send_scrambled && (ScramblingControl>0)&& (pid != channels[curr_channel].pmt_pid) )
+			send_packet=0;
+		      if ((ScramblingControl>0) && (pid != channels[curr_channel].pmt_pid) )
+			channels[curr_channel].scrambled_channel++;
+		      //we don't count the PMT pid for up channels
+		      if(send_packet && (pid != channels[curr_channel].pmt_pid))
+			channels[curr_channel].streamed_channel++;
+		      if (pid != channels[curr_channel].pmt_pid)
+			channels[curr_channel].num_packet++;
 
 		  }
 
@@ -2230,8 +2231,8 @@ static void SignalHandler (int signum)
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	    {
 	      // Calcultation of the ratio (percentage) of scrambled packets received
-	      if (((channels[curr_channel].streamed_channel-channels[curr_channel].num_pmt)>0)&&channels[curr_channel].scrambled_channel>10)
-		channels[curr_channel].ratio_scrambled = (int)(channels[curr_channel].scrambled_channel*100/(channels[curr_channel].streamed_channel-channels[curr_channel].num_pmt));
+	      if (channels[curr_channel].num_packet >0 && channels[curr_channel].scrambled_channel>10)
+		channels[curr_channel].ratio_scrambled = (int)(channels[curr_channel].scrambled_channel*100/(channels[curr_channel].num_packet));
 	      else
 		channels[curr_channel].ratio_scrambled = 0;
 	      
@@ -2294,8 +2295,8 @@ static void SignalHandler (int signum)
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	    {
 	      channels[curr_channel].streamed_channel = 0;
+	      channels[curr_channel].num_packet = 0;
 	      channels[curr_channel].scrambled_channel = 0;
-	      channels[curr_channel].num_pmt = 0;
 	    }
       
 #ifdef LIBDVBEN50221

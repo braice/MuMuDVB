@@ -125,13 +125,13 @@ struct unicast_client_t;
 typedef struct{
   /**tell if this channel is actually streamed*/
   int streamed_channel;
+  /**Tell the total packet number (without pmt) for the scrambling ratio*/
+  int num_packet;
   /**tell if this channel is actually streamed (precedent test, to see if it's changed)*/
   int streamed_channel_old;
   /**Ratio of scrambled packet versus all packets*/
   int ratio_scrambled;
 
-  /**The number of pmt pids seen*/
-  int num_pmt;
   /**Tell if at least one of the PID related to the chanel is scrambled*/
   int scrambled_channel;
   /** Old state to manage state change display*/
