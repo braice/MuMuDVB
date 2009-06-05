@@ -87,8 +87,8 @@ typedef struct sap_parameters_t{
 }sap_parameters_t;
 
 
-void sap_send(mumudvb_sap_message_t *sap_messages, int num_messages);
-int sap_update(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_message);
-int sap_add_program(mumudvb_channel_t channel, mumudvb_sap_message_t *sap_message);
+int init_sap(sap_parameters_t *sap_vars);
+void sap_send(sap_parameters_t *sap_vars, int num_messages);
+int sap_update(mumudvb_channel_t channel, sap_parameters_t *sap_vars, int curr_channel);
 
 #endif

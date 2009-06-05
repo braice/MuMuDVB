@@ -1392,7 +1392,7 @@ main (int argc, char **argv)
       log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
       return mumudvb_close(100<<8);
     }
-  //File descriptor for polling
+  //File descriptor for polling the DVB card
   fds.pfds[0].fd = fds.fd_dvr;
   //POLLIN : data available for read
   fds.pfds[0].events = POLLIN | POLLPRI; 
@@ -1408,9 +1408,8 @@ main (int argc, char **argv)
   // Init network, we open the sockets
   /*****************************************************/
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-    {
-      channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
-    }
+    channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
+    
   //We open the socket for the http unicast if needed and we update the poll structure
   if(strlen(unicast_vars.ipOut))
     {
@@ -1438,22 +1437,9 @@ main (int argc, char **argv)
   // init sap
   /*****************************************************/
 
-  if(sap_vars.sap)
-    {
-      sap_vars.sap_messages=malloc(sizeof(mumudvb_sap_message_t)*MAX_CHANNELS);
-      if(sap_vars.sap_messages==NULL)
-	{
-	  log_message( MSG_ERROR,"MALLOC\n");
-	  return mumudvb_close(100<<8);
-	}
-      memset (sap_vars.sap_messages, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
-      //For sap announces, we open the socket
-      sap_vars.sap_socketOut =  makesocket (SAP_IP, SAP_PORT, sap_vars.sap_ttl, &sap_vars.sap_sOut);
-      sap_vars.sap_serial= 1 + (int) (424242.0 * (rand() / (RAND_MAX + 1.0)));
-      sap_vars.sap_last_time_sent = 0;
-      //todo : loop to create the version
-    }
-
+  iRet=init_sap(&sap_vars);
+  if(iRet)
+    return iRet;
 
   /*****************************************************/
   // Information about streamed channels
@@ -2132,13 +2118,13 @@ static void SignalHandler (int signum)
 		  // it's the first time we are here, we initialize all the channels
 		  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 		    {
-		      sap_update(channels[curr_channel], &sap_vars.sap_messages[curr_channel]);
+		      sap_update(channels[curr_channel], &sap_vars, curr_channel);
 		    }
 		  sap_vars.sap_last_time_sent=now-sap_vars.sap_interval-1;
 		}
 	      if((now-sap_vars.sap_last_time_sent)>=sap_vars.sap_interval)
 		{
-		  sap_send(sap_vars.sap_messages, number_of_channels);
+		  sap_send(&sap_vars, number_of_channels);
 		  sap_vars.sap_last_time_sent=now;
 		}
 	    }
@@ -2153,7 +2139,7 @@ static void SignalHandler (int signum)
 			     channels[curr_channel].name, tuneparams.card);
 		channels[curr_channel].streamed_channel_old = 1;	// update
 		if(sap_vars.sap)
-		  sap_update(channels[curr_channel], &sap_vars.sap_messages[curr_channel]); //Channel status changed, we update the sap announces
+		  sap_update(channels[curr_channel], &sap_vars, curr_channel); //Channel status changed, we update the sap announces
 	      }
 	    else if ((channels[curr_channel].streamed_channel_old) && (channels[curr_channel].streamed_channel < 30))
 	      {
@@ -2162,7 +2148,7 @@ static void SignalHandler (int signum)
 			     channels[curr_channel].name, tuneparams.card);
 		channels[curr_channel].streamed_channel_old = 0;	// update
 		if(sap_vars.sap)
-		  sap_update(channels[curr_channel], &sap_vars.sap_messages[curr_channel]); //Channel status changed, we update the sap announces
+		  sap_update(channels[curr_channel], &sap_vars, curr_channel); //Channel status changed, we update the sap announces
 	      }
 
 
