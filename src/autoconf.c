@@ -167,7 +167,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 	channel_update=channel->num_pids>1?1:0;
 	if(channel_update)
 	  {
-	    log_message( MSG_DEBUG,"Autoconf : This is a channel update\n");
+	    log_message( MSG_INFO,"Autoconf : Channel %s update\n",channel->name);
 	    temp_pids[0]=pmt->pid;
 	    temp_num_pids++;
 	  }
