@@ -1400,6 +1400,9 @@ main (int argc, char **argv)
   //PAT : Program Association Table
   mandatory_pid[0]=1;
   asked_pid[0]=PID_ASKED;
+  //CAT : Conditional Access Table 
+  mandatory_pid[1]=1;
+  asked_pid[1]=PID_ASKED;
   //NIT : Network Information Table
   //It is intended to provide information about the physical network.
   mandatory_pid[16]=1;
