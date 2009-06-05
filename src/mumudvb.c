@@ -385,6 +385,7 @@ main (int argc, char **argv)
   int tune_retval=0;
   int partial_packet_number=0;
   int dont_send_sdt =0;
+  int dont_send_scrambled=0;
 
 
   // Initialise PID map
@@ -609,6 +610,11 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  tuneparams.dont_tune = atoi (substring);
+	}
+      else if (!strcmp (substring, "dont_send_scrambled"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  dont_send_scrambled = atoi (substring);
 	}
       else if (!strcmp (substring, "dont_send_sdt"))
 	{
@@ -1532,7 +1538,7 @@ main (int argc, char **argv)
       poll_ret=mumudvb_poll(&fds);
       if(poll_ret)
 	{
-	  Interrupted=i_ret;
+	  Interrupted=poll_ret;
 	  continue;
 	}
       /**************************************************************/
@@ -1755,9 +1761,17 @@ main (int argc, char **argv)
 		for (curr_pid = 0; (curr_pid < channels[curr_channel].num_pids)&& !send_packet; curr_pid++)
 		  if ((channels[curr_channel].pids[curr_pid] == pid)) {
 		    send_packet=1;
-		    channels[curr_channel].streamed_channel++;
-		    if ((ScramblingControl>0) && (pid != channels[curr_channel].pmt_pid) ) channels[curr_channel].scrambled_channel++;
-		    if (pid == channels[curr_channel].pmt_pid) channels[curr_channel].num_pmt++;
+		    //avoid sending of scrambled channels if we asked to
+		    if(dont_send_scrambled && (ScramblingControl>0)&& (pid != channels[curr_channel].pmt_pid) )
+		      send_packet=0;
+		    if ((ScramblingControl>0) && (pid != channels[curr_channel].pmt_pid) )
+		      channels[curr_channel].scrambled_channel++;
+		    if (pid == channels[curr_channel].pmt_pid)
+		      channels[curr_channel].num_pmt++;
+		    //we don't count the PMT pid for up channels
+		    if(send_packet && (pid != channels[curr_channel].pmt_pid))
+		      channels[curr_channel].streamed_channel++;
+
 		  }
 
 	      /******************************************************/
@@ -2192,7 +2206,7 @@ static void SignalHandler (int signum)
 
 	  // Check if the chanel stream state has changed
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-	    if ((channels[curr_channel].streamed_channel >= 100) && (!channels[curr_channel].streamed_channel_old))
+	    if ((channels[curr_channel].streamed_channel >= 50) && (!channels[curr_channel].streamed_channel_old))
 	      {
 		log_message( MSG_INFO,
 			     "Channel \"%s\" back.Card %d\n",
@@ -2216,7 +2230,7 @@ static void SignalHandler (int signum)
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	    {
 	      // Calcultation of the ratio (percentage) of scrambled packets received
-	      if ((channels[curr_channel].streamed_channel-channels[curr_channel].num_pmt)>0)
+	      if (((channels[curr_channel].streamed_channel-channels[curr_channel].num_pmt)>0)&&channels[curr_channel].scrambled_channel>10)
 		channels[curr_channel].ratio_scrambled = (int)(channels[curr_channel].scrambled_channel*100/(channels[curr_channel].streamed_channel-channels[curr_channel].num_pmt));
 	      else
 		channels[curr_channel].ratio_scrambled = 0;
