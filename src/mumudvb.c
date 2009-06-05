@@ -258,6 +258,49 @@ int log_initialised=0; /**say if we opened the syslog ressource*/
 int verbosity = MSG_INFO+1; /** the verbosity level for log messages */
 
 
+int mumudvb_poll(fds_t *fds)
+{
+  int poll_try;
+  int poll_eintr=0;
+  int last_poll_error;
+  int Interrupted;
+
+  poll_try=0;
+  poll_eintr=0;
+  last_poll_error=0;
+  while((poll (fds->pfds, fds->pfdsnum, 500)<0)&&(poll_try<MAX_POLL_TRIES))
+    {
+      if(errno != EINTR) //EINTR means Interrupted System Call, it normally shouldn't matter so much so we don't count it for our Poll tries
+	{
+	  poll_try++;
+	  last_poll_error=errno;
+	}
+      else
+	{
+	  poll_eintr++;
+	  if(poll_eintr==100)
+	    {
+	      log_message( MSG_DEBUG, "Poll : 100 EINTR\n");
+	      poll_eintr=0;
+	    }
+	}
+      /**\todo : put a maximum number of interrupted system calls per unit time*/
+    }
+  
+  if(poll_try==MAX_POLL_TRIES)
+    {
+      log_message( MSG_ERROR, "Poll : We reach the maximum number of polling tries\n\tLast error when polling: %s\n", strerror (errno));
+      Interrupted=errno<<8; //the <<8 is to make difference beetween signals and errors;
+      return Interrupted;
+    }
+  else if(poll_try)
+    {
+      log_message( MSG_WARN, "Poll : Warning : error when polling: %s\n", strerror (last_poll_error));
+    }
+  return 0;
+}
+
+
 
 // prototypes
 static void SignalHandler (int signum);
@@ -301,9 +344,6 @@ main (int argc, char **argv)
 {
   int k,i;
 
-  //polling of the dvr device
-  int poll_try;
-  int last_poll_error;
 
   //MPEG2-TS reception and sort
   int pid;			/** pid of the current mpeg2 packet */
@@ -311,6 +351,7 @@ main (int argc, char **argv)
   int bytes_read;		/** number of bytes actually read */
   //temporary buffers
   unsigned char temp_buffer_from_dvr[TS_PACKET_SIZE];
+  int poll_ret;
 
   /** List of mandatory pids */
   uint8_t mandatory_pid[MAX_MANDATORY_PID_NUMBER];
@@ -1488,29 +1529,12 @@ main (int argc, char **argv)
   while (!Interrupted)
     {   
       /* Poll the open file descriptors : we wait for data*/
-      poll_try=0;
-      last_poll_error=0;
-      while((poll (fds.pfds, fds.pfdsnum, 500)<0)&&(poll_try<MAX_POLL_TRIES))
+      poll_ret=mumudvb_poll(&fds);
+      if(poll_ret)
 	{
-	  if(errno != EINTR) //EINTR means Interrupted System Call, it normally shouldn't matter so much so we don't count it for our Poll tries
-	    {
-	      poll_try++;
-	      last_poll_error=errno;
-	    }
-	  /**\todo : put a maximum number of interrupted system calls per unit time*/
-	}
-
-      if(poll_try==MAX_POLL_TRIES)
-	{
-	  log_message( MSG_ERROR, "Poll : We reach the maximum number of polling tries\n\tLast error when polling: %s\n", strerror (errno));
-	  Interrupted=errno<<8; //the <<8 is to make difference beetween signals and errors;
+	  Interrupted=i_ret;
 	  continue;
 	}
-      else if(poll_try)
-	{
-	  log_message( MSG_WARN, "Poll : Warning : error when polling: %s\n", strerror (last_poll_error));
-	}
-
       /**************************************************************/
       /* UNICAST HTTP                                               */
       /**************************************************************/ 
@@ -1630,6 +1654,8 @@ main (int argc, char **argv)
 	      
 	      continue;
 	    }
+
+
 	  if( autoconf_vars.autoconfiguration==AUTOCONF_MODE_PIDS) //We have the channels and their PMT, we search the other pids
 	    {
 	      //here we call the autoconfiguration function
