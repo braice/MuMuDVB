@@ -150,7 +150,6 @@ uint8_t asked_pid[8192]; /** this array contains the pids we want to filter,*/
 uint8_t number_chan_asked_pid[8192]; /** the number of channels who want this pid*/
 
 
-
 int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
 // file descriptors
 fds_t fds; /** File descriptors associated with the card */
@@ -258,6 +257,9 @@ int log_initialised=0; /**say if we opened the syslog ressource*/
 int verbosity = MSG_INFO+1; /** the verbosity level for log messages */
 
 
+/**@brief : poll the file descriptors fds with a limit in the number of errors
+ *
+ */
 int mumudvb_poll(fds_t *fds)
 {
   int poll_try;
@@ -278,9 +280,9 @@ int mumudvb_poll(fds_t *fds)
       else
 	{
 	  poll_eintr++;
-	  if(poll_eintr==100)
+	  if(poll_eintr==10)
 	    {
-	      log_message( MSG_DEBUG, "Poll : 100 EINTR\n");
+	      log_message( MSG_DEBUG, "Poll : 10 successive EINTR\n");
 	      poll_eintr=0;
 	    }
 	}
@@ -304,9 +306,8 @@ int mumudvb_poll(fds_t *fds)
 
 // prototypes
 static void SignalHandler (int signum);
-int mumudvb_close(int Interrupted);
 
-
+/**@brief : display mumudvb usage*/
 void
 usage (char *name)
 {
@@ -342,7 +343,7 @@ usage (char *name)
 int
 main (int argc, char **argv)
 {
-  int k,i;
+  int k,i,iRet;
 
 
   //MPEG2-TS reception and sort
@@ -1128,7 +1129,7 @@ main (int argc, char **argv)
 
   number_of_channels = curr_channel;
 
-  // we clear it by paranoia
+  // we clear them by paranoia
   sprintf (filename_channels_diff, STREAMED_LIST_PATH,
 	   tuneparams.card);
   sprintf (filename_channels_not_streamed, NOT_STREAMED_LIST_PATH,
@@ -1228,8 +1229,6 @@ main (int argc, char **argv)
     signal (SIGINT, SIG_IGN);
   if (signal (SIGTERM, SignalHandler) == SIG_IGN)
     signal (SIGTERM, SIG_IGN);
-  //  if (signal (SIGPIPE, SignalHandler) == SIG_IGN)
-  //    signal (SIGPIPE, SIG_IGN); /**@todo : use sigaction*/
   struct sigaction act;
   act.sa_handler = SIG_IGN;
   sigemptyset (&act.sa_mask);
@@ -1266,69 +1265,9 @@ main (int argc, char **argv)
   //memory allocation for MPEG2-TS
   //packet structures
   /*****************************************************/
-
-  if(autoconf_vars.autoconfiguration)
-    {
-      autoconf_vars.autoconf_temp_pmt=malloc(sizeof(mumudvb_ts_packet_t));
-      if(autoconf_vars.autoconf_temp_pmt==NULL)
-	{
-	  log_message( MSG_ERROR,"MALLOC\n");
-	  return mumudvb_close(100<<8);
-	}
-      memset (autoconf_vars.autoconf_temp_pmt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-    }
-
-  if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)
-    {
-      autoconf_vars.autoconf_temp_pat=malloc(sizeof(mumudvb_ts_packet_t));
-      if(autoconf_vars.autoconf_temp_pat==NULL)
-	{
-	  log_message( MSG_ERROR,"MALLOC\n");
-	  return mumudvb_close(100<<8);
-	}
-      memset (autoconf_vars.autoconf_temp_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-      autoconf_vars.autoconf_temp_sdt=malloc(sizeof(mumudvb_ts_packet_t));
-      if(autoconf_vars.autoconf_temp_sdt==NULL)
-	{
-	  log_message( MSG_ERROR,"MALLOC\n");
-	  return mumudvb_close(100<<8);
-	  
-	}
-      memset (autoconf_vars.autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-      autoconf_vars.autoconf_temp_psip=malloc(sizeof(mumudvb_ts_packet_t));
-      if(autoconf_vars.autoconf_temp_psip==NULL)
-	{
-	  log_message( MSG_ERROR,"MALLOC\n");
-	  return mumudvb_close(100<<8);
-	  
-	}
-      memset (autoconf_vars.autoconf_temp_psip, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-      autoconf_vars.services=malloc(sizeof(mumudvb_service_t));
-      if(autoconf_vars.services==NULL)
-	{
-	  log_message( MSG_ERROR,"MALLOC\n");
-	  return mumudvb_close(100<<8);
-	}
-      memset (autoconf_vars.services, 0, sizeof( mumudvb_service_t));//we clear it
-
-    }
-
-  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-    {
-      channels[curr_channel].nb_bytes=0;
-      //If there is more than one pid in one channel we mark it
-      //For no autoconfiguration
-      if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_PIDS && channels[curr_channel].num_pids>1)
-	{
-	  log_message( MSG_DETAIL, "Autoconf : Autoconfiguration desactivated for channel \"%s\" \n", channels[curr_channel].name);
-	  channels[curr_channel].autoconfigurated=1;
-	}
-      else
-	{
-	  //Only one pid with autoconfiguration=1, it's the PMT pid
-	  channels[curr_channel].pmt_pid=channels[curr_channel].pids[0];
-	}
-    }
+  iRet=autoconf_init(&autoconf_vars, channels,number_of_channels);
+  if(iRet)
+    return iRet;
 
   /*****************************************************/
   //Pat rewriting
@@ -1339,10 +1278,7 @@ main (int argc, char **argv)
   if(rewrite_vars.rewrite_pat)
     {
       for (curr_channel = 0; curr_channel < MAX_CHANNELS; curr_channel++)
-	{
 	  channels[curr_channel].generated_pat_version=-1;
-	  /*rewrite_vars.continuity_counter[curr_channel]=0;*/
-	}
 
       rewrite_vars.full_pat=malloc(sizeof(mumudvb_ts_packet_t));
       if(rewrite_vars.full_pat==NULL)

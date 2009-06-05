@@ -116,6 +116,79 @@ char *encodings_en300468[] ={
 };
 
 
+/**@brief initialize the autoconfiguration : alloc the memory etc...
+ *
+ */
+int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *channels,int number_of_channels)
+{
+  int curr_channel;
+
+  if(autoconf_vars->autoconfiguration)
+    {
+      autoconf_vars->autoconf_temp_pmt=malloc(sizeof(mumudvb_ts_packet_t));
+      if(autoconf_vars->autoconf_temp_pmt==NULL)
+	{
+	  log_message( MSG_ERROR,"MALLOC\n");
+	  return mumudvb_close(100<<8);
+	}
+      memset (autoconf_vars->autoconf_temp_pmt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+    }
+
+  if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL)
+    {
+      autoconf_vars->autoconf_temp_pat=malloc(sizeof(mumudvb_ts_packet_t));
+      if(autoconf_vars->autoconf_temp_pat==NULL)
+	{
+	  log_message( MSG_ERROR,"MALLOC\n");
+	  return mumudvb_close(100<<8);
+	}
+      memset (autoconf_vars->autoconf_temp_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+      autoconf_vars->autoconf_temp_sdt=malloc(sizeof(mumudvb_ts_packet_t));
+      if(autoconf_vars->autoconf_temp_sdt==NULL)
+	{
+	  log_message( MSG_ERROR,"MALLOC\n");
+	  return mumudvb_close(100<<8);
+	  
+	}
+      memset (autoconf_vars->autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+      autoconf_vars->autoconf_temp_psip=malloc(sizeof(mumudvb_ts_packet_t));
+      if(autoconf_vars->autoconf_temp_psip==NULL)
+	{
+	  log_message( MSG_ERROR,"MALLOC\n");
+	  return mumudvb_close(100<<8);
+	  
+	}
+      memset (autoconf_vars->autoconf_temp_psip, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+      autoconf_vars->services=malloc(sizeof(mumudvb_service_t));
+      if(autoconf_vars->services==NULL)
+	{
+	  log_message( MSG_ERROR,"MALLOC\n");
+	  return mumudvb_close(100<<8);
+	}
+      memset (autoconf_vars->services, 0, sizeof( mumudvb_service_t));//we clear it
+
+    }
+
+  if (autoconf_vars->autoconfiguration==AUTOCONF_MODE_PIDS)
+    for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+    {
+      //If there is more than one pid in one channel we mark it
+      //For no autoconfiguration
+      if(channels[curr_channel].num_pids>1)
+	{
+	  log_message( MSG_DETAIL, "Autoconf : Autoconfiguration desactivated for channel \"%s\" \n", channels[curr_channel].name);
+	  channels[curr_channel].autoconfigurated=1;
+	}
+      else
+	{
+	  //Only one pid with autoconfiguration=1, it's the PMT pid
+	  channels[curr_channel].pmt_pid=channels[curr_channel].pids[0];
+	}
+    }
+  return 0;
+
+}
+
 
 /****************************************************************************/
 //Parts of this code (read of the pmt and read of the pat)
