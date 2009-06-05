@@ -175,6 +175,7 @@ tuning_parameters_t tuneparams={
   .pol = 0,
   .lnb_voltage_off=0,
   .lnb_type=LNB_UNIVERSAL,
+  .lo_frequency=0,
   //The 22KHz tone burst is usually used with non-DiSEqC capable switches to select
   //between two connected LNBs/satellites. When using DiSEqC epuipment this voltage
   //has to be switched consistently to the DiSEqC commands as described in the DiSEqC
@@ -202,6 +203,7 @@ sap_parameters_t sap_vars={
   .sap_sending_ip="0.0.0.0",
   .sap_default_group="",
   .sap_organisation="MuMuDVB",
+  .sap_ttl=SAP_DEFAULT_TTL,
 };
 
 //autoconfiguration. C99 initialisation
@@ -341,6 +343,7 @@ main (int argc, char **argv)
   int non_transmitted_counter = 0;
   int tune_retval=0;
   int partial_packet_number=0;
+  int dont_send_sdt =0;
 
 
   // Initialise PID map
@@ -535,7 +538,7 @@ main (int argc, char **argv)
 	  if (tuneparams.sat_number > 4)
 	    {
 	      log_message( MSG_ERROR,
-			   "Config issue : %s sat_number. The satellite number must be lower than 4. Please report if you have an equipment wich support more\n",
+			   "Config issue : %s sat_number. The satellite number must be between 0 and 4. Please report if you have an equipment wich support more\n",
 			   conf_filename);
 	      exit(ERROR_CONF);
 	    }
@@ -565,6 +568,12 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  tuneparams.dont_tune = atoi (substring);
+	}
+      else if (!strcmp (substring, "dont_send_sdt"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  dont_send_sdt = atoi (substring);
+	  log_message( MSG_INFO, "You decided not to send the SDT pid. This is a VLC workaround.\n");
 	}
       else if (!strcmp (substring, "autoconfiguration"))
 	{
@@ -618,6 +627,11 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  sap_vars.sap_interval = atoi (substring);
+	}
+      else if (!strcmp (substring, "sap_ttl"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  sap_vars.sap_ttl = atoi (substring);
 	}
       else if (!strcmp (substring, "sap_organisation"))
 	{
@@ -687,6 +701,8 @@ main (int argc, char **argv)
 	    tuneparams.lnb_type=LNB_UNIVERSAL;
 	  else if(!strcmp (substring, "standard"))
 	    tuneparams.lnb_type=LNB_STANDARD;
+	  else if(!strcmp (substring, "other"))
+	    tuneparams.lnb_type=LNB_OTHER;
 	  else
 	    {
 	      log_message( MSG_ERROR,
@@ -694,6 +710,11 @@ main (int argc, char **argv)
 			   conf_filename);
 	      exit(ERROR_CONF);
 	    }
+	}
+      else if (!strcmp (substring, "lo_frequency"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  tuneparams.lo_frequency = atoi(substring);
 	}
       else if (!strcmp (substring, "srate"))
 	{
@@ -760,7 +781,7 @@ main (int argc, char **argv)
 	  if ( ip_ok == 0)
 	    {
 	      log_message( MSG_ERROR,
-			   "You must precise ip first\n");
+			   "sap_group : this is a channel option, You must precise ip first\n");
 	      exit(ERROR_CONF);
 	    }
 
@@ -811,7 +832,7 @@ main (int argc, char **argv)
 	  if ( ip_ok == 0)
 	    {
 	      log_message( MSG_ERROR,
-			   "You must precise ip first\n");
+			   "port : You must precise ip first\n");
 	      exit(ERROR_CONF);
 	    }
 	  substring = strtok (NULL, delimiteurs);
@@ -828,7 +849,7 @@ main (int argc, char **argv)
 	  if ( ip_ok == 0)
 	    {
 	      log_message( MSG_ERROR,
-			"You must precise ip first\n");
+			"cam_pmt_pid : You must precise ip first\n");
 	      exit(ERROR_CONF);
 	    }
 	  substring = strtok (NULL, delimiteurs);
@@ -847,7 +868,7 @@ main (int argc, char **argv)
 	  if ( ip_ok == 0)
 	    {
 	      log_message( MSG_ERROR,
-			"You must precise ip first\n");
+			"ts_id : You must precise ip first\n");
 	      exit(ERROR_CONF);
 	    }
 	  substring = strtok (NULL, delimiteurs);
@@ -858,7 +879,7 @@ main (int argc, char **argv)
 	  if ( ip_ok == 0)
 	    {
 		log_message( MSG_ERROR,
-			"You must precise ip first\n");
+			"pids : You must precise ip first\n");
 	      exit(ERROR_CONF);
 	    }
 	  if (common_port!=0)
@@ -893,7 +914,7 @@ main (int argc, char **argv)
 	  if ( ip_ok == 0)
 	    {
 	      log_message( MSG_ERROR,
-			   "You must precise ip first\n");
+			   "name : You must precise ip first\n");
 	      exit(ERROR_CONF);
 	    }
 	  // other substring extraction method in order to keep spaces
@@ -1160,8 +1181,15 @@ main (int argc, char **argv)
     signal (SIGINT, SIG_IGN);
   if (signal (SIGTERM, SignalHandler) == SIG_IGN)
     signal (SIGTERM, SIG_IGN);
-  if (signal (SIGPIPE, SignalHandler) == SIG_IGN)
-    signal (SIGPIPE, SIG_IGN); /**@todo : use sigaction*/
+  //  if (signal (SIGPIPE, SignalHandler) == SIG_IGN)
+  //    signal (SIGPIPE, SIG_IGN); /**@todo : use sigaction*/
+  struct sigaction act;
+  act.sa_handler = SIG_IGN;
+  sigemptyset (&act.sa_mask);
+  act.sa_flags = 0;
+  if(sigaction (SIGPIPE, &act, NULL)<0)
+    log_message( MSG_ERROR,"ErrorSigaction\n");
+
   alarm (ALARM_TIME);
 
   /*****************************************************/
@@ -1434,7 +1462,7 @@ main (int argc, char **argv)
 	}
       memset (sap_vars.sap_messages, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
       //For sap announces, we open the socket
-      sap_vars.sap_socketOut =  makesocket (SAP_IP, SAP_PORT, SAP_TTL, &sap_vars.sap_sOut);
+      sap_vars.sap_socketOut =  makesocket (SAP_IP, SAP_PORT, sap_vars.sap_ttl, &sap_vars.sap_sOut);
       sap_vars.sap_serial= 1 + (int) (424242.0 * (rand() / (RAND_MAX + 1.0)));
       sap_vars.sap_last_time_sent = 0;
       //todo : loop to create the version
@@ -1692,6 +1720,10 @@ main (int argc, char **argv)
 	      if ((pid == PSIP_PID) && (tuneparams.fe_type==FE_ATSC))
 		send_packet=1;
 	      
+	      //VLC workaround
+	      if(dont_send_sdt && pid==17)
+		send_packet=0;
+	      
 	      //if it isn't mandatory wee see if it is in the channel list
 	      if(!send_packet)
 		for (curr_pid = 0; (curr_pid < channels[curr_channel].num_pids)&& !send_packet; curr_pid++)
@@ -1852,6 +1884,7 @@ main (int argc, char **argv)
 		      if(channels[curr_channel].clients)
 			{
 			  unicast_client_t *actual_client;
+			  unicast_client_t *temp_client;
 			  int written_len;
 			  actual_client=channels[curr_channel].clients;
 			  while(actual_client!=NULL)
@@ -1876,16 +1909,19 @@ main (int argc, char **argv)
 				  actual_client->consecutive_errors++;
 				  if(actual_client->consecutive_errors>UNICAST_CONSECUTIVE_ERROR_LIMIT)
 				    {
-				      log_message(MSG_INFO,"To much consecutive errors when writing to client %s:%d, we disconnect\n",
+				      log_message(MSG_INFO,"Too much consecutive errors when writing to client %s:%d, we disconnect\n",
 						  inet_ntoa(actual_client->SocketAddr.sin_addr),
 						  actual_client->SocketAddr.sin_port);
+				      temp_client=actual_client->chan_next;
 				      unicast_close_connection(&unicast_vars,&fds,actual_client->Socket,channels);
+				      actual_client=temp_client;
 				    }
 				}
 			      else if (actual_client->consecutive_errors)
 				actual_client->consecutive_errors--;
-
-			      actual_client=actual_client->chan_next;
+			     
+			      if(actual_client) //Can be null if the client was destroyed
+				actual_client=actual_client->chan_next;
 			    }
 			}
 		      /********* END of UNICAST **********/
@@ -2202,7 +2238,7 @@ static void SignalHandler (int signum)
 	    time_no_diff=now;
 
 	  //If we don't stream data for a too long time, we exit
-	  if(time_no_diff&&((now-time_no_diff)>timeout_no_diff))
+	  if((timeout_no_diff)&& (time_no_diff&&((now-time_no_diff)>timeout_no_diff)))
 	    {
 	      log_message( MSG_INFO,
 			   "No data from card %d in %ds, exiting.\n",

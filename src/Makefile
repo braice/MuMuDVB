@@ -19,7 +19,7 @@ else
 endif
 
 ifdef DUMA
-  CFLAGS += -lduma
+  LFLAGS += -lduma
 endif
 
 ifdef GCOV

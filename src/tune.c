@@ -75,39 +75,35 @@ void print_status(fe_status_t festatus) {
 }
 
 
-/** The structure for a diseqc cmd*/
+/** The structure for a diseqc command*/
 struct diseqc_cmd {
    struct dvb_diseqc_master_cmd cmd;
    uint32_t wait;
 };
 
 /** @brief Send a diseqc message
-@todo document more*/
+ *
+ * As defined in the DiseqC norm, we stop the 22kHz tone, we set the voltage. Wait. send the command. Wait. put back the 22kHz tone
+ *
+ */
 static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd,
-		     fe_sec_tone_mode_t t, unsigned char sat_no)
+		     fe_sec_tone_mode_t t)
 {
    if(ioctl(fd, FE_SET_TONE, SEC_TONE_OFF) < 0)
    	return -1;
    if(ioctl(fd, FE_SET_VOLTAGE, v) < 0)
    	return -1;
    usleep(15 * 1000);
-   if(sat_no >= 1 && sat_no <= 4)	//1.x compatible equipment
-   {
-     if(ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd->cmd) < 0)
-       return -1;
-     usleep(15 * 1000);
-    if(ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd->cmd) < 0)
-   	return -1;
-    usleep(cmd->wait * 1000);
-    usleep(15 * 1000);
-   }
-   else	//A or B simple diseqc
-   {
-    log_message( MSG_INFO, "SETTING SIMPLE %c BURST\n", sat_no);
-    if(ioctl(fd, FE_DISEQC_SEND_BURST, (sat_no == 'B' ? SEC_MINI_B : SEC_MINI_A)) < 0)
-   	return -1;
-    usleep(15 * 1000);
-   }
+   //1.x compatible equipment
+   if(ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd->cmd) < 0)
+     return -1;
+   usleep(15 * 1000);
+   if(ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd->cmd) < 0)
+     return -1;
+   usleep(cmd->wait * 1000);
+   usleep(15 * 1000);
+
+
    if(ioctl(fd, FE_SET_TONE, t) < 0)
    	return -1;
 
@@ -118,14 +114,23 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd,
  * specification is available from http://www.eutelsat.com/ 
  *
  * This function will set the LNB voltage and the 22kHz tone. If a satellite switching is asked
- * it will send a "full" diseqc message
- * @todo document more
+ * it will send a diseqc message
+ *
+ * @param fd : the file descriptor of the frontend
+ * @param sat_no : the satellite number (0 for non diseqc compliant hardware, 1 to 4 for diseqc compliant)
+ * @param pol_v_r : 1 : vertical or circular right, 0 : horizontal or circular left
+ * @param hi_lo : the band for a dual band lnb
+ * @param lnb_voltage_off : if one, force the 13/18V voltage to be 0 independantly of polarization
  */
 static int do_diseqc(int fd, unsigned char sat_no, int pol_v_r, int hi_lo, int lnb_voltage_off)
 {
 
   fe_sec_voltage_t lnb_voltage;
   struct diseqc_cmd cmd =  { {{0xe0, 0x10, 0x38, 0xf0, 0x00, 0x00}, 4}, 0 };
+  //Framing byte : Command from master, no reply required, first transmission : 0xe0
+  //Address byte : Any LNB, switcher or SMATV
+  //Command byte : Write to port group 0 (Committed switches)
+
 
   //Compute the lnb voltage : 0 if we asked, of 13V for vertical and circular right, 18 for horizontal and circular left
   if (lnb_voltage_off)
@@ -144,42 +149,38 @@ static int do_diseqc(int fd, unsigned char sat_no, int pol_v_r, int hi_lo, int l
       log_message( MSG_INFO, "LNB voltage 18V\n");
     }
 
-  /** @todo : always send diseqc ?*/
-    if(sat_no != 0)
+  //Diseqc compliant hardware
+  if(sat_no != 0)
     {
-	unsigned char d = sat_no;
-
-	/* param: high nibble: reset bits, low nibble set bits,
-	* bits are: option, position, polarizaion, band
-	*/
-	sat_no--;
-	cmd.cmd.msg[3] =
-    	    0xf0 | (((sat_no * 4) & 0x0f) | (pol_v_r ? 0 : 2) | (hi_lo ? 1 : 0));
-
-	return diseqc_send_msg(fd, 
-			       lnb_voltage,
-			       &cmd, 
-			       hi_lo ? SEC_TONE_ON : SEC_TONE_OFF, 
-			       d);
+      /* param: high nibble: reset bits, low nibble set bits,
+       * bits are: option, position, polarization, band
+       */
+      cmd.cmd.msg[3] =
+	0xf0 | ((((sat_no-1) * 4) & 0x0f) | (pol_v_r ? 0 : 2) | (hi_lo ? 1 : 0)); 
+      
+      return diseqc_send_msg(fd, 
+			     lnb_voltage,
+			     &cmd, 
+			     hi_lo ? SEC_TONE_ON : SEC_TONE_OFF);
     }
-    else 	//only tone and voltage
+  else 	//only tone and voltage
     {
-	
-	if(ioctl(fd, FE_SET_VOLTAGE, lnb_voltage) < 0)
-	  {
-	    log_message( MSG_WARN, "Warning : problem to set the LNB voltage");
-   	    return -1;
-	  }
-	    
-	if(ioctl(fd, FE_SET_TONE, (hi_lo ? SEC_TONE_ON : SEC_TONE_OFF)) < 0)
-	  {
-	    log_message( MSG_WARN, "Warning : problem to set the 22kHz tone");
-   	    return -1;
-	  }
-	
-	usleep(15 * 1000);
-	
-	return 0;
+      
+      if(ioctl(fd, FE_SET_VOLTAGE, lnb_voltage) < 0)
+	{
+	  log_message( MSG_WARN, "Warning : problem to set the LNB voltage");
+	  return -1;
+	}
+      
+      if(ioctl(fd, FE_SET_TONE, (hi_lo ? SEC_TONE_ON : SEC_TONE_OFF)) < 0)
+	{
+	  log_message( MSG_WARN, "Warning : problem to set the 22kHz tone");
+	  return -1;
+	}
+      
+      usleep(15 * 1000);
+      
+      return 0;
     }
 }
 
@@ -236,7 +237,6 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
       switch(type) {
          case FE_OFDM:
            log_message( MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);
-	   /**\todo : display the other parameters*/
            break;
          case FE_QPSK:
            log_message( MSG_INFO, "Event:  Frequency: %d\n",(unsigned int)((event.parameters.frequency)+lo_frequency));
@@ -249,6 +249,11 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
            log_message( MSG_INFO, "        SymbolRate: %d\n",event.parameters.u.qpsk.symbol_rate);
            log_message( MSG_INFO, "        FEC_inner:  %d\n",event.parameters.u.qpsk.fec_inner);
            break;
+#ifdef ATSC
+         case FE_ATSC:
+           log_message( MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);
+           break;
+#endif
          default:
            break;
       }
@@ -275,6 +280,9 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
   return 0;
 }
 
+/** @brief Tune the card
+ *
+ */
 int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
 {
   int res, hi_lo, dfd;
@@ -323,11 +331,19 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
 	  hi_lo = 1;
 	}
       }
-    else //LNB_STANDARD one band and one local oscillator
+    //LNB_STANDARD one band and one local oscillator
+    else if (tuneparams->lnb_type==LNB_STANDARD)
       {
 	hi_lo=0;
 	lo_frequency=LOF_STANDARD;
       }
+    //LNB_OTHER LNB frequency supplied by the user
+    else if (tuneparams->lnb_type==LNB_OTHER)
+      {
+	hi_lo=0;
+	lo_frequency=tuneparams->lo_frequency*1000UL;
+      }
+
     feparams.frequency=tuneparams->freq-lo_frequency;
 
     
