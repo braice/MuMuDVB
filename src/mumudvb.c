@@ -1467,52 +1467,9 @@ main (int argc, char **argv)
       /**************************************************************/ 
       if((!(fds.pfds[0].revents&POLLIN)) && (!(fds.pfds[0].revents&POLLPRI))) //Priority to the DVB packets so if there is dvb packets and something else, we look first to dvb packets
 	{
-	  /**@todo : put this in a function*/
-	  //If we have clients, we look if something happend for them
-	  if(fds.pfdsnum>2)
-	    {
-	      int actual_fd;
-	      for(actual_fd=2;actual_fd<fds.pfdsnum;actual_fd++)
-		{
-		  iRet=0;
-		  if((fds.pfds[actual_fd].revents&POLLIN)||(fds.pfds[actual_fd].revents&POLLPRI))
-		    {
-		      log_message(MSG_DEBUG,"Unicast : New message for socket %d\n", fds.pfds[actual_fd].fd);
-		      iRet=unicast_handle_message(&unicast_vars,fds.pfds[actual_fd].fd, channels, number_of_channels);
-		    }
-		  if (iRet==-2 || (fds.pfds[actual_fd].revents&POLLHUP)) //iRet==-2 --> 0 received data or error, we close the connection
-		    {
-		      unicast_close_connection(&unicast_vars,&fds,fds.pfds[actual_fd].fd,channels);
-		      //We check if we hage to parse fds.pfds[actual_fd].revents (the last fd moved to the actual one)
-		      if(fds.pfds[actual_fd].revents)
-			actual_fd--;//Yes, we force the loop to see it again
-		    }
-		}
-	    }
-	  //Now we look if something happend with the master connection
-	  if((fds.pfds[1].revents&POLLIN)||(fds.pfds[1].revents&POLLPRI))
-	    {
-	      //New connection, we accept the connection
-	      int tempSocket;
-	      tempSocket=unicast_accept_connection(&unicast_vars);
-	      if(tempSocket!=-1)
-		{
-		  fds.pfdsnum++;
-		  fds.pfds=realloc(fds.pfds,(fds.pfdsnum+1)*sizeof(struct pollfd));
-		  if (fds.pfds==NULL)
-		    {
-		      log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
-		      return mumudvb_close(100<<8);
-		    }
-		  //We poll the new socket
-		  fds.pfds[fds.pfdsnum-1].fd = tempSocket;
-		  fds.pfds[fds.pfdsnum-1].events = POLLIN | POLLPRI | POLLHUP; //We also poll the deconnections
-		  fds.pfds[fds.pfdsnum].fd = 0;
-		  fds.pfds[fds.pfdsnum].events = POLLIN | POLLPRI;
-		  log_message(MSG_DEBUG,"Unicast : Number of clients : %d\n", fds.pfdsnum-2);
-		}
-	    }
-
+	  iRet=unicast_hadle_fd_event(&unicast_vars, &fds, channels, number_of_channels);
+	  if(iRet)
+	    Interrupted=iRet;
 	  //no DVB packet, we continue
 	  continue;
 	}
@@ -1562,7 +1519,7 @@ main (int argc, char **argv)
 			memset (autoconf_vars.autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
 		    }
 		}
-	      if(pid==17) //SDT : contains the names of the services
+	      else if(pid==17) //SDT : contains the names of the services
 		{
 		  if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_sdt))
 		    {
@@ -1570,7 +1527,7 @@ main (int argc, char **argv)
 		      memset (autoconf_vars.autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 		    }
 		}	 
-	      if(pid==PSIP_PID && tuneparams.fe_type==FE_ATSC) //PSIP : contains the names of the services
+	      else if(pid==PSIP_PID && tuneparams.fe_type==FE_ATSC) //PSIP : contains the names of the services
 		{
 		  if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_psip))
 		    {
@@ -1601,7 +1558,6 @@ main (int argc, char **argv)
 			      log_message(MSG_DETAIL,"\n");
 			      channels[curr_channel].autoconfigurated=1;
 			    
-
 			      //We check if autoconfiguration is finished
 			      autoconf_vars.autoconfiguration=0;
 			      for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
@@ -1798,9 +1754,8 @@ main (int argc, char **argv)
 				channels[curr_channel].generated_pat_version=rewrite_vars.pat_version;
 			      }
 			    else
-			      {
-				log_message(MSG_DEBUG,"Pat rewrite : ERROR with the pat for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
-			      }			    
+			      log_message(MSG_DEBUG,"Pat rewrite : ERROR with the pat for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
+			      			    
 			  }
 			if(channels[curr_channel].generated_pat_version==rewrite_vars.pat_version)
 			  {

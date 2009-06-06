@@ -33,6 +33,7 @@ Todo list
  * implement a measurement of the "load"
  * implement channel by name
  * implement monitoring features
+ * implement limit in the number of clients
 
 ***********************/
 
@@ -57,6 +58,65 @@ int
 unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *host);
 int 
 unicast_send_streamed_channels_list_txt (int number_of_channels, mumudvb_channel_t *channels, int Socket);
+
+
+/**@brief Handle an "event" on the unicast file descriptors
+ * If the event is on an already open client connection, it handle the message
+ * If the event is on the master connection, it accepts the new connection
+ *
+ */
+int unicast_hadle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels)
+{
+  int iRet;
+  //If we have clients, we look if something happend for them
+  if(fds->pfdsnum>2)
+    {
+      int actual_fd;
+      for(actual_fd=2;actual_fd<fds->pfdsnum;actual_fd++)
+	{
+	  iRet=0;
+	  if((fds->pfds[actual_fd].revents&POLLIN)||(fds->pfds[actual_fd].revents&POLLPRI))
+	    {
+	      log_message(MSG_DEBUG,"Unicast : New message for socket %d\n", fds->pfds[actual_fd].fd);
+	      iRet=unicast_handle_message(unicast_vars,fds->pfds[actual_fd].fd, channels, number_of_channels);
+	    }
+	  if (iRet==-2 || (fds->pfds[actual_fd].revents&POLLHUP)) //iRet==-2 --> 0 received data or error, we close the connection
+	    {
+	      unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels);
+	      //We check if we hage to parse fds->pfds[actual_fd].revents (the last fd moved to the actual one)
+	      if(fds->pfds[actual_fd].revents)
+		actual_fd--;//Yes, we force the loop to see it again
+	    }
+	}
+    }
+  //Now we look if something happend with the master connection
+  if((fds->pfds[1].revents&POLLIN)||(fds->pfds[1].revents&POLLPRI))
+    {
+      //New connection, we accept the connection
+      int tempSocket;
+      tempSocket=unicast_accept_connection(unicast_vars);
+      if(tempSocket!=-1)
+	{
+	  fds->pfdsnum++;
+	  fds->pfds=realloc(fds->pfds,(fds->pfdsnum+1)*sizeof(struct pollfd));
+	  if (fds->pfds==NULL)
+	    {
+	      log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+	      return mumudvb_close(100<<8);
+	    }
+	  //We poll the new socket
+	  fds->pfds[fds->pfdsnum-1].fd = tempSocket;
+	  fds->pfds[fds->pfdsnum-1].events = POLLIN | POLLPRI | POLLHUP; //We also poll the deconnections
+	  fds->pfds[fds->pfdsnum].fd = 0;
+	  fds->pfds[fds->pfdsnum].events = POLLIN | POLLPRI;
+	  log_message(MSG_DEBUG,"Unicast : Number of clients : %d\n", fds->pfdsnum-2);
+	}
+    }
+  return 0;
+
+}
+
+
 
 
 /** @brief Accept an incoming connection

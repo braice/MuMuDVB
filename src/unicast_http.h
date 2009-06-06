@@ -137,6 +137,7 @@ typedef struct unicast_parameters_t{
   unicast_client_t *clients;
 }unicast_parameters_t;
 
+int unicast_hadle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels);
 
 int unicast_accept_connection(unicast_parameters_t *unicast_vars);
 int unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in SocketAddr, int Socket);
