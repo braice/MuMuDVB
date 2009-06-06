@@ -1813,12 +1813,12 @@ main (int argc, char **argv)
 				{
 				  //No ! 
 				  if(written_len==-1)
-				    log_message(MSG_INFO,"Error when writing to client %s:%d : %s\n",
+				    log_message(MSG_DEBUG,"Error when writing to client %s:%d : %s\n",
 						inet_ntoa(actual_client->SocketAddr.sin_addr),
 						actual_client->SocketAddr.sin_port,
 						strerror(errno));
 				  else
-				    log_message(MSG_INFO,"Not all the data was written to %s:%d. Asked len : %d, written len %d\n",
+				    log_message(MSG_DEBUG,"Not all the data was written to %s:%d. Asked len : %d, written len %d\n",
 						inet_ntoa(actual_client->SocketAddr.sin_addr),
 						actual_client->SocketAddr.sin_port,
 						channels[curr_channel].nb_bytes,
@@ -1836,7 +1836,7 @@ main (int argc, char **argv)
 				    }
 				}
 			      else if (actual_client->consecutive_errors)
-				actual_client->consecutive_errors--;
+				actual_client->consecutive_errors=0;
 			     
 			      if(actual_client) //Can be null if the client was destroyed
 				actual_client=actual_client->chan_next;
