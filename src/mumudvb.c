@@ -1676,9 +1676,9 @@ main (int argc, char **argv)
 		  }
 #endif
 
-	  /******************************************************/
-	  //PMT follow (ie we check if the pids announced in the pmt changed)
-	  /******************************************************/
+	      /******************************************************/
+	      //PMT follow (ie we check if the pids announced in the pmt changed)
+	      /******************************************************/
 	      /**@todo : put this in a function*/
 	      if( (autoconf_vars.autoconf_pid_update) && (send_packet==1) && (channels[curr_channel].autoconfigurated) &&(channels[curr_channel].pmt_pid==pid) && pid)  //no need to check paquets we don't send
 		{
@@ -1865,9 +1865,10 @@ main (int argc, char **argv)
   
 }
 
-/******************************************************/
-//Clean closing and freeing
-/******************************************************/
+/** @brief Clean closing and freeing
+ *
+ *
+ */
 int mumudvb_close(int Interrupted)
 {
 
@@ -2043,9 +2044,8 @@ static void SignalHandler (int signum)
 		{
 		  // it's the first time we are here, we initialize all the channels
 		  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-		    {
-		      sap_update(channels[curr_channel], &sap_vars, curr_channel);
-		    }
+		    sap_update(channels[curr_channel], &sap_vars, curr_channel);
+		    
 		  sap_vars.sap_last_time_sent=now-sap_vars.sap_interval-1;
 		}
 	      if((now-sap_vars.sap_last_time_sent)>=sap_vars.sap_interval)
@@ -2096,8 +2096,8 @@ static void SignalHandler (int signum)
 			       channels[curr_channel].name, channels[curr_channel].ratio_scrambled, tuneparams.card);
 		  channels[curr_channel].scrambled_channel_old = FULLY_UNSCRAMBLED;// update
 		}
-	      // Test if we have partiallay unscrambled packets (2%<=ratio<=95%) - scrambled_channel_old=PARTIALLY_UNSCRAMBLED : partially unscrambled
-	      if ((channels[curr_channel].ratio_scrambled >= 2) && (channels[curr_channel].ratio_scrambled <= 95) && (channels[curr_channel].scrambled_channel_old != PARTIALLY_UNSCRAMBLED))
+	      // Test if we have partiallay unscrambled packets (5%<=ratio<=90%) - scrambled_channel_old=PARTIALLY_UNSCRAMBLED : partially unscrambled
+	      if ((channels[curr_channel].ratio_scrambled >= 5) && (channels[curr_channel].ratio_scrambled <= 90) && (channels[curr_channel].scrambled_channel_old != PARTIALLY_UNSCRAMBLED))
 		{
 		  log_message( MSG_INFO,
 			       "Channel \"%s\" is now partially unscrambled (%d%% of scrambled packets). Card %d\n",
