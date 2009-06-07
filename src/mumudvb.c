@@ -250,6 +250,7 @@ pat_rewrite_parameters_t rewrite_vars={
 unicast_parameters_t unicast_vars={
   .ipOut="\0",
   .portOut=4242,
+  .consecutive_errors_timeout=UNICAST_CONSECUTIVE_ERROR_TIMEOUT,
 };
 
 //logging
@@ -311,7 +312,7 @@ static void SignalHandler (int signum);
 void
 usage (char *name)
 {
-  fprintf (stderr, "%s is a program who can redistribute stream from DVB on a network, in multicast.\n It's main feature is to take a whole transponder and put each channel on a different multicast IP.\n\n"
+  fprintf (stderr, "%s is a program who can redistribute stream from DVB on a network, in multicast or in http unicast.\n It's main feature is to take a whole transponder and put each channel on a different multicast IP.\n\n"
 	   "Usage: %s [options] \n"
 	   "-c, --config : Config file\n"
 	   "-s, --signal : Display signal power\n"
@@ -478,7 +479,7 @@ main (int argc, char **argv)
   log_initialised=1;
 
 
-  log_message( MSG_INFO, "MumuDVB Version "
+  log_message( MSG_INFO, "MuMuDVB Version "
 	   VERSION
 	   "\n"
 #ifndef LIBDVBEN50221
@@ -486,7 +487,8 @@ main (int argc, char **argv)
 #endif
 	   "Latest version available from http://mumudvb.braice.net/\n\n");
 
-
+  //paranoya we clear all the content of all the channels
+  memset (&channels, 0, sizeof (channels[0])*MAX_CHANNELS);
 
   /******************************************************/
   // config file reading
@@ -500,8 +502,6 @@ main (int argc, char **argv)
       exit(ERROR_CONF_FILE);
     }
 
-  //paranoya we clear all the content of all the channels
-  memset (&channels, 0, sizeof (channels[0])*MAX_CHANNELS);
 
   curr_channel=0;
   // we scan config file
@@ -813,9 +813,13 @@ main (int argc, char **argv)
 	  if(unicast_vars.ipOut)
 	    {
 	      log_message( MSG_WARN,
-			"You have enabled the support for HTTP Unicast. Please report any bug/comment\n");
+			"You have enabled the support for HTTP Unicast. This feature is quite youg, please report any bug/comment\n");
 	    }
-
+	}
+      else if (!strcmp (substring, "unicast_consecutive_errors_timeout"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  unicast_vars.consecutive_errors_timeout = atoi (substring);
 	}
       else if (!strcmp (substring, "sap_group"))
 	{
@@ -1823,21 +1827,39 @@ main (int argc, char **argv)
 						actual_client->SocketAddr.sin_port,
 						channels[curr_channel].nb_bytes,
 						written_len);
-
-				  actual_client->consecutive_errors++;
-				  if(actual_client->consecutive_errors>UNICAST_CONSECUTIVE_ERROR_LIMIT)
+				  if(!actual_client->consecutive_errors)
 				    {
-				      log_message(MSG_INFO,"Too much consecutive errors when writing to client %s:%d, we disconnect\n",
+				      log_message(MSG_DETAIL,"Unicast : Error when writing to client %s:%d : %s\n",
 						  inet_ntoa(actual_client->SocketAddr.sin_addr),
-						  actual_client->SocketAddr.sin_port);
-				      temp_client=actual_client->chan_next;
-				      unicast_close_connection(&unicast_vars,&fds,actual_client->Socket,channels);
-				      actual_client=temp_client;
+						  actual_client->SocketAddr.sin_port,
+						  strerror(errno));
+				      gettimeofday (&tv, (struct timezone *) NULL);
+				      actual_client->first_error_time = tv.tv_sec;
+				      actual_client->consecutive_errors=1;
+				    }
+				  else 
+				    {
+				      //We have actually errors, we check if we reached the timeout
+				      gettimeofday (&tv, (struct timezone *) NULL);
+                                      if((tv.tv_sec - actual_client->first_error_time) > unicast_vars.consecutive_errors_timeout)
+					{
+					  log_message(MSG_INFO,"Consecutive errors when writing to client %s:%d during too much time, we disconnect\n",
+						      inet_ntoa(actual_client->SocketAddr.sin_addr),
+						      actual_client->SocketAddr.sin_port);
+					  temp_client=actual_client->chan_next;
+					  unicast_close_connection(&unicast_vars,&fds,actual_client->Socket,channels);
+					  actual_client=temp_client;
+					}
 				    }
 				}
 			      else if (actual_client->consecutive_errors)
-				actual_client->consecutive_errors=0;
-			     
+				{
+				  log_message(MSG_DETAIL,"We can write again to client %s:%d\n",
+					      inet_ntoa(actual_client->SocketAddr.sin_addr),
+					      actual_client->SocketAddr.sin_port);
+				  actual_client->consecutive_errors=0;
+				}
+
 			      if(actual_client) //Can be null if the client was destroyed
 				actual_client=actual_client->chan_next;
 			    }

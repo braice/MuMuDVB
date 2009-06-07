@@ -32,7 +32,8 @@
 #include "mumudvb.h"
 
 #define RECV_BUFFER_MULTIPLE 100
-#define UNICAST_CONSECUTIVE_ERROR_LIMIT 42
+/**@brief the timeout for disconnecting a client with only consecutive errors*/
+#define UNICAST_CONSECUTIVE_ERROR_TIMEOUT 5
 
 #define HTTP_OK_REPLY "HTTP/1.0 200 OK\r\n"\
                       "Content-type: application/octet-stream\r\n"\
@@ -94,7 +95,10 @@ Applications should use this field to indicate the size of the
                       "\r\n"
 
 
-
+/** @brief A client connected to the unicast connection.
+ *
+ *There is two chained list of client : a global one wich contain all the clients. Another one in each channel wich contain the associated clients.
+ */
 typedef struct unicast_client_t{
   /**HTTP socket*/
   struct sockaddr_in SocketAddr;
@@ -106,8 +110,10 @@ typedef struct unicast_client_t{
   int buffersize;
   /**Position in the buffer*/
   int bufferpos;
-  /**Number of consecutive errors*/
+  /**Is there consecutive errors ?*/
   int consecutive_errors;
+  /**When the first consecutive error happeard*/
+  long first_error_time;
   /**Channel : -1 if not associated yet*/
   int channel;
   /**Next client*/
@@ -122,19 +128,20 @@ typedef struct unicast_client_t{
 
 
 /**@brief The parameters for unicast
- *
- * @ipOut The "HTML" ip address
- * @portOut The "HTML" port
- * @sIn The HTTP input socket
- * @socketIn The HTTP input socket
- * @clients The clients, contains all the clients, associated to a channel or not
 */
 typedef struct unicast_parameters_t{
+  /**The "HTTP" ip address*/
   char ipOut[20];
+  /** The "HTTP" port*/
   int portOut;
+  /** The HTTP input socket*/
   struct sockaddr_in sIn;
+  /**  The HTTP input socket*/
   int socketIn;
+  /** The clients, contains all the clients, associated to a channel or not*/
   unicast_client_t *clients;
+  /** The timeout before disconnecting a client wich does only errors*/
+  int consecutive_errors_timeout;
 }unicast_parameters_t;
 
 int unicast_hadle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels);

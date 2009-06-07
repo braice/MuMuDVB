@@ -164,6 +164,7 @@ Other global parameters
 5+^s|HTTP unicast parameters
 |ip_http |the listening ip for http unicast, if you want to listen to all interfaces put 0.0.0.0 | empty  |  | see the README for more details
 |port_http | The listening port for http unicast | 4242 | |  see the README for more details
+|unicast_consecutive_errors_timeout | The timeout for disconnecting a client wich is not responding | 5 | | 
 |==================================================================================================================
 
 
