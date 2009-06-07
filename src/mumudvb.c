@@ -1210,6 +1210,8 @@ main (int argc, char **argv)
 	signal (SIGALRM, SIG_IGN);
       if (signal (SIGUSR1, SignalHandler) == SIG_IGN)
 	signal (SIGUSR1, SIG_IGN);
+      if (signal (SIGUSR2, SignalHandler) == SIG_IGN)
+	signal (SIGUSR2, SIG_IGN);
       alarm (tuneparams.tuning_timeout);
     }
 
@@ -1258,6 +1260,10 @@ main (int argc, char **argv)
     log_message( MSG_ERROR,"ErrorSigaction\n");
 
   alarm (ALARM_TIME);
+
+  if(show_traffic)
+    log_message(MSG_INFO,"The traffic will be shown every %d seconds\n",show_traffic_interval);
+
 
   /*****************************************************/
   //cam_support
@@ -2235,6 +2241,10 @@ static void SignalHandler (int signum)
   else if (signum == SIGUSR2)
     {
       show_traffic = show_traffic ? 0 : 1;
+      if(show_traffic)
+	log_message(MSG_INFO,"The traffic will be shown every %d seconds\n",show_traffic_interval);
+      else
+	log_message(MSG_INFO,"The traffic will not be shown anymore\n");
     }
   else if (signum != SIGPIPE)
     {
