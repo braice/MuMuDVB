@@ -663,8 +663,8 @@ main (int argc, char **argv)
 	  autoconf_vars.autoconf_radios = atoi (substring);
 	  if(!(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL))
 	    {
-	      log_message( MSG_WARN,
-			"Warning : you have to set autoconfiguration in full mode to use autoconf of the radios\n");
+	      log_message( MSG_INFO,
+			"Autoconf : You have to set autoconfiguration in full mode to use autoconf of the radios\n");
 	    }
 	}
       else if (!strcmp (substring, "autoconf_ip_header"))
