@@ -162,6 +162,8 @@ typedef struct{
   unsigned char buf[MAX_UDP_SIZE];
   /**number of bytes actually in the buffer*/
   int nb_bytes;
+  /**The data sent to this channel*/
+  long sent_data;
 
   /**is the channel autoconfigurated ?*/
   int autoconfigurated;

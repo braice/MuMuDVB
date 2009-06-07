@@ -139,6 +139,9 @@ long real_start_time;
 
 
 int display_signal_strenght = 0; /** do we periodically show the signal strenght ?*/
+int show_traffic = 0; /** do we periodically show the traffic ?*/
+long show_traffic_time = 0; /** do we periodically show the signal strenght ?*/
+int show_traffic_interval = 10; /**The interval for the traffic calculation*/
 
 int no_daemon = 0; /** do we deamonize mumudvb ? */
 
@@ -316,6 +319,7 @@ usage (char *name)
 	   "Usage: %s [options] \n"
 	   "-c, --config : Config file\n"
 	   "-s, --signal : Display signal power\n"
+	   "-t, --traffic : Display channels traffic\n"
 	   "-d, --debug  : Don't deamonize\n"
 	   "-v           : More verbose\n"
 	   "-q           : Less verbose\n"
@@ -398,10 +402,11 @@ main (int argc, char **argv)
   /******************************************************/
   //Getopt
   /******************************************************/
-  const char short_options[] = "c:sdhvq";
+  const char short_options[] = "c:sdthvq";
   const struct option long_options[] = {
     {"config", required_argument, NULL, 'c'},
     {"signal", no_argument, NULL, 's'},
+    {"traffic", no_argument, NULL, 't'},
     {"debug", no_argument, NULL, 'd'},
     {"help", no_argument, NULL, 'h'},
     {0, 0, 0, 0}
@@ -438,6 +443,9 @@ main (int argc, char **argv)
 	  break;
 	case 's':
 	  display_signal_strenght = 1;
+	  break;
+	case 't':
+	  show_traffic = 1;
 	  break;
 	case 'd':
 	  no_daemon = 1;
@@ -534,6 +542,16 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  timeout_no_diff= atoi (substring);
+	}
+      else if (!strcmp (substring, "show_traffic_interval"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  show_traffic_interval= atoi (substring);
+	  if(show_traffic_interval<2)
+	    {
+	      show_traffic_interval=2;
+	      log_message(MSG_WARN,"Sorry the minimum interval for showing the traffic is 2s (10 seconds at least is advised)\n");
+	    }
 	}
       else if (!strcmp (substring, "rewrite_pat"))
 	{
@@ -1653,7 +1671,6 @@ main (int argc, char **argv)
 			channels[curr_channel].streamed_channel++;
 		      if (pid != channels[curr_channel].pmt_pid)
 			channels[curr_channel].num_packet++;
-
 		  }
 
 	      /******************************************************/
@@ -1799,6 +1816,9 @@ main (int argc, char **argv)
 		  //The buffer is full, we send it
 		  if ((channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE)
 		    {
+		      //For bandwith measurement
+		      if(show_traffic)
+			channels[curr_channel].sent_data+=channels[curr_channel].nb_bytes;
 		      /********** MULTICAST *************/
 		      sendudp (channels[curr_channel].socketOut, &channels[curr_channel].sOut, channels[curr_channel].buf,
 			       channels[curr_channel].nb_bytes);
@@ -2002,7 +2022,7 @@ int mumudvb_close(int Interrupted)
  *
  *  It check for the end of autoconfiguration
  * 
- * This function also catches SIGPIPE and SIGUSR1
+ * This function also catches SIGPIPE, SIGUSR1 and SIGUSR2
  * 
  ******************************************************/
 static void SignalHandler (int signum)
@@ -2080,25 +2100,52 @@ static void SignalHandler (int signum)
 
 	  // Check if the chanel stream state has changed
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-	    if ((channels[curr_channel].streamed_channel >= 50) && (!channels[curr_channel].streamed_channel_old))
-	      {
-		log_message( MSG_INFO,
-			     "Channel \"%s\" back.Card %d\n",
-			     channels[curr_channel].name, tuneparams.card);
-		channels[curr_channel].streamed_channel_old = 1;	// update
-		if(sap_vars.sap)
-		  sap_update(channels[curr_channel], &sap_vars, curr_channel); //Channel status changed, we update the sap announces
-	      }
-	    else if ((channels[curr_channel].streamed_channel_old) && (channels[curr_channel].streamed_channel < 30))
-	      {
-		log_message( MSG_INFO,
-			     "Channel \"%s\" down.Card %d\n",
-			     channels[curr_channel].name, tuneparams.card);
-		channels[curr_channel].streamed_channel_old = 0;	// update
-		if(sap_vars.sap)
-		  sap_update(channels[curr_channel], &sap_vars, curr_channel); //Channel status changed, we update the sap announces
-	      }
+	    {
+	      if ((channels[curr_channel].streamed_channel/ALARM_TIME >= 50) && (!channels[curr_channel].streamed_channel_old))
+		{
+		  log_message( MSG_INFO,
+			       "Channel \"%s\" back.Card %d\n",
+			       channels[curr_channel].name, tuneparams.card);
+		  channels[curr_channel].streamed_channel_old = 1;	// update
+		  if(sap_vars.sap)
+		    sap_update(channels[curr_channel], &sap_vars, curr_channel); //Channel status changed, we update the sap announces
+		}
+	      else if ((channels[curr_channel].streamed_channel_old) && (channels[curr_channel].streamed_channel/ALARM_TIME < 30))
+		{
+		  log_message( MSG_INFO,
+			       "Channel \"%s\" down.Card %d\n",
+			       channels[curr_channel].name, tuneparams.card);
+		  channels[curr_channel].streamed_channel_old = 0;	// update
+		  if(sap_vars.sap)
+		    sap_update(channels[curr_channel], &sap_vars, curr_channel); //Channel status changed, we update the sap announces
+		}
+	      //log_message( MSG_DEBUG, "Channel \"%s\"  %d packets/s \n",channels[curr_channel].name,channels[curr_channel].streamed_channel/ALARM_TIME);
+	    }
 
+
+	  //show the bandwith measurement
+	  if(show_traffic)
+	    {
+	      float time_interval;
+	      float transmitted_bytes;
+	      float traffic;
+	      if(!show_traffic_time)
+		show_traffic_time=now;
+	      if((now-show_traffic_time)>=show_traffic_interval)
+		{
+		  time_interval=now-show_traffic_time;
+		  show_traffic_time=now;
+		  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+		    {
+		      transmitted_bytes=channels[curr_channel].sent_data;
+		      traffic=transmitted_bytes/time_interval*1/1204;
+		      log_message( MSG_INFO, "Traffic :  %.2f kB/s \ŧ  for channel \"%s\"\n",
+				   traffic,
+				   channels[curr_channel].name);
+		      channels[curr_channel].sent_data=0;
+		    }
+		}
+	    }
 
 	  // Check if the chanel scrambling state has changed
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
@@ -2184,6 +2231,10 @@ static void SignalHandler (int signum)
   else if (signum == SIGUSR1)
     {
       display_signal_strenght = display_signal_strenght ? 0 : 1;
+    }
+  else if (signum == SIGUSR2)
+    {
+      show_traffic = show_traffic ? 0 : 1;
     }
   else if (signum != SIGPIPE)
     {

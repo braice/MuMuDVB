@@ -147,6 +147,9 @@ Possible options are:
 -s, --signal
 	Print signal strenght every 5 seconds
 
+-t, --traffic
+	Print the traffic of the channels every 10 seconds
+
 -h, --help
 	Show help
 
@@ -160,6 +163,7 @@ Possible options are:
 Signal: (see kill(1))
 ------------------------------------------------------------------
     SIGUSR1: switch the signal strenght printing
+    SIGUSR2: switch the traffic printing
 ------------------------------------------------------------------
 
 [[autoconfiguration]]
