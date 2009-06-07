@@ -2139,7 +2139,7 @@ static void SignalHandler (int signum)
 		    {
 		      transmitted_bytes=channels[curr_channel].sent_data;
 		      traffic=transmitted_bytes/time_interval*1/1204;
-		      log_message( MSG_INFO, "Traffic :  %.2f kB/s \ŧ  for channel \"%s\"\n",
+		      log_message( MSG_INFO, "Traffic :  %.2f kB/s \t  for channel \"%s\"\n",
 				   traffic,
 				   channels[curr_channel].name);
 		      channels[curr_channel].sent_data=0;
