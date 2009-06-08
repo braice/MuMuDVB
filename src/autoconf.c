@@ -73,6 +73,7 @@
 #include "mumudvb.h"
 #include "dvb.h"
 #include "autoconf.h"
+#include "rtp.h"
 
 //LIBUSCI for long channel names (ATSC only)
 #ifdef LIBUCSI
@@ -88,6 +89,7 @@ int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_le
 void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len);
 int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parameters);
 
+extern int rtp_header;
 
 /**
 @brief The different encodings that can be used
@@ -1065,6 +1067,8 @@ int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *ch
 	      //We store the PMT and the service id in the channel
 	      channels[channel_number].pmt_pid=actual_service->pmt_pid;
 	      channels[channel_number].ts_id=actual_service->id;
+	      if(rtp_header)
+		init_rtp_header(&channels[channel_number]);
 
 	      channel_number++;
 	    }

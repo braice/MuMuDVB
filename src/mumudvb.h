@@ -165,6 +165,9 @@ typedef struct{
   /**The data sent to this channel*/
   long sent_data;
 
+  /** The packet number for rtp*/
+  int rtp_packet_num;
+
   /**is the channel autoconfigurated ?*/
   int autoconfigurated;
 

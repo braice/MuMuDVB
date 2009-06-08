@@ -34,6 +34,7 @@
 
 
 extern int multicast_ttl;
+extern int rtp_header;
 
 int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumudvb_sap_message_t *sap_message);
 
@@ -206,13 +207,9 @@ int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumud
      a=type:broadcast
 
      a=x-plgroup: //channel's group
-
-     @subsection media name and transport address See RFC 1890
-     m=...
-
-     m=video channel_port udp 33     
   */
-  sprintf(temp_string,"t=0 0\r\na=tool:mumudvb-%s\r\na=type:broadcast\r\nm=video %d udp 33\r\n", VERSION, channel.portOut);
+  //plopplop
+  sprintf(temp_string,"t=0 0\r\na=tool:mumudvb-%s\r\na=type:broadcast\r\n", VERSION);
   if( (sap_message->len+payload_len+strlen(temp_string))>1024)
     {
       log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel.name);
@@ -220,6 +217,31 @@ int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumud
     }
   memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
   payload_len+=strlen(temp_string);
+
+  /**  @subsection media name and transport address See RFC 1890
+     m=...
+
+     Without RTP
+
+     m=video channel_port udp 33     
+
+     With RTP 
+
+     m=video channel_port rtp/avp 33     
+
+  */
+  if(!rtp_header)
+    sprintf(temp_string,"m=video %d udp 33\r\n", channel.portOut);
+  else
+    sprintf(temp_string,"m=video %d RTP/AVP 33\r\na=rtpmap:33 MP2T/90000\r\n",  channel.portOut);
+  if( (sap_message->len+payload_len+strlen(temp_string))>1024)
+    {
+      log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel.name);
+      return 1;
+    }
+  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
+  payload_len+=strlen(temp_string);
+
 
   if(strlen(channel.sap_group)||strlen(sap_vars->sap_default_group))
     {

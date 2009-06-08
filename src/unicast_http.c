@@ -59,6 +59,8 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
 int 
 unicast_send_streamed_channels_list_txt (int number_of_channels, mumudvb_channel_t *channels, int Socket);
 
+/**@todo : deal with the RTP over http case ie implement RTSP*/
+extern int rtp_header;
 
 /**@brief Handle an "event" on the unicast file descriptors
  * If the event is on an already open client connection, it handle the message

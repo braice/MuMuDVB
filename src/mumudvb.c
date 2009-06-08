@@ -111,6 +111,7 @@
 #include "sap.h"
 #include "pat_rewrite.h"
 #include "unicast_http.h"
+#include "rtp.h"
 
 /*Do we support ATSC ?*/
 #undef ATSC
@@ -166,6 +167,10 @@ char filename_cam_info[256];
 char filename_pid[256];
 char filename_gen_conf[256];
 int  write_streamed_channels=1;
+
+/**Do we send the rtp header ? */
+int rtp_header = 0;
+
 
 //tuning parameters C99 initialisation
 tuning_parameters_t tuneparams={
@@ -387,9 +392,11 @@ main (int argc, char **argv)
   uint8_t lo_mappids[8192];
 
 
-  int tune_retval=0;
+  /**The number of partial packets received*/
   int partial_packet_number=0;
+  /**Do we avoid sending the SDT pid (for VLC)*/
   int dont_send_sdt =0;
+  /**Do we avoid sending scrambled packets ?*/
   int dont_send_scrambled=0;
 
 
@@ -640,6 +647,13 @@ main (int argc, char **argv)
 	  dont_send_sdt = atoi (substring);
 	  if(dont_send_sdt)
 	    log_message( MSG_INFO, "You decided not to send the SDT pid. This is a VLC workaround.\n");
+	}
+      else if (!strcmp (substring, "rtp_header"))                                                                                                                                                                                         
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  rtp_header = atoi (substring);
+	  if (rtp_header==1)
+	    log_message( MSG_INFO, "You decided to send the RTP header.\n");
 	}
       else if (!strcmp (substring, "autoconfiguration"))
 	{
@@ -1219,15 +1233,15 @@ main (int argc, char **argv)
   if(!tuneparams.dont_tune)
     {
       // We tune the card
-      tune_retval =-1;
+      iRet =-1;
       
       if (open_fe (&fds.fd_frontend, tuneparams.card))
 	{
-	  tune_retval = 
+	  iRet = 
 	    tune_it (fds.fd_frontend, &tuneparams);
 	}
 
-    if (tune_retval < 0)
+    if (iRet < 0)
       {
         log_message( MSG_INFO, "Tunning issue, card %d\n", tuneparams.card);
         // we close the file descriptors
@@ -1341,6 +1355,11 @@ main (int argc, char **argv)
   /*****************************************************/
   //Some initialisations
   /*****************************************************/
+
+  //Initialisation of the channels for RTP
+  if(rtp_header)
+    for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+      init_rtp_header(&channels[curr_channel]);
 
   // initialisation of active channels list
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
@@ -1826,6 +1845,11 @@ main (int argc, char **argv)
 		      //For bandwith measurement
 		      if(show_traffic)
 			channels[curr_channel].sent_data+=channels[curr_channel].nb_bytes;
+
+		      /****** RTP *******/
+		      if(rtp_header)
+			rtp_update_sequence_number(&channels[curr_channel]);
+	      
 		      /********** MULTICAST *************/
 		      sendudp (channels[curr_channel].socketOut, &channels[curr_channel].sOut, channels[curr_channel].buf,
 			       channels[curr_channel].nb_bytes);
@@ -1838,7 +1862,11 @@ main (int argc, char **argv)
 			  actual_client=channels[curr_channel].clients;
 			  while(actual_client!=NULL)
 			    {
-			      written_len=write(actual_client->Socket,channels[curr_channel].buf, channels[curr_channel].nb_bytes);
+			      //NO RTP over http waiting for the RTSP implementation
+			      if(rtp_header)
+				written_len=write(actual_client->Socket,channels[curr_channel].buf+RTP_HEADER_LEN, channels[curr_channel].nb_bytes-RTP_HEADER_LEN)+RTP_HEADER_LEN; //+RTP_HEADER_LEN to avoid changing the next lines
+			      else
+				written_len=write(actual_client->Socket,channels[curr_channel].buf, channels[curr_channel].nb_bytes);
 			      //We check if all the data was successfully written
 			      if(written_len<channels[curr_channel].nb_bytes)
 				{
@@ -1892,7 +1920,11 @@ main (int argc, char **argv)
 			    }
 			}
 		      /********* END of UNICAST **********/
-		      channels[curr_channel].nb_bytes = 0;
+		      //If there is a rtp header we don't overwrite it
+		      if(rtp_header)
+			channels[curr_channel].nb_bytes = RTP_HEADER_LEN;
+		      else
+			channels[curr_channel].nb_bytes = 0;
 		    }
 		}
 	    }
