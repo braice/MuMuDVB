@@ -140,7 +140,8 @@ long real_start_time;
 
 int display_signal_strenght = 0; /** do we periodically show the signal strenght ?*/
 int show_traffic = 0; /** do we periodically show the traffic ?*/
-long show_traffic_time = 0; /** do we periodically show the signal strenght ?*/
+long show_traffic_time = 0; /** */
+int show_traffic_time_usec = 0; /** */
 int show_traffic_interval = 10; /**The interval for the traffic calculation*/
 
 int no_daemon = 0; /** do we deamonize mumudvb ? */
@@ -547,10 +548,10 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  show_traffic_interval= atoi (substring);
-	  if(show_traffic_interval<2)
+	  if(show_traffic_interval<ALARM_TIME)
 	    {
-	      show_traffic_interval=2;
-	      log_message(MSG_WARN,"Sorry the minimum interval for showing the traffic is 2s (10 seconds at least is advised)\n");
+	      show_traffic_interval=ALARM_TIME;
+	      log_message(MSG_WARN,"Sorry the minimum interval for showing the traffic is %ds\n",ALARM_TIME);
 	    }
 	}
       else if (!strcmp (substring, "rewrite_pat"))
@@ -2139,8 +2140,9 @@ static void SignalHandler (int signum)
 		show_traffic_time=now;
 	      if((now-show_traffic_time)>=show_traffic_interval)
 		{
-		  time_interval=now-show_traffic_time;
+		  time_interval=now+tv.tv_usec/1000000-show_traffic_time-show_traffic_time_usec/1000000;
 		  show_traffic_time=now;
+		  show_traffic_time_usec=tv.tv_usec;
 		  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 		    {
 		      transmitted_bytes=channels[curr_channel].sent_data;
