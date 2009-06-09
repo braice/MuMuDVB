@@ -52,8 +52,8 @@
 #define ALARM_TIME_TIMEOUT_NO_DIFF 600
 
 
-/** seven dvb paquets in one UDP*/
-#define MAX_UDP_SIZE (TS_PACKET_SIZE*7)
+/** MTU : 1500 bytes */
+#define MAX_UDP_SIZE 1500
 
 /**the max mandatory pid number*/
 #define MAX_MANDATORY_PID_NUMBER   32
