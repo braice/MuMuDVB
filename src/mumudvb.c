@@ -223,7 +223,6 @@ autoconf_parameters_t autoconf_vars={
   .autoconf_ip_header="239.100",
   .time_start_autoconfiguration=0,
   .transport_stream_id=-1,
-  .autoconf_temp_pmt=NULL,
   .autoconf_temp_pat=NULL,
   .autoconf_temp_sdt=NULL,
   .autoconf_temp_psip=NULL,
@@ -235,7 +234,6 @@ autoconf_parameters_t autoconf_vars={
 cam_parameters_t cam_vars={
   .cam_support = 0,
   .cam_number=0,
-  .cam_pmt_ptr=NULL,
   .tl=NULL,
   .sl=NULL,
   .stdcam=NULL,
@@ -1286,7 +1284,6 @@ main (int argc, char **argv)
 
 #ifdef LIBDVBEN50221
   if(cam_vars.cam_support){
-    cam_vars.cam_pmt_ptr=malloc(sizeof(mumudvb_ts_packet_t));
     
     //We initialise the cam. If fail, we remove cam support
     if(cam_start(&cam_vars,tuneparams.card,filename_cam_info))
@@ -1369,6 +1366,19 @@ main (int argc, char **argv)
       channels[curr_channel].streamed_channel_old = 1;
       channels[curr_channel].scrambled_channel = 0;
       channels[curr_channel].scrambled_channel_old = 0;
+      
+      //We alloc the channel pmt_packet (useful for autoconf and cam
+      /**@todo : allocate only if autoconf or cam*/
+      if(channels[curr_channel].pmt_packet==NULL)
+	{
+	  channels[curr_channel].pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
+	  if(channels[curr_channel].pmt_packet==NULL)
+	    {
+	      log_message( MSG_ERROR,"MALLOC channels[curr_channel].pmt_packet\n");
+	      return mumudvb_close(100<<8);
+	    }
+	  memset (channels[curr_channel].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+	}
 
     }
 
@@ -1595,10 +1605,10 @@ main (int argc, char **argv)
 		{
 		  if((!channels[curr_channel].autoconfigurated) &&(channels[curr_channel].pmt_pid==pid)&& pid)
 		    {
-		      if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_pmt))
+		      if(get_ts_packet(temp_buffer_from_dvr,channels[curr_channel].pmt_packet))
 			{
 			  //Now we have the PMT, we parse it
-			  if(autoconf_read_pmt(autoconf_vars.autoconf_temp_pmt, &channels[curr_channel], tuneparams.card, asked_pid, number_chan_asked_pid, &fds)==0)
+			  if(autoconf_read_pmt(channels[curr_channel].pmt_packet, &channels[curr_channel], tuneparams.card, asked_pid, number_chan_asked_pid, &fds)==0)
 			    {
 			      log_message(MSG_DETAIL,"Autoconf : Final PIDs for channel %d \"%s\" : ",curr_channel, channels[curr_channel].name);
 			      for(i=0;i<channels[curr_channel].num_pids;i++)
@@ -1617,7 +1627,7 @@ main (int argc, char **argv)
 				{
 				  autoconf_end(tuneparams.card, number_of_channels, channels, asked_pid, number_chan_asked_pid, &fds);
 				  //We free autoconf memory
-				  autoconf_freeing(&autoconf_vars,0);
+				  autoconf_freeing(&autoconf_vars);
 				}
 			    }
 			}
@@ -1704,16 +1714,17 @@ main (int argc, char **argv)
 	      // If we send the packet, we look if it's a cam pmt pid
 	      /******************************************************/
 #ifdef LIBDVBEN50221
-
-	      if(cam_vars.cam_support && send_packet==1)  //no need to check paquets we don't send
+	      //We don't ask the cam before the end of autoconfiguration
+	      if(!autoconf_vars.autoconfiguration && cam_vars.cam_support && send_packet==1)  //no need to check paquets we don't send
 		if(cam_vars.ca_resource_connected && cam_vars.delay>=1 )
 		  {
 		    if ((channels[curr_channel].need_cam_ask==CAM_NEED_ASK)&& (channels[curr_channel].pmt_pid == pid))
 		      {
-			if(get_ts_packet(temp_buffer_from_dvr,cam_vars.cam_pmt_ptr)) 
+			//if the packet is already ok, we don't get it (it can be updated by pmt_follow)
+			if((!channels[curr_channel].pmt_packet->empty && channels[curr_channel].pmt_packet->packet_ok)||(!autoconf_vars.autoconf_pid_update && get_ts_packet(temp_buffer_from_dvr,channels[curr_channel].pmt_packet))) 
 			  {
 			    cam_vars.delay=0;
-			    if(mumudvb_cam_new_pmt(&cam_vars, cam_vars.cam_pmt_ptr)==1)/**@todo : check ts_id*/
+			    if(mumudvb_cam_new_pmt(&cam_vars, channels[curr_channel].pmt_packet)==1)/**@todo : check ts_id*/
 			      {
 				log_message( MSG_INFO,"CAM : CA PMT sent for channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name );
 				channels[curr_channel].need_cam_ask=CAM_ASKED; //once we have asked the CAM for this PID, we don't have to ask anymore
@@ -1743,17 +1754,6 @@ main (int argc, char **argv)
 		  /*We need to update the full packet, we download it*/
 		  if(channels[curr_channel].pmt_needs_update)
 		    {
-		      if(channels[curr_channel].pmt_packet==NULL)
-			{
-			  channels[curr_channel].pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
-			  if(channels[curr_channel].pmt_packet==NULL)
-			    {
-			      log_message( MSG_ERROR,"MALLOC channels[curr_channel].pmt_packet\n");
-			      return mumudvb_close(100<<8);
-			    }
-			  memset (channels[curr_channel].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-			}
-
 			if(get_ts_packet(temp_buffer_from_dvr,channels[curr_channel].pmt_packet))
 			  {
 			    if(pmt_need_update(&channels[curr_channel],channels[curr_channel].pmt_packet->packet,0))
@@ -1985,8 +1985,6 @@ int mumudvb_close(int Interrupted)
 #ifdef LIBDVBEN50221
   if(cam_vars.cam_support)
     {
-      if(cam_vars.cam_pmt_ptr)
-	free(cam_vars.cam_pmt_ptr);
       // stop CAM operation
       cam_stop(&cam_vars);
       // delete cam_info file
@@ -2000,7 +1998,7 @@ int mumudvb_close(int Interrupted)
 #endif
 
   //autoconf variables freeing
-  autoconf_freeing(&autoconf_vars,0);
+  autoconf_freeing(&autoconf_vars);
 
   //sap variables freeing
   if(sap_vars.sap_messages)
@@ -2103,7 +2101,7 @@ static void SignalHandler (int signum)
 		  autoconf_vars.autoconfiguration=0;
 		  autoconf_end(tuneparams.card, number_of_channels, channels, asked_pid, number_chan_asked_pid, &fds);
 		  //We free autoconf memory
-		  autoconf_freeing(&autoconf_vars,0);
+		  autoconf_freeing(&autoconf_vars);
 		}
 	      else if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)
 		{

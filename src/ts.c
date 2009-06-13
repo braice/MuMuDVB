@@ -65,6 +65,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
   //delta used to remove TS HEADER
   delta = TS_HEADER_LEN-1; 
 
+
   //Sometimes there is some more data in the header, the adaptation field say it
   if (header->adaptation_field_control & 0x2)
     {
@@ -98,6 +99,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 	  ts_packet->continuity_counter=header->continuity_counter;
 	  ts_packet->pid=pid;
 	  ts_packet->len=AddPacketStart(ts_packet->packet,buf+delta+1,188-delta-1); //we add the packet to the buffer
+	  ts_packet->packet_ok=0;
 	}
     }
   else if(header->payload_unit_start_indicator==0) //Not the first, we check if the already registered packet corresponds
@@ -114,12 +116,18 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 	  ts_packet->empty=1;
 	}
       // -- discontinuity error in packet ?
+      if  (ts_packet->continuity_counter == header->continuity_counter) 
+	{
+	  log_message( MSG_DETAIL," TS parse : Duplicate packet : ts_packet->continuity_counter %d\n");
+	  return 0;
+	}
       if  ((ts_packet->continuity_counter+1)%16 != header->continuity_counter) 
 	{
 	  log_message( MSG_DETAIL," TS parse : Continuity ERROR : ts_packet->continuity_counter %d header->continuity_counter %d\n",ts_packet->continuity_counter,header->continuity_counter);
 	  ts_packet->empty=1;
 	  return 0;
 	}
+      ts_packet->packet_ok=0;
       ts_packet->continuity_counter=header->continuity_counter;
       if(ts_packet->len+(188-delta)<4096)
 	ts_packet->len=AddPacketContinue(ts_packet->packet,buf+delta,188-delta,ts_packet->len); //we add the packet to the buffer
@@ -138,6 +146,8 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
       parsed=ts_check_CRC(ts_packet); //TEST CRC32
     }
 
+  if(parsed)
+    ts_packet->packet_ok=1;
   return parsed;
 }
 

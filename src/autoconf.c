@@ -125,17 +125,6 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
 {
   int curr_channel;
 
-  if(autoconf_vars->autoconfiguration)
-    {
-      autoconf_vars->autoconf_temp_pmt=malloc(sizeof(mumudvb_ts_packet_t));
-      if(autoconf_vars->autoconf_temp_pmt==NULL)
-	{
-	  log_message( MSG_ERROR,"MALLOC\n");
-	  return mumudvb_close(100<<8);
-	}
-      memset (autoconf_vars->autoconf_temp_pmt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-    }
-
   if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL)
     {
       autoconf_vars->autoconf_temp_pat=malloc(sizeof(mumudvb_ts_packet_t));
@@ -962,7 +951,7 @@ mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,
  *
  * @param autoconf_vars pointer to the autoconf structure
  */
-void autoconf_freeing(autoconf_parameters_t *autoconf_vars,int flags)
+void autoconf_freeing(autoconf_parameters_t *autoconf_vars)
 {
   if(autoconf_vars->autoconf_temp_sdt)
     {
@@ -973,12 +962,6 @@ void autoconf_freeing(autoconf_parameters_t *autoconf_vars,int flags)
     {
       free(autoconf_vars->autoconf_temp_psip);
       autoconf_vars->autoconf_temp_psip=NULL;
-    }
-  //We have the option not to free the PMT
-  if(!(flags & DONT_FREE_PMT) && (autoconf_vars->autoconf_temp_pmt))
-    {
-      free(autoconf_vars->autoconf_temp_pmt);
-      autoconf_vars->autoconf_temp_pmt=NULL;
     }
   if(autoconf_vars->autoconf_temp_pat)
     {
@@ -1069,6 +1052,19 @@ int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *ch
 	      channels[channel_number].ts_id=actual_service->id;
 	      if(rtp_header)
 		init_rtp_header(&channels[channel_number]);
+	      
+	      if(channels[channel_number].pmt_packet==NULL)
+		{
+		  channels[channel_number].pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
+		  if(channels[channel_number].pmt_packet==NULL)
+		    {
+		      log_message( MSG_ERROR,"MALLOC channels[channel_number].pmt_packet\n");
+		      channel_number--;/**@todo make it cleaner*/
+		    }
+		  else
+		    memset (channels[channel_number].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+		}
+
 
 	      channel_number++;
 	    }
@@ -1137,8 +1133,8 @@ int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, a
     }
   
   log_message(MSG_DEBUG,"Autoconf : Step TWO, we get the video and audio PIDs\n");
-  //We free autoconf memory except PMT
-  autoconf_freeing(autoconf_vars,DONT_FREE_PMT);
+  //We free autoconf memort
+  autoconf_freeing(autoconf_vars);
   
   autoconf_vars->autoconfiguration=AUTOCONF_MODE_PIDS; //Next step add video and audio pids
   

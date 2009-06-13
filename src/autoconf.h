@@ -40,9 +40,6 @@
 //timeout for autoconfiguration
 #define AUTOCONFIGURE_TIME 10
 
-/**Flag for memory freeing*/
-#define DONT_FREE_PMT 0x01
-
 /**@brief chained list of services for autoconfiguration
  *
 */
@@ -89,7 +86,6 @@ Possible values for this variable
   int autoconf_pid_update;
   
   //Different packets used by autoconfiguration
-  mumudvb_ts_packet_t *autoconf_temp_pmt;
   mumudvb_ts_packet_t *autoconf_temp_pat;
   mumudvb_ts_packet_t *autoconf_temp_sdt;
   /**For ATSC Program and System Information Protocol*/
@@ -104,7 +100,7 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
 int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int card, uint8_t *asked_pid, uint8_t *number_chan_asked_pid, fds_t *fds);
 int autoconf_read_sdt(unsigned char *buf, int len, mumudvb_service_t *services);
 int autoconf_read_psip(autoconf_parameters_t *);
-void autoconf_freeing(autoconf_parameters_t *, int);
+void autoconf_freeing(autoconf_parameters_t *);
 int autoconf_read_pat(autoconf_parameters_t *);
 int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card);
 int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, autoconf_parameters_t *autoconf_vars, int common_port, int card, fds_t *fds,uint8_t *asked_pid, uint8_t *number_chan_asked_pid, int multicast_ttl);

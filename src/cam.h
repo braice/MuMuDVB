@@ -86,7 +86,6 @@ typedef struct cam_parameters_t{
   int mmi_enq_blind;
   int mmi_enq_length;
 
-  mumudvb_ts_packet_t *cam_pmt_ptr;
 }cam_parameters_t;
 
 /*****************************************************************************

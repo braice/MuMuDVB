@@ -441,6 +441,8 @@ typedef struct {
 typedef struct {
   /**say if the packet is empty*/
   int empty; 
+  /**say if the packet is ok*/
+  int packet_ok; 
   /**The PID of the packet*/
   int pid;
   /**the countinuity counter, incremented in each packet*/
