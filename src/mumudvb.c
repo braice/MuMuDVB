@@ -219,7 +219,7 @@ autoconf_parameters_t autoconf_vars={
   .autoconfiguration=0,
   .autoconf_radios=0,
   .autoconf_scrambled=0,
-  .autoconf_pid_update=0,
+  .autoconf_pid_update=1,
   .autoconf_ip_header="239.100",
   .time_start_autoconfiguration=0,
   .transport_stream_id=-1,
@@ -590,11 +590,6 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  autoconf_vars.autoconf_pid_update = atoi (substring);
-	  if(autoconf_vars.autoconf_pid_update)
-	    {
-	      log_message( MSG_WARN,
-			"You have enabled the autoconfiguration auto update, this feature is quite young. Please report any bug/comment\n");
-	    }
 	}
       else if (!strcmp (substring, "sat_number"))
 	{
@@ -1150,14 +1145,22 @@ main (int argc, char **argv)
   //end of config file reading
   /******************************************************/
 
+
   if(autoconf_vars.autoconfiguration)
     {
+      if(autoconf_vars.autoconf_pid_update)
+	{
+	  log_message( MSG_INFO,
+		       "The autoconfiguration auto update is enabled. If you want to disable it put \"autoconf_pid_update=0\" in your config file.\n");
+	}
       //In case of autoconfiguration, we generate a config file with the channels discovered
       //Here we generate the header, ie we take the actual config file and copy it removing the channels
       sprintf (filename_gen_conf, GEN_CONF_PATH,
 	       tuneparams.card);
       gen_config_file_header(conf_filename, filename_gen_conf);
     }
+  else 
+    autoconf_vars.autoconf_pid_update=0;
   
   free(conf_filename);
 

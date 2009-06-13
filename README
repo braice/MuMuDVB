@@ -176,6 +176,8 @@ Without autoconfiguration, you have to set the transponder parameters, and for e
 
 At the end of autoconfiguration MuMuDVB, generates a config file with the discovered parameters. You can find this file in: `/var/run/mumudvb/mumudvb_generated_conf_card%d`
 
+If the PIDs are changed, MuMuDVB will automatically update the channels except if you put "autoconf_pid_update=0" in your configuration file.
+
 MuMuDVB is able to do two kinds of autoconfiguration:
 
 Full autoconfiguration
