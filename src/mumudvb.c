@@ -1469,7 +1469,6 @@ main (int argc, char **argv)
   /*****************************************************/
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
-    
   //We open the socket for the http unicast if needed and we update the poll structure
   if(strlen(unicast_vars.ipOut))
     {

@@ -102,6 +102,40 @@ makesocket (char *szAddr, unsigned short port, int TTL,
   return iSocket;
 }
 
+/** @brief create a receiver socket, i.e. join the multicast group. 
+ *@todo document
+*/
+int
+makeclientsocket (char *szAddr, unsigned short port, int TTL,
+		  struct sockaddr_in *sSockAddr)
+{
+  int socket = makesocket (szAddr, port, TTL, sSockAddr);
+  struct ip_mreq blub;
+  struct sockaddr_in sin;
+  unsigned int tempaddr;
+  sin.sin_family = AF_INET;
+  sin.sin_port = htons (port);
+  sin.sin_addr.s_addr = inet_addr (szAddr);
+  if (bind (socket, (struct sockaddr *) &sin, sizeof (sin)))
+    {
+      log_message( MSG_ERROR, "bind failed : %s\n", strerror(errno));
+      exit (1);
+    }
+  tempaddr = inet_addr (szAddr);
+  if ((ntohl (tempaddr) >> 28) == 0xe)
+    {
+      blub.imr_multiaddr.s_addr = inet_addr (szAddr);
+      blub.imr_interface.s_addr = 0;
+      if (setsockopt
+	  (socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &blub, sizeof (blub)))
+	{
+	  log_message( MSG_ERROR, "setsockopt IP_ADD_MEMBERSHIP failed (multicast kernel?) : %s\n", strerror(errno));
+	  exit (1);
+	}
+    }
+  return socket;
+}
+
 
 /** @brief create a TCP receiver socket.
  *

@@ -45,6 +45,7 @@
 /** The default time to live*/
 #define DEFAULT_TTL		2
 
+int makeclientsocket (char *szAddr, unsigned short port, int TTL, struct sockaddr_in *sSockAddr);
 int sendudp (int fd, struct sockaddr_in *sSockAddr, unsigned char *data, int len);
 int makesocket (char *szAddr, unsigned short port, int TTL, struct sockaddr_in *sSockAddr);
 int makeTCPclientsocket (char *szAddr, unsigned short port, struct sockaddr_in *sSockAddr);
