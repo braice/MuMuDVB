@@ -129,6 +129,7 @@ extern uint32_t       crc32_table[256];
 /** Time to live of sent packets */
 int multicast_ttl=DEFAULT_TTL;
 int common_port = 1234;
+int multicast_auto_join=0;
 
 /* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
    - see http://www.cadsoft.de/people/kls/vdr/index.htm */
@@ -904,6 +905,11 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  multicast_ttl = atoi (substring);
 	}
+      else if (!strcmp (substring, "multicast_auto_join"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  multicast_auto_join = atoi (substring);
+	}
       else if (!strcmp (substring, "port"))
 	{
 	  if ( ip_ok == 0)
@@ -1468,7 +1474,13 @@ main (int argc, char **argv)
   // Init network, we open the sockets
   /*****************************************************/
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-    channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
+    {
+      //See the README for the reason of this option
+      if(multicast_auto_join)
+	channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
+      else
+	channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
+    }
   //We open the socket for the http unicast if needed and we update the poll structure
   if(strlen(unicast_vars.ipOut))
     {

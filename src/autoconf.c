@@ -90,6 +90,7 @@ void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len);
 int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parameters);
 
 extern int rtp_header;
+extern int multicast_auto_join;
 
 /**
 @brief The different encodings that can be used
@@ -1129,7 +1130,11 @@ int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, a
     {
       // Init udp
       //Open the multicast socket for the new channel
-      channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
+      //See the README for the reason of this option
+      if(multicast_auto_join)
+	channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
+      else
+	channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
     }
   
   log_message(MSG_DEBUG,"Autoconf : Step TWO, we get the video and audio PIDs\n");

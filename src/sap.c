@@ -34,6 +34,7 @@
 
 
 extern int multicast_ttl;
+extern int multicast_auto_join;
 extern int rtp_header;
 
 int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumudvb_sap_message_t *sap_message);
@@ -54,7 +55,11 @@ int init_sap(sap_parameters_t *sap_vars)
 	}
       memset (sap_vars->sap_messages, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
       //For sap announces, we open the socket
-      sap_vars->sap_socketOut =  makesocket (SAP_IP, SAP_PORT, sap_vars->sap_ttl, &sap_vars->sap_sOut);
+      //See the README about multicast_auto_join
+      if(multicast_auto_join)
+	sap_vars->sap_socketOut =  makeclientsocket (SAP_IP, SAP_PORT, sap_vars->sap_ttl, &sap_vars->sap_sOut);
+      else
+	sap_vars->sap_socketOut =  makesocket (SAP_IP, SAP_PORT, sap_vars->sap_ttl, &sap_vars->sap_sOut);
       sap_vars->sap_serial= 1 + (int) (424242.0 * (rand() / (RAND_MAX + 1.0)));
       sap_vars->sap_last_time_sent = 0;
       //todo : loop to create the version

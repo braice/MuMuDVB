@@ -512,3 +512,37 @@ The pat rewrite announces only the streamed channel in the PAT, but VLC also rea
 A temporary workaround is avoid sending the SDT PID. You can do this using the "dont_send_sdt" option
 
 This option will be replaced by a SDT rewrite.
+
+
+HELP ! my multicast traffic is flooded (I have a HP switch)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The best explanation is found in the HP multicast routing guide.
+
+On switches that do not support Data-Driven IGMP, unregistered multicast
+groups are flooded to the VLAN rather than pruned. In this scenario, Fast-Leave IGMP can actually increase the problem of multicast flooding by removing the IGMP group filter before the Querier has recognized the IGMP leave. The Querier will continue to transmit the multicast group during this short time, and because the group is no longer registered the switch will then flood the multicast group to all ports.
+
+On ProCurve switches that do support Data-Driven IGMP (“Smart” IGMP),
+when unregistered multicasts are received the switch automatically filters (drops) them. Thus, the sooner the IGMP Leave is processed, the sooner this multicast traffic stops flowing.
+
+
+Switches without problems (supporting data driven igmp): 
+
+Switch 6400cl
+Switch 6200yl
+Switch 5400zl
+Switch 5300xl
+Switch 4200vl
+Switch 3500yl
+Switch 3400cl
+Switch 2900
+Switch 2500
+
+
+Switches WITH problems (NOT supporting data driven igmp): 
+Switch 2600
+Switch 2600-PWR
+Switch 4100gl
+Switch 6108
+
+So if you have one of the above switches this is "normal". The workaround is to make MuMuDVB join the multicast group. For this put "multicast_auto_join=1" in your configuration file.
