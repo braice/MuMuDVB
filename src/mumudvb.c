@@ -131,6 +131,13 @@ int multicast_ttl=DEFAULT_TTL;
 int common_port = 1234;
 int multicast_auto_join=0;
 
+//statistics for the big buffer
+int stats_num_packets_received=0;
+int stats_num_reads=0;
+long show_buffer_stats_time = 0; /** */
+int show_buffer_stats_interval = 120; /** */
+
+
 /* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
    - see http://www.cadsoft.de/people/kls/vdr/index.htm */
 
@@ -361,7 +368,13 @@ main (int argc, char **argv)
   int ScramblingControl;
   int bytes_read;		/** number of bytes actually read */
   //temporary buffers
-  unsigned char temp_buffer_from_dvr[TS_PACKET_SIZE];
+  /**Buffer containing one packet*/
+  unsigned char actual_ts_packet[TS_PACKET_SIZE];
+  /**The buffer from the DVR wich can contain several TS packets*/
+  unsigned char *temp_buffer_from_dvr;
+  /** The maximum number of packets in the buffer from DVR*/
+  int dvr_buffer_size=DEFAULT_TS_BUFFER_SIZE;
+  int buffpos;
   int poll_ret;
 
   /** List of mandatory pids */
@@ -910,6 +923,21 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  multicast_auto_join = atoi (substring);
 	}
+      else if (!strcmp (substring, "dvr_buffer_size"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  dvr_buffer_size = atoi (substring);
+	  if(dvr_buffer_size<=0)
+	    {
+	      log_message( MSG_WARN,
+			"Warning : the buffer size MUST be >0, forced to 1 packet\n");
+	      dvr_buffer_size = 1;
+	    }
+	  if(dvr_buffer_size>1)
+	      log_message( MSG_WARN,
+			"Warning : You set a buffer size > 1, this feature is experimental, please report bugs/problems or results\n");
+	    
+	}
       else if (!strcmp (substring, "port"))
 	{
 	  if ( ip_ok == 0)
@@ -1433,6 +1461,8 @@ main (int argc, char **argv)
   //Set the filters
   /*****************************************************/
 
+  //We alloc the buffer
+  temp_buffer_from_dvr=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*dvr_buffer_size);
 
   //We fill the asked_pid array
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
@@ -1550,22 +1580,42 @@ main (int argc, char **argv)
       /**************************************************************/ 
 
       /* Attempt to read 188 bytes from /dev/____/dvr */
-      if ((bytes_read = read (fds.fd_dvr, temp_buffer_from_dvr, TS_PACKET_SIZE)) > 0)
+      if ((bytes_read = read (fds.fd_dvr, temp_buffer_from_dvr, TS_PACKET_SIZE*dvr_buffer_size)) > 0)
 	{
-	  if (bytes_read != TS_PACKET_SIZE)
-	    {
-	      log_message( MSG_WARN, "Warning : partial packet received\n");
-	      partial_packet_number++;
-	      continue;
-	    }
 
-	  pid = ((temp_buffer_from_dvr[1] & 0x1f) << 8) | (temp_buffer_from_dvr[2]);
+	  if((bytes_read>0 )&& (bytes_read % TS_PACKET_SIZE))
+	    {
+	      log_message( MSG_WARN, "Warning : partial packet received len %d\n", bytes_read);
+	      partial_packet_number++;
+	      bytes_read-=bytes_read % TS_PACKET_SIZE;
+	      if(bytes_read<=0)
+		continue;
+	    }
+	}
+
+      if(bytes_read<0)
+	{
+	  if(errno!=EAGAIN)
+	    log_message( MSG_DEBUG,"Error : Read error------------------------------------------------- %s \n",strerror(errno));
+	  continue;
+	}
+
+      stats_num_packets_received+=(int) bytes_read/188;
+      stats_num_reads++;
+ 
+      for(buffpos=0;(buffpos+TS_PACKET_SIZE)<=bytes_read;buffpos+=TS_PACKET_SIZE)//plop we loop on the subpackets
+	{
+	  //log_message( MSG_DEBUG, "--------buffpos %d\n", buffpos);
+	  memcpy( actual_ts_packet,temp_buffer_from_dvr+buffpos,TS_PACKET_SIZE);
+	  //temp_buffer_from_dvr=temp_buffer_from_dvr2+buffpos;
+	  
+	  pid = ((actual_ts_packet[1] & 0x1f) << 8) | (actual_ts_packet[2]);
 
 	  //Software filtering in case the card doesn't have hardware filtering
 	  if(asked_pid[pid]==PID_NOT_ASKED)
 	    continue;
 
-	  ScramblingControl = (temp_buffer_from_dvr[3] & 0xc0) >> 6;
+	  ScramblingControl = (actual_ts_packet[3] & 0xc0) >> 6;
 	  // 0 = Not scrambled
 	  // 1 = Reserved for future use
 	  // 2 = Scrambled with even key
@@ -1579,7 +1629,7 @@ main (int argc, char **argv)
 	    {
 	      if(pid==0) //PAT : contains the services identifiers and the pmt pid for each service
 		{
-		  if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_pat))
+		  if(get_ts_packet(actual_ts_packet,autoconf_vars.autoconf_temp_pat))
 		    {
 		      if(autoconf_read_pat(&autoconf_vars))
 			{
@@ -1593,7 +1643,7 @@ main (int argc, char **argv)
 		}
 	      else if(pid==17) //SDT : contains the names of the services
 		{
-		  if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_sdt))
+		  if(get_ts_packet(actual_ts_packet,autoconf_vars.autoconf_temp_sdt))
 		    {
 		      autoconf_read_sdt(autoconf_vars.autoconf_temp_sdt->packet,autoconf_vars.autoconf_temp_sdt->len,autoconf_vars.services);
 		      memset (autoconf_vars.autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1601,7 +1651,7 @@ main (int argc, char **argv)
 		}	 
 	      else if(pid==PSIP_PID && tuneparams.fe_type==FE_ATSC) //PSIP : contains the names of the services
 		{
-		  if(get_ts_packet(temp_buffer_from_dvr,autoconf_vars.autoconf_temp_psip))
+		  if(get_ts_packet(actual_ts_packet,autoconf_vars.autoconf_temp_psip))
 		    {
 		      autoconf_read_psip(&autoconf_vars);
 		      memset (autoconf_vars.autoconf_temp_psip, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1619,7 +1669,7 @@ main (int argc, char **argv)
 		{
 		  if((!channels[curr_channel].autoconfigurated) &&(channels[curr_channel].pmt_pid==pid)&& pid)
 		    {
-		      if(get_ts_packet(temp_buffer_from_dvr,channels[curr_channel].pmt_packet))
+		      if(get_ts_packet(actual_ts_packet,channels[curr_channel].pmt_packet))
 			{
 			  //Now we have the PMT, we parse it
 			  if(autoconf_read_pmt(channels[curr_channel].pmt_packet, &channels[curr_channel], tuneparams.card, asked_pid, number_chan_asked_pid, &fds)==0)
@@ -1663,14 +1713,14 @@ main (int argc, char **argv)
 	      /*Check the version before getting the full packet*/
 	      if(!rewrite_vars.needs_update)
 		{
-		  rewrite_vars.needs_update=pat_need_update(&rewrite_vars,temp_buffer_from_dvr);
+		  rewrite_vars.needs_update=pat_need_update(&rewrite_vars,actual_ts_packet);
 		  if(rewrite_vars.needs_update) //It needs update we mark the packet as empty
 		    rewrite_vars.full_pat->empty=1;
 		}
 	      /*We need to update the full packet, we download it*/
 	      if(rewrite_vars.needs_update)
 		{
-		  if(get_ts_packet(temp_buffer_from_dvr,rewrite_vars.full_pat))
+		  if(get_ts_packet(actual_ts_packet,rewrite_vars.full_pat))
 		    {
 		      log_message(MSG_DEBUG,"Pat rewrite : Full pat updated\n");
 		      /*We've got the FULL PAT packet*/
@@ -1735,7 +1785,7 @@ main (int argc, char **argv)
 		    if ((channels[curr_channel].need_cam_ask==CAM_NEED_ASK)&& (channels[curr_channel].pmt_pid == pid))
 		      {
 			//if the packet is already ok, we don't get it (it can be updated by pmt_follow)
-			if((!channels[curr_channel].pmt_packet->empty && channels[curr_channel].pmt_packet->packet_ok)||(!autoconf_vars.autoconf_pid_update && get_ts_packet(temp_buffer_from_dvr,channels[curr_channel].pmt_packet))) 
+			if((!channels[curr_channel].pmt_packet->empty && channels[curr_channel].pmt_packet->packet_ok)||(!autoconf_vars.autoconf_pid_update && get_ts_packet(actual_ts_packet,channels[curr_channel].pmt_packet))) 
 			  {
 			    cam_vars.delay=0;
 			    if(mumudvb_cam_new_pmt(&cam_vars, channels[curr_channel].pmt_packet)==1)/**@todo : check ts_id*/
@@ -1760,7 +1810,7 @@ main (int argc, char **argv)
 		  if(!channels[curr_channel].pmt_needs_update)
 		    {
 		      //Checking without crc32, it there is a change we get the full packet for crc32 checking
-		      channels[curr_channel].pmt_needs_update=pmt_need_update(&channels[curr_channel],temp_buffer_from_dvr,1);
+		      channels[curr_channel].pmt_needs_update=pmt_need_update(&channels[curr_channel],actual_ts_packet,1);
 		      
 		      if(channels[curr_channel].pmt_needs_update&&channels[curr_channel].pmt_packet) //It needs update we mark the packet as empty
 			channels[curr_channel].pmt_packet->empty=1;
@@ -1768,7 +1818,7 @@ main (int argc, char **argv)
 		  /*We need to update the full packet, we download it*/
 		  if(channels[curr_channel].pmt_needs_update)
 		    {
-			if(get_ts_packet(temp_buffer_from_dvr,channels[curr_channel].pmt_packet))
+			if(get_ts_packet(actual_ts_packet,channels[curr_channel].pmt_packet))
 			  {
 			    if(pmt_need_update(&channels[curr_channel],channels[curr_channel].pmt_packet->packet,0))
 			      {
@@ -1809,7 +1859,7 @@ main (int argc, char **argv)
 			    log_message(MSG_DEBUG,"Pat rewrite : We need to rewrite the PAT for the channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name);
 			    /*They mismatch*/
 			    /*We generate the rewritten packet*/
-			    if(pat_channel_rewrite(&rewrite_vars, channels, curr_channel,temp_buffer_from_dvr))
+			    if(pat_channel_rewrite(&rewrite_vars, channels, curr_channel,actual_ts_packet))
 			      {
 				/*We update the version*/
 				channels[curr_channel].generated_pat_version=rewrite_vars.pat_version;
@@ -1821,9 +1871,9 @@ main (int argc, char **argv)
 			if(channels[curr_channel].generated_pat_version==rewrite_vars.pat_version)
 			  {
 			    /*We send the rewrited PAT from channels[curr_channel].generated_pat*/
-			    memcpy(temp_buffer_from_dvr,channels[curr_channel].generated_pat,TS_PACKET_SIZE);
+			    memcpy(actual_ts_packet,channels[curr_channel].generated_pat,TS_PACKET_SIZE);
 			    //To avoid the duplicates, we have to update the continuity counter
-			    pat_rewrite_set_continuity_counter(temp_buffer_from_dvr,rewrite_vars.continuity_counter);
+			    pat_rewrite_set_continuity_counter(actual_ts_packet,rewrite_vars.continuity_counter);
 			  }
 			else
 			  {
@@ -1846,13 +1896,13 @@ main (int argc, char **argv)
 	      if(send_packet==1)
 		{
 		  // we fill the channel buffer
-		  memcpy(channels[curr_channel].buf + channels[curr_channel].nb_bytes, temp_buffer_from_dvr, bytes_read);
+		  memcpy(channels[curr_channel].buf + channels[curr_channel].nb_bytes, actual_ts_packet, TS_PACKET_SIZE);
 
 		  channels[curr_channel].buf[channels[curr_channel].nb_bytes + 1] =
 		    (channels[curr_channel].buf[channels[curr_channel].nb_bytes + 1] & 0xe0) | hi_mappids[pid];
 		  channels[curr_channel].buf[channels[curr_channel].nb_bytes + 2] = lo_mappids[pid];
 
-		  channels[curr_channel].nb_bytes += bytes_read;
+		  channels[curr_channel].nb_bytes += TS_PACKET_SIZE;
 		  //The buffer is full, we send it
 		  if ((channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE)
 		    {
@@ -2198,6 +2248,20 @@ static void SignalHandler (int signum)
 		    }
 		}
 	    }
+
+	  /*plop*/
+	  /**Show the statistics for the big buffer*/
+	  if(!show_buffer_stats_time)
+		show_buffer_stats_time=now;
+	  if((now-show_buffer_stats_time)>=show_buffer_stats_interval)
+	    {
+	      show_buffer_stats_time=now;
+	      log_message( MSG_DEBUG, "DEBUG : Average packets in the buffer %d\n", stats_num_packets_received/stats_num_reads);
+	      stats_num_packets_received=0;
+	      stats_num_reads=0;
+	    }
+
+
 
 	  // Check if the chanel scrambling state has changed
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)

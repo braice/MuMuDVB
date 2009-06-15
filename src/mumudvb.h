@@ -46,6 +46,9 @@
 /**Size of an MPEG2-TS packet*/
 #define TS_PACKET_SIZE 188
 
+/**Default Maximum Number of TS packets in the TS buffer*/
+#define DEFAULT_TS_BUFFER_SIZE 1
+
 /** How often (in seconds) to update the "now" variable*/
 #define ALARM_TIME 2
 #define ALARM_TIME_TIMEOUT 60
@@ -61,17 +64,16 @@
 #define CONF_LINELEN 	        512
 #define MAX_NAME_LEN		256
 
-//Maximum number of polling tries (excepted EINTR)
+/**Maximum number of polling tries (excepted EINTR)*/
 #define MAX_POLL_TRIES		5
 
-//The path for the auto generated config file
+/**The path for the auto generated config file*/
 #define GEN_CONF_PATH "/var/run/mumudvb/mumudvb_generated_conf_card%d"
-
-//The path for the list of streamed channels
+/**The path for the list of streamed channels*/
 #define STREAMED_LIST_PATH "/var/run/mumudvb/chaines_diffusees_carte%d"
-//The path for the list of *not* streamed channels
+/**The path for the list of *not* streamed channels*/
 #define NOT_STREAMED_LIST_PATH "/var/run/mumudvb/chaines_non_diffusees_carte%d"
-//The path for the cam_info
+/**The path for the cam_info*/
 #define CAM_INFO_LIST_PATH "/var/run/mumudvb/caminfo_carte%d"
 
 

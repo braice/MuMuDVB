@@ -58,6 +58,7 @@ Feature overview
 - Support of DVB-S, DVB-C, DVB-T and ATSC
 - Possibility to partially rewrite the stream for better compatibility with set-top boxes. See <<pat_rewrite,Pat Rewrite>> section.
 - Support for HTTP unicast see <<unicast,http unicast>> section
+- Support for RTP headers (only for multicast)
 
 Detailled feature list
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -76,10 +77,11 @@ Detailled feature list
   * SDT (17): Service Description Table: data describing the services in the system e.g. names of services, the service provider, etc.
   * EIT (18): Event Information Table: data concerning events or programmes such as event name, start time, duration, etc.
   * TDT (20): Time and Date Table: information related to the present time and date.This information is given in a separate table due to the frequent updating of this information.
-- Automatically suscribe to all multicast groups (IGMP membership request) in order to avoid some switches to broadcast all channels.
+- Can suscribe to all multicast groups (IGMP membership request) in order to avoid some switches to broadcast all channels see <<problems_hp,problems with HP switches>>.
 - Supports autoconfiguration, see <<autoconfiguration,Autoconfiguration>> section
 - Debian flavor initialisation scripts
 - Can skip the tuning of the card as a temporary workaround for DVB-S2
+- The buffer size can be tuned to reduce CPU usage, see <<reduce_cpu,reduce MuMuDVB CPU usage>> section.
 
 Others programs are availaible from http://gitweb.braice.net/gitweb?p=mumudvb_tools;a=summary[MuMuDVB Tools Repository] :
 
@@ -441,6 +443,27 @@ To enable PAT rewriting, add `rewrite_pat=1` to your config file. This feature c
 [NOTE]
 PAT rewrite can fail (i.e. doesn't solve the previous symptoms) for some channels if their PMT pid is shared. In this case you have to add the `ts_id` option to the channel to specify the transport stream id, also known as service id.
 
+[[reduce_cpu]]
+Reduce MuMuDVB CPU usage (Experimental)
+---------------------------------------
+
+Normally MuMuDVB reads the packets from the card one by one and aske the card if there is data avalaible between each packets (poll). But often the cards have an internal buffer. Because of this buffer, some pollings are useless. These pollings eat some CPU time.
+
+To reduce CPU usage, one solution is to try to read several packets at the same time. To do this use the option `dvr_buffer_size`.
+
+.Example
+------------------
+dvr_buffer_size=40
+------------------
+
+To see if the value you put is too big or to low, run MuMuDVB in verbose mode, the average number of packets received at the same time will be shown every 2 minutes. If this number if below your buffer size, it is useless to increase it. 
+
+The CPU usage reduction can be between 20% and 50%
+
+This feature is very new and can have sides effets, please contact if you see any.
+
+If you use this option feel free to report the improvements at mumudvb @AT@ braice DOT net
+
 
 Technical details (not sorted)
 ------------------------------
@@ -514,6 +537,7 @@ A temporary workaround is avoid sending the SDT PID. You can do this using the "
 This option will be replaced by a SDT rewrite.
 
 
+[[problems_hp]]
 HELP ! my multicast traffic is flooded (I have a HP switch)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -547,3 +571,12 @@ Switch 4100gl
 Switch 6108
 
 So if you have one of the above switches this is "normal". The workaround is to make MuMuDVB join the multicast group. For this put "multicast_auto_join=1" in your configuration file.
+
+MuMuDVB is eating a lot of CPU with sasc-ng !
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you use sasc-ng + dvbloopback, MuMuDVB will eat more CPU than needed.
+
+A part of this CPU time is used to descramble the channels, another part is due to the way dvbloopback is implemented and the way MuMuDVB ask the card.
+
+To reduce the cpu usage, see <<reduce_cpu,reduce MuMuDVB CPU usage>> section. In the case of using MuMuDVB with sasc-ng this improvement can be quite large.
