@@ -2202,7 +2202,7 @@ static void SignalHandler (int signum)
 	  // Check if the chanel stream state has changed
 	  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	    {
-	      if ((channels[curr_channel].streamed_channel/ALARM_TIME >= 50) && (!channels[curr_channel].streamed_channel_old))
+	      if ((channels[curr_channel].streamed_channel/ALARM_TIME >= 80) && (!channels[curr_channel].streamed_channel_old))
 		{
 		  log_message( MSG_INFO,
 			       "Channel \"%s\" back.Card %d\n",
