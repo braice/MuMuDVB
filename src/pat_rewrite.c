@@ -145,19 +145,25 @@ int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_
       else
 	{
 	  //We check the transport stream id if present and the size of the packet
-	  if((buf_dest_pos+4<TS_PACKET_SIZE) && (!channels[curr_channel].ts_id || (channels[curr_channel].ts_id == HILO(prog->program_number)) ))
+	  // + 4 for the CRC32
+	  if((buf_dest_pos+PAT_PROG_LEN+4<TS_PACKET_SIZE) &&
+	     (!channels[curr_channel].ts_id || (channels[curr_channel].ts_id == HILO(prog->program_number)) ))
 	    {
 	      for(i=0;i<channels[curr_channel].num_pids;i++)
 		if(channels[curr_channel].pids[i]==HILO(prog->network_pid))
 		  {
-		    log_message(MSG_DEBUG,"Pat rewrite : NEW program for channel %d : \"%s\". PMT pid : %d\n", curr_channel, channels[curr_channel].name,channels[curr_channel].pids[i]);
-		    //we found a announce for a PMT pid in our stream, we keep it
-		    memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->packet+delta,PAT_PROG_LEN);
-		    buf_dest_pos+=PAT_PROG_LEN;
-		    if(buf_dest_pos+4>TS_PACKET_SIZE) //The +4 is for CRC32
+		    if(buf_dest_pos+PAT_PROG_LEN+4+1>TS_PACKET_SIZE) //The +4 is for CRC32 +1 is because indexing starts at 0
 		      {
-			log_message(MSG_WARN,"Pat rewrite : The generated PAT is too big for channel %d : \"%s\", we skip the other pids\n", curr_channel, channels[curr_channel].name);
+			log_message(MSG_WARN,"Pat rewrite : The generated PAT is too big for channel %d : \"%s\", we skip the other pids/programs\n", curr_channel, channels[curr_channel].name);
 			i=channels[curr_channel].num_pids;
+		      }
+		    else
+		      {
+			log_message(MSG_DETAIL,"Pat rewrite : NEW program for channel %d : \"%s\". PMT pid : %d\n", curr_channel, channels[curr_channel].name,channels[curr_channel].pids[i]);
+			//we found a announce for a PMT pid in our stream, we keep it
+			memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->packet+delta,PAT_PROG_LEN);
+			buf_dest_pos+=PAT_PROG_LEN;
+			log_message(MSG_DEBUG,"Pat rewrite :  %d\n", buf_dest_pos);
 		      }
 		  }
 	    }
