@@ -1785,13 +1785,20 @@ main (int argc, char **argv)
 		    if ((channels[curr_channel].need_cam_ask==CAM_NEED_ASK)&& (channels[curr_channel].pmt_pid == pid))
 		      {
 			//if the packet is already ok, we don't get it (it can be updated by pmt_follow)
-			if((!channels[curr_channel].pmt_packet->empty && channels[curr_channel].pmt_packet->packet_ok)||(!autoconf_vars.autoconf_pid_update && get_ts_packet(actual_ts_packet,channels[curr_channel].pmt_packet))) 
+			if((autoconf_vars.autoconf_pid_update && !channels[curr_channel].pmt_packet->empty && channels[curr_channel].pmt_packet->packet_ok)||
+			   (!autoconf_vars.autoconf_pid_update && get_ts_packet(actual_ts_packet,channels[curr_channel].pmt_packet))) 
 			  {
 			    cam_vars.delay=0;
-			    if(mumudvb_cam_new_pmt(&cam_vars, channels[curr_channel].pmt_packet)==1)/**@todo : check ts_id*/
+			    iRet=mumudvb_cam_new_pmt(&cam_vars, channels[curr_channel].pmt_packet);
+			    if(iRet==1)/**@todo : check ts_id*/
 			      {
 				log_message( MSG_INFO,"CAM : CA PMT sent for channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name );
 				channels[curr_channel].need_cam_ask=CAM_ASKED; //once we have asked the CAM for this PID, we don't have to ask anymore
+			      }
+			    else if(iRet==-1)
+			      {
+				log_message( MSG_DETAIL,"CAM : Problem sending CA PMT for channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name );
+				channels[curr_channel].pmt_packet->empty=1;//if there was a problem, we reset the packet
 			      }
 			  }
 		      }
