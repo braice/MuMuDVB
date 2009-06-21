@@ -860,6 +860,9 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  unicast_vars.consecutive_errors_timeout = atoi (substring);
+	  if(unicast_vars.consecutive_errors_timeout<=0)
+	    log_message( MSG_WARN,
+			 "Warning : You have desactivated the unicast timeout for disconnecting clients, this can lead to an accumulation of zombie clients, this is unadvised, prefer a long timeout\n");
 	}
       else if (!strcmp (substring, "sap_group"))
 	{
@@ -1967,7 +1970,7 @@ main (int argc, char **argv)
 				    {
 				      //We have actually errors, we check if we reached the timeout
 				      gettimeofday (&tv, (struct timezone *) NULL);
-                                      if((tv.tv_sec - actual_client->first_error_time) > unicast_vars.consecutive_errors_timeout)
+                                      if((unicast_vars.consecutive_errors_timeout > 0) && (tv.tv_sec - actual_client->first_error_time) > unicast_vars.consecutive_errors_timeout)
 					{
 					  log_message(MSG_INFO,"Consecutive errors when writing to client %s:%d during too much time, we disconnect\n",
 						      inet_ntoa(actual_client->SocketAddr.sin_addr),
