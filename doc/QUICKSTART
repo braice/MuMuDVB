@@ -9,10 +9,12 @@ It this guide I'll explain how to stream a full transponder (all the channels
 multiplexed on the same carrier frequency) over a network, by assigning each
 channel to a different multicast IP. The SAP announces will automatically be generated.
 
+For HTTP unicast or more advanced features, please refer to the full documentation.
+
 I'll take an example for DVB-S (satellite) and DVB-T (terrestrial)
 
 I suppose you have one DVB card wich is already working, if you have more than
-one card refer to the full doc.
+one card refer to the full documentation.
 
 DVB-S
 -----
@@ -53,12 +55,12 @@ mumudvb -d -c __path to config file__
 adress
 
 [NOTE]
-The SAP (session announcement protocol) announces will be sent automatically
+The SAP (session announcement protocol) announces will be sent automatically.
 
 DVB-T
 -----
 
-- It's the same way as DVB-s excepted that you need other informations for
+- It's the same way as DVB-S excepted that you need other informations for
 tuning your card.
 
 You can find these informations in : `/usr/share/doc/dvb-utils/examples/scan/dvb-t/` if you installed the dvb-utils
@@ -77,7 +79,7 @@ look for the following parameters in README_CONF : bandwidth, qam, trans_mode,
 guardinterval, coderate
 
 [NOTE]
-The SAP (session announcement protocol) announces will be sent automatically
+The SAP (session announcement protocol) announces will be sent automatically.
 
 Troubleshooting
 ---------------
@@ -88,3 +90,5 @@ szap and check your parameters
 - If it still don't work, look at common issues in the README and you can
 contact (see the README for getting the e-mail addresses)
 
+[NOTE]
+When contacting about an issue, please join the config file used and the output of MuMuDVB in verbose mode ( -vvv on the command line) and any other information that could be useful.

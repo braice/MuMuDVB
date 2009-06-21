@@ -63,9 +63,8 @@ In the following list, only the parameter `freq` is mandatory
 |card | The DVB/ATSC card number | 0 | only limited by your OS
 |tuning_timeout |tuning timeout in seconds. | 300 | 0 = no timeout
 |timeout_no_diff |If no channels are streamed, MuMuDVB will kill himself after this time (specified in seconds) | 600 |  0 = infinite timeout
-|dont_tune |We do not try to tune the card (another program,like tzap, did it for us) | | This is a workaround for DVB-S2
+|dont_tune |We do not try to tune the card (another program,like tzap, did it for us) | | This is mainly a workaround for DVB-S2
 |==================================================================================================================
-
 
 
 Parameters specific to satellite
@@ -77,8 +76,8 @@ Parameters specific to satellite
 |pol |transponder's polarisation. One char. 'v' (vertical), 'h' (horizontal), 'l' (left circular), 'r' (right circular) | | h, H, v, V, l, L, r or R | Mandatory
 |srate  |transponder's symbol rate | | | Mandatory
 |lnb_type |The LNB type | universal | universal, standard or other | Most of the LNBs are universal. if other is selected you have to set the local oscillator frequency
-|lo_frequency |The frequency of the LNB's local oscillator when lnb_type=other | 0 |  | In MHz
-|sat_number |The satellite number in case you have multiples lnb, no effect if 0, send a diseqc message if non 0 | 0 | 1 to 4 | If you have equipment which support more, please contact
+|lo_frequency |The frequency of the LNB's local oscillator when lnb_type=other |  |  | In MHz, see below.
+|sat_number |The satellite number in case you have multiples lnb, no effect if 0 (only 22kHz tone and 13/18V), send a diseqc message if non 0 | 0 | 1 to 4 | If you have equipment which support more, please contact
 |lnb_voltage_off |Force the LNB voltage to be 0V (instead of 13V or 18V). This is useful when your LNB have it's own power supply. | 0 | 0 or 1 | 
 |coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto | 
 |==================================================================================================================
@@ -89,7 +88,6 @@ Local oscillator frequencies :
 - C band (Hi) 5950 MHz
 - C band (Lo) 5150 MHz
 - Ku Band : this is the default band for MuMuDVB, you don't have to set the LO frequency. For information : Hi band : 10600, Low band : 9750, Single : 10750
-
 
 
 Parameters specific to terrestrial (DVB-T)
@@ -169,7 +167,7 @@ Other global parameters
 5+^s|HTTP unicast parameters
 |ip_http |the listening ip for http unicast, if you want to listen to all interfaces put 0.0.0.0 | empty  |  | see the README for more details
 |port_http | The listening port for http unicast | 4242 | |  see the README for more details
-|unicast_consecutive_errors_timeout | The timeout for disconnecting a client wich is not responding | 5 | | 
+|unicast_consecutive_errors_timeout | The timeout for disconnecting a client wich is not responding | 5 | | A client will be disconnected if not data have been sucessfully sent during this interval. A value of 0 desactivate the timeout (unadvised).
 |==================================================================================================================
 
 
@@ -185,13 +183,13 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 [width="80%",cols="2,8,1,1,3",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
-|ip |multicast (can also be unicast) ip where the chanel will be streamed | | | Mandatory
-|port | The port | 1234 or common_port | | 
+|ip |multicast (can also be unicast, in raw UDP ) ip where the chanel will be streamed | | | Mandatory
+|port | The port | 1234 or common_port | | Ports below 1024 needs root rights.
 |sap_group |The playlist group for SAP announces | | string | optionnal
 |cam_pmt_pid |Only for scrambled channels. The PMT PID for CAM support | | | 
 |ts_id |The transport stream id (program number), olny for autoconfiguration, or pat rewrite see README for more details | | | 
 |name | The name of the channel. Will be used for /var/run/mumudvb/chaines_diffusees%d, logging and SAP announces | | | Mandatory
-|pids | The PIDs list, separated by spaces | | | some pids are always sent (PAD EIT SDT TDT NIT), see README for more details
+|pids | The PIDs list, separated by spaces | | | some pids are always sent (PAT CAT EIT SDT TDT NIT), see README for more details
 |==================================================================================================================
 
 
@@ -207,7 +205,7 @@ You use autoconfiguration
 
 If you use full autoconfiguration, you don't need to specify any channel and don't need any PID, this section does not concern you.
 
-If you use partial autoconfiguration, you'll need the PMT PID for each channel.
+If you use partial autoconfiguration, you'll need only the PMT PID for each channel.
 
 You do not use autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -218,7 +216,7 @@ For each channel it is advised to specify at least :
 - One video PID (except for radios)
 - One audio PID
 - The PMT PID
-- The PCR PID (if different from video)
+- The PCR PID (if different from video/audio)
 
 If you don't have access to the PIDs via a website like http://www.kingofsat.net[King Of Sat], the easiest way is to use linuxtv's dvb-apps.
 
