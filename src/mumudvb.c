@@ -266,6 +266,7 @@ unicast_parameters_t unicast_vars={
   .ipOut="\0",
   .portOut=4242,
   .consecutive_errors_timeout=UNICAST_CONSECUTIVE_ERROR_TIMEOUT,
+  .max_clients=-1,
 };
 
 //logging
@@ -387,7 +388,9 @@ main (int argc, char **argv)
   FILE *conf_file;
   FILE *channels_diff;
   FILE *channels_not_streamed;
+#ifdef LIBDVBEN50221
   FILE *cam_info;
+#endif
   FILE *pidfile;
 
   // configuration file parsing
@@ -863,6 +866,11 @@ main (int argc, char **argv)
 	  if(unicast_vars.consecutive_errors_timeout<=0)
 	    log_message( MSG_WARN,
 			 "Warning : You have desactivated the unicast timeout for disconnecting clients, this can lead to an accumulation of zombie clients, this is unadvised, prefer a long timeout\n");
+	}
+      else if (!strcmp (substring, "unicast_max_clients"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  unicast_vars.max_clients = atoi (substring);
 	}
       else if (!strcmp (substring, "sap_group"))
 	{

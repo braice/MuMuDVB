@@ -23,7 +23,7 @@
  */
 
 /**@file
- * @brief HTML unicast header
+ * @brief HTML unicast headers
  */
 
 #ifndef _UNICAST_H
@@ -94,6 +94,9 @@ Applications should use this field to indicate the size of the
 #define HTTP_501_REPLY "HTTP/1.0 501 Not implemented\r\n"\
                       "\r\n"
 
+#define HTTP_503_REPLY "HTTP/1.0 503 Too many clients\r\n"\
+                      "\r\n"
+
 
 /** @brief A client connected to the unicast connection.
  *
@@ -140,6 +143,10 @@ typedef struct unicast_parameters_t{
   int socketIn;
   /** The clients, contains all the clients, associated to a channel or not*/
   unicast_client_t *clients;
+  /** The number of connected clients*/
+  int client_number;
+  /** The maximum number of simultaneous clients allowed*/
+  int max_clients;
   /** The timeout before disconnecting a client wich does only errors*/
   int consecutive_errors_timeout;
 }unicast_parameters_t;

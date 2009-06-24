@@ -33,7 +33,6 @@ Todo list
  * implement a measurement of the "load"
  * implement channel by name
  * implement monitoring features
- * implement limit in the number of clients
 
 ***********************/
 
@@ -132,6 +131,7 @@ int unicast_accept_connection(unicast_parameters_t *unicast_vars)
   unsigned int l;
   int tempSocket;
   struct sockaddr_in tempSocketAddrIn;
+
   l = sizeof(struct sockaddr);
   tempSocket = accept(unicast_vars->socketIn, (struct sockaddr *) &tempSocketAddrIn, &l);
   if (tempSocket < 0)
@@ -140,13 +140,6 @@ int unicast_accept_connection(unicast_parameters_t *unicast_vars)
       return -1;
     }
   log_message(MSG_DETAIL,"Unicast : New connection from %s:%d\n",inet_ntoa(tempSocketAddrIn.sin_addr), tempSocketAddrIn.sin_port);
-
-  if( unicast_add_client(unicast_vars, tempSocketAddrIn, tempSocket)<0)
-    {
-      //We cannot create the client, we close the socket cleanly
-      close(tempSocket);                 
-      return -1;
-    }
 
   //Now we set this socket to be non blocking because we poll it
   int flags;
@@ -158,6 +151,23 @@ int unicast_accept_connection(unicast_parameters_t *unicast_vars)
       return -1;
     }
 
+  /* if the maximum number of clients is reached, raise a temporary error*/
+  if((unicast_vars->max_clients>0)&&(unicast_vars->client_number>=unicast_vars->max_clients))
+    {
+      int iRet;
+      log_message(MSG_INFO,"Unicast : Too many clients connected, we raise an error to  %s\n", inet_ntoa(tempSocketAddrIn.sin_addr));
+      iRet=write(tempSocket,HTTP_503_REPLY, strlen(HTTP_503_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
+      close(tempSocket);
+      return -1;
+    }
+
+
+  if( unicast_add_client(unicast_vars, tempSocketAddrIn, tempSocket)<0)
+    {
+      //We cannot create the client, we close the socket cleanly
+      close(tempSocket);                 
+      return -1;
+    }
 
   return tempSocket;
 
@@ -212,6 +222,8 @@ int unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in So
   client->prev=prev_client;
   client->chan_next=NULL;
   client->chan_prev=NULL;
+
+  unicast_vars->client_number++;
 
   return 0;
 }
@@ -333,7 +345,10 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, int Socket, mumudvb_c
 	    exit(1);
 	}
     }
-  
+
+
+  unicast_vars->client_number--;
+
 
   return 0;
 }
@@ -590,7 +605,6 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, int fd, mumudvb_c
 	    }
 
 	  //We have found a channel, we add the client
-	  /**@todo : add a limit in the number of simultaneous clients*/
 	  if(requested_channel)
 	    {
 	      if(!channel_add_unicast_client(client,&channels[requested_channel-1]))
