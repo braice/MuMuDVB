@@ -54,8 +54,12 @@
 #define ALARM_TIME_TIMEOUT 60
 #define ALARM_TIME_TIMEOUT_NO_DIFF 600
 
+/** MTU 
+    1500 bytes - ip header (12bytes) - TCP header (biggest between TCP and udp) 24  : 7 mpeg2-ts packet per ethernet frame
 
-/** MTU : 1500 bytes - ip header (12bytes) - TCP header (biggest between TCP and udp) 24  : 7 mpeg2-ts packet per ethernet frame*/
+We cannot discover easily the MTU with unconnected UDP
+      http://linuxgazette.net/149/melinte.html
+*/
 #define MAX_UDP_SIZE 1464
 
 /**the max mandatory pid number*/
