@@ -347,8 +347,12 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     feparams.frequency=tuneparams->freq-lo_frequency;
 
     
-    log_message( MSG_INFO, "Tuning DVB-S to Freq: %u, Pol:%c Srate=%d, LNB number: %d\n",feparams.frequency,tuneparams->pol,
-		 tuneparams->srate, tuneparams->sat_number);
+    log_message( MSG_INFO, "Tuning DVB-S to Freq: %u Hz, LO frequency %u kHz Pol:%c Srate=%d, LNB number: %d\n",
+		 feparams.frequency,
+		 lo_frequency,
+		 tuneparams->pol,
+		 tuneparams->srate,
+		 tuneparams->sat_number);
     feparams.inversion=tuneparams->specInv;
     feparams.u.qpsk.symbol_rate=tuneparams->srate;
     feparams.u.qpsk.fec_inner=tuneparams->HP_CodeRate;
@@ -367,7 +371,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     }
     break;
   case FE_QAM: //DVB-C
-    log_message( MSG_INFO, "tuning DVB-C to %d, srate=%d\n",tuneparams->freq,tuneparams->srate);
+    log_message( MSG_INFO, "tuning DVB-C to %d Hz, srate=%d\n",tuneparams->freq,tuneparams->srate);
     feparams.frequency=tuneparams->freq;
     feparams.inversion=INVERSION_OFF;
     feparams.u.qam.symbol_rate = tuneparams->srate;
@@ -376,7 +380,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     break;
 #ifdef ATSC
   case FE_ATSC: //ATSC
-    log_message( MSG_INFO, "tuning ATSC to %d, modulation=%d\n",tuneparams->freq,tuneparams->atsc_modulation);
+    log_message( MSG_INFO, "tuning ATSC to %d Hz, modulation=%d\n",tuneparams->freq,tuneparams->atsc_modulation);
     feparams.frequency=tuneparams->freq;
     feparams.u.vsb.modulation = tuneparams->atsc_modulation;
     break;
