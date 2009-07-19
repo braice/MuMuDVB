@@ -6,7 +6,7 @@ Version 1.5.5
 Comportement général
 ---------------------
 
-Pour fonctionner correctement, MuMuDVB nécessite un fichier de configuration.
+Pour fonctionner correctement, MuMuDVB a besoin d'un fichier de configuration.
 
 L'ordre des paramètres n'a, la plupart du temps, pas d'importance.
 
@@ -20,7 +20,7 @@ Tous les paramètres s'écrivent sous la forme `nom=valeur`
 freq=11987
 --------------------------
 
-Le fichier de configurations est constitué de deux parts : une partie générale, et une partie définissant les chaines
+Le fichier de configurations est constitué de deux parts : une partie générale, et une partie définissant les chaînes
 
 
 Partie générale
@@ -28,16 +28,16 @@ Partie générale
 
 Cette partie, la première du fichier de configuration, contient les paramètres nécessaires pour accorder la carte DVB et les autres paramètres globaux.
 
-Pour les paramètres concernant l'accord de la carte, référez vous a la section <<tuning,paramètres d'accord>>. Pour les autres paramètres globaux, referez vous a la section <<other_global,paramètres globaux>>
+Pour les paramètres concernant l'accord de la carte, référez vous à la section <<tuning,paramètres d'accord>>. Pour les autres paramètres globaux, référez vous à la section <<other_global,paramètres globaux>>
 
 Partie concernant les chaînes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Si vous n'utilisez pas l'autoconfiguration complète, vous devez définir les chaînes que vous voulez diffuser.
 
-Chaque définition de chaine commence par une ligne `ip=` et fini par une ligne `pids=`.
+Chaque définition de chaîne commence par une ligne `ip=` et fini par une ligne `pids=`.
 
-Réferez vous a la section <<channel_parameters,configuration des chaînes>> pour une liste détaillée des différents paramètres.
+Référez vous a la section <<channel_parameters,configuration des chaînes>> pour une liste détaillée des différents paramètres.
 
 
 Fichiers d'exemple
@@ -50,8 +50,8 @@ Paramètres concernant l'accord de la carte
 ------------------------------------------
 
 [NOTE]
-Pour la réception terrestre et câblée, vous pouvez utiliser w_scan pour savoir quelles chaines vous pouvez recevoir. Pour plus de détails référez vous a la section <<w_scan, w_scan>>. Sinon vous pouvez regarder le contenu des "initial tuning files" fourni avec dvb-apps de linuxtv.
-Le site  http://www.kingofsat.net[King Of Sat] référence les chaines satellite pouvant être reçues en Europe
+Pour la réception terrestre et câblée, vous pouvez utiliser w_scan pour savoir quelles chaînes vous pouvez recevoir. Pour plus de détails référez vous a la section <<w_scan, w_scan>>. Sinon vous pouvez regarder le contenu des "initial tuning files" fourni avec dvb-apps de linuxtv.
+Le site  http://www.kingofsat.net[King Of Sat] référence les chaînes satellite pouvant être reçues en Europe
 
 
 Paramètres communs à tous les modes de réception (terrestre, satellite et câble)
@@ -63,9 +63,9 @@ Dans la liste suivante, seul le paramètre `freq` est obligatoire
 |==================================================================================================================
 |Nom |Description | Valeur par défaut | Commentaires
 |freq | Fréquence du transpondeur en MHz  | | Obligatoire
-|card | Le numéro de carte DVB/ATSC| 0 | Limité seulement pas l'OS
+|card | Le numéro de carte DVB/ATSC| 0 | Limité seulement par l'OS
 |tuning_timeout | Temps d'attente pour l'accord de la carte | 300 | 0 = attente infinie
-|timeout_no_diff | Si aucune chaine n'est diffusée, MuMuDVB se "suicidera" au bout de ce délai ( en secondes ) | 600 |  0 = attente infinie
+|timeout_no_diff | Si aucune chaîne n'est diffusée, MuMuDVB se "suicidera" au bout de ce délai ( en secondes ) | 600 |  0 = attente infinie
 |dont_tune | MuMuDVB n'accordera pas la carte si ce paramètre est spécifié (un autre programme comme tzap l'a fait) | | Ceci est principalement pour le DVB-S2
 |==================================================================================================================
 
@@ -76,7 +76,7 @@ Paramètres spécifiques à la réception satellite
 [width="80%",cols="2,6,1,3,2",options="header"]
 |==================================================================================================================
 |Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
-|pol |Polarisation. Un caractère. 'v' (verticale), 'h' (horizontale), 'l' ( circulaire gauche ), 'r' ( circulaire droite ) | | h, H, v, V, l, L, r or R | Obligatoire
+|pol |Polarisation. Un caractère. 'v' (verticale), 'h' (horizontale), 'l' ( circulaire gauche ), 'r' ( circulaire droite ) | | h, H, v, V, l, L, r ou R | Obligatoire
 |srate  |Le taux de symboles ( symbol rate ) | | | Obligatoire
 |lnb_type |Le type de LNB | universal | universal, standard or other | La plupart des LNBs sont universels. Si vous choisissez other, vous devez spécifier la fréquence de l'oscillateur local
 |lo_frequency | La fréquence de l'oscillateur local du LNB ( lorsque le type de LNB est other ) |  |  | En MHz, voir plus bas
@@ -144,20 +144,20 @@ Autres paramètres globaux
 |Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
 |common_port | Le port par défaut pour la diffusion multicast | 1234 | | 
 |multicast_ttl | Le TTL multicast | 2 | |
-|multicast_auto_join | Si positionné à 1 MuMuDVB joindra automatiquement tous les groupes multicast crées | 0 | 0 or 1 | cf problèmes connus dans le README
+|multicast_auto_join | Si positionné à 1 MuMuDVB joindra automatiquement tous les groupes multicast créés | 0 | 0 or 1 | cf problèmes connus dans le README
 |dont_send_sdt |Si positionné à 1, MuMuDVB n'enverra pas le PID SDT, c'est un contournement d'un bug de VLC | 0 | | voir le README pour plus de détails
-|dont_send_scrambled | Si positionné à 1, MuMuDVB n'enverra pas les paquets brouillés. Cela retirera (indirectement) les annonces SAP pour les chaines brouillées |0 | |
-|show_traffic_interval | Le temps secondes entre deux affichages du trafic | 10 | >2 | 
+|dont_send_scrambled | Si positionné à 1, MuMuDVB n'enverra pas les paquets brouillés. Cela retirera (indirectement) les annonces SAP pour les chaînes brouillées |0 | |
+|show_traffic_interval | Le temps en secondes entre deux affichages du trafic | 10 | >2 | 
 |rtp_header | Envoie les en-têtes RTP avec le flux (excepté pour l'unicast HTTP) | 0 | 0 ou 1 | 
 |dvr_buffer_size | La taille du  "tampon DVR" en paquets de 188 octets | 1 | >=1 | Fonctionnalité "expérimentale", se référer au README 
 5+^s|Paramètres concernant le support des cartes CAM
-|cam_support |Indique si l'on veux le support pour les chaines brouillées | 0 | 0 ou 1 |
+|cam_support |Indique si l'on veux le support pour les chaînes brouillées | 0 | 0 ou 1 |
 |cam_number |Le numéro du module CAM que l'on veux utiliser| 0 | | Dans le cas ou vouz avez plusieurs modules CAM sur une carte DVB
 5+^s|Paramètres pour l'autoconfiguration
 |autoconfiguration |autoconfiguration 1: Trouve les PIDs audio et video, 2: autoconfiguration complète | 0 | 0, 1 or 2 | Se référer au README pour plus de détails
-|autoconf_ip_header |Pour l'autoconfiguration complète, la première partie de l'ip des chaines diffuséesFor full | 239.100 | | Se référer au README pour plus de détails
+|autoconf_ip_header |Pour l'autoconfiguration complète, la première partie de l'ip des chaînes diffusées | 239.100 | | Se référer au README pour plus de détails
 |autoconf_radios | Lors de l'autoconfiguration complète, est ce que les radios seront diffusées ?| 0 | 0 ou 1 | 
-|autoconf_scrambled |Lors de l'autoconfiguration complète, est ce que les chaînes brouillées seront diffusées ? | 0 | 0 or 1 | Automatique lorsque cam_support=1. Defois, une chaine en clair peut être marquée comme étant cryptée. Cette option est aussi nécessaire lorsqu'une softcam est utilisée.
+|autoconf_scrambled |Lors de l'autoconfiguration complète, est ce que les chaînes brouillées seront diffusées ? | 0 | 0 or 1 | Automatique lorsque cam_support=1. Parfois, une chaîne en clair peut être marquée comme étant cryptée. Cette option est aussi nécessaire lorsqu'une softcam est utilisée.
 |autoconf_pid_update |Est ce que MuMuDVB se reconfigure lorsque le PMT est mis à jour ? | 1 | 0 or 1 | 
 5+^s|Paramètres concernant les annonces SAP
 |sap | Génération des annonces SAP | 0 (1 si autoconfiguration complète) | 0 or 1 | 
@@ -178,21 +178,21 @@ Autres paramètres globaux
 Paramètres concernant les chaînes
 ---------------------------------
 
-Chaque définition de chaine doit commencer par une ligne `ip=` et finir par une ligne `pids=`. Le seul autre paramètre obligatoire est le paramètre `name`.
+Chaque définition de chaîne doit commencer par une ligne `ip=` et finir par une ligne `pids=`. Le seul autre paramètre obligatoire est le paramètre `name`.
 
-Concernant les PIDs, référez vous à la section <<getpids,obtenir les PIDs>> section
+Concernant les PIDs, référez vous à la section <<getpids,obtenir les PIDs>>.
 
 
-[width="80%",cols="2,8,1,1,3",options="header"]
+[width="80%",cols="2,8,1,4",options="header"]
 |==================================================================================================================
-|Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
-|ip |multicast (can also be unicast, in raw UDP ) ip where the chanel will be streamed | | | Mandatory
-|port | Le port | 1234 ou common_port | | Les ports inférieurs à 1024 nécessitent les droits root.
-|sap_group | Le groupe de liste de lecture pour les annonces SAP | |  | optionnel
-|cam_pmt_pid |Uniquement pour les chaînes brouillées. Le PID PMT pour le module CAM | | | 
-|ts_id |Le  "transport stream id" (appelé aussi "program number"), uniquement pour l'autoconfiguration ou la réécriture du PID PAT, se référer au README pour plus de détails | | | 
-|name | Le nom de la chaîne. Sera utilisé pour /var/run/mumudvb/chaines_diffusees%d, les journaux et les annonces SAP | | | Obligatoire
-|pids | La liste des PIDs, séparés par des espaces. | | | Certains PIDs sont systématiquement envoyés (PAT CAT EIT SDT TDT NIT).
+|Nom |Description | Valeur par défaut |  Commentaires
+|ip |Adresse ip multicast sur laquelle la chaîne sera diffusée | |  Obligatoire
+|port | Le port | 1234 ou common_port |  Les ports inférieurs à 1024 nécessitent les droits root.
+|sap_group | Le groupe de liste de lecture pour les annonces SAP | |  optionnel
+|cam_pmt_pid |Uniquement pour les chaînes brouillées. Le PID PMT pour le module CAM | |  
+|ts_id |Le  "transport stream id" (appelé aussi "program number"), uniquement pour l'autoconfiguration ou la réécriture du PID PAT, se référer au README pour plus de détails | | 
+|name | Le nom de la chaîne. Sera utilisé pour /var/run/mumudvb/chaines_diffusees%d, les journaux et les annonces SAP | | Obligatoire
+|pids | La liste des PIDs, séparés par des espaces. | |  Certains PIDs sont systématiquement envoyés (PAT CAT EIT SDT TDT NIT).
 |==================================================================================================================
 
 
@@ -206,16 +206,17 @@ La manière la plus simple est d'utiliser l'autoconfiguration et de modifier le 
 Vous utilisez l'autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Si vous utilisez l'autoconfiguration complète, vous n'avez à spécifier aucune chaine et vous n'avez besoin de spécifier aucun PID, cette section ne vous concerne donc pas.
+Si vous utilisez l'autoconfiguration complète, vous n'avez à spécifier aucune chaîne et vous n'avez besoin de spécifier aucun PID, cette section ne vous concerne donc pas.
 
-Si vous utilisez l'autoconfiguration partielle, vous aurez besoin seulement du PID PMT pour chaque chaine, lisez la suite pour savoir comment l'obtenir.
+Si vous utilisez l'autoconfiguration partielle, vous aurez besoin seulement du PID PMT pour chaque chaîne, lisez la suite pour savoir comment l'obtenir.
 
 Vous n'utilisez pas l'autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Si vous n'utilisez pas l'autoconfiguration, vous devez obtenir les PIDs (Program Identifier) pour chaque chaine.
+Si vous n'utilisez pas l'autoconfiguration, vous devez obtenir les PIDs (Program Identifier) pour chaque chaîne.
 
-Pour chaque chaine, il est conseillé de spécifier au minimum :
+Pour chaque chaîne, il est conseillé de spécifier au minimum :
+
 - Un PID vidéo (sauf pour les radios)
 - Un PID audio
 - Le PID PMT
@@ -223,7 +224,7 @@ Pour chaque chaine, il est conseillé de spécifier au minimum :
 
 Si vous n'avez pas accès aux PIDs via un site web comme http://www.kingofsat.net[King Of Sat], la manière la plus facile pour les obtenir est d'utiliser les dvb-apps de linuxtv.
 
-Si vous ne savez pas sur quelle fréquence accorder votre carte ou les chaines que vous pouvez recevoir, vous pouvez utiliser <<w_scan,w_scan>> ou <<scan_inital_tuning,scan>> (des dvb-apps) si vous avez un fichier d'accord initial (généralement fourni avec la documentation de scan).
+Si vous ne savez pas sur quelle fréquence accorder votre carte ou les chaînes que vous pouvez recevoir, vous pouvez utiliser <<w_scan,w_scan>> ou <<scan_inital_tuning,scan>> (des dvb-apps) si vous avez un fichier d'accord initial (généralement fourni avec la documentation de scan).
 
 [[w_scan]]
 Utiliser w_scan pour obtenir un fichier d'accord initial
@@ -259,6 +260,7 @@ T 514000000 8MHz 2/3 2/3 QAM64 8k 1/4 NONE
 Si vous voulez utiliser l'autoconfiguration complète, ce fichier contient toutes les informations nécessaires. Par exemple, la seconde colonne est la fréquence ( en Hz ).
 
 Le format est le suivant : 
+
 .Terrestre
 ----------------------------------------------------------------------------------------
 T freq bandwidth fec_hi fec_lo modulation transmission-mode guard-interval hierarchy
