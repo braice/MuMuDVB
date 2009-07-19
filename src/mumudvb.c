@@ -1004,7 +1004,7 @@ main (int argc, char **argv)
 			"pids : You must precise ip first\n");
 	      exit(ERROR_CONF);
 	    }
-	  if (common_port!=0)
+	  if (common_port!=0 && channels[curr_channel].portOut == 0)
 	    channels[curr_channel].portOut = common_port;
 	  while ((substring = strtok (NULL, delimiteurs)) != NULL)
 	    {
