@@ -20,7 +20,7 @@ All parameters are in the form: `name=value`
 freq=11987
 --------------------------
 
-This configuration file contains two parts
+The configuration file contains two parts
 
 Common part
 ~~~~~~~~~~~
@@ -232,7 +232,7 @@ w_scan works only for terrestrial or cable.
 
 You can find wscan in the http://edafe.org/vdr/w_scan/[w_scan website].
 
-Once you compiled it, you can lauch it using 
+Once you compiled it (optionnal for x86), you can lauch it using 
 ---------------------------------------
 ./w_scan -x >> inital_tuning_file.txt
 ---------------------------------------
