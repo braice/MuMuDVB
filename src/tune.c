@@ -323,11 +323,11 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     //Universal lnb : two bands, hi and low one and two local oscilators
     if(tuneparams->lnb_type==LNB_UNIVERSAL)
       {
-	if (tuneparams->freq < SLOF) {
-	  lo_frequency=LOF1_UNIVERSAL;
+	if (tuneparams->freq < tuneparams->lnb_slof) {
+	  lo_frequency=tuneparams->lnb_lof_low;
 	  hi_lo = 0;
 	} else {
-	  lo_frequency=LOF2_UNIVERSAL;
+	  lo_frequency=tuneparams->lnb_lof_high;
 	  hi_lo = 1;
 	}
       }
@@ -335,13 +335,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     else if (tuneparams->lnb_type==LNB_STANDARD)
       {
 	hi_lo=0;
-	lo_frequency=LOF_STANDARD;
-      }
-    //LNB_OTHER LNB frequency supplied by the user
-    else if (tuneparams->lnb_type==LNB_OTHER)
-      {
-	hi_lo=0;
-	lo_frequency=tuneparams->lo_frequency*1000UL;
+	lo_frequency=tuneparams->lnb_lof_standard;
       }
 
     feparams.frequency=tuneparams->freq-lo_frequency;

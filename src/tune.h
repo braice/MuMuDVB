@@ -38,13 +38,13 @@
 
 /* DVB-S */
 /** lnb_slof: switch frequency of LNB */
-#define SLOF (11700*1000UL)
+#define DEFAULT_SLOF (11700*1000UL)
 /** lnb_lof1: local frequency of lower LNB band */
-#define LOF1_UNIVERSAL (9750*1000UL)
+#define DEFAULT_LOF1_UNIVERSAL (9750*1000UL)
 /** lnb_lof2: local frequency of upper LNB band */
-#define LOF2_UNIVERSAL (10600*1000UL)
+#define DEFAULT_LOF2_UNIVERSAL (10600*1000UL)
 /** Lnb standard Local oscillator frequency*/
-#define LOF_STANDARD (10750*1000UL)
+#define DEFAULT_LOF_STANDARD (10750*1000UL)
 
 
 /* DVB-T */
@@ -65,7 +65,6 @@
 /* The lnb type*/
 #define LNB_UNIVERSAL 0
 #define LNB_STANDARD 1
-#define LNB_OTHER 2
 
 
 /** @brief Parameters for tuning the card*/
@@ -84,10 +83,16 @@ typedef struct tuning_parameters_t{
   unsigned int srate;
   /**The polarisation H, V, L or R (for satellite)*/
   char pol;
-  /**The lnb type : universal (two local oscilator frequencies), standard (one) or other (in this case the lo_frequency is provided by the user)*/
+  /**The lnb type : universal (two local oscilator frequencies), standard (one)*/
   int lnb_type;
-  /**The lo frequency provided by the user (in MHz)*/
-  int lo_frequency;
+  /**The lo frequency (in kHz) for single LO LNB*/
+  uint32_t lnb_lof_standard;
+  /**The lo switch frequency for dual LO LNB*/
+  uint32_t lnb_slof;
+  /**The low LO frequency (in kHz) for dual LO LNB*/
+  uint32_t lnb_lof_low;
+  /**The HIGH LO frequency (in kHz) for dual LO LNB*/
+  uint32_t lnb_lof_high;
   /** Do we force the lnb voltage to be 0 ? (in case the LNB have it's own power supply (satellite only))*/
   int lnb_voltage_off;
   //int tone;

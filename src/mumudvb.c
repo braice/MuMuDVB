@@ -191,7 +191,10 @@ tuning_parameters_t tuneparams={
   .pol = 0,
   .lnb_voltage_off=0,
   .lnb_type=LNB_UNIVERSAL,
-  .lo_frequency=0,
+  .lnb_lof_standard=DEFAULT_LOF_STANDARD,
+  .lnb_slof=DEFAULT_SLOF,
+  .lnb_lof_low=DEFAULT_LOF1_UNIVERSAL,
+  .lnb_lof_high=DEFAULT_LOF2_UNIVERSAL,
   //The 22KHz tone burst is usually used with non-DiSEqC capable switches to select
   //between two connected LNBs/satellites. When using DiSEqC epuipment this voltage
   //has to be switched consistently to the DiSEqC commands as described in the DiSEqC
@@ -791,8 +794,6 @@ main (int argc, char **argv)
 	    tuneparams.lnb_type=LNB_UNIVERSAL;
 	  else if(!strcmp (substring, "standard"))
 	    tuneparams.lnb_type=LNB_STANDARD;
-	  else if(!strcmp (substring, "other"))
-	    tuneparams.lnb_type=LNB_OTHER;
 	  else
 	    {
 	      log_message( MSG_ERROR,
@@ -801,10 +802,25 @@ main (int argc, char **argv)
 	      exit(ERROR_CONF);
 	    }
 	}
-      else if (!strcmp (substring, "lo_frequency"))
+      else if (!strcmp (substring, "lnb_lof_standard"))
 	{
 	  substring = strtok (NULL, delimiteurs);
-	  tuneparams.lo_frequency = atoi(substring);
+	  tuneparams.lnb_lof_standard = atoi(substring)*1000UL;
+	}
+      else if (!strcmp (substring, "lnb_slof"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  tuneparams.lnb_slof = atoi(substring)*1000UL;
+	}
+      else if (!strcmp (substring, "lnb_lof_high"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  tuneparams.lnb_lof_high = atoi(substring)*1000UL;
+	}
+      else if (!strcmp (substring, "lnb_lof_low"))
+	{
+	  substring = strtok (NULL, delimiteurs);
+	  tuneparams.lnb_lof_low = atoi(substring)*1000UL;
 	}
       else if (!strcmp (substring, "srate"))
 	{
