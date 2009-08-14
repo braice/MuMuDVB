@@ -42,6 +42,7 @@ enum
     ERROR_TUNE,
     ERROR_NO_DIFF,
     ERROR_CAM,
+    ERROR_GENERIC,
   };
 
 #endif
