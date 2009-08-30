@@ -1,5 +1,5 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB - UDP-ize a DVB transport stream.
  * 
  * (C) 2009 Brice DUBOST
  * 
@@ -30,9 +30,10 @@
 
 /***********************
 Todo list
- * implement a measurement of the "load"
+ * implement a measurement of the "load" -- almost done with the traffic display
  * implement channel by name
  * implement monitoring features
+ * implement channels by port  --- in progress
 
 ***********************/
 
@@ -64,55 +65,94 @@ extern int rtp_header;
 /**@brief Handle an "event" on the unicast file descriptors
  * If the event is on an already open client connection, it handle the message
  * If the event is on the master connection, it accepts the new connection
+ * If the event is on a channel specific socket, it accepts the new connection and starts streaming
  *
  */
-int unicast_hadle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels)
+int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels)
 {
   int iRet;
-  //If we have clients, we look if something happend for them
-  if(fds->pfdsnum>2)
+  //We look what happened for which connection
+  int actual_fd;
+  for(actual_fd=1;actual_fd<fds->pfdsnum;actual_fd++)
     {
-      int actual_fd;
-      for(actual_fd=2;actual_fd<fds->pfdsnum;actual_fd++)
-	{
-	  iRet=0;
-	  if((fds->pfds[actual_fd].revents&POLLIN)||(fds->pfds[actual_fd].revents&POLLPRI))
-	    {
-	      log_message(MSG_DEBUG,"Unicast : New message for socket %d\n", fds->pfds[actual_fd].fd);
-	      iRet=unicast_handle_message(unicast_vars,fds->pfds[actual_fd].fd, channels, number_of_channels);
-	    }
-	  if (iRet==-2 || (fds->pfds[actual_fd].revents&POLLHUP)) //iRet==-2 --> 0 received data or error, we close the connection
-	    {
-	      unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels);
-	      //We check if we hage to parse fds->pfds[actual_fd].revents (the last fd moved to the actual one)
-	      if(fds->pfds[actual_fd].revents)
-		actual_fd--;//Yes, we force the loop to see it again
-	    }
-	}
+      iRet=0;
+      if((fds->pfds[actual_fd].revents&POLLHUP)&&(unicast_vars->fd_info[actual_fd].type==UNICAST_CLIENT))
+      {
+        log_message(MSG_DEBUG,"Unicast : We've got a POLLHUP. Actual_fd %d socket %d we close the connection \n", actual_fd, fds->pfds[actual_fd].fd );
+        unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels);
+          //We check if we hage to parse fds->pfds[actual_fd].revents (the last fd moved to the actual one)
+        if(fds->pfds[actual_fd].revents)
+          actual_fd--;//Yes, we force the loop to see it 
+      }
+      if((fds->pfds[actual_fd].revents&POLLIN)||(fds->pfds[actual_fd].revents&POLLPRI))
+        {
+          if((unicast_vars->fd_info[actual_fd].type==UNICAST_MASTER)||
+              (unicast_vars->fd_info[actual_fd].type==UNICAST_LISTEN_CHANNEL))
+          {
+            //Event on the master connection or listenin channel 
+            //New connection, we accept the connection
+            log_message(MSG_DEBUG,"Unicast : New client\n");
+            int tempSocket;
+            unicast_client_t *tempClient;
+            tempClient=unicast_accept_connection(unicast_vars);
+            if(tempClient!=NULL)
+            {
+              tempSocket=tempClient->Socket;
+              fds->pfdsnum++;
+              fds->pfds=realloc(fds->pfds,(fds->pfdsnum+1)*sizeof(struct pollfd));
+              if (fds->pfds==NULL)
+              {
+                log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+                return mumudvb_close(100<<8);
+              }
+              //We poll the new socket
+              fds->pfds[fds->pfdsnum-1].fd = tempSocket;
+              fds->pfds[fds->pfdsnum-1].events = POLLIN | POLLPRI | POLLHUP; //We also poll the deconnections
+              fds->pfds[fds->pfdsnum].fd = 0;
+              fds->pfds[fds->pfdsnum].events = POLLIN | POLLPRI;
+              
+              //Information about the descriptor
+              unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
+              if (unicast_vars->fd_info==NULL)
+              {
+                log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+                return mumudvb_close(100<<8);
+              }
+              //client connection
+              unicast_vars->fd_info[fds->pfdsnum-1].type=UNICAST_CLIENT;
+              unicast_vars->fd_info[fds->pfdsnum-1].channel=-1;
+              unicast_vars->fd_info[fds->pfdsnum-1].client=tempClient;
+              
+
+              log_message(MSG_DEBUG,"Unicast : Number of clients : %d\n", unicast_vars->client_number);
+               
+              if(unicast_vars->fd_info[actual_fd].type==UNICAST_LISTEN_CHANNEL)
+              {
+            //Event on a channel connection, we open a new socket for this client and 
+            //we store the wanted channel for when we will get the GET
+              }
+            }
+          }
+          else if(unicast_vars->fd_info[actual_fd].type==UNICAST_CLIENT)
+          {
+            //Event on a client connectio i.e. the client asked something
+            log_message(MSG_DEBUG,"Unicast : New message for socket %d\n", fds->pfds[actual_fd].fd);
+            iRet=unicast_handle_message(unicast_vars,unicast_vars->fd_info[actual_fd].client, channels, number_of_channels);
+            if (iRet==-2 ) //iRet==-2 --> 0 received data or error, we close the connection
+            {
+              unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels);
+              //We check if we hage to parse fds->pfds[actual_fd].revents (the last fd moved to the actual one)
+              if(fds->pfds[actual_fd].revents)
+                actual_fd--;//Yes, we force the loop to see it again
+            }
+          }
+          else
+          {
+            log_message(MSG_WARN,"Unicast : File descriptor with bad type, please contact\n Debug information : actual_fd %d unicast_vars->fd_info[actual_fd].type %d\n",
+                        actual_fd, unicast_vars->fd_info[actual_fd].type);
+          }
     }
-  //Now we look if something happend with the master connection
-  if((fds->pfds[1].revents&POLLIN)||(fds->pfds[1].revents&POLLPRI))
-    {
-      //New connection, we accept the connection
-      int tempSocket;
-      tempSocket=unicast_accept_connection(unicast_vars);
-      if(tempSocket!=-1)
-	{
-	  fds->pfdsnum++;
-	  fds->pfds=realloc(fds->pfds,(fds->pfdsnum+1)*sizeof(struct pollfd));
-	  if (fds->pfds==NULL)
-	    {
-	      log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
-	      return mumudvb_close(100<<8);
-	    }
-	  //We poll the new socket
-	  fds->pfds[fds->pfdsnum-1].fd = tempSocket;
-	  fds->pfds[fds->pfdsnum-1].events = POLLIN | POLLPRI | POLLHUP; //We also poll the deconnections
-	  fds->pfds[fds->pfdsnum].fd = 0;
-	  fds->pfds[fds->pfdsnum].events = POLLIN | POLLPRI;
-	  log_message(MSG_DEBUG,"Unicast : Number of clients : %d\n", fds->pfdsnum-2);
-	}
-    }
+  }
   return 0;
 
 }
@@ -125,11 +165,12 @@ int unicast_hadle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumud
  *
  * @param unicast_vars the unicast parameters
  */
-int unicast_accept_connection(unicast_parameters_t *unicast_vars)
+unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars)
 {
 
   unsigned int l;
   int tempSocket;
+  unicast_client_t *tempClient;
   struct sockaddr_in tempSocketAddrIn;
 
   l = sizeof(struct sockaddr);
@@ -137,7 +178,7 @@ int unicast_accept_connection(unicast_parameters_t *unicast_vars)
   if (tempSocket < 0)
     {
       log_message(MSG_ERROR,"Unicast : Error when accepting the incoming connection : %s\n", strerror(errno));
-      return -1;
+      return NULL;
     }
   log_message(MSG_DETAIL,"Unicast : New connection from %s:%d\n",inet_ntoa(tempSocketAddrIn.sin_addr), tempSocketAddrIn.sin_port);
 
@@ -148,7 +189,7 @@ int unicast_accept_connection(unicast_parameters_t *unicast_vars)
   if (fcntl(tempSocket, F_SETFL, flags) < 0)
     {
       log_message(MSG_ERROR,"Set non blocking failed : %s\n",strerror(errno));
-      return -1;
+      return NULL;
     }
 
   /* if the maximum number of clients is reached, raise a temporary error*/
@@ -158,18 +199,18 @@ int unicast_accept_connection(unicast_parameters_t *unicast_vars)
       log_message(MSG_INFO,"Unicast : Too many clients connected, we raise an error to  %s\n", inet_ntoa(tempSocketAddrIn.sin_addr));
       iRet=write(tempSocket,HTTP_503_REPLY, strlen(HTTP_503_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
       close(tempSocket);
-      return -1;
+      return NULL;
     }
 
-
-  if( unicast_add_client(unicast_vars, tempSocketAddrIn, tempSocket)<0)
+  tempClient=unicast_add_client(unicast_vars, tempSocketAddrIn, tempSocket);
+  if( tempClient == NULL)
     {
       //We cannot create the client, we close the socket cleanly
-      close(tempSocket);                 
-      return -1;
+      close(tempSocket);
+      return NULL;
     }
 
-  return tempSocket;
+  return tempClient;
 
 }
 
@@ -180,12 +221,12 @@ int unicast_accept_connection(unicast_parameters_t *unicast_vars)
  * @param SocketAddr The socket address
  * @param Socket The socket number
  */
-int unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in SocketAddr, int Socket)
+unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in SocketAddr, int Socket)
 {
 
   unicast_client_t *client;
   unicast_client_t *prev_client;
-  log_message(MSG_DEBUG,"Unicast : We create a client associated with %d\n",Socket);
+  log_message(MSG_DEBUG,"Unicast : We create a client associated with the socket %d\n",Socket);
   //We allocate a new client
   if(unicast_vars->clients==NULL)
     {
@@ -195,7 +236,7 @@ int unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in So
     }
   else
     {
-      log_message(MSG_DEBUG,"Unicast : already clients\n");
+      log_message(MSG_DEBUG,"Unicast : there is already clients\n");
       client=unicast_vars->clients;
       while(client->next!=NULL)
 	client=client->next;
@@ -206,8 +247,8 @@ int unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in So
   if(client==NULL)
     {
       log_message(MSG_ERROR,"Unicast : allocating a new client : MALLOC error");
-      close(Socket);                 
-      return -1;
+      close(Socket); 
+      return NULL;
     }
 
   //We fill the client data
@@ -225,7 +266,7 @@ int unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in So
 
   unicast_vars->client_number++;
 
-  return 0;
+  return client;
 }
 
 
@@ -239,32 +280,12 @@ int unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in So
  * @param Socket the socket nubmer of the client we want to delete
  * @param channels the array of channels
  */
-int unicast_del_client(unicast_parameters_t *unicast_vars, int Socket, mumudvb_channel_t *channels)
+int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels)
 {
-  unicast_client_t *client;
   unicast_client_t *prev_client,*next_client;
   unicast_client_t *clienttmp;
 
-  client=unicast_find_client(unicast_vars,Socket);
-  if(client==NULL)
-    {
-      log_message(MSG_ERROR,"Unicast : delete client : client not found : This should never happend, please contact\n");
-      
-      if(unicast_vars->clients==NULL)
-	log_message(MSG_ERROR,"Unicast : 0 client\n");
-      else
-	{
-	  clienttmp=unicast_vars->clients;
-	  while(clienttmp!=NULL)
-	    {
-	      log_message(MSG_ERROR,"We search the socket %d, we see socket %d\n",Socket,clienttmp->Socket);
-	      clienttmp=clienttmp->next;
-	    }
-	}
-
-      return -1;
-    }
-  log_message(MSG_DETAIL,"Unicast : We delete the client %s:%d, socket %d\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port, Socket);
+  log_message(MSG_DETAIL,"Unicast : We delete the client %s:%d, socket %d\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port, client->Socket);
 
   log_message(MSG_DEBUG,"Unicast : ---------------Before-------------\n");
   if(unicast_vars->clients==NULL)
@@ -287,8 +308,8 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, int Socket, mumudvb_c
 
 
   if (client->Socket >= 0)
-    {			    
-      close(client->Socket);                 
+    {
+      close(client->Socket);
     }
   
   prev_client=client->prev;
@@ -353,34 +374,6 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, int Socket, mumudvb_c
   return 0;
 }
 
-/** @brief Find a client with a specified socket
- * return NULL if no clients are found
- *
- * @param unicast_vars the unicast parameters
- * @param Socket the socket for wich we search the client
- */
-unicast_client_t *unicast_find_client(unicast_parameters_t *unicast_vars, int Socket)
-{
-  unicast_client_t *client;
-
-  if(unicast_vars->clients==NULL)
-    return NULL;
-  else
-    {
-      client=unicast_vars->clients;
-      while(client!=NULL)
-	{
-	  if (client->Socket==Socket)
-	    return client;
-	  client=client->next;
-	}
-    }
-
-  return NULL;
-}
-
-
-
 
 
 /** @brief Close an unicast connection and delete the client
@@ -414,16 +407,31 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
 
   log_message(MSG_DEBUG,"Unicast : We close the connection\n");
   //We delete the client
-  unicast_del_client(unicast_vars, Socket, channels);
+  unicast_del_client(unicast_vars, unicast_vars->fd_info[actual_fd].client, channels);
   //We move the last fd to the actual/deleted one, and decrease the number of fds by one
   fds->pfds[actual_fd].fd = fds->pfds[fds->pfdsnum-1].fd;
   fds->pfds[actual_fd].events = fds->pfds[fds->pfdsnum-1].events;
   fds->pfds[actual_fd].revents = fds->pfds[fds->pfdsnum-1].revents;
+  //we move the file descriptor information
+  unicast_vars->fd_info[actual_fd] = unicast_vars->fd_info[fds->pfdsnum-1];
+  //last one set to 0 for poll()
   fds->pfds[fds->pfdsnum-1].fd=0;
   fds->pfds[fds->pfdsnum-1].events=POLLIN|POLLPRI;
+  fds->pfds[fds->pfdsnum-1].revents=0; //We clear it to avoid nasty bugs ...
   fds->pfdsnum--;
-  fds->pfds=realloc(fds->pfds,(fds->pfdsnum+1)*sizeof(struct pollfd));/**@todo check return value*/
-  log_message(MSG_DEBUG,"Unicast : Number of clients : %d\n", fds->pfdsnum-2);
+  fds->pfds=realloc(fds->pfds,(fds->pfdsnum+1)*sizeof(struct pollfd));
+  if (fds->pfds==NULL)
+  {
+    log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+    exit(100<<8);
+  }
+  unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
+  if (unicast_vars->fd_info==NULL)
+  {
+    log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+    exit(100<<8);
+  }
+  log_message(MSG_DEBUG,"Unicast : Number of clients : %d\n", unicast_vars->client_number);
 
 }
 
@@ -436,40 +444,18 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
  *
  * @param unicast_vars the unicast parameters
  */
-int unicast_handle_message(unicast_parameters_t *unicast_vars, int fd, mumudvb_channel_t *channels, int number_of_channels)
+int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels)
 {
-  unicast_client_t *client;
   int received_len;
-  
 
-  client=unicast_find_client(unicast_vars,fd);
-  if(client==NULL)
-    {
-      log_message(MSG_ERROR,"Unicast : Handle message, client not found, This should never happend, please contact\n");
-      unicast_client_t *clienttmp;
-      
-      if(unicast_vars->clients==NULL)
-	log_message(MSG_ERROR,"Unicast : 0 client\n");
-      else
-	{
-	  clienttmp=unicast_vars->clients;
-	  while(clienttmp!=NULL)
-	    {
-	      log_message(MSG_ERROR,"We search the socket %d, we see socket %d\n",fd,clienttmp->Socket);
-	      clienttmp=clienttmp->next;
-	    }
-	}
-
-      return -1;
-    }
-
+  /************ auto increasing buffer to receive the message **************/
   if((client->buffersize-client->bufferpos)<RECV_BUFFER_MULTIPLE)
     {
       client->buffer=realloc(client->buffer,(client->buffersize + RECV_BUFFER_MULTIPLE)*sizeof(char));
       client->buffersize += RECV_BUFFER_MULTIPLE;
       if(client->buffer==NULL)
 	{
-	  log_message(MSG_ERROR,"Unicast : Problem with realloc for the client buffer : %s\n",strerror(errno));
+          log_message(MSG_ERROR,"Unicast : Problem with realloc for the client buffer : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 	  client->buffersize=0;
 	  client->bufferpos=0;
 	  return -1;
@@ -510,7 +496,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, int fd, mumudvb_c
       
       if(strstr(client->buffer,"GET ")==client->buffer)
 	{
-	
+	/** @todo Implement here the preselected channels via the port of the connection */
 	  //to implement : 
 	  //Information ???
 	  //GET /monitor/???
@@ -564,7 +550,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, int fd, mumudvb_c
 		  log_message(MSG_DEBUG,"Unicast : Channel by name, name %s\n",substring);
 		  //search the channel
 		  err404=1;//Temporary
-		  /**@todo, implement the search without the spaces*/
+		  /** @todo implement the search without the spaces*/
 		}
 	    }
 	  //Channels list
@@ -691,7 +677,7 @@ void unicast_freeing(unicast_parameters_t *unicast_vars, mumudvb_channel_t *chan
   for(actual_client=unicast_vars->clients; actual_client != NULL; actual_client=next_client)
     {
       next_client= actual_client->next;
-      unicast_del_client(unicast_vars, actual_client->Socket, channels);
+      unicast_del_client(unicast_vars, actual_client, channels);
     }
 }
 

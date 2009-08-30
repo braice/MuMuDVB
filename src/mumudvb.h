@@ -188,6 +188,8 @@ typedef struct{
 
   /**Unicast clients*/
   struct unicast_client_t *clients;
+  /**Unicast port (listening socket per channel) */
+  int unicast_port;
 
   /**The sap playlist group*/
   char sap_group[20];

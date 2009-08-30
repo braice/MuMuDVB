@@ -1012,6 +1012,8 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
       	  channels[curr_channel].ts_id = atoi (substring);
 	}
+        /** @todo : add the per channel option for the http unicast port (int unicast_port)*/
+        /** @todo : add option for the starting http unicast port (for autoconf full)*/
       else if (!strcmp (substring, "pids"))
 	{
 	  if ( ip_ok == 0)
@@ -1509,12 +1511,24 @@ main (int argc, char **argv)
   set_filters(asked_pid, &fds);
   fds.pfds=NULL;
   fds.pfdsnum=1;
+  //+1 for closing the pfd list, see man poll
   fds.pfds=realloc(fds.pfds,(fds.pfdsnum+1)*sizeof(struct pollfd));
   if (fds.pfds==NULL)
     {
       log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
       return mumudvb_close(100<<8);
     }
+    
+  //We fill the file descriptor information structure. the first one is irrelevant
+  //(file descriptor associated to the DVB card) but we allocate it for consistency
+  unicast_vars.fd_info=NULL;
+  unicast_vars.fd_info=realloc(unicast_vars.fd_info,(fds.pfdsnum)*sizeof(unicast_fd_info_t));
+  if (unicast_vars.fd_info==NULL)
+  {
+    log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+    return mumudvb_close(100<<8);
+  }
+  
   //File descriptor for polling the DVB card
   fds.pfds[0].fd = fds.fd_dvr;
   //POLLIN : data available for read
@@ -1537,6 +1551,7 @@ main (int argc, char **argv)
 	channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
       else
 	channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
+      /** @todo : open the unicast listening connections fo the channels */
     }
   //We open the socket for the http unicast if needed and we update the poll structure
   if(strlen(unicast_vars.ipOut))
@@ -1557,6 +1572,17 @@ main (int argc, char **argv)
 	  fds.pfds[1].events = POLLIN | POLLPRI;
 	  fds.pfds[2].fd = 0;
 	  fds.pfds[2].events = POLLIN | POLLPRI;
+          //Information about the descriptor
+          unicast_vars.fd_info=realloc(unicast_vars.fd_info,(fds.pfdsnum)*sizeof(unicast_fd_info_t));
+          if (unicast_vars.fd_info==NULL)
+          {
+            log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+            return mumudvb_close(100<<8);
+          }
+          //Master connection
+          unicast_vars.fd_info[1].type=UNICAST_MASTER;
+          unicast_vars.fd_info[1].channel=-1;
+          unicast_vars.fd_info[1].client=NULL;
 	}
     }
 
@@ -1596,7 +1622,7 @@ main (int argc, char **argv)
       /**************************************************************/ 
       if((!(fds.pfds[0].revents&POLLIN)) && (!(fds.pfds[0].revents&POLLPRI))) //Priority to the DVB packets so if there is dvb packets and something else, we look first to dvb packets
 	{
-	  iRet=unicast_hadle_fd_event(&unicast_vars, &fds, channels, number_of_channels);
+	  iRet=unicast_handle_fd_event(&unicast_vars, &fds, channels, number_of_channels);
 	  if(iRet)
 	    Interrupted=iRet;
 	  //no DVB packet, we continue
@@ -2074,8 +2100,6 @@ int mumudvb_close(int Interrupted)
 
   // we close the file descriptors
   close_card_fd (fds);
-  free(fds.pfds);
-  fds.pfds=NULL;
 
   //We close the unicast connections and free the clients
   unicast_freeing(&unicast_vars, channels);
@@ -2134,9 +2158,12 @@ int mumudvb_close(int Interrupted)
     }
 
   /*free the file descriptors*/
-  if(fds.pfds)
-    free(fds.pfds);
-  fds.pfds=NULL;
+    if(fds.pfds)
+      free(fds.pfds);
+    fds.pfds=NULL;
+    if(unicast_vars.fd_info)
+      free(unicast_vars.fd_info);
+    unicast_vars.fd_info=NULL;
 
   if(Interrupted<(1<<8))
     return (0);
