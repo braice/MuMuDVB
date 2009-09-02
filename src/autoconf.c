@@ -466,7 +466,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 		  }
 	      }
 	  }
-	/**@todo : update generated conf file*/
+	/** @todo : update generated conf file*/
 	/**************************
 	 * Channel update END
 	 **************************/
@@ -1002,13 +1002,13 @@ void autoconf_free_services(mumudvb_service_t *services)
  * @param port The mulicast port
  * @param card The card number for the ip address
  */
-int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card)
+int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card)
 {
 
   mumudvb_service_t *actual_service;
   int channel_number=0;
   char ip[20];
-  
+  //int actual_unicast_port=;
   actual_service=parameters.services;
 
   do
@@ -1065,7 +1065,17 @@ int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *ch
 		  else
 		    memset (channels[channel_number].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 		}
-
+                
+                /** @todo open the unicast listening connections fo the channels */
+                /*
+                if(strlen(unicast_vars.ipOut))
+                {
+                channels[channel_number].unicast_port=actual_unicast_port;
+                log_message(MSG_DETAIL,"Unicast : We open the channel %d http socket address %s:%d\n",channel_number, unicast_vars.ipOut, channels[channel_number].unicast_port);
+                unicast_create_listening_socket(UNICAST_LISTEN_CHANNEL, curr_channel, unicast_vars.ipOut,channels[channel_number].unicast_port , &channels[channel_number].sIn, &channels[channel_number].socketIn, &fds, &unicast_vars);
+                actual_unicast_port++;
+                }
+                */
 
 	      channel_number++;
 	    }
@@ -1106,7 +1116,7 @@ int services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *ch
 int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, autoconf_parameters_t *autoconf_vars, int common_port, int card, fds_t *fds,uint8_t *asked_pid, uint8_t *number_chan_asked_pid,int multicast_ttl)
 {
   int curr_channel,curr_pid;
-  *number_of_channels=services_to_channels(*autoconf_vars, channels, common_port, card); //Convert the list of services into channels
+  *number_of_channels=autoconf_services_to_channels(*autoconf_vars, channels, common_port, card); //Convert the list of services into channels
   //we got the pmt pids for the channels, we open the filters
   for (curr_channel = 0; curr_channel < *number_of_channels; curr_channel++)
     {

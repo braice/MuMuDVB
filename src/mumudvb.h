@@ -190,6 +190,10 @@ typedef struct{
   struct unicast_client_t *clients;
   /**Unicast port (listening socket per channel) */
   int unicast_port;
+  /**Unicast listening socket*/
+  struct sockaddr_in sIn;
+  /**Unicast listening socket*/
+  int socketIn;
 
   /**The sap playlist group*/
   char sap_group[20];

@@ -1012,7 +1012,17 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
       	  channels[curr_channel].ts_id = atoi (substring);
 	}
-        /** @todo : add the per channel option for the http unicast port (int unicast_port)*/
+        else if (!strcmp (substring, "unicast_port"))
+        {
+          if ( ip_ok == 0)
+          {
+            log_message( MSG_ERROR,
+                         "unicast_port : You must precise ip first\n");
+            exit(ERROR_CONF);
+          }
+          substring = strtok (NULL, delimiteurs);
+          channels[curr_channel].unicast_port = atoi (substring);
+        }
         /** @todo : add option for the starting http unicast port (for autoconf full)*/
       else if (!strcmp (substring, "pids"))
 	{
@@ -1551,39 +1561,19 @@ main (int argc, char **argv)
 	channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
       else
 	channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
-      /** @todo : open the unicast listening connections fo the channels */
     }
   //We open the socket for the http unicast if needed and we update the poll structure
   if(strlen(unicast_vars.ipOut))
     {
-      log_message(MSG_DETAIL,"Unicast : We open the http socket for address %s:%d\n",unicast_vars.ipOut, unicast_vars.portOut);
-      unicast_vars.socketIn= makeTCPclientsocket(unicast_vars.ipOut, unicast_vars.portOut, &unicast_vars.sIn);
-      //We add them to the poll descriptors
-      if(unicast_vars.socketIn>0)
-	{
-	  fds.pfdsnum=2;
-	  fds.pfds=realloc(fds.pfds,(fds.pfdsnum+1)*sizeof(struct pollfd));
-	  if (fds.pfds==NULL)
-	    {
-	      log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
-	      return mumudvb_close(100<<8);
-	    }
-	  fds.pfds[1].fd = unicast_vars.socketIn;
-	  fds.pfds[1].events = POLLIN | POLLPRI;
-	  fds.pfds[2].fd = 0;
-	  fds.pfds[2].events = POLLIN | POLLPRI;
-          //Information about the descriptor
-          unicast_vars.fd_info=realloc(unicast_vars.fd_info,(fds.pfdsnum)*sizeof(unicast_fd_info_t));
-          if (unicast_vars.fd_info==NULL)
+      log_message(MSG_DETAIL,"Unicast : We open the Master http socket for address %s:%d\n",unicast_vars.ipOut, unicast_vars.portOut);
+      unicast_create_listening_socket(UNICAST_MASTER, -1, unicast_vars.ipOut, unicast_vars.portOut, &unicast_vars.sIn, &unicast_vars.socketIn, &fds, &unicast_vars);
+        /** open the unicast listening connections fo the channels */
+        for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+          if(channels[curr_channel].unicast_port)
           {
-            log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
-            return mumudvb_close(100<<8);
+            log_message(MSG_DETAIL,"Unicast : We open the channel %d http socket address %s:%d\n",curr_channel, unicast_vars.ipOut, channels[curr_channel].unicast_port);
+            unicast_create_listening_socket(UNICAST_LISTEN_CHANNEL, curr_channel, unicast_vars.ipOut,channels[curr_channel].unicast_port , &channels[curr_channel].sIn, &channels[curr_channel].socketIn, &fds, &unicast_vars);
           }
-          //Master connection
-          unicast_vars.fd_info[1].type=UNICAST_MASTER;
-          unicast_vars.fd_info[1].channel=-1;
-          unicast_vars.fd_info[1].client=NULL;
-	}
     }
 
 

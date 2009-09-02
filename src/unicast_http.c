@@ -62,7 +62,53 @@ unicast_send_streamed_channels_list_txt (int number_of_channels, mumudvb_channel
 /**@todo : deal with the RTP over http case ie implement RTSP*/
 extern int rtp_header;
 
-/**@brief Handle an "event" on the unicast file descriptors
+
+/** @brief Create a listening socket and add it to the list of polling file descriptors if success 
+ *
+ *
+ *
+ */
+int unicast_create_listening_socket(int socket_type, int socket_channel, char *ipOut, int port, struct sockaddr_in *sIn, int *socketIn, fds_t *fds, unicast_parameters_t *unicast_vars)
+{
+  *socketIn= makeTCPclientsocket(ipOut, port, sIn);
+      //We add them to the poll descriptors
+  if(*socketIn>0)
+  {
+    fds->pfdsnum++;
+    log_message(MSG_DEBUG, "unicast : fds->pfdsnum : %d\n", fds->pfdsnum);
+    fds->pfds=realloc(fds->pfds,(fds->pfdsnum+1)*sizeof(struct pollfd));
+    if (fds->pfds==NULL)
+    {
+      log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+      return -1;
+    }
+    fds->pfds[fds->pfdsnum-1].fd = *socketIn;
+    fds->pfds[fds->pfdsnum-1].events = POLLIN | POLLPRI;
+    fds->pfds[fds->pfdsnum].fd = 0;
+    fds->pfds[fds->pfdsnum].events = POLLIN | POLLPRI;
+          //Information about the descriptor
+    unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
+    if (unicast_vars->fd_info==NULL)
+    {
+      log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+      return -1;
+    }
+          //Master connection
+    unicast_vars->fd_info[fds->pfdsnum-1].type=socket_type;
+    unicast_vars->fd_info[fds->pfdsnum-1].channel=socket_channel;
+    unicast_vars->fd_info[fds->pfdsnum-1].client=NULL;
+  }
+  else
+  {
+    log_message( MSG_WARN, "Problem creating the socket %s:%d : %s\n",ipOut,port,strerror(errno) );
+    return -1;
+  }
+
+  return 0;
+
+}
+
+/** @brief Handle an "event" on the unicast file descriptors
  * If the event is on an already open client connection, it handle the message
  * If the event is on the master connection, it accepts the new connection
  * If the event is on a channel specific socket, it accepts the new connection and starts streaming
@@ -73,6 +119,8 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
   int iRet;
   //We look what happened for which connection
   int actual_fd;
+  
+  log_message(MSG_DEBUG,"Unicast :unicast_handle_fd_event \n");
   for(actual_fd=1;actual_fd<fds->pfdsnum;actual_fd++)
     {
       iRet=0;
@@ -94,7 +142,9 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
             log_message(MSG_DEBUG,"Unicast : New client\n");
             int tempSocket;
             unicast_client_t *tempClient;
-            tempClient=unicast_accept_connection(unicast_vars);
+            //we accept the incoming connection
+            tempClient=unicast_accept_connection(unicast_vars, fds->pfds[actual_fd].fd);
+
             if(tempClient!=NULL)
             {
               tempSocket=tempClient->Socket;
@@ -128,8 +178,10 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
                
               if(unicast_vars->fd_info[actual_fd].type==UNICAST_LISTEN_CHANNEL)
               {
-            //Event on a channel connection, we open a new socket for this client and 
-            //we store the wanted channel for when we will get the GET
+                //Event on a channel connection, we open a new socket for this client and 
+                //we store the wanted channel for when we will get the GET
+                log_message(MSG_DEBUG,"Unicast : Connection on a channel socket the client  will get the channel %d\n", unicast_vars->fd_info[actual_fd].channel);
+                tempClient->askedChannel=unicast_vars->fd_info[actual_fd].channel;
               }
             }
           }
@@ -164,8 +216,9 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
  *
  *
  * @param unicast_vars the unicast parameters
+ * @param socketIn the socket on wich the connection was made
  */
-unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars)
+unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, int socketIn)
 {
 
   unsigned int l;
@@ -174,7 +227,7 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars)
   struct sockaddr_in tempSocketAddrIn;
 
   l = sizeof(struct sockaddr);
-  tempSocket = accept(unicast_vars->socketIn, (struct sockaddr *) &tempSocketAddrIn, &l);
+  tempSocket = accept(socketIn, (struct sockaddr *) &tempSocketAddrIn, &l);
   if (tempSocket < 0)
     {
       log_message(MSG_ERROR,"Unicast : Error when accepting the incoming connection : %s\n", strerror(errno));
@@ -258,6 +311,7 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
   client->buffersize=0;
   client->bufferpos=0;
   client->channel=-1;
+  client->askedChannel=-1;
   client->consecutive_errors=0;
   client->next=NULL;
   client->prev=prev_client;
@@ -502,9 +556,17 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 	  //GET /monitor/???
 
 	  pos=4;
+          
+          //if the client have already an asked channel we don't parse the GET
+          if(client->askedChannel!=-1)
+          {
+            requested_channel=client->askedChannel+1; //+1 because requested channel starts at 1 and asked channel starts at 0
+            log_message(MSG_DEBUG,"Unicast : Channel by socket, number %d\n",requested_channel);
+            client->askedChannel=-1;
+          }
 	  //Channel by number
 	  //GET /bynumber/channelnumber
-	  if(strstr(client->buffer +pos ,"/bynumber/")==(client->buffer +pos))
+	  else if(strstr(client->buffer +pos ,"/bynumber/")==(client->buffer +pos))
 	    {
 	      if(client->channel!=-1)
 		{

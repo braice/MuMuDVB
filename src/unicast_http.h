@@ -129,6 +129,8 @@ typedef struct unicast_client_t{
   long first_error_time;
   /**Channel : -1 if not associated yet*/
   int channel;
+  /**Future channel : we will set the channel when we will receive the get*/
+  int askedChannel;
   /**Next client*/
   struct unicast_client_t *next;
   /**Previous client*/
@@ -181,9 +183,11 @@ typedef struct unicast_parameters_t{
   unicast_fd_info_t *fd_info;
 }unicast_parameters_t;
 
+int unicast_create_listening_socket(int socket_type, int socket_channel, char *ipOut, int port, struct sockaddr_in *sIn, int *socketIn, fds_t *fds, unicast_parameters_t *unicast_vars);
+
 int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels);
 
-unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars);
+unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, int socketIn);
 unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in SocketAddr, int Socket);
 void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, int Socket, mumudvb_channel_t *channels);
 
