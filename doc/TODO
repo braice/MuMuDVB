@@ -1,5 +1,21 @@
  * support for DVB-S2
  * support for IPv6
  * support for diseqc > 1
+
+
  * Http unicast
- * Be able to reconfigure when the PMT version changes
+  * Master connection not mandatory, option unicast=1
+  * unicast ip for autoconfiguration (this ip can be different from the master one in the future)
+  * Be able to desactivate multicast cleanly in the future (now document ttl=0)
+  * Clean a bit the debug messages
+
+ * Autoconfiguration
+  * make the syntax autoconfiguration=1/2 obsolete and replace by full/partial
+  * In partial autoconfiguration, add a step for channels with a service ID and no PMT (this step will be skipped in full autoconf since we get both automatically)
+
+ * SDT rewrite
+  * Be able to rewrite the SDT PID
+
+ * Full transponder
+  * Be able to stream a channel with pid 8192 (will work only on budget cards)
+ 
