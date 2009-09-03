@@ -92,6 +92,7 @@ int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parame
 extern int rtp_header;
 extern int multicast_auto_join;
 
+
 /**
 @brief The different encodings that can be used
 Cf EN 300 468 Annex A (I used v1.9.1)
@@ -1002,13 +1003,13 @@ void autoconf_free_services(mumudvb_service_t *services)
  * @param port The mulicast port
  * @param card The card number for the ip address
  */
-int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card)
+int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card, unicast_parameters_t *unicast_vars, fds_t *fds)
 {
 
   mumudvb_service_t *actual_service;
   int channel_number=0;
   char ip[20];
-  //int actual_unicast_port=;
+  int actual_unicast_port=parameters.autoconf_unicast_start_port;
   actual_service=parameters.services;
 
   do
@@ -1066,16 +1067,14 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 		    memset (channels[channel_number].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 		}
                 
-                /** @todo open the unicast listening connections fo the channels */
-                /*
-                if(strlen(unicast_vars.ipOut))
+                /** open the unicast listening connections fo the channels */
+                if(actual_unicast_port && strlen(parameters.unicast_ipOut))
                 {
-                channels[channel_number].unicast_port=actual_unicast_port;
-                log_message(MSG_DETAIL,"Unicast : We open the channel %d http socket address %s:%d\n",channel_number, unicast_vars.ipOut, channels[channel_number].unicast_port);
-                unicast_create_listening_socket(UNICAST_LISTEN_CHANNEL, curr_channel, unicast_vars.ipOut,channels[channel_number].unicast_port , &channels[channel_number].sIn, &channels[channel_number].socketIn, &fds, &unicast_vars);
-                actual_unicast_port++;
+                  channels[channel_number].unicast_port=actual_unicast_port;
+                  log_message(MSG_INFO,"Unicast : We open the channel %d http socket address %s:%d\n",channel_number, parameters.unicast_ipOut, channels[channel_number].unicast_port);
+                  unicast_create_listening_socket(UNICAST_LISTEN_CHANNEL, channel_number, parameters.unicast_ipOut, channels[channel_number].unicast_port , &channels[channel_number].sIn, &channels[channel_number].socketIn, fds, unicast_vars);
+                  actual_unicast_port++;
                 }
-                */
 
 	      channel_number++;
 	    }
@@ -1113,10 +1112,10 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
  * @param asked_pid the array containing the pids already asked
  * @param fds the file descriptors
 */
-int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, autoconf_parameters_t *autoconf_vars, int common_port, int card, fds_t *fds,uint8_t *asked_pid, uint8_t *number_chan_asked_pid,int multicast_ttl)
+int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, autoconf_parameters_t *autoconf_vars, int common_port, int card, fds_t *fds,uint8_t *asked_pid, uint8_t *number_chan_asked_pid,int multicast_ttl , unicast_parameters_t *unicast_vars)
 {
   int curr_channel,curr_pid;
-  *number_of_channels=autoconf_services_to_channels(*autoconf_vars, channels, common_port, card); //Convert the list of services into channels
+  *number_of_channels=autoconf_services_to_channels(*autoconf_vars, channels, common_port, card, unicast_vars, fds); //Convert the list of services into channels
   //we got the pmt pids for the channels, we open the filters
   for (curr_channel = 0; curr_channel < *number_of_channels; curr_channel++)
     {

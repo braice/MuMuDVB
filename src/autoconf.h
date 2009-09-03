@@ -30,6 +30,7 @@
 #define _AUTOCONF_H
 
 #include "mumudvb.h"
+#include "unicast_http.h"
 #include "ts.h"
 
 /**find the audio and video pids from the PMT*/
@@ -92,6 +93,10 @@ Possible values for this variable
   mumudvb_ts_packet_t *autoconf_temp_psip; /**@todo : see if it's really necesarry to split it from the sdt*/
   mumudvb_service_t   *services;
 
+  /**the starting http unicast port */
+  int autoconf_unicast_start_port;
+  /**The unicast "HTTP" ip address*/
+  char unicast_ipOut[20];
 }autoconf_parameters_t;
 
 
@@ -102,8 +107,8 @@ int autoconf_read_sdt(unsigned char *buf, int len, mumudvb_service_t *services);
 int autoconf_read_psip(autoconf_parameters_t *);
 void autoconf_freeing(autoconf_parameters_t *);
 int autoconf_read_pat(autoconf_parameters_t *);
-int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card);
-int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, autoconf_parameters_t *autoconf_vars, int common_port, int card, fds_t *fds,uint8_t *asked_pid, uint8_t *number_chan_asked_pid, int multicast_ttl);
+int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card, unicast_parameters_t *unicast_vars, fds_t *fds);
+int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, autoconf_parameters_t *autoconf_vars, int common_port, int card, fds_t *fds,uint8_t *asked_pid, uint8_t *number_chan_asked_pid, int multicast_ttl, unicast_parameters_t *unicast_vars);
 void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, uint8_t *asked_pid, uint8_t *number_chan_asked_pid, fds_t *fds);
 void autoconf_free_services(mumudvb_service_t *services);
 int pmt_need_update(mumudvb_channel_t *channel, unsigned char *buf, int ts_header);

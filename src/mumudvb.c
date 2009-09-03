@@ -238,6 +238,8 @@ autoconf_parameters_t autoconf_vars={
   .autoconf_temp_sdt=NULL,
   .autoconf_temp_psip=NULL,
   .services=NULL,
+  .unicast_ipOut="\0",
+  .autoconf_unicast_start_port=0,
   };
 
 #ifdef LIBDVBEN50221
@@ -695,17 +697,23 @@ main (int argc, char **argv)
 			"Autoconf : You have to set autoconfiguration in full mode to use autoconf of the radios\n");
 	    }
 	}
-      else if (!strcmp (substring, "autoconf_ip_header"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  if(strlen(substring)>8)
-	    {
-	      log_message( MSG_ERROR,
-			   "The autoconf ip header is too long\n");
-	      exit(ERROR_CONF);
-	    }
-	  sscanf (substring, "%s\n", autoconf_vars.autoconf_ip_header);
-	}
+        else if (!strcmp (substring, "autoconf_ip_header"))
+        {
+          substring = strtok (NULL, delimiteurs);
+          if(strlen(substring)>8)
+          {
+            log_message( MSG_ERROR,
+                         "The autoconf ip header is too long\n");
+            exit(ERROR_CONF);
+          }
+          sscanf (substring, "%s\n", autoconf_vars.autoconf_ip_header);
+        }
+        /**  option for the starting http unicast port (for autoconf full)*/
+        else if (!strcmp (substring, "autoconf_unicast_start_port"))
+        {
+          substring = strtok (NULL, delimiteurs);
+          autoconf_vars.autoconf_unicast_start_port = atoi (substring);
+        }
       else if (!strcmp (substring, "sap"))
 	{
 	  substring = strtok (NULL, delimiteurs);
@@ -869,6 +877,8 @@ main (int argc, char **argv)
               exit(ERROR_CONF);
             }
 	  sscanf (substring, "%s\n", unicast_vars.ipOut);
+          /** @todo put this in another option */
+          sscanf (substring, "%s\n", autoconf_vars.unicast_ipOut);
 	  if(unicast_vars.ipOut)
 	    {
 	      log_message( MSG_WARN,
@@ -1023,7 +1033,6 @@ main (int argc, char **argv)
           substring = strtok (NULL, delimiteurs);
           channels[curr_channel].unicast_port = atoi (substring);
         }
-        /** @todo : add option for the starting http unicast port (for autoconf full)*/
       else if (!strcmp (substring, "pids"))
 	{
 	  if ( ip_ok == 0)
@@ -1565,13 +1574,13 @@ main (int argc, char **argv)
   //We open the socket for the http unicast if needed and we update the poll structure
   if(strlen(unicast_vars.ipOut))
     {
-      log_message(MSG_DETAIL,"Unicast : We open the Master http socket for address %s:%d\n",unicast_vars.ipOut, unicast_vars.portOut);
+      log_message(MSG_INFO,"Unicast : We open the Master http socket for address %s:%d\n",unicast_vars.ipOut, unicast_vars.portOut);
       unicast_create_listening_socket(UNICAST_MASTER, -1, unicast_vars.ipOut, unicast_vars.portOut, &unicast_vars.sIn, &unicast_vars.socketIn, &fds, &unicast_vars);
         /** open the unicast listening connections fo the channels */
         for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
           if(channels[curr_channel].unicast_port)
           {
-            log_message(MSG_DETAIL,"Unicast : We open the channel %d http socket address %s:%d\n",curr_channel, unicast_vars.ipOut, channels[curr_channel].unicast_port);
+            log_message(MSG_INFO,"Unicast : We open the channel %d http socket address %s:%d\n",curr_channel, unicast_vars.ipOut, channels[curr_channel].unicast_port);
             unicast_create_listening_socket(UNICAST_LISTEN_CHANNEL, curr_channel, unicast_vars.ipOut,channels[curr_channel].unicast_port , &channels[curr_channel].sIn, &channels[curr_channel].socketIn, &fds, &unicast_vars);
           }
     }
@@ -1678,7 +1687,7 @@ main (int argc, char **argv)
 			{
 			  log_message(MSG_DEBUG,"Autoconf : It seems that we have finished to get the services list\n");
 			  //we finish full autoconfiguration
-			  Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, common_port, tuneparams.card, &fds,asked_pid, number_chan_asked_pid, multicast_ttl);
+                          Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, common_port, tuneparams.card, &fds,asked_pid, number_chan_asked_pid, multicast_ttl, &unicast_vars);
 			}
 		      else
 			memset (autoconf_vars.autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
@@ -2224,7 +2233,7 @@ static void SignalHandler (int signum)
 		  //This happend when we are not able to get all the services of the PAT,
 		  //We continue with the partial list of services
 		  autoconf_vars.time_start_autoconfiguration=now;
-		  Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, common_port, tuneparams.card, &fds,asked_pid, number_chan_asked_pid, multicast_ttl);
+		  Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, common_port, tuneparams.card, &fds,asked_pid, number_chan_asked_pid, multicast_ttl, &unicast_vars);
 		}
 	    }
 	}
