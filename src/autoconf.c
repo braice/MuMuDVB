@@ -484,6 +484,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
  * @param tag the descriptor tag, cf EN 300 468
  * @param buf the decriptors buffer (part of the PMT)
  * @param descriptors_loop_len the length of the descriptors
+ * @param pos the position in the buffer
  */
 int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_len, int *pos)
 {
@@ -497,11 +498,11 @@ int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_le
       unsigned char descriptor_tag = buf[0];
       unsigned char descriptor_len = buf[1] + 2;
       
-      if (tag == descriptor_tag) 
-	return 1;
+      if (tag == descriptor_tag)
+        return 1;
 
       if(pos!=NULL)
-	*pos += descriptor_len;
+        *pos += descriptor_len;
       buf += descriptor_len;
       descriptors_loop_len -= descriptor_len;
     }
@@ -532,7 +533,7 @@ void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len)
  * This function extract the pmt from the pat 
  * before doing so it checks if the service is already initialised (sdt packet)
  *
- * @param autconf_vars The autoconfiguration structure, containing all we need
+ * @param autoconf_vars The autoconfiguration structure, containing all we need
  */
 int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
 {
@@ -862,7 +863,7 @@ void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *service)
 }
 
 
-/** @Brief : show the contents of the CA identifier descriptor
+/** @brief : show the contents of the CA identifier descriptor
  *
  * @param buf : the buffer containing the descriptor
  */
@@ -998,10 +999,12 @@ void autoconf_free_services(mumudvb_service_t *services)
  *
  * This function is called when We've got all the services, we now fill the channels structure
  * After that we go in AUTOCONF_MODE_PIDS to get audio and video pids
- * @param services Chained list of services
+ * @param parameters The autoconf parameters
  * @param channels Chained list of channels
  * @param port The mulicast port
  * @param card The card number for the ip address
+ * @param unicast_vars The unicast parameters
+ * @param fds The file descriptors (for filters and unicast)
  */
 int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card, unicast_parameters_t *unicast_vars, fds_t *fds)
 {
@@ -1165,6 +1168,7 @@ int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, a
  * @param number_of_channels the number of channels
  * @param channels the array of channels
  * @param asked_pid the array containing the pids already asked
+ * @param number_chan_asked_pid the number of channels who want this pid
  * @param fds the file descriptors
 */
 void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, uint8_t *asked_pid, uint8_t *number_chan_asked_pid, fds_t *fds)
@@ -1210,7 +1214,7 @@ void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels,
   ATSC 
 ********************************************************/
 
-/** @Brief read a PSIP table to find channels names 
+/** @brief Read a PSIP table to find channels names 
  *
  * We read the master PSIP pid, search for a (T/C)VCT table
  * If it find this table, searches for channels within the transport (check
@@ -1219,7 +1223,6 @@ void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels,
  * 
  * @param parameters : the structure containing autoconfiguration parameters
  */
-
 int autoconf_read_psip(autoconf_parameters_t *parameters)
 {
   mumudvb_ts_packet_t *psip_mumu;
@@ -1447,12 +1450,13 @@ int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parame
  * Autoconfiguration auto update
  ********************************************************************/
 
-/** @Brief, tell if the pmt have a newer version than the one recorded actually
+/** @brief, tell if the pmt have a newer version than the one recorded actually
  * In the PMT pid there is a field to say if the PMT was updated
  * This function check if it has changed 
  *
- *@param channel the channel for which we have to check
- *@param buf : the received buffer
+ * @param channel the channel for which we have to check
+ * @param buf : the received buffer
+ * @param ts_header says if the packet contains a transport stream header
  */
 int pmt_need_update(mumudvb_channel_t *channel, unsigned char *buf,int ts_header)
 {

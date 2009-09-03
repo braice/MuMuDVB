@@ -70,7 +70,7 @@ int init_sap(sap_parameters_t *sap_vars)
 
 /** @brief Send the sap message
  * 
- * @param sap_messages the array of sap messages
+ * @param sap_vars the sap variables
  * @param num_messages the number of sap messages
  */
 void sap_send(sap_parameters_t *sap_vars, int num_messages)
@@ -95,7 +95,8 @@ void sap_send(sap_parameters_t *sap_vars, int num_messages)
 /** @brief update the contents of the sap message
  * This function read the informations of the channel and update the sap message
  * @param channel : the channel to be updated
- * @param sap_message the sap message associated with the channel
+ * @param sap_vars the sap variables
+ * @param curr_channel the number of the updated channel
  */
 int sap_update(mumudvb_channel_t channel, sap_parameters_t *sap_vars, int curr_channel)
 {
@@ -155,6 +156,7 @@ int sap_update(mumudvb_channel_t channel, sap_parameters_t *sap_vars, int curr_c
  * When this function is called the header of the sap message is already done
  * it adds the payload (sdp). For mare information refer to RFC 2327 and RFC 1890
  * @param channel the channel
+ * @param sap_vars the sap variables
  * @param sap_message the sap message
  */
 int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumudvb_sap_message_t *sap_message)

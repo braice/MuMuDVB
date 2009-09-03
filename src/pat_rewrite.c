@@ -41,7 +41,7 @@
 extern uint32_t       crc32_table[256];
 
 
-/** @Brief, tell if the pat have a newer version than the one recorded actually
+/** @brief, tell if the pat have a newer version than the one recorded actually
  * In the PAT pid there is a field to say if the PAT was updated
  * This function check if it has changed (in order to rewrite the pat only once)
  * General Note : in case it change during streaming it can be a problem ane we would have to deal with re-autoconfiguration

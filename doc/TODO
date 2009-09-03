@@ -8,6 +8,7 @@
   * unicast ip for autoconfiguration (this ip can be different from the master one in the future)
   * Be able to desactivate multicast cleanly in the future (now document ttl=0)
   * Clean a bit the debug messages
+  * Badd the unicast port/ per channel in the channel list
 
  * Autoconfiguration
   * make the syntax autoconfiguration=1/2 obsolete and replace by full/partial

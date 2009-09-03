@@ -23,7 +23,9 @@
  */
 
 
-/**@file This file contains the functions concerning the RTP header*/
+/** @file 
+ * This file contains the functions concerning the RTP header
+ */
 
 #define RTP_HEADER_LEN 12
 

@@ -331,7 +331,7 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
  * and free the memory of the client (including the buffer)
  *
  * @param unicast_vars the unicast parameters
- * @param Socket the socket nubmer of the client we want to delete
+ * @param client the client we want to delete
  * @param channels the array of channels
  */
 int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels)
@@ -497,6 +497,9 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
  *
  *
  * @param unicast_vars the unicast parameters
+ * @param client The client from which the message was received
+ * @param channels the channel array
+ * @param number_of_channels quite explicit ...
  */
 int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels)
 {
@@ -749,6 +752,7 @@ void unicast_freeing(unicast_parameters_t *unicast_vars, mumudvb_channel_t *chan
  * @param number_of_channels the number of channels
  * @param channels the channels array
  * @param Socket the socket on wich the information have to be sent
+ * @param host The server ip address/name (got in the HTTP GET request)
  */
 int 
 unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *host)
