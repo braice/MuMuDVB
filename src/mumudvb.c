@@ -1233,7 +1233,30 @@ main (int argc, char **argv)
   //end of config file reading
   /******************************************************/
 
+  /*****************************************************/
+  //daemon part two, we write our PID as we know the card number
+  /*****************************************************/
 
+  // We write our pid in a file if we deamonize
+  if (!no_daemon)
+  {
+    sprintf (filename_pid, "/var/run/mumudvb/mumudvb_carte%d.pid", tuneparams.card);
+    pidfile = fopen (filename_pid, "w");
+    if (pidfile == NULL)
+    {
+      log_message( MSG_INFO,"%s: %s\n",
+                   filename_pid, strerror (errno));
+      exit(ERROR_CREATE_FILE);
+    }
+    fprintf (pidfile, "%d\n", getpid ());
+    fclose (pidfile);
+  }
+
+  
+  /*****************************************************/
+  //Autoconfiguration init
+  /*****************************************************/
+  
   if(autoconf_vars.autoconfiguration)
     {
       if(autoconf_vars.autoconf_pid_update)
@@ -1249,7 +1272,7 @@ main (int argc, char **argv)
     }
   else 
     autoconf_vars.autoconf_pid_update=0;
-  
+
   free(conf_filename);
 
   number_of_channels = curr_channel;
@@ -1323,7 +1346,7 @@ main (int argc, char **argv)
     {
       // We tune the card
       iRet =-1;
-      
+
       if (open_fe (&fds.fd_frontend, tuneparams.card))
 	{
 	  iRet = 
@@ -1335,7 +1358,7 @@ main (int argc, char **argv)
         log_message( MSG_INFO, "Tunning issue, card %d\n", tuneparams.card);
         // we close the file descriptors
         close_card_fd (fds);
-        exit(ERROR_TUNE);
+        return mumudvb_close(ERROR_TUNE<<8);
       }
       log_message( MSG_INFO, "Card %d tuned\n", tuneparams.card);
       tuneparams.card_tuned = 1;
@@ -1397,7 +1420,7 @@ main (int argc, char **argv)
   /*****************************************************/
   iRet=autoconf_init(&autoconf_vars, channels,number_of_channels);
   if(iRet)
-    return iRet;
+    return mumudvb_close(ERROR_GENERIC);
 
   /*****************************************************/
   //Pat rewriting
@@ -1420,25 +1443,6 @@ main (int argc, char **argv)
       
     }
 
-
-  /*****************************************************/
-  //daemon part two, we write our PID
-  /*****************************************************/
-
-  // We write our pid in a file if we deamonize
-  if (!no_daemon)
-    {
-      sprintf (filename_pid, "/var/run/mumudvb/mumudvb_carte%d.pid", tuneparams.card);
-      pidfile = fopen (filename_pid, "w");
-      if (pidfile == NULL)
-	{
-	  log_message( MSG_INFO,"%s: %s\n",
-		  filename_pid, strerror (errno));
-	  exit(ERROR_CREATE_FILE);
-	}
-      fprintf (pidfile, "%d\n", getpid ());
-      fclose (pidfile);
-    }
 
   /*****************************************************/
   //Some initialisations
@@ -1598,7 +1602,7 @@ main (int argc, char **argv)
 
   iRet=init_sap(&sap_vars);
   if(iRet)
-    return iRet;
+    return mumudvb_close(ERROR_GENERIC);
 
   /*****************************************************/
   // Information about streamed channels
@@ -2322,9 +2326,9 @@ static void SignalHandler (int signum)
 	  if((now-show_buffer_stats_time)>=show_buffer_stats_interval)
 	    {
 	      show_buffer_stats_time=now;
-	      log_message( MSG_DEBUG, "DEBUG : Average packets in the buffer %d\n", stats_num_packets_received/stats_num_reads);
-	      stats_num_packets_received=0;
-	      stats_num_reads=0;
+              log_message( MSG_DEBUG, "DEBUG : Average packets in the buffer %d\n", stats_num_packets_received/stats_num_reads);
+              stats_num_packets_received=0;
+              stats_num_reads=0;
 	    }
 
 
