@@ -465,7 +465,7 @@ main (int argc, char **argv)
 	  conf_filename = (char *) malloc (strlen (optarg) + 1);
 	  if (!conf_filename)
 	    {
-	      log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+	      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 	      exit(errno);
 	    }
 	  strncpy (conf_filename, optarg, strlen (optarg) + 1);
@@ -1436,7 +1436,7 @@ main (int argc, char **argv)
       rewrite_vars.full_pat=malloc(sizeof(mumudvb_ts_packet_t));
       if(rewrite_vars.full_pat==NULL)
 	{
-	  log_message( MSG_ERROR,"MALLOC\n");
+	  log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 	  return mumudvb_close(100<<8);
 	}
       memset (rewrite_vars.full_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1469,7 +1469,7 @@ main (int argc, char **argv)
 	  channels[curr_channel].pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
 	  if(channels[curr_channel].pmt_packet==NULL)
 	    {
-	      log_message( MSG_ERROR,"MALLOC channels[curr_channel].pmt_packet\n");
+              log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 	      return mumudvb_close(100<<8);
 	    }
 	  memset (channels[curr_channel].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1544,7 +1544,7 @@ main (int argc, char **argv)
   fds.pfds=realloc(fds.pfds,(fds.pfdsnum+1)*sizeof(struct pollfd));
   if (fds.pfds==NULL)
     {
-      log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+      log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       return mumudvb_close(100<<8);
     }
     
@@ -1554,7 +1554,7 @@ main (int argc, char **argv)
   unicast_vars.fd_info=realloc(unicast_vars.fd_info,(fds.pfdsnum)*sizeof(unicast_fd_info_t));
   if (unicast_vars.fd_info==NULL)
   {
-    log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+    log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     return mumudvb_close(100<<8);
   }
   

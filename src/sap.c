@@ -31,6 +31,7 @@
 #include "sap.h"
 #include "network.h"
 #include <string.h>
+#include <errno.h>
 
 
 extern int multicast_ttl;
@@ -50,8 +51,8 @@ int init_sap(sap_parameters_t *sap_vars)
       sap_vars->sap_messages=malloc(sizeof(mumudvb_sap_message_t)*MAX_CHANNELS);
       if(sap_vars->sap_messages==NULL)
 	{
-	  log_message( MSG_ERROR,"MALLOC\n");
-	  return mumudvb_close(100<<8);
+          log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+	  return -1;
 	}
       memset (sap_vars->sap_messages, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
       //For sap announces, we open the socket

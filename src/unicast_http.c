@@ -79,7 +79,7 @@ int unicast_create_listening_socket(int socket_type, int socket_channel, char *i
     fds->pfds=realloc(fds->pfds,(fds->pfdsnum+1)*sizeof(struct pollfd));
     if (fds->pfds==NULL)
     {
-      log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+      log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       return -1;
     }
     fds->pfds[fds->pfdsnum-1].fd = *socketIn;
@@ -90,7 +90,7 @@ int unicast_create_listening_socket(int socket_type, int socket_channel, char *i
     unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
     if (unicast_vars->fd_info==NULL)
     {
-      log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+      log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       return -1;
     }
           //Master connection
@@ -119,8 +119,8 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
   int iRet;
   //We look what happened for which connection
   int actual_fd;
-  
-  log_message(MSG_DEBUG,"Unicast :unicast_handle_fd_event \n");
+
+
   for(actual_fd=1;actual_fd<fds->pfdsnum;actual_fd++)
     {
       iRet=0;
@@ -152,8 +152,8 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
               fds->pfds=realloc(fds->pfds,(fds->pfdsnum+1)*sizeof(struct pollfd));
               if (fds->pfds==NULL)
               {
-                log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
-                return mumudvb_close(100<<8);
+                log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+                return -1;/** @todo set interrupted*/
               }
               //We poll the new socket
               fds->pfds[fds->pfdsnum-1].fd = tempSocket;
@@ -165,8 +165,8 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
               unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
               if (unicast_vars->fd_info==NULL)
               {
-                log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
-                return mumudvb_close(100<<8);
+                log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+                return -1;/** @todo set interrupted*/
               }
               //client connection
               unicast_vars->fd_info[fds->pfdsnum-1].type=UNICAST_CLIENT;
@@ -299,7 +299,7 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
     }
   if(client==NULL)
     {
-      log_message(MSG_ERROR,"Unicast : allocating a new client : MALLOC error");
+      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       close(Socket); 
       return NULL;
     }
@@ -476,13 +476,13 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
   fds->pfds=realloc(fds->pfds,(fds->pfdsnum+1)*sizeof(struct pollfd));
   if (fds->pfds==NULL)
   {
-    log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+    log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     exit(100<<8);
   }
   unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
   if (unicast_vars->fd_info==NULL)
   {
-    log_message( MSG_ERROR, "malloc() failed: %s\n", strerror(errno));
+    log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     exit(100<<8);
   }
   log_message(MSG_DEBUG,"Unicast : Number of clients : %d\n", unicast_vars->client_number);

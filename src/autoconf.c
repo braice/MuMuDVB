@@ -132,31 +132,31 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
       autoconf_vars->autoconf_temp_pat=malloc(sizeof(mumudvb_ts_packet_t));
       if(autoconf_vars->autoconf_temp_pat==NULL)
 	{
-	  log_message( MSG_ERROR,"MALLOC\n");
-	  return mumudvb_close(100<<8);
+          log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+	  return -1;
 	}
       memset (autoconf_vars->autoconf_temp_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
       autoconf_vars->autoconf_temp_sdt=malloc(sizeof(mumudvb_ts_packet_t));
       if(autoconf_vars->autoconf_temp_sdt==NULL)
 	{
-	  log_message( MSG_ERROR,"MALLOC\n");
-	  return mumudvb_close(100<<8);
+          log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+	  return -1;
 	  
 	}
       memset (autoconf_vars->autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
       autoconf_vars->autoconf_temp_psip=malloc(sizeof(mumudvb_ts_packet_t));
       if(autoconf_vars->autoconf_temp_psip==NULL)
 	{
-	  log_message( MSG_ERROR,"MALLOC\n");
-	  return mumudvb_close(100<<8);
+          log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+	  return -1;
 	  
 	}
       memset (autoconf_vars->autoconf_temp_psip, 0, sizeof( mumudvb_ts_packet_t));//we clear it
       autoconf_vars->services=malloc(sizeof(mumudvb_service_t));
       if(autoconf_vars->services==NULL)
 	{
-	  log_message( MSG_ERROR,"MALLOC\n");
-	  return mumudvb_close(100<<8);
+          log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+	  return -1;
 	}
       memset (autoconf_vars->services, 0, sizeof( mumudvb_service_t));//we clear it
 
@@ -788,7 +788,7 @@ void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *service)
   tempdest=tempbuf=malloc(sizeof(char)*MAX_NAME_LEN);
   if(tempdest==NULL)
     {
-      log_message(MSG_WARN,"Warning : Malloc error in parse_service_descriptor\n");
+      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       return;
     }
 
@@ -914,7 +914,7 @@ mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int
   actual_service->next=malloc(sizeof(mumudvb_service_t));
   if(actual_service->next==NULL)
     {
-      log_message( MSG_WARN, "Warning : MALLOC error in autoconf_find_service_for_add\n");
+      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       return NULL;
     }
   memset (actual_service->next, 0, sizeof( mumudvb_service_t));//we clear it
@@ -1063,7 +1063,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 		  channels[channel_number].pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
 		  if(channels[channel_number].pmt_packet==NULL)
 		    {
-		      log_message( MSG_ERROR,"MALLOC channels[channel_number].pmt_packet\n");
+                      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 		      channel_number--;/**@todo make it cleaner*/
 		    }
 		  else
