@@ -43,6 +43,7 @@ enum
     ERROR_NO_DIFF,
     ERROR_CAM,
     ERROR_GENERIC,
+    ERROR_NO_CAM_INIT,
   };
 
 #endif

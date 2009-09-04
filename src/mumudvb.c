@@ -164,6 +164,7 @@ uint8_t number_chan_asked_pid[8192]; /** the number of channels who want this pi
 
 
 int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
+int timeout_no_cam_init = ALARM_TIME_TIMEOUT_NO_CAM_INIT;
 // file descriptors
 fds_t fds; /** File descriptors associated with the card */
 
@@ -565,14 +566,19 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);	//we extract the substring
 	  tuneparams.tuning_timeout = atoi (substring);
-	}
-      else if (!strcmp (substring, "timeout_no_diff"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  timeout_no_diff= atoi (substring);
-	}
-      else if (!strcmp (substring, "show_traffic_interval"))
-	{
+        }
+        else if (!strcmp (substring, "timeout_no_diff"))
+        {
+          substring = strtok (NULL, delimiteurs);
+          timeout_no_diff= atoi (substring);
+        }
+        else if (!strcmp (substring, "timeout_no_cam_init"))
+        {
+          substring = strtok (NULL, delimiteurs);
+          timeout_no_cam_init= atoi (substring);
+        }
+        else if (!strcmp (substring, "show_traffic_interval"))
+        {
 	  substring = strtok (NULL, delimiteurs);
 	  show_traffic_interval= atoi (substring);
 	  if(show_traffic_interval<ALARM_TIME)
@@ -2309,7 +2315,7 @@ static void SignalHandler (int signum)
 		}
 	    }
 
-	  /*plop*/
+
 	  /**Show the statistics for the big buffer*/
 	  if(!show_buffer_stats_time)
 		show_buffer_stats_time=now;
@@ -2398,8 +2404,16 @@ static void SignalHandler (int signum)
 #ifdef LIBDVBEN50221
 	  if(cam_vars.cam_support)
 	    {
-	      cam_vars.delay++;
-	    }
+              cam_vars.delay++;
+            }
+            if (cam_vars.cam_support && timeout_no_cam_init>0 && now>timeout_no_cam_init && cam_vars.ca_resource_connected==0)
+            {
+              log_message( MSG_INFO,
+                           "No CAM initialization on card %d in %ds, exiting.\n",
+                           tuneparams.card, timeout_no_cam_init);
+              Interrupted=ERROR_NO_CAM_INIT<<8; //the <<8 is to make difference beetween signals and errors
+            }
+
 #endif
 	}
       alarm (ALARM_TIME);

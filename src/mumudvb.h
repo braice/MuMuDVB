@@ -53,6 +53,7 @@
 #define ALARM_TIME 2
 #define ALARM_TIME_TIMEOUT 60
 #define ALARM_TIME_TIMEOUT_NO_DIFF 600
+#define ALARM_TIME_TIMEOUT_NO_CAM_INIT 600
 
 /** MTU 
     1500 bytes - ip header (12bytes) - TCP header (biggest between TCP and udp) 24  : 7 mpeg2-ts packet per ethernet frame
