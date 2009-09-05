@@ -152,8 +152,7 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
     en50221_app_mmi_register_menu_callback(cam_params->stdcam->mmi_resource, mumudvb_cam_mmi_menu_callback, cam_params);
     en50221_app_mmi_register_list_callback(cam_params->stdcam->mmi_resource, mumudvb_cam_mmi_menu_callback, cam_params);
   } else {
-    fprintf(stderr, "CAM Menus are not supported by this interface hardware\n");
-    exit(1);
+    log_message( MSG_WARN,  "CAM Menus are not supported by this interface hardware\n");
   }
   
 
