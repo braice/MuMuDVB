@@ -50,6 +50,13 @@ ifneq ($(CAMSUPPORT),0)
   LFLAGS += -ldvben50221 -ldvbapi -lucsi -lpthread
 endif
 
+#test if we asked for cam debugging
+ifndef CAMDEBUG
+  CAMDEBUG=0
+endif
+ifneq ($(CAMDEBUG),0)
+  CFLAGS += -DCAMDEBUG
+endif
 
 .PHONY: all clean clean_objs install uninstall
 

@@ -106,7 +106,7 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
 {
   // Copy the filename pointer into a static local pointer to be accessible from other threads
   static_nom_fich_cam_info=nom_fich_cam_info;
-    
+
   // create transport layer
   cam_params->tl = en50221_tl_create(1, 16);
   if (cam_params->tl == NULL) {
@@ -134,12 +134,16 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
   // hook up the AI callbacks
   if (cam_params->stdcam->ai_resource) {
     en50221_app_ai_register_callback(cam_params->stdcam->ai_resource, mumudvb_cam_ai_callback, cam_params->stdcam);
+  } else {
+    log_message( MSG_WARN,  "CAM : WARNING : No Application Information ressource\n");
   }
 
   // hook up the CA callbacks
   if (cam_params->stdcam->ca_resource) {
     en50221_app_ca_register_info_callback(cam_params->stdcam->ca_resource, mumudvb_cam_ca_info_callback, cam_params);
     en50221_app_ca_register_pmt_reply_callback(cam_params->stdcam->ca_resource, mumudvb_cam_app_ca_pmt_reply_callback, cam_params);
+  } else {
+    log_message( MSG_WARN,  "CAM : WARNING : No CA ressource\n");
   }
 
 
@@ -186,19 +190,95 @@ void cam_stop(cam_parameters_t *cam_params)
 
 }
 
-/**@brief The thread for polling the cam */
+
+
+
+/**********************************Debug ******************************/
+#ifdef CAMDEBUG
+
+/**
+ * States a CAM in a slot can be in.
+ */
+#define DVBCA_CAMSTATE_MISSING 0
+#define DVBCA_CAMSTATE_INITIALISING 1
+#define DVBCA_CAMSTATE_READY 2
+
+struct en50221_stdcam_hlci {
+  struct en50221_stdcam stdcam;
+
+  int cafd;
+  int slotnum;
+  int initialised;
+  struct en50221_app_send_functions sendfuncs;
+};
+
+/** @brief DEBUG */
+int cam_debug_dvbca_get_cam_state(int fd, uint8_t slot)
+{
+  ca_slot_info_t info;
+
+  info.num = slot;
+  if (ioctl(fd, CA_GET_SLOT_INFO, &info))
+    return -1;
+
+  if (info.flags == 0)
+    return DVBCA_CAMSTATE_MISSING;
+  if (info.flags & CA_CI_MODULE_READY)
+    return DVBCA_CAMSTATE_READY;
+  if (info.flags & CA_CI_MODULE_PRESENT)
+    return DVBCA_CAMSTATE_INITIALISING;
+
+  return -1;
+}
+#endif
+/***************************end of debug ******************************/
+
+/** @brief The thread for polling the cam */
 static void *camthread_func(void* arg)
 {
   cam_parameters_t *cam_params;
   cam_params= (cam_parameters_t *) arg;
+  /**********************************Debug ******************************/
+#ifdef CAMDEBUG
+  int camstate;//debug
+  int camstateold=-2;//debug
+  struct en50221_stdcam *stdcam=cam_params->stdcam;
+  struct en50221_stdcam_hlci *hlci = (struct en50221_stdcam_hlci *) stdcam;
+#endif
+  /***************************end of debug ******************************/
   while(!cam_params->camthread_shutdown) { 
     usleep(500000); //some waiting
     cam_params->stdcam->poll(cam_params->stdcam);
+    /**********************************Debug ******************************/
+#ifdef CAMDEBUG
+    camstate=cam_debug_dvbca_get_cam_state(hlci->cafd, hlci->slotnum);
+    if(camstate!=camstateold)
+    {
+      camstateold=camstate;
+      switch(camstate) 
+      {
+        case DVBCA_CAMSTATE_MISSING:
+          log_message( MSG_DEBUG,  "CAM New cam state : DVBCA_CAMSTATE_MISSING\n");
+          break;
+        case DVBCA_CAMSTATE_READY:
+          log_message( MSG_DEBUG,  "CAM New cam state : DVBCA_CAMSTATE_READY\n");
+          break;
+        case DVBCA_CAMSTATE_INITIALISING:
+          log_message( MSG_DEBUG,  "CAM New cam state : DVBCA_CAMSTATE_INITIALISING\n");
+          break;
+        case -1:
+          log_message( MSG_DEBUG,  "CAM New cam state : Eroor during the query\n");
+        break;
+      }
+    }
+#endif
+    /***************************end of debug ******************************/
   }
 
 
   return 0;
 }
+
 
 
 
