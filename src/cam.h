@@ -74,6 +74,9 @@ typedef struct cam_parameters_t{
   int cam_support;
   /**The came number (in case of multiple cams)*/
   int cam_number;
+#ifdef CAMDEBUG
+  int need_reset;
+#endif
   struct en50221_transport_layer *tl;
   struct en50221_session_layer *sl;
   struct en50221_stdcam *stdcam;

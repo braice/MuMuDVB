@@ -248,6 +248,9 @@ autoconf_parameters_t autoconf_vars={
 cam_parameters_t cam_vars={
   .cam_support = 0,
   .cam_number=0,
+#ifdef CAMDEBUG
+  .need_reset=0,
+#endif
   .tl=NULL,
   .sl=NULL,
   .stdcam=NULL,
@@ -2412,10 +2415,17 @@ static void SignalHandler (int signum)
             }
             if (cam_vars.cam_support && timeout_no_cam_init>0 && now>timeout_no_cam_init && cam_vars.ca_resource_connected==0)
             {
+#ifdef CAMDEBUG
+              log_message( MSG_INFO,
+                           "No CAM initialization on card %d in %ds, WE FORCE A RESET.\n",
+                           tuneparams.card, timeout_no_cam_init);
+              cam_vars.need_reset=1;
+#else
               log_message( MSG_INFO,
                            "No CAM initialization on card %d in %ds, exiting.\n",
                            tuneparams.card, timeout_no_cam_init);
               Interrupted=ERROR_NO_CAM_INIT<<8; //the <<8 is to make difference beetween signals and errors
+#endif
             }
 
 #endif
