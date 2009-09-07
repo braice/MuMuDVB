@@ -2416,10 +2416,21 @@ static void SignalHandler (int signum)
             if (cam_vars.cam_support && timeout_no_cam_init>0 && now>timeout_no_cam_init && cam_vars.ca_resource_connected==0)
             {
 #ifdef CAMDEBUG
-              log_message( MSG_INFO,
-                           "No CAM initialization on card %d in %ds, WE FORCE A RESET.\n",
-                           tuneparams.card, timeout_no_cam_init);
-              cam_vars.need_reset=1;
+              if(cam_vars.need_reset==0)
+              {
+                log_message( MSG_INFO,
+                            "No CAM initialization on card %d in %ds, WE FORCE A RESET.\n",
+                            tuneparams.card, timeout_no_cam_init);
+                cam_vars.need_reset=1;
+                timeout_no_cam_init=now+timeout_no_cam_init;
+              }
+              else
+              {
+                log_message( MSG_INFO,
+                             "No CAM initialization on card %d in %ds,  he reset didn't worked.\n",
+                             tuneparams.card, timeout_no_cam_init);
+                Interrupted=ERROR_NO_CAM_INIT<<8; //the <<8 is to make difference beetween signals and errors
+              }
 #else
               log_message( MSG_INFO,
                            "No CAM initialization on card %d in %ds, exiting.\n",

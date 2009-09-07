@@ -100,36 +100,6 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
 
 static char *static_nom_fich_cam_info;
 
-#ifdef CAMDEBUG
-
-
-
-
-struct en50221_stdcam_llci {
-  struct en50221_stdcam stdcam;
-
-  int cafd;
-  int slotnum;
-  int state;
-/** //I dont need these ones
-  struct llci_resource resources[RESOURCE_IDS_COUNT];
-
-  struct en50221_transport_layer *tl;
-  struct en50221_session_layer *sl;
-  struct en50221_app_send_functions sendfuncs;
-  int tl_slot_id;
-
-  struct en50221_app_rm *rm_resource;
-
-  struct en50221_app_datetime *datetime_resource;
-  int datetime_session_number;
-  uint8_t datetime_response_interval;
-  time_t datetime_next_send;
-  time_t datetime_dvbtime;
-*/
-
-};
-#endif
 
 
 /** @brief start the cam
@@ -162,21 +132,7 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
     en50221_tl_destroy(cam_params->tl);
     return 1;
   }
-  
-#ifdef CAMDEBUG
-  /** @todo check HLCI/LLCI*/
-  /* to avoid 
-  
-  > On my testing system (TechnoTrend TT-1500 + PowerCam Pro), I've noticed this
-  > two strange error/warning messages from LIBDVBEN50221 library :
-  > en50221_tl_handle_sb: Received T_SB for connection not in T_STATE_ACTIVE
-  > from module on slot 00
-  > en50221_stdcam_llci_poll: Error reported by stack:-7
-  */
-  struct en50221_stdcam *stdcam=cam_params->stdcam;
-  struct en50221_stdcam_llci *llci = (struct en50221_stdcam_llci *) stdcam;
-  llci->state = EN50221_STDCAM_CAM_INRESET;
-#endif
+
 
   // hook up the AI callbacks
   if (cam_params->stdcam->ai_resource) {
@@ -242,34 +198,30 @@ void cam_stop(cam_parameters_t *cam_params)
 
 /**********************************Debug ******************************/
 #ifdef CAMDEBUG
+struct en50221_stdcam_llci {
+  struct en50221_stdcam stdcam;
 
-/**
- * States a CAM in a slot can be in.
+  int cafd;
+  int slotnum;
+  int state;
+/** //I dont need these ones
+  struct llci_resource resources[RESOURCE_IDS_COUNT];
+
+  struct en50221_transport_layer *tl;
+  struct en50221_session_layer *sl;
+  struct en50221_app_send_functions sendfuncs;
+  int tl_slot_id;
+
+  struct en50221_app_rm *rm_resource;
+
+  struct en50221_app_datetime *datetime_resource;
+  int datetime_session_number;
+  uint8_t datetime_response_interval;
+  time_t datetime_next_send;
+  time_t datetime_dvbtime;
  */
-#define DVBCA_CAMSTATE_MISSING 0
-#define DVBCA_CAMSTATE_INITIALISING 1
-#define DVBCA_CAMSTATE_READY 2
 
-
-
-/** @brief DEBUG */
-int cam_debug_dvbca_get_cam_state(int fd, uint8_t slot)
-{
-  ca_slot_info_t info;
-
-  info.num = slot;
-  if (ioctl(fd, CA_GET_SLOT_INFO, &info))
-    return -1;
-
-  if (info.flags == 0)
-    return DVBCA_CAMSTATE_MISSING;
-  if (info.flags & CA_CI_MODULE_READY)
-    return DVBCA_CAMSTATE_READY;
-  if (info.flags & CA_CI_MODULE_PRESENT)
-    return DVBCA_CAMSTATE_INITIALISING;
-
-  return -1;
-}
+};
 
 void cam_reset_cam(cam_parameters_t *cam_params)
 {
@@ -288,49 +240,20 @@ static void *camthread_func(void* arg)
 {
   cam_parameters_t *cam_params;
   cam_params= (cam_parameters_t *) arg;
-  /**********************************Debug ******************************/
-#ifdef CAMDEBUG
-  int camstate;//debug
-  int camstateold=-2;//debug
-  struct en50221_stdcam *stdcam=cam_params->stdcam;
-  struct en50221_stdcam_llci *llci = (struct en50221_stdcam_llci *) stdcam;
-#endif
-  /***************************end of debug ******************************/
   while(!cam_params->camthread_shutdown) { 
     usleep(500000); //some waiting
     cam_params->stdcam->poll(cam_params->stdcam);
     /**********************************Debug ******************************/
 #ifdef CAMDEBUG
-    camstate=cam_debug_dvbca_get_cam_state(llci->cafd, llci->slotnum);
-    if(camstate!=camstateold)
-    {
-      camstateold=camstate;
-      switch(camstate) 
-      {
-        case DVBCA_CAMSTATE_MISSING:
-          log_message( MSG_DEBUG,  "CAM New cam state : DVBCA_CAMSTATE_MISSING\n");
-          break;
-        case DVBCA_CAMSTATE_READY:
-          log_message( MSG_DEBUG,  "CAM New cam state : DVBCA_CAMSTATE_READY\n");
-          break;
-        case DVBCA_CAMSTATE_INITIALISING:
-          log_message( MSG_DEBUG,  "CAM New cam state : DVBCA_CAMSTATE_INITIALISING\n");
-          break;
-        case -1:
-          log_message( MSG_DEBUG,  "CAM New cam state : Eroor during the query\n");
-        break;
-      }
-    }
-    if(cam_params->need_reset)
+    if(cam_params->need_reset==1)
     {
       log_message( MSG_DEBUG,  "CAM We force the reset of the CAM\n");
       cam_reset_cam(cam_params);
-      cam_params->need_reset=0;
+      cam_params->need_reset=-1;
     }
 #endif
     /***************************end of debug ******************************/
   }
-
 
   return 0;
 }
