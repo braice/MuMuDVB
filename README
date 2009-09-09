@@ -3,6 +3,9 @@ MuMuDVB - README
 Brice Dubost <mumudvb@braice.net>
 Version 1.5.5
 
+[NOTE]
+An HTML version of this file is availaible on http://mumudvb.braice.net[MuMuDVB's website].
+
 image::http://mumudvb.braice.net/mumudvbwiki/skins/common/images/logo_mumu_wiki.png[caption="logo MuMuDVB"]
 
 Presentation
@@ -49,11 +52,10 @@ When contacting about an issue, please join the config file used and the output 
 Contents and features
 ---------------------
 
-Feature overview
+Features overview
 ~~~~~~~~~~~~~~~~~
 
 - Stream channels from a transponder on different multicast IPs
-- The program can rewrite the PAT PID in order to announce only present channels (useful for some set-top boxes)
 - Support for scrambled channels (if you don't have a CAM you can use sasc-ng, but check if it's allowed in you country/by your broadcaster)
 - Support for automatic configuration i.e channels discovery, see <<autoconfiguration,Autoconfiguration>> section
 - Generation of SAP announces, see <<sap,SAP>> section
@@ -65,7 +67,6 @@ Feature overview
 Detailled feature list
 ~~~~~~~~~~~~~~~~~~~~~~
 
-- Streams channels from a transponder on different multicast IPs
 - Can show reception level when streaming
 - Show if channels are successfully descrambled by the CAM
 - Makes a list of streamed and down channels in real time
@@ -89,7 +90,7 @@ Detailled feature list
 - Can avoid the sending of scrambled packets
 - Automatically detect the scrambling status of a channel
 
-Others programs are availaible from http://gitweb.braice.net/gitweb?p=mumudvb_tools;a=summary[MuMuDVB Tools Repository] :
+Others small programs are availaible from http://gitweb.braice.net/gitweb?p=mumudvb_tools;a=summary[MuMuDVB Tools Repository] :
 
 - relay: this program takes a stream and sends it again on a different ip. It can be used to unicast a stream over a network that doesn't support multicast, and multicast it again at the other end
 - recup_sap: tiny sap client, get sap announces during 60 seconds and put them on a file (unsorted)
@@ -109,7 +110,7 @@ $ make
 -----------------------------
 
 [NOTE]
-The cam support depends on libdvben50221, libucsi (from linuxtv's dvb-apps) and libpthread. If you don't want to compile MuMuDVB with cam support, type `make CAMSUPPORT=0` instead of `make`.
+The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps) and libpthread. If you don't want to compile MuMuDVB with CAM support, type `make CAMSUPPORT=0` instead of `make`.
 
 [NOTE]
 The decoding of long channel names for autoconfiguration in ATSC depends on libucsi (from linuxtv's dvb-apps), if you don't want to compile MuMuDVB with this feature (and avoid the libucsi dependance) type `make LIBUCSI=0` instead of `make`. The full autoconfiguration will still work with ATSC but the channel names will be the short channels names (7 characters maximum)
@@ -130,16 +131,16 @@ From Debian package
 
 If you want to install a version which is not in your repositories, you can install it by hand by typing:
 
---------------------
-dpkg -i mumudvb*.deb
---------------------
+----------------------
+# dpkg -i mumudvb*.deb
+----------------------
 
 Otherwise you can use aptitude as usual
 
 Usage
 -----
 
-The documentation for configuration file syntax is in `doc/README_CONF`.
+The documentation for configuration file syntax is in `doc/README_CONF` or in HTML version on MuMuDVB's website.
 
 Usage:
 
@@ -184,9 +185,9 @@ MuMuDVB is able to find the channels in the transponder and their PIDs (Program 
 
 Without autoconfiguration, you have to set the transponder parameters, and for each channel, the multicast ip, the name and the PIDs (PMT, audio, video, teletext etc...)
 
-At the end of autoconfiguration MuMuDVB, generates a config file with the discovered parameters. You can find this file in: `/var/run/mumudvb/mumudvb_generated_conf_card%d`
+At the end of autoconfiguration, MuMuDVB generates a config file with the discovered parameters. This file is: `/var/run/mumudvb/mumudvb_generated_conf_card%d`
 
-If the PIDs are changed, MuMuDVB will automatically update the channels except if you put "autoconf_pid_update=0" in your configuration file.
+If the PIDs are changed, MuMuDVB will automatically update the channels except if you put `autoconf_pid_update=0` in your configuration file.
 
 MuMuDVB is able to do two kinds of autoconfiguration:
 
@@ -197,7 +198,7 @@ This is the easiest way to use MuMuDVB.
 
 Use this when you want to stream a full transponder.
 
-In this mode, MuMuDVB will find for you the different channels, their name and their pids (PMT, PCR, Audio, Video, Subtitle, Teletext and AC3).
+In this mode, MuMuDVB will find for you the different channels, their name and their PIDs (PMT, PCR, Audio, Video, Subtitle, Teletext and AC3).
 
 In order to use this mode you have to:
 - Set the tuning parameters to your config file
@@ -235,13 +236,13 @@ Use this when you want to control the name of the channels, and wich channel you
 - For each channel, you have to set:
  * the Ip adress
  * the name
- * the PMT pid
+ * the PMT PID
 
 
-MuMuDVB will find the audio, video, PCR, teletext, subtitling and ac3 pids for you before streaming.
+MuMuDVB will find the audio, video, PCR, teletext, subtitling and AC3 PIDs for you before streaming.
 
 [NOTE]
-If you put more than one pid for a channel, MuMuDVB will desactivate autoconfiguration for this channel.
+If you put more than one PID for a channel, MuMuDVB will desactivate autoconfiguration for this channel.
 
 [NOTE]
 A detailled, documented example configuration file can be found in `doc/configuration_examples/autoconf1.conf`
@@ -265,7 +266,7 @@ The SAP announces will be only sent for alive channels. When a channel goes down
 Asking MuMuDVB to generate SAP announces
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For sending SAP announces you have to add `sap=1` to your config file. The other parameters concerning the sap announces are defined in the `doc/README_CONF` file.
+For sending SAP announces you have to add `sap=1` to your config file. The other parameters concerning the sap announces are documented in the `doc/README_CONF` file.
 
 Configuring the client to get the SAP announces
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -289,11 +290,12 @@ Click on the "Settings" menu, then on "add interface" and choose SAP playlist. T
 HTTP Unicast
 ------------
 
-In addition to multicast, MuMuDVB also supports HTTP unicast. This make you able to use mumudvb on networks wich doesn't support multicast.
+In addition to multicast, MuMuDVB also supports HTTP unicast. This make you able to use MuMuDVB on networks wich doesn't support multicast.
 
 There is one listening connection, the channel is selected via the HTTP path, see further.
 
-Be careful with unicast, it can eat a lot of bandwith.
+[NOTE]
+Be careful with unicast, it can eat a lot of bandwith. Think about limitting the number of clients.
 
 Activate HTTP unicast
 ~~~~~~~~~~~~~~~~~~~~~
@@ -368,17 +370,17 @@ Important note : check the contract with your broadcaster to see if you are allo
 Hardware descrambling
 ~~~~~~~~~~~~~~~~~~~~~
 
-MuMuDVB supports scrambled channels via hardware descrambling i.e. a CAM (Conditionnal Access Module). It can ask the cam to descramble multiple channels if the cam supports it (Aston Pro, or PowerCam Pro are known to work with multiple channels).
+MuMuDVB supports scrambled channels via hardware descrambling i.e. a CAM (Conditionnal Access Module). It can ask the CAM to descramble multiple channels if the CAM supports it (Aston Pro, or PowerCam Pro are known to work with multiple channels).
 
-If you are limited by the number of PIDs, it is possible to ask the cam to decrypt only the audio and video. This feature is not implemented, please ask if you need it.
+If you are limited by the number of PIDs the can can decrypt simultaneously, it is possible to ask the CAM to decrypt only the audio and video. This feature is not implemented, please ask if you need it.
 
 [NOTE]
 The hardware descramblig uses almost no CPU, all the descrambling is made by the CAM.
 
 [NOTE]
-MuMuDVB doesn't query the cam before asking for descrambling. The query is not reliable. Most of CAMs answer a menu when the descrambling is not possible and MuMuDVB will display it on the standard error. In other words MuMuDVB cannot tell you cleary why a channel is not descrambled if the CAM doesn't reply a menu.
+MuMuDVB doesn't query the CAM before asking for descrambling. The query is not reliable. Most of CAMs answer a menu when the descrambling is not possible and MuMuDVB will display it on the standard error.
 
-The information concerning the cam is stored in '''/var/run/mumudvb/caminfo_carte%d''' where %d is the card number.
+The information concerning the CAM is stored in '''/var/run/mumudvb/caminfo_carte%d''' where %d is the DVB card number.
 
 .Example contents of '''/var/run/mumudvb/caminfo_carte%d''' 
 ----------------------------------------------------
@@ -403,7 +405,7 @@ Just add `cam_support=1` to your config file
  * For each scrambled channel add the `cam_pmt_pid` option. This option is made for MuMuDVB to know wich PID is the PMT PID wich will be used to ask for descrambling
 
 [NOTE]
-You have an example of cam support in doc/configuration_examples/autoconf1.conf
+You have an example of CAM support in doc/configuration_examples/autoconf1.conf
 
 
 
@@ -413,6 +415,8 @@ Software descrambling
 Important note : this solution is not allowed by some provider contracts.
 
 MuMuDVB has been reported to work with software descrambling solutions like sascng + newcs + dvbloopback.
+
+In this case  you don't need to set the `cam_support` option. Just ajust the `card` option to fit with your virtual dvbloopback card. 
 
 If you use these solutions, see <<reduce_cpu,reduce MuMuDVB CPU usage>> section.
 
@@ -443,7 +447,7 @@ The scrambling status is stored together with the streamed channel list.
 PAT (Program Allocation Table) Rewriting
 -----------------------------------------
 
-This feature is mainly intended for set-top boxes. This option will announce only the streamed channel in the Program Allocation Table. Computer clients parse this table and decode the first working program. Set-top boxes usually try only the first one which give usually a blank screen in most of the channels. 
+This feature is mainly intended for set-top boxes. This option will announce only the streamed channel in the Program Allocation Table instead of all transponder channels. Computer clients parse this table and decode the first working program. Set-top boxes usually try only the first one which give usually a blank screen in most of the channels. 
 
 To enable PAT rewriting, add `rewrite_pat=1` to your config file. This feature consumes few CPU, since the rewritten PAT is stored in memory and computed only once per channel.
 
@@ -479,9 +483,9 @@ Technical details (not sorted)
 
  * Try to avoid old via or nForce chipsets and in general ultra low cost motherboards. They can't deal with a lot of data on the PCI bus.
 
- * When the program starts, he writes the channel list on /var/run/mumudvb/chaines_diffusees_carte%d (where %d is the card number). This file contains streamed channels (updated every 5 seconds) in the form: "name:ip:port:Scramblingstatus"
+ * When the program starts, he writes the channel list in the file `/var/run/mumudvb/chaines_diffusees_carte%d` (where %d is the card number). This file contains streamed channels (updated every 5 seconds) in the form: "name:ip:port:Scramblingstatus"
 
- * MuMuDVB can deal with more than 4 cards. You must use a kernel >= 2.6.11 and udev statically compiled witch klibc (04/2005) waiting for glibc update... Note: this issue is solved now ( with udev 104 and libc6 2.7 )
+ * MuMuDVB is able to support as many cards as the operating system does. Old versions of udev+glibc were not able to support more than 4 cards but this problem is solved using relatively recent versions (udev > 104 and libc6 > 2.7)
 
  * When daemonized, MuMuDVB writes its process identifier in `/var/run/mumudvb/mumudvb_carte%d.pid`, where %d is replaced by the card number
 
@@ -493,8 +497,8 @@ Known issues
 VLC can't read the stream but it is fine with xine or mplayer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
- * For VLC, you must specify the PMT PID besides audio and video pids.
-It's a frequent issue. To solve it you can use `vlc -v` and you'll see a ligne like: `[00000269] ts demuxer debug:   * number=1025 pid=110` you'll have the pid associated with your number, you can also use dvbsnoop, or see how to get pids in doc/README_CONF. Another solution is to use full autoconfiguration.
+ * For VLC, you must specify the PMT PID besides audio and video PIDs.
+It's a frequent issue. To solve it you can use the verbose mode of VLC (`vlc -v`) and you'll see a ligne like: `[00000269] ts demuxer debug:   * number=1025 pid=110` you'll have the PMT PID associated with your program number, you can also use dvbsnoop, or see how to get pids in doc/README_CONF. Another solution is to use full autoconfiguration.
 
 VLC reads the video but no audio
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -514,7 +518,7 @@ The system crashes or freeze
 Tuning issues with DVB-T
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
- * You must check tuning settings, knowing that auto bandwidth does'nt work.
+ * You must check tuning settings, knowing that auto bandwidth usually does'nt work.
 
 The set-top box display a blank screen
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -524,12 +528,12 @@ The set-top box display a blank screen
 Simple autoconfiguration fails finding the right pids
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
- * This can happend if a PMT pid is shared among multiple channels, see <<autoconfiguration_simple,simple autoconfiguration>> section for more details.
+ * This can happend if a PMT PIDs is shared among multiple channels, see <<autoconfiguration_simple,simple autoconfiguration>> section for more details.
 
 The CAM is complaining about locked channels
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
- * Some viaccess CAMs can have a lock for "mature" channels. To desactivate this lock go on the cam menu using "gnutv -cammenu" for example (from linuxtv dvb-apps).
+ * Some viaccess CAMs can have a lock for "mature" channels. To desactivate this lock go on the CAM menu using "gnutv -cammenu" for example (from linuxtv dvb-apps).
 
 You have to set the maturity rating to maximum and unlock Maturity rating in Bolts submenu.
 
@@ -538,8 +542,8 @@ VLC doesn't select the good program even with PAT rewriting
 
 This is a VLC bug https://trac.videolan.org/vlc/ticket/2782
 
-The pat rewrite announces only the streamed channel in the PAT, but VLC also read the SDT to find channels (it should only refer to the pat) and sometimes select the bad program.
-A temporary workaround is avoid sending the SDT PID. You can do this using the "dont_send_sdt" option
+The PAT rewrite announces only the streamed channel in the PAT, but VLC also read the SDT to find channels (it should only refer to the PAT) and sometimes select the bad program.
+A temporary workaround is avoid sending the SDT PID. You can do this using the `dont_send_sdt` option.
 
 This option will be replaced by a SDT rewrite.
 
@@ -556,28 +560,27 @@ groups are flooded to the VLAN rather than pruned. In this scenario, Fast-Leave 
 On ProCurve switches that do support Data-Driven IGMP (“Smart” IGMP),
 when unregistered multicasts are received the switch automatically filters (drops) them. Thus, the sooner the IGMP Leave is processed, the sooner this multicast traffic stops flowing.
 
-
 Switches without problems (supporting data driven igmp): 
 
-Switch 6400cl
-Switch 6200yl
-Switch 5400zl
-Switch 5300xl
-Switch 4200vl
-Switch 3500yl
-Switch 3400cl
-Switch 2900
-Switch 2800
-Switch 2500
+ * Switch 6400cl
+ * Switch 6200yl
+ * Switch 5400zl
+ * Switch 5300xl
+ * Switch 4200vl
+ * Switch 3500yl
+ * Switch 3400cl
+ * Switch 2900
+ * Switch 2800
+ * Switch 2500
 
 
 Switches WITH problems (NOT supporting data driven igmp): 
-Switch 2600
-Switch 2600-PWR
-Switch 4100gl
-Switch 6108
+ * Switch 2600
+ * Switch 2600-PWR
+ * Switch 4100gl
+ * Switch 6108
 
-So if you have one of the above switches this is "normal". The workaround is to make MuMuDVB join the multicast group. For this put "multicast_auto_join=1" in your configuration file.
+So if you have one of the above switches this is "normal". The workaround is to make MuMuDVB join the multicast group. For this put `multicast_auto_join=1` in your configuration file.
 
 MuMuDVB is eating a lot of CPU with sasc-ng !
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
