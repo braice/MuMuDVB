@@ -351,11 +351,9 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *cli
       clienttmp=unicast_vars->clients;
       while(clienttmp!=NULL)
 	{
-	  log_message(MSG_ERROR,"We see socket %d\n",clienttmp->Socket);
+	  log_message(MSG_DEBUG,"We see socket %d\n",clienttmp->Socket);
 	  clienttmp=clienttmp->next;
 	  i++;
-	  if(i>30)
-	    exit(1);
 	}
     }
   
@@ -413,11 +411,9 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *cli
       clienttmp=unicast_vars->clients;
       while(clienttmp!=NULL)
 	{
-	  log_message(MSG_ERROR,"We see socket %d\n",clienttmp->Socket);
+	  log_message(MSG_DEBUG,"We see socket %d\n",clienttmp->Socket);
 	  clienttmp=clienttmp->next;
 	  i++;
-	  if(i>30)
-	    exit(1);
 	}
     }
 
@@ -477,13 +473,13 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
   if (fds->pfds==NULL)
   {
     log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    exit(100<<8);
+    exit(100<<8); /** @todo : set interrupted instead of exciting badly */
   }
   unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
   if (unicast_vars->fd_info==NULL)
   {
     log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    exit(100<<8);
+    exit(100<<8); /** @todo : set interrupted instead of exciting badly */
   }
   log_message(MSG_DEBUG,"Unicast : Number of clients : %d\n", unicast_vars->client_number);
 
@@ -509,7 +505,6 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
   if((client->buffersize-client->bufferpos)<RECV_BUFFER_MULTIPLE)
     {
       client->buffer=realloc(client->buffer,(client->buffersize + RECV_BUFFER_MULTIPLE)*sizeof(char));
-      client->buffersize += RECV_BUFFER_MULTIPLE;
       if(client->buffer==NULL)
 	{
           log_message(MSG_ERROR,"Unicast : Problem with realloc for the client buffer : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
@@ -517,6 +512,8 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 	  client->bufferpos=0;
 	  return -1;
 	}
+        memset (client->buffer+client->buffersize, 0, RECV_BUFFER_MULTIPLE*sizeof(char)); //We fill the buffer with zeros to be sure
+        client->buffersize += RECV_BUFFER_MULTIPLE;
     }
 
   received_len=recv(client->Socket, client->buffer+client->bufferpos, RECV_BUFFER_MULTIPLE, 0);
@@ -539,7 +536,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
   /***************** Now we parse the message to see if something was asked  *****************/
 
   //We search for the end of the HTTP request
-  if(strstr(client->buffer, "\n\r\n\0"))
+  if(strlen(client->buffer)>5 && strstr(client->buffer, "\n\r\n\0"))
     {
       int pos,err404;
       char *substring=NULL;
