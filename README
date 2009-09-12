@@ -6,7 +6,7 @@ Version 1.5.5
 [NOTE]
 An HTML version of this file is availaible on http://mumudvb.braice.net[MuMuDVB's website].
 
-image::http://mumudvb.braice.net/mumudvbwiki/skins/common/images/logo_mumu_wiki.png[caption="logo MuMuDVB"]
+image::http://mumudvb.braice.net/mumudvb/logo_mumu_wiki.png[caption="logo MuMuDVB"]
 
 Presentation
 ------------
@@ -294,8 +294,13 @@ In addition to multicast, MuMuDVB also supports HTTP unicast. This make you able
 
 There is one listening connection, the channel is selected via the HTTP path, see further.
 
+And you can have listening sockets per channel, in this case the client will always get the same channel independantly of the path.
+
 [NOTE]
 Be careful with unicast, it can eat a lot of bandwith. Think about limitting the number of clients.
+
+[NOTE]
+If you don't want the (always here) multicast traffic to go on your network set `multicast_ttl=0`
 
 Activate HTTP unicast
 ~~~~~~~~~~~~~~~~~~~~~
@@ -304,8 +309,37 @@ To enable HTTP unicast you have to set the option `ip_http`. This option will se
 
 You can also define the listening port using `port_http`. If the port is not defined, the default port will be 4242.
 
+Activate "per channel" listening socket
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can create listening connections only for a channel. In this case, when a client connect to this socket he will alway get the same channel independantly of the HTTP path.
+
+If you use full autoconfiguration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You need to set the option `autoconf_unicast_start_port` which define what is the output port for the first discovered channel (for the following channels the port will be incremented).
+
+
+If you don't use full autoconfiguration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For the channels for which you want to have a listening unicast socket you have to set the option `unicast_port` which define the listening port of the socket
+
+
+
 Client side, the different methods to get channels
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Single channel socket
+^^^^^^^^^^^^^^^^^^^^^
+
+If the client connect to a single client socket he will get the associated channel independantly of the path.
+
+If you server is listening on the ip 10.0.0.1 and the port for the channel is 5000,
+
+-------------------------
+vlc http://10.0.0.1:5000/
+-------------------------
 
 Get the channel by number
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -575,6 +609,7 @@ Switches without problems (supporting data driven igmp):
 
 
 Switches WITH problems (NOT supporting data driven igmp): 
+
  * Switch 2600
  * Switch 2600-PWR
  * Switch 4100gl

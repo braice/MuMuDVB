@@ -162,6 +162,7 @@ Autres paramètres globaux
 |autoconf_radios | Lors de l'autoconfiguration complète, est ce que les radios seront diffusées ?| 0 | 0 ou 1 | 
 |autoconf_scrambled |Lors de l'autoconfiguration complète, est ce que les chaînes brouillées seront diffusées ? | 0 | 0 or 1 | Automatique lorsque cam_support=1. Parfois, une chaîne en clair peut être marquée comme étant cryptée. Cette option est aussi nécessaire lorsqu'une softcam est utilisée.
 |autoconf_pid_update |Est ce que MuMuDVB se reconfigure lorsque le PMT est mis à jour ? | 1 | 0 or 1 | 
+|autoconf_unicast_start_port |Le port unicast pour la première chaine découverte |  |  | Voir README-fr pour plus de détails.
 5+^s|Paramètres concernant les annonces SAP
 |sap | Génération des annonces SAP | 0 (1 si autoconfiguration complète) | 0 or 1 | 
 |sap_organisation |Champ "organisation" envoyé avec les annonces SAP | MuMuDVB | | Optionnel
@@ -191,6 +192,7 @@ Concernant les PIDs, référez vous à la section <<getpids,obtenir les PIDs>>.
 |Nom |Description | Valeur par défaut |  Commentaires
 |ip |Adresse ip multicast sur laquelle la chaîne sera diffusée | |  Obligatoire
 |port | Le port | 1234 ou common_port |  Les ports inférieurs à 1024 nécessitent les droits root.
+|unicast_port | Le port pour l'unicast HTTP ( associé à cette chaîne ) |  | | Les ports inférieurs à 1024 nécessitent les droits root. Vous devez activer l'unicast HTTP avec l'option `ip_http`
 |sap_group | Le groupe de liste de lecture pour les annonces SAP | |  optionnel
 |cam_pmt_pid |Uniquement pour les chaînes brouillées. Le PID PMT pour le module CAM | |  
 |ts_id |Le  "transport stream id" (appelé aussi "program number"), uniquement pour l'autoconfiguration ou la réécriture du PID PAT, se référer au README pour plus de détails | | 

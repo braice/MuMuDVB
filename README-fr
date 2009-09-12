@@ -6,7 +6,7 @@ Version 1.5.5
 [NOTE]
 Une version HTML de ce fichier est disponible sur http://mumudvb.braice.net[le site web de MuMuDVB].
 
-image::http://mumudvb.braice.net/mumudvbwiki/skins/common/images/logo_mumu_wiki.png[caption="logo MuMuDVB"]
+image::http://mumudvb.braice.net/mumudvb/logo_mumu_wiki.png[caption="logo MuMuDVB"]
 
 Présentation
 ------------
@@ -19,7 +19,7 @@ MuMuDVB (Multi Multicast DVB) est, à l'origine, une modification de dvbstream p
 MuMuDVB est un projet indépendant.
 
 
-MuMuDVB est un programme qui rediffuse des flux (chaînes de télévision) depuis une carte DVB (télévision numérique) sur un réseau en utilisant du multicast ou de l'unicast HTTP. Il peut diffuser un transpondeur (ensemble de chaînes regroupées sur une même fréquence) entien en assignant une ip multicast par chaîne.
+MuMuDVB est un programme qui rediffuse des flux (chaînes de télévision) depuis une carte DVB (télévision numérique) sur un réseau en utilisant du multicast ou de l'unicast HTTP. Il peut diffuser un transpondeur (ensemble de chaînes regroupées sur une même fréquence) entier en assignant une ip multicast par chaîne.
 
 Site Web
 ~~~~~~~~
@@ -91,7 +91,7 @@ Liste détaillée des fonctionalités
 
 D'autres petits programmes sont disponibles depuis le http://gitweb.braice.net/gitweb?p=mumudvb_tools;a=summary[dépot MuMuDVB Tools] :
 
-- relay: ce programme s'inscrit a un flux multicast et le renvoie sur une autre adresse. Il peux etre utilisé pour traverser des réseaux ne supportant pas le multicast.
+- relay: ce programme s'inscrit a un flux multicast et le renvoie sur une autre adresse. Il peux être utilisé pour traverser des réseaux ne supportant pas le multicast.
 - recup_sap: très petit et basique client sap. Récupère les annonces pendant 60 secondes et les place dans un fichier.
 
 
@@ -122,13 +122,13 @@ Pour installer les scripts d'initialisation ( style debian ) tapez :
 ------------------------------------------------------------
 
 [NOTE]
-Il est conseillé de créer un utilisateur système pour MuMuDVB, par exemple : `_mumudvb`. Vous devez ajouter cet utilisateur au groupe video et rendre le répertoire `/var/run/mumudvb` en lecture-écriture pour cet utilisateur. En faisant cela, vous pourrez profiter de toutes les fonctionnalités de MuMuDVB.
+Il est conseillé de créer un utilisateur système pour MuMuDVB, par exemple : `_mumudvb`. Vous devez ajouter cet utilisateur au groupe vidéo et rendre le répertoire `/var/run/mumudvb` en lecture-écriture pour cet utilisateur. En faisant cela, vous pourrez profiter de toutes les fonctionnalités de MuMuDVB.
 
 
 À partir du paquet Debian
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Si vous voulez installer une version qui n'est pas dans vos dépots, vous pouvez le faire à la main en tapant : 
+Si vous voulez installer une version qui n'est pas dans vos dépôts, vous pouvez le faire à la main en tapant : 
 
 ----------------------
 # dpkg -i mumudvb*.deb
@@ -228,7 +228,7 @@ Un fichier de configuration d'exemple, documenté (en anglais) peux être est di
 Autoconfiguration "simple"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Utilisez ce mode lorsque vous voulez controler le nom des chaînes et quelle chaînes vous vouler diffuser.
+Utilisez ce mode lorsque vous voulez contrôler le nom des chaînes et quelle chaînes vous voulez diffuser.
 
 - Vous devez ajouter 'autoconfiguration=1' dans le début de votre fichier de configuration.
 - Pour chaque chaîne, vous devez préciser : 
@@ -290,10 +290,13 @@ Unicast HTTP
 
 En plus du multicast, MuMuDVB supporte aussi l'unicast HTTP. Cela vous permet d'utiliser MuMuDVB à travers des réseau qui ne supportent pas le multicast.
 
-Il y a une connection en écoute, la chaîne est sélectionnée par le chemin HTTP, voir plus loin.
+Il y a une connexion en écoute, la chaîne est sélectionnée par le chemin HTTP, voir plus loin.
 
 [NOTE]
-Rappellez vous que l'unicast peut consommer beaucoup de bande passante. Pensez à limiter le nombre de clients.
+Rappelez vous que l'unicast peut consommer beaucoup de bande passante. Pensez à limiter le nombre de clients.
+
+[NOTE]
+Si vous ne voulez pas que le flux multicast (toujours présent) aille sur votre réseau, utilisez l'option `multicast_ttl=0`
 
 Activer l'unicast HTTP
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -302,8 +305,37 @@ Pour activer l'unicast HTTP vous devez définir l'option `ip_http`. Cette option
 
 Vous pouvez aussi définir le port d'écoute en utilisant l'option `port_http`. Si le port n'est pas défini, MuMuDVB utilisera le port par défaut : 4242.
 
+Activer l'unicast par chaîne
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Vous pouvez créer des connections en écoute seulement pour une chaîne. Dans ce cas, quand un client se connecte dessus, il obtiendra toujours la même chaîne indépendamment du chemin HTTP.
+
+Vous utilisez l'autoconfiguration complète
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Vous devez définir l'option `autoconf_unicast_start_port` qui précise quel sera le port d'écoute pour la première chaîne découverte ( le port sera incrémenté pour chaque chaîne ).
+
+
+Vous n'utilisez pas l'autoconfiguration complète
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Pour les chaînes pour lesquelles avoir une connexion en écoute, vous devez définir l'option `unicast_port` qui permet de spécifier le port d'écoute.
+
+
 Coté client, les différentes méthodes pour obtenir les chaînes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Cas d'une connexion pour une chaîne
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Si le client se connecte au serveur sur un port qui est pour une seule chaîne, il obtiendra cette chaîne indépendamment du chemin demandé
+
+Si votre serveur écoute sur l'ip 10.0.0.1 et le port pour la chaîne est 5000,
+
+-------------------------
+vlc http://10.0.0.1:5000/
+-------------------------
 
 Obtenir les chaînes par numéro
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -337,13 +369,13 @@ Pour obtenir la liste des chaînes ( en texte brut avec plus de détails que la 
 Unicast HTTP et surveillance de MuMuDVB
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Cette connection HTTP peut être utilisée pour surveiller MuMuDVB. Cette fonctionnalité sera implémentée dans un futur proche. Merci de signaler quelles informations pourraient vous intéresser.
+Cette connexion HTTP peut être utilisée pour surveiller MuMuDVB. Cette fonctionnalité sera implémentée dans un futur proche. Merci de signaler quelles informations pourraient vous intéresser.
 
 
 Surveillance de MuMuDVB
 -----------------------
 
-Vous pouvez utiliser http://mmonit.com/monit/[Monit] pour surveiller MuMuDVB et le redémarrer lorsqu'il a des problèmes (MuMuDVB se tuicide lorsque de gros problèmes apparaissent).
+Vous pouvez utiliser http://mmonit.com/monit/[Monit] pour surveiller MuMuDVB et le redémarrer lorsqu'il a des problèmes (MuMuDVB se suicide lorsque de gros problèmes apparaissent).
 
 Vous devez installer les scripts de démarrage ( fait automatiquement si vous utilisez le paquet Debian ) et ajouter les lignes suivantes à votre fichier `/etc/monit/services` :
 
@@ -367,21 +399,21 @@ Support pour les chaînes brouillées
 Note importante : vérifiez si le contrat avec votre fournisseur de services vous autorise à diffuser les chaînes brouillées.
 
 Débrouillage matériel
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 MuMuDVB supporte les chaînes brouillées à l'aide d'un décodeur matériel ( un module CAM : Conditionnal Access Module ). MuMuDVB peut demander au module de débrouiller plusieurs chaînes si le module le supporte ( les CAMs Aston Pro ou PowerCam Pro sont capable de débrouiller plusieurs chaînes simultanément).
 
-Si vous êtes limités par le nombre de PIDs que le module CAM peut débrouiller simultanément, il est possible de demander au module de débrouiller seulement les PIDs audio et vidéo. Cette fonctionalité n'est pas implémentée, merci de contacter si vous en avez besoin.
+Si vous êtes limités par le nombre de PIDs que le module CAM peut débrouiller simultanément, il est possible de demander au module de débrouiller seulement les PIDs audio et vidéo. Cette fonctionnalité n'est pas implémentée, merci de contacter si vous en avez besoin.
 
 [NOTE]
-Le débrouillage materiel n'utilise quasiment aucune puissance processeur, tout le débrouillage est effectué par le module CAM.
+Le débrouillage matériel n'utilise quasiment aucune puissance processeur, tout le débrouillage est effectué par le module CAM.
 
 [NOTE]
 MuMuDVB ne demande pas au module CAM si le débrouillage est possible. Cette fonctionnalité des modules CAM n'est pas fiable. La plupart des modules CAM répondront par un menu si le débrouillage n'est pas possible et MuMuDVB l'affichera sur la sortie standard d'erreur.
 
 Les informations concernant le module CAM sont stockées dans le fichier '''/var/run/mumudvb/caminfo_carte%d''' où %d est le numéro de carte DVB.
 
-.Example contents of '''/var/run/mumudvb/caminfo_carte%d''' 
+.Example 
 ----------------------------------------------------
 CAM_Application_Type=01
 CAM_Application_Manufacturer=02ca
@@ -422,7 +454,7 @@ Si vous utilisez ces solutions référez vous à la section <<reduce_cpu,réduir
 État du débrouillage
 ~~~~~~~~~~~~~~~~~~~~
 
-L'état du désrouillage est stocké avec la liste des chaînes diffusées. 
+L'état du débrouillage est stocké avec la liste des chaînes diffusées. 
 
 .Example
 ----------------------------------------------
@@ -451,7 +483,7 @@ Cette fonctionnalité est principalement destinée pour les set-top boxes. Cet o
 Pour activer la réécriture du PAT, ajoutez `rewrite_pat=1` à votre fichier de configuration. Cet fonctionnalité utilise peu de puissance processeur, la table PAT étant réécrite une fois par chaîne et stockée en mémoire.
 
 [NOTE]
-La réécriture du PAT peu échouer (i.e. ne résout pas les symptomes précédents) pour certaines chaînes si le PID PMT est partagé par plusieurs chaînes. Dans ce cas, vous devez ajouter l'option `ts_id` pour spécifier le "transport stream id", encore appelé "service id" ou numéro de programme.
+La réécriture du PAT peu échouer (i.e. ne résout pas les symptômes précédents) pour certaines chaînes si le PID PMT est partagé par plusieurs chaînes. Dans ce cas, vous devez ajouter l'option `ts_id` pour spécifier le "transport stream id", encore appelé "service id" ou numéro de programme.
 
 [[reduce_cpu]]
 Réduire l'utilisation processeur (Expérimental)
@@ -534,7 +566,7 @@ Le module CAM refuse de décrypter des chaînes "locked"
 
  * Certains modules CAM viaccess peuvent avoir un verrou pour les chaînes "adultes". Pour enlever ce verrou, allez dans le menu du module CAM, en utilisant, par exemple, "gnutv -cammenu" (des dvb-apps de linuxtv).
 
-Vous devez mettre le "maturity rating" au maximum at dévérouiller "Maturity rating" dans le sous-menu "Bolts".
+Vous devez mettre le "maturity rating" au maximum et déverrouiller "Maturity rating" dans le sous-menu "Bolts".
 
 VLC ne choisit pas le bon programme même avec la réécriture du PAT
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -576,12 +608,13 @@ Switches without problems (supporting data driven igmp):
 
 
 Switches WITH problems (NOT supporting data driven igmp): 
+
  * Switch 2600
  * Switch 2600-PWR
  * Switch 4100gl
  * Switch 6108
 
-En conclusion, si vous avez un switch de la deuxième liste, c'est "normal". La solution est de faire en sorte que MuMuDVB joigne le groupe multicast. Pour cela, ajoutez `multicast_auto_join=1` dans votre fichier de configuration.
+En conclusion, si vous avez un commutateur de la deuxième liste, c'est "normal". La solution est de faire en sorte que MuMuDVB joigne le groupe multicast. Pour cela, ajoutez `multicast_auto_join=1` dans votre fichier de configuration.
 
 MuMuDVB utilise beaucoup de temps processeur avec sasc-ng !
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
