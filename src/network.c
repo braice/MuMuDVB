@@ -30,9 +30,12 @@
  */
 
 #include "network.h"
+#include "errors.h"
 #include <string.h>
 #include <errno.h> 
 #include <fcntl.h>
+
+extern int Interrupted;
 
 /**@brief Send data
  * just send the data over the socket fd
@@ -64,7 +67,7 @@ makesocket (char *szAddr, unsigned short port, int TTL,
   if (iSocket < 0)
     {
       log_message( MSG_WARN, "socket() failed : %s\n",strerror(errno));
-      exit (1);
+      Interrupted=ERROR_NETWORK<<8;
     }
 
   sSockAddr->sin_family = sin.sin_family = AF_INET;
@@ -73,14 +76,14 @@ makesocket (char *szAddr, unsigned short port, int TTL,
   if (iRet == 0)
     {
       log_message( MSG_ERROR,"inet_aton failed : %s\n", strerror(errno));
-      exit(1);
+      Interrupted=ERROR_NETWORK<<8;
     }
 
   iRet = setsockopt (iSocket, SOL_SOCKET, SO_REUSEADDR, &iLoop, sizeof (int));
   if (iRet < 0)
     {
       log_message( MSG_ERROR,"setsockopt SO_REUSEADDR failed : %s\n",strerror(errno));
-      exit (1);
+      Interrupted=ERROR_NETWORK<<8;
     }
 
   iRet =
@@ -88,7 +91,7 @@ makesocket (char *szAddr, unsigned short port, int TTL,
   if (iRet < 0)
     {
       log_message( MSG_ERROR,"setsockopt IP_MULTICAST_TTL failed.  multicast in kernel? error : %s \n",strerror(errno));
-      exit (1);
+      Interrupted=ERROR_NETWORK<<8;
     }
 
   iRet = setsockopt (iSocket, IPPROTO_IP, IP_MULTICAST_LOOP,
@@ -96,7 +99,7 @@ makesocket (char *szAddr, unsigned short port, int TTL,
   if (iRet < 0)
     {
       log_message( MSG_ERROR,"setsockopt IP_MULTICAST_LOOP failed.  multicast in kernel? error : %s\n",strerror(errno));
-      exit (1);
+      Interrupted=ERROR_NETWORK<<8;
     }
 
   return iSocket;
@@ -119,7 +122,7 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL,
   if (bind (socket, (struct sockaddr *) &sin, sizeof (sin)))
     {
       log_message( MSG_ERROR, "bind failed : %s\n", strerror(errno));
-      exit (1);
+      Interrupted=ERROR_NETWORK<<8;
     }
   tempaddr = inet_addr (szAddr);
   if ((ntohl (tempaddr) >> 28) == 0xe)
@@ -130,7 +133,7 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL,
 	  (socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &blub, sizeof (blub)))
 	{
 	  log_message( MSG_ERROR, "setsockopt IP_ADD_MEMBERSHIP failed (multicast kernel?) : %s\n", strerror(errno));
-	  exit (1);
+          Interrupted=ERROR_NETWORK<<8;
 	}
     }
   return socket;
