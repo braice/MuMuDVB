@@ -52,7 +52,9 @@ Todo list
 
 #include "unicast_http.h"
 #include "mumudvb.h"
+#include "errors.h"
 
+extern int Interrupted;
 
 int 
 unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *host);
@@ -473,13 +475,13 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
   if (fds->pfds==NULL)
   {
     log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    exit(100<<8); /** @todo : set interrupted instead of exciting badly */
+    Interrupted=ERROR_MEMORY<<8;
   }
   unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
   if (unicast_vars->fd_info==NULL)
   {
     log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    exit(100<<8); /** @todo : set interrupted instead of exciting badly */
+    Interrupted=ERROR_MEMORY<<8;
   }
   log_message(MSG_DEBUG,"Unicast : Number of clients : %d\n", unicast_vars->client_number);
 

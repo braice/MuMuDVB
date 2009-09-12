@@ -47,7 +47,7 @@
 
 #include "tune.h"
 #include "mumudvb.h"
-
+#include "errors.h"
 
 /*Do we support ATSC ?*/
 #undef ATSC
@@ -57,6 +57,7 @@
 #endif
 #endif
 
+extern int Interrupted;
 
 /** @ brief Print the status 
  * Print the status contained in festatus, this status says if the card is lock, sync etc.
@@ -381,7 +382,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
 #endif
   default:
     log_message( MSG_ERROR, "Unknown FE type : %x. Aborting\n", fe_info.type);
-    exit(-1);
+    Interrupted=ERROR_TUNE<<8;
   }
   usleep(100000);
 
