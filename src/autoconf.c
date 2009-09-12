@@ -870,16 +870,16 @@ void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *service)
 void autoconf_show_CA_identifier_descriptor(unsigned char *buf)
 {
 
-  int length,i;
+  int length,i,ca_id;
 
-  log_message(MSG_DEBUG, "Autoconf : --- SDT descriptor --- CA identifier descriptor\nAutoconf : CA_system_ids : ");
+  log_message(MSG_DETAIL, "Autoconf : --- SDT descriptor --- CA identifier descriptor\nAutoconf : CA_system_ids : ");
 
   length=buf[1];
-  for(i=0;i<length;i++)
-    log_message(MSG_DEBUG, "%d ", buf[i+2]);
-
-  log_message(MSG_DEBUG, "\n");   
-
+  for(i=0;i<length;i+=2)
+  {
+    ca_id=(buf[i]<<8)+buf[i+1];
+    display_ca_sys_id(ca_id);
+  }
 }
 
 
