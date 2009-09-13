@@ -155,29 +155,31 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
               if (fds->pfds==NULL)
               {
                 log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-                return -1;/** @todo set interrupted*/
+                Interrupted=ERROR_MEMORY<<8;
+                return -1;
               }
               //We poll the new socket
               fds->pfds[fds->pfdsnum-1].fd = tempSocket;
               fds->pfds[fds->pfdsnum-1].events = POLLIN | POLLPRI | POLLHUP; //We also poll the deconnections
               fds->pfds[fds->pfdsnum].fd = 0;
               fds->pfds[fds->pfdsnum].events = POLLIN | POLLPRI;
-              
+
               //Information about the descriptor
               unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
               if (unicast_vars->fd_info==NULL)
               {
                 log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-                return -1;/** @todo set interrupted*/
+                Interrupted=ERROR_MEMORY<<8;
+                return -1;
               }
               //client connection
               unicast_vars->fd_info[fds->pfdsnum-1].type=UNICAST_CLIENT;
               unicast_vars->fd_info[fds->pfdsnum-1].channel=-1;
               unicast_vars->fd_info[fds->pfdsnum-1].client=tempClient;
-              
+
 
               log_message(MSG_DEBUG,"Unicast : Number of clients : %d\n", unicast_vars->client_number);
-               
+
               if(unicast_vars->fd_info[actual_fd].type==UNICAST_LISTEN_CHANNEL)
               {
                 //Event on a channel connection, we open a new socket for this client and 
@@ -502,6 +504,7 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
 int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels)
 {
   int received_len;
+  (void) unicast_vars;
 
   /************ auto increasing buffer to receive the message **************/
   if((client->buffersize-client->bufferpos)<RECV_BUFFER_MULTIPLE)
@@ -549,7 +552,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
       err404=0;
 
       log_message(MSG_DEBUG,"Unicast : End of HTTP request, we parse it\n");
-      
+
       if(strstr(client->buffer,"GET ")==client->buffer)
 	{
 	/** @todo Implement here the preselected channels via the port of the connection */
@@ -558,7 +561,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 	  //GET /monitor/???
 
 	  pos=4;
-          
+
           //if the client have already an asked channel we don't parse the GET
           if(client->askedChannel!=-1)
           {
@@ -699,7 +702,7 @@ int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *chann
 {
   unicast_client_t *last_client;
   int iRet;
-  
+
   log_message(MSG_INFO,"Unicast : We add the client %s:%d to the channel \"%s\"\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port,channel->name);
 
   iRet=write(client->Socket,HTTP_OK_REPLY, strlen(HTTP_OK_REPLY));
