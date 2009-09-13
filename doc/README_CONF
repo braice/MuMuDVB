@@ -190,7 +190,7 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 |Parameter name |Description | Default value | Possible values | Comments
 |ip |multicast (can also be unicast, in raw UDP ) ip where the chanel will be streamed | | | Mandatory
 |port | The port | 1234 or common_port | | Ports below 1024 needs root rights.
-|unicast_port | The HTTP unicast port for this channel |  | | Ports below 1024 needs root rights. You need to activate HTTP unicast with `ip_http`
+|unicast_port | The HTTP unicast port for this channel | | Ports below 1024 needs root rights. You need to activate HTTP unicast with `ip_http`
 |sap_group |The playlist group for SAP announces | | string | optionnal
 |cam_pmt_pid |Only for scrambled channels. The PMT PID for CAM support | | | 
 |ts_id |The transport stream id (program number), olny for autoconfiguration, or pat rewrite see README for more details | | | 
