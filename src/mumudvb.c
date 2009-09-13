@@ -1887,14 +1887,13 @@ main (int argc, char **argv)
 	      /**@todo : put this in a function*/
 	      if( (autoconf_vars.autoconf_pid_update) && (send_packet==1) && (channels[curr_channel].autoconfigurated) &&(channels[curr_channel].pmt_pid==pid) && pid)  //no need to check paquets we don't send
 		{
-		  /**@todo: check ts_id -> do it with send_packet*/
 		  /*Note : the pmt version is initialised during autoconfiguration*/
 		  /*Check the version stored in the channel*/
 		  if(!channels[curr_channel].pmt_needs_update)
 		    {
 		      //Checking without crc32, it there is a change we get the full packet for crc32 checking
 		      channels[curr_channel].pmt_needs_update=pmt_need_update(&channels[curr_channel],actual_ts_packet,1);
-		      
+
 		      if(channels[curr_channel].pmt_needs_update&&channels[curr_channel].pmt_packet) //It needs update we mark the packet as empty
 			channels[curr_channel].pmt_packet->empty=1;
 		    }
@@ -1907,7 +1906,7 @@ main (int argc, char **argv)
 			      {
 				log_message(MSG_DETAIL,"Autoconfiguration : PMT packet updated, we have now to check if there is new things\n");
 				/*We've got the FULL PMT packet*/
-				if(autoconf_read_pmt(channels[curr_channel].pmt_packet, &channels[curr_channel], tuneparams.card, asked_pid, number_chan_asked_pid, &fds)==0)
+                                if(autoconf_read_pmt(channels[curr_channel].pmt_packet, &channels[curr_channel], tuneparams.card, asked_pid, number_chan_asked_pid, &fds)==0)
 				  {
 				    if(channels[curr_channel].need_cam_ask==CAM_ASKED)
 				      channels[curr_channel].need_cam_ask=CAM_NEED_ASK;

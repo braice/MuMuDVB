@@ -223,14 +223,14 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 	if(header->table_id!=0x02)
 	  {
 	    log_message( MSG_INFO,"Autoconf : Packet PID %d for channel \"%s\" is not a PMT PID. We remove the pmt pid for this channel\n", pmt->pid, channel->name);
-	    channel->pmt_pid=0; /** todo : put a threshold, */
+	    channel->pmt_pid=0; /** @todo : put a threshold, */
 	    return 1;
 	  }
 
 	//We check if this PMT belongs to the current channel. (Only works with autoconfiguration full for the moment because it stores the ts_id)
 	if(channel->ts_id && (channel->ts_id != HILO(header->program_number)) )
 	  {
-	    log_message( MSG_DETAIL,"Autoconf : The PMT %d not belongs to channel \"%s\"\n", pmt->pid, channel->name);
+	    log_message( MSG_DETAIL,"Autoconf : The PMT %d does not belongs to channel \"%s\"\n", pmt->pid, channel->name);
 	    return 1;
 	  }
 	
@@ -751,7 +751,7 @@ void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *service)
   
   buf += 2;
   service->type=*buf;
-  /**\todo use lookup*/
+  /**@todo use lookup*/
   //Cf EN 300 468 v1.9.1 table 81
   switch(service->type)
     {
@@ -1210,7 +1210,7 @@ void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels,
 
   log_streamed_channels(number_of_channels, channels);
 
-  /**\todo : make an option to generate it or not ?*/
+  /**@todo : make an option to generate it or not ?*/
   char filename_gen_conf[256];
   sprintf (filename_gen_conf, GEN_CONF_PATH,
 	   card);

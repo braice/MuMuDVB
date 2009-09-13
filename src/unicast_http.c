@@ -61,7 +61,7 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
 int 
 unicast_send_streamed_channels_list_txt (int number_of_channels, mumudvb_channel_t *channels, int Socket);
 
-/**@todo : deal with the RTP over http case ie implement RTSP*/
+/**@todo : deal with the RTP over http case ie implement RTSP  --> is it useful over TCP ?*/
 extern int rtp_header;
 
 
@@ -555,13 +555,13 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 
       if(strstr(client->buffer,"GET ")==client->buffer)
 	{
-	/** @todo Implement here the preselected channels via the port of the connection */
 	  //to implement : 
 	  //Information ???
 	  //GET /monitor/???
 
 	  pos=4;
 
+          /* preselected channels via the port of the connection */
           //if the client have already an asked channel we don't parse the GET
           if(client->askedChannel!=-1)
           {

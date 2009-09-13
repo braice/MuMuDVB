@@ -299,7 +299,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     return -1;
   }
 
-  /**\todo here check the capabilities of the card*/
+  /** @todo here check the capabilities of the card*/
 
   log_message( MSG_INFO, "Using DVB card \"%s\"\n",fe_info.name);
 
