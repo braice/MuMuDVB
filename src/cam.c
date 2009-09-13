@@ -101,6 +101,108 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
 static char *static_nom_fich_cam_info;
 
 
+/**********************************Debug ******************************/
+#ifdef CAMDEBUG
+
+/**
+ * The types of CA interface we support.
+ */
+
+#define DVBCA_INTERFACE_LINK 0
+#define DVBCA_INTERFACE_HLCI 1
+
+struct en50221_stdcam_llci {
+  struct en50221_stdcam stdcam;
+
+  int cafd;
+  int slotnum;
+  int state;
+/** //I dont need these ones
+  struct llci_resource resources[RESOURCE_IDS_COUNT];
+
+  struct en50221_transport_layer *tl;
+  struct en50221_session_layer *sl;
+  struct en50221_app_send_functions sendfuncs;
+  int tl_slot_id;
+
+  struct en50221_app_rm *rm_resource;
+
+  struct en50221_app_datetime *datetime_resource;
+  int datetime_session_number;
+  uint8_t datetime_response_interval;
+  time_t datetime_next_send;
+  time_t datetime_dvbtime;
+ */
+
+};
+
+void cam_reset_cam(cam_parameters_t *cam_params)
+{
+  struct en50221_stdcam *stdcam=cam_params->stdcam;
+  struct en50221_stdcam_llci *llci = (struct en50221_stdcam_llci *) stdcam;
+  ioctl(llci->cafd, CA_RESET, (1 << llci->slotnum));
+  //This variable only exist for low level CAMs so we check the type
+  if(cam_params->cam_type==DVBCA_INTERFACE_LINK)
+    llci->state = EN50221_STDCAM_CAM_NONE;
+ 
+}
+
+/**
+ * States a CAM in a slot can be in.
+ */
+
+#define DVBCA_CAMSTATE_MISSING 0
+#define DVBCA_CAMSTATE_INITIALISING 1
+#define DVBCA_CAMSTATE_READY 2
+
+int cam_debug_dvbca_get_cam_state(cam_parameters_t *cam_params)
+{
+  struct en50221_stdcam *stdcam=cam_params->stdcam;
+  struct en50221_stdcam_llci *llci = (struct en50221_stdcam_llci *) stdcam;
+
+  ca_slot_info_t info;
+  info.num = llci->slotnum;
+
+  if (ioctl(llci->cafd, CA_GET_SLOT_INFO, &info))
+    return -1;
+
+  if (info.flags == 0)
+    return DVBCA_CAMSTATE_MISSING;
+  if (info.flags & CA_CI_MODULE_READY)
+    return DVBCA_CAMSTATE_READY;
+  if (info.flags & CA_CI_MODULE_PRESENT)
+    return DVBCA_CAMSTATE_INITIALISING;
+
+  return -1;
+}
+
+
+
+
+
+int cam_debug_dvbca_get_interface_type(cam_parameters_t *cam_params)
+{
+  struct en50221_stdcam *stdcam=cam_params->stdcam;
+  struct en50221_stdcam_llci *llci = (struct en50221_stdcam_llci *) stdcam;
+
+  ca_slot_info_t info;
+
+  info.num = llci->slotnum;
+
+  if (ioctl(llci->cafd, CA_GET_SLOT_INFO, &info))
+    return -1;
+
+  if (info.type & CA_CI_LINK)
+    return DVBCA_INTERFACE_LINK;
+  if (info.type & CA_CI)
+    return DVBCA_INTERFACE_HLCI;
+
+  return -1;
+}
+
+
+#endif
+/***************************end of debug ******************************/
 
 /** @brief start the cam
  * This function will create the communication layers and set the callbacks*/
@@ -161,10 +263,24 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
   } else {
     log_message( MSG_WARN,  "CAM Menus are not supported by this interface hardware\n");
   }
-  
+
 
   // any other stuff
   cam_params->moveca = 1; //see http://www.linuxtv.org/pipermail/linux-dvb/2007-May/018198.html
+  /**********************************Debug ******************************/
+#ifdef CAMDEBUG
+  cam_params->cam_type = cam_debug_dvbca_get_interface_type(cam_params); //The reset procedure have only been tested on LLCI cams
+  switch(cam_params->cam_type)
+  {
+    case DVBCA_INTERFACE_LINK: 
+      log_message( MSG_DETAIL,  "CAM CAM type : low level interface\n");
+      break;
+    case DVBCA_INTERFACE_HLCI: 
+      log_message( MSG_DETAIL,  "CAM CAM type : HIGH level interface\n");
+      break;
+  }
+#endif
+  /***************************end of debug ******************************/
   // start the cam thread
   pthread_create(&(cam_params->camthread), NULL, camthread_func, cam_params);
   return 0;
@@ -196,50 +312,17 @@ void cam_stop(cam_parameters_t *cam_params)
 
 
 
-/**********************************Debug ******************************/
-#ifdef CAMDEBUG
-struct en50221_stdcam_llci {
-  struct en50221_stdcam stdcam;
 
-  int cafd;
-  int slotnum;
-  int state;
-/** //I dont need these ones
-  struct llci_resource resources[RESOURCE_IDS_COUNT];
-
-  struct en50221_transport_layer *tl;
-  struct en50221_session_layer *sl;
-  struct en50221_app_send_functions sendfuncs;
-  int tl_slot_id;
-
-  struct en50221_app_rm *rm_resource;
-
-  struct en50221_app_datetime *datetime_resource;
-  int datetime_session_number;
-  uint8_t datetime_response_interval;
-  time_t datetime_next_send;
-  time_t datetime_dvbtime;
- */
-
-};
-
-void cam_reset_cam(cam_parameters_t *cam_params)
-{
-  struct en50221_stdcam *stdcam=cam_params->stdcam;
-  struct en50221_stdcam_llci *llci = (struct en50221_stdcam_llci *) stdcam;
-  ioctl(llci->cafd, CA_RESET, (1 << llci->slotnum));
-  llci->state = EN50221_STDCAM_CAM_INRESET;
- 
-}
-
-#endif
-/***************************end of debug ******************************/
 
 /** @brief The thread for polling the cam */
 static void *camthread_func(void* arg)
 {
   cam_parameters_t *cam_params;
   cam_params= (cam_parameters_t *) arg;
+#ifdef CAMDEBUG
+  int i;
+  int camstate;
+#endif 
   while(!cam_params->camthread_shutdown) { 
     usleep(500000); //some waiting
     cam_params->stdcam->poll(cam_params->stdcam);
@@ -249,7 +332,28 @@ static void *camthread_func(void* arg)
     {
       log_message( MSG_DEBUG,  "CAM We force the reset of the CAM\n");
       cam_reset_cam(cam_params);
-      cam_params->need_reset=-1;
+      for(i=0;i<10;i++)
+      {
+        camstate=cam_debug_dvbca_get_cam_state(cam_params);
+        switch(camstate) 
+        {
+          case DVBCA_CAMSTATE_MISSING:
+            log_message( MSG_DEBUG,  "CAM cam state : DVBCA_CAMSTATE_MISSING\n");
+            break;
+          case DVBCA_CAMSTATE_READY:
+            log_message( MSG_DEBUG,  "CAM cam state : DVBCA_CAMSTATE_READY\n");
+            break;
+          case DVBCA_CAMSTATE_INITIALISING:
+            log_message( MSG_DEBUG,  "CAM cam state : DVBCA_CAMSTATE_INITIALISING\n");
+            break;
+          case -1:
+            log_message( MSG_DEBUG,  "CAM cam state : Eroor during the query\n");
+            break;
+        }
+        usleep(10000);
+      }
+      cam_params->need_reset=0;
+      cam_params->reset_counts++;
     }
 #endif
     /***************************end of debug ******************************/
@@ -363,7 +467,6 @@ static int mumudvb_cam_ai_callback(void *arg, uint8_t slot_id, uint16_t session_
       log_message( MSG_WARN,
 		   "%s: %s\n",
 		   static_nom_fich_cam_info, strerror (errno));
-      exit(ERROR_CREATE_FILE);
     }
   else
     {
@@ -400,13 +503,12 @@ static int mumudvb_cam_ca_info_callback(void *arg, uint8_t slot_id, uint16_t ses
       log_message( MSG_WARN,
 		   "%s: %s\n",
 		   static_nom_fich_cam_info, strerror (errno));
-      exit(ERROR_CREATE_FILE);
     }
   else
     {
       for(i=0; i< ca_id_count; i++) 
 	fprintf (file_cam_info,"ID_CA_Supported=%04x\n",ca_ids[i]);
-      
+
       fclose (file_cam_info);
     }
 

@@ -250,6 +250,9 @@ cam_parameters_t cam_vars={
   .cam_number=0,
 #ifdef CAMDEBUG
   .need_reset=0,
+  .reset_counts=0,
+  .reset_interval=20,
+  .max_reset_number=5,
 #endif
   .tl=NULL,
   .sl=NULL,
@@ -1661,7 +1664,7 @@ main (int argc, char **argv)
       if(bytes_read<0)
 	{
 	  if(errno!=EAGAIN)
-	    log_message( MSG_DEBUG,"Error : Read error------------------------------------------------- %s \n",strerror(errno));
+	    log_message( MSG_WARN,"Error : DVR Read error : %s \n",strerror(errno));
 	  continue;
 	}
 
@@ -2177,6 +2180,9 @@ int mumudvb_close(int Interrupted)
       free(unicast_vars.fd_info);
     unicast_vars.fd_info=NULL;
 
+//    if(temp_buffer_from_dvr)
+//       free(temp_buffer_from_dvr);
+
   if(Interrupted<(1<<8))
     return (0);
   else
@@ -2407,7 +2413,7 @@ static void SignalHandler (int signum)
 	      channels[curr_channel].num_packet = 0;
 	      channels[curr_channel].scrambled_channel = 0;
 	    }
-      
+
 #ifdef LIBDVBEN50221
 	  if(cam_vars.cam_support)
 	    {
@@ -2416,19 +2422,19 @@ static void SignalHandler (int signum)
             if (cam_vars.cam_support && timeout_no_cam_init>0 && now>timeout_no_cam_init && cam_vars.ca_resource_connected==0)
             {
 #ifdef CAMDEBUG
-              if(cam_vars.need_reset==0)
+              if(cam_vars.need_reset==0 && cam_vars.reset_counts<cam_vars.max_reset_number)
               {
                 log_message( MSG_INFO,
                             "No CAM initialization on card %d in %ds, WE FORCE A RESET.\n",
                             tuneparams.card, timeout_no_cam_init);
                 cam_vars.need_reset=1;
-                timeout_no_cam_init=now+timeout_no_cam_init;
+                timeout_no_cam_init=now+cam_vars.reset_interval;
               }
-              else
+              else if (cam_vars.reset_counts>=cam_vars.max_reset_number)
               {
                 log_message( MSG_INFO,
-                             "No CAM initialization on card %d in %ds,  he reset didn't worked.\n",
-                             tuneparams.card, timeout_no_cam_init);
+                             "No CAM initialization on card %d in %ds,  the %d resets didn't worked.\n",
+                             tuneparams.card, timeout_no_cam_init,cam_vars.max_reset_number);
                 Interrupted=ERROR_NO_CAM_INIT<<8; //the <<8 is to make difference beetween signals and errors
               }
 #else

@@ -53,7 +53,7 @@
 #define ALARM_TIME 2
 #define ALARM_TIME_TIMEOUT 60
 #define ALARM_TIME_TIMEOUT_NO_DIFF 600
-#define ALARM_TIME_TIMEOUT_NO_CAM_INIT 600
+#define ALARM_TIME_TIMEOUT_NO_CAM_INIT 60
 
 /** MTU 
     1500 bytes - ip header (12bytes) - TCP header (biggest between TCP and udp) 24  : 7 mpeg2-ts packet per ethernet frame
@@ -123,9 +123,8 @@ typedef struct {
 
 struct unicast_client_t;
 
-/**@brief Structure for storing channels
+/** @brief Structure for storing channels
  *
- * @todo : uses streamed_channel values to compute the used bandwith
  */
 typedef struct{
   /**tell if this channel is actually streamed*/
