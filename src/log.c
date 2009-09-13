@@ -139,7 +139,7 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
       log_message( MSG_WARN,
 		   "%s: %s\n",
 		   file_streamed_channels_filename, strerror (errno));
-      exit(ERROR_CREATE_FILE);
+      return;
     }
 
   file_not_streamed_channels = fopen (file_not_streamed_channels_filename, "w");
@@ -148,7 +148,7 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
       log_message( MSG_WARN,
 		   "%s: %s\n",
 		   file_not_streamed_channels_filename, strerror (errno));
-      exit(ERROR_CREATE_FILE);
+      return;
     }
 
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
@@ -218,7 +218,7 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
     {
       strcpy(current_line_temp,current_line);
       substring = strtok (current_line_temp, delimiteurs);
-      
+
       //We remove the channels and parameters concerning autoconfiguration
       if (!strcmp (substring, "autoconfiguration"))
 	continue;
@@ -228,10 +228,18 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
 	continue;
       else if (!strcmp (substring, "autoconf_radios"))
 	continue;
+      else if (!strcmp (substring, "autoconf_unicast_start_port"))
+        continue;
+      else if (!strcmp (substring, "autoconf_pid_update"))
+        continue;
       else if (!strcmp (substring, "ip"))
 	continue;
       else if (!strcmp (substring, "port"))
-	continue;
+        continue;
+      else if (!strcmp (substring, "unicast_port"))
+        continue;
+      else if (!strcmp (substring, "ts_id"))
+        continue;
       else if (!strcmp (substring, "cam_pmt_pid"))
 	continue;
       else if (!strcmp (substring, "pids"))
@@ -240,7 +248,6 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
 	continue;
       else if (!strcmp (substring, "name"))
 	continue;
-
       //we write the parts we didn't dropped
       fprintf(config_file,"%s",current_line);
 
@@ -292,8 +299,11 @@ void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *
       if (channels[curr_channel].sap_group[0])
 	fprintf ( config_file, "sap_group=%s\n", channels[curr_channel].sap_group);
       if (channels[curr_channel].need_cam_ask)
-	fprintf ( config_file, "cam_pmt_pid=%d\n", channels[curr_channel].pmt_pid);
-
+        fprintf ( config_file, "cam_pmt_pid=%d\n", channels[curr_channel].pmt_pid);
+      if (channels[curr_channel].ts_id)
+        fprintf ( config_file, "ts_id=%d\n", channels[curr_channel].ts_id);
+      if (channels[curr_channel].unicast_port)
+        fprintf ( config_file, "unicast_port=%d\n", channels[curr_channel].unicast_port);
       fprintf ( config_file, "pids=");
       for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
 	fprintf ( config_file, "%d ", channels[curr_channel].pids[curr_pid]);
