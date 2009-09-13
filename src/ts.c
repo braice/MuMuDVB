@@ -239,7 +239,7 @@ int check_pmt_ts_id(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
     log_message( MSG_DETAIL,"TS : GOOD ts_id for PMT %d and channel \"%s\"\n", pmt->pid, channel->name);
 
   if(!channel->ts_id)
-    log_message( MSG_DEBUG,"TS : no ts_id information for channel \"%s\"\n", pmt->pid, channel->name);
+    log_message( MSG_DEBUG,"TS : no ts_id information for channel \"%s\"\n", channel->name);
 
   return 1;
 
