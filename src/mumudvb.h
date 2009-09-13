@@ -126,7 +126,7 @@ struct unicast_client_t;
 /** @brief Structure for storing channels
  *
  */
-typedef struct{
+typedef struct mumudvb_channel_t{
   /**tell if this channel is actually streamed*/
   int streamed_channel;
   /**Tell the total packet number (without pmt) for the scrambling ratio*/

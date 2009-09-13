@@ -1476,7 +1476,7 @@ main (int argc, char **argv)
 	  if(channels[curr_channel].pmt_packet==NULL)
 	    {
               log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-	      return mumudvb_close(100<<8);
+	      return mumudvb_close(ERROR_MEMORY<<8);
 	    }
 	  memset (channels[curr_channel].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 	}
@@ -1856,19 +1856,27 @@ main (int argc, char **argv)
 			if((autoconf_vars.autoconf_pid_update && !channels[curr_channel].pmt_packet->empty && channels[curr_channel].pmt_packet->packet_ok)||
 			   (!autoconf_vars.autoconf_pid_update && get_ts_packet(actual_ts_packet,channels[curr_channel].pmt_packet))) 
 			  {
-			    cam_vars.delay=0;
-			    iRet=mumudvb_cam_new_pmt(&cam_vars, channels[curr_channel].pmt_packet);
-			    if(iRet==1)/**@todo : check ts_id*/
-			      {
-				log_message( MSG_INFO,"CAM : CA PMT sent for channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name );
-				channels[curr_channel].need_cam_ask=CAM_ASKED; //once we have asked the CAM for this PID, we don't have to ask anymore
-			      }
-			    else if(iRet==-1)
-			      {
-				log_message( MSG_DETAIL,"CAM : Problem sending CA PMT for channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name );
-				channels[curr_channel].pmt_packet->empty=1;//if there was a problem, we reset the packet
-			      }
-			  }
+                            //We check the transport stream id of the packet
+                            if(check_pmt_ts_id(channels[curr_channel].pmt_packet, &channels[curr_channel]))
+                            {
+                              cam_vars.delay=0;
+                              iRet=mumudvb_cam_new_pmt(&cam_vars, channels[curr_channel].pmt_packet);
+                              if(iRet==1)
+                              {
+                                log_message( MSG_INFO,"CAM : CA PMT sent for channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name );
+                                channels[curr_channel].need_cam_ask=CAM_ASKED; //once we have asked the CAM for this PID, we don't have to ask anymore
+                              }
+                              else if(iRet==-1)
+                              {
+                                log_message( MSG_DETAIL,"CAM : Problem sending CA PMT for channel %d : \"%s\"\n", curr_channel, channels[curr_channel].name );
+                                channels[curr_channel].pmt_packet->empty=1;//if there was a problem, we reset the packet
+                              }
+                            }
+                            else
+                            {
+                              channels[curr_channel].pmt_packet->empty=1;//The ts_id is bad, we will try to get another PMT packet
+                            }
+                          }
 		      }
 		  }
 #endif

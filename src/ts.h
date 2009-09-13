@@ -459,5 +459,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *pmt);
 int AddPacketStart (unsigned char *packet, unsigned char *buf, unsigned int len);
 int AddPacketContinue  (unsigned char *packet, unsigned char *buf, unsigned int len, unsigned int act_len);
 
+struct mumudvb_channel_t;
+int check_pmt_ts_id(mumudvb_ts_packet_t *pmt, struct mumudvb_channel_t *channel);
 
 #endif
