@@ -75,6 +75,8 @@
 #include "autoconf.h"
 #include "rtp.h"
 
+extern int Interrupted;
+
 //LIBUSCI for long channel names (ATSC only)
 #ifdef LIBUCSI
 #include <libucsi/atsc/types.h>
@@ -120,7 +122,7 @@ char *encodings_en300468[] ={
 };
 
 
-/**@brief initialize the autoconfiguration : alloc the memory etc...
+/** @brief initialize the autoconfiguration : alloc the memory etc...
  *
  */
 int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *channels,int number_of_channels)
@@ -133,14 +135,16 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
       if(autoconf_vars->autoconf_temp_pat==NULL)
 	{
           log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-	  return -1;
+          Interrupted=ERROR_MEMORY<<8;
+          return -1;
 	}
       memset (autoconf_vars->autoconf_temp_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
       autoconf_vars->autoconf_temp_sdt=malloc(sizeof(mumudvb_ts_packet_t));
       if(autoconf_vars->autoconf_temp_sdt==NULL)
 	{
           log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-	  return -1;
+          Interrupted=ERROR_MEMORY<<8;
+          return -1;
 	  
 	}
       memset (autoconf_vars->autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -148,7 +152,8 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
       if(autoconf_vars->autoconf_temp_psip==NULL)
 	{
           log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-	  return -1;
+          Interrupted=ERROR_MEMORY<<8;
+          return -1;
 	  
 	}
       memset (autoconf_vars->autoconf_temp_psip, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -156,7 +161,8 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
       if(autoconf_vars->services==NULL)
 	{
           log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-	  return -1;
+          Interrupted=ERROR_MEMORY<<8;
+          return -1;
 	}
       memset (autoconf_vars->services, 0, sizeof( mumudvb_service_t));//we clear it
 
@@ -789,6 +795,7 @@ void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *service)
   if(tempdest==NULL)
     {
       log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      Interrupted=ERROR_MEMORY<<8;
       return;
     }
 
@@ -1064,7 +1071,8 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 		  if(channels[channel_number].pmt_packet==NULL)
 		    {
                       log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-		      channel_number--;/**@todo make it cleaner*/
+                      Interrupted=ERROR_MEMORY<<8;
+                      return -1;
 		    }
 		  else
 		    memset (channels[channel_number].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
