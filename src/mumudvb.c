@@ -315,7 +315,7 @@ int mumudvb_poll(fds_t *fds)
 	      poll_eintr=0;
 	    }
 	}
-      /**\todo : put a maximum number of interrupted system calls per unit time*/
+      /**@todo : put a maximum number of interrupted system calls per unit time*/
     }
   
   if(poll_try==MAX_POLL_TRIES)
@@ -2342,7 +2342,7 @@ static void SignalHandler (int signum)
 	  if((now-show_buffer_stats_time)>=show_buffer_stats_interval)
 	    {
 	      show_buffer_stats_time=now;
-              log_message( MSG_DEBUG, "DEBUG : Average packets in the buffer %d\n", stats_num_packets_received/stats_num_reads);
+              log_message( MSG_DETAIL, "DETAIL : Average packets in the buffer %d\n", stats_num_packets_received/stats_num_reads);
               stats_num_packets_received=0;
               stats_num_reads=0;
 	    }
