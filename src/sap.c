@@ -183,20 +183,59 @@ int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumud
 
   @subsection session name (basically channel name)
   s= ...
-  @subsection connection information
-  ex : c=IN IP4 235.214.225.1/2
-
-  the /2 is the TTL of the media
-  */
-  sprintf(temp_string,"v=0\r\no=%s %d %d IN IP4 %s\r\ns=%s\r\nc=IN IP4 %s/%d\r\n", 
-	  sap_vars->sap_organisation, sap_vars->sap_serial, sap_message->version, channel.ipOut,
-	  channel.name, 
-	  channel.ipOut, multicast_ttl);
+   */
+  sprintf(temp_string,"v=0\r\no=%s %d %d IN IP4 %s\r\ns=%s\r\n", 
+          sap_vars->sap_organisation, sap_vars->sap_serial, sap_message->version, channel.ipOut,
+          channel.name);
   if( (sap_message->len+payload_len+strlen(temp_string))>1024)
+  {
+    log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel.name);
+    return 1;
+  }
+  memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
+  payload_len+=strlen(temp_string);
+
+    /**  @subsection URI
+  ex : u=http://www.cs.ucl.ac.uk/staff/M.Handley/sdp.03.ps
+
+  u=<URI>
+
+  o A URI is a Universal Resource Identifier as used by WWW clients
+
+  o The URI should be a pointer to additional information about the
+  conference
+
+  o This field is optional, but if it is present it should be specified
+  before the first media field
+
+  o No more than one URI field is allowed per session description
+  */
+  if(strlen(sap_vars->sap_uri))
+  {
+    sprintf(temp_string,"u=%s\r\n", 
+            sap_vars->sap_uri);
+    if( (sap_message->len+payload_len+strlen(temp_string))>1024)
     {
       log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel.name);
       return 1;
     }
+    memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
+    payload_len+=strlen(temp_string);
+
+  }
+  
+  /**  @subsection connection information
+  ex : c=IN IP4 235.214.225.1/2
+
+  the /2 is the TTL of the media
+   */
+  sprintf(temp_string,"c=IN IP4 %s/%d\r\n",
+          channel.ipOut, multicast_ttl);
+  if( (sap_message->len+payload_len+strlen(temp_string))>1024)
+  {
+    log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel.name);
+    return 1;
+  }
   memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
   payload_len+=strlen(temp_string);
 

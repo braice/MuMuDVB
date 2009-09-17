@@ -223,6 +223,7 @@ sap_parameters_t sap_vars={
   .sap_sending_ip="0.0.0.0",
   .sap_default_group="",
   .sap_organisation="MuMuDVB",
+  .sap_uri="\0",
   .sap_ttl=SAP_DEFAULT_TTL,
 };
 
@@ -758,6 +759,18 @@ main (int argc, char **argv)
 		strncpy(sap_vars.sap_organisation,strtok(substring,"\n"),255 - 1);
 	    }
 	}
+        else if (!strcmp (substring, "sap_uri"))
+        {
+	  // other substring extraction method in order to keep spaces
+          substring = strtok (NULL, "=");
+          if (!(strlen (substring) >= 255 - 1))
+            strcpy(sap_vars.sap_uri,strtok(substring,"\n"));	
+          else
+          {
+            log_message( MSG_WARN,"Sap URI too long\n");
+            strncpy(sap_vars.sap_uri,strtok(substring,"\n"),255 - 1);
+          }
+        }
       else if (!strcmp (substring, "sap_sending_ip"))
 	{
 	  substring = strtok (NULL, delimiteurs);

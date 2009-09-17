@@ -164,6 +164,7 @@ Other global parameters
 5+^s|SAP announces parameters  
 |sap | Generation of SAP announces | 0 (1 if full autoconfiguration) | 0 or 1 | 
 |sap_organisation |Organisation field sent in the SAP announces | MuMuDVB | | Optionnal
+|sap_uri |URI  field sent in the SAP announces |  | | Optionnal
 |sap_sending_ip |The SAP sender IP address | 0.0.0.0 | | Optionnal, not autodetected
 |sap_interval |Interval in seconds between sap announces | 5 | positive integers | 
 |sap_default_group | The default playlist group for sap announces | | string | Optionnal 

@@ -166,6 +166,7 @@ Autres paramètres globaux
 5+^s|Paramètres concernant les annonces SAP
 |sap | Génération des annonces SAP | 0 (1 si autoconfiguration complète) | 0 or 1 | 
 |sap_organisation |Champ "organisation" envoyé avec les annonces SAP | MuMuDVB | | Optionnel
+|sap_uri |Champ "URI" envoyé avec les annonces SAP |  | | Optionnel
 |sap_sending_ip |L'IP d'envoi des annonces SAP | 0.0.0.0 | | Optionnel, non détecté automatiquement
 |sap_interval |Intervalle en secondes entre les annonces SAP | 5 | entiers positifs | 
 |sap_default_group | Le groupe de liste de lecture par défaut pour les annonces SAP | | string | Optionnel 
