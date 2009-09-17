@@ -313,6 +313,7 @@ void cam_stop(cam_parameters_t *cam_params)
 
 
 
+#define MAX_WAIT_AFTER_RESET 30
 
 /** @brief The thread for polling the cam */
 static void *camthread_func(void* arg)
@@ -330,9 +331,11 @@ static void *camthread_func(void* arg)
 #ifdef CAMDEBUG
     if(cam_params->need_reset==1)
     {
-      log_message( MSG_DEBUG,  "CAM We force the reset of the CAM\n");
+      log_message( MSG_DETAIL,  "CAM We force the reset of the CAM\n");
       cam_reset_cam(cam_params);
-      for(i=0;i<10;i++)
+      i=0;
+      log_message( MSG_DEBUG,  "CAM We wait for the cam to be INITIALISING\n");
+      do
       {
         camstate=cam_debug_dvbca_get_cam_state(cam_params);
         switch(camstate) 
@@ -351,7 +354,10 @@ static void *camthread_func(void* arg)
             break;
         }
         usleep(10000);
-      }
+        i++;
+      } while(camstate!=DVBCA_CAMSTATE_INITIALISING && i < MAX_WAIT_AFTER_RESET);
+      if(i==MAX_WAIT_AFTER_RESET)
+        log_message( MSG_DEBUG,  "CAM The CAM isn't in a good state after reset, it will probably don't work :(\n");
       cam_params->need_reset=0;
       cam_params->reset_counts++;
     }
