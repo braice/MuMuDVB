@@ -13,7 +13,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/bin/mumudvb
 PIDDIR=/var/run/mumudvb
 DEFAULT_FILE=/etc/default/mumudvb
-NAME=Mumudvb
+NAME=MuMuDVB
 
 #Reading of the config file
 if [ -f "$DEFAULT_FILE" ] ; then
@@ -24,7 +24,7 @@ if [ "$DONTSTARTMUMU" = "true" ]; then exit 0; fi
 
 . /lib/lsb/init-functions
 
-test -x $DAEMON || exit 0
+test -x $DAEMON || exit 5
 
 set -e
 
@@ -58,7 +58,7 @@ case "$1" in
   start)
         if [ ! -f "$DEFAULT_FILE" ]; then
                 log_failure_msg "$DEFAULT_FILE not found, Can't start $NAME"
-                exit 0
+                exit 6
         fi
 
         log_daemon_msg "Starting $NAME"
@@ -77,8 +77,11 @@ case "$1" in
         do_start
         log_end_msg $?
         ;;
+  status)
+        status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+        ;;
   *)
-        log_success_msg "Usage: $0 {start|stop|restart|force-reload}" >&2
+        log_success_msg "Usage: $0 {start|stop|restart|force-reload|status}" >&2
         exit 1
         ;;
 esac
