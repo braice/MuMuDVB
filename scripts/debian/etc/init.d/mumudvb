@@ -13,7 +13,8 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/bin/mumudvb
 PIDDIR=/var/run/mumudvb
 DEFAULT_FILE=/etc/default/mumudvb
-NAME=MuMuDVB
+NAME=mumudvb
+DESC="television streaming program"
 
 #Reading of the config file
 if [ -f "$DEFAULT_FILE" ] ; then
@@ -33,13 +34,17 @@ do_start() {
                 mkdir -p $PIDDIR
         fi
         chown $DAEMONUSER $PIDDIR
-	eval $LAUNCH_BEFORE_MUMU
+	if [ -x $LAUNCH_BEFORE_MUMU ]; then
+		log_daemon_msg "Launching pre script ..."
+		eval $LAUNCH_BEFORE_MUMU
+		log_daemon_msg "Done."
+	fi
 	for ADAPTER in $ADAPTERS; do
 		#Todo : fails if all card fails
-		log_daemon_msg "     Card $ADAPTER"
+		log_daemon_msg " Starting card $ADAPTER"
 		eval CONFIG_FILE=\$MUMUDVB_CONF_$ADAPTER
 		if [ ! -f $CONFIG_FILE ]; then
-                   log_warning_msg "        Config file $CONFIG_FILE not found."
+                   log_warning_msg " Card $ADAPTER: Config file $CONFIG_FILE not found."
 		else
 		   start-stop-daemon --start --oknodo --pidfile "$PIDDIR/mumudvb_carte$ADAPTER.pid"\
                		 --chuid $DAEMONUSER --exec $DAEMON -- $DAEMON_OPTS -c $CONFIG_FILE
@@ -61,24 +66,24 @@ case "$1" in
                 exit 6
         fi
 
-        log_daemon_msg "Starting $NAME"
+        log_daemon_msg "Starting $DESC: $NAME"
         do_start
         log_end_msg $?
         ;;
   stop)
-        log_daemon_msg "Stopping $NAME"
+        log_daemon_msg "Stopping $DESC: $NAME"
         do_stop
         log_end_msg $?
         ;;
   restart|force-reload)
-        log_daemon_msg "Restarting $NAME"
+        log_daemon_msg "Restarting $DESC: $NAME"
         do_stop
         sleep 1
         do_start
         log_end_msg $?
         ;;
   status)
-        status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+        status_of_proc "$DAEMON" "$DESC: $NAME" && exit 0 || exit $?
         ;;
   *)
         log_success_msg "Usage: $0 {start|stop|restart|force-reload|status}" >&2
