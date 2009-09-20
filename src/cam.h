@@ -47,7 +47,6 @@
  * Header file for cam support, contains mainly the structure for carrying cam parameters
  */
 
-#ifdef LIBDVBEN50221
 #include <libdvben50221/en50221_stdcam.h>
 #include <pthread.h>
 
@@ -108,7 +107,5 @@ typedef struct cam_parameters_t{
 int cam_start(cam_parameters_t *, int, char *);
 void cam_stop(cam_parameters_t *);
 int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_pmt_ptr);
-
-#endif //LIBEN50221
 
 #endif

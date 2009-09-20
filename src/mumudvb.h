@@ -32,10 +32,9 @@
 #ifndef _MUMUDVB_H
 #define _MUMUDVB_H
 
-#define VERSION "1.5.5b"
-
 #include "network.h"  //for the sockaddr
 #include "ts.h"
+#include "config.h"
 
 /**the number of pids by channel*/
 #define MAX_PIDS_PAR_CHAINE     18

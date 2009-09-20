@@ -77,8 +77,8 @@
 
 extern int Interrupted;
 
-//LIBUSCI for long channel names (ATSC only)
-#ifdef LIBUCSI
+//LIBUCSI for long channel names (ATSC only)
+#ifdef HAVE_LIBUCSI
 #include <libucsi/atsc/types.h>
 #endif
 
@@ -1366,7 +1366,7 @@ int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parame
       break;
     }
 
-#ifdef LIBUCSI //used to decompress the atsc_text_descriptor
+#ifdef HAVE_LIBUCSI //used to decompress the atsc_text_descriptor
   int descriptor_delta;
   uint8_t *dest8=NULL; //Pointer for libusci conversion
   size_t destbufsize=MAX_NAME_LEN;

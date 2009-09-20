@@ -102,7 +102,7 @@
 #include "tune.h"
 #include "network.h"
 #include "dvb.h"
-#ifdef LIBDVBEN50221
+#ifdef ENABLE_CAM_SUPPORT
 #include "cam.h"
 #endif
 #include "ts.h"
@@ -244,7 +244,7 @@ autoconf_parameters_t autoconf_vars={
   .autoconf_unicast_start_port=0,
   };
 
-#ifdef LIBDVBEN50221
+#ifdef ENABLE_CAM_SUPPORT
 //CAM (Conditionnal Access Modules : for scrambled channels) C99 initialisation
 cam_parameters_t cam_vars={
   .cam_support = 0,
@@ -354,13 +354,13 @@ usage (char *name)
 	   "%s Version "
 	   VERSION
 	   "\n"
-#ifndef LIBDVBEN50221
+#ifndef ENABLE_CAM_SUPPORT
 	   "Builded without cam support.\n"
 #endif
 #ifdef ATSC
 	   "Builded with ATSC support.\n"
 #endif
-#ifdef LIBUCSI
+#ifdef HAVE_LIBUCSI
 	   "Builded with ATSC long channel names support.\n"
 #endif
 	   "Based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
@@ -401,7 +401,7 @@ main (int argc, char **argv)
   FILE *conf_file;
   FILE *channels_diff;
   FILE *channels_not_streamed;
-#ifdef LIBDVBEN50221
+#ifdef ENABLE_CAM_SUPPORT
   FILE *cam_info;
 #endif
   FILE *pidfile;
@@ -526,7 +526,7 @@ main (int argc, char **argv)
   log_message( MSG_INFO, "MuMuDVB Version "
 	   VERSION
 	   "\n"
-#ifndef LIBDVBEN50221
+#ifndef ENABLE_CAM_SUPPORT
 	   "Builded without cam support.\n"
 #endif
 	   "Latest version available from http://mumudvb.braice.net/\n\n");
@@ -604,7 +604,7 @@ main (int argc, char **argv)
 			"You have enabled the Pat Rewriting\n");
 	    }
 	}
-#ifdef LIBDVBEN50221
+#ifdef ENABLE_CAM_SUPPORT
       else if (!strcmp (substring, "cam_support"))
 	{
 	  substring = strtok (NULL, delimiteurs);
@@ -866,7 +866,7 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  tuneparams.card = atoi (substring);
 	}
-#ifdef LIBDVBEN50221
+#ifdef ENABLE_CAM_SUPPORT
       else if (!strcmp (substring, "cam_number"))
 	{
 	  substring = strtok (NULL, delimiteurs);
@@ -1016,7 +1016,7 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  unicast_vars.portOut = atoi (substring);
 	}
-#ifdef LIBDVBEN50221
+#ifdef ENABLE_CAM_SUPPORT
       else if (!strcmp (substring, "cam_pmt_pid"))
 	{
 	  if ( ip_ok == 0)
@@ -1326,7 +1326,7 @@ main (int argc, char **argv)
     fclose (channels_not_streamed);
 
 
-#ifdef LIBDVBEN50221
+#ifdef ENABLE_CAM_SUPPORT
   if(cam_vars.cam_support)
     {
       cam_info = fopen (filename_cam_info, "w");
@@ -1415,7 +1415,7 @@ main (int argc, char **argv)
   //cam_support
   /*****************************************************/
 
-#ifdef LIBDVBEN50221
+#ifdef ENABLE_CAM_SUPPORT
   if(cam_vars.cam_support){
     
     //We initialise the cam. If fail, we remove cam support
@@ -1858,7 +1858,7 @@ main (int argc, char **argv)
 	      //cam support
 	      // If we send the packet, we look if it's a cam pmt pid
 	      /******************************************************/
-#ifdef LIBDVBEN50221
+#ifdef ENABLE_CAM_SUPPORT
 	      //We don't ask the cam before the end of autoconfiguration
 	      if(!autoconf_vars.autoconfiguration && cam_vars.cam_support && send_packet==1)  //no need to check paquets we don't send
 		if(cam_vars.ca_resource_connected && cam_vars.delay>=1 )
@@ -2139,7 +2139,7 @@ int mumudvb_close(int Interrupted)
   //We close the unicast connections and free the clients
   unicast_freeing(&unicast_vars, channels);
 
-#ifdef LIBDVBEN50221
+#ifdef ENABLE_CAM_SUPPORT
   if(cam_vars.cam_support)
     {
       // stop CAM operation
@@ -2434,7 +2434,7 @@ static void SignalHandler (int signum)
 	      channels[curr_channel].scrambled_channel = 0;
 	    }
 
-#ifdef LIBDVBEN50221
+#ifdef ENABLE_CAM_SUPPORT
 	  if(cam_vars.cam_support)
 	    {
               cam_vars.delay++;

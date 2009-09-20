@@ -50,7 +50,6 @@
  * Code for talking with conditionnal acces modules. This code uses the libdvben50221 from dvb-apps
  */
 
-#ifdef LIBDVBEN50221
 #include <libucsi/section.h>
 
 
@@ -709,5 +708,3 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
   return 0;
 }
 
-
-#endif
