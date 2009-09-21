@@ -20,18 +20,21 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
+
 # HACK: there is no function in dvbapi, it is checkeb by the header. but we want to create a good LIBS
 AC_CHECK_LIB([dvbapi], [main])
+AC_CHECK_LIB([ucsi], [atsc_text_segment_decode],[atsc_long_names="yes"], [atsc_long_names="no"])
+#AC_CHECK_LIB([dvben50221], [en50221_stdcam_create],,,[ucsi,pthread])
 
 
 dnl
 dnl cam support
 dnl
 AC_ARG_ENABLE(cam_support,
-  [  --enable-cam-support          CAM support (default enabled)])
-if test "${enableval}" != "no"
+  [  --enable-cam-support          CAM support (default enabled)],,[enable_cam_support="yes"])
+
+if test "${enable_cam_support}" = "yes"
 then
-  enable_cam_support="yes"
   AC_CHECK_LIB([pthread], [pthread_create],[], [enable_cam_support="no"])
   AC_CHECK_LIB([ucsi], [atsc_text_segment_decode],[], [enable_cam_support="no"])
   AC_CHECK_LIB([dvben50221], [en50221_tl_create],[], [enable_cam_support="no"])
@@ -44,12 +47,6 @@ then
 fi
 AM_CONDITIONAL(BUILD_CAMSUPPORT, [test "${enable_cam_support}" != "no"])
 
-
-# Checks for libraries. 
-AC_CHECK_LIB([ucsi], [atsc_text_segment_decode],[atsc_long_names="yes"], [atsc_long_names="no"])
-
-#AM_CONDITIONAL(HAVE_WINCE, test "${SYS}" = "mingwce")
-#--enable-debug
 
 
 # Checks for header files.
