@@ -75,7 +75,7 @@ Possible values for this variable
   int autoconfiguration;
   /**do we autoconfigure the radios ?*/
   int autoconf_radios;
-  /** The beginning of autoconfigured multicast adresses*/
+  /** The beginning of autoconfigured multicast addresses*/
   char autoconf_ip_header[10];
   /**When did we started autoconfiguration ?*/
   long time_start_autoconfiguration; 

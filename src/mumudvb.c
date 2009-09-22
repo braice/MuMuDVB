@@ -283,7 +283,7 @@ unicast_parameters_t unicast_vars={
 };
 
 //logging
-int log_initialised=0; /**say if we opened the syslog ressource*/
+int log_initialised=0; /**say if we opened the syslog resource*/
 int verbosity = MSG_INFO+1; /** the verbosity level for log messages */
 
 

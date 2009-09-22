@@ -239,7 +239,7 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
   if (cam_params->stdcam->ai_resource) {
     en50221_app_ai_register_callback(cam_params->stdcam->ai_resource, mumudvb_cam_ai_callback, cam_params->stdcam);
   } else {
-    log_message( MSG_WARN,  "CAM : WARNING : No Application Information ressource\n");
+    log_message( MSG_WARN,  "CAM : WARNING : No Application Information resource\n");
   }
 
   // hook up the CA callbacks
@@ -247,7 +247,7 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
     en50221_app_ca_register_info_callback(cam_params->stdcam->ca_resource, mumudvb_cam_ca_info_callback, cam_params);
     en50221_app_ca_register_pmt_reply_callback(cam_params->stdcam->ca_resource, mumudvb_cam_app_ca_pmt_reply_callback, cam_params);
   } else {
-    log_message( MSG_WARN,  "CAM : WARNING : No CA ressource\n");
+    log_message( MSG_WARN,  "CAM : WARNING : No CA resource\n");
   }
 
 

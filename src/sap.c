@@ -128,7 +128,7 @@ int sap_update(mumudvb_channel_t channel, sap_parameters_t *sap_vars, int curr_c
     }
   else
     {
-      log_message(MSG_WARN,"WARNING : Invalid SAP sending Ip address, using 0.0.0.0 as Ip adress\n");
+      log_message(MSG_WARN,"WARNING : Invalid SAP sending Ip address, using 0.0.0.0 as Ip address\n");
       sap_message->buf[4]=0;
       sap_message->buf[5]=0;
       sap_message->buf[6]=0;
