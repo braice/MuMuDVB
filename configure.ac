@@ -48,6 +48,36 @@ fi
 AM_CONDITIONAL(BUILD_CAMSUPPORT, [test "${enable_cam_support}" != "no"])
 
 
+dnl
+dnl  Test coverage
+dnl
+AC_ARG_ENABLE(coverage,
+	[  --enable-coverage       build for test coverage (default disabled)],,
+	[enable_coverage="no"])
+AS_IF([test "${enable_coverage}" != "no"], [
+	CFLAGS="-fprofile-arcs -ftest-coverage ${CFLAGS}"
+	CXXFLAGS="-fprofile-arcs -ftest-coverage ${CXXFLAGS}"
+	LDFLAGS="-lgcov ${LDFLAGS}"
+])
+
+dnl
+dnl cam support
+dnl
+AC_ARG_ENABLE(duma,
+  [  --enable-duma          Debbuging DUMA library (default disabled)],,
+  [enable_duma="no"])
+
+if test "${enable_duma}" = "yes"
+then
+  AC_CHECK_LIB([duma], [_duma_malloc],[], [enable_duma="no"])
+  if test "${enable_duma}" != "no"
+  then
+    LDFLAGS="-lduma ${LDFLAGS}"
+  else
+    AC_MSG_WARN([The DUMA library needs to be installed before])
+  fi
+fi
+
 
 # Checks for header files.
 AC_HEADER_RESOLV
@@ -75,6 +105,8 @@ echo ""
 echo "-------------------------------------------------------"
 echo "MuMuDVB configure results:"
 echo ""
+echo "Features"
+echo ""
 
 if test "${enable_cam_support}" != "no" ; then
         echo "Build with CAM support:                             yes"
@@ -87,3 +119,20 @@ if test "${atsc_long_names}" = "yes" ; then
 else
         echo "Build with ATSC long names support:                  no"
 fi
+
+echo ""
+echo "Debugging"
+echo ""
+
+if test "${enable_coverage}" = "yes" ; then
+        echo "Build with code coverage debug symbols              yes"
+else
+        echo "Build with code coverage debug symbols               no"
+fi
+
+if test "${enable_duma}" = "yes" ; then
+        echo "Build with debugging DUMA library                    yes"
+else
+        echo "Build with debugging DUMA library                    no"
+fi
+
