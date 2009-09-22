@@ -1,14 +1,10 @@
-docdir = $(datadir)/doc/@PACKAGE@
-man_MANS = mumudvb.1
-
+#We just have a doc target to compile the documentation, no installation is made
 ASCIIDOCFLAGS   = -a toc -a numbered
-DOC_FILES	= README.html README-fr.html README_CONF.html README_CONF-fr.html QUICKSTART.html
-SRC_DOC_FILES	= $(DOC_FILES:.html=.txt)
-EXAMPLES        = configuration_examples/autoconf1.conf configuration_examples/autoconf_full.conf configuration_examples/example.conf
-DISTCLEANFILES  = $(DOC_FILES)
-doc_DATA        = $(SRC_DOC_FILES) $(EXAMPLES)
+htmldocdir	= asciidoc
+html_DOC	= $(htmldocdir)/README.html $(htmldocdir)/README-fr.html $(htmldocdir)/README_CONF.html $(htmldocdir)/README_CONF-fr.html $(htmldocdir)/QUICKSTART.html
+DISTCLEANFILES  = $(html_DOC)
 
-doc: $(DOC_FILES)
+doc: $(html_DOC)
 
-%.html: %.txt
-	-asciidoc $(ASCIIDOCFLAGS) $^
+$(htmldocdir)/%.html: %.txt
+	-asciidoc $(ASCIIDOCFLAGS) -o $@ $^
