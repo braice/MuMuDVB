@@ -1,7 +1,7 @@
 MuMuDVB - README
 ================
 Brice Dubost <mumudvb@braice.net>
-Version 1.5.5
+Version 1.6
 
 [NOTE]
 Une version HTML de ce fichier est disponible sur http://mumudvb.braice.net[le site web de MuMuDVB].
@@ -25,7 +25,6 @@ Site Web
 ~~~~~~~~
 
 http://mumudvb.braice.net[Site principal de MuMuDVB]
-
 
 Auteurs et contacts
 -------------------
@@ -101,18 +100,51 @@ Installation
 À partir des sources
 ~~~~~~~~~~~~~~~~~~~~
 
+
+À partir d'un snapshot
+^^^^^^^^^^^^^^^^^^^^^^
+
+Si vous avez téléchargé un snapshot, vous devez regénérer les fichiers d'auto(conf make etc ...). Pour faire cela, vous avec besoin des autotools et automake et taper, dans le répertoire de MuMuDVB : 
+
+----------------
+autoreconf -i -f
+----------------
+
+Ainsi vous aurez un source qui peux être installé comme un source "relase"
+
+À partir d'une "release"
+^^^^^^^^^^^^^^^^^^^^^^^^
+
 Pour installer MuMuDVB, tapez : 
 
------------------------------
+--------------------------------------
+$ ./configure [options pour configure]
 $ make
 # make install
------------------------------
+--------------------------------------
+
+Les `[options pour configure]` spécifiques à MuMuDVB sont : 
+
+--------------------------------------------------------------------------------------------------------------
+  --enable-cam-support    Support pour les modules CAM (actif par défaut)
+  --enable-coverage       Compiler avec le support pour les tests de couverture du code (désactivé par défaut)
+  --enable-duma           Librairie de debug DUMA (désactivé par défaut)
+--------------------------------------------------------------------------------------------------------------
+
+Vous pouvez obtenir la liste de toutes les options de configure en tapant
+
+--------------------
+$ ./configure --help
+--------------------
 
 [NOTE]
-Le support pour les modules CAM dépends des librairies libdvben50221, libucsi ( des dvb-apps de linuxtv ) et libpthread. Si vous ne voulez pas compiler MuMuDVB avec le support pour les modules CAM, tapez `make CAMSUPPORT=0` au lieu de `make`.
+Le support pour les modules CAM dépends des librairies libdvben50221, libucsi ( des dvb-apps de linuxtv ) et libpthread. Le script configure détectera la présence de ces librairies et désactivera le support pour les modules CAM si l'une d'elle est absente.
 
 [NOTE]
-Le décodage des noms de chaîne longs pour l'autocoonfiguration en ATSC dépends de la librairie libucsi ( des dvb-apps de linuxtv ), si vous ne voulez pas compiler MuMuDVB avec cette fonctionnalité ( et, ainsi, éviter la dépendance avec la libucsi ), tapez `make LIBUCSI=0` au lieu de `make`. L'autoconfiguration complète fonctionnera toujours avec l'ATSC mais les noms de chaîne seront des noms courts ( 7 caractères maximum ).
+Le décodage des noms de chaîne longs pour l'autocoonfiguration en ATSC dépends de la librairie libucsi ( des dvb-apps de linuxtv ). Le script configure détectera la présence de cette librairies et désactivera le support pour les noms longs si elle est absente. L'autoconfiguration complète fonctionnera toujours avec l'ATSC mais les noms de chaîne seront des noms courts ( 7 caractères maximum ).
+
+[NOTE]
+Si vous voulez compiler la documentation i.e. générer des fichiers HTML avec asciidoc, tapez `make doc`. Le rendu des table fonctionnera avec asciidoc 8.4.4 ( il peux fonctionner avec des versions plus faibles mais il n'a pas été testé ).
 
 Pour installer les scripts d'initialisation ( style debian ) tapez : 
 
@@ -139,7 +171,7 @@ Sinon vous pouvez utiliser aptitude ou synaptic.
 Utilisation
 -----------
 
-La documentation concernant la syntaxe du fichier de configuration est dans le fichier `doc/README_CONF` ou en version HTML sur le site de MuMuDVB.
+La documentation concernant la syntaxe du fichier de configuration est dans le fichier `doc/README_CONF-fr.txt` ( link:README_CONF-fr.html[Version HTML] ).
 
 Utilisation:
 
@@ -266,7 +298,7 @@ Les annonces SAP seront envoyées uniquement pour les chaînes actives. Quand un
 Demander à MuMuDVB de générer les annonces SAP
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Pour envoyer les annonces SAP, vous devez ajouter `sap=1` à votre fichier de configuration. Les autres paramètres concernant les annonces SAP sont documentés dans le fichier `doc/README_CONF-fr`.
+Pour envoyer les annonces SAP, vous devez ajouter `sap=1` à votre fichier de configuration. Les autres paramètres concernant les annonces SAP sont documentés dans le fichier `doc/README_CONF-fr` ( link:README_CONF-fr.html[Version HTML] ).
 
 Configurer le client pour recevoir les annonces SAP
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -519,7 +551,7 @@ Détails techniques (en vrac)
 
  * Lorsque MuMuDVB tourne en démon, il écrit son identifiant de processus dans le fichier `/var/run/mumudvb/mumudvb_carte%d.pid`, où %d est remplacé par le numéro de carte.
 
- * MuMuDVB supporte la réception satellite en bande Ku avec des LNB universel ou standard. Le support pour la réception satellite en bande S ou C est implémenté via l'utilisation de l'option `lo_frequency`. Référez vous au fichier `doc/README_CONF-fr` pour plus de détails.
+ * MuMuDVB supporte la réception satellite en bande Ku avec des LNB universel ou standard. Le support pour la réception satellite en bande S ou C est implémenté via l'utilisation de l'option `lo_frequency`. Référez vous au fichier `doc/README_CONF-fr` ( link:README_CONF-fr.html[Version HTML] ) pour plus de détails.
 
 Problèmes connus
 ----------------
@@ -528,7 +560,7 @@ VLC n'arrive pas à lire le flux mais cela marche avec xine ou mplayer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
  * Pour VLC vous devez spécifier le PID PMT en plus des PIDs audio et vidéo.
-C'est un problème fréquent. Pour le résoudre, vous pouvez utilisez le mode verbeux de VLC ( `vlc -v` ) et vous obtiendrez une ligne comme : `[00000269] ts demuxer debug:   * number=1025 pid=110`. Vous obtiendrez le PID PMT associé à votre numéro de programme. Vous pouvez aussi utiliser dvbsnoop, ou vous référer à la section "comment obtenir les PIDs" du fichier `doc/README_CONF-fr`. Une autre solution est d'utiliser l'autoconfiguration complète.
+C'est un problème fréquent. Pour le résoudre, vous pouvez utilisez le mode verbeux de VLC ( `vlc -v` ) et vous obtiendrez une ligne comme : `[00000269] ts demuxer debug:   * number=1025 pid=110`. Vous obtiendrez le PID PMT associé à votre numéro de programme. Vous pouvez aussi utiliser dvbsnoop, ou vous référer à la section "comment obtenir les PIDs" du fichier `doc/README_CONF-fr` ( link:README_CONF-fr.html[Version HTML] ). Une autre solution est d'utiliser l'autoconfiguration complète.
 
 VLC arrive a lire la vidéo mais pas le son
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -1,7 +1,7 @@
 MuMuDVB - README
 ================
 Brice Dubost <mumudvb@braice.net>
-Version 1.5.5
+Version 1.6
 
 [NOTE]
 An HTML version of this file is availaible on http://mumudvb.braice.net[MuMuDVB's website].
@@ -102,18 +102,50 @@ Installation
 From sources
 ~~~~~~~~~~~~
 
+From a snapshot
+^^^^^^^^^^^^^^^
+
+If you downloaded a snapshot, you will have to generate the auto(conf make etc ...) files. In order to do this you will need the autotools and automake and, type in the folder of MuMuDVB
+
+----------------
+autoreconf -i -f
+----------------
+
+Then you have a source which can be installed as a release package.
+
+From a release package
+^^^^^^^^^^^^^^^^^^^^^^
+
 In order to install MuMuDVB type:
 
------------------------------
+---------------------------------
+$ ./configure [configure options]
 $ make
 # make install
------------------------------
+---------------------------------
+
+The `[configure options]` specific to MuMuDVB are:
+
+---------------------------------------------------------------------
+  --enable-cam-support    CAM support (default enabled)
+  --enable-coverage       build for test coverage (default disabled)
+  --enable-duma           Debbuging DUMA library (default disabled)
+---------------------------------------------------------------------
+
+You can have a list of all the configure options by typing
+
+--------------------
+$ ./configure --help
+--------------------
 
 [NOTE]
-The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps) and libpthread. If you don't want to compile MuMuDVB with CAM support, type `make CAMSUPPORT=0` instead of `make`.
+The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps) and libpthread. The configure script will detect automatically the presence of these libraries and desactivate the CAM support if one of them is not present.
 
 [NOTE]
-The decoding of long channel names for autoconfiguration in ATSC depends on libucsi (from linuxtv's dvb-apps), if you don't want to compile MuMuDVB with this feature (and avoid the libucsi dependance) type `make LIBUCSI=0` instead of `make`. The full autoconfiguration will still work with ATSC but the channel names will be the short channels names (7 characters maximum)
+The decoding of long channel names for autoconfiguration in ATSC depends on libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of this library and desactivate the long channel name support if it is not present. The full autoconfiguration will still work with ATSC but the channel names will be the short channels names (7 characters maximum)
+
+[NOTE]
+If you want to compile the doc i.e. generate HTML files using asciidoc, type `make doc`. The rendering for the tables will work with asciidoc 8.4.4 (can work with lower version but not tested).
 
 In order to install starting scripts (debian flavor) type:
 
@@ -135,12 +167,12 @@ If you want to install a version which is not in your repositories, you can inst
 # dpkg -i mumudvb*.deb
 ----------------------
 
-Otherwise you can use aptitude as usual
+Otherwise you can use aptitude/synaptic as usual
 
 Usage
 -----
 
-The documentation for configuration file syntax is in `doc/README_CONF` or in HTML version on MuMuDVB's website.
+The documentation for configuration file syntax is in `doc/README_CONF.txt` (link:README_CONF.html[HTML version]).
 
 Usage:
 
@@ -266,7 +298,7 @@ The SAP announces will be only sent for alive channels. When a channel goes down
 Asking MuMuDVB to generate SAP announces
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For sending SAP announces you have to add `sap=1` to your config file. The other parameters concerning the sap announces are documented in the `doc/README_CONF` file.
+For sending SAP announces you have to add `sap=1` to your config file. The other parameters concerning the sap announces are documented in the `doc/README_CONF.txt` file (link:README_CONF.html[HTML version]).
 
 Configuring the client to get the SAP announces
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -523,7 +555,7 @@ Technical details (not sorted)
 
  * When daemonized, MuMuDVB writes its process identifier in `/var/run/mumudvb/mumudvb_carte%d.pid`, where %d is replaced by the card number
 
- * MuMuDVB supports satellite in the Ku band, with universal or standard LNBs. The support of satellites in the S or C band is implemented via the use of the lo_frequency option. See README_CONF.
+ * MuMuDVB supports satellite in the Ku band, with universal or standard LNBs. The support of satellites in the S or C band is implemented via the use of the lo_frequency option. See `doc/README_CONF.txt` (link:README_CONF.html[HTML version]).
 
 Known issues
 ------------
@@ -532,7 +564,7 @@ VLC can't read the stream but it is fine with xine or mplayer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
  * For VLC, you must specify the PMT PID besides audio and video PIDs.
-It's a frequent issue. To solve it you can use the verbose mode of VLC (`vlc -v`) and you'll see a ligne like: `[00000269] ts demuxer debug:   * number=1025 pid=110` you'll have the PMT PID associated with your program number, you can also use dvbsnoop, or see how to get pids in doc/README_CONF. Another solution is to use full autoconfiguration.
+It's a frequent issue. To solve it you can use the verbose mode of VLC (`vlc -v`) and you'll see a ligne like: `[00000269] ts demuxer debug:   * number=1025 pid=110` you'll have the PMT PID associated with your program number, you can also use dvbsnoop, or see how to get pids in `doc/README_CONF.txt` (link:README_CONF.html[HTML version]). Another solution is to use full autoconfiguration.
 
 VLC reads the video but no audio
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

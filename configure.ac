@@ -61,7 +61,7 @@ AS_IF([test "${enable_coverage}" != "no"], [
 ])
 
 dnl
-dnl cam support
+dnl duma support
 dnl
 AC_ARG_ENABLE(duma,
   [  --enable-duma          Debbuging DUMA library (default disabled)],,
