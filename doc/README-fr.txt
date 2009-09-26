@@ -87,6 +87,7 @@ Liste détaillée des fonctionalités
 - La taille du tampon peux être réglée pour réduire l'utilisation processeur. Voir la section <<reduce_cpu,réduire l'utilisation processseur>>
 - Peux ne pas envoyer les paquets brouillés
 - Détecte automatiquement si une chaîne est brouillée
+- Peut réinitialiser le module CAM si l'initialisation échoue
 
 D'autres petits programmes sont disponibles depuis le http://gitweb.braice.net/gitweb?p=mumudvb_tools;a=summary[dépot MuMuDVB Tools] :
 

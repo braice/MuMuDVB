@@ -89,6 +89,7 @@ Detailled feature list
 - The buffer size can be tuned to reduce CPU usage, see <<reduce_cpu,reduce MuMuDVB CPU usage>> section.
 - Can avoid the sending of scrambled packets
 - Automatically detect the scrambling status of a channel
+- Can reset the CAM module in case of a bad initialisation
 
 Others small programs are availaible from http://gitweb.braice.net/gitweb?p=mumudvb_tools;a=summary[MuMuDVB Tools Repository] :
 

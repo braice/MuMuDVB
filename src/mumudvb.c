@@ -164,7 +164,7 @@ uint8_t number_chan_asked_pid[8192]; /** the number of channels who want this pi
 
 
 int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
-int timeout_no_cam_init = ALARM_TIME_TIMEOUT_NO_CAM_INIT;
+int timeout_no_cam_init = CAM_DEFAULT_RESET_INTERVAL;
 // file descriptors
 fds_t fds; /** File descriptors associated with the card */
 
@@ -249,12 +249,10 @@ autoconf_parameters_t autoconf_vars={
 cam_parameters_t cam_vars={
   .cam_support = 0,
   .cam_number=0,
-#ifdef CAMDEBUG
   .need_reset=0,
   .reset_counts=0,
-  .reset_interval=20,
-  .max_reset_number=5,
-#endif
+  .reset_interval=CAM_DEFAULT_RESET_INTERVAL,
+  .max_reset_number=CAM_DEFAULT_MAX_RESET_NUM,
   .tl=NULL,
   .sl=NULL,
   .stdcam=NULL,
@@ -287,7 +285,7 @@ int log_initialised=0; /**say if we opened the syslog resource*/
 int verbosity = MSG_INFO+1; /** the verbosity level for log messages */
 
 
-/**@brief : poll the file descriptors fds with a limit in the number of errors
+/** @brief : poll the file descriptors fds with a limit in the number of errors
  *
  */
 int mumudvb_poll(fds_t *fds)
@@ -337,7 +335,7 @@ int mumudvb_poll(fds_t *fds)
 // prototypes
 static void SignalHandler (int signum);
 
-/**@brief : display mumudvb usage*/
+/** @brief : display mumudvb usage*/
 void
 usage (char *name)
 {
@@ -359,9 +357,9 @@ usage (char *name)
 #endif
 #ifdef ATSC
 	   "Builded with ATSC support.\n"
-#endif
 #ifdef HAVE_LIBUCSI
 	   "Builded with ATSC long channel names support.\n"
+#endif
 #endif
 	   "Based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
 	   "Released under the GPL.\n"
@@ -526,9 +524,6 @@ main (int argc, char **argv)
   log_message( MSG_INFO, "MuMuDVB Version "
 	   VERSION
 	   "\n"
-#ifndef ENABLE_CAM_SUPPORT
-	   "Builded without cam support.\n"
-#endif
 	   "Latest version available from http://mumudvb.braice.net/\n\n");
 
   //paranoya we clear all the content of all the channels
@@ -549,7 +544,7 @@ main (int argc, char **argv)
 
   curr_channel=0;
   // we scan config file
-  // see doc/README-conf for further information
+  // see doc/README_CONF* for further information
   int line_len;
   while (fgets (current_line, CONF_LINELEN, conf_file))
     {
@@ -578,11 +573,6 @@ main (int argc, char **argv)
         {
           substring = strtok (NULL, delimiteurs);
           timeout_no_diff= atoi (substring);
-        }
-        else if (!strcmp (substring, "timeout_no_cam_init"))
-        {
-          substring = strtok (NULL, delimiteurs);
-          timeout_no_cam_init= atoi (substring);
         }
         else if (!strcmp (substring, "show_traffic_interval"))
         {
@@ -615,6 +605,17 @@ main (int argc, char **argv)
 			"You have enabled the support for conditionnal acces modules (scrambled channels). Please report any bug/comment\n");
 	    }
 	}
+        else if (!strcmp (substring, "cam_reset_interval"))
+        {
+          substring = strtok (NULL, delimiteurs);
+          cam_vars.reset_interval = atoi (substring);
+          timeout_no_cam_init= cam_vars.reset_interval;
+        }
+        else if (!strcmp (substring, "cam_number"))
+        {
+          substring = strtok (NULL, delimiteurs);
+          cam_vars.cam_number = atoi (substring);
+        }
 #endif
       else if (!strcmp (substring, "autoconf_scrambled"))
 	{
@@ -676,7 +677,7 @@ main (int argc, char **argv)
 	  if(dont_send_sdt)
 	    log_message( MSG_INFO, "You decided not to send the SDT pid. This is a VLC workaround.\n");
 	}
-      else if (!strcmp (substring, "rtp_header"))                                                                                                                                                                                         
+      else if (!strcmp (substring, "rtp_header"))
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  rtp_header = atoi (substring);
@@ -866,13 +867,6 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  tuneparams.card = atoi (substring);
 	}
-#ifdef ENABLE_CAM_SUPPORT
-      else if (!strcmp (substring, "cam_number"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  cam_vars.cam_number = atoi (substring);
-	}
-#endif
       else if (!strcmp (substring, "ip"))
 	{
 	  if ( ip_ok )
@@ -2441,28 +2435,34 @@ static void SignalHandler (int signum)
             }
             if (cam_vars.cam_support && timeout_no_cam_init>0 && now>timeout_no_cam_init && cam_vars.ca_resource_connected==0)
             {
-#ifdef CAMDEBUG
-              if(cam_vars.need_reset==0 && cam_vars.reset_counts<cam_vars.max_reset_number)
+              if(cam_vars.cam_type==DVBCA_INTERFACE_LINK)
               {
-                log_message( MSG_INFO,
-                            "No CAM initialization on card %d in %ds, WE FORCE A RESET.\n",
-                            tuneparams.card, timeout_no_cam_init);
-                cam_vars.need_reset=1;
-                timeout_no_cam_init=now+cam_vars.reset_interval;
+                if(cam_vars.need_reset==0 && cam_vars.reset_counts<cam_vars.max_reset_number)
+                {
+                  log_message( MSG_INFO,
+                               "CAM: No CAM initialization on card %d in %ds, WE FORCE A RESET. try %d on %d.\n",
+                               tuneparams.card,
+                               timeout_no_cam_init,
+                               cam_vars.reset_counts+1,
+                               cam_vars.max_reset_number);
+                  cam_vars.need_reset=1;
+                  timeout_no_cam_init=now+cam_vars.reset_interval;
+                }
+                else if (cam_vars.reset_counts>=cam_vars.max_reset_number)
+                {
+                  log_message( MSG_INFO,
+                               "CAM: No CAM initialization on card %d in %ds,  the %d resets didn't worked. Exiting.\n",
+                               tuneparams.card, timeout_no_cam_init,cam_vars.max_reset_number);
+                  Interrupted=ERROR_NO_CAM_INIT<<8; //the <<8 is to make difference beetween signals and errors
+                }
               }
-              else if (cam_vars.reset_counts>=cam_vars.max_reset_number)
+              else
               {
                 log_message( MSG_INFO,
-                             "No CAM initialization on card %d in %ds,  the %d resets didn't worked.\n",
-                             tuneparams.card, timeout_no_cam_init,cam_vars.max_reset_number);
+                             "CAM: No CAM initialization on card %d in %ds and HLCI CAM, exiting.\n",
+                             tuneparams.card, timeout_no_cam_init);
                 Interrupted=ERROR_NO_CAM_INIT<<8; //the <<8 is to make difference beetween signals and errors
               }
-#else
-              log_message( MSG_INFO,
-                           "No CAM initialization on card %d in %ds, exiting.\n",
-                           tuneparams.card, timeout_no_cam_init);
-              Interrupted=ERROR_NO_CAM_INIT<<8; //the <<8 is to make difference beetween signals and errors
-#endif
             }
 
 #endif

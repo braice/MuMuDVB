@@ -52,7 +52,7 @@
 #define ALARM_TIME 2
 #define ALARM_TIME_TIMEOUT 60
 #define ALARM_TIME_TIMEOUT_NO_DIFF 600
-#define ALARM_TIME_TIMEOUT_NO_CAM_INIT 60
+
 
 /** MTU 
     1500 bytes - ip header (12bytes) - TCP header (biggest between TCP and udp) 24  : 7 mpeg2-ts packet per ethernet frame
@@ -81,7 +81,7 @@ We cannot discover easily the MTU with unconnected UDP
 #define CAM_INFO_LIST_PATH "/var/run/mumudvb/caminfo_carte%d"
 
 
-//errors
+
 enum
   {
     MSG_ERROR=-2,

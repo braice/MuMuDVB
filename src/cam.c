@@ -100,15 +100,6 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
 static char *static_nom_fich_cam_info;
 
 
-/**********************************Debug ******************************/
-#ifdef CAMDEBUG
-
-/**
- * The types of CA interface we support.
- */
-
-#define DVBCA_INTERFACE_LINK 0
-#define DVBCA_INTERFACE_HLCI 1
 
 struct en50221_stdcam_llci {
   struct en50221_stdcam stdcam;
@@ -116,25 +107,9 @@ struct en50221_stdcam_llci {
   int cafd;
   int slotnum;
   int state;
-/** //I dont need these ones
-  struct llci_resource resources[RESOURCE_IDS_COUNT];
-
-  struct en50221_transport_layer *tl;
-  struct en50221_session_layer *sl;
-  struct en50221_app_send_functions sendfuncs;
-  int tl_slot_id;
-
-  struct en50221_app_rm *rm_resource;
-
-  struct en50221_app_datetime *datetime_resource;
-  int datetime_session_number;
-  uint8_t datetime_response_interval;
-  time_t datetime_next_send;
-  time_t datetime_dvbtime;
- */
-
 };
 
+/** @brief Reset the CAM */
 void cam_reset_cam(cam_parameters_t *cam_params)
 {
   struct en50221_stdcam *stdcam=cam_params->stdcam;
@@ -146,14 +121,9 @@ void cam_reset_cam(cam_parameters_t *cam_params)
  
 }
 
-/**
- * States a CAM in a slot can be in.
- */
 
-#define DVBCA_CAMSTATE_MISSING 0
-#define DVBCA_CAMSTATE_INITIALISING 1
-#define DVBCA_CAMSTATE_READY 2
 
+/** @brief Get the CAM state */
 int cam_debug_dvbca_get_cam_state(cam_parameters_t *cam_params)
 {
   struct en50221_stdcam *stdcam=cam_params->stdcam;
@@ -176,9 +146,7 @@ int cam_debug_dvbca_get_cam_state(cam_parameters_t *cam_params)
 }
 
 
-
-
-
+/** @brief Get the CAM interface type */
 int cam_debug_dvbca_get_interface_type(cam_parameters_t *cam_params)
 {
   struct en50221_stdcam *stdcam=cam_params->stdcam;
@@ -200,8 +168,6 @@ int cam_debug_dvbca_get_interface_type(cam_parameters_t *cam_params)
 }
 
 
-#endif
-/***************************end of debug ******************************/
 
 /** @brief start the cam
  * This function will create the communication layers and set the callbacks*/
@@ -266,8 +232,7 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
 
   // any other stuff
   cam_params->moveca = 1; //see http://www.linuxtv.org/pipermail/linux-dvb/2007-May/018198.html
-  /**********************************Debug ******************************/
-#ifdef CAMDEBUG
+
   cam_params->cam_type = cam_debug_dvbca_get_interface_type(cam_params); //The reset procedure have only been tested on LLCI cams
   switch(cam_params->cam_type)
   {
@@ -278,14 +243,13 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
       log_message( MSG_DETAIL,  "CAM CAM type : HIGH level interface\n");
       break;
   }
-#endif
-  /***************************end of debug ******************************/
+
   // start the cam thread
   pthread_create(&(cam_params->camthread), NULL, camthread_func, cam_params);
   return 0;
 }
 
-/**@brief Stops the CAM*/
+/** @brief Stops the CAM*/
 void cam_stop(cam_parameters_t *cam_params)
 {
   if (cam_params->stdcam == NULL)
@@ -312,22 +276,19 @@ void cam_stop(cam_parameters_t *cam_params)
 
 
 
-#define MAX_WAIT_AFTER_RESET 30
+
 
 /** @brief The thread for polling the cam */
 static void *camthread_func(void* arg)
 {
   cam_parameters_t *cam_params;
   cam_params= (cam_parameters_t *) arg;
-#ifdef CAMDEBUG
   int i;
   int camstate;
-#endif 
   while(!cam_params->camthread_shutdown) { 
     usleep(500000); //some waiting
     cam_params->stdcam->poll(cam_params->stdcam);
-    /**********************************Debug ******************************/
-#ifdef CAMDEBUG
+
     if(cam_params->need_reset==1)
     {
       log_message( MSG_DETAIL,  "CAM We force the reset of the CAM\n");
@@ -356,12 +317,11 @@ static void *camthread_func(void* arg)
         i++;
       } while(camstate!=DVBCA_CAMSTATE_INITIALISING && i < MAX_WAIT_AFTER_RESET);
       if(i==MAX_WAIT_AFTER_RESET)
-        log_message( MSG_DEBUG,  "CAM The CAM isn't in a good state after reset, it will probably don't work :(\n");
+        log_message( MSG_INFO,  "CAM The CAM isn't in a good state after reset, it will probably don't work :(\n");
       cam_params->need_reset=0;
       cam_params->reset_counts++;
     }
-#endif
-    /***************************end of debug ******************************/
+
   }
 
   return 0;

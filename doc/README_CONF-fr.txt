@@ -156,6 +156,7 @@ Autres paramètres globaux
 5+^s|Paramètres concernant le support des cartes CAM
 |cam_support |Indique si l'on veux le support pour les chaînes brouillées | 0 | 0 ou 1 |
 |cam_number |Le numéro du module CAM que l'on veux utiliser| 0 | | Dans le cas ou vouz avez plusieurs modules CAM sur une carte DVB
+|cam_reset_interval |Le temps (en secondes) que MuMuDVB attends pour que la CAM soit initialisée. Après ce délai, MuMuDVB tentera de réinitialiser le module CAM. | 30 | | Si la réinitialisation échoue, MuMuDVB retentera de réinitialiser le module après cet intervelle de temps. Le nombre maximum de tentatives de réinitialisations avant de quitter est 5.
 5+^s|Paramètres pour l'autoconfiguration
 |autoconfiguration |autoconfiguration 1: Trouve les PIDs audio et video, 2: autoconfiguration complète | 0 | 0, 1 or 2 | Se référer au README pour plus de détails
 |autoconf_ip_header |Pour l'autoconfiguration complète, la première partie de l'ip des chaînes diffusées | 239.100 | | Se référer au README pour plus de détails

@@ -73,13 +73,11 @@ typedef struct cam_parameters_t{
   int cam_support;
   /**The came number (in case of multiple cams)*/
   int cam_number;
-#ifdef CAMDEBUG
   int cam_type;
   int need_reset;
   int reset_counts;
   int max_reset_number;
   int reset_interval;
-#endif
   struct en50221_transport_layer *tl;
   struct en50221_session_layer *sl;
   struct en50221_stdcam *stdcam;
@@ -103,6 +101,24 @@ typedef struct cam_parameters_t{
 #define MMI_STATE_ENQ 2
 #define MMI_STATE_MENU 3
 
+#define MAX_WAIT_AFTER_RESET 30
+#define CAM_DEFAULT_MAX_RESET_NUM 5
+#define CAM_DEFAULT_RESET_INTERVAL 30
+
+/**
+ * States a CAM in a slot can be in.
+ */
+
+#define DVBCA_CAMSTATE_MISSING 0
+#define DVBCA_CAMSTATE_INITIALISING 1
+#define DVBCA_CAMSTATE_READY 2
+
+/**
+ * The types of CA interface we support.
+ */
+
+#define DVBCA_INTERFACE_LINK 0
+#define DVBCA_INTERFACE_HLCI 1
 
 int cam_start(cam_parameters_t *, int, char *);
 void cam_stop(cam_parameters_t *);

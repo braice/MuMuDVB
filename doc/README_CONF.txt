@@ -154,6 +154,7 @@ Other global parameters
 5+^s|CAM support parameters
 |cam_support |Specify if we wants the support for scrambled channels | 0 | 0 or 1 |
 |cam_number |the number of the CAM we want to use | 0 | | In case you have multiple CAMs on one DVB card
+|cam_reset_interval |The time (in seconds) we wait for the CAM to be initialised before resetting it. | 30 | | If the reset is not successful, MuMuDVB will reset the CAM again after this interval. The maximum number of resets before exiting is 5
 5+^s|Autoconfiguration parameters
 |autoconfiguration |autoconfiguration 1: find audio and video PIDs, 2: full autoconfiguration | 0 | 0, 1 or 2 | see the README for more details
 |autoconf_ip_header |For full autoconfiguration, the first part of the ip for streamed channel | 239.100 | |  see the README for more details
