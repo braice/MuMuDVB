@@ -7,4 +7,5 @@ DISTCLEANFILES  = $(html_DOC)
 doc: $(html_DOC)
 
 $(htmldocdir)/%.html: %.txt
+	install -d $(htmldocdir)
 	-asciidoc $(ASCIIDOCFLAGS) -o $@ $^
