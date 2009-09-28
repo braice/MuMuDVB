@@ -68,7 +68,7 @@ typedef struct sap_parameters_t{
   int sap; 
   /**Interval between two sap announces in second*/
   int sap_interval;
-  /** The ip address of the server wich send the sap announces*/
+  /** The ip address of the server that sends the sap announces*/
   char sap_sending_ip[20];
   /**the x-plgroup default : ie the playlist group (mainly for vlc)*/
   char sap_default_group[20];
