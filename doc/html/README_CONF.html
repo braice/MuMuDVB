@@ -1,0 +1,1260 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="generator" content="AsciiDoc 8.4.4" />
+<title>MuMuDVB - README for the configuration file</title>
+<style type="text/css">
+/* Debug borders */
+p, li, dt, dd, div, pre, h1, h2, h3, h4, h5, h6 {
+/*
+  border: 1px solid red;
+*/
+}
+
+body {
+  margin: 1em 5% 1em 5%;
+}
+
+a {
+  color: blue;
+  text-decoration: underline;
+}
+a:visited {
+  color: fuchsia;
+}
+
+em {
+  font-style: italic;
+  color: navy;
+}
+
+strong {
+  font-weight: bold;
+  color: #083194;
+}
+
+tt {
+  color: navy;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #527bbd;
+  font-family: sans-serif;
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
+}
+
+h1, h2, h3 {
+  border-bottom: 2px solid silver;
+}
+h2 {
+  padding-top: 0.5em;
+}
+h3 {
+  float: left;
+}
+h3 + * {
+  clear: left;
+}
+
+div.sectionbody {
+  font-family: serif;
+  margin-left: 0;
+}
+
+hr {
+  border: 1px solid silver;
+}
+
+p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+ul, ol, li > p {
+  margin-top: 0;
+}
+
+pre {
+  padding: 0;
+  margin: 0;
+}
+
+span#author {
+  color: #527bbd;
+  font-family: sans-serif;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+span#email {
+}
+span#revision {
+  font-family: sans-serif;
+}
+
+div#footer {
+  font-family: sans-serif;
+  font-size: small;
+  border-top: 2px solid silver;
+  padding-top: 0.5em;
+  margin-top: 4.0em;
+}
+div#footer-text {
+  float: left;
+  padding-bottom: 0.5em;
+}
+div#footer-badges {
+  float: right;
+  padding-bottom: 0.5em;
+}
+
+div#preamble {
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+}
+div.tableblock, div.imageblock, div.exampleblock, div.verseblock,
+div.quoteblock, div.literalblock, div.listingblock, div.sidebarblock,
+div.admonitionblock {
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+}
+div.admonitionblock {
+  margin-top: 2.5em;
+  margin-bottom: 2.5em;
+}
+
+div.content { /* Block element content. */
+  padding: 0;
+}
+
+/* Block element titles. */
+div.title, caption.title {
+  color: #527bbd;
+  font-family: sans-serif;
+  font-weight: bold;
+  text-align: left;
+  margin-top: 1.0em;
+  margin-bottom: 0.5em;
+}
+div.title + * {
+  margin-top: 0;
+}
+
+td div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content + div.title {
+  margin-top: 0.0em;
+}
+
+div.sidebarblock > div.content {
+  background: #ffffee;
+  border: 1px solid silver;
+  padding: 0.5em;
+}
+
+div.listingblock > div.content {
+  border: 1px solid silver;
+  background: #f4f4f4;
+  padding: 0.5em;
+}
+
+div.quoteblock {
+  padding-left: 2.0em;
+  margin-right: 10%;
+}
+div.quoteblock > div.attribution {
+  padding-top: 0.5em;
+  text-align: right;
+}
+
+div.verseblock {
+  padding-left: 2.0em;
+  margin-right: 10%;
+}
+div.verseblock > div.content {
+  white-space: pre;
+}
+div.verseblock > div.attribution {
+  padding-top: 0.75em;
+  text-align: left;
+}
+/* DEPRECATED: Pre version 8.2.7 verse style literal block. */
+div.verseblock + div.attribution {
+  text-align: left;
+}
+
+div.admonitionblock .icon {
+  vertical-align: top;
+  font-size: 1.1em;
+  font-weight: bold;
+  text-decoration: underline;
+  color: #527bbd;
+  padding-right: 0.5em;
+}
+div.admonitionblock td.content {
+  padding-left: 0.5em;
+  border-left: 2px solid silver;
+}
+
+div.exampleblock > div.content {
+  border-left: 2px solid silver;
+  padding: 0.5em;
+}
+
+div.imageblock div.content { padding-left: 0; }
+div.imageblock img { border: 1px solid silver; }
+span.image img { border-style: none; }
+
+dl {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+dt {
+  margin-top: 0.5em;
+  margin-bottom: 0;
+  font-style: normal;
+  color: navy;
+}
+dd > *:first-child {
+  margin-top: 0.1em;
+}
+
+ul, ol {
+    list-style-position: outside;
+}
+ol.arabic {
+  list-style-type: decimal;
+}
+ol.loweralpha {
+  list-style-type: lower-alpha;
+}
+ol.upperalpha {
+  list-style-type: upper-alpha;
+}
+ol.lowerroman {
+  list-style-type: lower-roman;
+}
+ol.upperroman {
+  list-style-type: upper-roman;
+}
+
+div.compact ul, div.compact ol,
+div.compact p, div.compact p,
+div.compact div, div.compact div {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
+
+div.tableblock > table {
+  border: 3px solid #527bbd;
+}
+thead {
+  font-family: sans-serif;
+  font-weight: bold;
+}
+tfoot {
+  font-weight: bold;
+}
+td > div.verse {
+  white-space: pre;
+}
+p.table {
+  margin-top: 0;
+}
+/* Because the table frame attribute is overriden by CSS in most browsers. */
+div.tableblock > table[frame="void"] {
+  border-style: none;
+}
+div.tableblock > table[frame="hsides"] {
+  border-left-style: none;
+  border-right-style: none;
+}
+div.tableblock > table[frame="vsides"] {
+  border-top-style: none;
+  border-bottom-style: none;
+}
+
+
+div.hdlist {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+div.hdlist tr {
+  padding-bottom: 15px;
+}
+dt.hdlist1.strong, td.hdlist1.strong {
+  font-weight: bold;
+}
+td.hdlist1 {
+  vertical-align: top;
+  font-style: normal;
+  padding-right: 0.8em;
+  color: navy;
+}
+td.hdlist2 {
+  vertical-align: top;
+}
+div.hdlist.compact tr {
+  margin: 0;
+  padding-bottom: 0;
+}
+
+.comment {
+  background: yellow;
+}
+
+@media print {
+  div#footer-badges { display: none; }
+}
+
+div#toctitle {
+  color: #527bbd;
+  font-family: sans-serif;
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-top: 1.0em;
+  margin-bottom: 0.1em;
+}
+
+div.toclevel1, div.toclevel2, div.toclevel3, div.toclevel4 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+div.toclevel2 {
+  margin-left: 2em;
+  font-size: 0.9em;
+}
+div.toclevel3 {
+  margin-left: 4em;
+  font-size: 0.9em;
+}
+div.toclevel4 {
+  margin-left: 6em;
+  font-size: 0.9em;
+}
+/* Workarounds for IE6's broken and incomplete CSS2. */
+
+div.sidebar-content {
+  background: #ffffee;
+  border: 1px solid silver;
+  padding: 0.5em;
+}
+div.sidebar-title, div.image-title {
+  color: #527bbd;
+  font-family: sans-serif;
+  font-weight: bold;
+  margin-top: 0.0em;
+  margin-bottom: 0.5em;
+}
+
+div.listingblock div.content {
+  border: 1px solid silver;
+  background: #f4f4f4;
+  padding: 0.5em;
+}
+
+div.quoteblock-attribution {
+  padding-top: 0.5em;
+  text-align: right;
+}
+
+div.verseblock-content {
+  white-space: pre;
+}
+div.verseblock-attribution {
+  padding-top: 0.75em;
+  text-align: left;
+}
+
+div.exampleblock-content {
+  border-left: 2px solid silver;
+  padding-left: 0.5em;
+}
+
+/* IE6 sets dynamically generated links as visited. */
+div#toc a:visited { color: blue; }
+</style>
+<script type="text/javascript">
+/*<![CDATA[*/
+window.onload = function(){generateToc(2)}
+/* Author: Mihai Bazon, September 2002
+ * http://students.infoiasi.ro/~mishoo
+ *
+ * Table Of Content generator
+ * Version: 0.4
+ *
+ * Feel free to use this script under the terms of the GNU General Public
+ * License, as long as you do not remove or alter this notice.
+ */
+
+ /* modified by Troy D. Hanson, September 2006. License: GPL */
+ /* modified by Stuart Rackham, October 2006. License: GPL */
+
+function getText(el) {
+  var text = "";
+  for (var i = el.firstChild; i != null; i = i.nextSibling) {
+    if (i.nodeType == 3 /* Node.TEXT_NODE */) // IE doesn't speak constants.
+      text += i.data;
+    else if (i.firstChild != null)
+      text += getText(i);
+  }
+  return text;
+}
+
+function TocEntry(el, text, toclevel) {
+  this.element = el;
+  this.text = text;
+  this.toclevel = toclevel;
+}
+
+function tocEntries(el, toclevels) {
+  var result = new Array;
+  var re = new RegExp('[hH]([2-'+(toclevels+1)+'])');
+  // Function that scans the DOM tree for header elements (the DOM2
+  // nodeIterator API would be a better technique but not supported by all
+  // browsers).
+  var iterate = function (el) {
+    for (var i = el.firstChild; i != null; i = i.nextSibling) {
+      if (i.nodeType == 1 /* Node.ELEMENT_NODE */) {
+        var mo = re.exec(i.tagName)
+        if (mo)
+          result[result.length] = new TocEntry(i, getText(i), mo[1]-1);
+        iterate(i);
+      }
+    }
+  }
+  iterate(el);
+  return result;
+}
+
+// This function does the work. toclevels = 1..4.
+function generateToc(toclevels) {
+  var toc = document.getElementById("toc");
+  var entries = tocEntries(document.getElementsByTagName("body")[0], toclevels);
+  for (var i = 0; i < entries.length; ++i) {
+    var entry = entries[i];
+    if (entry.element.id == "")
+      entry.element.id = "toc" + i;
+    var a = document.createElement("a");
+    a.href = "#" + entry.element.id;
+    a.appendChild(document.createTextNode(entry.text));
+    var div = document.createElement("div");
+    div.appendChild(a);
+    div.className = "toclevel" + entry.toclevel;
+    toc.appendChild(div);
+  }
+  if (entries.length == 0)
+    document.getElementById("header").removeChild(toc);
+}
+/*]]>*/
+</script>
+</head>
+<body>
+<div id="header">
+<h1>MuMuDVB - README for the configuration file</h1>
+<span id="author">Brice Dubost</span><br />
+<span id="email"><tt>&lt;<a href="mailto:mumudvb@braice.net">mumudvb@braice.net</a>&gt;</tt></span><br />
+Version 1.6
+<div id="toc">
+  <div id="toctitle">Table of Contents</div>
+  <noscript><p><b>JavaScript must be enabled in your browser to display the table of contents.</b></p></noscript>
+</div>
+</div>
+<h2 id="_general_behavior">1. General behavior</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>MuMuDVB needs a configuration file in order to run properly.</p></div>
+<div class="paragraph"><p>The order of the parameters is most of the times not relevant.</p></div>
+<div class="paragraph"><p>You can put comments everywhere in the configuration file: just start the line with <tt>#</tt>. In line comments are not allowed i.e. <tt>port=1234 #The multicast port</tt> is <strong>not</strong> a valid line.</p></div>
+<div class="paragraph"><p>All parameters are in the form: <tt>name=value</tt></p></div>
+<div class="listingblock">
+<div class="title">Example</div>
+<div class="content">
+<pre><tt>#The tuning frequency
+freq=11987</tt></pre>
+</div></div>
+<div class="paragraph"><p>The configuration file contains two parts</p></div>
+<h3 id="_common_part">1.1. Common part</h3><div style="clear:left"></div>
+<div class="paragraph"><p>This is the first part of the configuration file, it contains the parameters needed for tuning the DVB card and the global parameters.</p></div>
+<div class="paragraph"><p>See the <a href="#tuning">tuning</a> section for the list of parameters used to tune the card. and <a href="#other_global">other global parameters</a> section for parameters like autoconfiguration, cam support etc &#8230;</p></div>
+<h3 id="_channels_part">1.2. Channels part</h3><div style="clear:left"></div>
+<div class="paragraph"><p>If you are not using full autoconfiguration you need to set the list of the channels you want to stream.
+Each channel start with an <tt>ip=</tt> line and ends with a <tt>pids=</tt> line.</p></div>
+<div class="paragraph"><p>See <a href="#channel_parameters">channel parameters</a> section for a list of detailled parameters.</p></div>
+</div>
+<h2 id="_example_config_files">2. Example config files</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>You can find documented examples in the directory <tt>doc/configuration_examples</tt></p></div>
+</div>
+<h2 id="tuning">3. Parameters concerning the tuning of the card</h2>
+<div class="sectionbody">
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">For terrestrial and cable, you can use w_scan to see the channels you can receive see <a href="#w_scan">w_scan section</a>.
+Otherwise you can have a look at the initial tuning files given with linuxtv&#8217;s dvb-apps.
+For european satellite users, you can have a look at <a href="http://www.kingofsat.net">King Of Sat</a></td>
+</tr></table>
+</div>
+<h3 id="_parameters_concerning_all_modes_terrestrial_satellite_cable">3.1. Parameters concerning all modes (terrestrial, satellite, cable)</h3><div style="clear:left"></div>
+<div class="paragraph"><p>In the following list, only the parameter <tt>freq</tt> is mandatory</p></div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="14%" />
+<col width="57%" />
+<col width="7%" />
+<col width="21%" />
+<thead>
+<tr>
+<th align="left" valign="top">Parameter name </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Default value </th>
+<th align="left" valign="top"> Comments</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left" valign="top"><p class="table">freq</p></td>
+<td align="left" valign="top"><p class="table">transponder&#8217;s frequency in MHz</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Mandatory</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">card</p></td>
+<td align="left" valign="top"><p class="table">The DVB/ATSC card number</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">only limited by your OS</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">tuning_timeout</p></td>
+<td align="left" valign="top"><p class="table">tuning timeout in seconds.</p></td>
+<td align="left" valign="top"><p class="table">300</p></td>
+<td align="left" valign="top"><p class="table">0 = no timeout</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">timeout_no_diff</p></td>
+<td align="left" valign="top"><p class="table">If no channels are streamed, MuMuDVB will kill himself after this time (specified in seconds)</p></td>
+<td align="left" valign="top"><p class="table">600</p></td>
+<td align="left" valign="top"><p class="table">0 = infinite timeout</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">dont_tune</p></td>
+<td align="left" valign="top"><p class="table">We do not try to tune the card (another program,like tzap, did it for us)</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">This is mainly a workaround for DVB-S2</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="_parameters_specific_to_satellite">3.2. Parameters specific to satellite</h3><div style="clear:left"></div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="14%" />
+<col width="42%" />
+<col width="7%" />
+<col width="21%" />
+<col width="14%" />
+<thead>
+<tr>
+<th align="left" valign="top">Parameter name </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Default value </th>
+<th align="left" valign="top"> Possible values </th>
+<th align="left" valign="top"> Comments</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left" valign="top"><p class="table">pol</p></td>
+<td align="left" valign="top"><p class="table">transponder&#8217;s polarisation. One char. <em>v</em> (vertical), <em>h</em> (horizontal), <em>l</em> (left circular), <em>r</em> (right circular)</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">h, H, v, V, l, L, r or R</p></td>
+<td align="left" valign="top"><p class="table">Mandatory</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">srate</p></td>
+<td align="left" valign="top"><p class="table">transponder&#8217;s symbol rate</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Mandatory</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">lnb_type</p></td>
+<td align="left" valign="top"><p class="table">The LNB type</p></td>
+<td align="left" valign="top"><p class="table">universal</p></td>
+<td align="left" valign="top"><p class="table">universal, standard</p></td>
+<td align="left" valign="top"><p class="table">Universal : two local oscilators. Standard : one local oscillator.Most of the LNBs are universal.</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">lnb_lof_standard</p></td>
+<td align="left" valign="top"><p class="table">The frequency of the LNB&#8217;s local oscillator when lnb_type=standard</p></td>
+<td align="left" valign="top"><p class="table">10750</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">In MHz, see below.</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">lnb_slof</p></td>
+<td align="left" valign="top"><p class="table">The switching frequency frequency of the LNB (define the two bands). Valid when lnb_type=universal</p></td>
+<td align="left" valign="top"><p class="table">11700</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">In MHz, see below.</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">lnb_lof_low</p></td>
+<td align="left" valign="top"><p class="table">The frequency of the LNB&#8217;s local oscillator for the low band. Valid when lnb_type=universal</p></td>
+<td align="left" valign="top"><p class="table">9750</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">In MHz, see below.</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">lnb_lof_high</p></td>
+<td align="left" valign="top"><p class="table">The frequency of the LNB&#8217;s local oscillator for the high band. Valid when lnb_type=universal</p></td>
+<td align="left" valign="top"><p class="table">10600</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">In MHz, see below.</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">sat_number</p></td>
+<td align="left" valign="top"><p class="table">The satellite number in case you have multiples lnb, no effect if 0 (only 22kHz tone and 13/18V), send a diseqc message if non 0</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">1 to 4</p></td>
+<td align="left" valign="top"><p class="table">If you have equipment which support more, please contact</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">lnb_voltage_off</p></td>
+<td align="left" valign="top"><p class="table">Force the LNB voltage to be 0V (instead of 13V or 18V). This is useful when your LNB have it&#8217;s own power supply.</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 or 1</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">coderate</p></td>
+<td align="left" valign="top"><p class="table">coderate, also called FEC</p></td>
+<td align="left" valign="top"><p class="table">auto</p></td>
+<td align="left" valign="top"><p class="table">none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h4 id="_local_oscillator_frequencies">3.2.1. Local oscillator frequencies :</h4>
+<div class="ulist"><ul>
+<li>
+<p>
+S-Band 3650 MHz
+</p>
+</li>
+<li>
+<p>
+C band (Hi) 5950 MHz
+</p>
+</li>
+<li>
+<p>
+C band (Lo) 5150 MHz
+</p>
+</li>
+<li>
+<p>
+Ku Band : this is the default band for MuMuDVB, you don&#8217;t have to set the LO frequency. For information : Hi band : 10600, Low band : 9750, Single : 10750
+</p>
+</li>
+</ul></div>
+<h3 id="_parameters_specific_to_terrestrial_dvb_t">3.3. Parameters specific to terrestrial (DVB-T)</h3><div style="clear:left"></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content"><tt>auto</tt> usually works fine for all the parameters except <tt>bandwidth</tt></td>
+</tr></table>
+</div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="13%" />
+<col width="53%" />
+<col width="6%" />
+<col width="26%" />
+<thead>
+<tr>
+<th align="left" valign="top">Parameter name </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Default value </th>
+<th align="left" valign="top"> Possible values</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left" valign="top"><p class="table">bandwidth</p></td>
+<td align="left" valign="top"><p class="table">bandwidth</p></td>
+<td align="left" valign="top"><p class="table">8MHz</p></td>
+<td align="left" valign="top"><p class="table">8MHz, 7MHz, 6MHz, auto</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">trans_mode</p></td>
+<td align="left" valign="top"><p class="table">transmission mode</p></td>
+<td align="left" valign="top"><p class="table">auto</p></td>
+<td align="left" valign="top"><p class="table">2k, 8k, auto</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">guardinterval</p></td>
+<td align="left" valign="top"><p class="table">guard interval</p></td>
+<td align="left" valign="top"><p class="table">auto</p></td>
+<td align="left" valign="top"><p class="table">1/32, 1/16, 1/8, 1/4, auto</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">coderate</p></td>
+<td align="left" valign="top"><p class="table">coderate, also called FEC</p></td>
+<td align="left" valign="top"><p class="table">auto</p></td>
+<td align="left" valign="top"><p class="table">none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="_parameters_specific_to_cable_dvb_c">3.4. Parameters specific to cable (DVB-C)</h3><div style="clear:left"></div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="14%" />
+<col width="42%" />
+<col width="7%" />
+<col width="21%" />
+<col width="14%" />
+<thead>
+<tr>
+<th align="left" valign="top">Parameter name </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Default value </th>
+<th align="left" valign="top"> Possible values </th>
+<th align="left" valign="top"> Comments</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left" valign="top"><p class="table">srate</p></td>
+<td align="left" valign="top"><p class="table">transponder&#8217;s symbol rate</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Mandatory</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">qam</p></td>
+<td align="left" valign="top"><p class="table">quadrature amplitude modulation</p></td>
+<td align="left" valign="top"><p class="table">auto</p></td>
+<td align="left" valign="top"><p class="table">qpsk, 16, 32, 64, 128, 256, auto</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">coderate</p></td>
+<td align="left" valign="top"><p class="table">coderate, also called FEC</p></td>
+<td align="left" valign="top"><p class="table">auto</p></td>
+<td align="left" valign="top"><p class="table">none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">The <a href="http://www.rfcafe.com/references/electrical/spectral-inv.htm">spectral inversion</a> is fixed to OFF, it should work for most of the people, if you need to change this parameter, please contact.</td>
+</tr></table>
+</div>
+<h3 id="_parameters_specific_to_atsc_cable_or_terrestrial">3.5. Parameters specific to ATSC (Cable or Terrestrial)</h3><div style="clear:left"></div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="14%" />
+<col width="42%" />
+<col width="14%" />
+<col width="28%" />
+<thead>
+<tr>
+<th align="left" valign="top">Parameter name </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Default value </th>
+<th align="left" valign="top"> Possible values</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left" valign="top"><p class="table">atsc_modulation</p></td>
+<td align="left" valign="top"><p class="table">the modulation for ATSC</p></td>
+<td align="left" valign="top"><p class="table">vsb8</p></td>
+<td align="left" valign="top"><p class="table">vsb8, vsb16, qam256, qam64, qamauto</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">VSB 8 is the default modulation for most of the terrestrial ATSC transmission</td>
+</tr></table>
+</div>
+</div>
+<h2 id="other_global">4. Other global parameters</h2>
+<div class="sectionbody">
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="12%" />
+<col width="50%" />
+<col width="6%" />
+<col width="12%" />
+<col width="18%" />
+<thead>
+<tr>
+<th align="left" valign="top">Parameter name </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Default value </th>
+<th align="left" valign="top"> Possible values </th>
+<th align="left" valign="top"> Comments</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left" valign="top"><p class="table">common_port</p></td>
+<td align="left" valign="top"><p class="table">Default port for the streaming</p></td>
+<td align="left" valign="top"><p class="table">1234</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">multicast_ttl</p></td>
+<td align="left" valign="top"><p class="table">The multicast Time To Live</p></td>
+<td align="left" valign="top"><p class="table">2</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">multicast_auto_join</p></td>
+<td align="left" valign="top"><p class="table">Set to 1 if you want MuMuDVB to join automatically the multicast groups</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 or 1</p></td>
+<td align="left" valign="top"><p class="table">See known problems in the README</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">dont_send_sdt</p></td>
+<td align="left" valign="top"><p class="table">If set to 1, don&#8217;t send the SDT pid. This is a VLC workaround</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">see README for details</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">dont_send_scrambled</p></td>
+<td align="left" valign="top"><p class="table">If set to 1 don&#8217;t send the packets detected as scrambled. this will also remove indirectly the sap announces for the scrambled channels</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">show_traffic_interval</p></td>
+<td align="left" valign="top"><p class="table">the interval in second between two displays of the traffic</p></td>
+<td align="left" valign="top"><p class="table">10</p></td>
+<td align="left" valign="top"><p class="table">&gt;2</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">rtp_header</p></td>
+<td align="left" valign="top"><p class="table">Send the stream with the rtp headers (execpt for HTTP unicast)</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 or 1</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">dvr_buffer_size</p></td>
+<td align="left" valign="top"><p class="table">The size of the "DVR buffer" in packets</p></td>
+<td align="left" valign="top"><p class="table">1</p></td>
+<td align="left" valign="top"><p class="table">&gt;=1</p></td>
+<td align="left" valign="top"><p class="table">Experimental feature, see README</p></td>
+</tr>
+<tr>
+<td colspan="5" align="center" valign="top"><p class="table"><strong>CAM support parameters</strong></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">cam_support</p></td>
+<td align="left" valign="top"><p class="table">Specify if we wants the support for scrambled channels</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 or 1</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">cam_number</p></td>
+<td align="left" valign="top"><p class="table">the number of the CAM we want to use</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">In case you have multiple CAMs on one DVB card</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">cam_reset_interval</p></td>
+<td align="left" valign="top"><p class="table">The time (in seconds) we wait for the CAM to be initialised before resetting it.</p></td>
+<td align="left" valign="top"><p class="table">30</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">If the reset is not successful, MuMuDVB will reset the CAM again after this interval. The maximum number of resets before exiting is 5</p></td>
+</tr>
+<tr>
+<td colspan="5" align="center" valign="top"><p class="table"><strong>Autoconfiguration parameters</strong></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">autoconfiguration</p></td>
+<td align="left" valign="top"><p class="table">autoconfiguration 1: find audio and video PIDs, 2: full autoconfiguration</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0, 1 or 2</p></td>
+<td align="left" valign="top"><p class="table">see the README for more details</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">autoconf_ip_header</p></td>
+<td align="left" valign="top"><p class="table">For full autoconfiguration, the first part of the ip for streamed channel</p></td>
+<td align="left" valign="top"><p class="table">239.100</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">see the README for more details</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">autoconf_radios</p></td>
+<td align="left" valign="top"><p class="table">Do we consider radios as valid channels during full autoconfiguration ?</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 or 1</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">autoconf_scrambled</p></td>
+<td align="left" valign="top"><p class="table">Do we consider scrambled channels valid channels during full autoconfiguration ?</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 or 1</p></td>
+<td align="left" valign="top"><p class="table">Automatic when cam_support=1. Sometimes a clear channel can be marked as scrambled. This option allows you to bypass the ckecking.</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">autoconf_pid_update</p></td>
+<td align="left" valign="top"><p class="table">Do we follow the changes in the PIDs when the PMT is updated ?</p></td>
+<td align="left" valign="top"><p class="table">1</p></td>
+<td align="left" valign="top"><p class="table">0 or 1</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">autoconf_unicast_start_port</p></td>
+<td align="left" valign="top"><p class="table">The unicast port for the first discovered channel</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">See README for more details.</p></td>
+</tr>
+<tr>
+<td colspan="5" align="center" valign="top"><p class="table"><strong>SAP announces parameters</strong></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">sap</p></td>
+<td align="left" valign="top"><p class="table">Generation of SAP announces</p></td>
+<td align="left" valign="top"><p class="table">0 (1 if full autoconfiguration)</p></td>
+<td align="left" valign="top"><p class="table">0 or 1</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">sap_organisation</p></td>
+<td align="left" valign="top"><p class="table">Organisation field sent in the SAP announces</p></td>
+<td align="left" valign="top"><p class="table">MuMuDVB</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Optionnal</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">sap_uri</p></td>
+<td align="left" valign="top"><p class="table">URI  field sent in the SAP announces</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Optionnal</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">sap_sending_ip</p></td>
+<td align="left" valign="top"><p class="table">The SAP sender IP address</p></td>
+<td align="left" valign="top"><p class="table">0.0.0.0</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Optionnal, not autodetected</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">sap_interval</p></td>
+<td align="left" valign="top"><p class="table">Interval in seconds between sap announces</p></td>
+<td align="left" valign="top"><p class="table">5</p></td>
+<td align="left" valign="top"><p class="table">positive integers</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">sap_default_group</p></td>
+<td align="left" valign="top"><p class="table">The default playlist group for sap announces</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">string</p></td>
+<td align="left" valign="top"><p class="table">Optionnal</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">sap_ttl</p></td>
+<td align="left" valign="top"><p class="table">The TTL for the multicast SAP packets</p></td>
+<td align="left" valign="top"><p class="table">255</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">The RFC 2974 says "SAP announcements &#8230; SHOULD be sent with an IP time-to-live of 255 (the use of TTL scoping for multicast is discouraged [RFC 2365])."</p></td>
+</tr>
+<tr>
+<td colspan="5" align="center" valign="top"><p class="table"><strong>HTTP unicast parameters</strong></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">ip_http</p></td>
+<td align="left" valign="top"><p class="table">the listening ip for http unicast, if you want to listen to all interfaces put 0.0.0.0</p></td>
+<td align="left" valign="top"><p class="table">empty</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">see the README for more details</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">port_http</p></td>
+<td align="left" valign="top"><p class="table">The listening port for http unicast</p></td>
+<td align="left" valign="top"><p class="table">4242</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">see the README for more details</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">unicast_consecutive_errors_timeout</p></td>
+<td align="left" valign="top"><p class="table">The timeout for disconnecting a client wich is not responding</p></td>
+<td align="left" valign="top"><p class="table">5</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">A client will be disconnected if not data have been sucessfully sent during this interval. A value of 0 desactivate the timeout (unadvised).</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">unicast_max_clients</p></td>
+<td align="left" valign="top"><p class="table">The limit on the number of connected clients</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">0 : no limit.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<h2 id="channel_parameters">5. Channel parameters</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Each channel must start with a <tt>ip=</tt> line and ends with a <tt>pids=</tt> line. The only other mandatory parameter is the <tt>name</tt> of the channel.</p></div>
+<div class="paragraph"><p>Concerning the PIDs see the <a href="#getpids">getting the PIDs</a> section</p></div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="13%" />
+<col width="53%" />
+<col width="6%" />
+<col width="6%" />
+<col width="20%" />
+<thead>
+<tr>
+<th align="left" valign="top">Parameter name </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Default value </th>
+<th align="left" valign="top"> Possible values </th>
+<th align="left" valign="top"> Comments</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left" valign="top"><p class="table">ip</p></td>
+<td align="left" valign="top"><p class="table">multicast (can also be unicast, in raw UDP ) ip where the chanel will be streamed</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Mandatory</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">port</p></td>
+<td align="left" valign="top"><p class="table">The port</p></td>
+<td align="left" valign="top"><p class="table">1234 or common_port</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Ports below 1024 needs root rights.</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">unicast_port</p></td>
+<td align="left" valign="top"><p class="table">The HTTP unicast port for this channel</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Ports below 1024 needs root rights. You need to activate HTTP unicast with <tt>ip_http</tt></p></td>
+<td align="left" valign="top"><p class="table">sap_group</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">The playlist group for SAP announces</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">string</p></td>
+<td align="left" valign="top"><p class="table">optionnal</p></td>
+<td align="left" valign="top"><p class="table">cam_pmt_pid</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">Only for scrambled channels. The PMT PID for CAM support</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">ts_id</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">The transport stream id (program number), olny for autoconfiguration, or pat rewrite see README for more details</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">name</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">The name of the channel. Will be used for /var/run/mumudvb/chaines_diffusees%d, logging and SAP announces</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Mandatory</p></td>
+<td align="left" valign="top"><p class="table">pids</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<h2 id="getpids">6. Get the PID numbers</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>The simplest way is to use autoconfiguration and modify the generated configuration file : <tt>/var/run/mumudvb/mumudvb_generated_conf_card%d</tt></p></div>
+<h3 id="_you_use_autoconfiguration">6.1. You use autoconfiguration</h3><div style="clear:left"></div>
+<div class="paragraph"><p>If you use full autoconfiguration, you don&#8217;t need to specify any channel and don&#8217;t need any PID, this section does not concern you.</p></div>
+<div class="paragraph"><p>If you use partial autoconfiguration, you&#8217;ll need only the PMT PID for each channel.</p></div>
+<h3 id="_you_do_not_use_autoconfiguration">6.2. You do not use autoconfiguration</h3><div style="clear:left"></div>
+<div class="paragraph"><p>If you don&#8217;t use autoconfiguration (see the README), you have to get the PIDs (Program Identifier) for each channel.</p></div>
+<div class="paragraph"><p>For each channel it is advised to specify at least :
+- One video PID (except for radios)
+- One audio PID
+- The PMT PID
+- The PCR PID (if different from video/audio)</p></div>
+<div class="paragraph"><p>If you don&#8217;t have access to the PIDs via a website like <a href="http://www.kingofsat.net">King Of Sat</a>, the easiest way is to use linuxtv&#8217;s dvb-apps.</p></div>
+<div class="paragraph"><p>You don&#8217;t know on wich frequency to tune and the channels you can receive. In this case, you can use <a href="#w_scan">w_scan</a> or using <a href="#scan_inital_tuning">scan</a> from dvb-apps if you have an initial tuning config file.</p></div>
+<h4 id="w_scan">6.2.1. Using w_scan to get an initial tuning file</h4>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">w_scan works only for terrestrial or cable.</td>
+</tr></table>
+</div>
+<div class="paragraph"><p>You can find wscan in the <a href="http://edafe.org/vdr/w_scan/">w_scan website</a>.</p></div>
+<div class="paragraph"><p>Once you compiled it (optionnal for x86), you can lauch it using</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>./w_scan -x &gt;&gt; inital_tuning_file.txt</tt></pre>
+</div></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">If you are not scanning DVB-T you will have to set the option</td>
+</tr></table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>-f type frontend type
+ What programs do you want to search for?
+  a = atsc (vsb/qam)
+  c = cable
+  t = terrestrian [default]</tt></pre>
+</div></div>
+<div class="paragraph"><p>Your <tt>initial_tuning_file.txt</tt> file should contain lines like</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>T 482000000 8MHz AUTO AUTO AUTO AUTO AUTO AUTO
+T 498000000 8MHz AUTO AUTO AUTO AUTO AUTO AUTO
+T 514000000 8MHz 2/3 2/3 QAM64 8k 1/4 NONE</tt></pre>
+</div></div>
+<div class="paragraph"><p>If you want to use full autoconfiguration, this file contains all the parameters you need. For example the second row is the frequency.</p></div>
+<div class="paragraph"><p>The format is :
+.Terrestrial</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>T freq bandwidth fec_hi fec_lo modulation transmission-mode guard-interval hierarchy</tt></pre>
+</div></div>
+<div class="listingblock">
+<div class="title">Cable</div>
+<div class="content">
+<pre><tt>C freq symbol_rate fec modulation</tt></pre>
+</div></div>
+<div class="listingblock">
+<div class="title">ATSC</div>
+<div class="content">
+<pre><tt>A freq modulation</tt></pre>
+</div></div>
+<div class="paragraph"><p>If you don&#8217;t plan to use full autoconfiguration you can use <tt>scan</tt> with this file, see <a href="#scan_inital_tuning">using scan with an inital tuning file</a></p></div>
+<h4 id="scan_inital_tuning">6.2.2. Using scan with an initial tuning file</h4>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">With satellite this allow you to find all the frequencies (if the broadcaster follow the norm). Because, every transponder announces the others.</td>
+</tr></table>
+</div>
+<div class="paragraph"><p>You need <tt>scan</tt> from linuxtv&#8217;s dvb-apps</p></div>
+<div class="paragraph"><p>If you have an initial tuning file from <tt>w_scan</tt>, the scan documentation or other type :</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>scan -o pids pathtoyourinitialtuningfile</tt></pre>
+</div></div>
+<div class="paragraph"><p>You&#8217;ll first get blocks like</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>&gt;&gt;&gt; tune to: 514000000:INVERSION_AUTO:BANDWIDTH_8_MHZ:FEC_2_3:FEC_2_3:QAM_64:TRANSMISSION_MODE_8K:GUARD_INTERVAL_1_4:HIERARCHY_NONE
+0x0000 0x7850: pmt_pid 0x0110 Barcelona TV -- Barcelona TV (running)
+0x0000 0x7851: pmt_pid 0x0710 COM Radio -- COM Radio (running)
+0x0000 0x7855: pmt_pid 0x0210 TV L'Hospitalet -- TV L'Hospitalet (running)
+0x0000 0x7856: pmt_pid 0x0510 Radio Hospitalet -- Radio Hospitalet (running)
+0x0000 0x785a: pmt_pid 0x0310 Televisio Badalona -- Televisio Badalona (running)
+0x0000 0x785b: pmt_pid 0x0610 Radio Ciutat Badalona -- Radio Ciutat Badal</tt></pre>
+</div></div>
+<div class="paragraph"><p>You have now acces to the PMT PID (in hexadecimal), you can convert it to decimal and use partial autoconfiguration.</p></div>
+<div class="paragraph"><p>After this blocks, you&#8217;ll get lines like</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>Sensacio FM              (0x273f) 02: PCR == A            A 0x0701
+urBe TV                  (0x7864) 01: PCR == V   V 0x0300 A 0x0301 (cat)
+Canal Catala Barcelona   (0x7869) 01: PCR == V   V 0x0200 A 0x0201 (cat)
+25 TV                    (0x786e) 01: PCR == V   V 0x0400 A 0x0401 (spa) TT 0x0402
+ONDA RAMBLA PUNTO RADIO  (0x786f) 02: PCR == A            A 0x0601 (cat)
+Localia                  (0x7873) 01: PCR == V   V 0x0100 A 0x0101
+ONA FM                   (0x7874) 02: PCR == A            A 0x0501
+TV3                      (0x0321) 01: PCR == V   V 0x006f A 0x0070 (cat) 0x0072 (vo) 0x0074 (ad) TT 0x0071 AC3 0x0073 SUB 0x032b</tt></pre>
+</div></div>
+<div class="paragraph"><p>You have now acces to the other PIDs</p></div>
+<div class="paragraph"><p>MuMuDVB wants the PIDs in decimal, so you have to convert the pids from hexadecimal to decimal.</p></div>
+<h4 id="_scan_only_one_transponder">6.2.3. Scan only one transponder</h4>
+<div class="paragraph"><p>You first have to tune the card on the wanted frequency (with <tt>tune</tt>, <tt>szap</tt> or <tt>tzap</tt> for example).</p></div>
+<div class="paragraph"><p>After you use the scan utility:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>scan -o pids -c -a 0</tt></pre>
+</div></div>
+<div class="paragraph"><p>Where 0 is the card number</p></div>
+<div class="paragraph"><p>And you&#8217;ll get results like in the section <a href="#scan_initial_tuning">scan with an initial tuning file</a></p></div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2009-09-26 18:01:08 CEST
+</div>
+</div>
+</body>
+</html>
