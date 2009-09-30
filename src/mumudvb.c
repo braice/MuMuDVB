@@ -164,7 +164,9 @@ uint8_t number_chan_asked_pid[8192]; /** the number of channels who want this pi
 
 
 int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
+#ifdef ENABLE_CAM_SUPPORT
 int timeout_no_cam_init = CAM_DEFAULT_RESET_INTERVAL;
+#endif
 // file descriptors
 fds_t fds; /** File descriptors associated with the card */
 
