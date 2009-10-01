@@ -1,7 +1,30 @@
--- Mumudvb 1.5.5 --
+-- MuMuDVB 1.6 --
 
 New features / improvements : 
- * The limit in the size of the PAT pid for pat rewriting has been removed
+ * Support for HTTP Unicast
+ * Implementation of the RTP headers.
+ * The limit in the size of the PAT PID for PAT rewriting has been removed
+ * PAT rewrite is less CPU consuming
+ * ATSC autoconfiguration fully fonctionnal
+ * Autoconfiguration: MuMuDVB can update the PIDs while running if they change
+ * Tuning: Support for circular polarization, more LNBs and possibility to fix LNB voltage to 0V
+ * Tuning: We can set the coderate (FEC) for satellite and cable with the option coderate
+ * Documentation rewrite. The doc is now in asciidoc format + new configuration examples
+ * Autoconfiguration: We wait for all the channels in the PAT to be configured before continuing
+ * Autoconfiguration: New option autoconf_scrambled which permit to autoconfigure scrambbled channels even without cam_support
+ * CAM support: We look on the packets to check if the descrambling was successful
+ * Option dont_send_scrambled to avoid sending scrambled packets (thus not making SAP announces for scrambled channels)
+ * Option to show the traffic for each channel
+ * Reduce CPU usage : experimental feature : DVB buffering
+ * CAM : MuMuDVB can reset the CAM module if it initialize badly
+ * SAP : new option sap_uri.
+ * VLC bug : add an option to avoid sending the SDT, this is a workaround for VLC
+
+Bugs corrected :
+ * Cam support : wait a bit more between polling events (solve problems with T-Rex Supermodule v4.6)
+ * Cam : Change the list managment. This solves the problem of only one channel descrambled with aston pro
+ * We check if the PMT_QUERY sending (asking a channel to be descrambled) to the CAM was sucessful. 
+ * Autoconfiguration, pat rewrite, CAM : we check the transport_stream id. This solve problems with shared PMT betwwen channels.
 
 -- Mumudvb 1.5.4 --
 
