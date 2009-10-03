@@ -377,3 +377,59 @@ void display_ca_sys_id(int id)
     log_message( MSG_DETAIL,"Ca system id 0x%04x : UNKNOWN\n",id);
 
 }
+
+
+/** @brief Display the service type according to EN 300 468 v1.9.1 table 81
+ *
+ * @param type the type to display
+ * @param loglevel : the loglevel for displaying it
+ */
+void display_service_type(int type, int loglevel)
+{
+  switch(type)
+  {
+    case 0x01:
+      log_message(loglevel, "Autoconf : service type : Television\n"); break;
+    case 0x02:
+      log_message(loglevel, "Autoconf : service type : Radio\n"); break;
+    case 0x03:
+      log_message(loglevel, "Autoconf : service type : Teletext\n"); break;
+    case 0x04:
+      log_message(loglevel, "Autoconf : service type : NVOD Reference service\n"); break;
+    case 0x05:
+      log_message(loglevel, "Autoconf : service type : NVOD Time shifted service\n"); break;
+    case 0x06:
+      log_message(loglevel, "Autoconf : service type : Mosaic service\n"); break;
+    case 0x0a:
+      log_message(loglevel, "Autoconf : service type : Advanced codec Radio\n"); break;
+    case 0x0b:
+      log_message(loglevel, "Autoconf : service type : Advanced codec mosaic\n"); break;
+    case 0x0c:
+      log_message(loglevel, "Autoconf : service type : Data braodcast service\n"); break;
+    case 0x0d:
+      log_message(loglevel, "Autoconf : service type : Reserved for common interface usage\n"); break;
+    case 0x0e:
+      log_message(loglevel, "Autoconf : service type : RCS Map\n"); break;
+    case 0x0f:
+      log_message(loglevel, "Autoconf : service type : RCS FLS\n"); break;
+    case 0x10:
+      log_message(loglevel, "Autoconf : service type : DVB MHP (multimedia home platform)\n"); break;
+    case 0x11:
+      log_message(loglevel, "Autoconf : service type : Television MPEG2-HD\n"); break;
+    case 0x16:
+      log_message(loglevel, "Autoconf : service type : Advanced codec SD Television\n"); break;
+    case 0x17:
+      log_message(loglevel, "Autoconf : service type : Advanced codec SD NVOD Time shifted service\n"); break;
+    case 0x18:
+      log_message(loglevel, "Autoconf : service type : Advanced codec SD NVOD Reference service\n"); break;
+    case 0x19:
+      log_message(loglevel, "Autoconf : service type : Advanced codec HD Television\n"); break;
+    case 0x1a:
+      log_message(loglevel, "Autoconf : service type : Advanced codec HD NVOD Time shifted service\n"); break;
+    case 0x1b:
+      log_message(loglevel, "Autoconf : service type : Advanced codec HD NVOD Reference service\n"); break;
+    default:
+      log_message(loglevel, "Autoconf : Please report : Unknow service type (0x%02x), doc : EN 300 468 v1.9.1 table 81\n",
+                  type);
+  }
+}

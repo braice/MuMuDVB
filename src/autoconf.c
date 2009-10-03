@@ -748,29 +748,13 @@ void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *service)
   char *dest;
   char *tempdest, *tempbuf;
   int encoding_control_char=8; //cf encodings_en300468 
-  
+
   buf += 2;
   service->type=*buf;
-  /**@todo use lookup*/
-  //Cf EN 300 468 v1.9.1 table 81
-  switch(service->type)
-    {
-      case 0x01:
-	log_message(MSG_DEBUG, "Autoconf : service type : Television\n"); break;
-      case 0x02:
-	log_message(MSG_DEBUG, "Autoconf : service type : Radio\n"); break;
-      case 0x03:
-	log_message(MSG_DEBUG, "Autoconf : service type : Teletext\n"); break;
-      case 0x06:
-	log_message(MSG_DEBUG, "Autoconf : service type : Mosaic service\n"); break;
-      case 0x0c:
-	log_message(MSG_DEBUG, "Autoconf : service type : Data braodcast service\n"); break;
-      case 0x11:
-	log_message(MSG_DEBUG, "Autoconf : service type : Television MPEG2-HD\n"); break;
-    default:
-      log_message(MSG_WARN, "Autoconf : Please report : Unknow service type (0x%02x), doc : EN 300 468 v1.9.1 table 81\n",
-		  service->type);
-    }
+
+  //We show the service type
+  display_service_type(service->type, MSG_DEBUG);
+
 
   buf ++; //we skip the service_type
   len = *buf; //provider name len
@@ -1034,15 +1018,16 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
       else
 	{
 	  //Cf EN 300 468 v1.9.1 Table 81
-	  if((actual_service->type==1||
-	      actual_service->type==0x11)||
-	     (actual_service->type==0x02&&parameters.autoconf_radios))
-	    // service_type "digital television service" (0x01) ||
-	    // MPEG-2 HD digital television service (0x11) || 
-	    // service_type digital radio sound service  (0x02)
+          if((actual_service->type==0x01||
+              actual_service->type==0x11||
+              actual_service->type==0x16||
+              actual_service->type==0x19)||
+              ((actual_service->type==0x02||
+              actual_service->type==0x0a)&&parameters.autoconf_radios))
 	    {
 	      log_message(MSG_DETAIL,"Autoconf : We convert a new service into a channel, id %d pmt_pid %d name \"%s\" \n",
 			  actual_service->id, actual_service->pmt_pid, actual_service->name);
+              display_service_type(actual_service->type, MSG_DETAIL);
 
 	      channels[channel_number].streamed_channel = 0;
 	      channels[channel_number].streamed_channel_old = 1;
@@ -1089,16 +1074,17 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 
 	      channel_number++;
 	    }
-	  else if(actual_service->type==0x02) //service_type digital radio sound service
+            else if(actual_service->type==0x02||actual_service->type==0x0a) //service_type digital radio sound service
 	    log_message(MSG_DETAIL,"Autoconf : Service type digital radio sound service, no autoconfigure. (if you want add autoconf_radios=1 to your configuration file) Name \"%s\"\n",
 			actual_service->name);
-	  else if(actual_service->type==0x0c) //service_type data broadcast service
-	    log_message(MSG_DETAIL,"Autoconf : Service type data broadcast service, no autoconfigure. Name \"%s\"\n",
-			  actual_service->name);
 	  else
-	    log_message(MSG_DETAIL,"Autoconf : Service type 0x%02x, no autoconfigure. Name \"%s\"\n",
+          {
+              //We show the service type
+            display_service_type(actual_service->type, MSG_DETAIL);
+	    log_message(MSG_DETAIL,"Autoconf : No autoconfigure due to service type. Name \"%s\"\n",
 			actual_service->type,
 			actual_service->name);
+          }
 	}
       actual_service=actual_service->next;
     }
