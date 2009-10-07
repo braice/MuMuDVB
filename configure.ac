@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([MuMuDVB], [1.6.1b_20091003], [mumudvb@braice.net])
+AC_INIT([MuMuDVB], [1.6.1b_20091007], [mumudvb@braice.net])
 AC_CONFIG_SRCDIR([src/mumudvb.c])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([src/config.h])
@@ -21,8 +21,8 @@ AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
 
-# HACK: there is no function in dvbapi, it is checkeb by the header. but we want to create a good LIBS
-AC_CHECK_LIB([dvbapi], [main])
+
+AC_CHECK_LIB([dvbapi], [dvbdemux_set_section_filter])
 AC_CHECK_LIB([ucsi], [atsc_text_segment_decode],[atsc_long_names="yes"], [atsc_long_names="no"])
 #AC_CHECK_LIB([dvben50221], [en50221_stdcam_create],,,[ucsi,pthread])
 
