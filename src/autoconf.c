@@ -1082,7 +1082,6 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
               //We show the service type
             display_service_type(actual_service->type, MSG_DETAIL);
 	    log_message(MSG_DETAIL,"Autoconf : No autoconfigure due to service type. Name \"%s\"\n",
-			actual_service->type,
 			actual_service->name);
           }
 	}
