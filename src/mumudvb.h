@@ -106,6 +106,22 @@ enum
     CAM_ASKED
   };
 
+  /** The different PID types*/
+enum
+{
+  PID_UNKNOW=0,
+  PID_PMT,
+  PID_PCR,
+  PID_VIDEO,
+  PID_VIDEO_MPEG4,
+  PID_AUDIO,
+  PID_AUDIO_AAC,
+  PID_AUDIO_AC3,
+  PID_AUDIO_EAC3,
+  PID_AUDIO_DTS,
+  PID_SUBTITLE,
+  PID_TELETEXT,
+};
 
 /**@brief file descriptors*/
 typedef struct {
@@ -145,9 +161,13 @@ typedef struct mumudvb_channel_t{
 
   /**the channel pids*/
   int pids[MAX_PIDS_PAR_CHAINE];
+  /**the channel pids type (PMT, audio, video etc)*/
+  int pids_type[MAX_PIDS_PAR_CHAINE];
   /**number of channel pids*/
   int num_pids;
 
+  /** Channel Type (Radio, TV, etc) / service type*/
+  int channel_type;
   /**Transport stream ID*/
   int ts_id;
   /**pmt pid number*/

@@ -204,6 +204,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 {
   int section_len, descr_section_len, i,j;
 	int pid,pcr_pid;
+        int pid_type;
 	int found=0;
 	pmt_t *header;
 	pmt_info_t *descr_header;
@@ -213,9 +214,11 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 	
 	//For channel update
 	int temp_pids[MAX_PIDS_PAR_CHAINE];
+        int temp_pids_type[MAX_PIDS_PAR_CHAINE];
 	//For channel update
 	int temp_num_pids=0;
 
+        pid_type=0;
 
 	section_len=pmt->len;
 	header=(pmt_t *)pmt->packet;
@@ -249,7 +252,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 	//we read the different descriptors included in the pmt
 	//for more information see ITU-T Rec. H.222.0 | ISO/IEC 13818 table 2-34
 	for (i=program_info_length+PMT_LEN; i<=section_len-(PMT_INFO_LEN+4); i+=descr_section_len+PMT_INFO_LEN)
-	  {      
+	  {
 	    //we parse the part after the descriptors
 	    //we map the descriptor header
 	    descr_header=(pmt_info_t *)(pmt->packet+i);
@@ -262,37 +265,52 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 	      {
 	      case 0x01:
 	      case 0x02:
-	      case 0x10: /* ISO/IEC 14496-2 Visual - MPEG4 video */	      
-	      case 0x1b: /* AVC video stream as defined in ITU-T Rec. H.264 | ISO/IEC 14496-10 Video */
-		log_message( MSG_DEBUG,"Autoconf :   Video \tpid %d\n",pid);
+              case 0x1b: /* AVC video stream as defined in ITU-T Rec. H.264 | ISO/IEC 14496-10 Video */
+                pid_type=PID_VIDEO;
+                log_message( MSG_DEBUG,"Autoconf :   Video \tpid %d\n",pid);
+                break;
+              case 0x10: /* ISO/IEC 14496-2 Visual - MPEG4 video */
+                pid_type=PID_VIDEO_MPEG4;
+		log_message( MSG_DEBUG,"Autoconf :   Video MPEG4 \tpid %d\n",pid);
 		break;
 
 	      case 0x03:
 	      case 0x04:
 	      case 0x81: /* Audio per ATSC A/53B [2] Annex B */
-	      case 0x0f: /* ISO/IEC 13818-7 Audio with ADTS transport syntax - usually AAC */
 	      case 0x11: /* ISO/IEC 14496-3 Audio with the LATM transport syntax as defined in ISO/IEC 14496-3 */
-		log_message( MSG_DEBUG,"Autoconf :   Audio \tpid %d\n",pid);
+                pid_type=PID_AUDIO;
+                log_message( MSG_DEBUG,"Autoconf :   Audio \tpid %d\n",pid);
 		break;
+              case 0x0f: /* ISO/IEC 13818-7 Audio with ADTS transport syntax - usually AAC */
+                pid_type=PID_AUDIO_AAC;
+                log_message( MSG_DEBUG,"Autoconf :   Audio AAC \tpid %d\n",pid);
+                break;
 
 	      case 0x06: /* Descriptor defined in EN 300 468 */
 		if(descr_section_len) //If we have an accociated descriptor, we'll search inforation in it
 		  {
-		    if(pmt_find_descriptor(0x46,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL))
+		    if(pmt_find_descriptor(0x46,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
 		      log_message( MSG_DEBUG,"Autoconf :   VBI Teletext \tpid %d\n",pid);
-		    else if(pmt_find_descriptor(0x56,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL))
+                      pid_type=PID_TELETEXT;
+                    }else if(pmt_find_descriptor(0x56,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
 		      log_message( MSG_DEBUG,"Autoconf :   Teletext \tpid %d\n",pid);
-		    else if(pmt_find_descriptor(0x59,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL))
+                      pid_type=PID_TELETEXT;
+                    }else if(pmt_find_descriptor(0x59,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
 		      log_message( MSG_DEBUG,"Autoconf :   Subtitling \tpid %d\n",pid);
-		    else if(pmt_find_descriptor(0x6a,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL))
+                      pid_type=PID_SUBTITLE;
+                    }else if(pmt_find_descriptor(0x6a,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
 		      log_message( MSG_DEBUG,"Autoconf :   AC3 (audio) \tpid %d\n",pid);
-		    else if(pmt_find_descriptor(0x7a,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL))
+                      pid_type=PID_AUDIO_AC3;
+                    }else if(pmt_find_descriptor(0x7a,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
 		      log_message( MSG_DEBUG,"Autoconf :   Enhanced AC3 (audio) \tpid %d\n",pid);
-		    else if(pmt_find_descriptor(0x7b,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL))
+                      pid_type=PID_AUDIO_EAC3;
+                    }else if(pmt_find_descriptor(0x7b,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
 		      log_message( MSG_DEBUG,"Autoconf :   DTS (audio) \tpid %d\n",pid);
-		    else if(pmt_find_descriptor(0x7c,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL))
+                      pid_type=PID_AUDIO_DTS;
+                    }else if(pmt_find_descriptor(0x7c,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
 		      log_message( MSG_DEBUG,"Autoconf :   AAC (audio) \tpid %d\n",pid);
-		    else
+                      pid_type=PID_AUDIO_AAC;
+                    }else
 		      {
 			log_message( MSG_DEBUG,"Autoconf : Unknown descriptor see EN 300 468 v1.9.1 table 12, pid %d descriptor tags : ", pid);
 			pmt_print_descriptor_tags(pmt->packet+i+PMT_INFO_LEN,descr_section_len);
@@ -354,11 +372,13 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 	    if(channel_update)
 	      {
 		temp_pids[temp_num_pids]=pid;
+                temp_pids_type[temp_num_pids]=pid_type;
 		temp_num_pids++;
 	      }
 	    else
 	      {
 		channel->pids[channel->num_pids]=pid;
+                channel->pids_type[channel->num_pids]=pid_type;
 		channel->num_pids++;
 	      }
 	  }
@@ -380,11 +400,13 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 	    if(channel_update)
 	      {
 		temp_pids[temp_num_pids]=pcr_pid;
+                temp_pids_type[temp_num_pids]=PID_PCR;
 		temp_num_pids++;
 	      }
 	    else
 	      {
 		channel->pids[channel->num_pids]=pcr_pid;
+                channel->pids_type[channel->num_pids]=PID_PCR;
 		channel->num_pids++;
 	      }
 	    log_message( MSG_DEBUG, "Autoconf : Added PCR pid %d\n",pcr_pid);
@@ -422,6 +444,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 
 		    number_chan_asked_pid[temp_pids[i]]++;
 		    channel->pids[channel->num_pids]=temp_pids[i];
+                    channel->pids_type[channel->num_pids]=temp_pids_type[i];
 		    channel->num_pids++;
 
 		    log_message(MSG_DETAIL,"Autoconf : Add the new filters\n");
@@ -1029,10 +1052,12 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 			  actual_service->id, actual_service->pmt_pid, actual_service->name);
               display_service_type(actual_service->type, MSG_DETAIL);
 
+              channels[channel_number].channel_type=actual_service->type;
 	      channels[channel_number].streamed_channel = 0;
 	      channels[channel_number].streamed_channel_old = 1;
 	      channels[channel_number].nb_bytes=0;
 	      channels[channel_number].pids[0]=actual_service->pmt_pid;
+              channels[channel_number].pids_type[0]=PID_PMT;
 	      channels[channel_number].num_pids=1;
 	      channels[channel_number].portOut=port;
 	      strcpy(channels[channel_number].name,actual_service->name);
@@ -1062,7 +1087,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 		  else
 		    memset (channels[channel_number].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 		}
-                
+
                 /** open the unicast listening connections fo the channels */
                 if(actual_unicast_port && strlen(parameters.unicast_ipOut))
                 {
