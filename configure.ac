@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.63])
-AC_INIT([MuMuDVB], [1.6.1b_20091007], [mumudvb@braice.net])
+AC_PREREQ([2.61])
+AC_INIT([MuMuDVB], [1.6.1b_20091010], [mumudvb@braice.net])
 AC_CONFIG_SRCDIR([src/mumudvb.c])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([src/config.h])
