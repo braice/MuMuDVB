@@ -202,7 +202,8 @@ typedef struct mumudvb_channel_t{
   /** The version of the generated pat */
   int generated_pat_version;
 
-
+  /** The occupied traffic (in kB/s) */
+  float traffic;
 
 }mumudvb_channel_t;
 

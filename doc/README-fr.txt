@@ -1,7 +1,7 @@
 MuMuDVB - README
 ================
 Brice Dubost <mumudvb@braice.net>
-Version 1.6
+Version 1.6.1
 
 [NOTE]
 Une version HTML de ce fichier est disponible sur http://mumudvb.braice.net[le site web de MuMuDVB].
@@ -404,6 +404,7 @@ Unicast HTTP et surveillance de MuMuDVB
 
 Cette connexion HTTP peut être utilisée pour surveiller MuMuDVB. Cette fonctionnalité sera implémentée dans un futur proche. Merci de signaler quelles informations pourraient vous intéresser.
 
+Vous pouver obtenir des statistiques en utilisant l'adresse `http://10.0.0.1:4242/monitor/statistics.txt`
 
 Surveillance de MuMuDVB
 -----------------------

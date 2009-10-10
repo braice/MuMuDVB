@@ -1,7 +1,7 @@
 MuMuDVB - README for the configuration file
 ===========================================
 Brice Dubost <mumudvb@braice.net>
-Version 1.6
+Version 1.6.1
 
 General behavior
 ----------------
@@ -149,6 +149,7 @@ Other global parameters
 |dont_send_sdt |If set to 1, don't send the SDT pid. This is a VLC workaround | 0 | | see README for details
 |dont_send_scrambled | If set to 1 don't send the packets detected as scrambled. this will also remove indirectly the sap announces for the scrambled channels |0 | |
 |show_traffic_interval | the interval in second between two displays of the traffic | 10 | >2 | 
+|compute_traffic_interval | the interval in second between two computations of the traffic | 10 | >2 | 
 |rtp_header | Send the stream with the rtp headers (execpt for HTTP unicast) | 0 | 0 or 1 | 
 |dvr_buffer_size | The size of the "DVR buffer" in packets | 1 | >=1 | Experimental feature, see README 
 5+^s|CAM support parameters

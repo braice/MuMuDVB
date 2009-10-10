@@ -151,7 +151,10 @@ int display_signal_strenght = 0; /** do we periodically show the signal strenght
 int show_traffic = 0; /** do we periodically show the traffic ?*/
 long show_traffic_time = 0; /** */
 int show_traffic_time_usec = 0; /** */
-int show_traffic_interval = 10; /**The interval for the traffic calculation*/
+long compute_traffic_time = 0; /** */
+int compute_traffic_time_usec = 0; /** */
+int show_traffic_interval = 10; /**The interval for the traffic display*/
+int compute_traffic_interval = 10; /**The interval for the traffic calculation*/
 
 int no_daemon = 0; /** do we deamonize mumudvb ? */
 
@@ -586,6 +589,16 @@ main (int argc, char **argv)
 	      log_message(MSG_WARN,"Sorry the minimum interval for showing the traffic is %ds\n",ALARM_TIME);
 	    }
 	}
+        else if (!strcmp (substring, "compute_traffic_interval"))
+        {
+          substring = strtok (NULL, delimiteurs);
+          compute_traffic_interval= atoi (substring);
+          if(compute_traffic_interval<ALARM_TIME)
+          {
+            compute_traffic_interval=ALARM_TIME;
+            log_message(MSG_WARN,"Sorry the minimum interval for computing the traffic is %ds\n",ALARM_TIME);
+          }
+        }
       else if (!strcmp (substring, "rewrite_pat"))
 	{
 	  substring = strtok (NULL, delimiteurs);
@@ -1997,9 +2010,8 @@ main (int argc, char **argv)
 		  //The buffer is full, we send it
 		  if ((channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE)
 		    {
-		      //For bandwith measurement
-		      if(show_traffic)
-			channels[curr_channel].sent_data+=channels[curr_channel].nb_bytes;
+		      //For bandwith measurement (traffic)
+                      channels[curr_channel].sent_data+=channels[curr_channel].nb_bytes;
 
 		      /****** RTP *******/
 		      if(rtp_header)
@@ -2319,30 +2331,38 @@ static void SignalHandler (int signum)
 	    }
 
 
-	  //show the bandwith measurement
-	  if(show_traffic)
-	    {
-	      float time_interval;
-	      float transmitted_bytes;
-	      float traffic;
-	      if(!show_traffic_time)
-		show_traffic_time=now;
-	      if((now-show_traffic_time)>=show_traffic_interval)
-		{
-		  time_interval=now+tv.tv_usec/1000000-show_traffic_time-show_traffic_time_usec/1000000;
-		  show_traffic_time=now;
-		  show_traffic_time_usec=tv.tv_usec;
-		  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-		    {
-		      transmitted_bytes=channels[curr_channel].sent_data;
-		      traffic=transmitted_bytes/time_interval*1/1204;
-		      log_message( MSG_INFO, "Traffic :  %.2f kB/s \t  for channel \"%s\"\n",
-				   traffic,
-				   channels[curr_channel].name);
-		      channels[curr_channel].sent_data=0;
-		    }
-		}
-	    }
+	  //compute the bandwith occupied by each channel
+            float time_interval;
+            if(!compute_traffic_time)
+              compute_traffic_time=now;
+            if((now-compute_traffic_time)>=compute_traffic_interval)
+            {
+              time_interval=now+tv.tv_usec/1000000-compute_traffic_time-compute_traffic_time_usec/1000000;
+              compute_traffic_time=now;
+              compute_traffic_time_usec=tv.tv_usec;
+              for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+              {
+                channels[curr_channel].traffic=((float)channels[curr_channel].sent_data)/time_interval*1/1204;
+                channels[curr_channel].sent_data=0;
+              }
+            }
+
+            //show the bandwith measurement
+            if(show_traffic)
+            {
+              if(!show_traffic_time)
+                show_traffic_time=now;
+              if((now-show_traffic_time)>=show_traffic_interval)
+              {
+                show_traffic_time=now;
+                for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+                {
+                  log_message( MSG_INFO, "Traffic :  %.2f kB/s \t  for channel \"%s\"\n",
+                               channels[curr_channel].traffic,
+                               channels[curr_channel].name);
+                }
+              }
+            }
 
 
 	  /**Show the statistics for the big buffer*/

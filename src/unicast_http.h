@@ -99,7 +99,9 @@ Applications should use this field to indicate the size of the
                             "\r\n"
 
 #define HTTP_CHANNELS_REPLY_TEXT_START "#Channels list\r\n"\
-                            "#Channel number::name::sap playlist group::multicast ip::multicast port::num unicast clients::scrambling ratio\r\n"\
+                            "#Channel number::name::sap playlist group::multicast ip::multicast port::num unicast clients::scrambling ratio\r\n"
+
+#define HTTP_STATISTICS_TEXT_START "#MuMuDVB Statistics\r\n"
 
 #define HTTP_501_REPLY "HTTP/1.0 501 Not implemented\r\n"\
                       "\r\n"

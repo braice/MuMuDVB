@@ -1,7 +1,7 @@
 MuMuDVB - README concernant le fichier de configuration
 =======================================================
 Brice Dubost <mumudvb@braice.net>
-Version 1.6
+Version 1.6.1
 
 Comportement général
 ---------------------
@@ -151,6 +151,7 @@ Autres paramètres globaux
 |dont_send_sdt |Si positionné à 1, MuMuDVB n'enverra pas le PID SDT, c'est un contournement d'un bug de VLC | 0 | | voir le README pour plus de détails
 |dont_send_scrambled | Si positionné à 1, MuMuDVB n'enverra pas les paquets brouillés. Cela retirera (indirectement) les annonces SAP pour les chaînes brouillées |0 | |
 |show_traffic_interval | Le temps en secondes entre deux affichages du trafic | 10 | >2 | 
+|compute_traffic_interval | Le temps en secondes entre deux calculs du trafic | 10 | >2 | 
 |rtp_header | Envoie les en-têtes RTP avec le flux (excepté pour l'unicast HTTP) | 0 | 0 ou 1 | 
 |dvr_buffer_size | La taille du  "tampon DVR" en paquets de 188 octets | 1 | >=1 | Fonctionnalité "expérimentale", se référer au README 
 5+^s|Paramètres concernant le support des cartes CAM

@@ -60,6 +60,8 @@ int
 unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *host);
 int 
 unicast_send_streamed_channels_list_txt (int number_of_channels, mumudvb_channel_t *channels, int Socket);
+int 
+    unicast_send_statistics_txt(int number_of_channels, mumudvb_channel_t *channels, int Socket);
 
 /**@todo : deal with the RTP over http case ie implement RTSP  --> is it useful over TCP ?*/
 extern int rtp_header;
@@ -637,11 +639,17 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 	      return -2; //We close the connection afterwards
 	    }
 	  //Channels list, text version
-	  else if(strstr(client->buffer +pos ,"/channels_list.txt")==(client->buffer +pos))
-	    {
-	      unicast_send_streamed_channels_list_txt (number_of_channels, channels, client->Socket);
-	      return -2; //We close the connection afterwards
-	    }
+          else if(strstr(client->buffer +pos ,"/channels_list.txt")==(client->buffer +pos))
+            {
+              unicast_send_streamed_channels_list_txt (number_of_channels, channels, client->Socket);
+              return -2; //We close the connection afterwards
+            }
+            //statistics, text version
+          else if(strstr(client->buffer +pos ,"/monitor/statistics.txt")==(client->buffer +pos))
+            {
+              unicast_send_statistics_txt (number_of_channels, channels, client->Socket);
+              return -2; //We close the connection afterwards
+            }
 	  //Not implemented path --> 404
 	  else
 	      err404=1;
@@ -875,6 +883,80 @@ unicast_send_streamed_channels_list_txt (int number_of_channels, mumudvb_channel
       log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
       return -1;
     }
+
+
+  return 0;
+}
+
+
+/** @brief Send a basic text file containig statistics
+ *
+ * @param number_of_channels the number of channels
+ * @param channels the channels array
+ * @param Socket the socket on wich the information have to be sent
+ */
+int 
+unicast_send_statistics_txt(int number_of_channels, mumudvb_channel_t *channels, int Socket)
+{
+  int curr_channel;
+  int iRet;
+  char buffer[1024];
+  unicast_client_t *unicast_client=NULL;
+  int clients=0;
+
+
+  iRet=write(Socket,HTTP_OK_TEXT_REPLY, strlen(HTTP_OK_TEXT_REPLY));
+  if(iRet!=strlen(HTTP_OK_TEXT_REPLY))
+  {
+    log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
+    return -1;
+  }
+  iRet=write(Socket,HTTP_STATISTICS_TEXT_START, strlen(HTTP_STATISTICS_TEXT_START));
+  if(iRet!=strlen(HTTP_STATISTICS_TEXT_START))
+  {
+    log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
+    return -1;
+  }
+
+  /**@todo : send general statistics*/
+
+  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+    if (channels[curr_channel].streamed_channel_old)
+  {
+    clients=0;
+    unicast_client=channels[curr_channel].clients;
+    while(unicast_client!=NULL)
+    {
+      unicast_client=unicast_client->chan_next;
+      clients++;
+    }
+    iRet=snprintf(buffer, 1024, "Channel number %d\r\nName %s\r\nTs_id %d\r\nSap Group %s\r\nMulticast Ip %s\r\nMulticast Port %d\r\nUnicast port %d\r\nNumber of Unicast clients %d\r\nRatio of scrambled packets %d\r\nTraffic (kB/s) %f\r\nNumber of pids %d\r\n\r\n",
+                  curr_channel,
+                  channels[curr_channel].name,
+                  channels[curr_channel].ts_id,
+                  channels[curr_channel].sap_group,
+                  channels[curr_channel].ipOut,
+                  channels[curr_channel].portOut,
+                  channels[curr_channel].unicast_port,
+                  clients,
+                  channels[curr_channel].ratio_scrambled,
+                  channels[curr_channel].traffic,
+                  channels[curr_channel].num_pids);
+				  
+    iRet=write(Socket,buffer, strlen(buffer));
+    if(iRet!=(int)strlen(buffer)) //Cast to make compiler happy
+    {
+      log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
+      return -1;
+    }
+  }
+
+  iRet=write(Socket,"\r\n\r\n", strlen("\r\n\r\n"));
+  if(iRet!=strlen("\r\n\r\n"))
+  {
+    log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
+    return -1;
+  }
 
 
   return 0;
