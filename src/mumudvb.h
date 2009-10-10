@@ -237,6 +237,9 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename);
 void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *saving_filename);
 void display_ca_sys_id(int id);
 void display_service_type(int type, int loglevel);
+int pid_type_to_str(char *dest,int type);
+int service_type_to_str(char *dest, int type);
+
 int mumudvb_close(int Interrupted);
 
 #endif

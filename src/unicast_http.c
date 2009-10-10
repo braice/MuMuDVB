@@ -33,9 +33,10 @@ Todo list
  * implement a measurement of the "load" -- almost done with the traffic display
  * implement channel by name
  * implement monitoring features
- * implement channels by port  --- in progress
 
 ***********************/
+//in order to use asprintf (extension gnu)
+#define _GNU_SOURCE
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -47,6 +48,8 @@ Todo list
 #include <string.h>
 #include <poll.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <sys/time.h>
 
 
 
@@ -889,6 +892,7 @@ unicast_send_streamed_channels_list_txt (int number_of_channels, mumudvb_channel
 }
 
 
+
 /** @brief Send a basic text file containig statistics
  *
  * @param number_of_channels the number of channels
@@ -903,7 +907,14 @@ unicast_send_statistics_txt(int number_of_channels, mumudvb_channel_t *channels,
   char buffer[1024];
   unicast_client_t *unicast_client=NULL;
   int clients=0;
-
+  char *dest=NULL;
+  char tempdest[81];
+  char str_pidtype[81];
+  char str_service_type[81];
+  int len_dest;
+  int i;
+  struct timeval tv;
+  extern long real_start_time;
 
   iRet=write(Socket,HTTP_OK_TEXT_REPLY, strlen(HTTP_OK_TEXT_REPLY));
   if(iRet!=strlen(HTTP_OK_TEXT_REPLY))
@@ -919,7 +930,18 @@ unicast_send_statistics_txt(int number_of_channels, mumudvb_channel_t *channels,
   }
 
   /**@todo : send general statistics*/
-
+  gettimeofday (&tv, (struct timezone *) NULL);
+  iRet=snprintf(buffer, 1024, "Uptime  %d:%02d:%02d\r\n\r\n#Channel statistics \r\n",
+                ((int)(tv.tv_sec - real_start_time)/3600),
+                ((int)((tv.tv_sec - real_start_time) % 3600)/60),
+                ((int)(tv.tv_sec - real_start_time) %60));
+  iRet=write(Socket,buffer, strlen(buffer));
+  if(iRet!=(int)strlen(buffer)) //Cast to make compiler happy
+  {
+    log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
+    return -1;
+  }
+  
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     if (channels[curr_channel].streamed_channel_old)
   {
@@ -930,9 +952,24 @@ unicast_send_statistics_txt(int number_of_channels, mumudvb_channel_t *channels,
       unicast_client=unicast_client->chan_next;
       clients++;
     }
-    iRet=snprintf(buffer, 1024, "Channel number %d\r\nName %s\r\nTs_id %d\r\nSap Group %s\r\nMulticast Ip %s\r\nMulticast Port %d\r\nUnicast port %d\r\nNumber of Unicast clients %d\r\nRatio of scrambled packets %d\r\nTraffic (kB/s) %f\r\nNumber of pids %d\r\n\r\n",
+    for(i=0;i<channels[curr_channel].num_pids;i++)
+    {
+      pid_type_to_str(str_pidtype,channels[curr_channel].pids_type[i]);
+      if(snprintf(tempdest,80*sizeof(char),"  Pid %d type %s\r\n",channels[curr_channel].pids[i],str_pidtype)!=-1)
+      {
+        if(dest)
+          len_dest=strlen(dest);
+        else
+          len_dest=0;
+        dest=realloc(dest,(len_dest+strlen(tempdest)+1)*sizeof(char));
+        strcat(dest,tempdest);
+      }
+    }
+    service_type_to_str(str_service_type,channels[curr_channel].channel_type);
+    iRet=snprintf(buffer, 1024, "Channel number %d\r\nName %s\r\nService type %s\r\nTs_id %d\r\nSap Group %s\r\nMulticast Ip %s\r\nMulticast Port %d\r\nUnicast port %d\r\nNumber of Unicast clients %d\r\nRatio of scrambled packets %d\r\nTraffic (kB/s) %f\r\nNumber of pids %d\r\nPids :\r\n%s\r\n\r\n",
                   curr_channel,
                   channels[curr_channel].name,
+                  str_service_type,
                   channels[curr_channel].ts_id,
                   channels[curr_channel].sap_group,
                   channels[curr_channel].ipOut,
@@ -941,8 +978,10 @@ unicast_send_statistics_txt(int number_of_channels, mumudvb_channel_t *channels,
                   clients,
                   channels[curr_channel].ratio_scrambled,
                   channels[curr_channel].traffic,
-                  channels[curr_channel].num_pids);
-				  
+                  channels[curr_channel].num_pids,
+                  dest);
+    free(dest);
+    dest=NULL;
     iRet=write(Socket,buffer, strlen(buffer));
     if(iRet!=(int)strlen(buffer)) //Cast to make compiler happy
     {

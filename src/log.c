@@ -379,6 +379,61 @@ void display_ca_sys_id(int id)
 }
 
 
+/** @brief Convert the service type to str according to EN 300 468 v1.9.1 table 81
+ *
+ * @param type the type to display
+ * @param dest : the destination string
+ */
+int service_type_to_str(char *dest, int type)
+{
+  switch(type)
+  {
+    case 0x01:
+      return snprintf(dest,80*sizeof(char), "Television");
+    case 0x02:
+      return snprintf(dest,80*sizeof(char), "Radio");
+    case 0x03:
+      return snprintf(dest,80*sizeof(char), "Teletext");
+    case 0x04:
+      return snprintf(dest,80*sizeof(char), "NVOD Reference service");
+    case 0x05:
+      return snprintf(dest,80*sizeof(char), "NVOD Time shifted service");
+    case 0x06:
+      return snprintf(dest,80*sizeof(char), "Mosaic service");
+    case 0x0a:
+      return snprintf(dest,80*sizeof(char), "Advanced codec Radio");
+    case 0x0b:
+      return snprintf(dest,80*sizeof(char), "Advanced codec mosaic");
+    case 0x0c:
+      return snprintf(dest,80*sizeof(char), "Data braodcast service");
+    case 0x0d:
+      return snprintf(dest,80*sizeof(char), "Reserved for common interface usage");
+    case 0x0e:
+      return snprintf(dest,80*sizeof(char), "RCS Map");
+    case 0x0f:
+      return snprintf(dest,80*sizeof(char), "RCS FLS");
+    case 0x10:
+      return snprintf(dest,80*sizeof(char), "DVB MHP (multimedia home platform)");
+    case 0x11:
+      return snprintf(dest,80*sizeof(char), "Television MPEG2-HD");
+    case 0x16:
+      return snprintf(dest,80*sizeof(char), "Advanced codec SD Television");
+    case 0x17:
+      return snprintf(dest,80*sizeof(char), "Advanced codec SD NVOD Time shifted service");
+    case 0x18:
+      return snprintf(dest,80*sizeof(char), "Advanced codec SD NVOD Reference service");
+    case 0x19:
+      return snprintf(dest,80*sizeof(char), "Advanced codec HD Television");
+    case 0x1a:
+      return snprintf(dest,80*sizeof(char), "Advanced codec HD NVOD Time shifted service");
+    case 0x1b:
+      return snprintf(dest,80*sizeof(char), "Advanced codec HD NVOD Reference service");
+    default:
+      return snprintf(dest,80*sizeof(char), "Please report : Unknow service type (0x%02x), doc : EN 300 468 v1.9.1 table 81",
+                  type);
+  }
+}
+
 /** @brief Display the service type according to EN 300 468 v1.9.1 table 81
  *
  * @param type the type to display
@@ -386,50 +441,44 @@ void display_ca_sys_id(int id)
  */
 void display_service_type(int type, int loglevel)
 {
+  char type_str[81];
+  service_type_to_str(type_str,type);
+  log_message(loglevel, "Autoconf : service type : %s \n", type_str);
+}
+
+/** @brief Write the PID type into a string
+ *
+ * @param dest : the destination string
+ * @param type the type to display
+ */
+int pid_type_to_str(char *dest,int type)
+{
   switch(type)
   {
-    case 0x01:
-      log_message(loglevel, "Autoconf : service type : Television\n"); break;
-    case 0x02:
-      log_message(loglevel, "Autoconf : service type : Radio\n"); break;
-    case 0x03:
-      log_message(loglevel, "Autoconf : service type : Teletext\n"); break;
-    case 0x04:
-      log_message(loglevel, "Autoconf : service type : NVOD Reference service\n"); break;
-    case 0x05:
-      log_message(loglevel, "Autoconf : service type : NVOD Time shifted service\n"); break;
-    case 0x06:
-      log_message(loglevel, "Autoconf : service type : Mosaic service\n"); break;
-    case 0x0a:
-      log_message(loglevel, "Autoconf : service type : Advanced codec Radio\n"); break;
-    case 0x0b:
-      log_message(loglevel, "Autoconf : service type : Advanced codec mosaic\n"); break;
-    case 0x0c:
-      log_message(loglevel, "Autoconf : service type : Data braodcast service\n"); break;
-    case 0x0d:
-      log_message(loglevel, "Autoconf : service type : Reserved for common interface usage\n"); break;
-    case 0x0e:
-      log_message(loglevel, "Autoconf : service type : RCS Map\n"); break;
-    case 0x0f:
-      log_message(loglevel, "Autoconf : service type : RCS FLS\n"); break;
-    case 0x10:
-      log_message(loglevel, "Autoconf : service type : DVB MHP (multimedia home platform)\n"); break;
-    case 0x11:
-      log_message(loglevel, "Autoconf : service type : Television MPEG2-HD\n"); break;
-    case 0x16:
-      log_message(loglevel, "Autoconf : service type : Advanced codec SD Television\n"); break;
-    case 0x17:
-      log_message(loglevel, "Autoconf : service type : Advanced codec SD NVOD Time shifted service\n"); break;
-    case 0x18:
-      log_message(loglevel, "Autoconf : service type : Advanced codec SD NVOD Reference service\n"); break;
-    case 0x19:
-      log_message(loglevel, "Autoconf : service type : Advanced codec HD Television\n"); break;
-    case 0x1a:
-      log_message(loglevel, "Autoconf : service type : Advanced codec HD NVOD Time shifted service\n"); break;
-    case 0x1b:
-      log_message(loglevel, "Autoconf : service type : Advanced codec HD NVOD Reference service\n"); break;
+    case PID_PMT:
+      return snprintf(dest,80*sizeof(char),"PMT");
+    case PID_PCR:
+      return snprintf(dest,80*sizeof(char),"PCR");
+    case PID_VIDEO:
+      return snprintf(dest,80*sizeof(char),"Video");
+    case PID_VIDEO_MPEG4:
+      return snprintf(dest,80*sizeof(char),"Video (MPEG4)");
+    case PID_AUDIO:
+      return snprintf(dest,80*sizeof(char),"Audio");
+    case PID_AUDIO_AAC:
+      return snprintf(dest,80*sizeof(char),"Audio (AAC)");
+    case PID_AUDIO_AC3:
+      return snprintf(dest,80*sizeof(char),"Audio (AC3)");
+    case PID_AUDIO_EAC3:
+      return snprintf(dest,80*sizeof(char),"Audio (E-AC3)");
+    case PID_AUDIO_DTS:
+      return snprintf(dest,80*sizeof(char),"Audio (DTS)");
+    case PID_SUBTITLE:
+      return snprintf(dest,80*sizeof(char),"Subtitle");
+    case PID_TELETEXT:
+      return snprintf(dest,80*sizeof(char),"Teletext");
+    case PID_UNKNOW:
     default:
-      log_message(loglevel, "Autoconf : Please report : Unknow service type (0x%02x), doc : EN 300 468 v1.9.1 table 81\n",
-                  type);
+      return snprintf(dest,80*sizeof(char),"Unknow");
   }
 }
