@@ -203,306 +203,307 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
 int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int card, uint8_t *asked_pid, uint8_t *number_chan_asked_pid,fds_t *fds)
 {
   int section_len, descr_section_len, i,j;
-	int pid,pcr_pid;
-        int pid_type;
-	int found=0;
-	pmt_t *header;
-	pmt_info_t *descr_header;
+  int pid,pcr_pid;
+  int pid_type;
+  int found=0;
+  pmt_t *header;
+  pmt_info_t *descr_header;
 
-	int program_info_length;
-	int channel_update;
-	
-	//For channel update
-	int temp_pids[MAX_PIDS_PAR_CHAINE];
-        int temp_pids_type[MAX_PIDS_PAR_CHAINE];
-	//For channel update
-	int temp_num_pids=0;
+  int program_info_length;
+  int channel_update;
 
-        pid_type=0;
+  //For channel update
+  int temp_pids[MAX_PIDS_PAR_CHAINE];
+  int temp_pids_type[MAX_PIDS_PAR_CHAINE];
+  //For channel update
+  int temp_num_pids=0;
 
-	section_len=pmt->len;
-	header=(pmt_t *)pmt->packet;
+  pid_type=0;
 
-	if(header->table_id!=0x02)
-	  {
-	    log_message( MSG_INFO,"Autoconf : Packet PID %d for channel \"%s\" is not a PMT PID. We remove the pmt pid for this channel\n", pmt->pid, channel->name);
-	    channel->pmt_pid=0; /** @todo : put a threshold, */
-	    return 1;
-	  }
+  section_len=pmt->len;
+  header=(pmt_t *)pmt->packet;
 
-	//We check if this PMT belongs to the current channel. (Only works with autoconfiguration full for the moment because it stores the ts_id)
-	if(channel->ts_id && (channel->ts_id != HILO(header->program_number)) )
-	  {
-	    log_message( MSG_DETAIL,"Autoconf : The PMT %d does not belongs to channel \"%s\"\n", pmt->pid, channel->name);
-	    return 1;
-	  }
-	
-	log_message( MSG_DEBUG,"Autoconf : PMT (PID %d) read for autoconfiguration of channel \"%s\"\n", pmt->pid, channel->name);
+  if(header->table_id!=0x02)
+  {
+    log_message( MSG_INFO,"Autoconf : Packet PID %d for channel \"%s\" is not a PMT PID. We remove the pmt pid for this channel\n", pmt->pid, channel->name);
+    channel->pmt_pid=0; /** @todo : put a threshold, */
+    return 1;
+  }
 
-	channel_update=channel->num_pids>1?1:0;
-	if(channel_update)
-	  {
-	    log_message( MSG_INFO,"Autoconf : Channel %s update\n",channel->name);
-	    temp_pids[0]=pmt->pid;
-	    temp_num_pids++;
-	  }
-	
-	program_info_length=HILO(header->program_info_length); //program_info_length
+  //We check if this PMT belongs to the current channel. (Only works with autoconfiguration full for the moment because it stores the ts_id)
+  if(channel->ts_id && (channel->ts_id != HILO(header->program_number)) )
+  {
+    log_message( MSG_DETAIL,"Autoconf : The PMT %d does not belongs to channel \"%s\"\n", pmt->pid, channel->name);
+    return 1;
+  }
 
-	//we read the different descriptors included in the pmt
-	//for more information see ITU-T Rec. H.222.0 | ISO/IEC 13818 table 2-34
-	for (i=program_info_length+PMT_LEN; i<=section_len-(PMT_INFO_LEN+4); i+=descr_section_len+PMT_INFO_LEN)
-	  {
-	    //we parse the part after the descriptors
-	    //we map the descriptor header
-	    descr_header=(pmt_info_t *)(pmt->packet+i);
-	    //We get the length of the descriptor
-	    descr_section_len=HILO(descr_header->ES_info_length);        //ES_info_length
+  log_message( MSG_DEBUG,"Autoconf : PMT (PID %d) read for autoconfiguration of channel \"%s\"\n", pmt->pid, channel->name);
 
-	    pid=HILO(descr_header->elementary_PID);
-	    //Depending of the stream type we'll take or not this pid
-	    switch(descr_header->stream_type)
-	      {
-	      case 0x01:
-	      case 0x02:
-              case 0x1b: /* AVC video stream as defined in ITU-T Rec. H.264 | ISO/IEC 14496-10 Video */
-                pid_type=PID_VIDEO;
-                log_message( MSG_DEBUG,"Autoconf :   Video \tpid %d\n",pid);
-                break;
-              case 0x10: /* ISO/IEC 14496-2 Visual - MPEG4 video */
-                pid_type=PID_VIDEO_MPEG4;
-		log_message( MSG_DEBUG,"Autoconf :   Video MPEG4 \tpid %d\n",pid);
-		break;
+  channel_update=channel->num_pids>1?1:0;
+  if(channel_update)
+  {
+    log_message( MSG_INFO,"Autoconf : Channel %s update\n",channel->name);
+    temp_pids[0]=pmt->pid;
+    temp_num_pids++;
+  }
 
-	      case 0x03:
-	      case 0x04:
-	      case 0x81: /* Audio per ATSC A/53B [2] Annex B */
-	      case 0x11: /* ISO/IEC 14496-3 Audio with the LATM transport syntax as defined in ISO/IEC 14496-3 */
-                pid_type=PID_AUDIO;
-                log_message( MSG_DEBUG,"Autoconf :   Audio \tpid %d\n",pid);
-		break;
-              case 0x0f: /* ISO/IEC 13818-7 Audio with ADTS transport syntax - usually AAC */
-                pid_type=PID_AUDIO_AAC;
-                log_message( MSG_DEBUG,"Autoconf :   Audio AAC \tpid %d\n",pid);
-                break;
+  program_info_length=HILO(header->program_info_length); //program_info_length
 
-	      case 0x06: /* Descriptor defined in EN 300 468 */
-		if(descr_section_len) //If we have an accociated descriptor, we'll search inforation in it
-		  {
-		    if(pmt_find_descriptor(0x46,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
-		      log_message( MSG_DEBUG,"Autoconf :   VBI Teletext \tpid %d\n",pid);
-                      pid_type=PID_TELETEXT;
-                    }else if(pmt_find_descriptor(0x56,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
-		      log_message( MSG_DEBUG,"Autoconf :   Teletext \tpid %d\n",pid);
-                      pid_type=PID_TELETEXT;
-                    }else if(pmt_find_descriptor(0x59,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
-		      log_message( MSG_DEBUG,"Autoconf :   Subtitling \tpid %d\n",pid);
-                      pid_type=PID_SUBTITLE;
-                    }else if(pmt_find_descriptor(0x6a,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
-		      log_message( MSG_DEBUG,"Autoconf :   AC3 (audio) \tpid %d\n",pid);
-                      pid_type=PID_AUDIO_AC3;
-                    }else if(pmt_find_descriptor(0x7a,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
-		      log_message( MSG_DEBUG,"Autoconf :   Enhanced AC3 (audio) \tpid %d\n",pid);
-                      pid_type=PID_AUDIO_EAC3;
-                    }else if(pmt_find_descriptor(0x7b,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
-		      log_message( MSG_DEBUG,"Autoconf :   DTS (audio) \tpid %d\n",pid);
-                      pid_type=PID_AUDIO_DTS;
-                    }else if(pmt_find_descriptor(0x7c,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
-		      log_message( MSG_DEBUG,"Autoconf :   AAC (audio) \tpid %d\n",pid);
-                      pid_type=PID_AUDIO_AAC;
-                    }else
-		      {
-			log_message( MSG_DEBUG,"Autoconf : Unknown descriptor see EN 300 468 v1.9.1 table 12, pid %d descriptor tags : ", pid);
-			pmt_print_descriptor_tags(pmt->packet+i+PMT_INFO_LEN,descr_section_len);
-			log_message( MSG_DEBUG,"\n");
-			continue;
-		      }
-		  }
-		else
-		  {
-		    log_message( MSG_DEBUG,"Autoconf : PMT read : stream type 0x06 without descriptor\n");
-		    continue;
-		  }
-		break;
-		//Now, the list of what we drop
-	      case 0x05:
-		log_message( MSG_DEBUG, "Autoconf : Dropped pid %d, type : 0x05, ITU-T Rec. H.222.0 | ISO/IEC 13818-1 private_sections \n",pid);
-		continue;
-		//Digital Storage Medium Command and Control (DSM-CC) cf H.222.0 | ISO/IEC 13818-1 annex B
-	      case 0x0a:
-		log_message( MSG_DEBUG, "Autoconf : Dropped pid %d, type : 0x0A ISO/IEC 13818-6 type A (DSM-CC)\n",pid);
-		continue;
-	      case 0x0b:
-		log_message( MSG_DEBUG, "Autoconf : Dropped pid %d, type : 0x0B ISO/IEC 13818-6 type B (DSM-CC)\n",pid);
-		continue;
-	      case 0x0c:
-		log_message( MSG_DEBUG, "Autoconf : Dropped pid %d, type : 0x0C ISO/IEC 13818-6 type C (DSM-CC)\n",pid);
-		continue;
-	      default:
-		log_message( MSG_INFO, "Autoconf : !!!!Unknown stream type : 0x%02x, PID : %d cf ITU-T Rec. H.222.0 | ISO/IEC 13818\n",descr_header->stream_type,pid);
-		continue;
-	      }
+  //we read the different descriptors included in the pmt
+  //for more information see ITU-T Rec. H.222.0 | ISO/IEC 13818 table 2-34
+  for (i=program_info_length+PMT_LEN; i<=section_len-(PMT_INFO_LEN+4); i+=descr_section_len+PMT_INFO_LEN)
+  {
+    //we parse the part after the descriptors
+    //we map the descriptor header
+    descr_header=(pmt_info_t *)(pmt->packet+i);
+    //We get the length of the descriptor
+    descr_section_len=HILO(descr_header->ES_info_length);        //ES_info_length
 
-	    //We keep this pid
+    pid=HILO(descr_header->elementary_PID);
+    //Depending of the stream type we'll take or not this pid
+    switch(descr_header->stream_type)
+    {
+      case 0x01:
+      case 0x02:
+      case 0x1b: /* AVC video stream as defined in ITU-T Rec. H.264 | ISO/IEC 14496-10 Video */
+        pid_type=PID_VIDEO;
+        log_message( MSG_DEBUG,"Autoconf :   Video \tpid %d\n",pid);
+        break;
 
-	    //For cam debugging purposes, we look if we can find a ca descriptor to display ca system ids
-	    if(descr_section_len)
-	      {
-		int pos;
-		int casysid;
-		pos=0;
-		while(pmt_find_descriptor(0x09,pmt->packet+i+PMT_INFO_LEN,descr_section_len,&pos))
-		  {
-		    descr_ca_t *ca_descriptor;
-		    ca_descriptor=(descr_ca_t *)(pmt->packet+i+PMT_INFO_LEN+pos);
-		    casysid=0;
-		    while(channel->ca_sys_id[casysid] && channel->ca_sys_id[casysid]!=HILO(ca_descriptor->CA_type)&& casysid<32 )
-		      casysid++;
-		    if(!channel->ca_sys_id[casysid])
-		      {
-			channel->ca_sys_id[casysid]=HILO(ca_descriptor->CA_type);
-			display_ca_sys_id(HILO(ca_descriptor->CA_type)); //we display it with the description
-		      }
-		    pos+=ca_descriptor->descriptor_length+2;
-		  }
-	      }
+      case 0x10: /* ISO/IEC 14496-2 Visual - MPEG4 video */
+        pid_type=PID_VIDEO_MPEG4;
+        log_message( MSG_DEBUG,"Autoconf :   Video MPEG4 \tpid %d\n",pid);
+        break;
 
-	    
-	    //log_message( MSG_DEBUG,"Autoconf  PID %d added\n", pid);
-	    if(channel_update)
-	      {
-		temp_pids[temp_num_pids]=pid;
-                temp_pids_type[temp_num_pids]=pid_type;
-		temp_num_pids++;
-	      }
-	    else
-	      {
-		channel->pids[channel->num_pids]=pid;
-                channel->pids_type[channel->num_pids]=pid_type;
-		channel->num_pids++;
-	      }
-	  }
+      case 0x03:
+      case 0x04:
+      case 0x81: /* Audio per ATSC A/53B [2] Annex B */
+      case 0x11: /* ISO/IEC 14496-3 Audio with the LATM transport syntax as defined in ISO/IEC 14496-3 */
+        pid_type=PID_AUDIO;
+        log_message( MSG_DEBUG,"Autoconf :   Audio \tpid %d\n",pid);
+        break;
 
-	/**************************
-	 * PCR PID
-	 **************************/
+      case 0x0f: /* ISO/IEC 13818-7 Audio with ADTS transport syntax - usually AAC */
+        pid_type=PID_AUDIO_AAC;
+        log_message( MSG_DEBUG,"Autoconf :   Audio AAC \tpid %d\n",pid);
+        break;
 
-	pcr_pid=HILO(header->PCR_PID); //The PCR pid.
+      case 0x06: /* Descriptor defined in EN 300 468 */
+        if(descr_section_len) //If we have an accociated descriptor, we'll search inforation in it
+        {
+          if(pmt_find_descriptor(0x46,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
+            log_message( MSG_DEBUG,"Autoconf :   VBI Teletext \tpid %d\n",pid);
+            pid_type=PID_TELETEXT;
+          }else if(pmt_find_descriptor(0x56,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
+            log_message( MSG_DEBUG,"Autoconf :   Teletext \tpid %d\n",pid);
+            pid_type=PID_TELETEXT;
+          }else if(pmt_find_descriptor(0x59,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
+            log_message( MSG_DEBUG,"Autoconf :   Subtitling \tpid %d\n",pid);
+            pid_type=PID_SUBTITLE;
+          }else if(pmt_find_descriptor(0x6a,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
+            log_message( MSG_DEBUG,"Autoconf :   AC3 (audio) \tpid %d\n",pid);
+            pid_type=PID_AUDIO_AC3;
+          }else if(pmt_find_descriptor(0x7a,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
+            log_message( MSG_DEBUG,"Autoconf :   Enhanced AC3 (audio) \tpid %d\n",pid);
+            pid_type=PID_AUDIO_EAC3;
+          }else if(pmt_find_descriptor(0x7b,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
+            log_message( MSG_DEBUG,"Autoconf :   DTS (audio) \tpid %d\n",pid);
+            pid_type=PID_AUDIO_DTS;
+          }else if(pmt_find_descriptor(0x7c,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
+            log_message( MSG_DEBUG,"Autoconf :   AAC (audio) \tpid %d\n",pid);
+            pid_type=PID_AUDIO_AAC;
+          }else
+          {
+            log_message( MSG_DEBUG,"Autoconf : Unknown descriptor see EN 300 468 v1.9.1 table 12, pid %d descriptor tags : ", pid);
+            pmt_print_descriptor_tags(pmt->packet+i+PMT_INFO_LEN,descr_section_len);
+            log_message( MSG_DEBUG,"\n");
+            continue;
+          }
+        }
+        else
+        {
+          log_message( MSG_DEBUG,"Autoconf : PMT read : stream type 0x06 without descriptor\n");
+          continue;
+        }
+        break;
+
+      //Now, the list of what we drop
+      case 0x05:
+        log_message( MSG_DEBUG, "Autoconf : Dropped pid %d, type : 0x05, ITU-T Rec. H.222.0 | ISO/IEC 13818-1 private_sections \n",pid);
+        continue;
+      //Digital Storage Medium Command and Control (DSM-CC) cf H.222.0 | ISO/IEC 13818-1 annex B
+      case 0x0a:
+        log_message( MSG_DEBUG, "Autoconf : Dropped pid %d, type : 0x0A ISO/IEC 13818-6 type A (DSM-CC)\n",pid);
+        continue;
+      case 0x0b:
+        log_message( MSG_DEBUG, "Autoconf : Dropped pid %d, type : 0x0B ISO/IEC 13818-6 type B (DSM-CC)\n",pid);
+        continue;
+      case 0x0c:
+        log_message( MSG_DEBUG, "Autoconf : Dropped pid %d, type : 0x0C ISO/IEC 13818-6 type C (DSM-CC)\n",pid);
+        continue;
+      default:
+        log_message( MSG_INFO, "Autoconf : !!!!Unknown stream type : 0x%02x, PID : %d cf ITU-T Rec. H.222.0 | ISO/IEC 13818\n",descr_header->stream_type,pid);
+        continue;
+    }
+  
+    //We keep this pid
+  
+    //For cam debugging purposes, we look if we can find a ca descriptor to display ca system ids
+    if(descr_section_len)
+    {
+      int pos;
+      int casysid;
+      pos=0;
+      while(pmt_find_descriptor(0x09,pmt->packet+i+PMT_INFO_LEN,descr_section_len,&pos))
+      {
+        descr_ca_t *ca_descriptor;
+        ca_descriptor=(descr_ca_t *)(pmt->packet+i+PMT_INFO_LEN+pos);
+        casysid=0;
+        while(channel->ca_sys_id[casysid] && channel->ca_sys_id[casysid]!=HILO(ca_descriptor->CA_type)&& casysid<32 )
+          casysid++;
+        if(!channel->ca_sys_id[casysid])
+        {
+          channel->ca_sys_id[casysid]=HILO(ca_descriptor->CA_type);
+          display_ca_sys_id(HILO(ca_descriptor->CA_type)); //we display it with the description
+        }
+        pos+=ca_descriptor->descriptor_length+2;
+      }
+    }
+  
+    if(channel_update)
+    {
+      temp_pids[temp_num_pids]=pid;
+      temp_pids_type[temp_num_pids]=pid_type;
+      temp_num_pids++;
+    }
+    else
+    {
+      channel->pids[channel->num_pids]=pid;
+      channel->pids_type[channel->num_pids]=pid_type;
+      channel->num_pids++;
+    }
+  }
+
+  /**************************
+  * PCR PID
+  **************************/
+
+  pcr_pid=HILO(header->PCR_PID); //The PCR pid.
 	//we check if it's not already included (ie the pcr is carried with the video)
-	found=0;
-	for(i=0;i<channel->num_pids;i++)
-	  {
-	    if((channel_update && temp_pids[i]==pcr_pid) || (!channel_update && channel->pids[i]==pcr_pid))
-	       found=1;
-	  }
-	if(!found)
-	  {
-	    if(channel_update)
-	      {
-		temp_pids[temp_num_pids]=pcr_pid;
-                temp_pids_type[temp_num_pids]=PID_PCR;
-		temp_num_pids++;
-	      }
-	    else
-	      {
-		channel->pids[channel->num_pids]=pcr_pid;
-                channel->pids_type[channel->num_pids]=PID_PCR;
-		channel->num_pids++;
-	      }
-	    log_message( MSG_DEBUG, "Autoconf : Added PCR pid %d\n",pcr_pid);
-	  }
+  found=0;
+  for(i=0;i<channel->num_pids;i++)
+  {
+    if((channel_update && temp_pids[i]==pcr_pid) || (!channel_update && channel->pids[i]==pcr_pid))
+      found=1;
+  }
+  if(!found)
+  {
+    if(channel_update)
+    {
+      temp_pids[temp_num_pids]=pcr_pid;
+      temp_pids_type[temp_num_pids]=PID_PCR;
+      temp_num_pids++;
+    }
+    else
+    {
+      channel->pids[channel->num_pids]=pcr_pid;
+      channel->pids_type[channel->num_pids]=PID_PCR;
+      channel->num_pids++;
+    }
+    log_message( MSG_DEBUG, "Autoconf : Added PCR pid %d\n",pcr_pid);
+  }
 
-	/**************************
-	 * PCR PID - END
-	 **************************/
-	//We store the PMT version useful to check for updates
-	channel->pmt_version=header->version_number;
+  /**************************
+  * PCR PID - END
+  **************************/
+  //We store the PMT version useful to check for updates
+  channel->pmt_version=header->version_number;
 
-	/**************************
-	 * Channel update 
-	 **************************/
-	//If it's a channel update we will have to update the filters
-	if(channel_update)
-	  {
-	    log_message( MSG_DEBUG,"Autoconf : Channel update new number of pids %d old %d we check for changes\n", temp_num_pids, channel->num_pids);
-	    
+  /**************************
+  * Channel update 
+  **************************/
+  //If it's a channel update we will have to update the filters
+  if(channel_update)
+  {
+    log_message( MSG_DEBUG,"Autoconf : Channel update new number of pids %d old %d we check for changes\n", temp_num_pids, channel->num_pids);
+
 	    //We search for added pids
-	    for(i=0;i<temp_num_pids;i++)
-	      {
-		found=0;
-		for(j=0;j<channel->num_pids;j++)
-		  {
-		    if(channel->pids[j]==temp_pids[i])
-		      found=1;
-		  }
-		if(!found)
-		  {
-		    log_message( MSG_DEBUG, "Autoconf : Update : pid %d added \n",temp_pids[i]);
+    for(i=0;i<temp_num_pids;i++)
+    {
+      found=0;
+      for(j=0;j<channel->num_pids;j++)
+      {
+        if(channel->pids[j]==temp_pids[i])
+          found=1;
+      }
+      if(!found)
+      {
+        log_message( MSG_DEBUG, "Autoconf : Update : pid %d added \n",temp_pids[i]);
 		    //If the pid is not on the list we add it for the filters
-		    if(asked_pid[temp_pids[i]]==PID_NOT_ASKED)
-		      asked_pid[temp_pids[i]]=PID_ASKED;
+        if(asked_pid[temp_pids[i]]==PID_NOT_ASKED)
+          asked_pid[temp_pids[i]]=PID_ASKED;
 
-		    number_chan_asked_pid[temp_pids[i]]++;
-		    channel->pids[channel->num_pids]=temp_pids[i];
-                    channel->pids_type[channel->num_pids]=temp_pids_type[i];
-		    channel->num_pids++;
+        number_chan_asked_pid[temp_pids[i]]++;
+        channel->pids[channel->num_pids]=temp_pids[i];
+        channel->pids_type[channel->num_pids]=temp_pids_type[i];
+        channel->num_pids++;
 
-		    log_message(MSG_DETAIL,"Autoconf : Add the new filters\n");
+        log_message(MSG_DETAIL,"Autoconf : Add the new filters\n");
 		    // we open the file descriptors
-		    if (create_card_fd (card, asked_pid, fds) < 0)
-		      {
-			log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors. Some channels will probably not work\n");
+        if (create_card_fd (card, asked_pid, fds) < 0)
+        {
+          log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors. Some channels will probably not work\n");
 			//return; //FIXME : what do we do here ?
-		      }
+        }
 		    //open the new filters
-		    set_filters(asked_pid, fds);
+        set_filters(asked_pid, fds);
 
-		  }
-	      }
+      }
+    }
 	    //We search for suppressed pids
-	    for(i=0;i<channel->num_pids;i++)
-	      {
-		found=0;
-		for(j=0;j<temp_num_pids;j++)
-		  {
-		    if(channel->pids[i]==temp_pids[j])
-		      found=1;
-		  }
-		if(!found)
-		  {
-		    log_message( MSG_DEBUG, "Autoconf : Update : pid %d supressed \n",channel->pids[i]);
+    for(i=0;i<channel->num_pids;i++)
+    {
+      found=0;
+      for(j=0;j<temp_num_pids;j++)
+      {
+        if(channel->pids[i]==temp_pids[j])
+          found=1;
+      }
+      if(!found)
+      {
+        log_message( MSG_DEBUG, "Autoconf : Update : pid %d supressed \n",channel->pids[i]);
 
 		    //We check the number of channels on wich this pid is registered, if 0 it's strange we warn
-		    if((channel->pids[i]>MAX_MANDATORY_PID_NUMBER )&& (number_chan_asked_pid[channel->pids[i]]))
-		      {
+        if((channel->pids[i]>MAX_MANDATORY_PID_NUMBER )&& (number_chan_asked_pid[channel->pids[i]]))
+        {
 			//We decrease the number of channels with this pid
-			number_chan_asked_pid[channel->pids[i]]--;
+          number_chan_asked_pid[channel->pids[i]]--;
 			//If no channel need this pid anymore, we remove the filter (closing the file descriptor remove the filter associated)
-			if(number_chan_asked_pid[channel->pids[i]]==0)
-			  {			    
-			    log_message( MSG_DEBUG, "Autoconf : Update : pid %d does not belong to any channel anymore, we close the filter \n",channel->pids[i]);
-			    close(fds->fd_demuxer[channel->pids[i]]);
-			    fds->fd_demuxer[channel->pids[i]]=0;
-			    asked_pid[channel->pids[i]]=PID_NOT_ASKED;
-			  }
-		      }
-		    else
-		      log_message( MSG_WARN, "Autoconf : Update : We tried to suppressed pid %d in a strange way, please contact if you can reproduce\n",channel->pids[i]);
+          if(number_chan_asked_pid[channel->pids[i]]==0)
+          {			    
+            log_message( MSG_DEBUG, "Autoconf : Update : pid %d does not belong to any channel anymore, we close the filter \n",channel->pids[i]);
+            close(fds->fd_demuxer[channel->pids[i]]);
+            fds->fd_demuxer[channel->pids[i]]=0;
+            asked_pid[channel->pids[i]]=PID_NOT_ASKED;
+          }
+        }
+        else
+          log_message( MSG_WARN, "Autoconf : Update : We tried to suppressed pid %d in a strange way, please contact if you can reproduce\n",channel->pids[i]);
 		    
 		    //We remove the pid from this channel by swapping with the last one and decreasing the pid number
-		    channel->pids[i]=channel->pids[channel->num_pids-1];
-		    channel->num_pids--;
+        channel->pids[i]=channel->pids[channel->num_pids-1];
+        channel->num_pids--;
 
-		  }
-	      }
-	  }
-	/** @todo : update generated conf file*/
-	/**************************
-	 * Channel update END
-	 **************************/
+      }
+    }
+  }
+  /** @todo : update generated conf file*/
+  /**************************
+  * Channel update END
+  **************************/
 
-	log_message( MSG_DEBUG,"Autoconf : Number of pids after autoconf %d\n", channel->num_pids);
-	return 0; 
+  log_message( MSG_DEBUG,"Autoconf : Number of pids after autoconf %d\n", channel->num_pids);
+  return 0; 
 }
 
 
@@ -526,7 +527,7 @@ int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_le
     {
       unsigned char descriptor_tag = buf[0];
       unsigned char descriptor_len = buf[1] + 2;
-      
+
       if (tag == descriptor_tag)
         return 1;
 
@@ -550,7 +551,7 @@ void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len)
     {
       unsigned char descriptor_tag = buf[0];
       unsigned char descriptor_len = buf[1] + 2;
-      
+
       log_message( MSG_DEBUG,"0x%02x - ", descriptor_tag);
       buf += descriptor_len;
       descriptors_loop_len -= descriptor_len;
