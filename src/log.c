@@ -405,7 +405,7 @@ int service_type_to_str(char *dest, int type)
     case 0x0b:
       return snprintf(dest,80*sizeof(char), "Advanced codec mosaic");
     case 0x0c:
-      return snprintf(dest,80*sizeof(char), "Data braodcast service");
+      return snprintf(dest,80*sizeof(char), "Data broadcast service");
     case 0x0d:
       return snprintf(dest,80*sizeof(char), "Reserved for common interface usage");
     case 0x0e:
