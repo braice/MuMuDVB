@@ -47,13 +47,12 @@
 #define DEFAULT_LOF_STANDARD (10750*1000UL)
 
 
-/* DVB-T */
+/* DVB-T DVB-C */
 /* default option : full auto except bandwith = 8MHz*/
 /* AUTO settings */
 #define BANDWIDTH_DEFAULT           BANDWIDTH_8_MHZ
 #define HP_CODERATE_DEFAULT         FEC_AUTO
 #define MODULATION_DEFAULT          QAM_AUTO
-#define ATSC_MODULATION_DEFAULT     VSB_8
 #define TRANSMISSION_MODE_DEFAULT   TRANSMISSION_MODE_AUTO
 #define GUARD_INTERVAL_DEFAULT      GUARD_INTERVAL_AUTO
 #define HIERARCHY_DEFAULT           HIERARCHY_NONE
@@ -62,6 +61,8 @@
 #define LP_CODERATE_DEFAULT (FEC_NONE) /* unused if HIERARCHY_NONE */
 #endif
 
+/* ATSC */
+#define ATSC_MODULATION_DEFAULT     VSB_8
 
 /* The lnb type*/
 #define LNB_UNIVERSAL 0
@@ -96,14 +97,12 @@ typedef struct tuning_parameters_t{
   uint32_t lnb_lof_high;
   /** Do we force the lnb voltage to be 0 ? (in case the LNB have it's own power supply (satellite only))*/
   int lnb_voltage_off;
-  //int tone;
   /**spectral inversion. AUTO seems to work with all the hardware
      @todo : catch more information about this*/
   fe_spectral_inversion_t specInv;
   /**The satellite number ie the LNB number*/
   unsigned char sat_number;
-  /** quadrature modulation 
-      For cable and terrestrial frontends (QAM and OFDM) */
+  /** The kind of modulation */
   fe_modulation_t modulation;
   /** high priority stream code rate ie error correction, FEC */
   fe_code_rate_t HP_CodeRate;
