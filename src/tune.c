@@ -300,10 +300,61 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
 	  tuneparams->LP_CodeRate=tuneparams->HP_CodeRate; // I found the following : 
 	  //In order to achieve hierarchy, two different code rates may be applied to two different levels of the modulation. Since hierarchy is not implemented ...
   }
+  else if (!strcmp (substring, "delivery_system"))
+  {
+#if DVB_API_VERSION >= 5
+    substring = strtok (NULL, delimiteurs);
+    sscanf (substring, "%s\n", substring);
+    if (!strcmp (substring, "DVBC_ANNEX_AC"))
+      tuneparams->delivery_system=SYS_DVBC_ANNEX_AC;
+    else if (!strcmp (substring, "DVBC_ANNEX_B"))
+      tuneparams->delivery_system=SYS_DVBC_ANNEX_B;
+    else if (!strcmp (substring, "DVBT"))
+      tuneparams->delivery_system=SYS_DVBT;
+    else if (!strcmp (substring, "DSS"))
+      tuneparams->delivery_system=SYS_DSS;
+    else if (!strcmp (substring, "DVBS"))
+      tuneparams->delivery_system=SYS_DVBS;
+    else if (!strcmp (substring, "DVBS2"))
+      tuneparams->delivery_system=SYS_DVBS2;
+    else if (!strcmp (substring, "DVBH"))
+      tuneparams->delivery_system=SYS_DVBH;
+    else if (!strcmp (substring, "ISDBT"))
+      tuneparams->delivery_system=SYS_ISDBT;
+    else if (!strcmp (substring, "ISDBS"))
+      tuneparams->delivery_system=SYS_ISDBS;
+    else if (!strcmp (substring, "ISDBS"))
+      tuneparams->delivery_system=SYS_ISDBS;
+    else if (!strcmp (substring, "ISDBC"))
+      tuneparams->delivery_system=SYS_ISDBC;
+    else if (!strcmp (substring, "ATSC"))
+      tuneparams->delivery_system=SYS_ATSC;
+    else if (!strcmp (substring, "ATSCMH"))
+      tuneparams->delivery_system=SYS_ATSCMH;
+    else if (!strcmp (substring, "DMBTH"))
+      tuneparams->delivery_system=SYS_DMBTH;
+    else if (!strcmp (substring, "CMMB"))
+      tuneparams->delivery_system=SYS_CMMB;
+    else if (!strcmp (substring, "DAB"))
+      tuneparams->delivery_system=SYS_DAB;
+    else
+    {
+      log_message( MSG_ERROR,
+                   "Config issue : delivery_system. Unknown delivery_system : %s\n",substring);
+      return -1;
+    }
+    log_message( MSG_INFO,
+                 "You will use DVB API version 5 for tuning your card.\n");
+#else
+    log_message( MSG_ERROR,
+                 "Config issue : delivery_system. You are trying to set the delivery system but your MuMuDVB have not been built with DVB-S2/DVB API 5 support.\n");
+    return -1;
+#endif
+  }
   else
-    return 0;
+    return 0; //Nothing concerning tuning, we return 0 to explore the other possibilities
 
-  return 1;
+  return 1;//We found something for tuning, we tell main to go for the next line
 
 }
 
