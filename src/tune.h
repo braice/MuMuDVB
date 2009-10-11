@@ -134,6 +134,6 @@ typedef struct tuning_parameters_t{
 
 
 int tune_it(int, tuning_parameters_t *);
-
+int read_tuning_configuration(tuning_parameters_t *, char *);
 
 #endif

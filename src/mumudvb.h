@@ -67,6 +67,7 @@ We cannot discover easily the MTU with unconnected UDP
 /**config line length*/
 #define CONF_LINELEN 	        512
 #define MAX_NAME_LEN		256
+#define CONFIG_FILE_SEPARATOR   " ="
 
 /**Maximum number of polling tries (excepted EINTR)*/
 #define MAX_POLL_TRIES		5

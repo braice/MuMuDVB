@@ -419,7 +419,7 @@ main (int argc, char **argv)
   int ip_ok = 0;
   char current_line[CONF_LINELEN];
   char *substring=NULL;
-  char delimiteurs[] = " =";
+  char delimiteurs[] = CONFIG_FILE_SEPARATOR;
 
 
   uint8_t hi_mappids[8192];
@@ -572,7 +572,12 @@ main (int argc, char **argv)
       if (substring[0] == '#')
 	continue; 
 
-      if ((!strcmp (substring, "timeout_accord"))||(!strcmp (substring, "tuning_timeout")))
+      if((iRet=read_tuning_configuration(&tuneparams, substring))) //Read the line concerning the tuning parameters
+      {
+        if(iRet==-1)
+          exit(ERROR_CONF);
+      }
+      else if ((!strcmp (substring, "timeout_accord"))||(!strcmp (substring, "tuning_timeout")))
 	{
 	  substring = strtok (NULL, delimiteurs);	//we extract the substring
 	  tuneparams.tuning_timeout = atoi (substring);
@@ -645,44 +650,7 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  autoconf_vars.autoconf_pid_update = atoi (substring);
 	}
-      else if (!strcmp (substring, "sat_number"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  tuneparams.sat_number = atoi (substring);
-	  if (tuneparams.sat_number > 4)
-	    {
-	      log_message( MSG_ERROR,
-			   "Config issue : %s sat_number. The satellite number must be between 0 and 4. Please report if you have an equipment wich support more\n",
-			   conf_filename);
-	      exit(ERROR_CONF);
-	    }
-	}
-#ifdef ATSC
-      else if (!strcmp (substring, "atsc_modulation"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  if (!strcmp (substring, "vsb8"))
-	    tuneparams.atsc_modulation = VSB_8;
-	  else if (!strcmp (substring, "vsb16"))
-	    tuneparams.atsc_modulation = VSB_16;
-	  else if (!strcmp (substring, "qam256"))
-	    tuneparams.atsc_modulation = QAM_256;
-	  else if (!strcmp (substring, "qam64"))
-	    tuneparams.atsc_modulation = QAM_64;
-	  else if (!strcmp (substring, "qamauto"))
-	    tuneparams.atsc_modulation = QAM_AUTO;
-	  else 
-	    {
-	      log_message( MSG_WARN,
-			   "Bad value for atsc_modulation, will try VSB_8 (usual modulation for terrestrial)\n"); //Note : see the initialisation of tuneparams for the default value
-    }
-	}
-#endif
-      else if (!strcmp (substring, "dont_tune"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  tuneparams.dont_tune = atoi (substring);
-	}
+
       else if (!strcmp (substring, "dont_send_scrambled"))
 	{
 	  substring = strtok (NULL, delimiteurs);
@@ -801,90 +769,7 @@ main (int argc, char **argv)
 	    }
 	  sscanf (substring, "%s\n", sap_vars.sap_sending_ip);
 	}
-      else if (!strcmp (substring, "freq"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  tuneparams.freq = atol (substring);
-	  tuneparams.freq *= 1000UL;
-	}
-      else if (!strcmp (substring, "pol"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  if (tolower (substring[0]) == 'v')
-	    {
-	      tuneparams.pol = 'V';
-	    }
-	  else if (tolower (substring[0]) == 'h')
-	    {
-	      tuneparams.pol = 'H';
-	    }
-	  else if (tolower (substring[0]) == 'l')
-	    {
-	      tuneparams.pol = 'L';
-	    }
-	  else if (tolower (substring[0]) == 'r')
-	    {
-	      tuneparams.pol = 'R';
-	    }
-	  else
-	    {
-	      log_message( MSG_ERROR,
-			   "Config issue : %s polarisation\n",
-			   conf_filename);
-	      exit(ERROR_CONF);
-	    }
-	}
-      else if (!strcmp (substring, "lnb_voltage_off"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  tuneparams.lnb_voltage_off = atoi(substring);
-	}
-      else if (!strcmp (substring, "lnb_type"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  if(!strcmp (substring, "universal"))
-	    tuneparams.lnb_type=LNB_UNIVERSAL;
-	  else if(!strcmp (substring, "standard"))
-	    tuneparams.lnb_type=LNB_STANDARD;
-	  else
-	    {
-	      log_message( MSG_ERROR,
-			   "Config issue : %s lnb_type\n",
-			   conf_filename);
-	      exit(ERROR_CONF);
-	    }
-	}
-      else if (!strcmp (substring, "lnb_lof_standard"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  tuneparams.lnb_lof_standard = atoi(substring)*1000UL;
-	}
-      else if (!strcmp (substring, "lnb_slof"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  tuneparams.lnb_slof = atoi(substring)*1000UL;
-	}
-      else if (!strcmp (substring, "lnb_lof_high"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  tuneparams.lnb_lof_high = atoi(substring)*1000UL;
-	}
-      else if (!strcmp (substring, "lnb_lof_low"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  tuneparams.lnb_lof_low = atoi(substring)*1000UL;
-	}
-      else if (!strcmp (substring, "srate"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  tuneparams.srate = atol (substring);
-	  tuneparams.srate *= 1000UL;
-	}
-      else if (!strcmp (substring, "card"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  tuneparams.card = atoi (substring);
-	}
+
       else if (!strcmp (substring, "ip"))
 	{
 	  if ( ip_ok )
@@ -1122,126 +1007,6 @@ main (int argc, char **argv)
 		log_message( MSG_WARN,"Channel name too long\n");
 		strncpy(channels[curr_channel].name,strtok(substring,"\n"),MAX_NAME_LEN-1);
 	    }
-	}
-      else if (!strcmp (substring, "qam"))
-	{
-	  // DVB-T
-	  substring = strtok (NULL, delimiteurs);
-	  sscanf (substring, "%s\n", substring);
-	  if (!strcmp (substring, "qpsk"))
-	    tuneparams.modulation=QPSK;
-	  else if (!strcmp (substring, "16"))
-	    tuneparams.modulation=QAM_16;
-	  else if (!strcmp (substring, "32"))
-	    tuneparams.modulation=QAM_32;
-	  else if (!strcmp (substring, "64"))
-	    tuneparams.modulation=QAM_64;
-	  else if (!strcmp (substring, "128"))
-	    tuneparams.modulation=QAM_128;
-	  else if (!strcmp (substring, "256"))
-	    tuneparams.modulation=QAM_256;
-	  else if (!strcmp (substring, "auto"))
-	    tuneparams.modulation=QAM_AUTO;
-	  else
-	    {
-		log_message( MSG_ERROR,
-			"Config issue : QAM\n");
-	      exit(ERROR_CONF);
-	    }
-	}
-      else if (!strcmp (substring, "trans_mode"))
-	{
-	  // DVB-T
-	  substring = strtok (NULL, delimiteurs);
-	  sscanf (substring, "%s\n", substring);
-	  if (!strcmp (substring, "2k"))
-	    tuneparams.TransmissionMode=TRANSMISSION_MODE_2K;
-	  else if (!strcmp (substring, "8k"))
-	    tuneparams.TransmissionMode=TRANSMISSION_MODE_8K;
-	  else if (!strcmp (substring, "auto"))
-	    tuneparams.TransmissionMode=TRANSMISSION_MODE_AUTO;
-	  else
-	    {
-		log_message( MSG_ERROR,
-			"Config issue : trans_mode\n");
-	      exit(ERROR_CONF);
-	    }
-	}
-      else if (!strcmp (substring, "bandwidth"))
-	{
-	  // DVB-T
-	  substring = strtok (NULL, delimiteurs);
-	  sscanf (substring, "%s\n", substring);
-	  if (!strcmp (substring, "8MHz"))
-	    tuneparams.bandwidth=BANDWIDTH_8_MHZ;
-	  else if (!strcmp (substring, "7MHz"))
-	    tuneparams.bandwidth=BANDWIDTH_7_MHZ;
-	  else if (!strcmp (substring, "6MHz"))
-	    tuneparams.bandwidth=BANDWIDTH_6_MHZ;
-	  else if (!strcmp (substring, "auto"))
-	    tuneparams.bandwidth=BANDWIDTH_AUTO;
-	  else
-	    {
-		log_message( MSG_ERROR,
-			"Config issue : bandwidth\n");
-	      exit(ERROR_CONF);
-	    }
-	}
-      else if (!strcmp (substring, "guardinterval"))
-	{
-	  // DVB-T
-	  substring = strtok (NULL, delimiteurs);
-	  sscanf (substring, "%s\n", substring);
-	  if (!strcmp (substring, "1/32"))
-	    tuneparams.guardInterval=GUARD_INTERVAL_1_32;
-	  else if (!strcmp (substring, "1/16"))
-	    tuneparams.guardInterval=GUARD_INTERVAL_1_16;
-	  else if (!strcmp (substring, "1/8"))
-	    tuneparams.guardInterval=GUARD_INTERVAL_1_8;
-	  else if (!strcmp (substring, "1/4"))
-	    tuneparams.guardInterval=GUARD_INTERVAL_1_4;
-	  else if (!strcmp (substring, "auto"))
-	    tuneparams.guardInterval=GUARD_INTERVAL_AUTO;
-	  else
-	    {
-		log_message( MSG_ERROR,
-			"Config issue : guardinterval\n");
-	      exit(ERROR_CONF);
-	    }
-	}
-      else if (!strcmp (substring, "coderate"))
-	{
-	  // DVB-T
-	  substring = strtok (NULL, delimiteurs);
-	  sscanf (substring, "%s\n", substring);
-	  if (!strcmp (substring, "none"))
-	    tuneparams.HP_CodeRate=FEC_NONE;
-	  else if (!strcmp (substring, "1/2"))
-	    tuneparams.HP_CodeRate=FEC_1_2;
-	  else if (!strcmp (substring, "2/3"))
-	    tuneparams.HP_CodeRate=FEC_2_3;
-	  else if (!strcmp (substring, "3/4"))
-	    tuneparams.HP_CodeRate=FEC_3_4;
-	  else if (!strcmp (substring, "4/5"))
-	    tuneparams.HP_CodeRate=FEC_4_5;
-	  else if (!strcmp (substring, "5/6"))
-	    tuneparams.HP_CodeRate=FEC_5_6;
-	  else if (!strcmp (substring, "6/7"))
-	    tuneparams.HP_CodeRate=FEC_6_7;
-	  else if (!strcmp (substring, "7/8"))
-	    tuneparams.HP_CodeRate=FEC_7_8;
-	  else if (!strcmp (substring, "8/9"))
-	    tuneparams.HP_CodeRate=FEC_8_9;
-	  else if (!strcmp (substring, "auto"))
-	    tuneparams.HP_CodeRate=FEC_AUTO;
-	  else
-	    {
-	      log_message( MSG_ERROR,
-			"Config issue : coderate\n");
-	      exit(ERROR_CONF);
-	    }
-	  tuneparams.LP_CodeRate=tuneparams.HP_CodeRate; // I found the following : 
-	  //In order to achieve hierarchy, two different code rates may be applied to two different levels of the modulation. Since hierarchy is not implemented ...
 	}
       else
 	{
