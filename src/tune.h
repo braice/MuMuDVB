@@ -53,6 +53,7 @@
 #define BANDWIDTH_DEFAULT           BANDWIDTH_8_MHZ
 #define HP_CODERATE_DEFAULT         FEC_AUTO
 #define MODULATION_DEFAULT          QAM_AUTO
+#define ATSC_MODULATION_DEFAULT     VSB_8
 #define TRANSMISSION_MODE_DEFAULT   TRANSMISSION_MODE_AUTO
 #define GUARD_INTERVAL_DEFAULT      GUARD_INTERVAL_AUTO
 #define HIERARCHY_DEFAULT           HIERARCHY_NONE
@@ -121,8 +122,6 @@ typedef struct tuning_parameters_t{
   fe_hierarchy_t hier;
   /** do we periodically display the strenght of the signal ?*/
   int display_strenght;
-  /** The modulation for ATSC cards */
-  fe_modulation_t atsc_modulation;
   /**The frontend type*/
   fe_type_t fe_type;
 #if DVB_API_VERSION >= 5

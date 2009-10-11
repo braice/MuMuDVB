@@ -75,17 +75,18 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
 #ifdef ATSC
   else if (!strcmp (substring, "atsc_modulation"))
   {
+    log_message( MSG_WARN, "Warning : The option atsc_modulation is deprecated, use the option modulation instead\n"); 
     substring = strtok (NULL, delimiteurs);
     if (!strcmp (substring, "vsb8"))
-      tuneparams->atsc_modulation = VSB_8;
+      tuneparams->modulation = VSB_8;
     else if (!strcmp (substring, "vsb16"))
-      tuneparams->atsc_modulation = VSB_16;
+      tuneparams->modulation = VSB_16;
     else if (!strcmp (substring, "qam256"))
-      tuneparams->atsc_modulation = QAM_256;
+      tuneparams->modulation = QAM_256;
     else if (!strcmp (substring, "qam64"))
-      tuneparams->atsc_modulation = QAM_64;
+      tuneparams->modulation = QAM_64;
     else if (!strcmp (substring, "qamauto"))
-      tuneparams->atsc_modulation = QAM_AUTO;
+      tuneparams->modulation = QAM_AUTO;
     else 
     {
       log_message( MSG_WARN,
@@ -183,6 +184,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
   else if (!strcmp (substring, "qam"))
   {
   // DVB-T
+    log_message( MSG_WARN, "Warning : The option qam is deprecated, use the option modulation instead\n");
     substring = strtok (NULL, delimiteurs);
     sscanf (substring, "%s\n", substring);
     if (!strcmp (substring, "qpsk"))
@@ -378,6 +380,47 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
     return -1;
 #endif
   }
+  else if (!strcmp (substring, "modulation"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    if (!strcmp (substring, "QPSK"))
+      tuneparams->modulation = QPSK;
+    else if (!strcmp (substring, "QAM_16"))
+      tuneparams->modulation = QAM_16;
+    else if (!strcmp (substring, "QAM_32"))
+      tuneparams->modulation = QAM_32;
+    else if (!strcmp (substring, "QAM_64"))
+      tuneparams->modulation = QAM_64;
+    else if (!strcmp (substring, "QAM_128"))
+      tuneparams->modulation = QAM_128;
+    else if (!strcmp (substring, "QAM_256"))
+      tuneparams->modulation = QAM_256;
+    else if (!strcmp (substring, "QAM_AUTO"))
+      tuneparams->modulation = QAM_AUTO;
+#ifdef ATSC
+    else if (!strcmp (substring, "VSB_8"))
+      tuneparams->modulation = VSB_8;
+    else if (!strcmp (substring, "VSB_16"))
+      tuneparams->modulation = VSB_16;
+#endif
+#if DVB_API_VERSION >= 5
+    else if (!strcmp (substring, "PSK_8"))
+      tuneparams->modulation = PSK_8;
+    else if (!strcmp (substring, "APSK_16"))
+      tuneparams->modulation = APSK_16;
+    else if (!strcmp (substring, "APSK_32"))
+      tuneparams->modulation = APSK_32;
+    else if (!strcmp (substring, "DQPSK"))
+      tuneparams->modulation = DQPSK;
+#endif
+    else 
+    {
+      log_message( MSG_ERROR,
+                   "Config issue : Bad value for modulation\n");
+      return -1;
+    }
+  }
+
   else
     return 0; //Nothing concerning tuning, we return 0 to explore the other possibilities
 
@@ -643,6 +686,8 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     feparams.u.ofdm.bandwidth=tuneparams->bandwidth;
     feparams.u.ofdm.code_rate_HP=tuneparams->HP_CodeRate;
     feparams.u.ofdm.code_rate_LP=tuneparams->LP_CodeRate;
+    if(tuneparams->modulation==-1)
+      tuneparams->modulation=MODULATION_DEFAULT;
     feparams.u.ofdm.constellation=tuneparams->modulation;
     feparams.u.ofdm.transmission_mode=tuneparams->TransmissionMode;
     feparams.u.ofdm.guard_interval=tuneparams->guardInterval;
@@ -701,13 +746,17 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     feparams.inversion=INVERSION_OFF;
     feparams.u.qam.symbol_rate = tuneparams->srate;
     feparams.u.qam.fec_inner = tuneparams->HP_CodeRate;
+    if(tuneparams->modulation==-1)
+      tuneparams->modulation=MODULATION_DEFAULT;
     feparams.u.qam.modulation = tuneparams->modulation;
     break;
 #ifdef ATSC
   case FE_ATSC: //ATSC
-    log_message( MSG_INFO, "tuning ATSC to %d Hz, modulation=%d\n",tuneparams->freq,tuneparams->atsc_modulation);
+    log_message( MSG_INFO, "tuning ATSC to %d Hz, modulation=%d\n",tuneparams->freq,tuneparams->modulation);
     feparams.frequency=tuneparams->freq;
-    feparams.u.vsb.modulation = tuneparams->atsc_modulation;
+    if(tuneparams->modulation==-1)
+      tuneparams->modulation=ATSC_MODULATION_DEFAULT;
+    feparams.u.vsb.modulation = tuneparams->modulation;
     break;
 #endif
   default:
