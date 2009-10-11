@@ -217,6 +217,9 @@ tuning_parameters_t tuneparams={
   .hier = HIERARCHY_DEFAULT,
   .atsc_modulation = VSB_8,
   .fe_type=FE_QPSK, //sat by default
+#if DVB_API_VERSION >= 5
+  .delivery_system=SYS_UNDEFINED,
+#endif
 };
 
 

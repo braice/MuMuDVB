@@ -125,10 +125,15 @@ typedef struct tuning_parameters_t{
   fe_modulation_t atsc_modulation;
   /**The frontend type*/
   fe_type_t fe_type;
+#if DVB_API_VERSION >= 5
+  /** DVB API version 5*/
+  fe_delivery_system_t delivery_system;
+#endif
 }tuning_parameters_t;
 
 
 
 int tune_it(int, tuning_parameters_t *);
+
 
 #endif
