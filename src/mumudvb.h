@@ -36,6 +36,17 @@
 #include "ts.h"
 #include "config.h"
 
+/*Do we support ATSC ?*/
+#undef ATSC
+#if defined(DVB_API_VERSION_MINOR)
+#if DVB_API_VERSION == 3 && DVB_API_VERSION_MINOR >= 1
+#define ATSC 1
+#endif
+#endif
+#if DVB_API_VERSION > 3
+#define ATSC 1
+#endif
+
 /**the number of pids by channel*/
 #define MAX_PIDS_PAR_CHAINE     18
 

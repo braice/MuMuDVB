@@ -113,16 +113,6 @@
 #include "unicast_http.h"
 #include "rtp.h"
 
-/*Do we support ATSC ?*/
-#undef ATSC
-#if defined(DVB_API_VERSION_MINOR)
-#if DVB_API_VERSION == 3 && DVB_API_VERSION_MINOR >= 1
-#define ATSC 1
-#endif
-#endif
-
-
-
 /** the table for crc32 claculations */
 extern uint32_t       crc32_table[256];
 
@@ -359,7 +349,7 @@ usage (char *name)
 	   "\n"
 	   "%s Version "
 	   VERSION
-	   "\n"
+	   "\n\n"
 #ifndef ENABLE_CAM_SUPPORT
 	   "Builded without cam support.\n"
 #endif
@@ -369,6 +359,10 @@ usage (char *name)
 	   "Builded with ATSC long channel names support.\n"
 #endif
 #endif
+#if DVB_API_VERSION >= 5
+           "Builded with support for DVB API Version 5 (DVB-S2).\n"
+#endif
+           "\n"
 	   "Based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
 	   "Released under the GPL.\n"
 	   "Latest version available from http://mumudvb.braice.net/\n"
