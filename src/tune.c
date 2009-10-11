@@ -385,30 +385,30 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
     substring = strtok (NULL, delimiteurs);
     if (!strcmp (substring, "QPSK"))
       tuneparams->modulation = QPSK;
-    else if (!strcmp (substring, "QAM_16"))
+    else if (!strcmp (substring, "QAM16"))
       tuneparams->modulation = QAM_16;
-    else if (!strcmp (substring, "QAM_32"))
+    else if (!strcmp (substring, "QAM32"))
       tuneparams->modulation = QAM_32;
-    else if (!strcmp (substring, "QAM_64"))
+    else if (!strcmp (substring, "QAM64"))
       tuneparams->modulation = QAM_64;
-    else if (!strcmp (substring, "QAM_128"))
+    else if (!strcmp (substring, "QAM128"))
       tuneparams->modulation = QAM_128;
-    else if (!strcmp (substring, "QAM_256"))
+    else if (!strcmp (substring, "QAM256"))
       tuneparams->modulation = QAM_256;
-    else if (!strcmp (substring, "QAM_AUTO"))
+    else if (!strcmp (substring, "QAMAUTO"))
       tuneparams->modulation = QAM_AUTO;
 #ifdef ATSC
-    else if (!strcmp (substring, "VSB_8"))
+    else if (!strcmp (substring, "VSB8"))
       tuneparams->modulation = VSB_8;
-    else if (!strcmp (substring, "VSB_16"))
+    else if (!strcmp (substring, "VSB16"))
       tuneparams->modulation = VSB_16;
 #endif
 #if DVB_API_VERSION >= 5
-    else if (!strcmp (substring, "PSK_8"))
+    else if (!strcmp (substring, "8PSK"))
       tuneparams->modulation = PSK_8;
-    else if (!strcmp (substring, "APSK_16"))
+    else if (!strcmp (substring, "16APSK"))
       tuneparams->modulation = APSK_16;
-    else if (!strcmp (substring, "APSK_32"))
+    else if (!strcmp (substring, "32APSK"))
       tuneparams->modulation = APSK_32;
     else if (!strcmp (substring, "DQPSK"))
       tuneparams->modulation = DQPSK;
