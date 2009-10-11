@@ -127,7 +127,10 @@ typedef struct tuning_parameters_t{
   fe_type_t fe_type;
 #if DVB_API_VERSION >= 5
   /** DVB API version 5*/
+  /**Delivery system : DVB-S DVB-T etc ...*/
   fe_delivery_system_t delivery_system;
+  /** Rolloff (For DVB-S and DVB-S2)*/
+  fe_rolloff_t rolloff;
 #endif
 }tuning_parameters_t;
 

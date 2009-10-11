@@ -351,6 +351,33 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
     return -1;
 #endif
   }
+  else if (!strcmp (substring, "rolloff"))
+  {
+#if DVB_API_VERSION >= 5
+    substring = strtok (NULL, delimiteurs);
+    sscanf (substring, "%s\n", substring);
+    if (!strcmp (substring, "35"))
+      tuneparams->rolloff=ROLLOFF_35;
+    else if (!strcmp (substring, "20"))
+      tuneparams->rolloff=ROLLOFF_20;
+    else if (!strcmp (substring, "25"))
+      tuneparams->rolloff=ROLLOFF_25;
+    else if (!strcmp (substring, "auto"))
+      tuneparams->rolloff=ROLLOFF_AUTO;
+    else
+    {
+      log_message( MSG_ERROR,
+                   "Config issue : delivery_system. Unknown delivery_system : %s\n",substring);
+      return -1;
+    }
+    log_message( MSG_INFO,
+                 "You will use DVB API version 5 for tuning your card.\n");
+#else
+    log_message( MSG_ERROR,
+                 "Config issue : delivery_system. You are trying to set the delivery system but your MuMuDVB have not been built with DVB-S2/DVB API 5 support.\n");
+    return -1;
+#endif
+  }
   else
     return 0; //Nothing concerning tuning, we return 0 to explore the other possibilities
 

@@ -209,6 +209,7 @@ tuning_parameters_t tuneparams={
   .fe_type=FE_QPSK, //sat by default
 #if DVB_API_VERSION >= 5
   .delivery_system=SYS_UNDEFINED,
+  .rolloff=ROLLOFF_35,
 #endif
 };
 
