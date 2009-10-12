@@ -688,6 +688,14 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
 
   switch(fe_info.type) {
   case FE_OFDM: //DVB-T
+#if DVB_API_VERSION >= 5
+    if((tuneparams->delivery_system!=SYS_UNDEFINED)&&(tuneparams->delivery_system!=SYS_DVBT))
+    {
+      log_message( MSG_ERROR, "ERROR : The delivery system does not fit with the card frontend type (DVB-T)..\n");
+      Interrupted=ERROR_TUNE<<8;
+      return -1;
+    }
+#endif
     if (tuneparams->freq < 1000000) tuneparams->freq*=1000UL;
     feparams.frequency=tuneparams->freq;
     feparams.u.ofdm.bandwidth=tuneparams->bandwidth;
@@ -718,6 +726,14 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     log_message( MSG_INFO, "Tuning DVB-T to %d Hz, Bandwidth: %d\n", tuneparams->freq,dvbt_bandwidth);
     break;
   case FE_QPSK: //DVB-S
+#if DVB_API_VERSION >= 5
+    if((tuneparams->delivery_system!=SYS_UNDEFINED)&&(tuneparams->delivery_system!=SYS_DVBS)&&(tuneparams->delivery_system!=SYS_DVBS2))
+    {
+      log_message( MSG_ERROR, "ERROR : The delivery system does not fit with the card frontend type (DVB-S).\n");
+      Interrupted=ERROR_TUNE<<8;
+      return -1;
+    }
+#endif
     //Universal lnb : two bands, hi and low one and two local oscilators
     if(tuneparams->lnb_type==LNB_UNIVERSAL)
       {
@@ -762,6 +778,14 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     }
     break;
   case FE_QAM: //DVB-C
+#if DVB_API_VERSION >= 5
+    if((tuneparams->delivery_system!=SYS_UNDEFINED)&&(tuneparams->delivery_system!=SYS_DVBC_ANNEX_AC)&&(tuneparams->delivery_system!=SYS_DVBC_ANNEX_B))
+    {
+      log_message( MSG_ERROR, "ERROR : The delivery system does not fit with the card frontend type (DVB-C).\n");
+      Interrupted=ERROR_TUNE<<8;
+      return -1;
+    }
+#endif
     log_message( MSG_INFO, "tuning DVB-C to %d Hz, srate=%d\n",tuneparams->freq,tuneparams->srate);
     feparams.frequency=tuneparams->freq;
     feparams.inversion=INVERSION_OFF;
@@ -773,6 +797,14 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     break;
 #ifdef ATSC
   case FE_ATSC: //ATSC
+#if DVB_API_VERSION >= 5
+    if((tuneparams->delivery_system!=SYS_UNDEFINED)&&(tuneparams->delivery_system!=SYS_ATSC))
+    {
+      log_message( MSG_ERROR, "ERROR : The delivery system does not fit with the card frontend type (ATSC).\n");
+      Interrupted=ERROR_TUNE<<8;
+      return -1;
+    }
+#endif
     log_message( MSG_INFO, "tuning ATSC to %d Hz, modulation=%d\n",tuneparams->freq,tuneparams->modulation);
     feparams.frequency=tuneparams->freq;
     if(!tuneparams->modulation_set)
