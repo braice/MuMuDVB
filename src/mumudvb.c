@@ -191,14 +191,8 @@ tuning_parameters_t tuneparams={
   .lnb_slof=DEFAULT_SLOF,
   .lnb_lof_low=DEFAULT_LOF1_UNIVERSAL,
   .lnb_lof_high=DEFAULT_LOF2_UNIVERSAL,
-  //The 22KHz tone burst is usually used with non-DiSEqC capable switches to select
-  //between two connected LNBs/satellites. When using DiSEqC epuipment this voltage
-  //has to be switched consistently to the DiSEqC commands as described in the DiSEqC
-  //spec.
-  //.tone = -1; //not used, only diseqc is supported
-  .specInv = INVERSION_AUTO,
   .sat_number = 0,
-  .modulation = -1,
+  .modulation_set = 0,
   .HP_CodeRate = HP_CODERATE_DEFAULT,//cf tune.h
   .LP_CodeRate = LP_CODERATE_DEFAULT,
   .TransmissionMode = TRANSMISSION_MODE_DEFAULT,

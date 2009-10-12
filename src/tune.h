@@ -68,6 +68,9 @@
 #define LNB_UNIVERSAL 0
 #define LNB_STANDARD 1
 
+#if DVB_API_VERSION >= 5
+#define MAX_CMDSEQ_PROPS_NUM 11
+#endif
 
 /** @brief Parameters for tuning the card*/
 typedef struct tuning_parameters_t{
@@ -97,13 +100,11 @@ typedef struct tuning_parameters_t{
   uint32_t lnb_lof_high;
   /** Do we force the lnb voltage to be 0 ? (in case the LNB have it's own power supply (satellite only))*/
   int lnb_voltage_off;
-  /**spectral inversion. AUTO seems to work with all the hardware
-     @todo : catch more information about this*/
-  fe_spectral_inversion_t specInv;
   /**The satellite number ie the LNB number*/
   unsigned char sat_number;
   /** The kind of modulation */
   fe_modulation_t modulation;
+  int modulation_set;
   /** high priority stream code rate ie error correction, FEC */
   fe_code_rate_t HP_CodeRate;
   /** low priority stream code rate 

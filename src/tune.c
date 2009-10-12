@@ -75,6 +75,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
 #ifdef ATSC
   else if (!strcmp (substring, "atsc_modulation"))
   {
+    tuneparams->modulation_set = 1;
     log_message( MSG_WARN, "Warning : The option atsc_modulation is deprecated, use the option modulation instead\n"); 
     substring = strtok (NULL, delimiteurs);
     if (!strcmp (substring, "vsb8"))
@@ -90,7 +91,8 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
     else 
     {
       log_message( MSG_WARN,
-                   "Bad value for atsc_modulation, will try VSB_8 (usual modulation for terrestrial)\n"); //Note : see the initialisation of tuneparams for the default value
+                   "Bad value for atsc_modulation, will try VSB_8 (usual modulation for terrestrial)\n");
+      tuneparams->modulation_set = 0;
     }
   }
 #endif
@@ -185,6 +187,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
   {
   // DVB-T
     log_message( MSG_WARN, "Warning : The option qam is deprecated, use the option modulation instead\n");
+    tuneparams->modulation_set = 1;
     substring = strtok (NULL, delimiteurs);
     sscanf (substring, "%s\n", substring);
     if (!strcmp (substring, "qpsk"))
@@ -205,6 +208,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
     {
       log_message( MSG_ERROR,
                    "Config issue : QAM\n");
+      tuneparams->modulation_set = 0;
       return -1;
     }
   }
@@ -270,7 +274,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
   }
   else if (!strcmp (substring, "coderate"))
   {
-	  // DVB-T
+    // DVB-T
     substring = strtok (NULL, delimiteurs);
     sscanf (substring, "%s\n", substring);
     if (!strcmp (substring, "none"))
@@ -388,6 +392,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
   }
   else if (!strcmp (substring, "modulation"))
   {
+    tuneparams->modulation_set = 1;
     substring = strtok (NULL, delimiteurs);
     if (!strcmp (substring, "QPSK"))
       tuneparams->modulation = QPSK;
@@ -423,6 +428,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
     {
       log_message( MSG_ERROR,
                    "Config issue : Bad value for modulation\n");
+      tuneparams->modulation_set = 0;
       return -1;
     }
   }
@@ -652,6 +658,7 @@ int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_str
   return 0;
 }
 
+
 /** @brief Tune the card
  *
  */
@@ -661,6 +668,8 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
   struct dvb_frontend_parameters feparams;
   struct dvb_frontend_info fe_info;
   uint32_t lo_frequency=0;
+  struct dvb_frontend_event event;
+  int dvbt_bandwidth=0;
 
   //no warning
   hi_lo = 0;
@@ -675,63 +684,77 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
   log_message( MSG_INFO, "Using DVB card \"%s\"\n",fe_info.name);
 
   tuneparams->fe_type=fe_info.type;
+  feparams.inversion=INVERSION_AUTO;
 
   switch(fe_info.type) {
   case FE_OFDM: //DVB-T
     if (tuneparams->freq < 1000000) tuneparams->freq*=1000UL;
     feparams.frequency=tuneparams->freq;
-    feparams.inversion=INVERSION_AUTO;
     feparams.u.ofdm.bandwidth=tuneparams->bandwidth;
     feparams.u.ofdm.code_rate_HP=tuneparams->HP_CodeRate;
     feparams.u.ofdm.code_rate_LP=tuneparams->LP_CodeRate;
-    if(tuneparams->modulation==-1)
+    if(!tuneparams->modulation_set)
       tuneparams->modulation=MODULATION_DEFAULT;
     feparams.u.ofdm.constellation=tuneparams->modulation;
     feparams.u.ofdm.transmission_mode=tuneparams->TransmissionMode;
     feparams.u.ofdm.guard_interval=tuneparams->guardInterval;
     feparams.u.ofdm.hierarchy_information=tuneparams->hier;
-    log_message( MSG_INFO, "tuning DVB-T to %d Hz, Bandwidth: %d\n", tuneparams->freq, 
-		 tuneparams->bandwidth==BANDWIDTH_8_MHZ ? 8 : (tuneparams->bandwidth==BANDWIDTH_7_MHZ ? 7 : 6));
+    switch(tuneparams->bandwidth)
+    {
+      case BANDWIDTH_8_MHZ:
+        dvbt_bandwidth=8000000;
+        break;
+      case BANDWIDTH_7_MHZ:
+        dvbt_bandwidth=7000000;
+        break;
+      case BANDWIDTH_6_MHZ:
+        dvbt_bandwidth=6000000;
+        break;
+      case BANDWIDTH_AUTO:
+      default:
+        dvbt_bandwidth=0;
+        break;
+    }
+    log_message( MSG_INFO, "Tuning DVB-T to %d Hz, Bandwidth: %d\n", tuneparams->freq,dvbt_bandwidth);
     break;
   case FE_QPSK: //DVB-S
     //Universal lnb : two bands, hi and low one and two local oscilators
     if(tuneparams->lnb_type==LNB_UNIVERSAL)
       {
-	if (tuneparams->freq < tuneparams->lnb_slof) {
-	  lo_frequency=tuneparams->lnb_lof_low;
-	  hi_lo = 0;
-	} else {
-	  lo_frequency=tuneparams->lnb_lof_high;
-	  hi_lo = 1;
-	}
+        if (tuneparams->freq < tuneparams->lnb_slof) {
+          lo_frequency=tuneparams->lnb_lof_low;
+          hi_lo = 0;
+        } else {
+          lo_frequency=tuneparams->lnb_lof_high;
+          hi_lo = 1;
+        }
       }
     //LNB_STANDARD one band and one local oscillator
     else if (tuneparams->lnb_type==LNB_STANDARD)
       {
-	hi_lo=0;
-	lo_frequency=tuneparams->lnb_lof_standard;
+        hi_lo=0;
+        lo_frequency=tuneparams->lnb_lof_standard;
       }
 
     feparams.frequency=tuneparams->freq-lo_frequency;
 
-    
+
     log_message( MSG_INFO, "Tuning DVB-S to Freq: %u Hz, LO frequency %u kHz Pol:%c Srate=%d, LNB number: %d\n",
-		 feparams.frequency,
-		 lo_frequency,
-		 tuneparams->pol,
-		 tuneparams->srate,
-		 tuneparams->sat_number);
-    feparams.inversion=tuneparams->specInv;
+                feparams.frequency,
+                lo_frequency,
+                tuneparams->pol,
+                tuneparams->srate,
+                tuneparams->sat_number);
     feparams.u.qpsk.symbol_rate=tuneparams->srate;
     feparams.u.qpsk.fec_inner=tuneparams->HP_CodeRate;
     dfd = fd_frontend;
-    
+
     //For diseqc vertical==circular right and horizontal == circular left
     if(do_diseqc( dfd, 
-		  tuneparams->sat_number,
-		  (tuneparams->pol == 'V' ? 1 : 0) + (tuneparams->pol == 'R' ? 1 : 0),
-		  hi_lo,
-		  tuneparams->lnb_voltage_off) == 0)
+                  tuneparams->sat_number,
+                  (tuneparams->pol == 'V' ? 1 : 0) + (tuneparams->pol == 'R' ? 1 : 0),
+                  hi_lo,
+                  tuneparams->lnb_voltage_off) == 0)
       log_message( MSG_INFO, "DISEQC SETTING SUCCEDED\n");
     else  {
       log_message( MSG_WARN, "DISEQC SETTING FAILED\n");
@@ -744,7 +767,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     feparams.inversion=INVERSION_OFF;
     feparams.u.qam.symbol_rate = tuneparams->srate;
     feparams.u.qam.fec_inner = tuneparams->HP_CodeRate;
-    if(tuneparams->modulation==-1)
+    if(!tuneparams->modulation_set)
       tuneparams->modulation=MODULATION_DEFAULT;
     feparams.u.qam.modulation = tuneparams->modulation;
     break;
@@ -752,7 +775,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
   case FE_ATSC: //ATSC
     log_message( MSG_INFO, "tuning ATSC to %d Hz, modulation=%d\n",tuneparams->freq,tuneparams->modulation);
     feparams.frequency=tuneparams->freq;
-    if(tuneparams->modulation==-1)
+    if(!tuneparams->modulation_set)
       tuneparams->modulation=ATSC_MODULATION_DEFAULT;
     feparams.u.vsb.modulation = tuneparams->modulation;
     break;
@@ -760,18 +783,157 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
   default:
     log_message( MSG_ERROR, "Unknown FE type : %x. Aborting\n", fe_info.type);
     Interrupted=ERROR_TUNE<<8;
+    return -1;
   }
   usleep(100000);
+
 
   /* The tuning of the card*/
   while(1)  {
     if (ioctl(fd_frontend, FE_GET_EVENT, &event) < 0)	//EMPTY THE EVENT QUEUE
       break;
   }
-  
-  if (ioctl(fd_frontend,FE_SET_FRONTEND,feparams) < 0) {
-    log_message( MSG_ERROR, "ERROR tuning channel : %s \n", strerror(errno));
-    return -1;
+
+  //If we support DVB API version 5 we check if the delivery system was defined
+#if DVB_API_VERSION >= 5
+  if(tuneparams->delivery_system==SYS_UNDEFINED)
+#else
+  if(1)
+#endif
+  {
+    if (ioctl(fd_frontend,FE_SET_FRONTEND,&feparams) < 0) {
+      log_message( MSG_ERROR, "ERROR tuning channel : %s \n", strerror(errno));
+      Interrupted=ERROR_TUNE<<8;
+      return -1;
+    }
   }
+#if DVB_API_VERSION >= 5
+  else
+  {
+    /*  Memo : S2API Commands 
+    DTV_UNDEFINED            DTV_TUNE                 DTV_CLEAR               
+    DTV_FREQUENCY            DTV_MODULATION           DTV_BANDWIDTH_HZ        
+    DTV_INVERSION            DTV_DISEQC_MASTER        DTV_SYMBOL_RATE         
+    DTV_INNER_FEC            DTV_VOLTAGE              DTV_TONE                
+    DTV_PILOT                DTV_ROLLOFF              DTV_DISEQC_SLAVE_REPLY  
+    DTV_FE_CAPABILITY_COUNT  DTV_FE_CAPABILITY        DTV_DELIVERY_SYSTEM     
+    DTV_API_VERSION          DTV_API_VERSION          DTV_CODE_RATE_HP        
+    DTV_CODE_RATE_LP         DTV_GUARD_INTERVAL       DTV_TRANSMISSION_MODE   
+    DTV_HIERARCHY 
+    */
+    //DVB api version 5 and delivery system defined, we do DVB-API-5 tuning 
+    log_message( MSG_INFO, "Tuning With DVB-API version 5. delivery system : %d\n",tuneparams->delivery_system);
+    struct dtv_property pclear[] = {
+      { .cmd = DTV_CLEAR,},
+    };
+    struct dtv_properties cmdclear = {
+      .num = 1,
+      .props = pclear
+    };
+    struct dtv_properties *cmdseq;
+    int commandnum =0;
+
+    cmdseq = (struct dtv_properties*) calloc(1, sizeof(*cmdseq));
+    if (!cmdseq)
+    {
+      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      return -1;
+    }
+
+    cmdseq->props = (struct dtv_property*) calloc(MAX_CMDSEQ_PROPS_NUM, sizeof(*(cmdseq->props)));
+    if (!(cmdseq->props))
+    {
+      free(cmdseq);
+      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      return -1;
+    }
+    if((tuneparams->delivery_system==SYS_DVBS)||(tuneparams->delivery_system==SYS_DVBS2))
+    {
+      cmdseq->props[commandnum].cmd      = DTV_DELIVERY_SYSTEM;
+      cmdseq->props[commandnum++].u.data = tuneparams->delivery_system;
+      cmdseq->props[commandnum].cmd      = DTV_FREQUENCY;
+      cmdseq->props[commandnum++].u.data = feparams.frequency;
+      cmdseq->props[commandnum].cmd      = DTV_MODULATION;
+      cmdseq->props[commandnum++].u.data = tuneparams->modulation;
+      cmdseq->props[commandnum].cmd      = DTV_SYMBOL_RATE;
+      cmdseq->props[commandnum++].u.data = tuneparams->srate;
+      cmdseq->props[commandnum].cmd      = DTV_INNER_FEC;
+      cmdseq->props[commandnum++].u.data = tuneparams->HP_CodeRate;
+      cmdseq->props[commandnum].cmd      = DTV_INVERSION;
+      cmdseq->props[commandnum++].u.data = INVERSION_AUTO;
+      cmdseq->props[commandnum].cmd      = DTV_ROLLOFF;
+      cmdseq->props[commandnum++].u.data = tuneparams->rolloff;
+      cmdseq->props[commandnum].cmd      = DTV_PILOT;
+      cmdseq->props[commandnum++].u.data = PILOT_AUTO;
+      cmdseq->props[commandnum++].cmd    = DTV_TUNE;
+    }
+    else if(tuneparams->delivery_system==SYS_DVBT)
+    {
+      cmdseq->props[commandnum].cmd      = DTV_DELIVERY_SYSTEM;
+      cmdseq->props[commandnum++].u.data = tuneparams->delivery_system;
+      cmdseq->props[commandnum].cmd      = DTV_FREQUENCY;
+      cmdseq->props[commandnum++].u.data = feparams.frequency;
+      cmdseq->props[commandnum].cmd      = DTV_BANDWIDTH_HZ;
+      cmdseq->props[commandnum++].u.data = dvbt_bandwidth;
+      cmdseq->props[commandnum].cmd      = DTV_CODE_RATE_HP;
+      cmdseq->props[commandnum++].u.data = tuneparams->HP_CodeRate;
+      cmdseq->props[commandnum].cmd      = DTV_CODE_RATE_LP;
+      cmdseq->props[commandnum++].u.data = tuneparams->LP_CodeRate;
+      cmdseq->props[commandnum].cmd      = DTV_MODULATION;
+      cmdseq->props[commandnum++].u.data = tuneparams->modulation;
+      cmdseq->props[commandnum].cmd      = DTV_TRANSMISSION_MODE;
+      cmdseq->props[commandnum++].u.data = tuneparams->TransmissionMode;
+      cmdseq->props[commandnum].cmd      = DTV_HIERARCHY;
+      cmdseq->props[commandnum++].u.data = tuneparams->hier;
+      cmdseq->props[commandnum++].cmd    = DTV_TUNE;
+    }
+    else if((tuneparams->delivery_system==SYS_DVBC_ANNEX_AC)||(tuneparams->delivery_system==SYS_DVBC_ANNEX_B))
+    {
+      cmdseq->props[commandnum].cmd      = DTV_DELIVERY_SYSTEM;
+      cmdseq->props[commandnum++].u.data = tuneparams->delivery_system;
+      cmdseq->props[commandnum].cmd      = DTV_FREQUENCY;
+      cmdseq->props[commandnum++].u.data = feparams.frequency;
+      cmdseq->props[commandnum].cmd      = DTV_MODULATION;
+      cmdseq->props[commandnum++].u.data = tuneparams->modulation;
+      cmdseq->props[commandnum].cmd      = DTV_SYMBOL_RATE;
+      cmdseq->props[commandnum++].u.data = tuneparams->srate;
+      cmdseq->props[commandnum].cmd      = DTV_INVERSION;
+      cmdseq->props[commandnum++].u.data = INVERSION_OFF;
+      cmdseq->props[commandnum].cmd      = DTV_INNER_FEC;
+      cmdseq->props[commandnum++].u.data = tuneparams->HP_CodeRate;
+      cmdseq->props[commandnum++].cmd    = DTV_TUNE;
+    }
+    else if(tuneparams->delivery_system==SYS_ATSC)
+    {
+      cmdseq->props[commandnum].cmd      = DTV_DELIVERY_SYSTEM;
+      cmdseq->props[commandnum++].u.data = tuneparams->delivery_system;
+      cmdseq->props[commandnum].cmd      = DTV_FREQUENCY;
+      cmdseq->props[commandnum++].u.data = feparams.frequency;
+      cmdseq->props[commandnum].cmd      = DTV_MODULATION;
+      cmdseq->props[commandnum++].u.data = tuneparams->modulation;
+      cmdseq->props[commandnum++].cmd    = DTV_TUNE;
+    }
+    else
+    {
+      log_message( MSG_ERROR, "ERROR : unsupported delivery system. Try tuning using DVB API 3 (do not set delivery_system). And please contact so it can be implemented.\n");
+      return -1;
+    }
+
+    cmdseq->num = commandnum;
+    if ((ioctl(fd_frontend, FE_SET_PROPERTY, &cmdclear)) == -1) {
+      log_message( MSG_ERROR,"FE_SET_PROPERTY clear failed : %s\n", strerror(errno));
+      Interrupted=ERROR_TUNE<<8;
+      return -1;
+    }
+
+    if ((ioctl(fd_frontend, FE_SET_PROPERTY, cmdseq)) == -1) {
+      log_message( MSG_ERROR,"FE_SET_PROPERTY failed : %s\n", strerror(errno));
+      Interrupted=ERROR_TUNE<<8;
+      return -1;
+    }
+
+  }
+#endif 
+ 
   return(check_status(fd_frontend,fe_info.type,lo_frequency,tuneparams->display_strenght));
 }
