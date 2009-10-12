@@ -564,23 +564,15 @@ static int do_diseqc(int fd, unsigned char sat_no, int pol_v_r, int hi_lo, int l
     }
 }
 
-/** @todo document*/
-int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* feparams,uint32_t lo_frequency, int display_strength) {
+/** @brief Check the status of the card
+ *@todo document
+ */
+int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_strength) {
   int32_t strength;
   fe_status_t festatus;
   struct dvb_frontend_event event;
   struct pollfd pfd[1];
   int status;
-
-  while(1)  {
-	if (ioctl(fd_frontend, FE_GET_EVENT, &event) < 0)	//EMPTY THE EVENT QUEUE
-	break;
-  }
-  
-  if (ioctl(fd_frontend,FE_SET_FRONTEND,feparams) < 0) {
-    log_message( MSG_ERROR, "ERROR tuning channel : %s \n", strerror(errno));
-    return -1;
-  }
 
   pfd[0].fd = fd_frontend;
   pfd[0].events = POLLPRI;
@@ -771,5 +763,15 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
   }
   usleep(100000);
 
-  return(check_status(fd_frontend,fe_info.type,&feparams,lo_frequency,tuneparams->display_strenght));
+  /* The tuning of the card*/
+  while(1)  {
+    if (ioctl(fd_frontend, FE_GET_EVENT, &event) < 0)	//EMPTY THE EVENT QUEUE
+      break;
+  }
+  
+  if (ioctl(fd_frontend,FE_SET_FRONTEND,feparams) < 0) {
+    log_message( MSG_ERROR, "ERROR tuning channel : %s \n", strerror(errno));
+    return -1;
+  }
+  return(check_status(fd_frontend,fe_info.type,lo_frequency,tuneparams->display_strenght));
 }
