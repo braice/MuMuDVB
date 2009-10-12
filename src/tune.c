@@ -293,6 +293,12 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
       tuneparams->HP_CodeRate=FEC_8_9;
     else if (!strcmp (substring, "auto"))
       tuneparams->HP_CodeRate=FEC_AUTO;
+#if DVB_API_VERSION >= 5
+    else if (!strcmp (substring, "3/5"))
+      tuneparams->HP_CodeRate=FEC_3_5;
+    else if (!strcmp (substring, "9/10"))
+      tuneparams->HP_CodeRate=FEC_9_10;
+#endif
     else
     {
       log_message( MSG_ERROR,
