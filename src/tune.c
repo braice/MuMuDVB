@@ -916,6 +916,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     else
     {
       log_message( MSG_ERROR, "ERROR : unsupported delivery system. Try tuning using DVB API 3 (do not set delivery_system). And please contact so it can be implemented.\n");
+      Interrupted=ERROR_TUNE<<8;
       return -1;
     }
 
