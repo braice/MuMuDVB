@@ -658,7 +658,15 @@ Une partie de ce temps CPU est utilisé pour débrouiller les chaînes, une autr
 
 Pour réduire l'utilisation processeur référez vous à la section <<reduce_cpu,réduire l'utilisation processeur de MuMuDVB>>. Dans le cas de l'utilisation de MuMuDVB avec sasc-ng cette amélioration peut être importante.
 
+La réception est bonne mais MuMuDVB indique toutes les chaînes "down"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Si le signal est bon mais MuMuDVB vous indique que toutes les chaînes sont "down", cela peut être dû à votre module CAM si vous en possédez un. Essayez après avoir retiré votre module
+
+Je veux diffuser à partir de plusieurs cartes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+La solution est simple : lancez un processus de MuMuDVB pour chaque carte.
 
 
 

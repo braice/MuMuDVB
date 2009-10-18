@@ -659,3 +659,16 @@ If you use sasc-ng + dvbloopback, MuMuDVB will eat more CPU than needed.
 A part of this CPU time is used to descramble the channels, another part is due to the way dvbloopback is implemented and the way MuMuDVB ask the card.
 
 To reduce the cpu usage, see <<reduce_cpu,reduce MuMuDVB CPU usage>> section. In the case of using MuMuDVB with sasc-ng this improvement can be quite large.
+
+
+The reception is working but all the channels are down
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the signal is good but MuMuDVB tells you that all the channels are down and you are sure about your pids it can be due to your CAM module if you have one. Try after unplugging your CAM module.
+
+I want to stream from several cards
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The solution is simple: just launch a MuMuDVB process for each card.
+
+
