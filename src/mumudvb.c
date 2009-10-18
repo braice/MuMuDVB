@@ -121,12 +121,6 @@ int multicast_ttl=DEFAULT_TTL;
 int common_port = 1234;
 int multicast_auto_join=0;
 
-//statistics for the big buffer
-int stats_num_packets_received=0;
-int stats_num_reads=0;
-long show_buffer_stats_time = 0; /** */
-int show_buffer_stats_interval = 120; /** */
-
 
 /* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
    - see http://www.cadsoft.de/people/kls/vdr/index.htm */
@@ -136,15 +130,19 @@ long now;
 long time_no_diff;
 long real_start_time;
 
-
-
+//statistics for the big buffer
+int stats_num_packets_received=0;
+int stats_num_reads=0;
+long show_buffer_stats_time = 0; /** */
+int show_buffer_stats_interval = 120; /** How often we how the statistics about the DVR buffer*/
+//statistics for the traffic
 int show_traffic = 0; /** do we periodically show the traffic ?*/
 long show_traffic_time = 0; /** */
 int show_traffic_time_usec = 0; /** */
 long compute_traffic_time = 0; /** */
 int compute_traffic_time_usec = 0; /** */
-int show_traffic_interval = 10; /**The interval for the traffic display*/
-int compute_traffic_interval = 10; /**The interval for the traffic calculation*/
+int show_traffic_interval = 10; /** The interval for the traffic display */
+int compute_traffic_interval = 10; /** The interval for the traffic calculation */
 
 int no_daemon = 0; /** do we deamonize mumudvb ? */
 
@@ -985,7 +983,6 @@ main (int argc, char **argv)
 
 #ifdef ENABLE_CAM_SUPPORT
   if(cam_vars.cam_support){
-    
     //We initialise the cam. If fail, we remove cam support
     if(cam_start(&cam_vars,tuneparams.card,filename_cam_info))
       {
