@@ -210,7 +210,7 @@ tuning_parameters_t tuneparams={
 //sap announces C99 initialisation
 sap_parameters_t sap_vars={
   .sap_messages=NULL, 
-  .sap=0, //No sap by default
+  .sap=SAP_UNDEFINED, //No sap by default
   .sap_interval=SAP_DEFAULT_INTERVAL,
   .sap_sending_ip="0.0.0.0",
   .sap_default_group="",
@@ -630,16 +630,7 @@ main (int argc, char **argv)
           cam_vars.cam_number = atoi (substring);
         }
 #endif
-      else if (!strcmp (substring, "autoconf_scrambled"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  autoconf_vars.autoconf_scrambled = atoi (substring);
-	}
-      else if (!strcmp (substring, "autoconf_pid_update"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  autoconf_vars.autoconf_pid_update = atoi (substring);
-	}
+
 
       else if (!strcmp (substring, "dont_send_scrambled"))
 	{
@@ -660,55 +651,14 @@ main (int argc, char **argv)
 	  if (rtp_header==1)
 	    log_message( MSG_INFO, "You decided to send the RTP header.\n");
 	}
-      else if (!strcmp (substring, "autoconfiguration"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  autoconf_vars.autoconfiguration = atoi (substring);
-	  if(!((autoconf_vars.autoconfiguration==AUTOCONF_MODE_PIDS)||(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)))
-	    {
-	      log_message( MSG_WARN,
-			"Bad value for autoconfiguration, autoconfiguration will not be run\n");
-	    autoconf_vars.autoconfiguration=0;
-	    }
-	  if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)
-	    {
-	      log_message( MSG_INFO,
-			"Full autoconfiguration, we activate SAP announces. if you want to desactivate them see the README.\n");
-	      sap_vars.sap=1;
-	    }
-	}
-      else if (!strcmp (substring, "autoconf_radios"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  autoconf_vars.autoconf_radios = atoi (substring);
-	  if(!(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL))
-	    {
-	      log_message( MSG_INFO,
-			"Autoconf : You have to set autoconfiguration in full mode to use autoconf of the radios\n");
-	    }
-	}
-        else if (!strcmp (substring, "autoconf_ip_header"))
-        {
-          substring = strtok (NULL, delimiteurs);
-          if(strlen(substring)>8)
-          {
-            log_message( MSG_ERROR,
-                         "The autoconf ip header is too long\n");
-            exit(ERROR_CONF);
-          }
-          sscanf (substring, "%s\n", autoconf_vars.autoconf_ip_header);
-        }
-        /**  option for the starting http unicast port (for autoconf full)*/
-        else if (!strcmp (substring, "autoconf_unicast_start_port"))
-        {
-          substring = strtok (NULL, delimiteurs);
-          autoconf_vars.autoconf_unicast_start_port = atoi (substring);
-        }
       else if (!strcmp (substring, "sap"))
 	{
 	  substring = strtok (NULL, delimiteurs);
-	  sap_vars.sap = atoi (substring);
-	  if(sap_vars.sap)
+          if(atoi (substring) != 0)
+            sap_vars.sap = SAP_ON;
+          else
+            sap_vars.sap = SAP_OFF;
+          if(sap_vars.sap == SAP_ON)
 	    {
 	      log_message( MSG_INFO,
 			"Sap announces will be sent\n");
@@ -812,12 +762,6 @@ main (int argc, char **argv)
 	}
       else if (!strcmp (substring, "sap_group"))
 	{
-	  if (sap_vars.sap==0)
-	    {
-	      log_message( MSG_WARN,
-			"Warning : you have not activated sap, the sap group will not be taken in account\n");
-
-	    }
 	  if ( ip_ok == 0)
 	    {
 	      log_message( MSG_ERROR,
@@ -836,12 +780,6 @@ main (int argc, char **argv)
 	}
       else if (!strcmp (substring, "sap_default_group"))
 	{
-	  if (sap_vars.sap==0)
-	    {
-	      log_message( MSG_WARN,
-			"Warning : you have not activated sap, the sap group will not be taken in account\n");
-
-	    }
 	  substring = strtok (NULL, "=");
 	  if(strlen(substring)>19)
 	    {
@@ -1015,6 +953,14 @@ main (int argc, char **argv)
 
     }
   fclose (conf_file);
+  
+  
+  if((autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)&&(sap_vars.sap == SAP_UNDEFINED))
+  {
+    log_message( MSG_INFO,
+                 "Full autoconfiguration, we activate SAP announces. if you want to desactivate them see the README.\n");
+    sap_vars.sap=SAP_ON;
+  }
   /******************************************************/
   //end of config file reading
   /******************************************************/
@@ -2046,7 +1992,7 @@ static void SignalHandler (int signum)
       else //we are not doing autoconfiguration we can do something else
 	{
 	  //sap announces
-	  if(sap_vars.sap)
+          if(sap_vars.sap == SAP_ON)
 	    {
 	      if(!sap_vars.sap_last_time_sent)
 		{
@@ -2073,7 +2019,7 @@ static void SignalHandler (int signum)
 			       "Channel \"%s\" back.Card %d\n",
 			       channels[curr_channel].name, tuneparams.card);
 		  channels[curr_channel].streamed_channel_old = 1;	// update
-		  if(sap_vars.sap)
+                  if(sap_vars.sap == SAP_ON)
 		    sap_update(channels[curr_channel], &sap_vars, curr_channel); //Channel status changed, we update the sap announces
 		}
 	      else if ((channels[curr_channel].streamed_channel_old) && (channels[curr_channel].streamed_channel/ALARM_TIME < 30))
@@ -2082,7 +2028,7 @@ static void SignalHandler (int signum)
 			       "Channel \"%s\" down.Card %d\n",
 			       channels[curr_channel].name, tuneparams.card);
 		  channels[curr_channel].streamed_channel_old = 0;	// update
-		  if(sap_vars.sap)
+                  if(sap_vars.sap == SAP_ON)
 		    sap_update(channels[curr_channel], &sap_vars, curr_channel); //Channel status changed, we update the sap announces
 		}
 	      //log_message( MSG_DEBUG, "Channel \"%s\"  %d packets/s \n",channels[curr_channel].name,channels[curr_channel].streamed_channel/ALARM_TIME);

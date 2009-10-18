@@ -122,6 +122,71 @@ char *encodings_en300468[] ={
 };
 
 
+/** @brief Read a line of the configuration file to check if there is a tuning parameter
+ *
+ * @param autoconf_vars the autoconfiguration parameters
+ * @param substring The currrent line
+ */
+int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, char *substring)
+{
+
+  char delimiteurs[] = CONFIG_FILE_SEPARATOR;
+
+  if (!strcmp (substring, "autoconf_scrambled"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    autoconf_vars->autoconf_scrambled = atoi (substring);
+  }
+  else if (!strcmp (substring, "autoconf_pid_update"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    autoconf_vars->autoconf_pid_update = atoi (substring);
+  }
+  else if (!strcmp (substring, "autoconfiguration"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    autoconf_vars->autoconfiguration = atoi (substring);
+    if(!((autoconf_vars->autoconfiguration==AUTOCONF_MODE_PIDS)||(autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL)))
+    {
+      log_message( MSG_WARN,
+                   "Bad value for autoconfiguration, autoconfiguration will not be run\n");
+      autoconf_vars->autoconfiguration=0;
+    }
+  }
+  else if (!strcmp (substring, "autoconf_radios"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    autoconf_vars->autoconf_radios = atoi (substring);
+    if(!(autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL))
+    {
+      log_message( MSG_INFO,
+                   "Autoconf : You have to set autoconfiguration in full mode to use autoconf of the radios\n");
+    }
+  }
+  else if (!strcmp (substring, "autoconf_ip_header"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    if(strlen(substring)>8)
+    {
+      log_message( MSG_ERROR,
+                   "The autoconf ip header is too long\n");
+      return -1;
+    }
+    sscanf (substring, "%s\n", autoconf_vars->autoconf_ip_header);
+  }
+  /**  option for the starting http unicast port (for autoconf full)*/
+  else if (!strcmp (substring, "autoconf_unicast_start_port"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    autoconf_vars->autoconf_unicast_start_port = atoi (substring);
+  }
+  else
+    return 0; //Nothing concerning autoconfiguration, we return 0 to explore the other possibilities
+
+  return 1;//We found something for autoconfiguration, we tell main to go for the next line
+}
+
+
 /** @brief initialize the autoconfiguration : alloc the memory etc...
  *
  */

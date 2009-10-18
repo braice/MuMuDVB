@@ -113,6 +113,7 @@ void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels,
 void autoconf_free_services(mumudvb_service_t *services);
 int pmt_need_update(mumudvb_channel_t *channel, unsigned char *buf, int ts_header);
 void update_pmt_version(mumudvb_channel_t *channel);
+int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, char *substring);
 
 
 #endif

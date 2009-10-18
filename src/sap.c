@@ -46,7 +46,7 @@ int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumud
  */
 int init_sap(sap_parameters_t *sap_vars)
 {
-  if(sap_vars->sap)
+  if(sap_vars->sap == SAP_ON)
     {
       sap_vars->sap_messages=malloc(sizeof(mumudvb_sap_message_t)*MAX_CHANNELS);
       if(sap_vars->sap_messages==NULL)
