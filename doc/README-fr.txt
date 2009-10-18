@@ -251,7 +251,7 @@ Les chaînes seront diffusées sur les adresses ip de multicast 239.100.c.n où 
 Si vous n'utilisez pas l'option common_port, MuMuDVB utilisera le port 1234.
 
 [NOTE]
-Par défaut, les annnonces SAP sont activées si vous utilisez ce mode d'autoconfiguration. Pour les désactiver, ajoutez `sap=0` après la ligne `autoconfiguration=2`.
+Par défaut, les annnonces SAP sont activées si vous utilisez ce mode d'autoconfiguration. Pour les désactiver, ajoutez `sap=0` dans votre fichier de configuration.
 
 [NOTE]
 Un fichier de configuration d'exemple, documenté (en anglais) peux être est disponible : `doc/configuration_examples/autoconf_full.conf`
