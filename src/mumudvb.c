@@ -539,7 +539,6 @@ main (int argc, char **argv)
       exit(ERROR_CONF_FILE);
     }
 
-
   curr_channel=0;
   // we scan config file
   // see doc/README_CONF* for further information
@@ -552,15 +551,22 @@ main (int argc, char **argv)
       if(current_line[line_len-1]=='\r' ||current_line[line_len-1]=='\n')
 	  current_line[line_len-1]=0;
 
+      //Line without "=" we continue
+      if(strstr(current_line,"=")==NULL)
+        continue;
+      //commentary
+      if (current_line[0] == '#')
+        continue;
       //We split the line
       substring = strtok (current_line, delimiteurs);
 
       //If nothing in the substring we avoid the segfault in the next line
       if(substring == NULL)
 	continue;
+
       //commentary
       if (substring[0] == '#')
-	continue; 
+        continue;
 
       if((iRet=read_tuning_configuration(&tuneparams, substring))) //Read the line concerning the tuning parameters
       {
@@ -589,208 +595,208 @@ main (int argc, char **argv)
         if(iRet==-1)
           exit(ERROR_CONF);
       }
-        else if (!strcmp (substring, "timeout_no_diff"))
+      else if (!strcmp (substring, "timeout_no_diff"))
+      {
+        substring = strtok (NULL, delimiteurs);
+        timeout_no_diff= atoi (substring);
+      }
+      else if (!strcmp (substring, "show_traffic_interval"))
+      {
+        substring = strtok (NULL, delimiteurs);
+        show_traffic_interval= atoi (substring);
+        if(show_traffic_interval<ALARM_TIME)
         {
-          substring = strtok (NULL, delimiteurs);
-          timeout_no_diff= atoi (substring);
+          show_traffic_interval=ALARM_TIME;
+          log_message(MSG_WARN,"Sorry the minimum interval for showing the traffic is %ds\n",ALARM_TIME);
         }
-        else if (!strcmp (substring, "show_traffic_interval"))
+      }
+      else if (!strcmp (substring, "compute_traffic_interval"))
+      {
+        substring = strtok (NULL, delimiteurs);
+        compute_traffic_interval= atoi (substring);
+        if(compute_traffic_interval<ALARM_TIME)
         {
-	  substring = strtok (NULL, delimiteurs);
-	  show_traffic_interval= atoi (substring);
-	  if(show_traffic_interval<ALARM_TIME)
-	    {
-	      show_traffic_interval=ALARM_TIME;
-	      log_message(MSG_WARN,"Sorry the minimum interval for showing the traffic is %ds\n",ALARM_TIME);
-	    }
-	}
-        else if (!strcmp (substring, "compute_traffic_interval"))
-        {
-          substring = strtok (NULL, delimiteurs);
-          compute_traffic_interval= atoi (substring);
-          if(compute_traffic_interval<ALARM_TIME)
-          {
-            compute_traffic_interval=ALARM_TIME;
-            log_message(MSG_WARN,"Sorry the minimum interval for computing the traffic is %ds\n",ALARM_TIME);
-          }
+          compute_traffic_interval=ALARM_TIME;
+          log_message(MSG_WARN,"Sorry the minimum interval for computing the traffic is %ds\n",ALARM_TIME);
         }
+      }
       else if (!strcmp (substring, "rewrite_pat"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  rewrite_vars.rewrite_pat = atoi (substring);
-	  if(rewrite_vars.rewrite_pat)
-	    {
-	      log_message( MSG_INFO,
-			"You have enabled the Pat Rewriting\n");
-	    }
-	}
+      {
+        substring = strtok (NULL, delimiteurs);
+        rewrite_vars.rewrite_pat = atoi (substring);
+        if(rewrite_vars.rewrite_pat)
+        {
+          log_message( MSG_INFO,
+                       "You have enabled the Pat Rewriting\n");
+        }
+      }
       else if (!strcmp (substring, "dont_send_scrambled"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  dont_send_scrambled = atoi (substring);
-	}
+      {
+        substring = strtok (NULL, delimiteurs);
+        dont_send_scrambled = atoi (substring);
+      }
       else if (!strcmp (substring, "dont_send_sdt"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  dont_send_sdt = atoi (substring);
-	  if(dont_send_sdt)
-	    log_message( MSG_INFO, "You decided not to send the SDT pid. This is a VLC workaround.\n");
-	}
+      {
+        substring = strtok (NULL, delimiteurs);
+        dont_send_sdt = atoi (substring);
+        if(dont_send_sdt)
+          log_message( MSG_INFO, "You decided not to send the SDT pid. This is a VLC workaround.\n");
+      }
       else if (!strcmp (substring, "rtp_header"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  rtp_header = atoi (substring);
-	  if (rtp_header==1)
-	    log_message( MSG_INFO, "You decided to send the RTP header.\n");
-	}
+      {
+        substring = strtok (NULL, delimiteurs);
+        rtp_header = atoi (substring);
+        if (rtp_header==1)
+          log_message( MSG_INFO, "You decided to send the RTP header.\n");
+      }
       else if (!strcmp (substring, "ip"))
-	{
-	  if ( ip_ok )
-	    {
-	      log_message( MSG_ERROR,
-			   "You must precise the pids last, or you forgot the pids\n");
-	      exit(ERROR_CONF);
-	    }
+      {
+        if ( ip_ok )
+        {
+          log_message( MSG_ERROR,
+                       "You must precise the pids last, or you forgot the pids\n");
+          exit(ERROR_CONF);
+        }
 
-	  substring = strtok (NULL, delimiteurs);
-          if(strlen(substring)>19)
-            {
-              log_message( MSG_ERROR,
-                           "The Ip address %s is too long.\n", substring);
-              exit(ERROR_CONF);
-            }
-	  sscanf (substring, "%s\n", channels[curr_channel].ipOut);
-	  ip_ok = 1;
-	}
+        substring = strtok (NULL, delimiteurs);
+        if(strlen(substring)>19)
+        {
+          log_message( MSG_ERROR,
+                       "The Ip address %s is too long.\n", substring);
+          exit(ERROR_CONF);
+        }
+        sscanf (substring, "%s\n", channels[curr_channel].ipOut);
+        ip_ok = 1;
+      }
 
       else if (!strcmp (substring, "common_port"))
-	{
-	  if ( ip_ok )
-	    {
-	      log_message( MSG_ERROR,
-			   "You have to set common_port before the channels\n");
-	      exit(ERROR_CONF);
-	    }
-	  substring = strtok (NULL, delimiteurs);
-	  common_port = atoi (substring);
-	}
+      {
+        if ( ip_ok )
+        {
+          log_message( MSG_ERROR,
+                       "You have to set common_port before the channels\n");
+          exit(ERROR_CONF);
+        }
+        substring = strtok (NULL, delimiteurs);
+        common_port = atoi (substring);
+      }
       else if (!strcmp (substring, "multicast_ttl"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  multicast_ttl = atoi (substring);
-	}
+      {
+        substring = strtok (NULL, delimiteurs);
+        multicast_ttl = atoi (substring);
+      }
       else if (!strcmp (substring, "multicast_auto_join"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  multicast_auto_join = atoi (substring);
-	}
+      {
+        substring = strtok (NULL, delimiteurs);
+        multicast_auto_join = atoi (substring);
+      }
       else if (!strcmp (substring, "dvr_buffer_size"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  dvr_buffer_size = atoi (substring);
-	  if(dvr_buffer_size<=0)
-	    {
-	      log_message( MSG_WARN,
-			"Warning : the buffer size MUST be >0, forced to 1 packet\n");
-	      dvr_buffer_size = 1;
-	    }
-	  if(dvr_buffer_size>1)
-	      log_message( MSG_WARN,
-			"Warning : You set a buffer size > 1, this feature is experimental, please report bugs/problems or results\n");
+      {
+        substring = strtok (NULL, delimiteurs);
+        dvr_buffer_size = atoi (substring);
+        if(dvr_buffer_size<=0)
+        {
+          log_message( MSG_WARN,
+                       "Warning : the buffer size MUST be >0, forced to 1 packet\n");
+          dvr_buffer_size = 1;
+        }
+        if(dvr_buffer_size>1)
+          log_message( MSG_WARN,
+                       "Warning : You set a buffer size > 1, this feature is experimental, please report bugs/problems or results\n");
 	    
-	}
+      }
       else if (!strcmp (substring, "port"))
-	{
-	  if ( ip_ok == 0)
-	    {
-	      log_message( MSG_ERROR,
-			   "port : You must precise ip first\n");
-	      exit(ERROR_CONF);
-	    }
-	  substring = strtok (NULL, delimiteurs);
-	  channels[curr_channel].portOut = atoi (substring);
-	}
+      {
+        if ( ip_ok == 0)
+        {
+          log_message( MSG_ERROR,
+                       "port : You must precise ip first\n");
+          exit(ERROR_CONF);
+        }
+        substring = strtok (NULL, delimiteurs);
+        channels[curr_channel].portOut = atoi (substring);
+      }
       else if (!strcmp (substring, "ts_id"))
-	{
-	  if ( ip_ok == 0)
-	    {
-	      log_message( MSG_ERROR,
-			"ts_id : You must precise ip first\n");
-	      exit(ERROR_CONF);
-	    }
-	  substring = strtok (NULL, delimiteurs);
-      	  channels[curr_channel].ts_id = atoi (substring);
-	}
+      {
+        if ( ip_ok == 0)
+        {
+          log_message( MSG_ERROR,
+                       "ts_id : You must precise ip first\n");
+          exit(ERROR_CONF);
+        }
+        substring = strtok (NULL, delimiteurs);
+        channels[curr_channel].ts_id = atoi (substring);
+      }
       else if (!strcmp (substring, "pids"))
-	{
-	  if ( ip_ok == 0)
-	    {
-		log_message( MSG_ERROR,
-			"pids : You must precise ip first\n");
-	      exit(ERROR_CONF);
-	    }
-	  if (common_port!=0 && channels[curr_channel].portOut == 0)
-	    channels[curr_channel].portOut = common_port;
-	  while ((substring = strtok (NULL, delimiteurs)) != NULL)
-	    {
-	      channels[curr_channel].pids[curr_pid] = atoi (substring);
+      {
+        if ( ip_ok == 0)
+        {
+          log_message( MSG_ERROR,
+                       "pids : You must precise ip first\n");
+          exit(ERROR_CONF);
+        }
+        if (common_port!=0 && channels[curr_channel].portOut == 0)
+          channels[curr_channel].portOut = common_port;
+        while ((substring = strtok (NULL, delimiteurs)) != NULL)
+        {
+          channels[curr_channel].pids[curr_pid] = atoi (substring);
 	      // we see if the given pid is good
-	      if (channels[curr_channel].pids[curr_pid] < 10 || channels[curr_channel].pids[curr_pid] > 8191)
-		{
-		  log_message( MSG_ERROR,
-			    "Config issue : %s in pids, given pid : %d\n",
-			    conf_filename, channels[curr_channel].pids[curr_pid]);
-		  exit(ERROR_CONF);
-		}
-	      curr_pid++;
-	      if (curr_pid >= MAX_PIDS_PAR_CHAINE)
-		{
-		  log_message( MSG_ERROR,
-			       "Too many pids : %d channel : %d\n",
-			       curr_pid, curr_channel);
-		  exit(ERROR_CONF);
-		}
-	    }
-	  channels[curr_channel].num_pids = curr_pid;
-	  curr_pid = 0;
-	  curr_channel++;
-	  ip_ok = 0;
-	}
+          if (channels[curr_channel].pids[curr_pid] < 10 || channels[curr_channel].pids[curr_pid] > 8191)
+          {
+            log_message( MSG_ERROR,
+                         "Config issue : %s in pids, given pid : %d\n",
+                         conf_filename, channels[curr_channel].pids[curr_pid]);
+            exit(ERROR_CONF);
+          }
+          curr_pid++;
+          if (curr_pid >= MAX_PIDS_PAR_CHAINE)
+          {
+            log_message( MSG_ERROR,
+                         "Too many pids : %d channel : %d\n",
+                         curr_pid, curr_channel);
+            exit(ERROR_CONF);
+          }
+        }
+        channels[curr_channel].num_pids = curr_pid;
+        curr_pid = 0;
+        curr_channel++;
+        ip_ok = 0;
+      }
       else if (!strcmp (substring, "name"))
-	{
-	  if ( ip_ok == 0)
-	    {
-	      log_message( MSG_ERROR,
-			   "name : You must precise ip first\n");
-	      exit(ERROR_CONF);
-	    }
+      {
+        if ( ip_ok == 0)
+        {
+          log_message( MSG_ERROR,
+                       "name : You must precise ip first\n");
+          exit(ERROR_CONF);
+        }
 	  // other substring extraction method in order to keep spaces
-	  substring = strtok (NULL, "=");
-	  if (!(strlen (substring) >= MAX_NAME_LEN - 1))
-	    strcpy(channels[curr_channel].name,strtok(substring,"\n"));	
-	  else
-	    {
-		log_message( MSG_WARN,"Channel name too long\n");
-		strncpy(channels[curr_channel].name,strtok(substring,"\n"),MAX_NAME_LEN-1);
-	    }
-	}
+        substring = strtok (NULL, "=");
+        if (!(strlen (substring) >= MAX_NAME_LEN - 1))
+          strcpy(channels[curr_channel].name,strtok(substring,"\n"));	
+        else
+        {
+          log_message( MSG_WARN,"Channel name too long\n");
+          strncpy(channels[curr_channel].name,strtok(substring,"\n"),MAX_NAME_LEN-1);
+        }
+      }
       else
-	{
-	  if(strlen (current_line) > 1)
-	    log_message( MSG_WARN,
-			 "Config issue : unknow symbol : %s\n\n", substring);
-	  continue;
-	}
+      {
+        if(strlen (current_line) > 1)
+          log_message( MSG_WARN,
+                       "Config issue : unknow symbol : %s\n\n", substring);
+        continue;
+      }
 
       if (curr_channel > MAX_CHANNELS)
-	{
-	  log_message( MSG_ERROR, "Too many channels : %d limit : %d\n",
-		       curr_channel, MAX_CHANNELS);
-	  exit(ERROR_TOO_CHANNELS);
-	}
+      {
+        log_message( MSG_ERROR, "Too many channels : %d limit : %d\n",
+                     curr_channel, MAX_CHANNELS);
+        exit(ERROR_TOO_CHANNELS);
+      }
 
     }
-  fclose (conf_file);
+    fclose (conf_file);
   
   /** @todo put this in another option */
   if(strlen(unicast_vars.ipOut))
