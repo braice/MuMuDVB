@@ -584,6 +584,11 @@ main (int argc, char **argv)
           exit(ERROR_CONF);
       }
 #endif
+      else if((iRet=read_unicast_configuration(&unicast_vars, &channels[curr_channel], ip_ok, substring))) //Read the line concerning the unicast parameters
+      {
+        if(iRet==-1)
+          exit(ERROR_CONF);
+      }
         else if (!strcmp (substring, "timeout_no_diff"))
         {
           substring = strtok (NULL, delimiteurs);
@@ -657,37 +662,7 @@ main (int argc, char **argv)
 	  sscanf (substring, "%s\n", channels[curr_channel].ipOut);
 	  ip_ok = 1;
 	}
-      else if (!strcmp (substring, "ip_http"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-          if(strlen(substring)>19)
-            {
-              log_message( MSG_ERROR,
-                           "The Ip address %s is too long.\n", substring);
-              exit(ERROR_CONF);
-            }
-	  sscanf (substring, "%s\n", unicast_vars.ipOut);
-          /** @todo put this in another option */
-          sscanf (substring, "%s\n", autoconf_vars.unicast_ipOut);
-	  if(unicast_vars.ipOut)
-	    {
-	      log_message( MSG_WARN,
-			"You have enabled the support for HTTP Unicast. This feature is quite youg, please report any bug/comment\n");
-	    }
-	}
-      else if (!strcmp (substring, "unicast_consecutive_errors_timeout"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  unicast_vars.consecutive_errors_timeout = atoi (substring);
-	  if(unicast_vars.consecutive_errors_timeout<=0)
-	    log_message( MSG_WARN,
-			 "Warning : You have desactivated the unicast timeout for disconnecting clients, this can lead to an accumulation of zombie clients, this is unadvised, prefer a long timeout\n");
-	}
-      else if (!strcmp (substring, "unicast_max_clients"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  unicast_vars.max_clients = atoi (substring);
-	}
+
       else if (!strcmp (substring, "common_port"))
 	{
 	  if ( ip_ok )
@@ -735,11 +710,6 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  channels[curr_channel].portOut = atoi (substring);
 	}
-      else if (!strcmp (substring, "port_http"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  unicast_vars.portOut = atoi (substring);
-	}
       else if (!strcmp (substring, "ts_id"))
 	{
 	  if ( ip_ok == 0)
@@ -751,17 +721,6 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
       	  channels[curr_channel].ts_id = atoi (substring);
 	}
-        else if (!strcmp (substring, "unicast_port"))
-        {
-          if ( ip_ok == 0)
-          {
-            log_message( MSG_ERROR,
-                         "unicast_port : You must precise ip first\n");
-            exit(ERROR_CONF);
-          }
-          substring = strtok (NULL, delimiteurs);
-          channels[curr_channel].unicast_port = atoi (substring);
-        }
       else if (!strcmp (substring, "pids"))
 	{
 	  if ( ip_ok == 0)
@@ -833,7 +792,9 @@ main (int argc, char **argv)
     }
   fclose (conf_file);
   
-  
+  /** @todo put this in another option */
+  if(strlen(unicast_vars.ipOut))
+    sscanf (unicast_vars.ipOut, "%s\n", autoconf_vars.unicast_ipOut);
   if((autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)&&(sap_vars.sap == SAP_UNDEFINED))
   {
     log_message( MSG_INFO,

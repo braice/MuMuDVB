@@ -70,6 +70,70 @@ int
 extern int rtp_header;
 
 
+/** @brief Read a line of the configuration file to check if there is a unicast parameter
+ *
+ * @param unicast_vars the unicast parameters
+ * @param substring The currrent line
+ */
+int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring)
+{
+
+  char delimiteurs[] = CONFIG_FILE_SEPARATOR;
+
+  if (!strcmp (substring, "ip_http"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    if(strlen(substring)>19)
+    {
+      log_message( MSG_ERROR,
+                   "The Ip address %s is too long.\n", substring);
+      exit(ERROR_CONF);
+    }
+    sscanf (substring, "%s\n", unicast_vars->ipOut);
+    if(unicast_vars->ipOut)
+    {
+      log_message( MSG_WARN,
+                   "You have enabled the support for HTTP Unicast. This feature is quite youg, please report any bug/comment\n");
+    }
+  }
+  else if (!strcmp (substring, "unicast_consecutive_errors_timeout"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    unicast_vars->consecutive_errors_timeout = atoi (substring);
+    if(unicast_vars->consecutive_errors_timeout<=0)
+      log_message( MSG_WARN,
+                   "Warning : You have desactivated the unicast timeout for disconnecting clients, this can lead to an accumulation of zombie clients, this is unadvised, prefer a long timeout\n");
+  }
+  else if (!strcmp (substring, "unicast_max_clients"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    unicast_vars->max_clients = atoi (substring);
+  }
+  else if (!strcmp (substring, "port_http"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    unicast_vars->portOut = atoi (substring);
+  }
+  else if (!strcmp (substring, "unicast_port"))
+  {
+    if ( ip_ok == 0)
+    {
+      log_message( MSG_ERROR,
+                   "unicast_port : You must precise ip first\n");
+      exit(ERROR_CONF);
+    }
+    substring = strtok (NULL, delimiteurs);
+    current_channel->unicast_port = atoi (substring);
+  }
+  else
+    return 0; //Nothing concerning tuning, we return 0 to explore the other possibilities
+
+  return 1;//We found something for tuning, we tell main to go for the next line
+
+}
+
+
+
 /** @brief Create a listening socket and add it to the list of polling file descriptors if success 
  *
  *
