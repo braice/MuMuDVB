@@ -759,7 +759,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     feparams.frequency=tuneparams->freq-lo_frequency;
 
 
-    log_message( MSG_INFO, "Tuning DVB-S to Freq: %u Hz, LO frequency %u kHz Pol:%c Srate=%d, LNB number: %d\n",
+    log_message( MSG_INFO, "Tuning DVB-S to Freq: %u kHz, LO frequency %u kHz Pol:%c Srate=%d, LNB number: %d\n",
                 feparams.frequency,
                 lo_frequency,
                 tuneparams->pol,
