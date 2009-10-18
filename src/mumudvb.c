@@ -327,11 +327,42 @@ int mumudvb_poll(fds_t *fds)
 // prototypes
 static void SignalHandler (int signum);
 
+/** @brief : display mumudvb info*/
+void
+print_info ()
+{
+  fprintf (stderr, 
+          "MuMuDVB Version "
+          VERSION
+          "\n --- Build information ---\n"
+#ifdef ENABLE_CAM_SUPPORT
+          "Builded with CAM support.\n"
+#else
+          "Builded without CAM support.\n"
+#endif
+#ifdef ATSC
+          "Builded with ATSC support.\n"
+#ifdef HAVE_LIBUCSI
+          "Builded with ATSC long channel names support.\n"
+#endif
+#endif
+#if DVB_API_VERSION >= 5
+          "Builded with support for DVB API Version 5 (DVB-S2).\n"
+#endif
+          "---------\n"
+          "Originally based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
+          "Released under the GPL.\n"
+          "Latest version available from http://mumudvb.braice.net/\n"
+          "Project from the cr@ns (http://www.crans.org)\n"
+          "by Brice DUBOST (mumudvb@braice.net)\n\n");
+}
+
 /** @brief : display mumudvb usage*/
 void
 usage (char *name)
 {
-  fprintf (stderr, "%s is a program who can redistribute stream from DVB on a network, in multicast or in http unicast.\n It's main feature is to take a whole transponder and put each channel on a different multicast IP.\n\n"
+  fprintf (stderr, "MuMuDVB is a program who can redistribute stream from DVB on a network, in multicast or in http unicast.\n"
+           "It's main feature is to take a whole transponder and put each channel on a different multicast IP.\n\n"
 	   "Usage: %s [options] \n"
 	   "-c, --config : Config file\n"
 	   "-s, --signal : Display signal power\n"
@@ -340,30 +371,8 @@ usage (char *name)
 	   "-v           : More verbose\n"
 	   "-q           : Less verbose\n"
 	   "-h, --help   : Help\n"
-	   "\n"
-	   "%s Version "
-	   VERSION
-	   "\n\n"
-#ifdef ENABLE_CAM_SUPPORT
-           "Builded with cam support.\n"
-#else
-	   "Builded without cam support.\n"
-#endif
-#ifdef ATSC
-	   "Builded with ATSC support.\n"
-#ifdef HAVE_LIBUCSI
-	   "Builded with ATSC long channel names support.\n"
-#endif
-#endif
-#if DVB_API_VERSION >= 5
-           "Builded with support for DVB API Version 5 (DVB-S2).\n"
-#endif
-           "\n"
-	   "Based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
-	   "Released under the GPL.\n"
-	   "Latest version available from http://mumudvb.braice.net/\n"
-	   "Project from the cr@ns (www.crans.org)\n"
-	   "by Brice DUBOST (mumudvb@braice.net)\n", name, name, name);
+	   "\n", name);
+  print_info ();
 }
 
 
@@ -518,11 +527,9 @@ main (int argc, char **argv)
     openlog ("MUMUDVB", LOG_PID, 0);
   log_initialised=1;
 
+  //Display general information
+  print_info ();
 
-  log_message( MSG_INFO, "MuMuDVB Version "
-	   VERSION
-	   "\n"
-	   "Latest version available from http://mumudvb.braice.net/\n\n");
 
   //paranoya we clear all the content of all the channels
   memset (&channels, 0, sizeof (channels[0])*MAX_CHANNELS);
