@@ -710,7 +710,6 @@ main (int argc, char **argv)
         if(dvr_buffer_size>1)
           log_message( MSG_WARN,
                        "Warning : You set a buffer size > 1, this feature is experimental, please report bugs/problems or results\n");
-	    
       }
       else if (!strcmp (substring, "port"))
       {
@@ -1250,8 +1249,11 @@ main (int argc, char **argv)
 	  continue;
 	}
 
-      stats_num_packets_received+=(int) bytes_read/188;
-      stats_num_reads++;
+      if(dvr_buffer_size!=1)
+      {
+        stats_num_packets_received+=(int) bytes_read/188;
+        stats_num_reads++;
+      }
  
       for(buffpos=0;(buffpos+TS_PACKET_SIZE)<=bytes_read;buffpos+=TS_PACKET_SIZE)//plop we loop on the subpackets
 	{
@@ -1926,15 +1928,18 @@ static void SignalHandler (int signum)
 
 
 	  /**Show the statistics for the big buffer*/
-	  if(!show_buffer_stats_time)
-		show_buffer_stats_time=now;
-	  if((now-show_buffer_stats_time)>=show_buffer_stats_interval)
-	    {
-	      show_buffer_stats_time=now;
-              log_message( MSG_DETAIL, "DETAIL : Average packets in the buffer %d\n", stats_num_packets_received/stats_num_reads);
-              stats_num_packets_received=0;
-              stats_num_reads=0;
-	    }
+          if(dvr_buffer_size!=1)
+          {
+            if(!show_buffer_stats_time)
+                  show_buffer_stats_time=now;
+            if((now-show_buffer_stats_time)>=show_buffer_stats_interval)
+              {
+                show_buffer_stats_time=now;
+                log_message( MSG_DETAIL, "DETAIL : Average packets in the buffer %d\n", stats_num_packets_received/stats_num_reads);
+                stats_num_packets_received=0;
+                stats_num_reads=0;
+              }
+          }
 
 
 
