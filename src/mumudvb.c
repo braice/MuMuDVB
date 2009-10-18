@@ -147,7 +147,7 @@ long time_no_diff;
 long real_start_time;
 
 
-int display_signal_strenght = 0; /** do we periodically show the signal strenght ?*/
+
 int show_traffic = 0; /** do we periodically show the traffic ?*/
 long show_traffic_time = 0; /** */
 int show_traffic_time_usec = 0; /** */
@@ -481,7 +481,7 @@ main (int argc, char **argv)
 	  strncpy (conf_filename, optarg, strlen (optarg) + 1);
 	  break;
 	case 's':
-	  display_signal_strenght = 1;
+	  tuneparams.display_strenght = 1;
 	  break;
 	case 't':
 	  show_traffic = 1;
@@ -2246,7 +2246,7 @@ static void SignalHandler (int signum)
       gettimeofday (&tv, (struct timezone *) NULL);
       now = tv.tv_sec - real_start_time;
 
-      if (display_signal_strenght && tuneparams.card_tuned)
+      if (tuneparams.display_strenght && tuneparams.card_tuned)
 	show_power (fds);
 
       if (!tuneparams.card_tuned)
@@ -2493,7 +2493,7 @@ static void SignalHandler (int signum)
     }
   else if (signum == SIGUSR1)
     {
-      display_signal_strenght = display_signal_strenght ? 0 : 1;
+      tuneparams.display_strenght = tuneparams.display_strenght ? 0 : 1;
     }
   else if (signum == SIGUSR2)
     {
