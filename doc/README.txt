@@ -59,7 +59,7 @@ Features overview
 - Support for scrambled channels (if you don't have a CAM you can use sasc-ng, but check if it's allowed in you country/by your broadcaster)
 - Support for automatic configuration i.e channels discovery, see <<autoconfiguration,Autoconfiguration>> section
 - Generation of SAP announces, see <<sap,SAP>> section
-- Support of DVB-S, DVB-C, DVB-T and ATSC
+- Support of DVB-S2, DVB-S, DVB-C, DVB-T and ATSC
 - Possibility to partially rewrite the stream for better compatibility with set-top boxes. See <<pat_rewrite,Pat Rewrite>> section.
 - Support for HTTP unicast see <<unicast,http unicast>> section
 - Support for RTP headers (only for multicast)
@@ -85,7 +85,6 @@ Detailled feature list
 - Supports autoconfiguration, see <<autoconfiguration,Autoconfiguration>> section
   * In autoconfiguration mode, MuMuDVB follow the changes in the PIDs and update itself while running.
 - Debian flavor initialisation scripts
-- Can skip the tuning of the card as a temporary workaround for DVB-S2
 - The buffer size can be tuned to reduce CPU usage, see <<reduce_cpu,reduce MuMuDVB CPU usage>> section.
 - Can avoid the sending of scrambled packets
 - Automatically detect the scrambling status of a channel

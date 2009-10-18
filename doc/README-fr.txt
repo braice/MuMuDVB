@@ -58,7 +58,7 @@ Fonctionalités principales
 - Support des chaines cryptées (si vous n'avez pas de CAM vous pouvez utiliser sasc-ng mais vérifiez que c'est autorisé dans votre pays/par votre abonnement)
 - Configuration automatique, i.e. dçouverte automatique des chaînes, référez-vous à la section <<autoconfiguration,Autoconfiguration>>.
 - Génération des annonces SAP, voir la section <<sap, annonces SAP>>.
-- Support pour DVB-S (satellite), DVB-C (cable), DVB-T (terrestre) et ATSC (terrestre ou cable en amérique du nord)
+- Support pour DVB-S2 (satellite), DVB-S (satellite), DVB-C (cable), DVB-T (terrestre) et ATSC (terrestre ou cable en amérique du nord)
 - Support pour l'unicast HTTP. voir la section <<unicast,unicast HTTP>>
 - Support pour les en-têtes RTP (seulement pour la diffusion en multicast)
 
@@ -83,7 +83,6 @@ Liste détaillée des fonctionalités
 - Supporte l'autoconfiguration, pour plus de détails voir la section <<autoconfiguration,Autoconfiguration>>
   * En mode d'autoconfiguration, MuMuDVB suit les changements dans les PIDs des chaînes et se met a jour automatiquement.
 - Scripts d'initialisation style Debian
-- Peut utiliser une carte accordée par un autre programme. Ceci est utile pour le DVB-S2 qui n'est pas encore supporté nativement
 - La taille du tampon peux être réglée pour réduire l'utilisation processeur. Voir la section <<reduce_cpu,réduire l'utilisation processseur>>
 - Peux ne pas envoyer les paquets brouillés
 - Détecte automatiquement si une chaîne est brouillée
