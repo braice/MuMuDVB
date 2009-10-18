@@ -101,6 +101,61 @@ static char *static_nom_fich_cam_info;
 
 
 
+/** @brief Read a line of the configuration file to check if there is a cam parameter
+ *
+ * @param cam_vars the sap parameters
+ * @param substring The currrent line
+ */
+int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring)
+{
+  char delimiteurs[] = CONFIG_FILE_SEPARATOR;
+  if (!strcmp (substring, "cam_support"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    cam_vars->cam_support = atoi (substring);
+    if(cam_vars->cam_support)
+    {
+      log_message( MSG_WARN,
+                   "You have enabled the support for conditionnal acces modules (scrambled channels). Please report any bug/comment\n");
+    }
+  }
+  else if (!strcmp (substring, "cam_reset_interval"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    cam_vars->reset_interval = atoi (substring);
+  }
+  else if (!strcmp (substring, "cam_number"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    cam_vars->cam_number = atoi (substring);
+  }
+  else if (!strcmp (substring, "cam_pmt_pid"))
+  {
+    if ( ip_ok == 0)
+    {
+      log_message( MSG_ERROR,
+                   "cam_pmt_pid : You must precise ip first\n");
+      return -1;
+    }
+    substring = strtok (NULL, delimiteurs);
+    current_channel->pmt_pid = atoi (substring);
+    if (current_channel->pmt_pid < 10 || current_channel->pmt_pid > 8191){
+      log_message( MSG_ERROR,
+                   "Config issue in pids, given pid : %d\n",
+                    current_channel->pmt_pid);
+      return -1;
+    }
+    current_channel->need_cam_ask=CAM_NEED_ASK;
+  }
+  
+  else
+    return 0; //Nothing concerning cam, we return 0 to explore the other possibilities
+
+  return 1;//We found something for cam, we tell main to go for the next line
+
+}
+
+
 struct en50221_stdcam_llci {
   struct en50221_stdcam stdcam;
 

@@ -123,5 +123,6 @@ typedef struct cam_parameters_t{
 int cam_start(cam_parameters_t *, int, char *);
 void cam_stop(cam_parameters_t *);
 int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_pmt_ptr);
+int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
 
 #endif

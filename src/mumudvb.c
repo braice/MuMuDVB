@@ -158,7 +158,7 @@ uint8_t number_chan_asked_pid[8192]; /** the number of channels who want this pi
 
 int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
 #ifdef ENABLE_CAM_SUPPORT
-int timeout_no_cam_init = CAM_DEFAULT_RESET_INTERVAL;
+int timeout_no_cam_init;
 #endif
 // file descriptors
 fds_t fds; /** File descriptors associated with the card */
@@ -577,6 +577,13 @@ main (int argc, char **argv)
         if(iRet==-1)
           exit(ERROR_CONF);
       }
+#ifdef ENABLE_CAM_SUPPORT
+      else if((iRet=read_cam_configuration(&cam_vars, &channels[curr_channel], ip_ok, substring))) //Read the line concerning the sap parameters
+      {
+        if(iRet==-1)
+          exit(ERROR_CONF);
+      }
+#endif
         else if (!strcmp (substring, "timeout_no_diff"))
         {
           substring = strtok (NULL, delimiteurs);
@@ -612,31 +619,6 @@ main (int argc, char **argv)
 			"You have enabled the Pat Rewriting\n");
 	    }
 	}
-#ifdef ENABLE_CAM_SUPPORT
-      else if (!strcmp (substring, "cam_support"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  cam_vars.cam_support = atoi (substring);
-	  if(cam_vars.cam_support)
-	    {
-	      log_message( MSG_WARN,
-			"You have enabled the support for conditionnal acces modules (scrambled channels). Please report any bug/comment\n");
-	    }
-	}
-        else if (!strcmp (substring, "cam_reset_interval"))
-        {
-          substring = strtok (NULL, delimiteurs);
-          cam_vars.reset_interval = atoi (substring);
-          timeout_no_cam_init= cam_vars.reset_interval;
-        }
-        else if (!strcmp (substring, "cam_number"))
-        {
-          substring = strtok (NULL, delimiteurs);
-          cam_vars.cam_number = atoi (substring);
-        }
-#endif
-
-
       else if (!strcmp (substring, "dont_send_scrambled"))
 	{
 	  substring = strtok (NULL, delimiteurs);
@@ -758,26 +740,6 @@ main (int argc, char **argv)
 	  substring = strtok (NULL, delimiteurs);
 	  unicast_vars.portOut = atoi (substring);
 	}
-#ifdef ENABLE_CAM_SUPPORT
-      else if (!strcmp (substring, "cam_pmt_pid"))
-	{
-	  if ( ip_ok == 0)
-	    {
-	      log_message( MSG_ERROR,
-			"cam_pmt_pid : You must precise ip first\n");
-	      exit(ERROR_CONF);
-	    }
-	  substring = strtok (NULL, delimiteurs);
-      	  channels[curr_channel].pmt_pid = atoi (substring);
-	  if (channels[curr_channel].pmt_pid < 10 || channels[curr_channel].pmt_pid > 8191){
-	      log_message( MSG_ERROR,
-		      "Config issue : %s in pids, given pid : %d\n",
-		      conf_filename, channels[curr_channel].pmt_pid);
-	    exit(ERROR_CONF);
-	  }
-	  channels[curr_channel].need_cam_ask=CAM_NEED_ASK;
-	}
-#endif
       else if (!strcmp (substring, "ts_id"))
 	{
 	  if ( ip_ok == 0)
@@ -878,6 +840,9 @@ main (int argc, char **argv)
                  "Full autoconfiguration, we activate SAP announces. if you want to desactivate them see the README.\n");
     sap_vars.sap=SAP_ON;
   }
+#ifdef ENABLE_CAM_SUPPORT
+  timeout_no_cam_init= cam_vars.reset_interval;
+#endif
   /******************************************************/
   //end of config file reading
   /******************************************************/
