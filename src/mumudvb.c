@@ -344,7 +344,9 @@ usage (char *name)
 	   "%s Version "
 	   VERSION
 	   "\n\n"
-#ifndef ENABLE_CAM_SUPPORT
+#ifdef ENABLE_CAM_SUPPORT
+           "Builded with cam support.\n"
+#else
 	   "Builded without cam support.\n"
 #endif
 #ifdef ATSC
