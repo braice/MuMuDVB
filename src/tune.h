@@ -47,7 +47,7 @@
 #define DEFAULT_LOF_STANDARD (10750*1000UL)
 
 
-/* DVB-T */
+/* DVB-T DVB-C */
 /* default option : full auto except bandwith = 8MHz*/
 /* AUTO settings */
 #define BANDWIDTH_DEFAULT           BANDWIDTH_8_MHZ
@@ -61,11 +61,16 @@
 #define LP_CODERATE_DEFAULT (FEC_NONE) /* unused if HIERARCHY_NONE */
 #endif
 
+/* ATSC */
+#define ATSC_MODULATION_DEFAULT     VSB_8
 
 /* The lnb type*/
 #define LNB_UNIVERSAL 0
 #define LNB_STANDARD 1
 
+#if DVB_API_VERSION >= 5
+#define MAX_CMDSEQ_PROPS_NUM 11
+#endif
 
 /** @brief Parameters for tuning the card*/
 typedef struct tuning_parameters_t{
@@ -95,15 +100,11 @@ typedef struct tuning_parameters_t{
   uint32_t lnb_lof_high;
   /** Do we force the lnb voltage to be 0 ? (in case the LNB have it's own power supply (satellite only))*/
   int lnb_voltage_off;
-  //int tone;
-  /**spectral inversion. AUTO seems to work with all the hardware
-     @todo : catch more information about this*/
-  fe_spectral_inversion_t specInv;
   /**The satellite number ie the LNB number*/
   unsigned char sat_number;
-  /** quadrature modulation 
-      For cable and terrestrial frontends (QAM and OFDM) */
+  /** The kind of modulation */
   fe_modulation_t modulation;
+  int modulation_set;
   /** high priority stream code rate ie error correction, FEC */
   fe_code_rate_t HP_CodeRate;
   /** low priority stream code rate 
@@ -121,14 +122,20 @@ typedef struct tuning_parameters_t{
   fe_hierarchy_t hier;
   /** do we periodically display the strenght of the signal ?*/
   int display_strenght;
-  /** The modulation for ATSC cards */
-  fe_modulation_t atsc_modulation;
   /**The frontend type*/
   fe_type_t fe_type;
+#if DVB_API_VERSION >= 5
+  /** DVB API version 5*/
+  /**Delivery system : DVB-S DVB-T etc ...*/
+  fe_delivery_system_t delivery_system;
+  /** Rolloff (For DVB-S and DVB-S2)*/
+  fe_rolloff_t rolloff;
+#endif
 }tuning_parameters_t;
 
 
 
 int tune_it(int, tuning_parameters_t *);
+int read_tuning_configuration(tuning_parameters_t *, char *);
 
 #endif

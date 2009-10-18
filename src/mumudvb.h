@@ -36,6 +36,17 @@
 #include "ts.h"
 #include "config.h"
 
+/*Do we support ATSC ?*/
+#undef ATSC
+#if defined(DVB_API_VERSION_MINOR)
+#if DVB_API_VERSION == 3 && DVB_API_VERSION_MINOR >= 1
+#define ATSC 1
+#endif
+#endif
+#if DVB_API_VERSION > 3
+#define ATSC 1
+#endif
+
 /**the number of pids by channel*/
 #define MAX_PIDS_PAR_CHAINE     18
 
@@ -67,6 +78,7 @@ We cannot discover easily the MTU with unconnected UDP
 /**config line length*/
 #define CONF_LINELEN 	        512
 #define MAX_NAME_LEN		256
+#define CONFIG_FILE_SEPARATOR   " ="
 
 /**Maximum number of polling tries (excepted EINTR)*/
 #define MAX_POLL_TRIES		5
