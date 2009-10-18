@@ -41,6 +41,111 @@ extern int rtp_header;
 int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumudvb_sap_message_t *sap_message);
 
 
+
+/** @brief Read a line of the configuration file to check if there is a sap parameter
+ *
+ * @param sap_vars the sap parameters
+ * @param substring The currrent line
+ */
+int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring)
+{
+  char delimiteurs[] = CONFIG_FILE_SEPARATOR;
+  if (!strcmp (substring, "sap"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    if(atoi (substring) != 0)
+      sap_vars->sap = SAP_ON;
+    else
+      sap_vars->sap = SAP_OFF;
+    if(sap_vars->sap == SAP_ON)
+    {
+      log_message( MSG_INFO,
+                   "Sap announces will be sent\n");
+    }
+  }
+  else if (!strcmp (substring, "sap_interval"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    sap_vars->sap_interval = atoi (substring);
+  }
+  else if (!strcmp (substring, "sap_ttl"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    sap_vars->sap_ttl = atoi (substring);
+  }
+  else if (!strcmp (substring, "sap_organisation"))
+  {
+	  // other substring extraction method in order to keep spaces
+    substring = strtok (NULL, "=");
+    if (!(strlen (substring) >= 255 - 1))
+      strcpy(sap_vars->sap_organisation,strtok(substring,"\n"));	
+    else
+    {
+      log_message( MSG_WARN,"Sap Organisation name too long\n");
+      strncpy(sap_vars->sap_organisation,strtok(substring,"\n"),255 - 1);
+    }
+  }
+  else if (!strcmp (substring, "sap_uri"))
+  {
+	  // other substring extraction method in order to keep spaces
+    substring = strtok (NULL, "=");
+    if (!(strlen (substring) >= 255 - 1))
+      strcpy(sap_vars->sap_uri,strtok(substring,"\n"));	
+    else
+    {
+      log_message( MSG_WARN,"Sap URI too long\n");
+      strncpy(sap_vars->sap_uri,strtok(substring,"\n"),255 - 1);
+    }
+  }
+  else if (!strcmp (substring, "sap_sending_ip"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    if(strlen(substring)>19)
+    {
+      log_message( MSG_ERROR,
+                   "The sap sending ip is too long\n");
+      return -1;
+    }
+    sscanf (substring, "%s\n", sap_vars->sap_sending_ip);
+  }
+  else if (!strcmp (substring, "sap_group"))
+  {
+    if ( ip_ok == 0)
+    {
+      log_message( MSG_ERROR,
+                   "sap_group : this is a channel option, You must precise ip first\n");
+      return -1;
+    }
+
+    substring = strtok (NULL, "=");
+    if(strlen(substring)>19)
+    {
+      log_message( MSG_ERROR,
+                   "The sap group is too long\n");
+      return -1;
+    }
+    sscanf (substring, "%s\n", current_channel->sap_group);
+  }
+  else if (!strcmp (substring, "sap_default_group"))
+  {
+    substring = strtok (NULL, "=");
+    if(strlen(substring)>19)
+    {
+      log_message( MSG_ERROR,
+                   "The sap default group is too long\n");
+      return -1;
+    }
+    sscanf (substring, "%s\n", sap_vars->sap_default_group);
+  }
+  else
+    return 0; //Nothing concerning sap, we return 0 to explore the other possibilities
+
+  return 1;//We found something for sap, we tell main to go for the next line
+
+  
+}
+
+
 /** @brief init the sap
  * Alloc the memory for the messages, open the socket
  */

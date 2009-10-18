@@ -572,6 +572,11 @@ main (int argc, char **argv)
         if(iRet==-1)
           exit(ERROR_CONF);
       }
+      else if((iRet=read_sap_configuration(&sap_vars, &channels[curr_channel], ip_ok, substring))) //Read the line concerning the sap parameters
+      {
+        if(iRet==-1)
+          exit(ERROR_CONF);
+      }
       else if ((!strcmp (substring, "timeout_accord"))||(!strcmp (substring, "tuning_timeout")))
 	{
 	  substring = strtok (NULL, delimiteurs);	//we extract the substring
@@ -656,65 +661,6 @@ main (int argc, char **argv)
 	  if (rtp_header==1)
 	    log_message( MSG_INFO, "You decided to send the RTP header.\n");
 	}
-      else if (!strcmp (substring, "sap"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-          if(atoi (substring) != 0)
-            sap_vars.sap = SAP_ON;
-          else
-            sap_vars.sap = SAP_OFF;
-          if(sap_vars.sap == SAP_ON)
-	    {
-	      log_message( MSG_INFO,
-			"Sap announces will be sent\n");
-	    }
-	}
-      else if (!strcmp (substring, "sap_interval"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  sap_vars.sap_interval = atoi (substring);
-	}
-      else if (!strcmp (substring, "sap_ttl"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  sap_vars.sap_ttl = atoi (substring);
-	}
-      else if (!strcmp (substring, "sap_organisation"))
-	{
-	  // other substring extraction method in order to keep spaces
-	  substring = strtok (NULL, "=");
-	  if (!(strlen (substring) >= 255 - 1))
-	    strcpy(sap_vars.sap_organisation,strtok(substring,"\n"));	
-	  else
-	    {
-		log_message( MSG_WARN,"Sap Organisation name too long\n");
-		strncpy(sap_vars.sap_organisation,strtok(substring,"\n"),255 - 1);
-	    }
-	}
-        else if (!strcmp (substring, "sap_uri"))
-        {
-	  // other substring extraction method in order to keep spaces
-          substring = strtok (NULL, "=");
-          if (!(strlen (substring) >= 255 - 1))
-            strcpy(sap_vars.sap_uri,strtok(substring,"\n"));	
-          else
-          {
-            log_message( MSG_WARN,"Sap URI too long\n");
-            strncpy(sap_vars.sap_uri,strtok(substring,"\n"),255 - 1);
-          }
-        }
-      else if (!strcmp (substring, "sap_sending_ip"))
-	{
-	  substring = strtok (NULL, delimiteurs);
-	  if(strlen(substring)>19)
-	    {
-	      log_message( MSG_ERROR,
-			   "The sap sending ip is too long\n");
-	      exit(ERROR_CONF);
-	    }
-	  sscanf (substring, "%s\n", sap_vars.sap_sending_ip);
-	}
-
       else if (!strcmp (substring, "ip"))
 	{
 	  if ( ip_ok )
@@ -764,35 +710,6 @@ main (int argc, char **argv)
 	{
 	  substring = strtok (NULL, delimiteurs);
 	  unicast_vars.max_clients = atoi (substring);
-	}
-      else if (!strcmp (substring, "sap_group"))
-	{
-	  if ( ip_ok == 0)
-	    {
-	      log_message( MSG_ERROR,
-			   "sap_group : this is a channel option, You must precise ip first\n");
-	      exit(ERROR_CONF);
-	    }
-
-	  substring = strtok (NULL, "=");
-	  if(strlen(substring)>19)
-	    {
-	      log_message( MSG_ERROR,
-			   "The sap group is too long\n");
-	      exit(ERROR_CONF);
-	    }
-	  sscanf (substring, "%s\n", channels[curr_channel].sap_group);
-	}
-      else if (!strcmp (substring, "sap_default_group"))
-	{
-	  substring = strtok (NULL, "=");
-	  if(strlen(substring)>19)
-	    {
-	      log_message( MSG_ERROR,
-			   "The sap default group is too long\n");
-	      exit(ERROR_CONF);
-	    }
-	  sscanf (substring, "%s\n", sap_vars.sap_default_group);
 	}
       else if (!strcmp (substring, "common_port"))
 	{

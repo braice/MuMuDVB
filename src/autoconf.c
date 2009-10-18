@@ -122,7 +122,7 @@ char *encodings_en300468[] ={
 };
 
 
-/** @brief Read a line of the configuration file to check if there is a tuning parameter
+/** @brief Read a line of the configuration file to check if there is a autoconf parameter
  *
  * @param autoconf_vars the autoconfiguration parameters
  * @param substring The currrent line

@@ -101,5 +101,6 @@ typedef struct sap_parameters_t{
 int init_sap(sap_parameters_t *sap_vars);
 void sap_send(sap_parameters_t *sap_vars, int num_messages);
 int sap_update(mumudvb_channel_t channel, sap_parameters_t *sap_vars, int curr_channel);
+int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
 
 #endif
