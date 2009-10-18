@@ -567,6 +567,11 @@ main (int argc, char **argv)
         if(iRet==-1)
           exit(ERROR_CONF);
       }
+      else if((iRet=read_autoconfiguration_configuration(&autoconf_vars, substring))) //Read the line concerning the autoconfiguration parameters
+      {
+        if(iRet==-1)
+          exit(ERROR_CONF);
+      }
       else if ((!strcmp (substring, "timeout_accord"))||(!strcmp (substring, "tuning_timeout")))
 	{
 	  substring = strtok (NULL, delimiteurs);	//we extract the substring
