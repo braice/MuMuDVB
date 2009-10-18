@@ -133,6 +133,7 @@ long real_start_time;
 //statistics for the big buffer
 int stats_num_packets_received=0;
 int stats_num_reads=0;
+int show_buffer_stats=0;
 long show_buffer_stats_time = 0; /** */
 int show_buffer_stats_interval = 120; /** How often we how the statistics about the DVR buffer*/
 //statistics for the traffic
@@ -708,6 +709,7 @@ main (int argc, char **argv)
         if(dvr_buffer_size>1)
           log_message( MSG_WARN,
                        "Warning : You set a buffer size > 1, this feature is experimental, please report bugs/problems or results\n");
+        show_buffer_stats=1;
       }
       else if (!strcmp (substring, "port"))
       {
@@ -1925,7 +1927,7 @@ static void SignalHandler (int signum)
 
 
 	  /**Show the statistics for the big buffer*/
-          if(dvr_buffer_size!=1)
+          if(show_buffer_stats)
           {
             if(!show_buffer_stats_time)
                   show_buffer_stats_time=now;
