@@ -209,7 +209,7 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
   event.status=0;
   while (((event.status & FE_TIMEDOUT)==0) && ((event.status & FE_HAS_LOCK)==0)) {
     log_message( MSG_DETAIL, "polling....\n");
-    if (poll(pfd,1,10000) > 0){
+    if (poll(pfd,1,5000) > 0){
       if (pfd[0].revents & POLLPRI){
         log_message( MSG_DETAIL, "Getting frontend event\n");
         if ((status = ioctl(fd_frontend, FE_GET_EVENT, &event)) < 0){
@@ -220,17 +220,16 @@ int check_status(int fd_frontend,int type, struct dvb_frontend_parameters* fepar
 	  else log_message( MSG_WARN, "Overflow error, trying again (status = %d, errno = %d)", status, errno);
         }
       }
-      if(display_strength)
-	{
-	  strength=0;
-	  if(ioctl(fd_frontend,FE_READ_SIGNAL_STRENGTH,&strength) >= 0)
-	    log_message( MSG_INFO, "Strength: %10d ",strength);
-	  strength=0;
-	  if(ioctl(fd_frontend,FE_READ_SNR,&strength) >= 0)
-	    log_message( MSG_INFO, "SNR: %10d\n",strength);
-	}
-
       print_status(event.status);
+    }
+    if(display_strength)
+    {
+      strength=0;
+      if(ioctl(fd_frontend,FE_READ_SIGNAL_STRENGTH,&strength) >= 0)
+        log_message( MSG_INFO, "Strength: %10d ",strength);
+      strength=0;
+      if(ioctl(fd_frontend,FE_READ_SNR,&strength) >= 0)
+        log_message( MSG_INFO, "SNR: %10d\n",strength);
     }
   }
 
