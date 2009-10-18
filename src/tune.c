@@ -432,6 +432,11 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
       return -1;
     }
   }
+  else if ((!strcmp (substring, "timeout_accord"))||(!strcmp (substring, "tuning_timeout")))
+  {
+    substring = strtok (NULL, delimiteurs);	//we extract the substring
+    tuneparams->tuning_timeout = atoi (substring);
+  }
 
   else
     return 0; //Nothing concerning tuning, we return 0 to explore the other possibilities

@@ -577,11 +577,6 @@ main (int argc, char **argv)
         if(iRet==-1)
           exit(ERROR_CONF);
       }
-      else if ((!strcmp (substring, "timeout_accord"))||(!strcmp (substring, "tuning_timeout")))
-	{
-	  substring = strtok (NULL, delimiteurs);	//we extract the substring
-	  tuneparams.tuning_timeout = atoi (substring);
-        }
         else if (!strcmp (substring, "timeout_no_diff"))
         {
           substring = strtok (NULL, delimiteurs);
