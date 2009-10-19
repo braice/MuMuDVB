@@ -63,7 +63,6 @@ In the following list, only the parameter `freq` is mandatory
 |card | The DVB/ATSC card number | 0 | only limited by your OS
 |tuning_timeout |tuning timeout in seconds. | 300 | 0 = no timeout
 |timeout_no_diff |If no channels are streamed, MuMuDVB will kill himself after this time (specified in seconds) | 600 |  0 = infinite timeout
-|dont_tune |We do not try to tune the card (another program,like tzap, did it for us) | | This is mainly a workaround for DVB-S2
 |==================================================================================================================
 
 

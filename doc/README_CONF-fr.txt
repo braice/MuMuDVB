@@ -66,7 +66,6 @@ Dans la liste suivante, seul le paramètre `freq` est obligatoire
 |card | Le numéro de carte DVB/ATSC| 0 | Limité seulement par l'OS
 |tuning_timeout | Temps d'attente pour l'accord de la carte | 300 | 0 = attente infinie
 |timeout_no_diff | Si aucune chaîne n'est diffusée, MuMuDVB se "suicidera" au bout de ce délai ( en secondes ) | 600 |  0 = attente infinie
-|dont_tune | MuMuDVB n'accordera pas la carte si ce paramètre est spécifié (un autre programme comme tzap l'a fait) | | Ceci est principalement pour le DVB-S2
 |==================================================================================================================
 
 

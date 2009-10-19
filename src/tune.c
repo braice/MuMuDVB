@@ -96,11 +96,6 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
     }
   }
 #endif
-  else if (!strcmp (substring, "dont_tune"))
-  {
-    substring = strtok (NULL, delimiteurs);
-    tuneparams->dont_tune = atoi (substring);
-  }
   else if (!strcmp (substring, "freq"))
   {
     substring = strtok (NULL, delimiteurs);

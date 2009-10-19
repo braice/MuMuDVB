@@ -74,6 +74,8 @@
  * tune.c tune.h : tuning of the dvb card
  *
  * network.c network.h : networking ie openning sockets, sending packets
+ *
+ * unicast_http.c unicast_http.h : HTTP unicast
  */
 
 #define _GNU_SOURCE		//in order to use program_invocation_short_name (extension gnu)
@@ -179,7 +181,6 @@ int rtp_header = 0;
 tuning_parameters_t tuneparams={
   .card = 0,
   .card_tuned = 0,
-  .dont_tune = 0,
   .tuning_timeout = ALARM_TIME_TIMEOUT,
   .freq = 0,  
   .srate = 0, 
@@ -929,32 +930,26 @@ main (int argc, char **argv)
       alarm (tuneparams.tuning_timeout);
     }
 
-  if(!tuneparams.dont_tune)
-    {
-      // We tune the card
-      iRet =-1;
 
-      if (open_fe (&fds.fd_frontend, tuneparams.card))
-	{
-	  iRet = 
-	    tune_it (fds.fd_frontend, &tuneparams);
-	}
+  // We tune the card
+  iRet =-1;
 
-    if (iRet < 0)
-      {
-        log_message( MSG_INFO, "Tunning issue, card %d\n", tuneparams.card);
-        // we close the file descriptors
-        close_card_fd (fds);
-        return mumudvb_close(ERROR_TUNE<<8);
-      }
-      log_message( MSG_INFO, "Card %d tuned\n", tuneparams.card);
-      tuneparams.card_tuned = 1;
-    }
-  else
+  if (open_fe (&fds.fd_frontend, tuneparams.card))
   {
-    log_message( MSG_INFO, "We don't tune card %d\n", tuneparams.card);
-    tuneparams.card_tuned = 1;
+    iRet = 
+      tune_it (fds.fd_frontend, &tuneparams);
   }
+
+  if (iRet < 0)
+  {
+    log_message( MSG_INFO, "Tunning issue, card %d\n", tuneparams.card);
+    // we close the file descriptors
+    close_card_fd (fds);
+    return mumudvb_close(ERROR_TUNE<<8);
+  }
+  log_message( MSG_INFO, "Card %d tuned\n", tuneparams.card);
+  tuneparams.card_tuned = 1;
+
   /******************************************************/
   //card tuned
   /******************************************************/
@@ -1796,7 +1791,7 @@ int mumudvb_close(int Interrupted)
  ******************************************************/
 static void SignalHandler (int signum)
 {
-
+  /** @todo : refactor */
   struct timeval tv;
   int curr_channel = 0;
   int count_of_active_channels=0;
