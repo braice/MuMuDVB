@@ -914,6 +914,8 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
       cmdseq->props[commandnum++].u.data = tuneparams->LP_CodeRate;
       cmdseq->props[commandnum].cmd      = DTV_MODULATION;
       cmdseq->props[commandnum++].u.data = tuneparams->modulation;
+      cmdseq->props[commandnum].cmd      = DTV_GUARD_INTERVAL;
+      cmdseq->props[commandnum++].u.data = tuneparams->guardInterval;
       cmdseq->props[commandnum].cmd      = DTV_TRANSMISSION_MODE;
       cmdseq->props[commandnum++].u.data = tuneparams->TransmissionMode;
       cmdseq->props[commandnum].cmd      = DTV_HIERARCHY;

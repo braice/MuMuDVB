@@ -70,7 +70,7 @@
 #define LNB_STANDARD 1
 
 #if DVB_API_VERSION >= 5
-#define MAX_CMDSEQ_PROPS_NUM 11
+#define MAX_CMDSEQ_PROPS_NUM 12
 #endif
 
 /** @brief Parameters for tuning the card*/
