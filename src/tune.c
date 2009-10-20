@@ -733,6 +733,8 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
       return -1;
     }
 #endif
+    if(!tuneparams->modulation_set)
+      tuneparams->modulation=SAT_MODULATION_DEFAULT;
     //Universal lnb : two bands, hi and low one and two local oscilators
     if(tuneparams->lnb_type==LNB_UNIVERSAL)
       {
