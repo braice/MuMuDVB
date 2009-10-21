@@ -1574,8 +1574,10 @@ main (int argc, char **argv)
 			rtp_update_sequence_number(&channels[curr_channel]);
 	      
 		      /********** MULTICAST *************/
-		      sendudp (channels[curr_channel].socketOut, &channels[curr_channel].sOut, channels[curr_channel].buf,
-			       channels[curr_channel].nb_bytes);
+                      //if the multicast TTL is set to 0 we don't send the multicast packets
+                      if(multicast_ttl)
+                        sendudp (channels[curr_channel].socketOut, &channels[curr_channel].sOut, channels[curr_channel].buf,
+                                channels[curr_channel].nb_bytes);
 		      /*********** UNICAST **************/
 		      if(channels[curr_channel].clients)
 			{
