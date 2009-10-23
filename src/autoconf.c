@@ -92,7 +92,6 @@ void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len);
 int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parameters);
 
 extern int rtp_header;
-extern int multicast_auto_join;
 
 
 /**
@@ -1199,10 +1198,10 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
  * @param asked_pid the array containing the pids already asked
  * @param fds the file descriptors
 */
-int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, autoconf_parameters_t *autoconf_vars, int common_port, int card, fds_t *fds,uint8_t *asked_pid, uint8_t *number_chan_asked_pid,int multicast_ttl , unicast_parameters_t *unicast_vars)
+int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, autoconf_parameters_t *autoconf_vars, multicast_parameters_t multicast_vars, int card, fds_t *fds,uint8_t *asked_pid, uint8_t *number_chan_asked_pid, unicast_parameters_t *unicast_vars)
 {
   int curr_channel,curr_pid;
-  *number_of_channels=autoconf_services_to_channels(*autoconf_vars, channels, common_port, card, unicast_vars, fds); //Convert the list of services into channels
+  *number_of_channels=autoconf_services_to_channels(*autoconf_vars, channels, multicast_vars.common_port, card, unicast_vars, fds); //Convert the list of services into channels
   //we got the pmt pids for the channels, we open the filters
   for (curr_channel = 0; curr_channel < *number_of_channels; curr_channel++)
     {
@@ -1227,10 +1226,10 @@ int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, a
       // Init udp
       //Open the multicast socket for the new channel
       //See the README for the reason of this option
-      if(multicast_auto_join)
-	channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
+      if(multicast_vars.auto_join)
+        channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_vars.ttl, &channels[curr_channel].sOut);
       else
-	channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
+        channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_vars.ttl, &channels[curr_channel].sOut);
     }
   
   log_message(MSG_DEBUG,"Autoconf : Step TWO, we get the video and audio PIDs\n");

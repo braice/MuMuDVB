@@ -118,12 +118,6 @@
 /** the table for crc32 claculations */
 extern uint32_t       crc32_table[256];
 
-/** Time to live of sent packets */
-int multicast_ttl=DEFAULT_TTL;
-int common_port = 1234;
-int multicast_auto_join=0;
-
-
 /* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
    - see http://www.cadsoft.de/people/kls/vdr/index.htm */
 
@@ -173,9 +167,15 @@ char filename_pid[256];
 char filename_gen_conf[256];
 int  write_streamed_channels=1;
 
-/**Do we send the rtp header ? */
-int rtp_header = 0;
+//multicast parameters
+multicast_parameters_t multicast_vars={
+  .ttl=DEFAULT_TTL,
+  .common_port = 1234,
+  .auto_join=0,
+//  .rtp_header = 0,
+};
 
+int rtp_header = 0;
 
 //tuning parameters C99 initialisation
 tuning_parameters_t tuneparams={
@@ -685,17 +685,17 @@ int
         exit(ERROR_CONF);
       }
       substring = strtok (NULL, delimiteurs);
-      common_port = atoi (substring);
+      multicast_vars.common_port = atoi (substring);
     }
     else if (!strcmp (substring, "multicast_ttl"))
     {
       substring = strtok (NULL, delimiteurs);
-      multicast_ttl = atoi (substring);
+      multicast_vars.ttl = atoi (substring);
     }
     else if (!strcmp (substring, "multicast_auto_join"))
     {
       substring = strtok (NULL, delimiteurs);
-      multicast_auto_join = atoi (substring);
+      multicast_vars.auto_join = atoi (substring);
     }
     else if (!strcmp (substring, "dvr_buffer_size"))
     {
@@ -742,8 +742,8 @@ int
                      "pids : You must precise ip first\n");
         exit(ERROR_CONF);
       }
-      if (common_port!=0 && channels[curr_channel].portOut == 0)
-        channels[curr_channel].portOut = common_port;
+      if (multicast_vars.common_port!=0 && channels[curr_channel].portOut == 0)
+        channels[curr_channel].portOut = multicast_vars.common_port;
       while ((substring = strtok (NULL, delimiteurs)) != NULL)
       {
         channels[curr_channel].pids[curr_pid] = atoi (substring);
@@ -1157,10 +1157,10 @@ int
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
   {
       //See the README for the reason of this option
-    if(multicast_auto_join)
-      channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
+    if(multicast_vars.auto_join)
+      channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_vars.ttl, &channels[curr_channel].sOut);
     else
-      channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_ttl, &channels[curr_channel].sOut);
+      channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_vars.ttl, &channels[curr_channel].sOut);
   }
   //We open the socket for the http unicast if needed and we update the poll structure
   if(strlen(unicast_vars.ipOut))
@@ -1181,7 +1181,7 @@ int
   // init sap
   /*****************************************************/
 
-  iRet=init_sap(&sap_vars);
+  iRet=init_sap(&sap_vars, multicast_vars);
   if(iRet)
     return mumudvb_close(ERROR_GENERIC);
 
@@ -1279,7 +1279,7 @@ int
             {
               log_message(MSG_DEBUG,"Autoconf : It seems that we have finished to get the services list\n");
 			  //we finish full autoconfiguration
-              Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, common_port, tuneparams.card, &fds,asked_pid, number_chan_asked_pid, multicast_ttl, &unicast_vars);
+              Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, multicast_vars, tuneparams.card, &fds,asked_pid, number_chan_asked_pid, &unicast_vars);
             }
             else
               memset (autoconf_vars.autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
@@ -1569,10 +1569,10 @@ int
             /****** RTP *******/
             if(rtp_header)
               rtp_update_sequence_number(&channels[curr_channel]);
-	      
+
             /********** MULTICAST *************/
-                      //if the multicast TTL is set to 0 we don't send the multicast packets
-            if(multicast_ttl)
+             //if the multicast TTL is set to 0 we don't send the multicast packets
+            if(multicast_vars.ttl)
               sendudp (channels[curr_channel].socketOut, &channels[curr_channel].sOut, channels[curr_channel].buf,
                        channels[curr_channel].nb_bytes);
             /*********** UNICAST **************/
@@ -1835,7 +1835,7 @@ static void SignalHandler (int signum)
 		  //This happend when we are not able to get all the services of the PAT,
 		  //We continue with the partial list of services
           autoconf_vars.time_start_autoconfiguration=now;
-          Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, common_port, tuneparams.card, &fds,asked_pid, number_chan_asked_pid, multicast_ttl, &unicast_vars);
+          Interrupted = autoconf_finish_full(&number_of_channels, channels, &autoconf_vars, multicast_vars, tuneparams.card, &fds,asked_pid, number_chan_asked_pid, &unicast_vars);
         }
       }
     }
@@ -1849,7 +1849,7 @@ static void SignalHandler (int signum)
         {
 		  // it's the first time we are here, we initialize all the channels
           for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-            sap_update(channels[curr_channel], &sap_vars, curr_channel);
+            sap_update(channels[curr_channel], &sap_vars, curr_channel, multicast_vars);
 		    
           sap_vars.sap_last_time_sent=now-sap_vars.sap_interval-1;
         }
@@ -1871,7 +1871,7 @@ static void SignalHandler (int signum)
                        channels[curr_channel].name, tuneparams.card);
           channels[curr_channel].streamed_channel_old = 1;	// update
           if(sap_vars.sap == SAP_ON)
-            sap_update(channels[curr_channel], &sap_vars, curr_channel); //Channel status changed, we update the sap announces
+            sap_update(channels[curr_channel], &sap_vars, curr_channel, multicast_vars); //Channel status changed, we update the sap announces
         }
         else if ((channels[curr_channel].streamed_channel_old) && (channels[curr_channel].streamed_channel/ALARM_TIME < 30))
         {
@@ -1880,7 +1880,7 @@ static void SignalHandler (int signum)
                        channels[curr_channel].name, tuneparams.card);
           channels[curr_channel].streamed_channel_old = 0;	// update
           if(sap_vars.sap == SAP_ON)
-            sap_update(channels[curr_channel], &sap_vars, curr_channel); //Channel status changed, we update the sap announces
+            sap_update(channels[curr_channel], &sap_vars, curr_channel, multicast_vars); //Channel status changed, we update the sap announces
         }
 	      //log_message( MSG_DEBUG, "Channel \"%s\"  %d packets/s \n",channels[curr_channel].name,channels[curr_channel].streamed_channel/ALARM_TIME);
       }

@@ -34,11 +34,9 @@
 #include <errno.h>
 
 
-extern int multicast_ttl;
-extern int multicast_auto_join;
 extern int rtp_header;
 
-int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumudvb_sap_message_t *sap_message);
+int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumudvb_sap_message_t *sap_message, multicast_parameters_t multicast_vars);
 
 
 
@@ -149,7 +147,7 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
 /** @brief init the sap
  * Alloc the memory for the messages, open the socket
  */
-int init_sap(sap_parameters_t *sap_vars)
+int init_sap(sap_parameters_t *sap_vars, multicast_parameters_t multicast_vars)
 {
   if(sap_vars->sap == SAP_ON)
     {
@@ -162,7 +160,7 @@ int init_sap(sap_parameters_t *sap_vars)
       memset (sap_vars->sap_messages, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
       //For sap announces, we open the socket
       //See the README about multicast_auto_join
-      if(multicast_auto_join)
+      if(multicast_vars.auto_join)
 	sap_vars->sap_socketOut =  makeclientsocket (SAP_IP, SAP_PORT, sap_vars->sap_ttl, &sap_vars->sap_sOut);
       else
 	sap_vars->sap_socketOut =  makesocket (SAP_IP, SAP_PORT, sap_vars->sap_ttl, &sap_vars->sap_sOut);
@@ -204,7 +202,7 @@ void sap_send(sap_parameters_t *sap_vars, int num_messages)
  * @param sap_vars the sap variables
  * @param curr_channel the number of the updated channel
  */
-int sap_update(mumudvb_channel_t channel, sap_parameters_t *sap_vars, int curr_channel)
+int sap_update(mumudvb_channel_t channel, sap_parameters_t *sap_vars, int curr_channel, multicast_parameters_t multicast_vars)
 {
   /** @todo check PACKET Size < MTU*/
   
@@ -249,7 +247,7 @@ int sap_update(mumudvb_channel_t channel, sap_parameters_t *sap_vars, int curr_c
   sap_message->len++;
 
   // one program per message
-  if(!sap_add_program(channel, sap_vars, sap_message))
+  if(!sap_add_program(channel, sap_vars, sap_message, multicast_vars))
     sap_message->to_be_sent=1;
   else
     sap_message->to_be_sent=0;
@@ -265,7 +263,7 @@ int sap_update(mumudvb_channel_t channel, sap_parameters_t *sap_vars, int curr_c
  * @param sap_vars the sap variables
  * @param sap_message the sap message
  */
-int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumudvb_sap_message_t *sap_message)
+int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumudvb_sap_message_t *sap_message, multicast_parameters_t multicast_vars)
 {
 
   //See RFC 2327
@@ -335,7 +333,7 @@ int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumud
   the /2 is the TTL of the media
    */
   sprintf(temp_string,"c=IN IP4 %s/%d\r\n",
-          channel.ipOut, multicast_ttl);
+          channel.ipOut, multicast_vars.ttl);
   if( (sap_message->len+payload_len+strlen(temp_string))>1024)
   {
     log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel.name);

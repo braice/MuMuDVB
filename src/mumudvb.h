@@ -239,6 +239,19 @@ typedef struct mumudvb_channel_t{
 
 }mumudvb_channel_t;
 
+/**The parameters concerning the multicast*/
+typedef struct multicast_parameters_t{
+  /** Time to live of sent packets */
+  int ttl;
+  /** the default port*/
+  int common_port;
+  /** Does MuMuDVB have to join the created multicast groups ?*/
+  int auto_join;
+//  /**Do we send the rtp header ? */
+//  int rtp_header;
+}multicast_parameters_t;
+
+/** @todo : do a structure containing the channels and the asked pids information*/
 
 //logging
 void log_message( int , const char *, ... );
