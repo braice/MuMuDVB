@@ -482,3 +482,52 @@ int pid_type_to_str(char *dest,int type)
       return snprintf(dest,80*sizeof(char),"Unknow");
   }
 }
+
+
+/** @brief : display mumudvb info*/
+void print_info ()
+{
+  fprintf (stderr, 
+           "MuMuDVB Version "
+               VERSION
+               "\n --- Build information ---\n"
+#ifdef ENABLE_CAM_SUPPORT
+               "Builded with CAM support.\n"
+#else
+               "Builded without CAM support.\n"
+#endif
+#ifdef ATSC
+               "Builded with ATSC support.\n"
+#ifdef HAVE_LIBUCSI
+               "Builded with ATSC long channel names support.\n"
+#endif
+#endif
+#if DVB_API_VERSION >= 5
+               "Builded with support for DVB API Version 5 (DVB-S2).\n"
+#endif
+               "---------\n"
+               "Originally based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
+               "Released under the GPL.\n"
+               "Latest version available from http://mumudvb.braice.net/\n"
+               "Project from the cr@ns (http://www.crans.org)\n"
+               "by Brice DUBOST (mumudvb@braice.net)\n\n");
+}
+
+
+
+/** @brief : display mumudvb usage*/
+void usage (char *name)
+{
+  fprintf (stderr, "MuMuDVB is a program who can redistribute stream from DVB on a network, in multicast or in http unicast.\n"
+      "It's main feature is to take a whole transponder and put each channel on a different multicast IP.\n\n"
+          "Usage: %s [options] \n"
+          "-c, --config : Config file\n"
+          "-s, --signal : Display signal power\n"
+          "-t, --traffic : Display channels traffic\n"
+          "-d, --debug  : Don't deamonize\n"
+          "-v           : More verbose\n"
+          "-q           : Less verbose\n"
+          "-h, --help   : Help\n"
+          "\n", name);
+  print_info ();
+}
