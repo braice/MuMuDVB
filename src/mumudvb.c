@@ -1249,15 +1249,13 @@ int
       stats_num_reads++;
     }
  
-    for(buffpos=0;(buffpos+TS_PACKET_SIZE)<=bytes_read;buffpos+=TS_PACKET_SIZE)//plop we loop on the subpackets
+    for(buffpos=0;(buffpos+TS_PACKET_SIZE)<=bytes_read;buffpos+=TS_PACKET_SIZE)//we loop on the subpackets
     {
-	  //log_message( MSG_DEBUG, "--------buffpos %d\n", buffpos);
       memcpy( actual_ts_packet,temp_buffer_from_dvr+buffpos,TS_PACKET_SIZE);
-	  //temp_buffer_from_dvr=temp_buffer_from_dvr2+buffpos;
-	  
+
       pid = ((actual_ts_packet[1] & 0x1f) << 8) | (actual_ts_packet[2]);
 
-	  //Software filtering in case the card doesn't have hardware filtering
+      //Software filtering in case the card doesn't have hardware filtering
       if(asked_pid[pid]==PID_NOT_ASKED)
         continue;
 
@@ -1303,7 +1301,6 @@ int
             memset (autoconf_vars.autoconf_temp_psip, 0, sizeof( mumudvb_ts_packet_t));//we clear it
           }
         }
-	      
         continue;
       }
 
