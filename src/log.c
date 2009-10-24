@@ -35,9 +35,11 @@
 #include <stdarg.h>
 #include <syslog.h>
 #include <errno.h>
+#include <linux/dvb/version.h>
 
 #include "mumudvb.h"
 #include "errors.h"
+
 
 extern int no_daemon;
 extern int verbosity;
