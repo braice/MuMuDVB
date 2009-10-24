@@ -251,8 +251,18 @@ typedef struct multicast_parameters_t{
 //  int rtp_header;
 }multicast_parameters_t;
 
-/** @todo : do a structure containing the channels and the asked pids information*/
-
+/** structure containing the channels and the asked pids information*/
+typedef struct mumudvb_chan_and_pids_t{
+  /** The number of channels ... */
+  int number_of_channels;
+  /** The channels array */
+  mumudvb_channel_t channels[MAX_CHANNELS];  /**@todo use realloc*/
+//Asked pids //used for filtering
+  /** this array contains the pids we want to filter,*/
+  uint8_t asked_pid[8192];
+  /** the number of channels who want this pid (used by autoconfiguration update)*/
+  uint8_t number_chan_asked_pid[8192];
+}mumudvb_chan_and_pids_t;
 
 
 int mumudvb_close(int Interrupted);
