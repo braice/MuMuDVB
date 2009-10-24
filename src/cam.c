@@ -59,7 +59,7 @@
 #include "mumudvb.h"
 #include "log.h"
 
-
+extern int Interrupted;
 
 
 /*****************************************************************************
@@ -104,7 +104,7 @@ static char *static_nom_fich_cam_info;
 
 /** @brief Read a line of the configuration file to check if there is a cam parameter
  *
- * @param cam_vars the sap parameters
+ * @param cam_vars the cam parameters
  * @param substring The currrent line
  */
 int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring)
@@ -124,6 +124,7 @@ int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *curren
   {
     substring = strtok (NULL, delimiteurs);
     cam_vars->reset_interval = atoi (substring);
+    cam_vars->timeout_no_cam_init = cam_vars->reset_interval;
   }
   else if (!strcmp (substring, "cam_number"))
   {
@@ -330,10 +331,6 @@ void cam_stop(cam_parameters_t *cam_params)
 
 
 
-
-
-
-
 /** @brief The thread for polling the cam */
 static void *camthread_func(void* arg)
 {
@@ -341,13 +338,55 @@ static void *camthread_func(void* arg)
   cam_params= (cam_parameters_t *) arg;
   int i;
   int camstate;
+  struct timeval tv;
+  long real_start_time;
+  long now;
+  //We record the starting time
+  gettimeofday (&tv, (struct timezone *) NULL);
+  real_start_time = tv.tv_sec;
+  now = 0;
+
   while(!cam_params->camthread_shutdown) { 
     usleep(500000); //some waiting
     cam_params->stdcam->poll(cam_params->stdcam);
 
+    gettimeofday (&tv, (struct timezone *) NULL);
+    now = tv.tv_sec - real_start_time;
+
+    //check if we need reset
+    if ( cam_params->ca_resource_connected==0 && cam_params->timeout_no_cam_init>0 && now>cam_params->timeout_no_cam_init)
+    {
+      if(cam_params->cam_type==DVBCA_INTERFACE_LINK)
+      {
+        if(cam_params->need_reset==0 && cam_params->reset_counts<cam_params->max_reset_number)
+        {
+          log_message( MSG_INFO,
+                       "CAM: No CAM initialization in %ds, WE FORCE A RESET. try %d on %d.\n",
+                       cam_params->timeout_no_cam_init,
+                       cam_params->reset_counts+1,
+                       cam_params->max_reset_number);
+          cam_params->need_reset=1;
+          cam_params->timeout_no_cam_init=now+cam_params->reset_interval;
+        }
+        else if (cam_params->reset_counts>=cam_params->max_reset_number)
+        {
+          log_message( MSG_INFO,
+                       "CAM: No CAM initialization  in %ds,  the %d resets didn't worked. Exiting.\n",
+                       cam_params->timeout_no_cam_init,cam_params->max_reset_number);
+          Interrupted= ERROR_NO_CAM_INIT<<8; //the <<8 is to make difference beetween signals and errors
+        }
+      }
+      else
+      {
+        log_message( MSG_INFO,
+                     "CAM: No CAM initialization on in %ds and HLCI CAM, exiting.\n",
+                     cam_params->timeout_no_cam_init);
+        Interrupted= ERROR_NO_CAM_INIT<<8; //the <<8 is to make difference beetween signals and errors
+      }
+    }
+    //We do the reset if needed
     if(cam_params->need_reset==1)
     {
-      log_message( MSG_DETAIL,  "CAM We force the reset of the CAM\n");
       cam_reset_cam(cam_params);
       i=0;
       log_message( MSG_DEBUG,  "CAM We wait for the cam to be INITIALISING\n");
@@ -723,4 +762,3 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
 
   return 0;
 }
-

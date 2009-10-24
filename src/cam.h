@@ -77,6 +77,7 @@ typedef struct cam_parameters_t{
   int need_reset;
   int reset_counts;
   int max_reset_number;
+  int timeout_no_cam_init;
   int reset_interval;
   struct en50221_transport_layer *tl;
   struct en50221_session_layer *sl;
@@ -89,7 +90,6 @@ typedef struct cam_parameters_t{
   int mmi_state;
   int mmi_enq_blind;
   int mmi_enq_length;
-
 }cam_parameters_t;
 
 /*****************************************************************************

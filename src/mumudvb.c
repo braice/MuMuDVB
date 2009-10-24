@@ -153,9 +153,6 @@ uint8_t number_chan_asked_pid[8192]; /** the number of channels who want this pi
 
 
 int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
-#ifdef ENABLE_CAM_SUPPORT
-int timeout_no_cam_init;
-#endif
 // file descriptors
 fds_t fds; /** File descriptors associated with the card */
 
@@ -245,6 +242,7 @@ cam_parameters_t cam_vars={
   .need_reset=0,
   .reset_counts=0,
   .reset_interval=CAM_DEFAULT_RESET_INTERVAL,
+  .timeout_no_cam_init=CAM_DEFAULT_RESET_INTERVAL,
   .max_reset_number=CAM_DEFAULT_MAX_RESET_NUM,
   .tl=NULL,
   .sl=NULL,
@@ -766,9 +764,7 @@ int
                  "Full autoconfiguration, we activate SAP announces. if you want to desactivate them see the README.\n");
     sap_vars.sap=SAP_ON;
   }
-#ifdef ENABLE_CAM_SUPPORT
-  timeout_no_cam_init= cam_vars.reset_interval;
-#endif
+
   /******************************************************/
   //end of config file reading
   /******************************************************/
@@ -1819,7 +1815,6 @@ static void SignalHandler (int signum)
           if(sap_vars.sap == SAP_ON)
             sap_update(channels[curr_channel], &sap_vars, curr_channel, multicast_vars); //Channel status changed, we update the sap announces
         }
-	      //log_message( MSG_DEBUG, "Channel \"%s\"  %d packets/s \n",channels[curr_channel].name,channels[curr_channel].streamed_channel/ALARM_TIME);
       }
 
 
@@ -1857,7 +1852,7 @@ static void SignalHandler (int signum)
       }
 
 
-      /**Show the statistics for the big buffer*/
+      /*Show the statistics for the big buffer*/
       if(show_buffer_stats)
       {
         if(!show_buffer_stats_time)
@@ -1873,7 +1868,7 @@ static void SignalHandler (int signum)
 
 
 
-	  // Check if the chanel scrambling state has changed
+      // Check if the chanel scrambling state has changed
       for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
       {
 	      // Calcultation of the ratio (percentage) of scrambled packets received
@@ -1881,8 +1876,7 @@ static void SignalHandler (int signum)
           channels[curr_channel].ratio_scrambled = (int)(channels[curr_channel].scrambled_channel*100/(channels[curr_channel].num_packet));
         else
           channels[curr_channel].ratio_scrambled = 0;
-	      
-	      
+
 	      // Test if we have only unscrambled packets (<2%) - scrambled_channel_old=FULLY_UNSCRAMBLED : fully unscrambled
         if ((channels[curr_channel].ratio_scrambled < 2) && (channels[curr_channel].scrambled_channel_old != FULLY_UNSCRAMBLED))
         {
@@ -1947,41 +1941,7 @@ static void SignalHandler (int signum)
 
 #ifdef ENABLE_CAM_SUPPORT
       if(cam_vars.cam_support)
-      {
         cam_vars.delay++;
-      }
-      if (cam_vars.cam_support && timeout_no_cam_init>0 && now>timeout_no_cam_init && cam_vars.ca_resource_connected==0)
-      {
-        if(cam_vars.cam_type==DVBCA_INTERFACE_LINK)
-        {
-          if(cam_vars.need_reset==0 && cam_vars.reset_counts<cam_vars.max_reset_number)
-          {
-            log_message( MSG_INFO,
-                         "CAM: No CAM initialization on card %d in %ds, WE FORCE A RESET. try %d on %d.\n",
-                         tuneparams.card,
-                         timeout_no_cam_init,
-                         cam_vars.reset_counts+1,
-                         cam_vars.max_reset_number);
-            cam_vars.need_reset=1;
-            timeout_no_cam_init=now+cam_vars.reset_interval;
-          }
-          else if (cam_vars.reset_counts>=cam_vars.max_reset_number)
-          {
-            log_message( MSG_INFO,
-                         "CAM: No CAM initialization on card %d in %ds,  the %d resets didn't worked. Exiting.\n",
-                         tuneparams.card, timeout_no_cam_init,cam_vars.max_reset_number);
-            Interrupted=ERROR_NO_CAM_INIT<<8; //the <<8 is to make difference beetween signals and errors
-          }
-        }
-        else
-        {
-          log_message( MSG_INFO,
-                       "CAM: No CAM initialization on card %d in %ds and HLCI CAM, exiting.\n",
-                       tuneparams.card, timeout_no_cam_init);
-          Interrupted=ERROR_NO_CAM_INIT<<8; //the <<8 is to make difference beetween signals and errors
-        }
-      }
-
 #endif
     }
     alarm (ALARM_TIME);
