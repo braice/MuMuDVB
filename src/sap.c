@@ -417,3 +417,32 @@ int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumud
   return 0;
 
 }
+
+
+/** @brief Sap function called periodically
+ * This function checks if there is sap messages to send
+ * @param number_of_channels the number of channels
+ * @param channels the channels
+ * @param sap_vars the sap variables
+ * @param multicast_vars the multicast variables
+ * @param now the time
+ */
+void sap_poll(sap_parameters_t *sap_vars,int number_of_channels,mumudvb_channel_t  *channels, multicast_parameters_t multicast_vars, long now)
+{
+  int curr_channel;
+  if(sap_vars->sap == SAP_ON)
+  {
+    if(!sap_vars->sap_last_time_sent)
+    {
+      // it's the first time we are here, we initialize all the channels
+      for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+        sap_update(channels[curr_channel], sap_vars, curr_channel, multicast_vars);
+      sap_vars->sap_last_time_sent=now-sap_vars->sap_interval-1;
+    }
+    if((now-sap_vars->sap_last_time_sent)>=sap_vars->sap_interval)
+    {
+      sap_send(sap_vars, number_of_channels);
+      sap_vars->sap_last_time_sent=now;
+    }
+  }
+}

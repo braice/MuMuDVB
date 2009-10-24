@@ -102,5 +102,6 @@ int init_sap(sap_parameters_t *sap_vars, multicast_parameters_t multicast_vars);
 void sap_send(sap_parameters_t *sap_vars, int num_messages);
 int sap_update(mumudvb_channel_t channel, sap_parameters_t *sap_vars, int curr_channel, multicast_parameters_t multicast_vars);
 int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
+void sap_poll(sap_parameters_t *sap_vars,int number_of_channels,mumudvb_channel_t  *channels, multicast_parameters_t multicast_vars, long now);
 
 #endif
