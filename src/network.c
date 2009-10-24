@@ -34,6 +34,7 @@
 #include <string.h>
 #include <errno.h> 
 #include <fcntl.h>
+#include "log.h"
 
 extern int Interrupted;
 

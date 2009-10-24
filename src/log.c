@@ -39,6 +39,7 @@
 
 #include "mumudvb.h"
 #include "errors.h"
+#include "log.h"
 
 
 extern int no_daemon;

@@ -74,6 +74,7 @@
 #include "dvb.h"
 #include "autoconf.h"
 #include "rtp.h"
+#include "log.h"
 
 extern int Interrupted;
 

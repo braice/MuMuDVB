@@ -32,6 +32,7 @@
 #include "network.h"
 #include <string.h>
 #include <errno.h>
+#include "log.h"
 
 
 extern int rtp_header;

@@ -29,7 +29,7 @@
  *
  * This file contains functions for tuning the card, or displaying signal strength...
  */
-   
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -48,6 +48,7 @@
 #include "tune.h"
 #include "mumudvb.h"
 #include "errors.h"
+#include "log.h"
 
 
 extern int Interrupted;

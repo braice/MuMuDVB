@@ -57,6 +57,7 @@
 #include "cam.h"
 #include "ts.h"
 #include "mumudvb.h"
+#include "log.h"
 
 
 

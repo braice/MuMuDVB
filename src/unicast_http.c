@@ -56,6 +56,7 @@ Todo list
 #include "unicast_http.h"
 #include "mumudvb.h"
 #include "errors.h"
+#include "log.h"
 
 extern int Interrupted;
 

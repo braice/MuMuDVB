@@ -114,6 +114,7 @@
 #include "pat_rewrite.h"
 #include "unicast_http.h"
 #include "rtp.h"
+#include "log.h"
 
 /** the table for crc32 claculations */
 extern uint32_t       crc32_table[256];
@@ -326,9 +327,6 @@ int mumudvb_poll(fds_t *fds)
 
 // prototypes
 static void SignalHandler (int signum);
-
-void print_info ();
-void usage (char *name);
 
 int
     main (int argc, char **argv)

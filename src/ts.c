@@ -30,6 +30,7 @@
 
 #include "ts.h"
 #include "mumudvb.h"
+#include "log.h"
 
 #include <stdint.h>
 extern uint32_t       crc32_table[256];

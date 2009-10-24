@@ -1,5 +1,5 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB - UDP-ize a DVB transport stream.
  * File for Conditionnal Access Modules support
  * 
  * (C) 2009 Brice DUBOST
