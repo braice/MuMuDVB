@@ -1214,8 +1214,7 @@ int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parame
   // we open the file descriptors
   if (create_card_fd (card, chan_and_pids->asked_pid, fds) < 0)
   {
-    log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");
-    return 666<<8; //the <<8 is to make difference beetween signals and errors;
+    log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors. Some channels will probably not work\n");
   }
   // we set the new filters
   set_filters( chan_and_pids->asked_pid, fds);
@@ -1300,7 +1299,6 @@ void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels,
   if (create_card_fd (card, asked_pid, fds) < 0)
     {
       log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors. Some channels will probably not work\n");
-      //return; //FIXME : what do we do here ?
     }
   
   log_message(MSG_DETAIL,"Autoconf : Add the new filters\n");
