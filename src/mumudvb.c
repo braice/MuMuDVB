@@ -226,7 +226,6 @@ autoconf_parameters_t autoconf_vars={
   .autoconf_temp_sdt=NULL,
   .autoconf_temp_psip=NULL,
   .services=NULL,
-  .unicast_ipOut="\0",
   .autoconf_unicast_start_port=0,
 };
 
@@ -666,10 +665,7 @@ int
 
   }
   fclose (conf_file);
-  
-  /** @todo put this in another option */
-  if(strlen(unicast_vars.ipOut))
-    sscanf (unicast_vars.ipOut, "%s\n", autoconf_vars.unicast_ipOut);
+
   if((autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)&&(sap_vars.sap == SAP_UNDEFINED))
   {
     log_message( MSG_INFO,

@@ -96,8 +96,6 @@ Possible values for this variable
 
   /**the starting http unicast port */
   int autoconf_unicast_start_port;
-  /**The unicast "HTTP" ip address*/
-  char unicast_ipOut[20];
 }autoconf_parameters_t;
 
 
@@ -108,7 +106,6 @@ int autoconf_read_sdt(unsigned char *buf, int len, mumudvb_service_t *services);
 int autoconf_read_psip(autoconf_parameters_t *);
 void autoconf_freeing(autoconf_parameters_t *);
 int autoconf_read_pat(autoconf_parameters_t *);
-int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card, unicast_parameters_t *unicast_vars, fds_t *fds);
 void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, uint8_t *asked_pid, uint8_t *number_chan_asked_pid, fds_t *fds);
 void autoconf_free_services(mumudvb_service_t *services);
 int pmt_need_update(mumudvb_channel_t *channel, unsigned char *buf, int ts_header);

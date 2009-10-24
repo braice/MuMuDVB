@@ -1087,7 +1087,7 @@ void autoconf_free_services(mumudvb_service_t *services)
  * @param unicast_vars The unicast parameters
  * @param fds The file descriptors (for filters and unicast)
  */
-int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card, unicast_parameters_t *unicast_vars, fds_t *fds)
+int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card, unicast_parameters_t *unicast_vars)
 {
 
   mumudvb_service_t *actual_service;
@@ -1154,17 +1154,14 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 		  else
 		    memset (channels[channel_number].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 		}
-
-                /** open the unicast listening connections fo the channels */
-                if(actual_unicast_port && strlen(parameters.unicast_ipOut))
+                //We update the unicast port, the connection will be created in autoconf_finish_full
+                if(actual_unicast_port && strlen(unicast_vars->ipOut))
                 {
                   channels[channel_number].unicast_port=actual_unicast_port;
-                  log_message(MSG_INFO,"Unicast : We open the channel %d http socket address %s:%d\n",channel_number, parameters.unicast_ipOut, channels[channel_number].unicast_port);
-                  unicast_create_listening_socket(UNICAST_LISTEN_CHANNEL, channel_number, parameters.unicast_ipOut, channels[channel_number].unicast_port , &channels[channel_number].sIn, &channels[channel_number].socketIn, fds, unicast_vars);
                   actual_unicast_port++;
                 }
 
-	      channel_number++;
+                channel_number++;
 	    }
             else if(actual_service->type==0x02||actual_service->type==0x0a) //service_type digital radio sound service
 	    log_message(MSG_DETAIL,"Autoconf : Service type digital radio sound service, no autoconfigure. (if you want add autoconf_radios=1 to your configuration file) Name \"%s\"\n",
@@ -1203,36 +1200,62 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parameters_t *autoconf_vars, multicast_parameters_t multicast_vars, int card, fds_t *fds, unicast_parameters_t *unicast_vars)
 {
   int curr_channel,curr_pid;
-  chan_and_pids->number_of_channels=autoconf_services_to_channels(*autoconf_vars, chan_and_pids->channels, multicast_vars.common_port, card, unicast_vars, fds); //Convert the list of services into channels
+  chan_and_pids->number_of_channels=autoconf_services_to_channels(*autoconf_vars, chan_and_pids->channels, multicast_vars.common_port, card, unicast_vars); //Convert the list of services into channels
   //we got the pmt pids for the channels, we open the filters
   for (curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
+  {
+    for (curr_pid = 0; curr_pid < chan_and_pids->channels[curr_channel].num_pids; curr_pid++)
     {
-      for (curr_pid = 0; curr_pid < chan_and_pids->channels[curr_channel].num_pids; curr_pid++)
-	{
-          if(chan_and_pids->asked_pid[chan_and_pids->channels[curr_channel].pids[curr_pid]]==PID_NOT_ASKED)
-            chan_and_pids->asked_pid[chan_and_pids->channels[curr_channel].pids[curr_pid]]=PID_ASKED;
-          chan_and_pids->number_chan_asked_pid[chan_and_pids->channels[curr_channel].pids[curr_pid]]++;
-	}
+      if(chan_and_pids->asked_pid[chan_and_pids->channels[curr_channel].pids[curr_pid]]==PID_NOT_ASKED)
+        chan_and_pids->asked_pid[chan_and_pids->channels[curr_channel].pids[curr_pid]]=PID_ASKED;
+      chan_and_pids->number_chan_asked_pid[chan_and_pids->channels[curr_channel].pids[curr_pid]]++;
     }
+  }
   // we open the file descriptors
   if (create_card_fd (card, chan_and_pids->asked_pid, fds) < 0)
-    {
-      log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");
-      return 666<<8; //the <<8 is to make difference beetween signals and errors;
-    }
+  {
+    log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");
+    return 666<<8; //the <<8 is to make difference beetween signals and errors;
+  }
   // we set the new filters
   set_filters( chan_and_pids->asked_pid, fds);
-  
+
+
+  //Networking
   for (curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
+  {
+
+    /** open the unicast listening connections fo the channels */
+    if(chan_and_pids->channels[curr_channel].unicast_port && strlen(unicast_vars->ipOut))
     {
-      // Init udp
-      //Open the multicast socket for the new channel
-      //See the README for the reason of this option
-      if(multicast_vars.auto_join)
-        chan_and_pids->channels[curr_channel].socketOut = makeclientsocket (chan_and_pids->channels[curr_channel].ipOut, chan_and_pids->channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids->channels[curr_channel].sOut);
-      else
-        chan_and_pids->channels[curr_channel].socketOut = makesocket (chan_and_pids->channels[curr_channel].ipOut, chan_and_pids->channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids->channels[curr_channel].sOut);
+      log_message(MSG_INFO,"Unicast : We open the channel %d http socket address %s:%d\n",
+                  curr_channel,
+                  unicast_vars->ipOut,
+                  chan_and_pids->channels[curr_channel].unicast_port);
+      unicast_create_listening_socket(UNICAST_LISTEN_CHANNEL,
+                                      curr_channel,
+                                      unicast_vars->ipOut,
+                                      chan_and_pids->channels[curr_channel].unicast_port,
+                                      &chan_and_pids->channels[curr_channel].sIn,
+                                      &chan_and_pids->channels[curr_channel].socketIn,
+                                      fds,
+                                      unicast_vars);
     }
+
+    //Open the multicast socket for the new channel
+    if(multicast_vars.auto_join) //See the README for the reason of this option
+      chan_and_pids->channels[curr_channel].socketOut = 
+          makeclientsocket (chan_and_pids->channels[curr_channel].ipOut,
+                            chan_and_pids->channels[curr_channel].portOut,
+                            multicast_vars.ttl,
+                            &chan_and_pids->channels[curr_channel].sOut);
+    else
+      chan_and_pids->channels[curr_channel].socketOut = 
+          makesocket (chan_and_pids->channels[curr_channel].ipOut,
+                      chan_and_pids->channels[curr_channel].portOut,
+                      multicast_vars.ttl,
+                      &chan_and_pids->channels[curr_channel].sOut);
+  }
 
   log_message(MSG_DEBUG,"Autoconf : Step TWO, we get the video and audio PIDs\n");
   //We free autoconf memort
