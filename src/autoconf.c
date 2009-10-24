@@ -75,6 +75,7 @@
 #include "autoconf.h"
 #include "rtp.h"
 #include "log.h"
+#include "tune.h"
 
 extern int Interrupted;
 
@@ -1199,46 +1200,46 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
  * @param asked_pid the array containing the pids already asked
  * @param fds the file descriptors
 */
-int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, autoconf_parameters_t *autoconf_vars, multicast_parameters_t multicast_vars, int card, fds_t *fds,uint8_t *asked_pid, uint8_t *number_chan_asked_pid, unicast_parameters_t *unicast_vars)
+int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parameters_t *autoconf_vars, multicast_parameters_t multicast_vars, int card, fds_t *fds, unicast_parameters_t *unicast_vars)
 {
   int curr_channel,curr_pid;
-  *number_of_channels=autoconf_services_to_channels(*autoconf_vars, channels, multicast_vars.common_port, card, unicast_vars, fds); //Convert the list of services into channels
+  chan_and_pids->number_of_channels=autoconf_services_to_channels(*autoconf_vars, chan_and_pids->channels, multicast_vars.common_port, card, unicast_vars, fds); //Convert the list of services into channels
   //we got the pmt pids for the channels, we open the filters
-  for (curr_channel = 0; curr_channel < *number_of_channels; curr_channel++)
+  for (curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
     {
-      for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+      for (curr_pid = 0; curr_pid < chan_and_pids->channels[curr_channel].num_pids; curr_pid++)
 	{
-	  if(asked_pid[channels[curr_channel].pids[curr_pid]]==PID_NOT_ASKED)
-	    asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
-	  number_chan_asked_pid[channels[curr_channel].pids[curr_pid]]++;
+          if(chan_and_pids->asked_pid[chan_and_pids->channels[curr_channel].pids[curr_pid]]==PID_NOT_ASKED)
+            chan_and_pids->asked_pid[chan_and_pids->channels[curr_channel].pids[curr_pid]]=PID_ASKED;
+          chan_and_pids->number_chan_asked_pid[chan_and_pids->channels[curr_channel].pids[curr_pid]]++;
 	}
     }
   // we open the file descriptors
-  if (create_card_fd (card, asked_pid, fds) < 0)
+  if (create_card_fd (card, chan_and_pids->asked_pid, fds) < 0)
     {
       log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT Open the new descriptors\n");
       return 666<<8; //the <<8 is to make difference beetween signals and errors;
     }
   // we set the new filters
-  set_filters( asked_pid, fds);
+  set_filters( chan_and_pids->asked_pid, fds);
   
-  for (curr_channel = 0; curr_channel < *number_of_channels; curr_channel++)
+  for (curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
     {
       // Init udp
       //Open the multicast socket for the new channel
       //See the README for the reason of this option
       if(multicast_vars.auto_join)
-        channels[curr_channel].socketOut = makeclientsocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_vars.ttl, &channels[curr_channel].sOut);
+        chan_and_pids->channels[curr_channel].socketOut = makeclientsocket (chan_and_pids->channels[curr_channel].ipOut, chan_and_pids->channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids->channels[curr_channel].sOut);
       else
-        channels[curr_channel].socketOut = makesocket (channels[curr_channel].ipOut, channels[curr_channel].portOut, multicast_vars.ttl, &channels[curr_channel].sOut);
+        chan_and_pids->channels[curr_channel].socketOut = makesocket (chan_and_pids->channels[curr_channel].ipOut, chan_and_pids->channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids->channels[curr_channel].sOut);
     }
-  
+
   log_message(MSG_DEBUG,"Autoconf : Step TWO, we get the video and audio PIDs\n");
   //We free autoconf memort
   autoconf_freeing(autoconf_vars);
-  
+
   autoconf_vars->autoconfiguration=AUTOCONF_MODE_PIDS; //Next step add video and audio pids
-  
+
   return 0;
 }
 
@@ -1579,4 +1580,113 @@ void update_pmt_version(mumudvb_channel_t *channel)
     log_message(MSG_INFO,"Autoconfiguration : New PMT version for channel %s. Old : %d, new: %d\n",channel->name,channel->pmt_version,pmt->version_number);
 
   channel->pmt_version=pmt->version_number;
+}
+
+/** @brief This function is called when a new packet is there and the autoconf is not finished*/
+int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t tuneparams, multicast_parameters_t multicast_vars, fds_t *fds, unicast_parameters_t *unicast_vars)
+{
+  int Interrupted=0;
+
+  if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL) //Full autoconfiguration, we search the channels and their names
+  {
+    if(pid==0) //PAT : contains the services identifiers and the PMT PID for each service
+    {
+      if(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_pat))
+      {
+        if(autoconf_read_pat(autoconf_vars))
+        {
+          log_message(MSG_DEBUG,"Autoconf : It seems that we have finished to get the services list\n");
+          //we finish full autoconfiguration
+          Interrupted = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams.card, fds, unicast_vars);
+        }
+        else
+          memset (autoconf_vars->autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
+      }
+    }
+    else if(pid==17) //SDT : contains the names of the services
+    {
+      if(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_sdt))
+      {
+        autoconf_read_sdt(autoconf_vars->autoconf_temp_sdt->packet,autoconf_vars->autoconf_temp_sdt->len,autoconf_vars->services);
+        memset (autoconf_vars->autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+      }
+    }	 
+    else if(pid==PSIP_PID && tuneparams.fe_type==FE_ATSC) //PSIP : contains the names of the services
+    {
+      if(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_psip))
+      {
+        autoconf_read_psip(autoconf_vars);
+        memset (autoconf_vars->autoconf_temp_psip, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+      }
+    }
+  }
+  else if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_PIDS) //We have the channels and their PMT, we search the other pids
+  {
+    int curr_channel,i;
+    for(curr_channel=0;curr_channel<MAX_CHANNELS;curr_channel++)
+    {
+      if((!chan_and_pids->channels[curr_channel].autoconfigurated) &&(chan_and_pids->channels[curr_channel].pmt_pid==pid)&& pid)
+      {
+        if(get_ts_packet(ts_packet,chan_and_pids->channels[curr_channel].pmt_packet))
+        {
+			  //Now we have the PMT, we parse it
+          if(autoconf_read_pmt(chan_and_pids->channels[curr_channel].pmt_packet, &chan_and_pids->channels[curr_channel], tuneparams.card, chan_and_pids->asked_pid, chan_and_pids->number_chan_asked_pid, fds)==0)
+          {
+            log_message(MSG_DETAIL,"Autoconf : Final PIDs for channel %d \"%s\" : ",curr_channel, chan_and_pids->channels[curr_channel].name);
+            for(i=0;i<chan_and_pids->channels[curr_channel].num_pids;i++)
+              log_message(MSG_DETAIL," %d -",chan_and_pids->channels[curr_channel].pids[i]);
+            log_message(MSG_DETAIL,"\n");
+            chan_and_pids->channels[curr_channel].autoconfigurated=1;
+
+                //We check if autoconfiguration is finished
+            autoconf_vars->autoconfiguration=0;
+            for (curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
+              if(!chan_and_pids->channels[curr_channel].autoconfigurated)
+                autoconf_vars->autoconfiguration=AUTOCONF_MODE_PIDS;
+
+            //if it's finished, we open the new descriptors and add the new filters
+            if(autoconf_vars->autoconfiguration==0)
+            {
+              autoconf_end(tuneparams.card, chan_and_pids->number_of_channels, chan_and_pids->channels, chan_and_pids->asked_pid, chan_and_pids->number_chan_asked_pid, fds);
+                  //We free autoconf memory
+              autoconf_freeing(autoconf_vars);
+            }
+          }
+        }
+      }
+    }
+  }
+  return Interrupted;
+}
+
+
+/** @brief Autoconf function called periodically
+ * This function check if we reached the timeout
+ * if it's finished, we open the new descriptors and add the new filters
+ */
+int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t tuneparams, multicast_parameters_t multicast_vars, fds_t *fds, unicast_parameters_t *unicast_vars)
+{
+  int Interrupted=0;
+  if(!autoconf_vars->time_start_autoconfiguration)
+    autoconf_vars->time_start_autoconfiguration=now;
+  else if (now-autoconf_vars->time_start_autoconfiguration>AUTOCONFIGURE_TIME)
+  {
+    if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_PIDS)
+    {
+      log_message(MSG_WARN,"Autoconf : Warning : Not all the channels were configured before timeout\n");
+      autoconf_vars->autoconfiguration=0;
+      autoconf_end(tuneparams.card, chan_and_pids->number_of_channels, chan_and_pids->channels, chan_and_pids->asked_pid, chan_and_pids->number_chan_asked_pid, fds);
+      //We free autoconf memory
+      autoconf_freeing(autoconf_vars);
+    }
+    else if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL)
+    {
+      log_message(MSG_WARN,"Autoconf : Warning : We were not able to get all the services, we continue with the partial service list\n");
+      //This happend when we are not able to get all the services of the PAT,
+      //We continue with the partial list of services
+      autoconf_vars->time_start_autoconfiguration=now;
+      Interrupted = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams.card, fds, unicast_vars);
+    }
+  }
+  return Interrupted;
 }

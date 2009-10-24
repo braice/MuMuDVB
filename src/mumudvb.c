@@ -286,7 +286,7 @@ int mumudvb_poll(fds_t *fds); //below
 int
     main (int argc, char **argv)
 {
-  int k,i,iRet;
+  int k,iRet;
 
 
   //MPEG2-TS reception and sort
@@ -1129,79 +1129,12 @@ int
       /*************************************************************************************/
       /****              AUTOCONFIGURATION PART                                         ****/
       /*************************************************************************************/
-      if(!ScramblingControl &&  autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL) //Full autoconfiguration, we search the channels and their names
+      if(!ScramblingControl &&  autoconf_vars.autoconfiguration)
       {
-        if(pid==0) //PAT : contains the services identifiers and the pmt pid for each service
-        {
-          if(get_ts_packet(actual_ts_packet,autoconf_vars.autoconf_temp_pat))
-          {
-            if(autoconf_read_pat(&autoconf_vars))
-            {
-              log_message(MSG_DEBUG,"Autoconf : It seems that we have finished to get the services list\n");
-			  //we finish full autoconfiguration
-              Interrupted = autoconf_finish_full(&chan_and_pids.number_of_channels, chan_and_pids.channels, &autoconf_vars, multicast_vars, tuneparams.card, &fds,chan_and_pids.asked_pid, chan_and_pids.number_chan_asked_pid, &unicast_vars);
-            }
-            else
-              memset (autoconf_vars.autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
-          }
-        }
-        else if(pid==17) //SDT : contains the names of the services
-        {
-          if(get_ts_packet(actual_ts_packet,autoconf_vars.autoconf_temp_sdt))
-          {
-            autoconf_read_sdt(autoconf_vars.autoconf_temp_sdt->packet,autoconf_vars.autoconf_temp_sdt->len,autoconf_vars.services);
-            memset (autoconf_vars.autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-          }
-        }	 
-        else if(pid==PSIP_PID && tuneparams.fe_type==FE_ATSC) //PSIP : contains the names of the services
-        {
-          if(get_ts_packet(actual_ts_packet,autoconf_vars.autoconf_temp_psip))
-          {
-            autoconf_read_psip(&autoconf_vars);
-            memset (autoconf_vars.autoconf_temp_psip, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-          }
-        }
+        Interrupted = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars, &chan_and_pids, tuneparams, multicast_vars, &fds, &unicast_vars);
         continue;
       }
-
-
-      if(!ScramblingControl &&  autoconf_vars.autoconfiguration==AUTOCONF_MODE_PIDS) //We have the channels and their PMT, we search the other pids
-      {
-	      //here we call the autoconfiguration function
-        for(curr_channel=0;curr_channel<MAX_CHANNELS;curr_channel++)
-        {
-          if((!chan_and_pids.channels[curr_channel].autoconfigurated) &&(chan_and_pids.channels[curr_channel].pmt_pid==pid)&& pid)
-          {
-            if(get_ts_packet(actual_ts_packet,chan_and_pids.channels[curr_channel].pmt_packet))
-            {
-			  //Now we have the PMT, we parse it
-              if(autoconf_read_pmt(chan_and_pids.channels[curr_channel].pmt_packet, &chan_and_pids.channels[curr_channel], tuneparams.card, chan_and_pids.asked_pid, chan_and_pids.number_chan_asked_pid, &fds)==0)
-              {
-                log_message(MSG_DETAIL,"Autoconf : Final PIDs for channel %d \"%s\" : ",curr_channel, chan_and_pids.channels[curr_channel].name);
-                for(i=0;i<chan_and_pids.channels[curr_channel].num_pids;i++)
-                  log_message(MSG_DETAIL," %d -",chan_and_pids.channels[curr_channel].pids[i]);
-                log_message(MSG_DETAIL,"\n");
-                chan_and_pids.channels[curr_channel].autoconfigurated=1;
-
-                //We check if autoconfiguration is finished
-                autoconf_vars.autoconfiguration=0;
-                for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
-                  if(!chan_and_pids.channels[curr_channel].autoconfigurated)
-                    autoconf_vars.autoconfiguration=AUTOCONF_MODE_PIDS;
-
-                //if it's finished, we open the new descriptors and add the new filters
-                if(autoconf_vars.autoconfiguration==0)
-                {
-                  autoconf_end(tuneparams.card, chan_and_pids.number_of_channels, chan_and_pids.channels, chan_and_pids.asked_pid, chan_and_pids.number_chan_asked_pid, &fds);
-                  //We free autoconf memory
-                  autoconf_freeing(&autoconf_vars);
-                }
-              }
-            }
-          }
-        }
-        continue;
-      }
+ 
       /*************************************************************************************/
       /****              AUTOCONFIGURATION PART FINISHED                                ****/
       /*************************************************************************************/
@@ -1675,32 +1608,8 @@ static void SignalHandler (int signum)
 
       //autoconfiguration
       //We check if we reached the autoconfiguration timeout
-      //if it's finished, we open the new descriptors and add the new filters
     if(autoconf_vars.autoconfiguration)
-    {
-      if(!autoconf_vars.time_start_autoconfiguration)
-        autoconf_vars.time_start_autoconfiguration=now;
-      else if (now-autoconf_vars.time_start_autoconfiguration>AUTOCONFIGURE_TIME)
-      {
-        if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_PIDS)
-        {
-          log_message(MSG_WARN,"Autoconf : Warning : Not all the channels were configured before timeout\n");
-          autoconf_vars.autoconfiguration=0;
-          autoconf_end(tuneparams.card, chan_and_pids.number_of_channels, chan_and_pids.channels, chan_and_pids.asked_pid, chan_and_pids.number_chan_asked_pid, &fds);
-		  //We free autoconf memory
-          autoconf_freeing(&autoconf_vars);
-        }
-        else if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)
-        {
-          log_message(MSG_WARN,"Autoconf : Warning : We were not able to get all the services, we continue with the partial service list\n");
-		  //This happend when we are not able to get all the services of the PAT,
-		  //We continue with the partial list of services
-          autoconf_vars.time_start_autoconfiguration=now;
-          Interrupted = autoconf_finish_full(&chan_and_pids.number_of_channels, chan_and_pids.channels, &autoconf_vars, multicast_vars, tuneparams.card, &fds,chan_and_pids.asked_pid, chan_and_pids.number_chan_asked_pid, &unicast_vars);
-        }
-      }
-    }
-      //end of autoconfiguration
+      Interrupted = autoconf_poll(now, &autoconf_vars, &chan_and_pids, tuneparams, multicast_vars, &fds, &unicast_vars);
     else //we are not doing autoconfiguration we can do something else
     {
       //sap announces
