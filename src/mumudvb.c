@@ -1549,6 +1549,8 @@ int mumudvb_close(int Interrupted)
   for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
   {
     close (chan_and_pids.channels[curr_channel].socketOut);
+    if(chan_and_pids.channels[curr_channel].socketIn>0)
+      close (chan_and_pids.channels[curr_channel].socketIn); 
       //Free the channel structures
     if(chan_and_pids.channels[curr_channel].pmt_packet)
       free(chan_and_pids.channels[curr_channel].pmt_packet);
