@@ -121,6 +121,8 @@ typedef struct tuning_parameters_t{
   fe_hierarchy_t hier;
   /** do we periodically display the strenght of the signal ?*/
   int display_strenght;
+  /**shutdown the thread for display strength */
+  int strengththreadshutdown;
   /**The frontend type*/
   fe_type_t fe_type;
 #if DVB_API_VERSION >= 5

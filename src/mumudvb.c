@@ -98,7 +98,9 @@
 #include <getopt.h>
 #include <errno.h>		// in order to use program_invocation_short_name (gnu extension)
 #include <linux/dvb/version.h>
-
+#ifdef HAVE_LIBPTHREAD
+#include <pthread.h>
+#endif
 
 #include "mumudvb.h"
 #include "tune.h"
@@ -157,9 +159,14 @@ char filename_pid[256];
 char filename_gen_conf[256];
 int  write_streamed_channels=1;
 
+#ifdef HAVE_LIBPTHREAD
+pthread_t signalpowerthread;
+#endif
+
 mumudvb_chan_and_pids_t chan_and_pids={
   .number_of_channels=0,
 };
+
 
 //multicast parameters
 multicast_parameters_t multicast_vars={
@@ -187,6 +194,8 @@ tuning_parameters_t tuneparams={
   .lnb_lof_high=DEFAULT_LOF2_UNIVERSAL,
   .sat_number = 0,
   .modulation_set = 0,
+  .display_strenght = 0,
+  .strengththreadshutdown = 0,
   .HP_CodeRate = HP_CODERATE_DEFAULT,//cf tune.h
   .LP_CodeRate = LP_CODERATE_DEFAULT,
   .TransmissionMode = TRANSMISSION_MODE_DEFAULT,
@@ -806,6 +815,14 @@ int
   log_message( MSG_INFO, "Card %d tuned\n", tuneparams.card);
   tuneparams.card_tuned = 1;
 
+#ifdef HAVE_LIBPTHREAD
+  //Thread for showing the strength
+  strength_parameters_t strengthparams;
+  strengthparams.fds = &fds;
+  strengthparams.tuneparams = &tuneparams;
+  pthread_create(&(signalpowerthread), NULL, show_power_func, &strengthparams);
+#endif
+
   /******************************************************/
   //card tuned
   /******************************************************/
@@ -1127,7 +1144,7 @@ int
       /*************************************************************************************/
       if(!ScramblingControl &&  autoconf_vars.autoconfiguration)
       {
-        Interrupted = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars, &chan_and_pids, tuneparams, multicast_vars, &fds, &unicast_vars);
+        Interrupted = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tuneparams, &multicast_vars, &unicast_vars);
         continue;
       }
  
@@ -1475,6 +1492,11 @@ int mumudvb_close(int Interrupted)
       log_message( MSG_INFO, "\nclosing cleanly. Error %d\n",Interrupted>>8);
   }
 
+#ifdef HAVE_LIBPTHREAD
+  tuneparams.strengththreadshutdown=1;
+  pthread_join(signalpowerthread, NULL);
+#endif
+
   for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
   {
     close (chan_and_pids.channels[curr_channel].socketOut);
@@ -1591,9 +1613,6 @@ static void SignalHandler (int signum)
     gettimeofday (&tv, (struct timezone *) NULL);
     now = tv.tv_sec - real_start_time;
 
-    if (tuneparams.display_strenght && tuneparams.card_tuned)
-      show_power (fds);
-
     if (!tuneparams.card_tuned)
     {
       log_message( MSG_INFO,
@@ -1605,7 +1624,7 @@ static void SignalHandler (int signum)
       //autoconfiguration
       //We check if we reached the autoconfiguration timeout
     if(autoconf_vars.autoconfiguration)
-      Interrupted = autoconf_poll(now, &autoconf_vars, &chan_and_pids, tuneparams, multicast_vars, &fds, &unicast_vars);
+      Interrupted = autoconf_poll(now, &autoconf_vars, &chan_and_pids, &tuneparams, &multicast_vars, &fds, &unicast_vars);
     else //we are not doing autoconfiguration we can do something else
     {
       //sap announces

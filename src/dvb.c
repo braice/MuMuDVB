@@ -93,21 +93,27 @@ set_ts_filt (int fd, uint16_t pid)
 /**
  * @brief Show the reception power.
  * This information is not alway reliable
- *
  * @param fds the file descriptors of the card
  */
-void
-show_power (fds_t fds)
+void *show_power_func(void* arg)
 {
+  strength_parameters_t  *strengthparams;
+  strengthparams= (strength_parameters_t  *) arg;
   int strength, ber, snr;
-  strength = ber = snr = 0;
-  if (ioctl (fds.fd_frontend, FE_READ_BER, &ber) >= 0)
-    if (ioctl (fds.fd_frontend, FE_READ_SIGNAL_STRENGTH, &strength) >= 0)
-      if (ioctl (fds.fd_frontend, FE_READ_SNR, &snr) >= 0)
-	log_message( MSG_INFO, "Bit error rate: %10d Signal strength: %10d SNR: %10d\n", ber,strength,snr);
+  while(!strengthparams->tuneparams->strengththreadshutdown)
+  {
+    usleep(2000000);
+    if(strengthparams->tuneparams->display_strenght && strengthparams->tuneparams->card_tuned)
+    {
+      strength = ber = snr = 0;
+      if (ioctl (strengthparams->fds->fd_frontend, FE_READ_BER, &ber) >= 0)
+        if (ioctl (strengthparams->fds->fd_frontend, FE_READ_SIGNAL_STRENGTH, &strength) >= 0)
+          if (ioctl (strengthparams->fds->fd_frontend, FE_READ_SNR, &snr) >= 0)
+            log_message( MSG_INFO, "Bit error rate: %10d Signal strength: %10d SNR: %10d\n", ber,strength,snr);
+    }
+  }
+  return 0;
 }
-
-
 
 /**
  * @brief Open file descriptors for the card. open dvr and one demuxer fd per asked pid. This function can be called 

@@ -111,7 +111,7 @@ void autoconf_free_services(mumudvb_service_t *services);
 int pmt_need_update(mumudvb_channel_t *channel, unsigned char *buf, int ts_header);
 void update_pmt_version(mumudvb_channel_t *channel);
 int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, char *substring);
-int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t tuneparams, multicast_parameters_t multicast_vars, fds_t *fds, unicast_parameters_t *unicast_vars);
-int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t tuneparams, multicast_parameters_t multicast_vars, fds_t *fds, unicast_parameters_t *unicast_vars);
+int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, fds_t *fds, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars,  unicast_parameters_t *unicast_vars);
+int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars, fds_t *fds, unicast_parameters_t *unicast_vars);
 
 #endif

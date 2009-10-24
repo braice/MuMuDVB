@@ -51,17 +51,23 @@
 #include <linux/dvb/frontend.h>
 
 #include "mumudvb.h"
+#include "tune.h"
 
 #define FRONTEND_DEV_PATH "/dev/dvb/adapter%d/frontend0"
 #define DEMUX_DEV_PATH    "/dev/dvb/adapter%d/demux0"
 #define DVR_DEV_PATH      "/dev/dvb/adapter%d/dvr0"
 
-
+/** The parameters for the thread for showing the strength */
+typedef struct strength_parameters_t{
+  tuning_parameters_t *tuneparams;
+  fds_t *fds;
+}strength_parameters_t;
 
 int open_fe (int *fd_frontend, int card);
 void set_ts_filt (int fd,uint16_t pid);
-void show_power (fds_t fds);
 int create_card_fd(int card, uint8_t *asked_pid, fds_t *fds);
 void set_filters(uint8_t *asked_pid, fds_t *fds);
 void close_card_fd(fds_t fds);
+
+void *show_power_func(void* arg);
 #endif

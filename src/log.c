@@ -508,6 +508,11 @@ void print_info ()
 #if DVB_API_VERSION >= 5
                "Builded with support for DVB API Version 5 (DVB-S2).\n"
 #endif
+#ifdef HAVE_LIBPTHREAD
+               "Builded with pthread support (used for periodic signal strength display and cam support).\n"
+#else
+               "Builded without pthread support (NO periodic signal strength display and NO cam support).\n"
+#endif
                "---------\n"
                "Originally based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
                "Released under the GPL.\n"
