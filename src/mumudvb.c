@@ -276,55 +276,16 @@ int log_initialised=0; /**say if we opened the syslog resource*/
 int verbosity = MSG_INFO+1; /** the verbosity level for log messages */
 
 
-/** @brief : poll the file descriptors fds with a limit in the number of errors
- *
- */
-int mumudvb_poll(fds_t *fds)
-{
-  int poll_try;
-  int poll_eintr=0;
-  int last_poll_error;
-  int Interrupted;
 
-  poll_try=0;
-  poll_eintr=0;
-  last_poll_error=0;
-  while((poll (fds->pfds, fds->pfdsnum, 500)<0)&&(poll_try<MAX_POLL_TRIES))
-  {
-    if(errno != EINTR) //EINTR means Interrupted System Call, it normally shouldn't matter so much so we don't count it for our Poll tries
-    {
-      poll_try++;
-      last_poll_error=errno;
-    }
-    else
-    {
-      poll_eintr++;
-      if(poll_eintr==10)
-      {
-        log_message( MSG_DEBUG, "Poll : 10 successive EINTR\n");
-        poll_eintr=0;
-      }
-    }
-    /**@todo : put a maximum number of interrupted system calls per unit time*/
-  }
-  
-  if(poll_try==MAX_POLL_TRIES)
-  {
-    log_message( MSG_ERROR, "Poll : We reach the maximum number of polling tries\n\tLast error when polling: %s\n", strerror (errno));
-    Interrupted=errno<<8; //the <<8 is to make difference beetween signals and errors;
-    return Interrupted;
-  }
-  else if(poll_try)
-  {
-    log_message( MSG_WARN, "Poll : Warning : error when polling: %s\n", strerror (last_poll_error));
-  }
-  return 0;
-}
 
 
 
 // prototypes
-static void SignalHandler (int signum);
+static void SignalHandler (int signum);//below
+int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb_channel_t *current_channel, int *ip_ok, char *substring); //in multicast.c
+int mumudvb_poll(fds_t *fds); //below
+
+
 
 int
     main (int argc, char **argv)
@@ -541,13 +502,18 @@ int
         exit(ERROR_CONF);
     }
 #ifdef ENABLE_CAM_SUPPORT
-    else if((iRet=read_cam_configuration(&cam_vars, &channels[curr_channel], ip_ok, substring))) //Read the line concerning the sap parameters
+    else if((iRet=read_cam_configuration(&cam_vars, &channels[curr_channel], ip_ok, substring))) //Read the line concerning the cam parameters
     {
       if(iRet==-1)
         exit(ERROR_CONF);
     }
 #endif
     else if((iRet=read_unicast_configuration(&unicast_vars, &channels[curr_channel], ip_ok, substring))) //Read the line concerning the unicast parameters
+    {
+      if(iRet==-1)
+        exit(ERROR_CONF);
+    }
+    else if((iRet=read_multicast_configuration(&multicast_vars, &channels[curr_channel], &ip_ok, substring))) //Read the line concerning the multicast parameters
     {
       if(iRet==-1)
         exit(ERROR_CONF);
@@ -606,47 +572,7 @@ int
       if (rtp_header==1)
         log_message( MSG_INFO, "You decided to send the RTP header.\n");
     }
-    else if (!strcmp (substring, "ip"))
-    {
-      if ( ip_ok )
-      {
-        log_message( MSG_ERROR,
-                     "You must precise the pids last, or you forgot the pids\n");
-        exit(ERROR_CONF);
-      }
 
-      substring = strtok (NULL, delimiteurs);
-      if(strlen(substring)>19)
-      {
-        log_message( MSG_ERROR,
-                     "The Ip address %s is too long.\n", substring);
-        exit(ERROR_CONF);
-      }
-      sscanf (substring, "%s\n", channels[curr_channel].ipOut);
-      ip_ok = 1;
-    }
-
-    else if (!strcmp (substring, "common_port"))
-    {
-      if ( ip_ok )
-      {
-        log_message( MSG_ERROR,
-                     "You have to set common_port before the channels\n");
-        exit(ERROR_CONF);
-      }
-      substring = strtok (NULL, delimiteurs);
-      multicast_vars.common_port = atoi (substring);
-    }
-    else if (!strcmp (substring, "multicast_ttl"))
-    {
-      substring = strtok (NULL, delimiteurs);
-      multicast_vars.ttl = atoi (substring);
-    }
-    else if (!strcmp (substring, "multicast_auto_join"))
-    {
-      substring = strtok (NULL, delimiteurs);
-      multicast_vars.auto_join = atoi (substring);
-    }
     else if (!strcmp (substring, "dvr_buffer_size"))
     {
       substring = strtok (NULL, delimiteurs);
@@ -662,17 +588,7 @@ int
                      "Warning : You set a buffer size > 1, this feature is experimental, please report bugs/problems or results\n");
       show_buffer_stats=1;
     }
-    else if (!strcmp (substring, "port"))
-    {
-      if ( ip_ok == 0)
-      {
-        log_message( MSG_ERROR,
-                     "port : You must precise ip first\n");
-        exit(ERROR_CONF);
-      }
-      substring = strtok (NULL, delimiteurs);
-      channels[curr_channel].portOut = atoi (substring);
-    }
+
     else if (!strcmp (substring, "ts_id"))
     {
       if ( ip_ok == 0)
@@ -1965,4 +1881,48 @@ static void SignalHandler (int signum)
   signal (signum, SignalHandler);
 }
 
+/** @brief : poll the file descriptors fds with a limit in the number of errors
+ *
+ * @param fds : the file descriptors
+ */
+int mumudvb_poll(fds_t *fds)
+{
+  int poll_try;
+  int poll_eintr=0;
+  int last_poll_error;
+  int Interrupted;
 
+  poll_try=0;
+  poll_eintr=0;
+  last_poll_error=0;
+  while((poll (fds->pfds, fds->pfdsnum, 500)<0)&&(poll_try<MAX_POLL_TRIES))
+  {
+    if(errno != EINTR) //EINTR means Interrupted System Call, it normally shouldn't matter so much so we don't count it for our Poll tries
+    {
+      poll_try++;
+      last_poll_error=errno;
+    }
+    else
+    {
+      poll_eintr++;
+      if(poll_eintr==10)
+      {
+        log_message( MSG_DEBUG, "Poll : 10 successive EINTR\n");
+        poll_eintr=0;
+      }
+    }
+    /**@todo : put a maximum number of interrupted system calls per unit time*/
+  }
+  
+  if(poll_try==MAX_POLL_TRIES)
+  {
+    log_message( MSG_ERROR, "Poll : We reach the maximum number of polling tries\n\tLast error when polling: %s\n", strerror (errno));
+    Interrupted=errno<<8; //the <<8 is to make difference beetween signals and errors;
+    return Interrupted;
+  }
+  else if(poll_try)
+  {
+    log_message( MSG_WARN, "Poll : Warning : error when polling: %s\n", strerror (last_poll_error));
+  }
+  return 0;
+}
