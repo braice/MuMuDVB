@@ -26,7 +26,7 @@
 /**@file
  * @brief This file contains the headers for the functions for rewriting the pat pid
  *
- * The pat rewrite is made to announce only the video stram associated with the channel in the PAT pid
+ * The pat rewrite is made to announce only the video stream associated with the channel in the PAT pid
  * Some set top boxes need it
  */
 
@@ -57,7 +57,5 @@ typedef struct pat_rewrite_parameters_t{
 }pat_rewrite_parameters_t;
 
 
-int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channels, int curr_channel, unsigned char *buf);
-int pat_need_update(pat_rewrite_parameters_t *rewrite_vars, unsigned char *buf);
-void update_version(pat_rewrite_parameters_t *rewrite_vars);
-void pat_rewrite_set_continuity_counter(unsigned char *buf,int continuity_counter);
+void pat_rewrite_new_global_packet(unsigned char *ts_packet, pat_rewrite_parameters_t *rewrite_vars);
+int pat_rewrite_new_channel_packet(unsigned char *ts_packet, pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel, int curr_channel);

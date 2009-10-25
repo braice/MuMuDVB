@@ -99,7 +99,7 @@ void pat_rewrite_set_continuity_counter(unsigned char *buf,int continuity_counte
  * @param curr_channel the channel for wich we want to generate a PAT
  * @param buf : the received buffer, to get the TS header
  */
-int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channels, int curr_channel, unsigned char *buf)
+int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel,  unsigned char *buf, int curr_channel)
 {
   ts_header_t *ts_header=(ts_header_t *)buf;
   pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->packet);
@@ -135,48 +135,48 @@ int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_
   //We copy what we need : EIT announce and present PMT announce
   //strict comparaison due to the calc of section len cf down
   while((delta+PAT_PROG_LEN)<(section_length))
+  {
+    prog=(pat_prog_t*)((char*)rewrite_vars->full_pat->packet+delta);
+    if(HILO(prog->program_number)==0)
     {
-      prog=(pat_prog_t*)((char*)rewrite_vars->full_pat->packet+delta);
-      if(HILO(prog->program_number)==0)
-	{
-	  //we found the announce for the EIT pid
-	  memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->packet+delta,PAT_PROG_LEN);
-	  buf_dest_pos+=PAT_PROG_LEN;
-	}
-      else
-	{
-	  //We check the transport stream id if present and the size of the packet
-	  // + 4 for the CRC32
-	  if((buf_dest_pos+PAT_PROG_LEN+4<TS_PACKET_SIZE) &&
-	     (!channels[curr_channel].ts_id || (channels[curr_channel].ts_id == HILO(prog->program_number)) ))
-	    {
-	      for(i=0;i<channels[curr_channel].num_pids;i++)
-		if(channels[curr_channel].pids[i]==HILO(prog->network_pid))
-		  {
-		    if(buf_dest_pos+PAT_PROG_LEN+4+1>TS_PACKET_SIZE) //The +4 is for CRC32 +1 is because indexing starts at 0
-		      {
-			log_message(MSG_WARN,"Pat rewrite : The generated PAT is too big for channel %d : \"%s\", we skip the other pids/programs\n", curr_channel, channels[curr_channel].name);
-			i=channels[curr_channel].num_pids;
-		      }
-		    else
-		      {
-			log_message(MSG_DETAIL,"Pat rewrite : NEW program for channel %d : \"%s\". PMT pid : %d\n", curr_channel, channels[curr_channel].name,channels[curr_channel].pids[i]);
-			//we found a announce for a PMT pid in our stream, we keep it
-			memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->packet+delta,PAT_PROG_LEN);
-			buf_dest_pos+=PAT_PROG_LEN;
-			log_message(MSG_DEBUG,"Pat rewrite :  %d\n", buf_dest_pos);
-		      }
-		  }
-	    }
-	  else
-	    log_message(MSG_DEBUG,"Pat rewrite : Program dropped because of ts_id. channel %d :\"%s\". ts_id chan : %d ts_id prog %d\n", 
-			curr_channel,
-			channels[curr_channel].name,
-			channels[curr_channel].ts_id,
-			HILO(prog->program_number));
-	}
-      delta+=PAT_PROG_LEN;
+      /*we found the announce for the EIT pid*/
+      memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->packet+delta,PAT_PROG_LEN);
+      buf_dest_pos+=PAT_PROG_LEN;
     }
+    else
+    {
+      /*We check the transport stream id if present and the size of the packet*/
+      /* + 4 for the CRC32*/
+      if((buf_dest_pos+PAT_PROG_LEN+4<TS_PACKET_SIZE) &&
+          (!channel->ts_id || (channel->ts_id == HILO(prog->program_number)) ))
+      {
+        for(i=0;i<channel->num_pids;i++)
+          if(channel->pids[i]==HILO(prog->network_pid))
+        {
+          if(buf_dest_pos+PAT_PROG_LEN+4+1>TS_PACKET_SIZE) //The +4 is for CRC32 +1 is because indexing starts at 0
+          {
+            log_message(MSG_WARN,"Pat rewrite : The generated PAT is too big for channel %d : \"%s\", we skip the other pids/programs\n", curr_channel, channel->name);
+            i=channel->num_pids;
+          }
+          else
+          {
+            log_message(MSG_DETAIL,"Pat rewrite : NEW program for channel %d : \"%s\". PMT pid : %d\n", curr_channel, channel->name,channel->pids[i]);
+            /*we found a announce for a PMT pid in our stream, we keep it*/
+            memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->packet+delta,PAT_PROG_LEN);
+            buf_dest_pos+=PAT_PROG_LEN;
+            log_message(MSG_DEBUG,"Pat rewrite :  %d\n", buf_dest_pos);
+          }
+        }
+      }
+      else
+        log_message(MSG_DEBUG,"Pat rewrite : Program dropped because of ts_id. channel %d :\"%s\". ts_id chan : %d ts_id prog %d\n", 
+                    curr_channel,
+                    channel->name,
+                    channel->ts_id,
+                    HILO(prog->program_number));
+    }
+    delta+=PAT_PROG_LEN;
+  }
  
   //we compute the new section length
   //section lenght is the size of the section after section_length (crc32 included : 4 bytes)
@@ -214,12 +214,85 @@ int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_
   memset(buf_dest+buf_dest_pos,0xFF,TS_PACKET_SIZE-buf_dest_pos);
 
   //We copy the result to the intended buffer
-  memcpy(channels[curr_channel].generated_pat,buf_dest,TS_PACKET_SIZE);
+  memcpy(channel->generated_pat,buf_dest,TS_PACKET_SIZE);
 
   //Everything is Ok ....
   return 1;
+}
+
+/** @brief This function is called when a new PAT packet for all channels is there and we asked for rewrite
+ * this function save the full PAT wich will be the source PAT for all the channels
+ */
+void pat_rewrite_new_global_packet(unsigned char *ts_packet, pat_rewrite_parameters_t *rewrite_vars)
+{
+  /*Check the version before getting the full packet*/
+  if(!rewrite_vars->needs_update)
+  {
+    rewrite_vars->needs_update=pat_need_update(rewrite_vars,ts_packet);
+    if(rewrite_vars->needs_update) //It needs update we mark the packet as empty
+      rewrite_vars->full_pat->empty=1;
+  }
+  /*We need to update the full packet, we download it*/
+  if(rewrite_vars->needs_update)
+  {
+    if(get_ts_packet(ts_packet,rewrite_vars->full_pat))
+    {
+      log_message(MSG_DEBUG,"Pat rewrite : Full pat updated\n");
+      /*We've got the FULL PAT packet*/
+      update_version(rewrite_vars);
+      rewrite_vars->needs_update=0;
+      rewrite_vars->full_pat_ok=1;
+    }
+  }
+  //To avoid the duplicates, we have to update the continuity counter
+  rewrite_vars->continuity_counter++;
+  rewrite_vars->continuity_counter= rewrite_vars->continuity_counter % 32;
+}
 
 
+/** @brief This function is called when a new PAT packet for a channel is there and we asked for rewrite
+ * This function copy the rewritten PAT to the buffer. And checks if the PAT was changed so the rewritten version have to be updated
+*/
+int pat_rewrite_new_channel_packet(unsigned char *ts_packet, pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel, int curr_channel)
+{
+  if(rewrite_vars->full_pat_ok ) //the global full pat is ok
+  {
+    /*We check if it's the first pat packet ? or we send it each time ?*/
+    /*We check if the versions corresponds*/
+    if(!rewrite_vars->needs_update && channel->generated_pat_version!=rewrite_vars->pat_version)//We check the version only if the PAT is not currently updated
+    {
+      log_message(MSG_DEBUG,"Pat rewrite : We need to rewrite the PAT for the channel %d : \"%s\"\n", curr_channel, channel->name);
+      /*They mismatch*/
+      /*We generate the rewritten packet*/
+      if(pat_channel_rewrite(rewrite_vars, channel, ts_packet, curr_channel))
+      {
+        /*We update the version*/
+        channel->generated_pat_version=rewrite_vars->pat_version;
+      }
+      else
+        log_message(MSG_DEBUG,"Pat rewrite : ERROR with the pat for the channel %d : \"%s\"\n", curr_channel, channel->name);
+
+    }
+    if(channel->generated_pat_version==rewrite_vars->pat_version)
+    {
+      /*We send the rewrited PAT from channel->generated_pat*/
+      memcpy(ts_packet,channel->generated_pat,TS_PACKET_SIZE);
+      //To avoid the duplicates, we have to update the continuity counter
+      pat_rewrite_set_continuity_counter(ts_packet,rewrite_vars->continuity_counter);
+    }
+    else
+    {
+      return 0;
+      log_message(MSG_DEBUG,"Pat rewrite : Bad pat channel version, we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channel->name);
+    }
+  }
+  else
+  {
+    return 0;
+    log_message(MSG_DEBUG,"Pat rewrite : We need a global pat update, we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channel->name);
+  }
+  return 1;
+  
 }
 
 

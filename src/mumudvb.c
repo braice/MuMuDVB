@@ -1096,6 +1096,7 @@ int
     /**************************************************************/ 
 
     /* Attempt to read 188 bytes from /dev/____/dvr */
+    /** @todo Put the read of the card in a thread ?*/
     if ((bytes_read = read (fds.fd_dvr, temp_buffer_from_dvr, TS_PACKET_SIZE*dvr_buffer_size)) > 0)
     {
 
@@ -1145,8 +1146,9 @@ int
       if(!ScramblingControl &&  autoconf_vars.autoconfiguration)
       {
         Interrupted = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tuneparams, &multicast_vars, &unicast_vars);
-        continue;
       }
+      if(autoconf_vars.autoconfiguration)
+        continue;
  
       /*************************************************************************************/
       /****              AUTOCONFIGURATION PART FINISHED                                ****/
@@ -1155,62 +1157,39 @@ int
       /******************************************************/
       //Pat rewrite 
       /******************************************************/
-      //we save the full pat wich will be the source pat for all the channels
       if( (pid == 0) && //This is a PAT PID
            rewrite_vars.rewrite_pat ) //AND we asked for rewrite
       {
-        /*Check the version before getting the full packet*/
-        if(!rewrite_vars.needs_update)
-        {
-          rewrite_vars.needs_update=pat_need_update(&rewrite_vars,actual_ts_packet);
-          if(rewrite_vars.needs_update) //It needs update we mark the packet as empty
-            rewrite_vars.full_pat->empty=1;
-        }
-        /*We need to update the full packet, we download it*/
-        if(rewrite_vars.needs_update)
-        {
-          if(get_ts_packet(actual_ts_packet,rewrite_vars.full_pat))
-          {
-            log_message(MSG_DEBUG,"Pat rewrite : Full pat updated\n");
-            /*We've got the FULL PAT packet*/
-            update_version(&rewrite_vars);
-            rewrite_vars.needs_update=0;
-            rewrite_vars.full_pat_ok=1;
-          }
-        }
-	      //To avoid the duplicates, we have to update the continuity counter
-        rewrite_vars.continuity_counter++;
-        rewrite_vars.continuity_counter= rewrite_vars.continuity_counter % 32;
+        pat_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars);
       }
-	  
+
 
       /******************************************************/
-	  //for each channel we'll look if we must send this PID
+      //for each channel we'll look if we must send this PID
       /******************************************************/
       for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
       {
 	      //we'll see if we must send this pid for this channel
         send_packet=0;
-	      
-	      //If it's a mandatory pid we send it
-	      
+
+	//If it's a mandatory pid we send it
         if((pid<MAX_MANDATORY_PID_NUMBER) && (mandatory_pid[pid]==1))
           send_packet=1;
 
         if ((pid == PSIP_PID) && (tuneparams.fe_type==FE_ATSC))
           send_packet=1;
-	      
-	      //VLC workaround
+
+	//VLC workaround
         if(dont_send_sdt && pid==17)
           send_packet=0;
-	      
-	      //if it isn't mandatory wee see if it is in the channel list
+
+	//if it isn't mandatory wee see if it is in the channel list
         if(!send_packet)
           for (curr_pid = 0; (curr_pid < chan_and_pids.channels[curr_channel].num_pids)&& !send_packet; curr_pid++)
             if ((chan_and_pids.channels[curr_channel].pids[curr_pid] == pid))
         {
           send_packet=1;
-		      //avoid sending of scrambled channels if we asked to
+	 //avoid sending of scrambled channels if we asked to
           if(dont_send_scrambled && (ScramblingControl>0)&& (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
             send_packet=0;
           if ((ScramblingControl>0) && (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
@@ -1223,21 +1202,21 @@ int
         }
 
         /******************************************************/
-	      //cam support
-	      // If we send the packet, we look if it's a cam pmt pid
+	//cam support
+	// If we send the packet, we look if it's a cam pmt pid
         /******************************************************/
+        /**@todo : put this in a function*/
 #ifdef ENABLE_CAM_SUPPORT
-	      //We don't ask the cam before the end of autoconfiguration
-        if(!autoconf_vars.autoconfiguration && cam_vars.cam_support && send_packet==1)  //no need to check paquets we don't send
-          if(cam_vars.ca_resource_connected && cam_vars.delay>=1 )
+        if((cam_vars.cam_support && send_packet==1) &&  //no need to check paquets we don't send
+          (cam_vars.ca_resource_connected && cam_vars.delay>=1 ))
         {
           if ((chan_and_pids.channels[curr_channel].need_cam_ask==CAM_NEED_ASK)&& (chan_and_pids.channels[curr_channel].pmt_pid == pid))
           {
-			//if the packet is already ok, we don't get it (it can be updated by pmt_follow)
+	    //if the packet is already ok, we don't get it (it can be updated by pmt_follow)
             if((autoconf_vars.autoconf_pid_update && !chan_and_pids.channels[curr_channel].pmt_packet->empty && chan_and_pids.channels[curr_channel].pmt_packet->packet_ok)||
                 (!autoconf_vars.autoconf_pid_update && get_ts_packet(actual_ts_packet,chan_and_pids.channels[curr_channel].pmt_packet))) 
             {
-                            //We check the transport stream id of the packet
+              //We check the transport stream id of the packet
               if(check_pmt_ts_id(chan_and_pids.channels[curr_channel].pmt_packet, &chan_and_pids.channels[curr_channel]))
               {
                 cam_vars.delay=0;
@@ -1263,19 +1242,24 @@ int
 #endif
 
         /******************************************************/
-	      //PMT follow (ie we check if the pids announced in the pmt changed)
+	//PMT follow (ie we check if the pids announced in the PMT changed)
         /******************************************************/
         /**@todo : put this in a function*/
-        if( (autoconf_vars.autoconf_pid_update) && (send_packet==1) && (chan_and_pids.channels[curr_channel].autoconfigurated) &&(chan_and_pids.channels[curr_channel].pmt_pid==pid) && pid)  //no need to check paquets we don't send
+        //no need to check paquets we don't send
+        if( (autoconf_vars.autoconf_pid_update) && 
+             (send_packet==1) && 
+             (chan_and_pids.channels[curr_channel].autoconfigurated) &&
+             (chan_and_pids.channels[curr_channel].pmt_pid==pid) && 
+             pid)
         {
           /*Note : the pmt version is initialised during autoconfiguration*/
           /*Check the version stored in the channel*/
           if(!chan_and_pids.channels[curr_channel].pmt_needs_update)
           {
-		      //Checking without crc32, it there is a change we get the full packet for crc32 checking
+	    //Checking without crc32, it there is a change we get the full packet for crc32 checking
             chan_and_pids.channels[curr_channel].pmt_needs_update=pmt_need_update(&chan_and_pids.channels[curr_channel],actual_ts_packet,1);
 
-            if(chan_and_pids.channels[curr_channel].pmt_needs_update&&chan_and_pids.channels[curr_channel].pmt_packet) //It needs update we mark the packet as empty
+            if(chan_and_pids.channels[curr_channel].pmt_needs_update && chan_and_pids.channels[curr_channel].pmt_packet) //It needs update we mark the packet as empty
               chan_and_pids.channels[curr_channel].pmt_packet->empty=1;
           }
           /*We need to update the full packet, we download it*/
@@ -1290,7 +1274,7 @@ int
                 if(autoconf_read_pmt(chan_and_pids.channels[curr_channel].pmt_packet, &chan_and_pids.channels[curr_channel], tuneparams.card, chan_and_pids.asked_pid, chan_and_pids.number_chan_asked_pid, &fds)==0)
                 {
                   if(chan_and_pids.channels[curr_channel].need_cam_ask==CAM_ASKED)
-                    chan_and_pids.channels[curr_channel].need_cam_ask=CAM_NEED_ASK;
+                    chan_and_pids.channels[curr_channel].need_cam_ask=CAM_NEED_ASK; //We we resend this packet to the CAM
                   update_pmt_version(&chan_and_pids.channels[curr_channel]);
                   chan_and_pids.channels[curr_channel].pmt_needs_update=0;
                 }
@@ -1307,54 +1291,17 @@ int
         }
 	  
         /******************************************************/
-	      //Rewrite PAT
+	//Rewrite PAT
         /******************************************************/
-        if(send_packet==1)  //no need to check paquets we don't send
-          if( (pid == 0) && //This is a PAT PID
-               rewrite_vars.rewrite_pat)  //AND we asked for rewrite
-        {
-          if(rewrite_vars.full_pat_ok ) //AND the global full pat is ok
-          {
-            /*We check if it's the first pat packet ? or we send it each time ?*/
-            /*We check if the versions corresponds*/
-            if(!rewrite_vars.needs_update && chan_and_pids.channels[curr_channel].generated_pat_version!=rewrite_vars.pat_version)//We check the version only if the PAT is not currently updated
-            {
-              log_message(MSG_DEBUG,"Pat rewrite : We need to rewrite the PAT for the channel %d : \"%s\"\n", curr_channel, chan_and_pids.channels[curr_channel].name);
-              /*They mismatch*/
-              /*We generate the rewritten packet*/
-              if(pat_channel_rewrite(&rewrite_vars, chan_and_pids.channels, curr_channel,actual_ts_packet))
-              {
-                /*We update the version*/
-                chan_and_pids.channels[curr_channel].generated_pat_version=rewrite_vars.pat_version;
-              }
-              else
-                log_message(MSG_DEBUG,"Pat rewrite : ERROR with the pat for the channel %d : \"%s\"\n", curr_channel, chan_and_pids.channels[curr_channel].name);
-			      			    
-            }
-            if(chan_and_pids.channels[curr_channel].generated_pat_version==rewrite_vars.pat_version)
-            {
-              /*We send the rewrited PAT from chan_and_pids.channels[curr_channel].generated_pat*/
-              memcpy(actual_ts_packet,chan_and_pids.channels[curr_channel].generated_pat,TS_PACKET_SIZE);
-			    //To avoid the duplicates, we have to update the continuity counter
-              pat_rewrite_set_continuity_counter(actual_ts_packet,rewrite_vars.continuity_counter);
-            }
-            else
-            {
-              send_packet=0;
-              log_message(MSG_DEBUG,"Pat rewrite : Bad pat channel version, we don't send the pat for the channel %d : \"%s\"\n", curr_channel, chan_and_pids.channels[curr_channel].name);
-            }
-          }
-          else
-          {
-            send_packet=0;
-            log_message(MSG_DEBUG,"Pat rewrite : We need a global pat update, we don't send the pat for the channel %d : \"%s\"\n", curr_channel, chan_and_pids.channels[curr_channel].name);
-          }
-        }
-	    
+        if((send_packet==1) && //no need to check paquets we don't send
+            (pid == 0) && //This is a PAT PID
+            rewrite_vars.rewrite_pat)  //AND we asked for rewrite
+          send_packet=pat_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_and_pids.channels[curr_channel], curr_channel);
+
 
         /******************************************************/
-	      //Ok we must send this packet,
-	      // we add it to the channel buffer
+	//Ok we must send this packet,
+	// we add it to the channel buffer
         /******************************************************/
         if(send_packet==1)
         {
@@ -1382,6 +1329,7 @@ int
               sendudp (chan_and_pids.channels[curr_channel].socketOut, &chan_and_pids.channels[curr_channel].sOut, chan_and_pids.channels[curr_channel].buf,
                        chan_and_pids.channels[curr_channel].nb_bytes);
             /*********** UNICAST **************/
+            /**@todo : put this in a function*/
             if(chan_and_pids.channels[curr_channel].clients)
             {
               unicast_client_t *actual_client;
