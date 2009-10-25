@@ -909,6 +909,25 @@ int
     memset (rewrite_vars.full_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
   }
 
+  /*****************************************************/
+  //SDT rewriting
+  //memory allocation for MPEG2-TS
+  //packet structures
+  /*****************************************************/
+
+  if(rewrite_vars.rewrite_sdt)
+  {
+    for (curr_channel = 0; curr_channel < MAX_CHANNELS; curr_channel++)
+      chan_and_pids.channels[curr_channel].generated_sdt_version=-1;
+
+    rewrite_vars.full_sdt=malloc(sizeof(mumudvb_ts_packet_t));
+    if(rewrite_vars.full_sdt==NULL)
+    {
+      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      return mumudvb_close(ERROR_MEMORY<<8);
+    }
+    memset (rewrite_vars.full_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+  }
 
   /*****************************************************/
   //Some initialisations
@@ -1507,6 +1526,10 @@ int mumudvb_close(int Interrupted)
   //Pat rewrite freeing
   if(rewrite_vars.full_pat)
     free(rewrite_vars.full_pat);
+
+  //SDT rewrite freeing
+  if(rewrite_vars.full_sdt)
+    free(rewrite_vars.full_sdt);
 
   if ((write_streamed_channels)&&remove (filename_channels_diff)) 
   {
