@@ -65,7 +65,7 @@
  *
  * log.c logging functions
  *
- * pat_rewrite.c pat_rewrite.h : the functions associated with the rewrite of the PAT pid
+ * pat_rewrite.c rewrite.h : the functions associated with the rewrite of the PAT pid
  *
  * sap.c sap.h : sap announces
  *
@@ -113,7 +113,7 @@
 #include "errors.h"
 #include "autoconf.h"
 #include "sap.h"
-#include "pat_rewrite.h"
+#include "rewrite.h"
 #include "unicast_http.h"
 #include "rtp.h"
 #include "log.h"
@@ -258,13 +258,19 @@ cam_parameters_t cam_vars={
 #endif
 
 //Parameters for PAT rewriting
-pat_rewrite_parameters_t rewrite_vars={
+rewrite_parameters_t rewrite_vars={
   .rewrite_pat = 0,
   .pat_version=-1,
   .full_pat=NULL,
   .pat_needs_update=1,
   .full_pat_ok=0,
   .pat_continuity_counter=0,
+  .rewrite_sdt = 0,
+  .sdt_version=-1,
+  .full_sdt=NULL,
+  .sdt_needs_update=1,
+  .full_sdt_ok=0,
+  .sdt_continuity_counter=0,
 };
 
 //Parameters for HTTP unicast
@@ -549,7 +555,17 @@ int
       if(rewrite_vars.rewrite_pat)
       {
         log_message( MSG_INFO,
-                     "You have enabled the Pat Rewriting\n");
+                     "You have enabled the PAT Rewriting\n");
+      }
+    }
+    else if (!strcmp (substring, "rewrite_sdt"))
+    {
+      substring = strtok (NULL, delimiteurs);
+      rewrite_vars.rewrite_sdt = atoi (substring);
+      if(rewrite_vars.rewrite_sdt)
+      {
+        log_message( MSG_INFO,
+                     "You have enabled the SDT Rewriting\n");
       }
     }
     else if (!strcmp (substring, "dont_send_scrambled"))

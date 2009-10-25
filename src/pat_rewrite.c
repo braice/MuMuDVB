@@ -35,7 +35,7 @@
 
 #include "mumudvb.h"
 #include "ts.h"
-#include "pat_rewrite.h"
+#include "rewrite.h"
 #include "log.h"
 #include <stdint.h>
 
@@ -51,7 +51,7 @@ extern uint32_t       crc32_table[256];
  *@param rewrite_vars the parameters for pat rewriting 
  *@param buf : the received buffer
  */
-int pat_need_update(pat_rewrite_parameters_t *rewrite_vars, unsigned char *buf)
+int pat_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf)
 {
   pat_t       *pat=(pat_t*)(buf+TS_HEADER_LEN);
   ts_header_t *header=(ts_header_t *)buf;
@@ -69,7 +69,7 @@ int pat_need_update(pat_rewrite_parameters_t *rewrite_vars, unsigned char *buf)
 }
 
 /** @brief update the version using the dowloaded pat*/
-void update_version(pat_rewrite_parameters_t *rewrite_vars)
+void update_version(rewrite_parameters_t *rewrite_vars)
 {
   pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->packet);
   if(rewrite_vars->pat_version!=pat->version_number)
@@ -99,7 +99,7 @@ void pat_rewrite_set_continuity_counter(unsigned char *buf,int continuity_counte
  * @param curr_channel the channel for wich we want to generate a PAT
  * @param buf : the received buffer, to get the TS header
  */
-int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel,  unsigned char *buf, int curr_channel)
+int pat_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel,  unsigned char *buf, int curr_channel)
 {
   ts_header_t *ts_header=(ts_header_t *)buf;
   pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->packet);
@@ -223,7 +223,7 @@ int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_
 /** @brief This function is called when a new PAT packet for all channels is there and we asked for rewrite
  * this function save the full PAT wich will be the source PAT for all the channels
  */
-void pat_rewrite_new_global_packet(unsigned char *ts_packet, pat_rewrite_parameters_t *rewrite_vars)
+void pat_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars)
 {
   /*Check the version before getting the full packet*/
   if(!rewrite_vars->pat_needs_update)
@@ -253,7 +253,7 @@ void pat_rewrite_new_global_packet(unsigned char *ts_packet, pat_rewrite_paramet
 /** @brief This function is called when a new PAT packet for a channel is there and we asked for rewrite
  * This function copy the rewritten PAT to the buffer. And checks if the PAT was changed so the rewritten version have to be updated
 */
-int pat_rewrite_new_channel_packet(unsigned char *ts_packet, pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel, int curr_channel)
+int pat_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel, int curr_channel)
 {
   if(rewrite_vars->full_pat_ok ) //the global full pat is ok
   {

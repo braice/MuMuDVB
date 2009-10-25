@@ -38,23 +38,36 @@
 #include <stdint.h>
 
 
-/** @brief the parameters for the Pat rewriting
- * This structure contain the parameters needed for Pat rewriting
+/** @brief the parameters for the rewriting
+ * This structure contain the parameters needed for rewriting
  */
-typedef struct pat_rewrite_parameters_t{
+typedef struct rewrite_parameters_t{
   /**Do we rewrite the PAT pid ?*/
   int rewrite_pat;
-  /**The actual version of the pat pid*/
+  /**The actual version of the PAT pid*/
   int pat_version;
-  /**Do the actual full pat needs to be updated ?*/
+  /**Do the actual full PAT needs to be updated ?*/
   int pat_needs_update;
-  /**Do the full pat is ok ?*/
+  /**Do the full PAT is ok ?*/
   int full_pat_ok;
   /** The Complete PAT PID */
   mumudvb_ts_packet_t *full_pat;
   /** The continuity counter of the sent PAT*/
   int pat_continuity_counter;
-}pat_rewrite_parameters_t;
+
+  /**Do we rewrite the SDT pid ?*/
+  int rewrite_sdt;
+  /**The actual version of the SDT pid*/
+  int sdt_version;
+  /**Do the actual full SDT needs to be updated ?*/
+  int sdt_needs_update;
+  /**Do the full SDT is ok ?*/
+  int full_sdt_ok;
+  /** The Complete SDT PID */
+  mumudvb_ts_packet_t *full_sdt;
+  /** The continuity counter of the sent SDT*/
+  int sdt_continuity_counter;
+}rewrite_parameters_t;
 
 
 void pat_rewrite_new_global_packet(unsigned char *ts_packet, pat_rewrite_parameters_t *rewrite_vars);
