@@ -226,27 +226,27 @@ int pat_channel_rewrite(pat_rewrite_parameters_t *rewrite_vars, mumudvb_channel_
 void pat_rewrite_new_global_packet(unsigned char *ts_packet, pat_rewrite_parameters_t *rewrite_vars)
 {
   /*Check the version before getting the full packet*/
-  if(!rewrite_vars->needs_update)
+  if(!rewrite_vars->pat_needs_update)
   {
-    rewrite_vars->needs_update=pat_need_update(rewrite_vars,ts_packet);
-    if(rewrite_vars->needs_update) //It needs update we mark the packet as empty
+    rewrite_vars->pat_needs_update=pat_need_update(rewrite_vars,ts_packet);
+    if(rewrite_vars->pat_needs_update) //It needs update we mark the packet as empty
       rewrite_vars->full_pat->empty=1;
   }
   /*We need to update the full packet, we download it*/
-  if(rewrite_vars->needs_update)
+  if(rewrite_vars->pat_needs_update)
   {
     if(get_ts_packet(ts_packet,rewrite_vars->full_pat))
     {
       log_message(MSG_DEBUG,"Pat rewrite : Full pat updated\n");
       /*We've got the FULL PAT packet*/
       update_version(rewrite_vars);
-      rewrite_vars->needs_update=0;
+      rewrite_vars->pat_needs_update=0;
       rewrite_vars->full_pat_ok=1;
     }
   }
   //To avoid the duplicates, we have to update the continuity counter
-  rewrite_vars->continuity_counter++;
-  rewrite_vars->continuity_counter= rewrite_vars->continuity_counter % 32;
+  rewrite_vars->pat_continuity_counter++;
+  rewrite_vars->pat_continuity_counter= rewrite_vars->pat_continuity_counter % 32;
 }
 
 
@@ -259,7 +259,7 @@ int pat_rewrite_new_channel_packet(unsigned char *ts_packet, pat_rewrite_paramet
   {
     /*We check if it's the first pat packet ? or we send it each time ?*/
     /*We check if the versions corresponds*/
-    if(!rewrite_vars->needs_update && channel->generated_pat_version!=rewrite_vars->pat_version)//We check the version only if the PAT is not currently updated
+    if(!rewrite_vars->pat_needs_update && channel->generated_pat_version!=rewrite_vars->pat_version)//We check the version only if the PAT is not currently updated
     {
       log_message(MSG_DEBUG,"Pat rewrite : We need to rewrite the PAT for the channel %d : \"%s\"\n", curr_channel, channel->name);
       /*They mismatch*/

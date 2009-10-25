@@ -262,9 +262,9 @@ pat_rewrite_parameters_t rewrite_vars={
   .rewrite_pat = 0,
   .pat_version=-1,
   .full_pat=NULL,
-  .needs_update=1,
+  .pat_needs_update=1,
   .full_pat_ok=0,
-  .continuity_counter=0,
+  .pat_continuity_counter=0,
 };
 
 //Parameters for HTTP unicast
