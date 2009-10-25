@@ -67,6 +67,8 @@
  *
  * pat_rewrite.c rewrite.h : the functions associated with the rewrite of the PAT pid
  *
+ * sdt_rewrite.c rewrite.h : the functions associated with the rewrite of the SDT pid
+ *
  * sap.c sap.h : sap announces
  *
  * ts.c ts.h : function related to the MPEG-TS parsing
@@ -1335,6 +1337,15 @@ int
             (pid == 0) && //This is a PAT PID
             rewrite_vars.rewrite_pat)  //AND we asked for rewrite
           send_packet=pat_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_and_pids.channels[curr_channel], curr_channel);
+
+        /******************************************************/
+	//Rewrite SDT
+        /******************************************************/
+        if((send_packet==1) && //no need to check paquets we don't send
+            (pid == 17) && //This is a SDT PID
+            rewrite_vars.rewrite_sdt &&  //AND we asked for rewrite
+            !chan_and_pids.channels[curr_channel].sdt_rewrite_skip ) //AND the generation was successful
+          send_packet=sdt_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_and_pids.channels[curr_channel], curr_channel);
 
 
         /******************************************************/
