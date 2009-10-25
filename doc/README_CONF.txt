@@ -157,6 +157,9 @@ Various parameters
 |compute_traffic_interval | the interval in second between two computations of the traffic | 10 | >2 | 
 |rtp_header | Send the stream with the rtp headers (execpt for HTTP unicast) | 0 | 0 or 1 | 
 |dvr_buffer_size | The size of the "DVR buffer" in packets | 1 | >=1 | Experimental feature, see README 
+|rewrite_pat | Do we rewrite the PAT PID | 0 | 0 or 1 | See README 
+|rewrite_sdt | Do we rewrite the SDT PID | 0 | 0 or 1 | See README 
+|sort_eit | Do we sort the EIT PID | 0 | 0 or 1 | See README 
 |==================================================================================================================
 
 CAM support parameters

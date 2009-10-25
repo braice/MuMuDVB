@@ -89,6 +89,7 @@ Detailled feature list
 - Can avoid the sending of scrambled packets
 - Automatically detect the scrambling status of a channel
 - Can reset the CAM module in case of a bad initialisation
+- Can sort the EIT PID to send only the ones corresponding to the current channel
 
 Others small programs are availaible from http://gitweb.braice.net/gitweb?p=mumudvb_tools;a=summary[MuMuDVB Tools Repository] :
 
@@ -524,7 +525,7 @@ PAT rewrite can fail (i.e. doesn't solve the previous symptoms) for some channel
 
 [[sdt_rewrite]]
 SDT (Service Description Table) Rewriting
-------------------------------------------
+-----------------------------------------
 
 This option will announce only the streamed channel in the Service Description Table instead of all transponder channels. Some clients parse this table and can show/select ghost programs if it is not rewritten (even if the PAT is). This can rise to a random black screen.
 
@@ -532,6 +533,18 @@ To enable SDT rewriting, add `rewrite_sdt=1` to your config file. This feature c
 
 [NOTE]
 If you don't use full autoconfiguration, SDT rewrite needs the `ts_id` option for each channel to specify the transport stream id, also known as service id.
+
+
+
+EIT PID (Event Information Table) Sorting
+-----------------------------------------
+
+This option will make MuMuDVB stream only the EIT packets corresponding to the streamed channel instead of all transponder channels. Some clients parse this table and can show/select ghost programs  (even if the PAT and the SDT are rewritten).
+
+To enable EIT sorting, add `sort_eit=1` to your config file. 
+
+[NOTE]
+If you don't use full autoconfiguration, EIT sorting needs the `ts_id` option for each channel to specify the transport stream id, also known as service id.
 
 [[reduce_cpu]]
 Reduce MuMuDVB CPU usage (Experimental)

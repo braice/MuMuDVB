@@ -88,6 +88,7 @@ Liste détaillée des fonctionalités
 - Peux ne pas envoyer les paquets brouillés
 - Détecte automatiquement si une chaîne est brouillée
 - Peut réinitialiser le module CAM si l'initialisation échoue
+- Peut trier le PID EIT pour envoyer seulement ceux correspondant a la chaine courante
 
 D'autres petits programmes sont disponibles depuis le http://gitweb.braice.net/gitweb?p=mumudvb_tools;a=summary[dépot MuMuDVB Tools] :
 
@@ -514,21 +515,32 @@ Réécriture du PID PAT (Program Allocation Table)
 
 Cette fonctionnalité est principalement destinée pour les set-top boxes. Cette option permet d'annoncer uniquement la chaîne diffusée dans le PID PAT (Program Allocation Table) au lieu de toutes les chaînes du transpondeur. Les clients sur ordinateur regardent cette table et décode le premier programme avec des PIDs audio/vidéo. Les set-top boxes décodent habituellement le premier programme de cette table ce qui résulte en un écran noir pour la plupart des chaînes.
 
-Pour activer la réécriture du PAT, ajoutez `rewrite_pat=1` à votre fichier de configuration. Cet fonctionnalité utilise peu de puissance processeur, la table PAT étant réécrite une fois par chaîne et stockée en mémoire.
+Pour activer la réécriture du PAT, ajoutez `rewrite_pat=1` à votre fichier de configuration. Cette fonctionnalité utilise peu de puissance processeur, la table PAT étant réécrite une fois par chaîne et stockée en mémoire.
 
 [NOTE]
 La réécriture du PAT peu échouer (i.e. ne résout pas les symptômes précédents) pour certaines chaînes si le PID PMT est partagé par plusieurs chaînes. Dans ce cas, vous devez ajouter l'option `ts_id` pour spécifier le "transport stream id", encore appelé "service id" ou numéro de programme.
 
 [[sdt_rewrite]]
 Réécriture du PID SDT (Service Description Table)
-------------------------------------------------
+-------------------------------------------------
 
 Cette option permet d'annoncer uniquement la chaîne diffusée dans le PID SDT (Service Description Table) au lieu de toutes les chaînes du transpondeur. Certains clients regardent cette table et peuvent ainsi montrer/sélectionner  des programmes fantomes si cette table n'est pas réécrite (même si le PAT est réécrit). Ceci peut se manifester par un écran noir de manière aléatoire.
 
-Pour activer la réécriture du SDT, ajoutez `rewrite_sdt=1` à votre fichier de configuration. Cet fonctionnalité utilise peu de puissance processeur, la table SDT étant réécrite une fois par chaîne et stockée en mémoire.
+Pour activer la réécriture du SDT, ajoutez `rewrite_sdt=1` à votre fichier de configuration. Cette fonctionnalité utilise peu de puissance processeur, la table SDT étant réécrite une fois par chaîne et stockée en mémoire.
 
 [NOTE]
 Si vous n'utilisez pas l'autoconfiguration complète, la réécriture du SDT nécessite l'option `ts_id` pour spécifier le "transport stream id", encore appelé "service id" ou numéro de programme.
+
+Tri du PID EIT (Event Information Table)
+----------------------------------------
+
+Cette option permet de ne diffuser que les packets EIT (Event Information Table) correspondant à la chaîne diffusée au lieu de toutes les chaînes du transpondeur. Certains clients regardent cette table et peuvent ainsi montrer/sélectionner des programmes fantomes si cette table n'est pas réécrite (même si le PAT et le SDT sont réécrits).
+
+Pour activer le tri du PID EIT, ajoutez `sort_eit=1` à votre fichier de configuration.
+
+[NOTE]
+Si vous n'utilisez pas l'autoconfiguration complète, le tri du PID EIT nécessite l'option `ts_id` pour spécifier le "transport stream id", encore appelé "service id" ou numéro de programme.
+
 
 [[reduce_cpu]]
 Réduire l'utilisation processeur (Expérimental)

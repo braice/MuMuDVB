@@ -158,6 +158,9 @@ Paramètres divers
 |compute_traffic_interval | Le temps en secondes entre deux calculs du trafic | 10 | >2 | 
 |rtp_header | Envoie les en-têtes RTP avec le flux (excepté pour l'unicast HTTP) | 0 | 0 ou 1 | 
 |dvr_buffer_size | La taille du  "tampon DVR" en paquets de 188 octets | 1 | >=1 | Fonctionnalité "expérimentale", se référer au README 
+|rewrite_pat | Est ce que MuMuDVB doit réécrire le PID PAT | 0 | 0 ou 1 | cf README 
+|rewrite_sdt | Est ce que MuMuDVB doit réécrire le PID SDT | 0 | 0 ou 1 | cf README 
+|sort_eit | Est ce que MuMuDVB doit trier les PID EIT | 0 | 0 ou 1 | cf README 
 |==================================================================================================================
 
 Paramètres concernant le support des cartes CAM
