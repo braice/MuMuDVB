@@ -69,7 +69,7 @@ int pat_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf)
 }
 
 /** @brief update the version using the dowloaded pat*/
-void update_version(rewrite_parameters_t *rewrite_vars)
+void update_pat_version(rewrite_parameters_t *rewrite_vars)
 {
   pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->packet);
   if(rewrite_vars->pat_version!=pat->version_number)
@@ -239,7 +239,7 @@ void pat_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_
     {
       log_message(MSG_DEBUG,"Pat rewrite : Full pat updated\n");
       /*We've got the FULL PAT packet*/
-      update_version(rewrite_vars);
+      update_pat_version(rewrite_vars);
       rewrite_vars->pat_needs_update=0;
       rewrite_vars->full_pat_ok=1;
     }
@@ -278,7 +278,7 @@ int pat_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_
       /*We send the rewrited PAT from channel->generated_pat*/
       memcpy(ts_packet,channel->generated_pat,TS_PACKET_SIZE);
       //To avoid the duplicates, we have to update the continuity counter
-      pat_rewrite_set_continuity_counter(ts_packet,rewrite_vars->continuity_counter);
+      pat_rewrite_set_continuity_counter(ts_packet,rewrite_vars->pat_continuity_counter);
     }
     else
     {

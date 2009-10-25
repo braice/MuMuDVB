@@ -233,6 +233,10 @@ typedef struct mumudvb_channel_t{
   unsigned char generated_pat[TS_PACKET_SIZE]; /**@todo: allocate dynamically*/
   /** The version of the generated pat */
   int generated_pat_version;
+  /**The generated sdt to be sent*/
+  unsigned char generated_sdt[TS_PACKET_SIZE]; /**@todo: allocate dynamically*/
+  /** The version of the generated sdt */
+  int generated_sdt_version;
 
   /** The occupied traffic (in kB/s) */
   float traffic;

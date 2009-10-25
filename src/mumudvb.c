@@ -1174,7 +1174,14 @@ int
       {
         pat_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars);
       }
-
+      /******************************************************/
+      //SDT rewrite 
+      /******************************************************/
+      if( (pid == 17) && //This is a SDT PID
+           rewrite_vars.rewrite_sdt ) //AND we asked for rewrite
+      {
+        sdt_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars);
+      }
 
       /******************************************************/
       //for each channel we'll look if we must send this PID
