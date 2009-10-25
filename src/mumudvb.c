@@ -332,8 +332,8 @@ int
   char delimiteurs[] = CONFIG_FILE_SEPARATOR;
 
 
-  uint8_t hi_mappids[8192];
-  uint8_t lo_mappids[8192];
+  uint8_t hi_mappids[8193];
+  uint8_t lo_mappids[8193];
 
 
   /**The number of partial packets received*/
@@ -345,7 +345,7 @@ int
 
 
   // Initialise PID map
-  for (k = 0; k < 8192; k++)
+  for (k = 0; k < 8193; k++)
   {
     hi_mappids[k] = (k >> 8);
     lo_mappids[k] = (k & 0xff);
@@ -613,7 +613,7 @@ int
       {
         chan_and_pids.channels[curr_channel].pids[curr_pid] = atoi (substring);
 	      // we see if the given pid is good
-        if (chan_and_pids.channels[curr_channel].pids[curr_pid] < 10 || chan_and_pids.channels[curr_channel].pids[curr_pid] > 8191)
+        if (chan_and_pids.channels[curr_channel].pids[curr_pid] < 10 || chan_and_pids.channels[curr_channel].pids[curr_pid] >= 8193)
         {
           log_message( MSG_ERROR,
                        "Config issue : %s in pids, given pid : %d\n",
@@ -928,8 +928,8 @@ int
   }
 
   //We initialise asked pid table
-  memset (chan_and_pids.asked_pid, 0, sizeof( uint8_t)*8192);//we clear it
-  memset (chan_and_pids.number_chan_asked_pid, 0, sizeof( uint8_t)*8192);//we clear it
+  memset (chan_and_pids.asked_pid, 0, sizeof( uint8_t)*8193);//we clear it
+  memset (chan_and_pids.number_chan_asked_pid, 0, sizeof( uint8_t)*8193);//we clear it
 
   //We initialise mandatory pid table
   memset (mandatory_pid, 0, sizeof( uint8_t)*MAX_MANDATORY_PID_NUMBER);//we clear it
@@ -1181,7 +1181,7 @@ int
 	//if it isn't mandatory wee see if it is in the channel list
         if(!send_packet)
           for (curr_pid = 0; (curr_pid < chan_and_pids.channels[curr_channel].num_pids)&& !send_packet; curr_pid++)
-            if ((chan_and_pids.channels[curr_channel].pids[curr_pid] == pid))
+            if ((chan_and_pids.channels[curr_channel].pids[curr_pid] == pid) || (chan_and_pids.channels[curr_channel].pids[curr_pid] == 8192)) //We can stream whole transponder using 8192
         {
           send_packet=1;
           //avoid sending of scrambled channels if we asked to

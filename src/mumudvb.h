@@ -142,7 +142,7 @@ typedef struct {
   /** the dvb frontend*/
   int fd_frontend;
   /** demuxer file descriptors */
-  int fd_demuxer[8192];
+  int fd_demuxer[8193];
   /** poll file descriptors */
   struct pollfd *pfds;	//  DVR device + unicast http clients
   int pfdsnum;
@@ -259,9 +259,9 @@ typedef struct mumudvb_chan_and_pids_t{
   mumudvb_channel_t channels[MAX_CHANNELS];  /**@todo use realloc*/
 //Asked pids //used for filtering
   /** this array contains the pids we want to filter,*/
-  uint8_t asked_pid[8192];
+  uint8_t asked_pid[8193];
   /** the number of channels who want this pid (used by autoconfiguration update)*/
-  uint8_t number_chan_asked_pid[8192];
+  uint8_t number_chan_asked_pid[8193];
 }mumudvb_chan_and_pids_t;
 
 
