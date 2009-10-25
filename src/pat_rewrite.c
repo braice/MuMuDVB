@@ -115,13 +115,17 @@ int pat_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
   int i;
   int new_section_length;
 
-
+  if(ts_header->payload_unit_start_indicator)
+  {
+    log_message(MSG_DEBUG,"PAT rewrite : pointer field 0x%x \n", buf[TS_HEADER_LEN-1]);
+  }
   section_length=HILO(pat->section_length);
 
   //lets start the copy
   //we copy the ts header and adapt it a bit
   //the continuity counter is updated elswhere
   ts_header->payload_unit_start_indicator=1;
+  buf[TS_HEADER_LEN-1]=0;//we erase the pointer field
   memcpy(buf_dest,ts_header,TS_HEADER_LEN);
   //we copy the modified PAT header
   pat->current_next_indicator=1; //applicable immediately
@@ -164,7 +168,6 @@ int pat_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
             /*we found a announce for a PMT pid in our stream, we keep it*/
             memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->packet+delta,PAT_PROG_LEN);
             buf_dest_pos+=PAT_PROG_LEN;
-            log_message(MSG_DEBUG,"Pat rewrite :  %d\n", buf_dest_pos);
           }
         }
       }
@@ -270,8 +273,10 @@ int pat_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_
         channel->generated_pat_version=rewrite_vars->pat_version;
       }
       else
+      {
         log_message(MSG_DEBUG,"Pat rewrite : ERROR with the pat for the channel %d : \"%s\"\n", curr_channel, channel->name);
-
+        return 0;
+      }
     }
     if(channel->generated_pat_version==rewrite_vars->pat_version)
     {
