@@ -152,7 +152,6 @@ Various parameters
 |common_port | Default port for the streaming | 1234 | | 
 |multicast_ttl |The multicast Time To Live | 2 | |
 |multicast_auto_join | Set to 1 if you want MuMuDVB to join automatically the multicast groups | 0 | 0 or 1 | See known problems in the README
-|dont_send_sdt |If set to 1, don't send the SDT pid. This is a VLC workaround | 0 | | see README for details
 |dont_send_scrambled | If set to 1 don't send the packets detected as scrambled. this will also remove indirectly the sap announces for the scrambled channels |0 | |
 |show_traffic_interval | the interval in second between two displays of the traffic | 10 | >2 | 
 |compute_traffic_interval | the interval in second between two computations of the traffic | 10 | >2 | 
@@ -226,7 +225,7 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 |unicast_port | The HTTP unicast port for this channel | | | Ports below 1024 needs root rights. You need to activate HTTP unicast with `ip_http`
 |sap_group |The playlist group for SAP announces | | string | optionnal
 |cam_pmt_pid |Only for scrambled channels. The PMT PID for CAM support | | | 
-|ts_id |The transport stream id (program number), olny for autoconfiguration, or pat rewrite see README for more details | | | 
+|ts_id |The transport stream id (program number), olny for autoconfiguration, or rewrite (PAT or SDT) see README for more details | | | 
 |name | The name of the channel. Will be used for /var/run/mumudvb/chaines_diffusees%d, logging and SAP announces | | | Mandatory
 |pids | The PIDs list, separated by spaces | | | some pids are always sent (PAT CAT EIT SDT TDT NIT), see README for more details
 |==================================================================================================================

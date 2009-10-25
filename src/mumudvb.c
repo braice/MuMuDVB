@@ -346,8 +346,6 @@ int
 
   /**The number of partial packets received*/
   int partial_packet_number=0;
-  /**Do we avoid sending the SDT pid (for VLC)*/
-  int dont_send_sdt =0;
   /**Do we avoid sending scrambled packets ?*/
   int dont_send_scrambled=0;
 
@@ -574,13 +572,6 @@ int
     {
       substring = strtok (NULL, delimiteurs);
       dont_send_scrambled = atoi (substring);
-    }
-    else if (!strcmp (substring, "dont_send_sdt"))
-    {
-      substring = strtok (NULL, delimiteurs);
-      dont_send_sdt = atoi (substring);
-      if(dont_send_sdt)
-        log_message( MSG_INFO, "You decided not to send the SDT pid. This is a VLC workaround.\n");
     }
     else if (!strcmp (substring, "rtp_header"))
     {
@@ -1218,9 +1209,6 @@ int
         if ((pid == PSIP_PID) && (tuneparams.fe_type==FE_ATSC))
           send_packet=1;
 
-	//VLC workaround
-        if(dont_send_sdt && pid==17)
-          send_packet=0;
 
 	//if it isn't mandatory wee see if it is in the channel list
         if(!send_packet)

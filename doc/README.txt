@@ -60,7 +60,7 @@ Features overview
 - Support for automatic configuration i.e channels discovery, see <<autoconfiguration,Autoconfiguration>> section
 - Generation of SAP announces, see <<sap,SAP>> section
 - Support of DVB-S2, DVB-S, DVB-C, DVB-T and ATSC
-- Possibility to partially rewrite the stream for better compatibility with set-top boxes. See <<pat_rewrite,Pat Rewrite>> section.
+- Possibility to partially rewrite the stream for better compatibility with set-top boxes and some clients. See <<pat_rewrite,PAT Rewrite>> and <<sdt_rewrite,SDT Rewrite>> sections.
 - Support for HTTP unicast see <<unicast,http unicast>> section
 - Support for RTP headers (only for multicast)
 
@@ -522,6 +522,17 @@ To enable PAT rewriting, add `rewrite_pat=1` to your config file. This feature c
 [NOTE]
 PAT rewrite can fail (i.e. doesn't solve the previous symptoms) for some channels if their PMT pid is shared. In this case you have to add the `ts_id` option to the channel to specify the transport stream id, also known as service id.
 
+[[sdt_rewrite]]
+SDT (Service Description Table) Rewriting
+------------------------------------------
+
+This option will announce only the streamed channel in the Service Description Table instead of all transponder channels. Some clients parse this table and can show/select ghost programs if it is not rewritten (even if the PAT is). This can rise to a random black screen.
+
+To enable SDT rewriting, add `rewrite_sdt=1` to your config file. This feature consumes few CPU, since the rewritten SDT is stored in memory and computed only once per channel.
+
+[NOTE]
+If you don't use full autoconfiguration, SDT rewrite needs the `ts_id` option for each channel to specify the transport stream id, also known as service id.
+
 [[reduce_cpu]]
 Reduce MuMuDVB CPU usage (Experimental)
 ---------------------------------------
@@ -608,12 +619,7 @@ You have to set the maturity rating to maximum and unlock Maturity rating in Bol
 VLC doesn't select the good program even with PAT rewriting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This is a VLC bug https://trac.videolan.org/vlc/ticket/2782
-
-The PAT rewrite announces only the streamed channel in the PAT, but VLC also read the SDT to find channels (it should only refer to the PAT) and sometimes select the bad program.
-A temporary workaround is avoid sending the SDT PID. You can do this using the `dont_send_sdt` option.
-
-This option will be replaced by a SDT rewrite.
+You also have to rewrite the SDT PID using the `rewrite_sdt` option
 
 
 [[problems_hp]]

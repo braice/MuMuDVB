@@ -153,7 +153,6 @@ Paramètres divers
 |common_port | Le port par défaut pour la diffusion multicast | 1234 | | 
 |multicast_ttl | Le TTL multicast | 2 | |
 |multicast_auto_join | Si positionné à 1 MuMuDVB joindra automatiquement tous les groupes multicast créés | 0 | 0 or 1 | cf problèmes connus dans le README
-|dont_send_sdt |Si positionné à 1, MuMuDVB n'enverra pas le PID SDT, c'est un contournement d'un bug de VLC | 0 | | voir le README pour plus de détails
 |dont_send_scrambled | Si positionné à 1, MuMuDVB n'enverra pas les paquets brouillés. Cela retirera (indirectement) les annonces SAP pour les chaînes brouillées |0 | |
 |show_traffic_interval | Le temps en secondes entre deux affichages du trafic | 10 | >2 | 
 |compute_traffic_interval | Le temps en secondes entre deux calculs du trafic | 10 | >2 | 
@@ -231,7 +230,7 @@ Concernant les PIDs, référez vous à la section <<getpids,obtenir les PIDs>>.
 |unicast_port | Le port pour l'unicast HTTP ( associé à cette chaîne ) | | Les ports inférieurs à 1024 nécessitent les droits root. Vous devez activer l'unicast HTTP avec l'option `ip_http`
 |sap_group | Le groupe de liste de lecture pour les annonces SAP | |  optionnel
 |cam_pmt_pid |Uniquement pour les chaînes brouillées. Le PID PMT pour le module CAM | |  
-|ts_id |Le  "transport stream id" (appelé aussi "program number"), uniquement pour l'autoconfiguration ou la réécriture du PID PAT, se référer au README pour plus de détails | | 
+|ts_id |Le  "transport stream id" (appelé aussi "program number"), uniquement pour l'autoconfiguration ou la réécriture du PID PAT ou SDT, se référer au README pour plus de détails | | 
 |name | Le nom de la chaîne. Sera utilisé pour /var/run/mumudvb/chaines_diffusees%d, les journaux et les annonces SAP | | Obligatoire
 |pids | La liste des PIDs, séparés par des espaces. | |  Certains PIDs sont systématiquement envoyés (PAT CAT EIT SDT TDT NIT).
 |==================================================================================================================

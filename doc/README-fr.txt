@@ -55,6 +55,7 @@ Fonctionalités principales
 
 - Diffuse les chaînes d'un transpondeur vers différents groupes (adresses IP) multicast.
 - MuMuDVB peux réécrire le PID PAT (table d'allocation des programmes) pour n'annoncer que les chaînes présentes (utile pour certaines set-top box). Voir la section <<pat_rewrite, réécriture du PAT>>.
+- MuMuDVB peux réécrire le PID SDT (table de description des programmes) pour n'annoncer que les chaînes présentes (utile pour certains clients). Voir la section <<sdt_rewrite, réécriture du SDT>>.
 - Support des chaines cryptées (si vous n'avez pas de CAM vous pouvez utiliser sasc-ng mais vérifiez que c'est autorisé dans votre pays/par votre abonnement)
 - Configuration automatique, i.e. dçouverte automatique des chaînes, référez-vous à la section <<autoconfiguration,Autoconfiguration>>.
 - Génération des annonces SAP, voir la section <<sap, annonces SAP>>.
@@ -511,12 +512,23 @@ L'état du débrouillage est stocké avec la liste des chaînes diffusées.
 Réécriture du PID PAT (Program Allocation Table)
 ------------------------------------------------
 
-Cette fonctionnalité est principalement destinée pour les set-top boxes. Cet option permet d'annoncer uniquement la chaîne diffusée dans le PID PAT (Program Allocation Table) au lieu de toutes les chaînes du transpondeur. Les clients sur ordinateur regardent cette table et décode le premier programme avec des PIDs audio/vidéo. Les set-top boxes décodent habituellement le premier programme de cette table ce qui résulte en un écran noir pour la plupart des chaînes.
+Cette fonctionnalité est principalement destinée pour les set-top boxes. Cette option permet d'annoncer uniquement la chaîne diffusée dans le PID PAT (Program Allocation Table) au lieu de toutes les chaînes du transpondeur. Les clients sur ordinateur regardent cette table et décode le premier programme avec des PIDs audio/vidéo. Les set-top boxes décodent habituellement le premier programme de cette table ce qui résulte en un écran noir pour la plupart des chaînes.
 
 Pour activer la réécriture du PAT, ajoutez `rewrite_pat=1` à votre fichier de configuration. Cet fonctionnalité utilise peu de puissance processeur, la table PAT étant réécrite une fois par chaîne et stockée en mémoire.
 
 [NOTE]
 La réécriture du PAT peu échouer (i.e. ne résout pas les symptômes précédents) pour certaines chaînes si le PID PMT est partagé par plusieurs chaînes. Dans ce cas, vous devez ajouter l'option `ts_id` pour spécifier le "transport stream id", encore appelé "service id" ou numéro de programme.
+
+[[sdt_rewrite]]
+Réécriture du PID SDT (Service Description Table)
+------------------------------------------------
+
+Cette option permet d'annoncer uniquement la chaîne diffusée dans le PID SDT (Service Description Table) au lieu de toutes les chaînes du transpondeur. Certains clients regardent cette table et peuvent ainsi montrer/sélectionner  des programmes fantomes si cette table n'est pas réécrite (même si le PAT est réécrit). Ceci peut se manifester par un écran noir de manière aléatoire.
+
+Pour activer la réécriture du SDT, ajoutez `rewrite_sdt=1` à votre fichier de configuration. Cet fonctionnalité utilise peu de puissance processeur, la table SDT étant réécrite une fois par chaîne et stockée en mémoire.
+
+[NOTE]
+Si vous n'utilisez pas l'autoconfiguration complète, la réécriture du SDT nécessite l'option `ts_id` pour spécifier le "transport stream id", encore appelé "service id" ou numéro de programme.
 
 [[reduce_cpu]]
 Réduire l'utilisation processeur (Expérimental)
@@ -604,12 +616,7 @@ Vous devez mettre le "maturity rating" au maximum et déverrouiller "Maturity ra
 VLC ne choisit pas le bon programme même avec la réécriture du PAT
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Ceci est un bug de VLC https://trac.videolan.org/vlc/ticket/2782
-
-La réécriture du PAT permet d'annoncer que la chaîne présente dans le flux dans la table PAT. Mais VLC lit aussi la table SDT pour trouver les chaînes (il devrait seulement se référer au PAT) et sélectionne parfois le mauvais programme.
-Une solution temporaire est de ne pas envoyer le PID SDT. Vous pouvez faire cela en utilisant l'option `dont_send_sdt`.
-
-Cet option sera remplacée par une réécriture du PID SDT.
+Vous devez aussi réécrire le PID SDT en utilisant l'option `rewrite_sdt`
 
 
 [[problems_hp]]
