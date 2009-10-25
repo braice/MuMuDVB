@@ -382,13 +382,16 @@ void display_ca_sys_id(int id)
 }
 
 
-/** @brief Convert the service type to str according to EN 300 468 v1.9.1 table 81
+/** @brief Convert the service type to str according to EN 300 468 v1.10.1 table 81
  *
  * @param type the type to display
  * @param dest : the destination string
  */
 int service_type_to_str(char *dest, int type)
 {
+  if(type>=0x80 && type<=0xFE)
+    return snprintf(dest,80*sizeof(char), "User defined");
+
   switch(type)
   {
     case 0x01:
@@ -432,12 +435,12 @@ int service_type_to_str(char *dest, int type)
     case 0x1b:
       return snprintf(dest,80*sizeof(char), "Advanced codec HD NVOD Reference service");
     default:
-      return snprintf(dest,80*sizeof(char), "Please report : Unknow service type (0x%02x), doc : EN 300 468 v1.9.1 table 81",
+      return snprintf(dest,80*sizeof(char), "Please report : Unknown service type (0x%02x), doc : EN 300 468 v1.10.1 table 81",
                   type);
   }
 }
 
-/** @brief Display the service type according to EN 300 468 v1.9.1 table 81
+/** @brief Display the service type according to EN 300 468 v1.10.1 table 81
  *
  * @param type the type to display
  * @param loglevel : the loglevel for displaying it
@@ -482,7 +485,7 @@ int pid_type_to_str(char *dest,int type)
       return snprintf(dest,80*sizeof(char),"Teletext");
     case PID_UNKNOW:
     default:
-      return snprintf(dest,80*sizeof(char),"Unknow");
+      return snprintf(dest,80*sizeof(char),"Unknown");
   }
 }
 
