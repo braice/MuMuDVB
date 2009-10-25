@@ -259,7 +259,7 @@ cam_parameters_t cam_vars={
 };
 #endif
 
-//Parameters for PAT rewriting
+//Parameters for rewriting
 rewrite_parameters_t rewrite_vars={
   .rewrite_pat = 0,
   .pat_version=-1,
@@ -273,6 +273,7 @@ rewrite_parameters_t rewrite_vars={
   .sdt_needs_update=1,
   .full_sdt_ok=0,
   .sdt_continuity_counter=0,
+  .eit_sort=0,
 };
 
 //Parameters for HTTP unicast
@@ -523,6 +524,11 @@ int
       if(iRet==-1)
         exit(ERROR_CONF);
     }
+    else if((iRet=read_rewrite_configuration(&rewrite_vars, substring))) //Read the line concerning the rewrite parameters
+    {
+      if(iRet==-1)
+        exit(ERROR_CONF);
+    }
     else if (!strcmp (substring, "timeout_no_diff"))
     {
       substring = strtok (NULL, delimiteurs);
@@ -546,26 +552,6 @@ int
       {
         compute_traffic_interval=ALARM_TIME;
         log_message(MSG_WARN,"Sorry the minimum interval for computing the traffic is %ds\n",ALARM_TIME);
-      }
-    }
-    else if (!strcmp (substring, "rewrite_pat"))
-    {
-      substring = strtok (NULL, delimiteurs);
-      rewrite_vars.rewrite_pat = atoi (substring);
-      if(rewrite_vars.rewrite_pat)
-      {
-        log_message( MSG_INFO,
-                     "You have enabled the PAT Rewriting\n");
-      }
-    }
-    else if (!strcmp (substring, "rewrite_sdt"))
-    {
-      substring = strtok (NULL, delimiteurs);
-      rewrite_vars.rewrite_sdt = atoi (substring);
-      if(rewrite_vars.rewrite_sdt)
-      {
-        log_message( MSG_INFO,
-                     "You have enabled the SDT Rewriting\n");
       }
     }
     else if (!strcmp (substring, "dont_send_scrambled"))
@@ -1195,6 +1181,7 @@ int
         sdt_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars);
       }
 
+
       /******************************************************/
       //for each channel we'll look if we must send this PID
       /******************************************************/
@@ -1335,6 +1322,16 @@ int
             !chan_and_pids.channels[curr_channel].sdt_rewrite_skip ) //AND the generation was successful
           send_packet=sdt_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_and_pids.channels[curr_channel], curr_channel);
 
+        /******************************************************/
+        //EIT SORT
+        /******************************************************/
+        if((send_packet==1) &&//no need to check paquets we don't send
+           (pid == 18) && //This is a EIT PID
+            (chan_and_pids.channels[curr_channel].ts_id) && //we have the ts_id
+            rewrite_vars.eit_sort ) //AND we asked for EIT sorting
+        {
+          send_packet=eit_sort_new_packet(actual_ts_packet, &chan_and_pids.channels[curr_channel]);
+        }
 
         /******************************************************/
 	//Ok we must send this packet,

@@ -78,15 +78,6 @@ void update_pat_version(rewrite_parameters_t *rewrite_vars)
   rewrite_vars->pat_version=pat->version_number;
 }
 
-/** @brief Just a small function to change the continuity counter of a packet
- * This function will overwrite the continuity counter of the packet with the one given in argument
- *
- */
-void pat_rewrite_set_continuity_counter(unsigned char *buf,int continuity_counter)
-{
-  ts_header_t *ts_header=(ts_header_t *)buf;
-  ts_header->continuity_counter=continuity_counter;
-}
 
 /** @brief Main function for pat rewriting 
  * The goal of this function is to make a new pat with only the announement for the streamed channel
@@ -283,7 +274,7 @@ int pat_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_
       /*We send the rewrited PAT from channel->generated_pat*/
       memcpy(ts_packet,channel->generated_pat,TS_PACKET_SIZE);
       //To avoid the duplicates, we have to update the continuity counter
-      pat_rewrite_set_continuity_counter(ts_packet,rewrite_vars->pat_continuity_counter);
+      set_continuity_counter(ts_packet,rewrite_vars->pat_continuity_counter);
     }
     else
     {

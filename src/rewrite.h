@@ -67,8 +67,13 @@ typedef struct rewrite_parameters_t{
   mumudvb_ts_packet_t *full_sdt;
   /** The continuity counter of the sent SDT*/
   int sdt_continuity_counter;
+
+  /** Do we sort the EIT PID ?*/
+  int eit_sort;
+
 }rewrite_parameters_t;
 
+int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substring);
 
 void pat_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars);
 int pat_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel, int curr_channel);
@@ -76,3 +81,7 @@ int pat_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_
 
 void sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars);
 int sdt_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel, int curr_channel);
+
+void set_continuity_counter(unsigned char *buf,int continuity_counter);
+
+int eit_sort_new_packet(unsigned char *ts_packet, mumudvb_channel_t *channel);

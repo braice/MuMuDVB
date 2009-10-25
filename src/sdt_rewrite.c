@@ -78,15 +78,6 @@ void update_sdt_version(rewrite_parameters_t *rewrite_vars)
   rewrite_vars->sdt_version=sdt->version_number;
 }
 
-/** @brief Just a small function to change the continuity counter of a packet
- * This function will overwrite the continuity counter of the packet with the one given in argument
- *
- */
-void sdt_rewrite_set_continuity_counter(unsigned char *buf,int continuity_counter)
-{
-  ts_header_t *ts_header=(ts_header_t *)buf;
-  ts_header->continuity_counter=continuity_counter;
-}
 
 /** @brief Main function for sdt rewriting 
  * The goal of this function is to make a new sdt with only the announement for the streamed channel
@@ -291,7 +282,7 @@ int sdt_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_
       /*We send the rewrited SDT from channel->generated_sdt*/
       memcpy(ts_packet,channel->generated_sdt,TS_PACKET_SIZE);
       //To avoid the duplicates, we have to update the continuity counter
-      sdt_rewrite_set_continuity_counter(ts_packet,rewrite_vars->sdt_continuity_counter);
+      set_continuity_counter(ts_packet,rewrite_vars->sdt_continuity_counter);
     }
     else
     {

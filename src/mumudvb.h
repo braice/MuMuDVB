@@ -243,6 +243,11 @@ typedef struct mumudvb_channel_t{
   /** The occupied traffic (in kB/s) */
   float traffic;
 
+  /** Are we dropping the current EIT packet for this channel*/ 
+  int eit_dropping;
+  /**The continuity counter for the EIT*/
+  int eit_continuity_counter;
+
 }mumudvb_channel_t;
 
 /**The parameters concerning the multicast*/
