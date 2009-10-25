@@ -178,7 +178,7 @@ multicast_parameters_t multicast_vars={
 
 int rtp_header = 0;
 
-//tuning parameters C99 initialisation
+//tuning parameters
 tuning_parameters_t tuneparams={
   .card = 0,
   .card_tuned = 0,
@@ -210,7 +210,7 @@ tuning_parameters_t tuneparams={
 };
 
 
-//sap announces C99 initialisation
+//sap announces
 sap_parameters_t sap_vars={
   .sap_messages=NULL, 
   .sap=SAP_UNDEFINED, //No sap by default
@@ -222,7 +222,7 @@ sap_parameters_t sap_vars={
   .sap_ttl=SAP_DEFAULT_TTL,
 };
 
-//autoconfiguration. C99 initialisation
+//autoconfiguration
 autoconf_parameters_t autoconf_vars={
   .autoconfiguration=0,
   .autoconf_radios=0,
@@ -239,7 +239,7 @@ autoconf_parameters_t autoconf_vars={
 };
 
 #ifdef ENABLE_CAM_SUPPORT
-//CAM (Conditionnal Access Modules : for scrambled channels) C99 initialisation
+//CAM (Conditionnal Access Modules : for scrambled channels)
 cam_parameters_t cam_vars={
   .cam_support = 0,
   .cam_number=0,
@@ -278,10 +278,6 @@ unicast_parameters_t unicast_vars={
 //logging
 int log_initialised=0; /**say if we opened the syslog resource*/
 int verbosity = MSG_INFO+1; /** the verbosity level for log messages */
-
-
-
-
 
 
 // prototypes
@@ -423,11 +419,11 @@ int
     usage (program_invocation_short_name);
     exit(ERROR_ARGS);
   }
-  
+
   /******************************************************/
   //end of command line options parsing
   /******************************************************/
-  
+
   // DO NOT REMOVE (make mumudvb a deamon)
   if(!no_daemon)
     if(daemon(42,0))
@@ -444,7 +440,6 @@ int
 
   //Display general information
   print_info ();
-
 
   //paranoya we clear all the content of all the channels
   memset (&chan_and_pids.channels, 0, sizeof (mumudvb_channel_t)*MAX_CHANNELS);
@@ -705,11 +700,11 @@ int
     fclose (pidfile);
   }
 
-  
+  chan_and_pids.number_of_channels = curr_channel;
   /*****************************************************/
   //Autoconfiguration init
   /*****************************************************/
-  
+
   if(autoconf_vars.autoconfiguration)
   {
     if(autoconf_vars.autoconf_pid_update)
@@ -717,8 +712,8 @@ int
       log_message( MSG_INFO,
                    "The autoconfiguration auto update is enabled. If you want to disable it put \"autoconf_pid_update=0\" in your config file.\n");
     }
-      //In case of autoconfiguration, we generate a config file with the channels discovered
-      //Here we generate the header, ie we take the actual config file and copy it removing the channels
+    //In case of autoconfiguration, we generate a config file with the channels discovered
+    //Here we generate the header, ie we take the actual config file and copy it removing the channels
     sprintf (filename_gen_conf, GEN_CONF_PATH,
              tuneparams.card);
     gen_config_file_header(conf_filename, filename_gen_conf);
@@ -727,8 +722,10 @@ int
     autoconf_vars.autoconf_pid_update=0;
 
   free(conf_filename);
+  /*****************************************************/
+  //End of Autoconfiguration init
+  /*****************************************************/
 
-  chan_and_pids.number_of_channels = curr_channel;
 
   // we clear them by paranoia
   sprintf (filename_channels_diff, STREAMED_LIST_PATH,
@@ -856,16 +853,16 @@ int
     //We initialise the cam. If fail, we remove cam support
     if(cam_start(&cam_vars,tuneparams.card,filename_cam_info))
     {
-      log_message( MSG_ERROR,"Cannot initalise cam\n");
+      log_message( MSG_ERROR,"ERROR : CAM : Cannot initalise cam\n");
       cam_vars.cam_support=0;
     }
     else
     {
-	//If the cam is properly initialised, we autoconfigure scrambled channels
+      //If the cam is properly initialised, we autoconfigure scrambled channels
       autoconf_vars.autoconf_scrambled=1;
     }
   }
-#endif  
+#endif
 
   /*****************************************************/
   //autoconfiguration
@@ -891,10 +888,9 @@ int
     if(rewrite_vars.full_pat==NULL)
     {
       log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      return mumudvb_close(100<<8);
+      return mumudvb_close(ERROR_MEMORY<<8);
     }
     memset (rewrite_vars.full_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-      
   }
 
 
@@ -1001,7 +997,7 @@ int
     log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     return mumudvb_close(100<<8);
   }
-    
+
   //We fill the file descriptor information structure. the first one is irrelevant
   //(file descriptor associated to the DVB card) but we allocate it for consistency
   unicast_vars.fd_info=NULL;
@@ -1134,15 +1130,15 @@ int
         continue;
 
       ScramblingControl = (actual_ts_packet[3] & 0xc0) >> 6;
-	  // 0 = Not scrambled
-	  // 1 = Reserved for future use
-	  // 2 = Scrambled with even key
-	  // 3 = Scrambled with odd key
+/* 0 = Not scrambled
+   1 = Reserved for future use
+   2 = Scrambled with even key
+   3 = Scrambled with odd key*/
 	  
 
-      /*************************************************************************************/
-      /****              AUTOCONFIGURATION PART                                         ****/
-      /*************************************************************************************/
+      /******************************************************/
+      //   AUTOCONFIGURATION PART
+      /******************************************************/
       if(!ScramblingControl &&  autoconf_vars.autoconfiguration)
       {
         Interrupted = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tuneparams, &multicast_vars, &unicast_vars);
@@ -1150,9 +1146,9 @@ int
       if(autoconf_vars.autoconfiguration)
         continue;
  
-      /*************************************************************************************/
-      /****              AUTOCONFIGURATION PART FINISHED                                ****/
-      /*************************************************************************************/
+      /******************************************************/
+      //   AUTOCONFIGURATION PART FINISHED
+      /******************************************************/
 
       /******************************************************/
       //Pat rewrite 
@@ -1169,13 +1165,12 @@ int
       /******************************************************/
       for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
       {
-	      //we'll see if we must send this pid for this channel
+	//we'll see if we must send this pid for this channel
         send_packet=0;
 
 	//If it's a mandatory pid we send it
         if((pid<MAX_MANDATORY_PID_NUMBER) && (mandatory_pid[pid]==1))
           send_packet=1;
-
         if ((pid == PSIP_PID) && (tuneparams.fe_type==FE_ATSC))
           send_packet=1;
 
@@ -1189,12 +1184,13 @@ int
             if ((chan_and_pids.channels[curr_channel].pids[curr_pid] == pid))
         {
           send_packet=1;
-	 //avoid sending of scrambled channels if we asked to
+          //avoid sending of scrambled channels if we asked to
           if(dont_send_scrambled && (ScramblingControl>0)&& (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
             send_packet=0;
           if ((ScramblingControl>0) && (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
             chan_and_pids.channels[curr_channel].scrambled_channel++;
-		      //we don't count the PMT pid for up channels
+
+          //we don't count the PMT pid for up channels
           if(send_packet && (pid != chan_and_pids.channels[curr_channel].pmt_pid))
             chan_and_pids.channels[curr_channel].streamed_channel++;
           if (pid != chan_and_pids.channels[curr_channel].pmt_pid)
@@ -1305,7 +1301,7 @@ int
         /******************************************************/
         if(send_packet==1)
         {
-		  // we fill the channel buffer
+          // we fill the channel buffer
           memcpy(chan_and_pids.channels[curr_channel].buf + chan_and_pids.channels[curr_channel].nb_bytes, actual_ts_packet, TS_PACKET_SIZE);
 
           chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] =
@@ -1313,10 +1309,10 @@ int
           chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 2] = lo_mappids[pid];
 
           chan_and_pids.channels[curr_channel].nb_bytes += TS_PACKET_SIZE;
-		  //The buffer is full, we send it
+          //The buffer is full, we send it
           if ((chan_and_pids.channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE)
           {
-		      //For bandwith measurement (traffic)
+            //For bandwith measurement (traffic)
             chan_and_pids.channels[curr_channel].sent_data+=chan_and_pids.channels[curr_channel].nb_bytes;
 
             /****** RTP *******/
@@ -1338,15 +1334,16 @@ int
               actual_client=chan_and_pids.channels[curr_channel].clients;
               while(actual_client!=NULL)
               {
-			      //NO RTP over http waiting for the RTSP implementation
+                //NO RTP over http waiting for the RTSP implementation
                 if(rtp_header)
                   written_len=write(actual_client->Socket,chan_and_pids.channels[curr_channel].buf+RTP_HEADER_LEN, chan_and_pids.channels[curr_channel].nb_bytes-RTP_HEADER_LEN)+RTP_HEADER_LEN; //+RTP_HEADER_LEN to avoid changing the next lines
                 else
                   written_len=write(actual_client->Socket,chan_and_pids.channels[curr_channel].buf, chan_and_pids.channels[curr_channel].nb_bytes);
-			      //We check if all the data was successfully written
+                //We check if all the data was successfully written
                 if(written_len<chan_and_pids.channels[curr_channel].nb_bytes)
                 {
-				  //No ! 
+                  //No ! 
+                  /** @todo Put a buffer */
                   if(written_len==-1)
                     log_message(MSG_DEBUG,"Error when writing to client %s:%d : %s\n",
                                 inet_ntoa(actual_client->SocketAddr.sin_addr),
@@ -1370,7 +1367,7 @@ int
                   }
                   else 
                   {
-				      //We have actually errors, we check if we reached the timeout
+                    //We have errors, we check if we reached the timeout
                     gettimeofday (&tv, (struct timezone *) NULL);
                     if((unicast_vars.consecutive_errors_timeout > 0) && (tv.tv_sec - actual_client->first_error_time) > unicast_vars.consecutive_errors_timeout)
                     {
@@ -1396,7 +1393,7 @@ int
               }
             }
             /********* END of UNICAST **********/
-		      //If there is a rtp header we don't overwrite it
+            //If there is a rtp header we don't overwrite it
             if(rtp_header)
               chan_and_pids.channels[curr_channel].nb_bytes = RTP_HEADER_LEN;
             else
@@ -1419,7 +1416,7 @@ int
                  "We received %d partial packets :-( \n",partial_packet_number );
 
   return mumudvb_close(Interrupted);
-  
+
 }
 
 /** @brief Clean closing and freeing
@@ -1483,7 +1480,7 @@ int mumudvb_close(int Interrupted)
   //sap variables freeing
   if(sap_vars.sap_messages)
     free(sap_vars.sap_messages);
-  
+
   //Pat rewrite freeing
   if(rewrite_vars.full_pat)
     free(rewrite_vars.full_pat);
@@ -1569,166 +1566,170 @@ static void SignalHandler (int signum)
       exit(ERROR_TUNE);
     }
 
-      //autoconfiguration
-      //We check if we reached the autoconfiguration timeout
+    /*autoconfiguration*/
+    /*We check if we reached the autoconfiguration timeout*/
     if(autoconf_vars.autoconfiguration)
-      Interrupted = autoconf_poll(now, &autoconf_vars, &chan_and_pids, &tuneparams, &multicast_vars, &fds, &unicast_vars);
-    else //we are not doing autoconfiguration we can do something else
     {
-      //sap announces
-      sap_poll(&sap_vars,chan_and_pids.number_of_channels,chan_and_pids.channels,multicast_vars, now);
+      Interrupted = autoconf_poll(now, &autoconf_vars, &chan_and_pids, &tuneparams, &multicast_vars, &fds, &unicast_vars);
+      alarm (ALARM_TIME);
+      return;
+    }
+
+    /*we are not doing autoconfiguration we can do something else*/
+    /*sap announces*/
+    sap_poll(&sap_vars,chan_and_pids.number_of_channels,chan_and_pids.channels,multicast_vars, now);
 
 
-	  // Check if the chanel stream state has changed
-      for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
-      {
-        if ((chan_and_pids.channels[curr_channel].streamed_channel/ALARM_TIME >= 80) && (!chan_and_pids.channels[curr_channel].streamed_channel_old))
-        {
-          log_message( MSG_INFO,
-                       "Channel \"%s\" back.Card %d\n",
-                       chan_and_pids.channels[curr_channel].name, tuneparams.card);
-          chan_and_pids.channels[curr_channel].streamed_channel_old = 1;	// update
-          if(sap_vars.sap == SAP_ON)
-            sap_update(chan_and_pids.channels[curr_channel], &sap_vars, curr_channel, multicast_vars); //Channel status changed, we update the sap announces
-        }
-        else if ((chan_and_pids.channels[curr_channel].streamed_channel_old) && (chan_and_pids.channels[curr_channel].streamed_channel/ALARM_TIME < 30))
-        {
-          log_message( MSG_INFO,
-                       "Channel \"%s\" down.Card %d\n",
-                       chan_and_pids.channels[curr_channel].name, tuneparams.card);
-          chan_and_pids.channels[curr_channel].streamed_channel_old = 0;	// update
-          if(sap_vars.sap == SAP_ON)
-            sap_update(chan_and_pids.channels[curr_channel], &sap_vars, curr_channel, multicast_vars); //Channel status changed, we update the sap announces
-        }
-      }
-
-
-	  //compute the bandwith occupied by each channel
-      float time_interval;
-      if(!compute_traffic_time)
-        compute_traffic_time=now;
-      if((now-compute_traffic_time)>=compute_traffic_interval)
-      {
-        time_interval=now+tv.tv_usec/1000000-compute_traffic_time-compute_traffic_time_usec/1000000;
-        compute_traffic_time=now;
-        compute_traffic_time_usec=tv.tv_usec;
-        for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
-        {
-          chan_and_pids.channels[curr_channel].traffic=((float)chan_and_pids.channels[curr_channel].sent_data)/time_interval*1/1204;
-          chan_and_pids.channels[curr_channel].sent_data=0;
-        }
-      }
-
-            //show the bandwith measurement
-      if(show_traffic)
-      {
-        if(!show_traffic_time)
-          show_traffic_time=now;
-        if((now-show_traffic_time)>=show_traffic_interval)
-        {
-          show_traffic_time=now;
-          for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
-          {
-            log_message( MSG_INFO, "Traffic :  %.2f kB/s \t  for channel \"%s\"\n",
-                         chan_and_pids.channels[curr_channel].traffic,
-                         chan_and_pids.channels[curr_channel].name);
-          }
-        }
-      }
-
-
-      /*Show the statistics for the big buffer*/
-      if(show_buffer_stats)
-      {
-        if(!show_buffer_stats_time)
-          show_buffer_stats_time=now;
-        if((now-show_buffer_stats_time)>=show_buffer_stats_interval)
-        {
-          show_buffer_stats_time=now;
-          log_message( MSG_DETAIL, "DETAIL : Average packets in the buffer %d\n", stats_num_packets_received/stats_num_reads);
-          stats_num_packets_received=0;
-          stats_num_reads=0;
-        }
-      }
-
-
-
-      // Check if the chanel scrambling state has changed
-      for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
-      {
-	      // Calcultation of the ratio (percentage) of scrambled packets received
-        if (chan_and_pids.channels[curr_channel].num_packet >0 && chan_and_pids.channels[curr_channel].scrambled_channel>10)
-          chan_and_pids.channels[curr_channel].ratio_scrambled = (int)(chan_and_pids.channels[curr_channel].scrambled_channel*100/(chan_and_pids.channels[curr_channel].num_packet));
-        else
-          chan_and_pids.channels[curr_channel].ratio_scrambled = 0;
-
-	      // Test if we have only unscrambled packets (<2%) - scrambled_channel_old=FULLY_UNSCRAMBLED : fully unscrambled
-        if ((chan_and_pids.channels[curr_channel].ratio_scrambled < 2) && (chan_and_pids.channels[curr_channel].scrambled_channel_old != FULLY_UNSCRAMBLED))
-        {
-          log_message( MSG_INFO,
-                       "Channel \"%s\" is now fully unscrambled (%d%% of scrambled packets). Card %d\n",
-                       chan_and_pids.channels[curr_channel].name, chan_and_pids.channels[curr_channel].ratio_scrambled, tuneparams.card);
-          chan_and_pids.channels[curr_channel].scrambled_channel_old = FULLY_UNSCRAMBLED;// update
-        }
-	      // Test if we have partiallay unscrambled packets (5%<=ratio<=80%) - scrambled_channel_old=PARTIALLY_UNSCRAMBLED : partially unscrambled
-        if ((chan_and_pids.channels[curr_channel].ratio_scrambled >= 5) && (chan_and_pids.channels[curr_channel].ratio_scrambled <= 80) && (chan_and_pids.channels[curr_channel].scrambled_channel_old != PARTIALLY_UNSCRAMBLED))
-        {
-          log_message( MSG_INFO,
-                       "Channel \"%s\" is now partially unscrambled (%d%% of scrambled packets). Card %d\n",
-                       chan_and_pids.channels[curr_channel].name, chan_and_pids.channels[curr_channel].ratio_scrambled, tuneparams.card);
-          chan_and_pids.channels[curr_channel].scrambled_channel_old = PARTIALLY_UNSCRAMBLED;// update
-        }
-	      // Test if we have nearly only scrambled packets (>90%) - scrambled_channel_old=HIGHLY_SCRAMBLED : highly scrambled
-        if ((chan_and_pids.channels[curr_channel].ratio_scrambled > 90) && chan_and_pids.channels[curr_channel].scrambled_channel_old != HIGHLY_SCRAMBLED)
-        {
-          log_message( MSG_INFO,
-                       "Channel \"%s\" is now higly scrambled (%d%% of scrambled packets). Card %d\n",
-                       chan_and_pids.channels[curr_channel].name, chan_and_pids.channels[curr_channel].ratio_scrambled, tuneparams.card);
-          chan_and_pids.channels[curr_channel].scrambled_channel_old = HIGHLY_SCRAMBLED;// update
-        }
-      }
-
-      /*******************************************/
-	  // we count active channels
-      /*******************************************/
-      for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
-        if (chan_and_pids.channels[curr_channel].streamed_channel_old)
-          count_of_active_channels++;
-
-	  //Time no diff is the time when we got 0 active channels
-	  //if we have active channels, we reinit this counter
-      if(count_of_active_channels)
-        time_no_diff=0;
-	  //If we don't have active channels and this is the first time, we store the time
-      else if(!time_no_diff)
-        time_no_diff=now;
-
-	  //If we don't stream data for a too long time, we exit
-      if((timeout_no_diff)&& (time_no_diff&&((now-time_no_diff)>timeout_no_diff)))
+    /* Check if the chanel stream state has changed*/
+    for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
+    {
+      if ((chan_and_pids.channels[curr_channel].streamed_channel/ALARM_TIME >= 80) && (!chan_and_pids.channels[curr_channel].streamed_channel_old))
       {
         log_message( MSG_INFO,
-                     "No data from card %d in %ds, exiting.\n",
-                     tuneparams.card, timeout_no_diff);
-        Interrupted=ERROR_NO_DIFF<<8; //the <<8 is to make difference beetween signals and errors
+                     "Channel \"%s\" back.Card %d\n",
+                     chan_and_pids.channels[curr_channel].name, tuneparams.card);
+        chan_and_pids.channels[curr_channel].streamed_channel_old = 1;	// update
+        if(sap_vars.sap == SAP_ON)
+          sap_update(chan_and_pids.channels[curr_channel], &sap_vars, curr_channel, multicast_vars); //Channel status changed, we update the sap announces
       }
+      else if ((chan_and_pids.channels[curr_channel].streamed_channel_old) && (chan_and_pids.channels[curr_channel].streamed_channel/ALARM_TIME < 30))
+      {
+        log_message( MSG_INFO,
+                     "Channel \"%s\" down.Card %d\n",
+                     chan_and_pids.channels[curr_channel].name, tuneparams.card);
+        chan_and_pids.channels[curr_channel].streamed_channel_old = 0;	// update
+        if(sap_vars.sap == SAP_ON)
+          sap_update(chan_and_pids.channels[curr_channel], &sap_vars, curr_channel, multicast_vars); //Channel status changed, we update the sap announces
+      }
+    }
 
-	  //generation of the files wich says the streamed channels
-      if (write_streamed_channels)
-        gen_file_streamed_channels(filename_channels_diff, filename_channels_not_streamed, chan_and_pids.number_of_channels, chan_and_pids.channels);
 
-	  // reinit
+    /*compute the bandwith occupied by each channel*/
+    float time_interval;
+    if(!compute_traffic_time)
+      compute_traffic_time=now;
+    if((now-compute_traffic_time)>=compute_traffic_interval)
+    {
+      time_interval=now+tv.tv_usec/1000000-compute_traffic_time-compute_traffic_time_usec/1000000;
+      compute_traffic_time=now;
+      compute_traffic_time_usec=tv.tv_usec;
       for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
       {
-        chan_and_pids.channels[curr_channel].streamed_channel = 0;
-        chan_and_pids.channels[curr_channel].num_packet = 0;
-        chan_and_pids.channels[curr_channel].scrambled_channel = 0;
+        chan_and_pids.channels[curr_channel].traffic=((float)chan_and_pids.channels[curr_channel].sent_data)/time_interval*1/1204;
+        chan_and_pids.channels[curr_channel].sent_data=0;
       }
+    }
+
+    /*show the bandwith measurement*/
+    if(show_traffic)
+    {
+      if(!show_traffic_time)
+        show_traffic_time=now;
+      if((now-show_traffic_time)>=show_traffic_interval)
+      {
+        show_traffic_time=now;
+        for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
+        {
+          log_message( MSG_INFO, "Traffic :  %.2f kB/s \t  for channel \"%s\"\n",
+                       chan_and_pids.channels[curr_channel].traffic,
+                       chan_and_pids.channels[curr_channel].name);
+        }
+      }
+    }
+
+
+    /*Show the statistics for the big buffer*/
+    if(show_buffer_stats)
+    {
+      if(!show_buffer_stats_time)
+        show_buffer_stats_time=now;
+      if((now-show_buffer_stats_time)>=show_buffer_stats_interval)
+      {
+        show_buffer_stats_time=now;
+        log_message( MSG_DETAIL, "DETAIL : Average packets in the buffer %d\n", stats_num_packets_received/stats_num_reads);
+        stats_num_packets_received=0;
+        stats_num_reads=0;
+      }
+    }
+
+
+
+    /* Check if the chanel scrambling state has changed*/
+    for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
+    {
+      /* Calcultation of the ratio (percentage) of scrambled packets received*/
+      if (chan_and_pids.channels[curr_channel].num_packet >0 && chan_and_pids.channels[curr_channel].scrambled_channel>10)
+        chan_and_pids.channels[curr_channel].ratio_scrambled = (int)(chan_and_pids.channels[curr_channel].scrambled_channel*100/(chan_and_pids.channels[curr_channel].num_packet));
+      else
+        chan_and_pids.channels[curr_channel].ratio_scrambled = 0;
+
+      /* Test if we have only unscrambled packets (<2%) - scrambled_channel_old=FULLY_UNSCRAMBLED : fully unscrambled*/
+      if ((chan_and_pids.channels[curr_channel].ratio_scrambled < 2) && (chan_and_pids.channels[curr_channel].scrambled_channel_old != FULLY_UNSCRAMBLED))
+      {
+        log_message( MSG_INFO,
+                     "Channel \"%s\" is now fully unscrambled (%d%% of scrambled packets). Card %d\n",
+                     chan_and_pids.channels[curr_channel].name, chan_and_pids.channels[curr_channel].ratio_scrambled, tuneparams.card);
+        chan_and_pids.channels[curr_channel].scrambled_channel_old = FULLY_UNSCRAMBLED;// update
+      }
+      /* Test if we have partiallay unscrambled packets (5%<=ratio<=80%) - scrambled_channel_old=PARTIALLY_UNSCRAMBLED : partially unscrambled*/
+      if ((chan_and_pids.channels[curr_channel].ratio_scrambled >= 5) && (chan_and_pids.channels[curr_channel].ratio_scrambled <= 80) && (chan_and_pids.channels[curr_channel].scrambled_channel_old != PARTIALLY_UNSCRAMBLED))
+      {
+        log_message( MSG_INFO,
+                     "Channel \"%s\" is now partially unscrambled (%d%% of scrambled packets). Card %d\n",
+                     chan_and_pids.channels[curr_channel].name, chan_and_pids.channels[curr_channel].ratio_scrambled, tuneparams.card);
+        chan_and_pids.channels[curr_channel].scrambled_channel_old = PARTIALLY_UNSCRAMBLED;// update
+      }
+      /* Test if we have nearly only scrambled packets (>90%) - scrambled_channel_old=HIGHLY_SCRAMBLED : highly scrambled*/
+      if ((chan_and_pids.channels[curr_channel].ratio_scrambled > 90) && chan_and_pids.channels[curr_channel].scrambled_channel_old != HIGHLY_SCRAMBLED)
+      {
+        log_message( MSG_INFO,
+                     "Channel \"%s\" is now higly scrambled (%d%% of scrambled packets). Card %d\n",
+                     chan_and_pids.channels[curr_channel].name, chan_and_pids.channels[curr_channel].ratio_scrambled, tuneparams.card);
+        chan_and_pids.channels[curr_channel].scrambled_channel_old = HIGHLY_SCRAMBLED;// update
+      }
+    }
+
+    /*******************************************/
+    /* we count active channels*/
+    /*******************************************/
+    for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
+      if (chan_and_pids.channels[curr_channel].streamed_channel_old)
+        count_of_active_channels++;
+
+    /*Time no diff is the time when we got 0 active channels*/
+    /*if we have active channels, we reinit this counter*/
+    if(count_of_active_channels)
+      time_no_diff=0;
+    /*If we don't have active channels and this is the first time, we store the time*/
+    else if(!time_no_diff)
+      time_no_diff=now;
+
+    /*If we don't stream data for a too long time, we exit*/
+    if((timeout_no_diff)&& (time_no_diff&&((now-time_no_diff)>timeout_no_diff)))
+    {
+      log_message( MSG_INFO,
+                   "No data from card %d in %ds, exiting.\n",
+                   tuneparams.card, timeout_no_diff);
+      Interrupted=ERROR_NO_DIFF<<8; //the <<8 is to make difference beetween signals and errors
+    }
+
+    /*generation of the files wich says the streamed channels*/
+    if (write_streamed_channels)
+      gen_file_streamed_channels(filename_channels_diff, filename_channels_not_streamed, chan_and_pids.number_of_channels, chan_and_pids.channels);
+
+    /* reinit*/
+    for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
+    {
+      chan_and_pids.channels[curr_channel].streamed_channel = 0;
+      chan_and_pids.channels[curr_channel].num_packet = 0;
+      chan_and_pids.channels[curr_channel].scrambled_channel = 0;
+    }
 
 #ifdef ENABLE_CAM_SUPPORT
-      if(cam_vars.cam_support)
-        cam_vars.delay++;
+    if(cam_vars.cam_support)
+      cam_vars.delay++;
 #endif
-    }
+
     alarm (ALARM_TIME);
   }
   else if (signum == SIGUSR1)
@@ -1782,7 +1783,7 @@ int mumudvb_poll(fds_t *fds)
     }
     /**@todo : put a maximum number of interrupted system calls per unit time*/
   }
-  
+
   if(poll_try==MAX_POLL_TRIES)
   {
     log_message( MSG_ERROR, "Poll : We reach the maximum number of polling tries\n\tLast error when polling: %s\n", strerror (errno));
