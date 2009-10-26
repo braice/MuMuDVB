@@ -1606,7 +1606,7 @@ void update_pmt_version(mumudvb_channel_t *channel)
 /** @brief This function is called when a new packet is there and the autoconf is not finished*/
 int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, fds_t *fds, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars,  unicast_parameters_t *unicast_vars)
 {
-  int Interrupted=0;
+  int iRet=0;
   if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL) //Full autoconfiguration, we search the channels and their names
   {
     if(pid==0) //PAT : contains the services identifiers and the PMT PID for each service
@@ -1617,7 +1617,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
         {
           log_message(MSG_DEBUG,"Autoconf : It seems that we have finished to get the services list\n");
           //we finish full autoconfiguration
-          Interrupted = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams->card, fds, unicast_vars);
+          iRet = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams->card, fds, unicast_vars);
         }
         else
           memset (autoconf_vars->autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
@@ -1686,7 +1686,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
  */
 int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars, fds_t *fds, unicast_parameters_t *unicast_vars)
 {
-  int Interrupted=0;
+  int iRet=0;
   if(!autoconf_vars->time_start_autoconfiguration)
     autoconf_vars->time_start_autoconfiguration=now;
   else if (now-autoconf_vars->time_start_autoconfiguration>AUTOCONFIGURE_TIME)
@@ -1705,8 +1705,8 @@ int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_a
       //This happend when we are not able to get all the services of the PAT,
       //We continue with the partial list of services
       autoconf_vars->time_start_autoconfiguration=now;
-      Interrupted = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams->card, fds, unicast_vars);
+      iRet = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams->card, fds, unicast_vars);
     }
   }
-  return Interrupted;
+  return iRet;
 }

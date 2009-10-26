@@ -1155,7 +1155,9 @@ int
       /******************************************************/
       if(!ScramblingControl &&  autoconf_vars.autoconfiguration)
       {
-        Interrupted = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tuneparams, &multicast_vars, &unicast_vars);
+        iRet = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tuneparams, &multicast_vars, &unicast_vars);
+        if(iRet)
+          Interrupted = iRet;
       }
       if(autoconf_vars.autoconfiguration)
         continue;
@@ -1596,6 +1598,7 @@ static void SignalHandler (int signum)
   struct timeval tv;
   int curr_channel = 0;
   int count_of_active_channels=0;
+  int iRet;
 
   if (signum == SIGALRM && !Interrupted)
   {
@@ -1615,7 +1618,9 @@ static void SignalHandler (int signum)
     /*We check if we reached the autoconfiguration timeout*/
     if(autoconf_vars.autoconfiguration)
     {
-      Interrupted = autoconf_poll(now, &autoconf_vars, &chan_and_pids, &tuneparams, &multicast_vars, &fds, &unicast_vars);
+      iRet = autoconf_poll(now, &autoconf_vars, &chan_and_pids, &tuneparams, &multicast_vars, &fds, &unicast_vars);
+      if(iRet)
+        Interrupted = iRet;
       alarm (ALARM_TIME);
       return;
     }
