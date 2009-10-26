@@ -100,9 +100,10 @@ void *show_power_func(void* arg)
   strength_parameters_t  *strengthparams;
   strengthparams= (strength_parameters_t  *) arg;
   int strength, ber, snr;
+  int wait_time=20;//in units of 100ms
+  int i;
   while(!strengthparams->tuneparams->strengththreadshutdown)
   {
-    usleep(2000000);
     if(strengthparams->tuneparams->display_strenght && strengthparams->tuneparams->card_tuned)
     {
       strength = ber = snr = 0;
@@ -111,6 +112,8 @@ void *show_power_func(void* arg)
           if (ioctl (strengthparams->fds->fd_frontend, FE_READ_SNR, &snr) >= 0)
             log_message( MSG_INFO, "Bit error rate: %10d Signal strength: %10d SNR: %10d\n", ber,strength,snr);
     }
+    for(i=0;i<wait_time && !strengthparams->tuneparams->strengththreadshutdown;i++)
+      usleep(100000);
   }
   return 0;
 }

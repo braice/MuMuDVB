@@ -1476,8 +1476,11 @@ int mumudvb_close(int Interrupted)
   }
 
 #ifdef HAVE_LIBPTHREAD
-  tuneparams.strengththreadshutdown=1;
-  pthread_join(signalpowerthread, NULL);
+  if(signalpowerthread)
+  {
+    tuneparams.strengththreadshutdown=1;
+    pthread_join(signalpowerthread, NULL);
+  }
 #endif
 
   for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
