@@ -1108,7 +1108,7 @@ int
     /**************************************************************/ 
 
     /* Attempt to read 188 bytes from /dev/____/dvr */
-    /** @todo Put the read of the card in a thread ?*/
+    /** @todo Put the read of the card in a thread  -- in fact two threads, one for the card, one for the rest*/
     if ((bytes_read = read (fds.fd_dvr, temp_buffer_from_dvr, TS_PACKET_SIZE*dvr_buffer_size)) > 0)
     {
 
@@ -1229,34 +1229,7 @@ int
         if((cam_vars.cam_support && send_packet==1) &&  //no need to check paquets we don't send
           (cam_vars.ca_resource_connected && cam_vars.delay>=1 ))
         {
-          if ((chan_and_pids.channels[curr_channel].need_cam_ask==CAM_NEED_ASK)&& (chan_and_pids.channels[curr_channel].pmt_pid == pid))
-          {
-	    //if the packet is already ok, we don't get it (it can be updated by pmt_follow)
-            if((autoconf_vars.autoconf_pid_update && !chan_and_pids.channels[curr_channel].pmt_packet->empty && chan_and_pids.channels[curr_channel].pmt_packet->packet_ok)||
-                (!autoconf_vars.autoconf_pid_update && get_ts_packet(actual_ts_packet,chan_and_pids.channels[curr_channel].pmt_packet))) 
-            {
-              //We check the transport stream id of the packet
-              if(check_pmt_ts_id(chan_and_pids.channels[curr_channel].pmt_packet, &chan_and_pids.channels[curr_channel]))
-              {
-                cam_vars.delay=0;
-                iRet=mumudvb_cam_new_pmt(&cam_vars, chan_and_pids.channels[curr_channel].pmt_packet);
-                if(iRet==1)
-                {
-                  log_message( MSG_INFO,"CAM : CA PMT sent for channel %d : \"%s\"\n", curr_channel, chan_and_pids.channels[curr_channel].name );
-                  chan_and_pids.channels[curr_channel].need_cam_ask=CAM_ASKED; //once we have asked the CAM for this PID, we don't have to ask anymore
-                }
-                else if(iRet==-1)
-                {
-                  log_message( MSG_DETAIL,"CAM : Problem sending CA PMT for channel %d : \"%s\"\n", curr_channel, chan_and_pids.channels[curr_channel].name );
-                  chan_and_pids.channels[curr_channel].pmt_packet->empty=1;//if there was a problem, we reset the packet
-                }
-              }
-              else
-              {
-                chan_and_pids.channels[curr_channel].pmt_packet->empty=1;//The ts_id is bad, we will try to get another PMT packet
-              }
-            }
-          }
+          cam_new_packet(pid, curr_channel, actual_ts_packet, &autoconf_vars, &cam_vars, &chan_and_pids.channels[curr_channel]);
         }
 #endif
 

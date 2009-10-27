@@ -762,3 +762,42 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
 
   return 0;
 }
+
+/** @brief This function is called when a new packet is there*/
+void cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, cam_parameters_t *cam_vars, mumudvb_channel_t *actual_channel)
+{
+  int iRet;
+  if ((actual_channel->need_cam_ask==CAM_NEED_ASK)&& (actual_channel->pmt_pid == pid))
+  {
+    //if the packet is already ok, we don't get it (it can be updated by pmt_follow)
+    if((autoconf_vars->autoconf_pid_update && !actual_channel->pmt_packet->empty && actual_channel->pmt_packet->packet_ok)||
+        (!autoconf_vars->autoconf_pid_update && get_ts_packet(ts_packet,actual_channel->pmt_packet))) 
+    {
+      //We check the transport stream id of the packet
+      if(check_pmt_ts_id(actual_channel->pmt_packet, actual_channel))
+      {
+        cam_vars->delay=0;
+        iRet=mumudvb_cam_new_pmt(cam_vars, actual_channel->pmt_packet);
+        if(iRet==1)
+        {
+          log_message( MSG_INFO,"CAM : CA PMT sent for channel %d : \"%s\"\n", curr_channel, actual_channel->name );
+          actual_channel->need_cam_ask=CAM_ASKED; //once we have asked the CAM for this PID, we don't have to ask anymore
+        }
+        else if(iRet==-1)
+        {
+          log_message( MSG_DETAIL,"CAM : Problem sending CA PMT for channel %d : \"%s\"\n", curr_channel, actual_channel->name );
+          actual_channel->pmt_packet->empty=1;//if there was a problem, we reset the packet
+        }
+      }
+      else
+      {
+        actual_channel->pmt_packet->empty=1;//The ts_id is bad, we will try to get another PMT packet
+      }
+    }
+  }
+    
+}
+
+
+
+
