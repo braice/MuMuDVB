@@ -1224,7 +1224,6 @@ int
 	//cam support
 	// If we send the packet, we look if it's a cam pmt pid
         /******************************************************/
-        /**@todo : put this in a function*/
 #ifdef ENABLE_CAM_SUPPORT
         if((cam_vars.cam_support && send_packet==1) &&  //no need to check paquets we don't send
           (cam_vars.ca_resource_connected && cam_vars.delay>=1 ))
@@ -1236,50 +1235,13 @@ int
         /******************************************************/
 	//PMT follow (ie we check if the pids announced in the PMT changed)
         /******************************************************/
-        /**@todo : put this in a function*/
-        //no need to check paquets we don't send
         if( (autoconf_vars.autoconf_pid_update) && 
-             (send_packet==1) && 
-             (chan_and_pids.channels[curr_channel].autoconfigurated) &&
-             (chan_and_pids.channels[curr_channel].pmt_pid==pid) && 
+             (send_packet==1) && //no need to check paquets we don't send
+             (chan_and_pids.channels[curr_channel].autoconfigurated) && //only channels whose pids where detected by autoconfiguration (we don't erase "manual" channels)
+             (chan_and_pids.channels[curr_channel].pmt_pid==pid) &&     //And we see the PMT
              pid)
         {
-          /*Note : the pmt version is initialised during autoconfiguration*/
-          /*Check the version stored in the channel*/
-          if(!chan_and_pids.channels[curr_channel].pmt_needs_update)
-          {
-	    //Checking without crc32, it there is a change we get the full packet for crc32 checking
-            chan_and_pids.channels[curr_channel].pmt_needs_update=pmt_need_update(&chan_and_pids.channels[curr_channel],actual_ts_packet,1);
-
-            if(chan_and_pids.channels[curr_channel].pmt_needs_update && chan_and_pids.channels[curr_channel].pmt_packet) //It needs update we mark the packet as empty
-              chan_and_pids.channels[curr_channel].pmt_packet->empty=1;
-          }
-          /*We need to update the full packet, we download it*/
-          if(chan_and_pids.channels[curr_channel].pmt_needs_update)
-          {
-            if(get_ts_packet(actual_ts_packet,chan_and_pids.channels[curr_channel].pmt_packet))
-            {
-              if(pmt_need_update(&chan_and_pids.channels[curr_channel],chan_and_pids.channels[curr_channel].pmt_packet->packet,0))
-              {
-                log_message(MSG_DETAIL,"Autoconfiguration : PMT packet updated, we have now to check if there is new things\n");
-                /*We've got the FULL PMT packet*/
-                if(autoconf_read_pmt(chan_and_pids.channels[curr_channel].pmt_packet, &chan_and_pids.channels[curr_channel], tuneparams.card, chan_and_pids.asked_pid, chan_and_pids.number_chan_asked_pid, &fds)==0)
-                {
-                  if(chan_and_pids.channels[curr_channel].need_cam_ask==CAM_ASKED)
-                    chan_and_pids.channels[curr_channel].need_cam_ask=CAM_NEED_ASK; //We we resend this packet to the CAM
-                  update_pmt_version(&chan_and_pids.channels[curr_channel]);
-                  chan_and_pids.channels[curr_channel].pmt_needs_update=0;
-                }
-                else
-                  chan_and_pids.channels[curr_channel].pmt_packet->empty=1;
-              }
-              else
-              {
-                log_message(MSG_DEBUG,"Autoconfiguration : False alert, nothing to do\n");
-                chan_and_pids.channels[curr_channel].pmt_needs_update=0;
-              }
-            }
-          }
+          autoconf_pmt_follow( actual_ts_packet, &fds, &chan_and_pids.channels[curr_channel], tuneparams.card, &chan_and_pids );
         }
 	  
         /******************************************************/

@@ -92,6 +92,7 @@ mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,
 int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_len, int *pos);
 void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len);
 int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parameters);
+void autoconf_free_services(mumudvb_service_t *services);
 
 extern int rtp_header;
 
@@ -1709,4 +1710,46 @@ int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_a
     }
   }
   return iRet;
+}
+
+
+/** @brief This function is called when a new PMT packet is there and we asked to check if there is updates*/
+void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t *actual_channel, int card,mumudvb_chan_and_pids_t *chan_and_pids)
+{
+  /*Note : the pmt version is initialised during autoconfiguration*/
+  /*Check the version stored in the channel*/
+  if(!actual_channel->pmt_needs_update)
+  {
+	    //Checking without crc32, it there is a change we get the full packet for crc32 checking
+    actual_channel->pmt_needs_update=pmt_need_update(actual_channel,ts_packet,1);
+
+    if(actual_channel->pmt_needs_update && actual_channel->pmt_packet) //It needs update we mark the packet as empty
+      actual_channel->pmt_packet->empty=1;
+  }
+  /*We need to update the full packet, we download it*/
+  if(actual_channel->pmt_needs_update)
+  {
+    if(get_ts_packet(ts_packet,actual_channel->pmt_packet))
+    {
+      if(pmt_need_update(actual_channel,actual_channel->pmt_packet->packet,0))
+      {
+        log_message(MSG_DETAIL,"Autoconfiguration : PMT packet updated, we have now to check if there is new things\n");
+        /*We've got the FULL PMT packet*/
+        if(autoconf_read_pmt(actual_channel->pmt_packet, actual_channel, card, chan_and_pids->asked_pid, chan_and_pids->number_chan_asked_pid, fds)==0)
+        {
+          if(actual_channel->need_cam_ask==CAM_ASKED)
+            actual_channel->need_cam_ask=CAM_NEED_ASK; //We we resend this packet to the CAM
+          update_pmt_version(actual_channel);
+          actual_channel->pmt_needs_update=0;
+        }
+        else
+          actual_channel->pmt_packet->empty=1;
+      }
+      else
+      {
+        log_message(MSG_DEBUG,"Autoconfiguration : False alert, nothing to do\n");
+        actual_channel->pmt_needs_update=0;
+      }
+    }
+  }
 }
