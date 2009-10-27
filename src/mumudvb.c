@@ -999,7 +999,7 @@ int
 
   // we open the file descriptors
   if (create_card_fd (tuneparams.card, chan_and_pids.asked_pid, &fds) < 0)
-    return mumudvb_close(100<<8);
+    return mumudvb_close(ERROR_GENERIC<<8);
 
   set_filters(chan_and_pids.asked_pid, &fds);
   fds.pfds=NULL;
@@ -1009,7 +1009,7 @@ int
   if (fds.pfds==NULL)
   {
     log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    return mumudvb_close(100<<8);
+    return mumudvb_close(ERROR_MEMORY<<8);
   }
 
   //We fill the file descriptor information structure. the first one is irrelevant
@@ -1019,7 +1019,7 @@ int
   if (unicast_vars.fd_info==NULL)
   {
     log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    return mumudvb_close(100<<8);
+    return mumudvb_close(ERROR_MEMORY<<8);
   }
 
   //File descriptor for polling the DVB card
@@ -1045,6 +1045,8 @@ int
     else
       chan_and_pids.channels[curr_channel].socketOut = makesocket (chan_and_pids.channels[curr_channel].ipOut, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids.channels[curr_channel].sOut);
   }
+
+
   //We open the socket for the http unicast if needed and we update the poll structure
   if(strlen(unicast_vars.ipOut))
   {
