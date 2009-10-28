@@ -57,7 +57,7 @@ int sdt_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf)
   ts_header_t *header=(ts_header_t *)buf;
 
   if(header->payload_unit_start_indicator) //It's the beginning of a new packet
-    if(sdt->version_number!=rewrite_vars->sdt_version)
+    if((sdt->version_number!=rewrite_vars->sdt_version) && (sdt->table_id==0x42))
       {
 	log_message(MSG_DEBUG,"SDT rewrite : Need update. stored version : %d, new: %d\n",rewrite_vars->sdt_version,sdt->version_number);
 	if(rewrite_vars->sdt_version!=-1)
