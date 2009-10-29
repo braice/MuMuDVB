@@ -130,7 +130,7 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
   log_message(MSG_DEBUG,"SDT rewrite : table id 0x%x \n", sdt->table_id);
   if(sdt->table_id!=0x42)
   {
-    rewrite_vars->sdt_needs_update=0;
+    rewrite_vars->sdt_needs_update=1;
     rewrite_vars->full_sdt->empty=1;
     log_message(MSG_DETAIL,"SDT rewrite :We didn't got the good SDT (wrong table id) we search for a new one\n");
     return 0;
