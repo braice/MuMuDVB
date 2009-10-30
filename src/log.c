@@ -517,9 +517,9 @@ void print_info ()
                "Builded with support for DVB API Version 5 (DVB-S2).\n"
 #endif
 #ifdef HAVE_LIBPTHREAD
-               "Builded with pthread support (used for periodic signal strength display and cam support).\n"
+               "Builded with pthread support (used for periodic signal strength display, cam support and transcoding).\n"
 #else
-               "Builded without pthread support (NO periodic signal strength display and NO cam support).\n"
+               "Builded without pthread support (NO periodic signal strength display, NO cam support and NO transcoding).\n"
 #endif
                "---------\n"
                "Originally based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
