@@ -48,6 +48,27 @@ then
 fi
 AM_CONDITIONAL(BUILD_CAMSUPPORT, [test "${enable_cam_support}" != "no"])
 
+dnl
+dnl transcoding support
+dnl
+AC_ARG_ENABLE(transcoding,
+  [  --enable-transcoding          transcoding support (default disabled)],,[enable_transcoding="no"])
+
+if test "${enable_transcoding}" = "yes"
+then
+  AC_CHECK_LIB([pthread], [pthread_create],[], [enable_transcoding="no"])
+  AC_CHECK_LIB([avcodec], [av_picture_copy],[], [enable_transcoding="no"])
+  AC_CHECK_LIB([avformat], [av_get_frame_filename],[], [enable_transcoding="no"])
+  AC_CHECK_LIB([swscale], [sws_freeContext],[], [enable_transcoding="no"])
+  if test "${enable_transcoding}" != "no"
+  then
+    AC_DEFINE(ENABLE_TRANSCODING, 1, Define if you want the transcoding support)
+  else
+    AC_MSG_WARN([libpthread, libavcodev, libavformat and libswscale are needed for transcoding support])
+  fi
+fi
+AM_CONDITIONAL(BUILD_TRANSCODING, [test "${enable_transcoding}" != "no"])
+
 
 dnl
 dnl  Test coverage
@@ -113,6 +134,13 @@ if test "${enable_cam_support}" != "no" ; then
         echo "Build with CAM support:                             yes"
 else
         echo "Build with CAM support:                              no"
+fi
+
+
+if test "${enable_transcoding}" != "no" ; then
+        echo "Build with transcoding support:                     yes"
+else
+        echo "Build with transcoding support:                      no"
 fi
 
 if test "${atsc_long_names}" = "yes" ; then

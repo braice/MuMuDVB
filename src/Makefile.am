@@ -15,3 +15,18 @@ SOURCES_camsupport = \
         cam.c \
 	cam.h \
         $(NULL)
+
+if BUILD_TRANSCODING
+mumudvb_SOURCES += $(SOURCES_transcoding)
+endif
+
+SOURCES_transcoding = \
+        transcode.c \
+	transcode.h \
+        transcode_common.c \
+	transcode_common.h \
+        transcode_avlib.c \
+	transcode_avlib.h \
+        transcode_queues.c \
+	transcode_queues.h \
+        $(NULL)

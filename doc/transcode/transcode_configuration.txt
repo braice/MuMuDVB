@@ -1,0 +1,349 @@
+transcode_enable <int> - enables or disables transcoding
+
+0 - disable (default); 1 - enable.
+
+----------------------------------------------------------------------------
+
+transcode_video_codec <string> - video codec for encoding
+
+mpeg4 (for MPEG-4), libx264 (for H.264) etc.
+
+----------------------------------------------------------------------------
+
+transcode_audio_codec - audio codec for encoding
+
+libmp3lame (for MP3), libfaac (for AAC) etc.
+
+----------------------------------------------------------------------------
+
+transcode_streaming_type <string> - streaming type
+
+mpegts - for MPEG-2 TS streaming.
+rtp - for RTP streaming.
+ffm - FFM feed to ffserver
+
+----------------------------------------------------------------------------
+
+transcode_ffm_url <string> - URL of FFM feed (required for FFM streaming)
+
+----------------------------------------------------------------------------
+
+transcode_rtp_port <int> - base port for RTP streaming
+
+Each RTP stream (audio or video) must go on an even port. Mumudvb will took for
+each media stream next even port starting from value specified in this option.
+
+----------------------------------------------------------------------------
+
+transcode_sdp_filename <string> - path to generated SDP file (for RTP streaming)
+
+----------------------------------------------------------------------------
+
+transcode_video_scale <float> - factor for video scaling
+
+----------------------------------------------------------------------------
+
+transcode_video_frames_per_second <int> - FPS of output video
+
+----------------------------------------------------------------------------
+
+transcode_audio_channels <int> - number of output audio channels
+
+Common values are:
+1 - mono
+2 - stereo
+
+----------------------------------------------------------------------------
+
+transcode_audio_sample_rate <int> - output audio sample rate
+
+Common values are: 96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350
+
+----------------------------------------------------------------------------
+
+transcode_aac_latm <int> - enable LATM payload type for AAC streams while RTP streaming
+
+0 - disable (default)
+1 - enable
+
+----------------------------------------------------------------------------
+
+transcode_aac_profile <string> - profile in case of AAC audio encoding
+
+low  - Low Complexity (LC) - the simplest and most widely used and supported.
+main - Main Profile (MAIN) - like the LC profile, with the addition of backwards prediction.
+ssl  - Sample-Rate Scalable (SRS) - a.k.a. Scalable Sample Rate (MPEG-4 AAC-SSR).
+ltp  - Long Term Prediction (LTP) - added in the MPEG-4 standard an improvement of the
+       MAIN profile using a forward predictor with lower computational complexity.
+
+----------------------------------------------------------------------------
+
+transcode_video_bitrate <string> - set video bitrate (int bits/s)
+
+Enables target bitrate mode for video. Attempts to reach a specific bitrate. Bitrate mode is generally the worst ratecontrol mode H.264 has.
+
+----------------------------------------------------------------------------
+
+transcode_audio_bitrate <int> - set audio bitrate (int bits/s)
+
+Enables target bitrate mode for audio.
+
+----------------------------------------------------------------------------
+
+transcode_x264_profile <int> - set H.264 encoding profile
+
+Supported values:
+
+baseline - Baseline Profile
+main - Main Profile
+high - High Profile
+
+Note: specify different video encoding options after declaration of transcode_x264_profile may change profile to higher one. For example option "enable_8x8dct=1" will enable 8x8 transform that is supported only by High Profile.
+
+----------------------------------------------------------------------------
+
+transcode_level <int> - set level of encoding
+
+Example values:
+10 for level 1.0
+11 for level 1.1
+12 for level 1.2
+20 for level 2.0
+21 for level 2.1
+30 for level 3.0
+etc.
+
+----------------------------------------------------------------------------
+
+transcode_x264_partitions <int> - enables best use of partitions for H.264
+
+0 - disable
+1 - enable
+
+Reccomended default to enable it for H.264.
+
+FFmpeg equivalent: partitions +parti4x4+parti8x8+partp8x8+partb8x8
+
+One of H.264's most useful features is the ability to choose among many combinations of inter and intra partitions. P-macroblocks can be subdivided into 16x8, 8x16, 8x8, 4x8, 8x4, and 4x4 partitions. B-macroblocks can be divided into 16x8, 8x16, and 8x8 partitions. I-macroblocks can be divided into 4x4 or 8x8 partitions. Analyzing more partition options improves quality at the cost of speed. The default is to analyze all partitions except p4x4 (p8x8, i8x8, i4x4, b8x8), since p4x4 is not particularly useful except at high bitrates and lower resolutions. Note that i8x8 requires 8x8dct, and is therefore a High Profile-only partition. p8x8 is the most costly, speed-wise, of the partitions, but also gives the most benefit. Generally, whenever possible, all partition types except p4x4 should be used.
+
+----------------------------------------------------------------------------
+
+transcode_loop_filter <int> - enables loop filter
+
+0 - disable
+1 - enable
+
+Reccomended default to enable it for H.264.
+
+----------------------------------------------------------------------------
+
+transcode_mixed_refs <int> - one reference per partition, as opposed to one reference per macroblock
+
+0 - disable
+1 - enable
+
+H.264 allows p8x8 blocks to select different references for each p8x8 block. This option allows this analysis to be done, and boosts quality with little speed impact. It should generally be used, though it obviously has no effect with only one reference frame.
+
+----------------------------------------------------------------------------
+
+enable_8x8dct <int> - high profile 8x8 transform (H.264)
+
+0 - disable
+1 - enable
+
+Gives a notable quality boost by allowing x264 to choose between 8x8 and 4x4 frequency transform size. Required for i8x8 partitions. Speed cost for this option is near-zero both for encoding and decoding; the only reason to disable it is when one needs support on a device not compatible with High Profile.
+
+----------------------------------------------------------------------------
+
+transcode_gop <int> - set the group of picture size
+
+Keyframe interval, also known as GOP length. This determines the maximum distance between I-frames. Very high GOP lengths will result in slightly more efficient compression, but will make seeking in the video somewhat more difficult. For H.264 recommended default: 250.
+
+----------------------------------------------------------------------------
+
+transcode_b_frames <int> - use 'frames' B frames
+
+B-frames are a core element of H.264 and are more efficient in H.264 than any previous standard. Some specific targets, such as HD-DVD and Blu-Ray, have limitations on the number of consecutive B-frames. Most, however, do not; as a result, there is rarely any negative effect to setting this to the maximum (16) since x264 will, if B-adapt is used, automatically choose the best number of B-frames anyways. This parameter simply serves to limit the max number of B-frames. Note that Baseline Profile, such as that used by iPods, does not support B-frames. Recommended default for H.264: 16.
+
+----------------------------------------------------------------------------
+
+transcode_mbd <int> - macroblock decision algorithm (high quality mode)
+
+0 - simple - use mbcmp (default)
+1 - bits - use fewest bits
+2 - rd - use best rate distortion
+
+*FIXME* enables high quality mode for MPEG-4 compression.
+
+----------------------------------------------------------------------------
+
+transcode_cmp <int> - full pel me compare function
+
+0   - sad    - sum of absolute differences, fast (default)
+1   - sse    - sum of squared errors
+2   - satd   - sum of absolute Hadamard transformed differences
+3   - dct    - sum of absolute DCT transformed differences
+4   - psnr   - sum of squared quantization errors (avoid, low quality)
+5   - bit    - number of bits needed for the block
+6   - rd     - rate distortion optimal, slow
+7   - zero   - 0
+8   - vsad   - sum of absolute vertical differences
+9   - vsse   - sum of squared vertical differences
+10  - nsse   - noise preserving sum of squared differences
+11  - w53    - 5/3 wavelet, only used in snow
+12  - w97    - 9/7 wavelet, only used in snow
+13  - dctmax -
+14  - dct264 -
+256 - chroma -
+
+*FIXME* Used in MPEG-4 compression
+
+----------------------------------------------------------------------------
+
+transcode_subcmp <int> - sub pel me compare function
+
+0   - sad    - sum of absolute differences, fast (default)
+1   - sse    - sum of squared errors
+2   - satd   - sum of absolute Hadamard transformed differences
+3   - dct    - sum of absolute DCT transformed differences
+4   - psnr   - sum of squared quantization errors (avoid, low quality)
+5   - bit    - number of bits needed for the block
+6   - rd     - rate distortion optimal, slow
+7   - zero   - 0
+8   - vsad   - sum of absolute vertical differences
+9   - vsse   - sum of squared vertical differences
+10  - nsse   - noise preserving sum of squared differences
+11  - w53    - 5/3 wavelet, only used in snow
+12  - w97    - 9/7 wavelet, only used in snow
+13  - dctmax -
+14  - dct264 -
+256 - chroma -
+
+*FIXME* Used in MPEG-4 compression
+
+----------------------------------------------------------------------------
+
+transcode_crf <float> - enables constant quality mode, and selects the quality (H.264 only)
+
+Constant quality mode (also known as constant ratefactor). Bitrate corresponds approximately to that of constant quantizer, but gives better quality overall at little speed cost. The best one-pass option in H.264.
+
+----------------------------------------------------------------------------
+
+transcode_refs <int> - reference frames to consider for motion compensation (H.264 only)
+
+One of H.264's most useful features is the abillity to reference frames other than the one immediately prior to the current frame. This parameter lets one specify how many references can be used, through a maximum of 16. Increasing the number of refs increases the DPB (Decoded Picture Buffer) requirement, which means hardware playback devices will often have strict limits to the number of refs they can handle. In live-action sources, more reference have limited use beyond 4-8, but in cartoon sources up to the maximum value of 16 is often useful. More reference frames require more processing power because every frame is searched by the motion search (except when an early skip decision is made). The slowdown is especially apparent with slower motion estimation methods. Recommended default for H.264: 6.
+
+----------------------------------------------------------------------------
+
+transcode_b_strategy <int> - strategy to choose between I/P/B-frames
+
+libx264, by default, adaptively decides through a low-resolution lookahead the best number of B-frames to use. It is possible to disable this adaptivity; this is not recommended. Recommended default for H.264: 1
+0: Very fast, but not recommended. Does not work with pre-scenecut (scenecut must be off to force off b-adapt).
+1: Fast, default mode in libx264. A good balance between speed and quality.
+2: A much slower but more accurate B-frame decision mode that correctly detects fades and generally gives considerably better quality. Its speed gets considerably slower at high bframes values, so its recommended to keep bframes relatively low (perhaps around 3) when using this option. It also may slow down the first pass of libx264 when in threaded mode.
+
+----------------------------------------------------------------------------
+
+transcode_coder_type <int>
+
+0 = vlc       variable length coder / huffman coder
+1 = ac/CABAC  arithmetic coder
+2 = raw       raw (no encoding)
+3 = rle       run-length coder
+4 = deflate   deflate-based coder
+
+CABAC is the default entropy encoder used by x264. Though somewhat slower on both the decoding and encoding end, it offers 10-15% improved compression on live-action sources and considerably higher improvements on animated sources, especially at low bitrates. It is also required for the use of trellis quantization. Disabling CABAC may somewhat improve decoding performance, especially at high bitrates. CABAC is not allowed in Baseline Profile.
+
+----------------------------------------------------------------------------
+
+transcode_me_method <int> - set motion estimation method
+
+1  - zero     - zero motion estimation (fastest)
+2  - full/esa - full motion estimation (slowest)
+3  - log      - log motion estimation
+4  - phods    - phods motion estimation
+5  - epzs/dia - EPZS motion estimation (default)
+6  - x1       - X1 motion estimation
+7  - hex      - hex motion estimation (x264 specific)
+8  - umh      - umh motion estimation (x264 specific)
+9  - iter     - iter motion estimation (snow specific)
+10 - tesa     - tesa motion estimation (x264 specific)
+
+One of the most important settings for x264, both speed and quality-wise.
+
+epzs - is the simplest search, consisting of starting at the best predictor, checking the motion vectors at one pixel upwards, left, down, and to the right, picking the best, and repeating the process until it no longer finds any better motion vector.
+
+hex - consists of a similar strategy, except it uses a range-2 search of 6 surrounding points, thus the name. It is considerably more efficient than DIA and hardly any slower, and therefore makes a good choice for general-use encoding.
+
+umh - is considerably slower than HEX, but searches a complex multi-hexagon pattern in order to avoid missing harder-to-find motion vectors. Unlike HEX and DIA, the merange parameter directly controls UMH's search radius, allowing one to increase or decrease the size of the wide search.
+
+full - is a highly optimized intelligent search of the entire motion search space within merange of the best predictor. It is mathematically equivalent to the bruteforce method of searching every single motion vector in that area, though faster. However, it is still considerably slower than UMH, with not too much benefit, so is not particularly useful for everyday encoding.
+
+----------------------------------------------------------------------------
+
+transcode_me_range <int> - limit motion vectors range)
+
+MErange controls the max range of the motion search. For HEX and DIA, this is clamped to between 4 and 16, with a recommended of 16. For UMH and ESA, it can be increased beyond the 16 to allow for a wider-range motion search, which is useful on HD footage and for high-motion footage. Note that for UMH and ESA, increasing MErange will significantly slow down encoding.
+
+----------------------------------------------------------------------------
+
+transcode_subq <int> - sub pel motion estimation quality
+
+An extremely important encoding parameter for H.264 which determines what algorithms are used for both subpixel motion searching and partition decision.
+
+1: Fastest, but extremely low quality. Should be avoided except on first pass encoding.
+2-5: Progressively better and slower, 5 serves as a good medium for higher speed encoding.
+6-7: 6 is the default. Activates rate-distortion optimization for partition decision. This can considerably improve efficiency, though it has a notable speed cost. 6 activates it in I/P frames, and subme7 activates it in B frames.
+8-9: Activates rate-distortion refinement, which uses RDO to refine both motion vectors and intra prediction modes. Slower than subme 6, but again, more efficient.
+
+----------------------------------------------------------------------------
+
+transcode_trellis <int> - rate-distortion optimal quantization
+
+0 - disabled
+1 - enabled only on the final encode of a MB
+2 - enabled on all mode decisions
+
+The main decision made in quantization is which coefficients to round up and which to round down. Trellis chooses the optimal rounding choices for the maximum rate-distortion score, to maximize PSNR relative to bitrate. This generally increases quality relative to bitrate by about 5% for a somewhat small speed cost. It should generally be enabled. Note that trellis requires CABAC.
+
+----------------------------------------------------------------------------
+
+transcode_sc_threshold <int> - scene change threshold
+
+Adjusts the sensitivity of x264's scenecut detection. Rarely needs to be adjusted. Recommended default for H.264: 40.
+
+----------------------------------------------------------------------------
+
+transcode_rc_eq <string> - set rate control equation
+
+Ratecontrol equation. Recommended default for H.264: 'blurCplx^(1-qComp)'.
+
+----------------------------------------------------------------------------
+
+transcode_qcomp <float> - video quantizer scale compression
+
+QP curve compression: 0.0 => CBR, 1.0 => CQP. Recommended default for H.264: 0.60.
+
+----------------------------------------------------------------------------
+
+transcode_qmin <int> - min video quantizer scale
+
+Minimum quantizer. Recommended default for H.264: 10.
+
+----------------------------------------------------------------------------
+
+transcode_qmax <int> - max video quantizer scale
+
+Maximum quantizer. Recommended default for H.264: 51.
+
+----------------------------------------------------------------------------
+
+transcode_qdiff <int> - max difference between the quantizer scale
+
+Set max QP step. Recommended default: 4.
+
+----------------------------------------------------------------------------
+
+transcode_keyint_min <int> - key interval
+
+----------------------------------------------------------------------------

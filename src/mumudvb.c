@@ -7,6 +7,9 @@
  * Code for dealing with libdvben50221 inspired from zap_ca
  * Copyright (C) 2004, 2005 Manu Abraham <abraham.manu@gmail.com>
  * Copyright (C) 2006 Andrew de Quincey (adq_dvb@lidskialf.net)
+ * 
+ * Transcoding written by Utelisys Communications B.V.
+ * Copyright (C) 2009 Utelisys Communications B.V.
  *
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -119,6 +122,9 @@
 #include "unicast_http.h"
 #include "rtp.h"
 #include "log.h"
+#ifdef ENABLE_TRANSCODING
+#include "transcode.h"
+#endif
 
 /** the table for crc32 claculations */
 extern uint32_t       crc32_table[256];
@@ -529,6 +535,12 @@ int
       if(iRet==-1)
         exit(ERROR_CONF);
     }
+#ifdef ENABLE_TRANSCODING
+    else if (transcode_read_option(&chan_and_pids.channels[curr_channel], ip_ok, delimiteurs, &substring))
+    {
+      continue;
+    }
+#endif
     else if (!strcmp (substring, "timeout_no_diff"))
     {
       substring = strtok (NULL, delimiteurs);
@@ -1295,7 +1307,32 @@ int
             /****** RTP *******/
             if(rtp_header)
               rtp_update_sequence_number(&chan_and_pids.channels[curr_channel]);
+            /********* TRANSCODE **********/
+#ifdef ENABLE_TRANSCODING
+	    if (NULL != chan_and_pids.channels[curr_channel].transcode_options.enable &&
+		    1 == *chan_and_pids.channels[curr_channel].transcode_options.enable) {
 
+		if (NULL == chan_and_pids.channels[curr_channel].transcode_handle) {
+
+		    strcpy(chan_and_pids.channels[curr_channel].transcode_options.ip, chan_and_pids.channels[curr_channel].ipOut);
+		    chan_and_pids.channels[curr_channel].transcode_options.port = chan_and_pids.channels[curr_channel].portOut;
+
+		    chan_and_pids.channels[curr_channel].transcode_handle = transcode_start_thread(chan_and_pids.channels[curr_channel].socketOut,
+			&chan_and_pids.channels[curr_channel].sOut, &chan_and_pids.channels[curr_channel].transcode_options);
+		}
+
+		if (NULL != chan_and_pids.channels[curr_channel].transcode_handle) {
+		    transcode_enqueue_data(chan_and_pids.channels[curr_channel].transcode_handle,
+			chan_and_pids.channels[curr_channel].buf+!(!(rtp_header))*RTP_HEADER_LEN,
+					   chan_and_pids.channels[curr_channel].nb_bytes-!(!(rtp_header))*RTP_HEADER_LEN);
+		}
+	    }
+
+	    if (NULL == chan_and_pids.channels[curr_channel].transcode_options.enable ||
+		    1 != *chan_and_pids.channels[curr_channel].transcode_options.enable ||
+		    (NULL != chan_and_pids.channels[curr_channel].transcode_options.streaming_type &&
+		    STREAMING_TYPE_MPEGTS != *chan_and_pids.channels[curr_channel].transcode_options.streaming_type))
+#endif
             /********** MULTICAST *************/
              //if the multicast TTL is set to 0 we don't send the multicast packets
             if(multicast_vars.ttl)
@@ -1312,10 +1349,7 @@ int
               while(actual_client!=NULL)
               {
                 //NO RTP over http waiting for the RTSP implementation
-                if(rtp_header)
-                  written_len=write(actual_client->Socket,chan_and_pids.channels[curr_channel].buf+RTP_HEADER_LEN, chan_and_pids.channels[curr_channel].nb_bytes-RTP_HEADER_LEN)+RTP_HEADER_LEN; //+RTP_HEADER_LEN to avoid changing the next lines
-                else
-                  written_len=write(actual_client->Socket,chan_and_pids.channels[curr_channel].buf, chan_and_pids.channels[curr_channel].nb_bytes);
+                written_len=write(actual_client->Socket,chan_and_pids.channels[curr_channel].buf+!(!(rtp_header))*RTP_HEADER_LEN, chan_and_pids.channels[curr_channel].nb_bytes-!(!(rtp_header))*RTP_HEADER_LEN)+!(!(rtp_header))*RTP_HEADER_LEN; //+RTP_HEADER_LEN to avoid changing the next lines
                 //We check if all the data was successfully written
                 if(written_len<chan_and_pids.channels[curr_channel].nb_bytes)
                 {
@@ -1424,6 +1458,9 @@ int mumudvb_close(int Interrupted)
 
   for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
   {
+#ifdef ENABLE_TRANSCODING
+    transcode_request_thread_end(chan_and_pids.channels[curr_channel].transcode_handle);
+#endif
     close (chan_and_pids.channels[curr_channel].socketOut);
     if(chan_and_pids.channels[curr_channel].socketIn>0)
       close (chan_and_pids.channels[curr_channel].socketIn); 
@@ -1433,6 +1470,14 @@ int mumudvb_close(int Interrupted)
     chan_and_pids.channels[curr_channel].pmt_packet=NULL;
   }
 
+#ifdef ENABLE_TRANSCODING
+    /* End transcoding and clear transcode options */
+    for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
+    {
+        transcode_wait_thread_end(chan_and_pids.channels[curr_channel].transcode_handle);
+        free_transcode_options(&chan_and_pids.channels[curr_channel].transcode_options);
+    }
+#endif
   // we close the file descriptors
   close_card_fd (fds);
 

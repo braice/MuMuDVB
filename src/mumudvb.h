@@ -35,6 +35,9 @@
 #include "network.h"  //for the sockaddr
 #include "ts.h"
 #include "config.h"
+#ifdef ENABLE_TRANSCODING
+#include "transcode_common.h"
+#endif
 
 /*Do we support ATSC ?*/
 #undef ATSC
@@ -247,6 +250,11 @@ typedef struct mumudvb_channel_t{
   int eit_dropping;
   /**The continuity counter for the EIT*/
   int eit_continuity_counter;
+
+#ifdef ENABLE_TRANSCODING
+  void *transcode_handle;
+  struct transcode_options_t transcode_options;
+#endif
 
 }mumudvb_channel_t;
 

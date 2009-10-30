@@ -502,6 +502,11 @@ void print_info ()
 #else
                "Builded without CAM support.\n"
 #endif
+#ifdef ENABLE_TRANSCODING
+               "Builded with transcoding support.\n"
+#else
+               "Builded without transcoding support.\n"
+#endif
 #ifdef ATSC
                "Builded with ATSC support.\n"
 #ifdef HAVE_LIBUCSI
