@@ -213,6 +213,7 @@ Paramètres concernant l'unicast HTTP
 |port_http | Le port d'écoute pour l'unicast HTTP | 4242 | | se référer au README pour plus de détails.
 |unicast_consecutive_errors_timeout | Le délai pour déconnecter un client qui ne réponds pas | 5 | | Un client sera déconnecté si aucune donnée n'a été envoyée avec succès durant cet intervalle. Une valeur 0 désactive cette fonctionnalité (déconseillé).
 |unicast_max_clients | Limite sur le nombre de clients simultanés | 0 | | 0 : pas de limite.
+|unicast_queue_size | La taille maximum du tampon utilisé lorsque l'écriture pour un client échoue. | 512k octets| | en octets.
 |==================================================================================================================
 
 

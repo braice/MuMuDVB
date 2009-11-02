@@ -288,6 +288,7 @@ unicast_parameters_t unicast_vars={
   .portOut=4242,
   .consecutive_errors_timeout=UNICAST_CONSECUTIVE_ERROR_TIMEOUT,
   .max_clients=-1,
+  .queue_max_size=UNICAST_DEFAULT_QUEUE_MAX,
 };
 
 //logging
@@ -1339,70 +1340,7 @@ int
               sendudp (chan_and_pids.channels[curr_channel].socketOut, &chan_and_pids.channels[curr_channel].sOut, chan_and_pids.channels[curr_channel].buf,
                        chan_and_pids.channels[curr_channel].nb_bytes);
             /*********** UNICAST **************/
-            /**@todo : put this in a function*/
-            if(chan_and_pids.channels[curr_channel].clients)
-            {
-              unicast_client_t *actual_client;
-              unicast_client_t *temp_client;
-              int written_len;
-              actual_client=chan_and_pids.channels[curr_channel].clients;
-              while(actual_client!=NULL)
-              {
-                //NO RTP over http waiting for the RTSP implementation
-                written_len=write(actual_client->Socket,chan_and_pids.channels[curr_channel].buf+!(!(rtp_header))*RTP_HEADER_LEN, chan_and_pids.channels[curr_channel].nb_bytes-!(!(rtp_header))*RTP_HEADER_LEN)+!(!(rtp_header))*RTP_HEADER_LEN; //+RTP_HEADER_LEN to avoid changing the next lines
-                //We check if all the data was successfully written
-                if(written_len<chan_and_pids.channels[curr_channel].nb_bytes)
-                {
-                  //No ! 
-                  /** @todo Put a buffer */
-                  if(written_len==-1)
-                    log_message(MSG_DEBUG,"Error when writing to client %s:%d : %s\n",
-                                inet_ntoa(actual_client->SocketAddr.sin_addr),
-                                          actual_client->SocketAddr.sin_port,
-                                          strerror(errno));
-                  else
-                    log_message(MSG_DEBUG,"Not all the data was written to %s:%d. Asked len : %d, written len %d\n",
-                                inet_ntoa(actual_client->SocketAddr.sin_addr),
-                                          actual_client->SocketAddr.sin_port,
-                                          chan_and_pids.channels[curr_channel].nb_bytes,
-                                          written_len);
-                  if(!actual_client->consecutive_errors)
-                  {
-                    log_message(MSG_DETAIL,"Unicast : Error when writing to client %s:%d : %s\n",
-                                inet_ntoa(actual_client->SocketAddr.sin_addr),
-                                          actual_client->SocketAddr.sin_port,
-                                          strerror(errno));
-                    gettimeofday (&tv, (struct timezone *) NULL);
-                    actual_client->first_error_time = tv.tv_sec;
-                    actual_client->consecutive_errors=1;
-                  }
-                  else 
-                  {
-                    //We have errors, we check if we reached the timeout
-                    gettimeofday (&tv, (struct timezone *) NULL);
-                    if((unicast_vars.consecutive_errors_timeout > 0) && (tv.tv_sec - actual_client->first_error_time) > unicast_vars.consecutive_errors_timeout)
-                    {
-                      log_message(MSG_INFO,"Consecutive errors when writing to client %s:%d during too much time, we disconnect\n",
-                                  inet_ntoa(actual_client->SocketAddr.sin_addr),
-                                            actual_client->SocketAddr.sin_port);
-                      temp_client=actual_client->chan_next;
-                      unicast_close_connection(&unicast_vars,&fds,actual_client->Socket,chan_and_pids.channels);
-                      actual_client=temp_client;
-                    }
-                  }
-                }
-                else if (actual_client->consecutive_errors)
-                {
-                  log_message(MSG_DETAIL,"We can write again to client %s:%d\n",
-                              inet_ntoa(actual_client->SocketAddr.sin_addr),
-                                        actual_client->SocketAddr.sin_port);
-                  actual_client->consecutive_errors=0;
-                }
-
-                if(actual_client) //Can be null if the client was destroyed
-                  actual_client=actual_client->chan_next;
-              }
-            }
+	    unicast_data_send(&chan_and_pids.channels[curr_channel], chan_and_pids.channels, &fds, &unicast_vars, rtp_header);
             /********* END of UNICAST **********/
             //If there is a rtp header we don't overwrite it
             if(rtp_header)

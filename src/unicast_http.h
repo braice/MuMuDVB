@@ -43,7 +43,10 @@ enum
 
 #define RECV_BUFFER_MULTIPLE 100
 /**@brief the timeout for disconnecting a client with only consecutive errors*/
-#define UNICAST_CONSECUTIVE_ERROR_TIMEOUT 5
+#define UNICAST_CONSECUTIVE_ERROR_TIMEOUT 30
+
+#define UNICAST_DEFAULT_QUEUE_MAX 1024*512
+#define UNICAST_MULTIPLE_QUEUE_SEND 3
 
 #define HTTP_OK_REPLY "HTTP/1.0 200 OK\r\n"\
                       "Content-type: application/octet-stream\r\n"\
@@ -109,6 +112,25 @@ Applications should use this field to indicate the size of the
 #define HTTP_503_REPLY "HTTP/1.0 503 Too many clients\r\n"\
                       "\r\n"
 
+/** @brief A data packet in queue.
+ *
+ */
+typedef struct unicast_queue_data_t{
+  int data_length;
+  unsigned char *data;
+  struct unicast_queue_data_t *next;
+}unicast_queue_data_t;
+
+/** @brief The header of a data queue.
+ *
+ */
+typedef struct unicast_queue_header_t{
+  int packets_in_queue;
+  int data_bytes_in_queue;
+  int full;
+  unicast_queue_data_t *first;
+  unicast_queue_data_t *last;
+}unicast_queue_header_t;
 
 /** @brief A client connected to the unicast connection.
  *
@@ -141,6 +163,10 @@ typedef struct unicast_client_t{
   struct unicast_client_t *chan_next;
   /**Previous client in the channel*/
   struct unicast_client_t *chan_prev;
+  /** The packets in queue*/
+  unicast_queue_header_t queue;
+  /** The latest write error for this client*/
+  int last_write_error;
 }unicast_client_t;
 
 
@@ -183,6 +209,8 @@ typedef struct unicast_parameters_t{
   int consecutive_errors_timeout;
   /** The information on the file descriptors : ie the type of FD, the client associated if it's a client fd, the channel if it's a channel fd */
   unicast_fd_info_t *fd_info;
+  /** The maximim size of the queue */
+  int queue_max_size;
 }unicast_parameters_t;
 
 int unicast_create_listening_socket(int socket_type, int socket_channel, char *ipOut, int port, struct sockaddr_in *sIn, int *socketIn, fds_t *fds, unicast_parameters_t *unicast_vars);
@@ -200,5 +228,11 @@ int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *chann
 
 void unicast_freeing(unicast_parameters_t *unicast_vars, mumudvb_channel_t *channels);
 int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
+
+void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *channels, fds_t *fds, unicast_parameters_t *unicast_vars, int rtp_header);
+
+void unicast_queue_clear(unicast_queue_header_t *header);
+
+
 
 #endif
