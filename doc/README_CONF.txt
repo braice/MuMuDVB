@@ -149,9 +149,6 @@ Various parameters
 [width="80%",cols="2,8,1,2,3",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
-|common_port | Default port for the streaming | 1234 | | 
-|multicast_ttl |The multicast Time To Live | 2 | |
-|multicast_auto_join | Set to 1 if you want MuMuDVB to join automatically the multicast groups | 0 | 0 or 1 | See known problems in the README
 |dont_send_scrambled | If set to 1 don't send the packets detected as scrambled. this will also remove indirectly the sap announces for the scrambled channels |0 | |
 |show_traffic_interval | the interval in second between two displays of the traffic | 10 | >2 | 
 |compute_traffic_interval | the interval in second between two computations of the traffic | 10 | >2 | 
@@ -160,6 +157,18 @@ Various parameters
 |rewrite_pat | Do we rewrite the PAT PID | 0 | 0 or 1 | See README 
 |rewrite_sdt | Do we rewrite the SDT PID | 0 | 0 or 1 | See README 
 |sort_eit | Do we sort the EIT PID | 0 | 0 or 1 | See README 
+|==================================================================================================================
+
+Multicast parameters
+~~~~~~~~~~~~~~~~~~~~
+
+[width="80%",cols="2,8,1,2,3",options="header"]
+|==================================================================================================================
+|Parameter name |Description | Default value | Possible values | Comments
+|multicast |Do we activate multicast | 1 | 0 or 1 |
+|common_port | Default port for the streaming | 1234 | | 
+|multicast_ttl |The multicast Time To Live | 2 | |
+|multicast_auto_join | Set to 1 if you want MuMuDVB to join automatically the multicast groups | 0 | 0 or 1 | See known problems in the README
 |==================================================================================================================
 
 CAM support parameters

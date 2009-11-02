@@ -1240,13 +1240,13 @@ int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parame
     }
 
     //Open the multicast socket for the new channel
-    if(multicast_vars->auto_join) //See the README for the reason of this option
+    if(multicast_vars->multicast && multicast_vars->auto_join) //See the README for the reason of this option
       chan_and_pids->channels[curr_channel].socketOut = 
           makeclientsocket (chan_and_pids->channels[curr_channel].ipOut,
                             chan_and_pids->channels[curr_channel].portOut,
                             multicast_vars->ttl,
                             &chan_and_pids->channels[curr_channel].sOut);
-    else
+    else if(multicast_vars->multicast)
       chan_and_pids->channels[curr_channel].socketOut = 
           makesocket (chan_and_pids->channels[curr_channel].ipOut,
                       chan_and_pids->channels[curr_channel].portOut,

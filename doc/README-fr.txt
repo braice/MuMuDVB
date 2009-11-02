@@ -330,7 +330,7 @@ Il y a une connexion en écoute, la chaîne est sélectionnée par le chemin HTT
 Rappelez vous que l'unicast peut consommer beaucoup de bande passante. Pensez à limiter le nombre de clients.
 
 [NOTE]
-Si vous ne voulez pas que le flux multicast (toujours présent) aille sur votre réseau, utilisez l'option `multicast_ttl=0`
+Si vous ne voulez pas que le flux multicast (toujours présent) aille sur votre réseau, utilisez l'option `multicast=0`
 
 Activer l'unicast HTTP
 ~~~~~~~~~~~~~~~~~~~~~~

@@ -333,7 +333,7 @@ And you can have listening sockets per channel, in this case the client will alw
 Be careful with unicast, it can eat a lot of bandwith. Think about limitting the number of clients.
 
 [NOTE]
-If you don't want the (always here) multicast traffic to go on your network set `multicast_ttl=0`
+If you don't want the (always here) multicast traffic to go on your network set `multicast=0`
 
 Activate HTTP unicast
 ~~~~~~~~~~~~~~~~~~~~~

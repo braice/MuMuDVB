@@ -150,9 +150,6 @@ Paramètres divers
 [width="80%",cols="2,8,1,2,3",options="header"]
 |==================================================================================================================
 |Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
-|common_port | Le port par défaut pour la diffusion multicast | 1234 | | 
-|multicast_ttl | Le TTL multicast | 2 | |
-|multicast_auto_join | Si positionné à 1 MuMuDVB joindra automatiquement tous les groupes multicast créés | 0 | 0 or 1 | cf problèmes connus dans le README
 |dont_send_scrambled | Si positionné à 1, MuMuDVB n'enverra pas les paquets brouillés. Cela retirera (indirectement) les annonces SAP pour les chaînes brouillées |0 | |
 |show_traffic_interval | Le temps en secondes entre deux affichages du trafic | 10 | >2 | 
 |compute_traffic_interval | Le temps en secondes entre deux calculs du trafic | 10 | >2 | 
@@ -162,6 +159,19 @@ Paramètres divers
 |rewrite_sdt | Est ce que MuMuDVB doit réécrire le PID SDT | 0 | 0 ou 1 | cf README 
 |sort_eit | Est ce que MuMuDVB doit trier les PID EIT | 0 | 0 ou 1 | cf README 
 |==================================================================================================================
+
+Paramètres concernant le multicast
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[width="80%",cols="2,8,1,2,3",options="header"]
+|==================================================================================================================
+|Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
+|multicast | Est ce que le multicast est activé ? | 1 | 0 ou 1 | 
+|common_port | Le port par défaut pour la diffusion multicast | 1234 | | 
+|multicast_ttl | Le TTL multicast | 2 | |
+|multicast_auto_join | Si positionné à 1 MuMuDVB joindra automatiquement tous les groupes multicast créés | 0 | 0 or 1 | cf problèmes connus dans le README
+|==================================================================================================================
+
+
 
 Paramètres concernant le support des cartes CAM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -178,6 +178,7 @@ mumudvb_chan_and_pids_t chan_and_pids={
 
 //multicast parameters
 multicast_parameters_t multicast_vars={
+  .multicast=1,
   .ttl=DEFAULT_TTL,
   .common_port = 1234,
   .auto_join=0,
@@ -669,7 +670,7 @@ int
   }
   fclose (conf_file);
 
-  if((autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)&&(sap_vars.sap == SAP_UNDEFINED))
+  if((autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)&&(sap_vars.sap == SAP_UNDEFINED) && (multicast_vars.multicast))
   {
     log_message( MSG_INFO,
                  "Full autoconfiguration, we activate SAP announces. if you want to desactivate them see the README.\n");
@@ -720,7 +721,39 @@ int
   else 
     autoconf_vars.autoconf_pid_update=0;
 
+  //We desactivate things depending on multicast if multicast is suppressed
+  if(!multicast_vars.ttl)
+  {
+    log_message( MSG_INFO, "The multicast TTL is set to 0, multicast will be desactivated.\n");
+    multicast_vars.multicast=0;
+  }
+  if(!multicast_vars.multicast)
+  {
+    for (curr_channel = 0; curr_channel < MAX_CHANNELS; curr_channel++)
+    {
+      if(chan_and_pids.channels[curr_channel].transcode_options.enable)
+      {
+	log_message( MSG_INFO, "NO Multicast, transcoding desactivated for channel \"%s\".\n", chan_and_pids.channels[curr_channel].name);
+	chan_and_pids.channels[curr_channel].transcode_options.enable=0;
+      }
+    }
+      if(multicast_vars.rtp_header)
+      {
+	multicast_vars.rtp_header=0;
+	log_message( MSG_INFO, "NO Multicast, RTP Header is desactivated.\n");
+      }
+      if(sap_vars.sap==SAP_ON)
+      {
+	log_message( MSG_INFO, "NO Multicast, SAP announces are desactivated.\n");
+	sap_vars.sap=SAP_OFF;
+      }
+  }
   free(conf_filename);
+  if(!multicast_vars.multicast && !unicast_vars.unicast)
+  {
+    log_message( MSG_ERROR, "NO Multicast AND NO unicast. No data can be send :(, Exciting ....\n");
+    return mumudvb_close(ERROR_CONF<<8);
+  }
   /*****************************************************/
   //End of Autoconfiguration init
   /*****************************************************/
@@ -1041,13 +1074,14 @@ int
   /*****************************************************/
   // Init network, we open the sockets
   /*****************************************************/
-  for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
-  {
+  if(multicast_vars.multicast)
+    for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
+    {
       //See the README for the reason of this option
-    if(multicast_vars.auto_join)
-      chan_and_pids.channels[curr_channel].socketOut = makeclientsocket (chan_and_pids.channels[curr_channel].ipOut, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids.channels[curr_channel].sOut);
-    else
-      chan_and_pids.channels[curr_channel].socketOut = makesocket (chan_and_pids.channels[curr_channel].ipOut, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids.channels[curr_channel].sOut);
+      if(multicast_vars.auto_join)
+        chan_and_pids.channels[curr_channel].socketOut = makeclientsocket (chan_and_pids.channels[curr_channel].ipOut, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids.channels[curr_channel].sOut);
+      else
+        chan_and_pids.channels[curr_channel].socketOut = makesocket (chan_and_pids.channels[curr_channel].ipOut, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids.channels[curr_channel].sOut);
   }
 
 
@@ -1326,7 +1360,7 @@ int
 #endif
             /********** MULTICAST *************/
              //if the multicast TTL is set to 0 we don't send the multicast packets
-            if(multicast_vars.ttl)
+            if(multicast_vars.multicast)
 	    {
 	      if(multicast_vars.rtp_header)
 	      {
@@ -1399,7 +1433,8 @@ int mumudvb_close(int Interrupted)
 #ifdef ENABLE_TRANSCODING
     transcode_request_thread_end(chan_and_pids.channels[curr_channel].transcode_handle);
 #endif
-    close (chan_and_pids.channels[curr_channel].socketOut);
+    if(chan_and_pids.channels[curr_channel].socketOut>0)
+      close (chan_and_pids.channels[curr_channel].socketOut);
     if(chan_and_pids.channels[curr_channel].socketIn>0)
       close (chan_and_pids.channels[curr_channel].socketIn); 
       //Free the channel structures
@@ -1452,7 +1487,7 @@ int mumudvb_close(int Interrupted)
   if(rewrite_vars.full_sdt)
     free(rewrite_vars.full_sdt);
 
-  if ((write_streamed_channels)&&remove (filename_channels_diff)) 
+  if (strlen(filename_channels_diff) && (write_streamed_channels)&&remove (filename_channels_diff)) 
   {
     log_message( MSG_WARN,
                  "%s: %s\n",
@@ -1460,7 +1495,7 @@ int mumudvb_close(int Interrupted)
     exit(ERROR_DEL_FILE);
   }
 
-  if ((write_streamed_channels)&&remove (filename_channels_not_streamed))
+  if (strlen(filename_channels_not_streamed) && (write_streamed_channels)&&remove (filename_channels_not_streamed))
   {
     log_message( MSG_WARN,
                  "%s: %s\n",
@@ -1471,7 +1506,7 @@ int mumudvb_close(int Interrupted)
 
   if (!no_daemon)
   {
-    if (remove (filename_pid))
+    if (strlen(filename_pid) && remove (filename_pid))
     {
       log_message( MSG_INFO, "%s: %s\n",
                    filename_pid, strerror (errno));

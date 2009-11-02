@@ -264,6 +264,8 @@ typedef struct mumudvb_channel_t{
 
 /**The parameters concerning the multicast*/
 typedef struct multicast_parameters_t{
+  /** Do we activate multicast ? */
+  int multicast;
   /** Time to live of sent packets */
   int ttl;
   /** the default port*/
