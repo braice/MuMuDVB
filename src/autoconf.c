@@ -1153,7 +1153,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 		    memset (channels[channel_number].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 		}
                 //We update the unicast port, the connection will be created in autoconf_finish_full
-                if(actual_unicast_port && strlen(unicast_vars->ipOut))
+                if(actual_unicast_port && unicast_vars->unicast)
                 {
                   channels[channel_number].unicast_port=actual_unicast_port;
                   actual_unicast_port++;
@@ -1223,7 +1223,7 @@ int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parame
   {
 
     /** open the unicast listening connections fo the channels */
-    if(chan_and_pids->channels[curr_channel].unicast_port && strlen(unicast_vars->ipOut))
+    if(chan_and_pids->channels[curr_channel].unicast_port && unicast_vars->unicast)
     {
       log_message(MSG_INFO,"Unicast : We open the channel %d http socket address %s:%d\n",
                   curr_channel,

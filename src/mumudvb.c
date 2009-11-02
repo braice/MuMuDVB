@@ -282,7 +282,8 @@ rewrite_parameters_t rewrite_vars={
 
 //Parameters for HTTP unicast
 unicast_parameters_t unicast_vars={
-  .ipOut="\0",
+  .unicast=0,
+  .ipOut="0.0.0.0",
   .portOut=4242,
   .consecutive_errors_timeout=UNICAST_CONSECUTIVE_ERROR_TIMEOUT,
   .max_clients=-1,
@@ -1051,7 +1052,7 @@ int
 
 
   //We open the socket for the http unicast if needed and we update the poll structure
-  if(strlen(unicast_vars.ipOut))
+  if(unicast_vars.unicast)
   {
     log_message(MSG_INFO,"Unicast : We open the Master http socket for address %s:%d\n",unicast_vars.ipOut, unicast_vars.portOut);
     unicast_create_listening_socket(UNICAST_MASTER, -1, unicast_vars.ipOut, unicast_vars.portOut, &unicast_vars.sIn, &unicast_vars.socketIn, &fds, &unicast_vars);

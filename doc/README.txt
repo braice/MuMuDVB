@@ -338,7 +338,7 @@ If you don't want the (always here) multicast traffic to go on your network set 
 Activate HTTP unicast
 ~~~~~~~~~~~~~~~~~~~~~
 
-To enable HTTP unicast you have to set the option `ip_http`. This option will set the ip adress on which you want to listen for incoming connections. If you want to listen on all your interfaces, put `0.0.0.0`.
+To enable HTTP unicast you have to set the option `unicast`. By default MuMuDVB will listen on all your interfaces for incoming connections.
 
 You can also define the listening port using `port_http`. If the port is not defined, the default port will be 4242.
 

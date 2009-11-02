@@ -335,7 +335,7 @@ Si vous ne voulez pas que le flux multicast (toujours présent) aille sur votre 
 Activer l'unicast HTTP
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Pour activer l'unicast HTTP vous devez définir l'option `ip_http`. Cette option vous permet de définir l'adresse IP sur laquelle vous voulez écouter les connections entrantes. Si vous voulez écouter sur toutes vos interfaces, mettez `0.0.0.0`.
+Pour activer l'unicast HTTP vous devez définir l'option `unicast`. Par défaut, MuMuDVB écoute sur toutes vos interfaces.
 
 Vous pouvez aussi définir le port d'écoute en utilisant l'option `port_http`. Si le port n'est pas défini, MuMuDVB utilisera le port par défaut : 4242.
 

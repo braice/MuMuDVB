@@ -192,6 +192,8 @@ typedef struct unicast_fd_info_t{
 /** @brief The parameters for unicast
 */
 typedef struct unicast_parameters_t{
+  /** Do we activate unicast ?*/
+  int unicast;
   /**The "HTTP" ip address*/
   char ipOut[20];
   /** The "HTTP" port*/

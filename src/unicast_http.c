@@ -95,6 +95,20 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
     sscanf (substring, "%s\n", unicast_vars->ipOut);
     if(unicast_vars->ipOut)
     {
+      if(unicast_vars->unicast==0)
+	log_message( MSG_WARN,
+                   "You should use the option \"unicast\" to activate unicast instead of ip_http\n");
+      unicast_vars->unicast=1;
+      log_message( MSG_WARN,
+                   "You have enabled the support for HTTP Unicast. This feature is quite youg, please report any bug/comment\n");
+    }
+  }
+  else if (!strcmp (substring, "unicast"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    unicast_vars->unicast = atoi (substring);
+    if(unicast_vars->unicast)
+    {
       log_message( MSG_WARN,
                    "You have enabled the support for HTTP Unicast. This feature is quite youg, please report any bug/comment\n");
     }

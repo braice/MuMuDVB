@@ -209,7 +209,8 @@ Paramètres concernant l'unicast HTTP
 [width="80%",cols="2,8,1,2,3",options="header"]
 |==================================================================================================================
 |Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
-|ip_http | L'ip d'écoute du serveur unicast. Si vous voulez écouter sur toutes les interfaces mettez 0.0.0.0 | vide  |  | Cette option active l'unicast HTTP, se référer au README pour plus de détails.
+|unicast | Utilisez cette option pour activer l'unicast HTTP | 0  |  | se référer au README pour plus de détails
+|ip_http | L'ip d'écoute du serveur unicast. Si vous voulez écouter sur toutes les interfaces mettez 0.0.0.0 | 0.0.0.0  |  |  se référer au README pour plus de détails.
 |port_http | Le port d'écoute pour l'unicast HTTP | 4242 | | se référer au README pour plus de détails.
 |unicast_consecutive_errors_timeout | Le délai pour déconnecter un client qui ne réponds pas | 5 | | Un client sera déconnecté si aucune donnée n'a été envoyée avec succès durant cet intervalle. Une valeur 0 désactive cette fonctionnalité (déconseillé).
 |unicast_max_clients | Limite sur le nombre de clients simultanés | 0 | | 0 : pas de limite.
