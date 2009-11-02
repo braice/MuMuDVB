@@ -43,9 +43,10 @@ enum
 
 #define RECV_BUFFER_MULTIPLE 100
 /**@brief the timeout for disconnecting a client with only consecutive errors*/
-#define UNICAST_CONSECUTIVE_ERROR_TIMEOUT 30
+#define UNICAST_CONSECUTIVE_ERROR_TIMEOUT 5
 
 #define UNICAST_DEFAULT_QUEUE_MAX 1024*512
+/**How many packets we try to send from the queue per new packet. This value MUST be at least 2*/
 #define UNICAST_MULTIPLE_QUEUE_SEND 3
 
 #define HTTP_OK_REPLY "HTTP/1.0 200 OK\r\n"\
