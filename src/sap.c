@@ -34,9 +34,6 @@
 #include <errno.h>
 #include "log.h"
 
-
-extern int rtp_header;
-
 int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumudvb_sap_message_t *sap_message, multicast_parameters_t multicast_vars);
 
 
@@ -381,7 +378,7 @@ int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumud
      m=video channel_port rtp/avp 33     
 
   */
-  if(!rtp_header)
+  if(!multicast_vars.rtp_header)
     sprintf(temp_string,"m=video %d udp 33\r\n", channel.portOut);
   else
     sprintf(temp_string,"m=video %d RTP/AVP 33\r\na=rtpmap:33 MP2T/90000\r\n",  channel.portOut);

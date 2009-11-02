@@ -27,10 +27,7 @@
  * This file contains the functions concerning the RTP header
  */
 
-#include <stdlib.h>
 #include "mumudvb.h"
-#include "rtp.h"
-
 
 
 /**@brief : This function add the RTP header to a channel
@@ -42,26 +39,26 @@
 void init_rtp_header(mumudvb_channel_t *channel)
 {
   // See RFC 1889
-  channel->nb_bytes=RTP_HEADER_LEN;// RTP header size
-  channel->buf[0]=128; //version=2 padding=0 extension=0 CSRC=0
-  channel->buf[1]=33;  // marker=0 payload type=33 (MP2T)
-  channel->buf[2]=0;   // sequence number
-  channel->buf[3]=0;   // sequence number
-  channel->buf[4]=0;   // timestamp
-  channel->buf[5]=0;   // timestamp
-  channel->buf[6]=0;   // timestamp
-  channel->buf[7]=0;   // timestamp
-  channel->buf[8]= (char)(rand() % 256); // synchronization source
-  channel->buf[9]= (char)(rand() % 256); // synchronization source
-  channel->buf[10]=(char)(rand() % 256); // synchronization source
-  channel->buf[11]=(char)(rand() % 256); // synchronization source
+  channel->buf_with_rtp_header[0]=128; //version=2 padding=0 extension=0 CSRC=0
+  channel->buf_with_rtp_header[1]=33;  // marker=0 payload type=33 (MP2T)
+  channel->buf_with_rtp_header[2]=0;   // sequence number
+  channel->buf_with_rtp_header[3]=0;   // sequence number
+  channel->buf_with_rtp_header[4]=0;   // timestamp
+  channel->buf_with_rtp_header[5]=0;   // timestamp
+  channel->buf_with_rtp_header[6]=0;   // timestamp
+  channel->buf_with_rtp_header[7]=0;   // timestamp
+  channel->buf_with_rtp_header[8]= (char)(rand() % 256); // synchronization source
+  channel->buf_with_rtp_header[9]= (char)(rand() % 256); // synchronization source
+  channel->buf_with_rtp_header[10]=(char)(rand() % 256); // synchronization source
+  channel->buf_with_rtp_header[11]=(char)(rand() % 256); // synchronization source
 
 }
 
 void rtp_update_sequence_number(mumudvb_channel_t *channel)
-{		      
+{
   // Change the header (sequence number)
-  channel->buf[2]=(char)((channel->rtp_packet_num >> 8) & 0xff); // sequence number (high)
-  channel->buf[3]=(char)(channel->rtp_packet_num & 0xff);        // sequence number (low)
+  channel->buf_with_rtp_header[2]=(char)((channel->rtp_packet_num >> 8) & 0xff); // sequence number (high)
+  channel->buf_with_rtp_header[3]=(char)(channel->rtp_packet_num & 0xff);        // sequence number (low)
   channel->rtp_packet_num++;
+  channel->rtp_packet_num &= 0xffff;
 }

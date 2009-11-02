@@ -181,10 +181,8 @@ multicast_parameters_t multicast_vars={
   .ttl=DEFAULT_TTL,
   .common_port = 1234,
   .auto_join=0,
-//  .rtp_header = 0,
+  .rtp_header = 0,
 };
-
-int rtp_header = 0;
 
 //tuning parameters
 tuning_parameters_t tuneparams={
@@ -572,14 +570,6 @@ int
       substring = strtok (NULL, delimiteurs);
       dont_send_scrambled = atoi (substring);
     }
-    else if (!strcmp (substring, "rtp_header"))
-    {
-      substring = strtok (NULL, delimiteurs);
-      rtp_header = atoi (substring);
-      if (rtp_header==1)
-        log_message( MSG_INFO, "You decided to send the RTP header.\n");
-    }
-
     else if (!strcmp (substring, "dvr_buffer_size"))
     {
       substring = strtok (NULL, delimiteurs);
@@ -926,7 +916,7 @@ int
   /*****************************************************/
 
   //Initialisation of the channels for RTP
-  if(rtp_header)
+  if(multicast_vars.rtp_header)
     for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
       init_rtp_header(&chan_and_pids.channels[curr_channel]);
 
@@ -1300,14 +1290,13 @@ int
 
           chan_and_pids.channels[curr_channel].nb_bytes += TS_PACKET_SIZE;
           //The buffer is full, we send it
-          if ((chan_and_pids.channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE)
+          if ((!multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
+	    ||(multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
           {
             //For bandwith measurement (traffic)
             chan_and_pids.channels[curr_channel].sent_data+=chan_and_pids.channels[curr_channel].nb_bytes;
 
-            /****** RTP *******/
-            if(rtp_header)
-              rtp_update_sequence_number(&chan_and_pids.channels[curr_channel]);
+
             /********* TRANSCODE **********/
 #ifdef ENABLE_TRANSCODING
 	    if (NULL != chan_and_pids.channels[curr_channel].transcode_options.enable &&
@@ -1324,8 +1313,8 @@ int
 
 		if (NULL != chan_and_pids.channels[curr_channel].transcode_handle) {
 		    transcode_enqueue_data(chan_and_pids.channels[curr_channel].transcode_handle,
-			chan_and_pids.channels[curr_channel].buf+!(!(rtp_header))*RTP_HEADER_LEN,
-					   chan_and_pids.channels[curr_channel].nb_bytes-!(!(rtp_header))*RTP_HEADER_LEN);
+			chan_and_pids.channels[curr_channel].buf,
+					   chan_and_pids.channels[curr_channel].nb_bytes);
 		}
 	    }
 
@@ -1337,16 +1326,26 @@ int
             /********** MULTICAST *************/
              //if the multicast TTL is set to 0 we don't send the multicast packets
             if(multicast_vars.ttl)
-              sendudp (chan_and_pids.channels[curr_channel].socketOut, &chan_and_pids.channels[curr_channel].sOut, chan_and_pids.channels[curr_channel].buf,
-                       chan_and_pids.channels[curr_channel].nb_bytes);
+	    {
+	      if(multicast_vars.rtp_header)
+	      {
+		/****** RTP *******/
+		rtp_update_sequence_number(&chan_and_pids.channels[curr_channel]);
+                sendudp (chan_and_pids.channels[curr_channel].socketOut,
+		         &chan_and_pids.channels[curr_channel].sOut,
+		         chan_and_pids.channels[curr_channel].buf_with_rtp_header,
+                         chan_and_pids.channels[curr_channel].nb_bytes+RTP_HEADER_LEN);
+	      }
+	      else
+		sendudp (chan_and_pids.channels[curr_channel].socketOut,
+			 &chan_and_pids.channels[curr_channel].sOut,
+			 chan_and_pids.channels[curr_channel].buf,
+                         chan_and_pids.channels[curr_channel].nb_bytes);
+	    }
             /*********** UNICAST **************/
-	    unicast_data_send(&chan_and_pids.channels[curr_channel], chan_and_pids.channels, &fds, &unicast_vars, rtp_header);
+	    unicast_data_send(&chan_and_pids.channels[curr_channel], chan_and_pids.channels, &fds, &unicast_vars);
             /********* END of UNICAST **********/
-            //If there is a rtp header we don't overwrite it
-            if(rtp_header)
-              chan_and_pids.channels[curr_channel].nb_bytes = RTP_HEADER_LEN;
-            else
-              chan_and_pids.channels[curr_channel].nb_bytes = 0;
+	    chan_and_pids.channels[curr_channel].nb_bytes = 0;
           }
         }
       }

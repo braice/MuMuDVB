@@ -57,7 +57,6 @@ Todo list
 #include "mumudvb.h"
 #include "errors.h"
 #include "log.h"
-#include "rtp.h"
 
 extern int Interrupted;
 
@@ -1054,7 +1053,7 @@ unicast_send_statistics_txt(int number_of_channels, mumudvb_channel_t *channels,
  * This function is called when a buffer for a channel is full and have to be sent to the clients
  *
  */
-void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *channels, fds_t *fds, unicast_parameters_t *unicast_vars, int rtp_header)
+void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *channels, fds_t *fds, unicast_parameters_t *unicast_vars)
 {
   if(actual_channel->clients)
   {
@@ -1070,14 +1069,8 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
     actual_client=actual_channel->clients;
     while(actual_client!=NULL)
     {
-      //NO RTP over http waiting for the RTSP implementation
       buffer=actual_channel->buf;
       buffer_len=actual_channel->nb_bytes;
-      if(rtp_header)
-      {
-	buffer+=RTP_HEADER_LEN;
-	buffer_len-=RTP_HEADER_LEN;
-      }
       data_from_queue=0;
       if(actual_client->queue.packets_in_queue!=0)
       {

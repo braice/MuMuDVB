@@ -1,5 +1,5 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB - UDP-ize a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
  * (C) 2004-2009 Brice DUBOST
@@ -21,7 +21,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *     
+ *
  */
 
 /**@file
@@ -35,6 +35,7 @@
 #include "network.h"  //for the sockaddr
 #include "ts.h"
 #include "config.h"
+
 #ifdef ENABLE_TRANSCODING
 #include "transcode_common.h"
 #endif
@@ -95,7 +96,8 @@ We cannot discover easily the MTU with unconnected UDP
 /**The path for the cam_info*/
 #define CAM_INFO_LIST_PATH "/var/run/mumudvb/caminfo_carte%d"
 
-
+/**RTP header length*/
+#define RTP_HEADER_LEN 12
 
 enum
   {
@@ -198,6 +200,8 @@ typedef struct mumudvb_channel_t{
   /**The PMT packet*/
   mumudvb_ts_packet_t *pmt_packet;
 
+  /**the RTP header (just before the buffer so it can be sended together)*/
+  unsigned char buf_with_rtp_header[RTP_HEADER_LEN];
   /**the buffer wich will be sent once it's full*/
   unsigned char buf[MAX_UDP_SIZE];
   /**number of bytes actually in the buffer*/
@@ -266,8 +270,8 @@ typedef struct multicast_parameters_t{
   int common_port;
   /** Does MuMuDVB have to join the created multicast groups ?*/
   int auto_join;
-//  /**Do we send the rtp header ? */
-//  int rtp_header;
+  /**Do we send the rtp header ? */
+  int rtp_header;
 }multicast_parameters_t;
 
 /** structure containing the channels and the asked pids information*/

@@ -94,8 +94,6 @@ void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len);
 int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parameters);
 void autoconf_free_services(mumudvb_service_t *services);
 
-extern int rtp_header;
-
 
 /**
 @brief The different encodings that can be used
@@ -1136,13 +1134,12 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 	      //This is a scrambled channel, we will have to ask the cam for descrambling it
 	      if(parameters.autoconf_scrambled && actual_service->free_ca_mode)
 		channels[channel_number].need_cam_ask=CAM_NEED_ASK;
-     
+
 	      //We store the PMT and the service id in the channel
 	      channels[channel_number].pmt_pid=actual_service->pmt_pid;
 	      channels[channel_number].ts_id=actual_service->id;
-	      if(rtp_header)
-		init_rtp_header(&channels[channel_number]);
-	      
+	      init_rtp_header(&channels[channel_number]); //We init the rtp header in all cases
+
 	      if(channels[channel_number].pmt_packet==NULL)
 		{
 		  channels[channel_number].pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));

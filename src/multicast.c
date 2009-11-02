@@ -96,6 +96,13 @@ int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb
     substring = strtok (NULL, delimiteurs);
     current_channel->portOut = atoi (substring);
   }
+  else if (!strcmp (substring, "rtp_header"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    multicast_vars->rtp_header = atoi (substring);
+    if (multicast_vars->rtp_header==1)
+      log_message( MSG_INFO, "You decided to send the RTP header (multicast only).\n");
+  }
   else
     return 0; //Nothing concerning multicast, we return 0 to explore the other possibilities
 
