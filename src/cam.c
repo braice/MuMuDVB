@@ -431,10 +431,10 @@ static void *camthread_func(void* arg)
  * This function if called when mumudvb receive a new PMT pid. 
  * This function will ask the cam to decrypt the associated channel
  */
-int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_pmt_ptr)
+int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_pmt_ptr, int need_cam_ask)
 {
   uint8_t capmt[4096];
-  int size;
+  int size,list_managment;
 
   // parse section
   struct section *section = section_codec(cam_pmt_ptr->packet,cam_pmt_ptr->len);
@@ -476,8 +476,13 @@ int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_p
     // If the an update is needed the Aston cams will be happy with a ADD (it detects that the channel is already present and updates
     //It seems that the power cam don't really follow the norm (ie accept almost everything)
     // Doing also only update should work
-    if ((size = en50221_ca_format_pmt(pmt, capmt, sizeof(capmt), cam_params->moveca, CA_LIST_MANAGEMENT_UPDATE, //an update should be equivalent to an add when the channel is not present
-				      CA_PMT_CMD_ID_OK_DESCRAMBLING)) < 0) {
+    //an update should be equivalent to an add when the channel is not present
+    //Note : The powercam HD V3.1 doesn't add channels with update, so we only do updates when the channel was added
+    if(need_cam_ask==CAM_NEED_UPDATE)
+      list_managment=CA_LIST_MANAGEMENT_UPDATE;
+    else
+      list_managment=CA_LIST_MANAGEMENT_ADD;
+    if ((size = en50221_ca_format_pmt(pmt, capmt, sizeof(capmt), cam_params->moveca, list_managment, CA_PMT_CMD_ID_OK_DESCRAMBLING)) < 0) {
 
       /*CA_PMT_CMD_ID_QUERY)) < 0) {
 	We don't do query, the query is never working very well. This is because the CAM cannot ask the card if 
@@ -767,7 +772,7 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
 void cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, cam_parameters_t *cam_vars, mumudvb_channel_t *actual_channel)
 {
   int iRet;
-  if ((actual_channel->need_cam_ask==CAM_NEED_ASK)&& (actual_channel->pmt_pid == pid))
+  if (((actual_channel->need_cam_ask==CAM_NEED_ASK)||(actual_channel->need_cam_ask==CAM_NEED_UPDATE))&& (actual_channel->pmt_pid == pid))
   {
     //if the packet is already ok, we don't get it (it can be updated by pmt_follow)
     if((autoconf_vars->autoconf_pid_update && !actual_channel->pmt_packet->empty && actual_channel->pmt_packet->packet_ok)||
@@ -777,7 +782,7 @@ void cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autocon
       if(check_pmt_ts_id(actual_channel->pmt_packet, actual_channel))
       {
         cam_vars->delay=0;
-        iRet=mumudvb_cam_new_pmt(cam_vars, actual_channel->pmt_packet);
+        iRet=mumudvb_cam_new_pmt(cam_vars, actual_channel->pmt_packet,actual_channel->need_cam_ask);
         if(iRet==1)
         {
           log_message( MSG_INFO,"CAM : CA PMT sent for channel %d : \"%s\"\n", curr_channel, actual_channel->name );

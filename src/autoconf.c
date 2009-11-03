@@ -1735,7 +1735,7 @@ void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t
         if(autoconf_read_pmt(actual_channel->pmt_packet, actual_channel, card, chan_and_pids->asked_pid, chan_and_pids->number_chan_asked_pid, fds)==0)
         {
           if(actual_channel->need_cam_ask==CAM_ASKED)
-            actual_channel->need_cam_ask=CAM_NEED_ASK; //We we resend this packet to the CAM
+            actual_channel->need_cam_ask=CAM_NEED_UPDATE; //We we resend this packet to the CAM
           update_pmt_version(actual_channel);
           actual_channel->pmt_needs_update=0;
         }
