@@ -31,12 +31,12 @@ void print_info ();
 void usage (char *name);
 void log_message( int , const char *, ... );
 void gen_file_streamed_channels (char *nom_fich_chaines_diff, char *nom_fich_chaines_non_diff, int nb_flux, mumudvb_channel_t *channels);
-void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels);
+void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels, int multicast, int unicast, int unicast_master_port, char *unicastipOut);
 void gen_config_file_header(char *orig_conf_filename, char *saving_filename);
 void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *saving_filename);
 void display_ca_sys_id(int id);
 void display_service_type(int type, int loglevel);
-int pid_type_to_str(char *dest,int type);
+char *pid_type_to_str(int type);
 int service_type_to_str(char *dest, int type);
 
 

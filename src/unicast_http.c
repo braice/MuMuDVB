@@ -964,7 +964,6 @@ unicast_send_statistics_txt(int number_of_channels, mumudvb_channel_t *channels,
   int clients=0;
   char *dest=NULL;
   char tempdest[81];
-  char str_pidtype[81];
   char str_service_type[81];
   int len_dest;
   int i;
@@ -1010,8 +1009,7 @@ unicast_send_statistics_txt(int number_of_channels, mumudvb_channel_t *channels,
     for(i=0;i<channels[curr_channel].num_pids;i++)
     {
       memset(tempdest,0,81);
-      pid_type_to_str(str_pidtype,channels[curr_channel].pids_type[i]);
-      if(snprintf(tempdest,80*sizeof(char),"  Pid %d type %s\r\n",channels[curr_channel].pids[i],str_pidtype)!=-1)
+      if(snprintf(tempdest,80*sizeof(char),"  Pid %d type %s\r\n",channels[curr_channel].pids[i],pid_type_to_str(channels[curr_channel].pids_type[i]))!=-1)
       {
 	tempdest[80]=0;
         if(dest)

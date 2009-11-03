@@ -1276,7 +1276,7 @@ int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parame
  * @param number_chan_asked_pid the number of channels who want this pid
  * @param fds the file descriptors
 */
-void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, uint8_t *asked_pid, uint8_t *number_chan_asked_pid, fds_t *fds)
+void autoconf_end(int card, mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds, int multicast, unicast_parameters_t *unicast_vars)
 {
   int curr_channel;
   int curr_pid;
@@ -1284,33 +1284,33 @@ void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels,
 
   log_message(MSG_DETAIL,"Autoconfiguration almost done\n");
   log_message(MSG_DETAIL,"Autoconf : We open the new file descriptors\n");
-  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+  for (curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
     {
-      for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+      for (curr_pid = 0; curr_pid < chan_and_pids->channels[curr_channel].num_pids; curr_pid++)
 	{
-	  if(asked_pid[channels[curr_channel].pids[curr_pid]]==PID_NOT_ASKED)
-	    asked_pid[channels[curr_channel].pids[curr_pid]]=PID_ASKED;
-	  number_chan_asked_pid[channels[curr_channel].pids[curr_pid]]++;
+	  if(chan_and_pids->asked_pid[chan_and_pids->channels[curr_channel].pids[curr_pid]]==PID_NOT_ASKED)
+	    chan_and_pids->asked_pid[chan_and_pids->channels[curr_channel].pids[curr_pid]]=PID_ASKED;
+	  chan_and_pids->number_chan_asked_pid[chan_and_pids->channels[curr_channel].pids[curr_pid]]++;
 	}
     }
   // we open the file descriptors
-  if (create_card_fd (card, asked_pid, fds) < 0)
+  if (create_card_fd (card, chan_and_pids->asked_pid, fds) < 0)
     {
       log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors. Some channels will probably not work\n");
     }
-  
+
   log_message(MSG_DETAIL,"Autoconf : Add the new filters\n");
-  set_filters(asked_pid, fds);
-  
+  set_filters(chan_and_pids->asked_pid, fds);
+
   log_message(MSG_INFO,"Autoconfiguration done\n");
 
-  log_streamed_channels(number_of_channels, channels);
+  log_streamed_channels(chan_and_pids->number_of_channels, chan_and_pids->channels, multicast, unicast_vars->unicast, unicast_vars->portOut, unicast_vars->ipOut);
 
   /**@todo : make an option to generate it or not ?*/
   char filename_gen_conf[256];
   sprintf (filename_gen_conf, GEN_CONF_PATH,
 	   card);
-  gen_config_file(number_of_channels, channels, filename_gen_conf);
+  gen_config_file(chan_and_pids->number_of_channels, chan_and_pids->channels, filename_gen_conf);
 
 }
 
@@ -1665,7 +1665,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
             //if it's finished, we open the new descriptors and add the new filters
             if(autoconf_vars->autoconfiguration==0)
             {
-              autoconf_end(tuneparams->card, chan_and_pids->number_of_channels, chan_and_pids->channels, chan_and_pids->asked_pid, chan_and_pids->number_chan_asked_pid, fds);
+              autoconf_end(tuneparams->card, chan_and_pids, fds, multicast_vars->multicast, unicast_vars);
                   //We free autoconf memory
               autoconf_freeing(autoconf_vars);
             }
@@ -1693,7 +1693,7 @@ int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_a
     {
       log_message(MSG_WARN,"Autoconf : Warning : Not all the channels were configured before timeout\n");
       autoconf_vars->autoconfiguration=0;
-      autoconf_end(tuneparams->card, chan_and_pids->number_of_channels, chan_and_pids->channels, chan_and_pids->asked_pid, chan_and_pids->number_chan_asked_pid, fds);
+      autoconf_end(tuneparams->card, chan_and_pids, fds, multicast_vars->multicast, unicast_vars);
       //We free autoconf memory
       autoconf_freeing(autoconf_vars);
     }

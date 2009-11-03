@@ -1113,7 +1113,7 @@ int
   /*****************************************************/
 
   if(autoconf_vars.autoconfiguration!=AUTOCONF_MODE_FULL)
-    log_streamed_channels(chan_and_pids.number_of_channels, chan_and_pids.channels);
+    log_streamed_channels(chan_and_pids.number_of_channels, chan_and_pids.channels, multicast_vars.multicast, unicast_vars.unicast, unicast_vars.portOut, unicast_vars.ipOut);
 
   if(autoconf_vars.autoconfiguration)
     log_message(MSG_INFO,"Autoconfiguration Start\n");

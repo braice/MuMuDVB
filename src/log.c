@@ -101,7 +101,7 @@ void log_message( int type,
  * @param number_of_channels the number of channels
  * @param channels : the channels array
  */
-void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels)
+void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels, int multicast, int unicast, int unicast_master_port, char *unicastipOut)
 {
   int curr_channel;
   int curr_pid;
@@ -110,11 +110,18 @@ void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels)
 	       (number_of_channels <= 1 ? "" : "s"));
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
-      log_message( MSG_INFO, "Channel number : %3d, ip : %s:%d, name : \"%s\"\n",
-		   curr_channel, channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
+      log_message( MSG_INFO, "Channel number : %3d, name : \"%s\"\n", curr_channel, channels[curr_channel].name);
+      if(multicast)
+	log_message( MSG_INFO, "\tMulticast ip : %s:%d\n", channels[curr_channel].ipOut, channels[curr_channel].portOut);
+      if(unicast)
+      {
+	log_message( MSG_INFO, "\tUnicast : Channel accessible via the master connection, %s:%d\n",unicastipOut, unicast_master_port);
+	if(channels[curr_channel].unicast_port)
+	  log_message( MSG_INFO, "\tUnicast : Channel accessible directly via %s:%d\n",unicastipOut, channels[curr_channel].unicast_port);
+      }
       log_message( MSG_DETAIL, "        pids : ");/**@todo Generate a strind and call log_message after, in syslog it generates one line per pid*/
       for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
-	log_message( MSG_DETAIL, "%d ", channels[curr_channel].pids[curr_pid]);
+	log_message( MSG_DETAIL, "%d (%s) ", channels[curr_channel].pids[curr_pid], pid_type_to_str(channels[curr_channel].pids_type[curr_pid]));
       log_message( MSG_DETAIL, "\n");
     }
 }
@@ -132,6 +139,7 @@ void
 gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_not_streamed_channels_filename,
 			    int number_of_channels, mumudvb_channel_t *channels)
 {
+  /**todo : adapt it for unicast (json ?) */
   FILE *file_streamed_channels;
   FILE *file_not_streamed_channels;
   int curr_channel;
@@ -457,35 +465,35 @@ void display_service_type(int type, int loglevel)
  * @param dest : the destination string
  * @param type the type to display
  */
-int pid_type_to_str(char *dest,int type)
+char *pid_type_to_str(int type)
 {
   switch(type)
   {
     case PID_PMT:
-      return snprintf(dest,80*sizeof(char),"PMT");
+      return "PMT";
     case PID_PCR:
-      return snprintf(dest,80*sizeof(char),"PCR");
+      return "PCR";
     case PID_VIDEO:
-      return snprintf(dest,80*sizeof(char),"Video");
+      return "Video";
     case PID_VIDEO_MPEG4:
-      return snprintf(dest,80*sizeof(char),"Video (MPEG4)");
+      return "Video (MPEG4)";
     case PID_AUDIO:
-      return snprintf(dest,80*sizeof(char),"Audio");
+      return "Audio";
     case PID_AUDIO_AAC:
-      return snprintf(dest,80*sizeof(char),"Audio (AAC)");
+      return "Audio (AAC)";
     case PID_AUDIO_AC3:
-      return snprintf(dest,80*sizeof(char),"Audio (AC3)");
+      return "Audio (AC3)";
     case PID_AUDIO_EAC3:
-      return snprintf(dest,80*sizeof(char),"Audio (E-AC3)");
+      return "Audio (E-AC3)";
     case PID_AUDIO_DTS:
-      return snprintf(dest,80*sizeof(char),"Audio (DTS)");
+      return "Audio (DTS)";
     case PID_SUBTITLE:
-      return snprintf(dest,80*sizeof(char),"Subtitle");
+      return "Subtitle";
     case PID_TELETEXT:
-      return snprintf(dest,80*sizeof(char),"Teletext");
+      return "Teletext";
     case PID_UNKNOW:
     default:
-      return snprintf(dest,80*sizeof(char),"Unknown");
+      return "Unknown";
   }
 }
 
