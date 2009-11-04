@@ -729,6 +729,7 @@ int
   }
   if(!multicast_vars.multicast)
   {
+#ifdef ENABLE_TRANSCODING
     for (curr_channel = 0; curr_channel < MAX_CHANNELS; curr_channel++)
     {
       if(chan_and_pids.channels[curr_channel].transcode_options.enable)
@@ -737,6 +738,7 @@ int
 	chan_and_pids.channels[curr_channel].transcode_options.enable=0;
       }
     }
+#endif
       if(multicast_vars.rtp_header)
       {
 	multicast_vars.rtp_header=0;
