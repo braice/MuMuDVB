@@ -120,6 +120,7 @@ enum
   {
     CAM_NO_ASK=0,
     CAM_NEED_ASK,
+    CAM_NEED_UPDATE,
     CAM_ASKED
   };
 
