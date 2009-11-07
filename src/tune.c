@@ -672,6 +672,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
   int dvbt_bandwidth=0;
 
   //no warning
+  memset(&feparams, 0, sizeof (struct dvb_frontend_parameters));
   hi_lo = 0;
 
   if ( (res = ioctl(fd_frontend,FE_GET_INFO, &fe_info) < 0)){
