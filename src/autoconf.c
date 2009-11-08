@@ -492,7 +492,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
   {
     log_message( MSG_DEBUG,"Autoconf : Channel update new number of pids %d old %d we check for changes\n", temp_num_pids, channel->num_pids);
 
-	    //We search for added pids
+    //We search for added pids
     for(i=0;i<temp_num_pids;i++)
     {
       found=0;
@@ -504,7 +504,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
       if(!found)
       {
         log_message( MSG_DEBUG, "Autoconf : Update : pid %d added \n",temp_pids[i]);
-		    //If the pid is not on the list we add it for the filters
+	//If the pid is not on the list we add it for the filters
         if(asked_pid[temp_pids[i]]==PID_NOT_ASKED)
           asked_pid[temp_pids[i]]=PID_ASKED;
 
@@ -514,18 +514,18 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
         channel->num_pids++;
 
         log_message(MSG_DETAIL,"Autoconf : Add the new filters\n");
-		    // we open the file descriptors
+	// we open the file descriptors
         if (create_card_fd (card, asked_pid, fds) < 0)
         {
           log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors. Some channels will probably not work\n");
-			//return; //FIXME : what do we do here ?
+	  //return; //FIXME : what do we do here ?
         }
-		    //open the new filters
+	//open the new filters
         set_filters(asked_pid, fds);
 
       }
     }
-	    //We search for suppressed pids
+    //We search for suppressed pids
     for(i=0;i<channel->num_pids;i++)
     {
       found=0;
@@ -538,14 +538,14 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
       {
         log_message( MSG_DEBUG, "Autoconf : Update : pid %d supressed \n",channel->pids[i]);
 
-		    //We check the number of channels on wich this pid is registered, if 0 it's strange we warn
+	//We check the number of channels on wich this pid is registered, if 0 it's strange we warn
         if((channel->pids[i]>MAX_MANDATORY_PID_NUMBER )&& (number_chan_asked_pid[channel->pids[i]]))
         {
-			//We decrease the number of channels with this pid
+	  //We decrease the number of channels with this pid
           number_chan_asked_pid[channel->pids[i]]--;
-			//If no channel need this pid anymore, we remove the filter (closing the file descriptor remove the filter associated)
+	  //If no channel need this pid anymore, we remove the filter (closing the file descriptor remove the filter associated)
           if(number_chan_asked_pid[channel->pids[i]]==0)
-          {			    
+          {
             log_message( MSG_DEBUG, "Autoconf : Update : pid %d does not belong to any channel anymore, we close the filter \n",channel->pids[i]);
             close(fds->fd_demuxer[channel->pids[i]]);
             fds->fd_demuxer[channel->pids[i]]=0;
@@ -553,14 +553,19 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
           }
         }
         else
-          log_message( MSG_WARN, "Autoconf : Update : We tried to suppressed pid %d in a strange way, please contact if you can reproduce\n",channel->pids[i]);
-		    
-		    //We remove the pid from this channel by swapping with the last one and decreasing the pid number
+          log_message( MSG_WARN, "Autoconf : Update : We tried to suppress pid %d in a strange way, please contact if you can reproduce\n",channel->pids[i]);
+        //We remove the pid from this channel by swapping with the last one and decreasing the pid number
         channel->pids[i]=channel->pids[channel->num_pids-1];
         channel->num_pids--;
+	i--; //we wan to check the pid just moved so we force the loop to reaxamine pid i
 
       }
     }
+    log_message( MSG_DETAIL, "        pids : ");/**@todo Generate a strind and call log_message after, in syslog it generates one line per pid*/
+    int curr_pid;
+    for (curr_pid = 0; curr_pid < channel->num_pids; curr_pid++)
+	log_message( MSG_DETAIL, "%d (%s) ", channel->pids[curr_pid], pid_type_to_str(channel->pids_type[curr_pid]));
+    log_message( MSG_DETAIL, "\n");
   }
   /** @todo : update generated conf file*/
   /**************************
@@ -646,6 +651,7 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
   int section_length=0;
   int number_of_services=0;
   int channels_missing=0;
+  int new_services=0;
 
   log_message(MSG_DEBUG,"Autoconf : ---- New PAT ----\n");
 
@@ -679,8 +685,9 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
 	      if(!actual_service->pmt_pid)
 		{
 		  //We found a new service without the PMT, pid, we update this service
+		  new_services=1;
 		  actual_service->pmt_pid=HILO(prog->network_pid);
-		  log_message(MSG_DEBUG,"Autoconf : service updated  pmt pid : %d\t id 0x%x\t name \"%s\"\n",
+		  log_message(MSG_DETAIL,"Autoconf : service updated  pmt pid : %d\t id 0x%x\t name \"%s\"\n",
 			      actual_service->pmt_pid,
 			      actual_service->id,
 			      actual_service->name);
@@ -702,7 +709,8 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
 
   if(channels_missing)
     {
-      log_message(MSG_DETAIL,"Autoconf : PAT read %d channels on %d are missing, we wait for others SDT/PSIP for the moment.\n",channels_missing,number_of_services);
+      if(new_services)
+        log_message(MSG_DETAIL,"Autoconf : PAT read %d channels on %d are missing, we wait for others SDT/PSIP for the moment.\n",channels_missing,number_of_services);
       return 0;
     }
 
@@ -734,16 +742,14 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
   if((header->table_id==0x42)||(header->table_id==0x46))
     {
       log_message(MSG_DEBUG, "Autoconf : -- SDT : Service Description Table --\n");
-  
+
       //Loop over different services in the SDT
       delta=SDT_LEN;
-      while((len-delta)>(4+SDT_DESCR_LEN))
+      while((len-delta)>=(4+SDT_DESCR_LEN))
 	{	  
 	  descr_header=(sdt_descr_t *)(buf +delta );
-	  
 	  //we search if we already have service id
 	  new_service=autoconf_find_service_for_add(services,HILO(descr_header->service_id));
-	  
 	  if(new_service)
 	    {
 	      log_message(MSG_DEBUG, "Autoconf : We discovered a new service, service_id : 0x%x  ", HILO(descr_header->service_id));
@@ -763,7 +769,6 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
 		case 5:
 		  log_message(MSG_DEBUG, "running_status : service off-air\t");  break;
 		}
-	      
 	      //we store the data
 	      new_service->id=HILO(descr_header->service_id);
 	      new_service->running_status=descr_header->running_status;
@@ -791,12 +796,12 @@ void parse_sdt_descriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_s
   while (descriptors_loop_len > 0) {
     unsigned char descriptor_tag = buf[0];
     unsigned char descriptor_len = buf[1] + 2;
-    
+
     if (!descriptor_len) {
       log_message(MSG_DEBUG, " Autoconf : --- SDT descriptor --- descriptor_tag == 0x%02x, len is 0\n", descriptor_tag);
       break;
     }
-    
+
     //The service descriptor provides the names of the service provider and the service in text form together with the service_type.
     if(descriptor_tag==0x48)
       parse_service_descriptor(buf,service);
@@ -1348,7 +1353,7 @@ int autoconf_read_psip(autoconf_parameters_t *parameters)
 
   if(parameters->transport_stream_id<0)
     {
-      log_message(MSG_DEBUG,"Autoconf :We don't have a transport id from the pat, we skip this PSIP\n");
+      log_message(MSG_DEBUG,"Autoconf :We don't have a transport id from the PAT, we skip this PSIP\n");
       return 1;
     }
     
@@ -1601,6 +1606,10 @@ void update_pmt_version(mumudvb_channel_t *channel)
   channel->pmt_version=pmt->version_number;
 }
 
+
+/********************************************************************
+ * Autoconfiguration new packet and poll functions
+ ********************************************************************/
 /** @brief This function is called when a new packet is there and the autoconf is not finished*/
 int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, fds_t *fds, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars,  unicast_parameters_t *unicast_vars)
 {
