@@ -34,14 +34,6 @@
 
 #include "mumudvb.h"
 
-/** Enum to tell if we send sap announces*/
-typedef enum sap_status {
-  SAP_UNDEFINED,
-  SAP_OFF,
-  SAP_ON
-} sap_status_t;
-
-
 /**refer to  RFC 2974 : sap IP address*/
 #define SAP_IP  "224.2.127.254"
 /**refer to  RFC 2974 : sap port*/
@@ -73,7 +65,7 @@ typedef struct sap_parameters_t{
   /**the sap messages array*/
   mumudvb_sap_message_t *sap_messages; 
   /**do we send sap announces ?*/
-  sap_status_t sap; 
+  option_status_t sap; 
   /**Interval between two sap announces in second*/
   int sap_interval;
   /** The ip address of the server that sends the sap announces*/

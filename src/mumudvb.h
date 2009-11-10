@@ -124,6 +124,14 @@ enum
     CAM_ASKED
   };
 
+/** Enum to tell if the option is set*/
+typedef enum option_status {
+  OPTION_UNDEFINED,
+  OPTION_OFF,
+  OPTION_ON
+} option_status_t;
+
+
   /** The different PID types*/
 enum
 {

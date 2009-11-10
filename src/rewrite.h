@@ -43,7 +43,7 @@
  */
 typedef struct rewrite_parameters_t{
   /**Do we rewrite the PAT pid ?*/
-  int rewrite_pat;
+  option_status_t rewrite_pat;
   /**The actual version of the PAT pid*/
   int pat_version;
   /**Do the actual full PAT needs to be updated ?*/
@@ -56,7 +56,7 @@ typedef struct rewrite_parameters_t{
   int pat_continuity_counter;
 
   /**Do we rewrite the SDT pid ?*/
-  int rewrite_sdt;
+  option_status_t rewrite_sdt;
   /**The actual version of the SDT pid*/
   int sdt_version;
   /**Do the actual full SDT needs to be updated ?*/
@@ -69,7 +69,7 @@ typedef struct rewrite_parameters_t{
   int sdt_continuity_counter;
 
   /** Do we sort the EIT PID ?*/
-  int eit_sort;
+  option_status_t eit_sort;
 
 }rewrite_parameters_t;
 
