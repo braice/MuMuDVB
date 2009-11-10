@@ -684,19 +684,19 @@ int
     {
       rewrite_vars.rewrite_pat=OPTION_ON;
       log_message( MSG_INFO,
-                   "Full autoconfiguration, we activate PAT rewritting. if you want to desactivate them see the README.\n");
+                   "Full autoconfiguration, we activate PAT rewritting. if you want to desactivate it see the README.\n");
     }
     if(rewrite_vars.rewrite_sdt == OPTION_UNDEFINED)
     {
       rewrite_vars.rewrite_sdt=OPTION_ON;
       log_message( MSG_INFO,
-                   "Full autoconfiguration, we activate SDT rewritting. if you want to desactivate them see the README.\n");
+                   "Full autoconfiguration, we activate SDT rewritting. if you want to desactivate it see the README.\n");
     }
     if(rewrite_vars.eit_sort == OPTION_UNDEFINED)
     {
       rewrite_vars.eit_sort=OPTION_ON;
       log_message( MSG_INFO,
-                   "Full autoconfiguration, we activate sorting of the EIT PID. if you want to desactivate them see the README.\n");
+                   "Full autoconfiguration, we activate sorting of the EIT PID. if you want to desactivate it see the README.\n");
     }
   }
 
