@@ -145,7 +145,15 @@ int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, c
   else if (!strcmp (substring, "autoconfiguration"))
   {
     substring = strtok (NULL, delimiteurs);
-    autoconf_vars->autoconfiguration = atoi (substring);
+    if(atoi (substring)==2)
+      autoconf_vars->autoconfiguration = AUTOCONF_MODE_FULL;
+    else if(atoi (substring)==1)
+      autoconf_vars->autoconfiguration = AUTOCONF_MODE_PIDS;
+    else if (!strcmp (substring, "full"))
+      autoconf_vars->autoconfiguration = AUTOCONF_MODE_FULL;
+    else if (!strcmp (substring, "partial"))
+      autoconf_vars->autoconfiguration = AUTOCONF_MODE_PIDS;
+
     if(!((autoconf_vars->autoconfiguration==AUTOCONF_MODE_PIDS)||(autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL)))
     {
       log_message( MSG_WARN,
