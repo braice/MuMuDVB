@@ -243,6 +243,7 @@ autoconf_parameters_t autoconf_vars={
   .autoconf_temp_psip=NULL,
   .services=NULL,
   .autoconf_unicast_start_port=0,
+  .num_ts_id=0,
 };
 
 #ifdef ENABLE_CAM_SUPPORT

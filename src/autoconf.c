@@ -188,6 +188,21 @@ int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, c
     substring = strtok (NULL, delimiteurs);
     autoconf_vars->autoconf_unicast_start_port = atoi (substring);
   }
+  else if (!strcmp (substring, "autoconf_tsid_list"))
+  {
+    while ((substring = strtok (NULL, delimiteurs)) != NULL)
+    {
+      if (autoconf_vars->num_ts_id >= MAX_CHANNELS)
+      {
+        log_message( MSG_ERROR,
+                     "Autoconfiguration : Too many ts id : %d\n",
+                     autoconf_vars->num_ts_id);
+        return -1;
+      }
+      autoconf_vars->ts_id_list[autoconf_vars->num_ts_id] = atoi (substring);
+      autoconf_vars->num_ts_id++;
+    }
+  }
   else
     return 0; //Nothing concerning autoconfiguration, we return 0 to explore the other possibilities
 
@@ -1104,6 +1119,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 
   mumudvb_service_t *actual_service;
   int channel_number=0;
+  int found_in_tsid_list;
   char ip[20];
   int actual_unicast_port=parameters.autoconf_unicast_start_port;
   actual_service=parameters.services;
@@ -1113,10 +1129,29 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
       if(parameters.autoconf_scrambled && actual_service->free_ca_mode)
 	  log_message(MSG_DETAIL,"Service scrambled. Name \"%s\"\n", actual_service->name);
 
+      //If there is a ts_id list we look if we find it
+      if(parameters.num_ts_id)
+      {
+	int actual_tsid;
+	found_in_tsid_list=0;
+	for(actual_tsid=0;actual_tsid<parameters.num_ts_id && !found_in_tsid_list;actual_tsid++)
+	{
+	  if(parameters.ts_id_list[actual_tsid]==actual_service->id)
+	  {
+	    found_in_tsid_list=1;
+            log_message(MSG_DEBUG,"Service found in the ts_id list. Name \"%s\"\n", actual_service->name);
+	  }
+	}
+      }
+      else //No ts id list so it is found
+	found_in_tsid_list=1;
+
       if(!parameters.autoconf_scrambled && actual_service->free_ca_mode)
 	log_message(MSG_DETAIL,"Service scrambled and no cam support. Name \"%s\"\n", actual_service->name);
       else if(!actual_service->pmt_pid)
 	log_message(MSG_DETAIL,"Service without a PMT pid, we skip. Name \"%s\"\n", actual_service->name);
+      else if(!found_in_tsid_list)
+	log_message(MSG_DETAIL,"Service NOT in the ts_id list, we skip. Name \"%s\", id %d\n", actual_service->name, actual_service->id);
       else
 	{
 	  //Cf EN 300 468 v1.9.1 Table 81

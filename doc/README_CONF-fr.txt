@@ -196,6 +196,7 @@ Paramètres pour l'autoconfiguration
 |autoconf_scrambled |Lors de l'autoconfiguration complète, est ce que les chaînes brouillées seront diffusées ? | 0 | 0 or 1 | Automatique lorsque cam_support=1. Parfois, une chaîne en clair peut être marquée comme étant cryptée. Cette option est aussi nécessaire lorsqu'une softcam est utilisée.
 |autoconf_pid_update |Est ce que MuMuDVB se reconfigure lorsque le PMT est mis à jour ? | 1 | 0 or 1 | 
 |autoconf_unicast_start_port |Le port unicast pour la première chaine découverte |  |  | Voir README-fr pour plus de détails.
+|autoconf_tsid_list |Pour ne pas autoconfigurer toutes les chaînes du transpondeur en autoconfiguration complète, spécifiez avec cette option la liste des transport stream id (numeros de programme) des chaînes que vous voulez configurer | vide |  | 
 |==================================================================================================================
 
 Paramètres concernant les annonces SAP
