@@ -1174,7 +1174,7 @@ int
       stats_num_packets_received+=(int) bytes_read/188;
       stats_num_reads++;
     }
- 
+
     for(buffpos=0;(buffpos+TS_PACKET_SIZE)<=bytes_read;buffpos+=TS_PACKET_SIZE)//we loop on the subpackets
     {
       memcpy( actual_ts_packet,temp_buffer_from_dvr+buffpos,TS_PACKET_SIZE);
