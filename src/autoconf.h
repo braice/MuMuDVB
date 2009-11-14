@@ -70,9 +70,9 @@ Possible values for this variable
 
  0 : none (or autoconf finished)
 
- 1 or AUTOCONF_MODE_PIDS : we have the PMT pids and the channels, we search the audio and video
+ AUTOCONF_MODE_PIDS : we have the PMT pids and the channels, we search the audio and video
 
- 2 or AUTOCONF_MODE_FULL : we have only the tuning parameters, we search the channels and their pmt pids*/
+ AUTOCONF_MODE_FULL : we have only the tuning parameters, we search the channels and their pmt pids*/
   int autoconfiguration;
   /**do we autoconfigure the radios ?*/
   int autoconf_radios;
@@ -96,6 +96,13 @@ Possible values for this variable
 
   /**the starting http unicast port */
   int autoconf_unicast_start_port;
+
+  /**the list of TS ID for full autoconfiguration*/
+  int ts_id_list[MAX_CHANNELS];
+  /**number of TS ID*/
+  int num_ts_id;
+
+
 }autoconf_parameters_t;
 
 

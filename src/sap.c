@@ -50,10 +50,10 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
   {
     substring = strtok (NULL, delimiteurs);
     if(atoi (substring) != 0)
-      sap_vars->sap = SAP_ON;
+      sap_vars->sap = OPTION_ON;
     else
-      sap_vars->sap = SAP_OFF;
-    if(sap_vars->sap == SAP_ON)
+      sap_vars->sap = OPTION_OFF;
+    if(sap_vars->sap == OPTION_ON)
     {
       log_message( MSG_INFO,
                    "Sap announces will be sent\n");
@@ -147,7 +147,7 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
  */
 int init_sap(sap_parameters_t *sap_vars, multicast_parameters_t multicast_vars)
 {
-  if(sap_vars->sap == SAP_ON)
+  if(sap_vars->sap == OPTION_ON)
     {
       sap_vars->sap_messages=malloc(sizeof(mumudvb_sap_message_t)*MAX_CHANNELS);
       if(sap_vars->sap_messages==NULL)
@@ -427,7 +427,7 @@ int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumud
 void sap_poll(sap_parameters_t *sap_vars,int number_of_channels,mumudvb_channel_t  *channels, multicast_parameters_t multicast_vars, long now)
 {
   int curr_channel;
-  if(sap_vars->sap == SAP_ON)
+  if(sap_vars->sap == OPTION_ON)
   {
     if(!sap_vars->sap_last_time_sent)
     {

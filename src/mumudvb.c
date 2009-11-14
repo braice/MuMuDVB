@@ -220,7 +220,7 @@ tuning_parameters_t tuneparams={
 //sap announces
 sap_parameters_t sap_vars={
   .sap_messages=NULL, 
-  .sap=SAP_UNDEFINED, //No sap by default
+  .sap=OPTION_UNDEFINED, //No sap by default
   .sap_interval=SAP_DEFAULT_INTERVAL,
   .sap_sending_ip="0.0.0.0",
   .sap_default_group="",
@@ -243,6 +243,7 @@ autoconf_parameters_t autoconf_vars={
   .autoconf_temp_psip=NULL,
   .services=NULL,
   .autoconf_unicast_start_port=0,
+  .num_ts_id=0,
 };
 
 #ifdef ENABLE_CAM_SUPPORT
@@ -266,19 +267,19 @@ cam_parameters_t cam_vars={
 
 //Parameters for rewriting
 rewrite_parameters_t rewrite_vars={
-  .rewrite_pat = 0,
+  .rewrite_pat = OPTION_UNDEFINED,
   .pat_version=-1,
   .full_pat=NULL,
   .pat_needs_update=1,
   .full_pat_ok=0,
   .pat_continuity_counter=0,
-  .rewrite_sdt = 0,
+  .rewrite_sdt = OPTION_UNDEFINED,
   .sdt_version=-1,
   .full_sdt=NULL,
   .sdt_needs_update=1,
   .full_sdt_ok=0,
   .sdt_continuity_counter=0,
-  .eit_sort=0,
+  .eit_sort=OPTION_UNDEFINED,
 };
 
 //Parameters for HTTP unicast
@@ -670,11 +671,33 @@ int
   }
   fclose (conf_file);
 
-  if((autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)&&(sap_vars.sap == SAP_UNDEFINED) && (multicast_vars.multicast))
+  //Autoconfiguration full is the simple mode for autoconfiguration, we set other option by default
+  if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)
   {
-    log_message( MSG_INFO,
-                 "Full autoconfiguration, we activate SAP announces. if you want to desactivate them see the README.\n");
-    sap_vars.sap=SAP_ON;
+    if((sap_vars.sap == OPTION_UNDEFINED) && (multicast_vars.multicast))
+    {
+      log_message( MSG_INFO,
+                   "Full autoconfiguration, we activate SAP announces. if you want to desactivate them see the README.\n");
+      sap_vars.sap=OPTION_ON;
+    }
+    if(rewrite_vars.rewrite_pat == OPTION_UNDEFINED)
+    {
+      rewrite_vars.rewrite_pat=OPTION_ON;
+      log_message( MSG_INFO,
+                   "Full autoconfiguration, we activate PAT rewritting. if you want to desactivate it see the README.\n");
+    }
+    if(rewrite_vars.rewrite_sdt == OPTION_UNDEFINED)
+    {
+      rewrite_vars.rewrite_sdt=OPTION_ON;
+      log_message( MSG_INFO,
+                   "Full autoconfiguration, we activate SDT rewritting. if you want to desactivate it see the README.\n");
+    }
+    if(rewrite_vars.eit_sort == OPTION_UNDEFINED)
+    {
+      rewrite_vars.eit_sort=OPTION_ON;
+      log_message( MSG_INFO,
+                   "Full autoconfiguration, we activate sorting of the EIT PID. if you want to desactivate it see the README.\n");
+    }
   }
 
   /******************************************************/
@@ -744,10 +767,10 @@ int
 	multicast_vars.rtp_header=0;
 	log_message( MSG_INFO, "NO Multicast, RTP Header is desactivated.\n");
       }
-      if(sap_vars.sap==SAP_ON)
+      if(sap_vars.sap==OPTION_ON)
       {
 	log_message( MSG_INFO, "NO Multicast, SAP announces are desactivated.\n");
-	sap_vars.sap=SAP_OFF;
+	sap_vars.sap=OPTION_OFF;
       }
   }
   free(conf_filename);
@@ -913,7 +936,7 @@ int
   //packet structures
   /*****************************************************/
 
-  if(rewrite_vars.rewrite_pat)
+  if(rewrite_vars.rewrite_pat == OPTION_ON)
   {
     for (curr_channel = 0; curr_channel < MAX_CHANNELS; curr_channel++)
       chan_and_pids.channels[curr_channel].generated_pat_version=-1;
@@ -933,7 +956,7 @@ int
   //packet structures
   /*****************************************************/
 
-  if(rewrite_vars.rewrite_sdt)
+  if(rewrite_vars.rewrite_sdt == OPTION_ON)
   {
     for (curr_channel = 0; curr_channel < MAX_CHANNELS; curr_channel++)
       chan_and_pids.channels[curr_channel].generated_sdt_version=-1;
@@ -1148,7 +1171,8 @@ int
     /**************************************************************/ 
 
     /* Attempt to read 188 bytes from /dev/____/dvr */
-    /** @todo Put the read of the card in a thread  -- in fact two threads, one for the card, one for the rest*/
+    /** @todo Put the read of the card in a thread  -- in fact two threads, one for the card, one for the rest
+     use pthread_cond_wait or mutex or similar to wait for data*/
     if ((bytes_read = read (fds.fd_dvr, temp_buffer_from_dvr, TS_PACKET_SIZE*dvr_buffer_size)) > 0)
     {
 
@@ -1212,7 +1236,7 @@ int
       //Pat rewrite 
       /******************************************************/
       if( (pid == 0) && //This is a PAT PID
-           rewrite_vars.rewrite_pat ) //AND we asked for rewrite
+           rewrite_vars.rewrite_pat == OPTION_ON ) //AND we asked for rewrite
       {
         pat_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars);
       }
@@ -1220,7 +1244,7 @@ int
       //SDT rewrite 
       /******************************************************/
       if( (pid == 17) && //This is a SDT PID
-           rewrite_vars.rewrite_sdt ) //AND we asked for rewrite
+           rewrite_vars.rewrite_sdt == OPTION_ON ) //AND we asked for rewrite
       {
         sdt_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars);
       }
@@ -1289,7 +1313,7 @@ int
         /******************************************************/
         if((send_packet==1) && //no need to check paquets we don't send
             (pid == 0) && //This is a PAT PID
-            rewrite_vars.rewrite_pat)  //AND we asked for rewrite
+            rewrite_vars.rewrite_pat == OPTION_ON )  //AND we asked for rewrite
           send_packet=pat_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_and_pids.channels[curr_channel], curr_channel);
 
         /******************************************************/
@@ -1297,7 +1321,7 @@ int
         /******************************************************/
         if((send_packet==1) && //no need to check paquets we don't send
             (pid == 17) && //This is a SDT PID
-            rewrite_vars.rewrite_sdt &&  //AND we asked for rewrite
+            rewrite_vars.rewrite_sdt == OPTION_ON &&  //AND we asked for rewrite
             !chan_and_pids.channels[curr_channel].sdt_rewrite_skip ) //AND the generation was successful
           send_packet=sdt_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_and_pids.channels[curr_channel], curr_channel);
 
@@ -1596,7 +1620,7 @@ static void SignalHandler (int signum)
                      "Channel \"%s\" back.Card %d\n",
                      chan_and_pids.channels[curr_channel].name, tuneparams.card);
         chan_and_pids.channels[curr_channel].streamed_channel_old = 1;	// update
-        if(sap_vars.sap == SAP_ON)
+        if(sap_vars.sap == OPTION_ON)
           sap_update(chan_and_pids.channels[curr_channel], &sap_vars, curr_channel, multicast_vars); //Channel status changed, we update the sap announces
       }
       else if ((chan_and_pids.channels[curr_channel].streamed_channel_old) && (chan_and_pids.channels[curr_channel].streamed_channel/ALARM_TIME < 30))
@@ -1605,7 +1629,7 @@ static void SignalHandler (int signum)
                      "Channel \"%s\" down.Card %d\n",
                      chan_and_pids.channels[curr_channel].name, tuneparams.card);
         chan_and_pids.channels[curr_channel].streamed_channel_old = 0;	// update
-        if(sap_vars.sap == SAP_ON)
+        if(sap_vars.sap == OPTION_ON)
           sap_update(chan_and_pids.channels[curr_channel], &sap_vars, curr_channel, multicast_vars); //Channel status changed, we update the sap announces
       }
     }

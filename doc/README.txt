@@ -254,6 +254,9 @@ If you don't use the common_port directive, MuMuDVB will use the port 1234.
 
 [NOTE]
 By default, SAP announces are activated if you use this autoconfiguration mode. To desactivate them put `sap=0` in your config file.
+By default, SDT rewriting is activated if you use this autoconfiguration mode. To desactivate them put `rewrite_sdt=0` in your config file.
+By default, PAT rewriting is activated if you use this autoconfiguration mode. To desactivate them put `rewrite_pat=0` in your config file.
+By default, EIT sorting activated if you use this autoconfiguration mode. To desactivate them put `sort_eit=0` in your config file.
 
 [NOTE]
 A detailled, documented example configuration file can be found in `doc/configuration_examples/autoconf_full.conf`

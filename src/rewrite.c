@@ -49,32 +49,40 @@ int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substri
   if (!strcmp (substring, "rewrite_pat"))
   {
     substring = strtok (NULL, delimiteurs);
-    rewrite_vars->rewrite_pat = atoi (substring);
-    if(rewrite_vars->rewrite_pat)
+    if(atoi (substring))
     {
+      rewrite_vars->rewrite_pat = OPTION_ON;
       log_message( MSG_INFO,
                    "You have enabled the PAT Rewriting\n");
     }
+    else
+      rewrite_vars->rewrite_pat = OPTION_OFF;
   }
   else if (!strcmp (substring, "rewrite_sdt"))
   {
     substring = strtok (NULL, delimiteurs);
-    rewrite_vars->rewrite_sdt = atoi (substring);
-    if(rewrite_vars->rewrite_sdt)
+    if(atoi (substring))
     {
+      rewrite_vars->rewrite_sdt = OPTION_ON;
       log_message( MSG_INFO,
                    "You have enabled the SDT Rewriting\n");
     }
+    else
+      rewrite_vars->rewrite_sdt = OPTION_OFF;
+
   }
   else if (!strcmp (substring, "sort_eit"))
   {
     substring = strtok (NULL, delimiteurs);
-    rewrite_vars->eit_sort = atoi (substring);
-    if(rewrite_vars->eit_sort)
+    if(atoi (substring))
     {
+      rewrite_vars->eit_sort = OPTION_ON;
       log_message( MSG_INFO,
                    "You have enabled the sort of the EIT PID\n");
     }
+    else
+      rewrite_vars->eit_sort = OPTION_OFF;
+
   }
   else
     return 0; //Nothing concerning rewrite, we return 0 to explore the other possibilities
