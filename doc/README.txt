@@ -693,4 +693,10 @@ I want to stream from several cards
 
 The solution is simple: just launch a MuMuDVB process for each card.
 
+I want to stream the whole transponder on one "channel"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+MuMuDVB can stream all the data received by the card to one "channel" (multicast or unicast). In order to do this you have to use the put the PID 8192 in the channel PID list.
+
+
 

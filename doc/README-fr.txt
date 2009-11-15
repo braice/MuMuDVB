@@ -690,5 +690,8 @@ Je veux diffuser à partir de plusieurs cartes
 
 La solution est simple : lancez un processus de MuMuDVB pour chaque carte.
 
+Je veux diffuser tout le transpondeur sur une "chaîne"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+MuMuDVB peut diffuser toutes les données reçues par la carte sur une "chaîne" (multicast ou unicast). Pour cela, vous devez ajouter le PID 8192 dans la liste des PIDs de la chaîne.
 

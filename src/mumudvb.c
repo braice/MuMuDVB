@@ -1261,7 +1261,7 @@ int
       pid = ((actual_ts_packet[1] & 0x1f) << 8) | (actual_ts_packet[2]);
 
       //Software filtering in case the card doesn't have hardware filtering
-      if(chan_and_pids.asked_pid[pid]==PID_NOT_ASKED)
+      if(chan_and_pids.asked_pid[8192]==PID_NOT_ASKED && chan_and_pids.asked_pid[pid]==PID_NOT_ASKED)
         continue;
 
       ScramblingControl = (actual_ts_packet[3] & 0xc0) >> 6;
