@@ -145,7 +145,7 @@ create_card_fd(int card, uint8_t *asked_pid, fds_t *fds)
   if(asprintf_ret==-1)
     return -1;
 
-  for(curr_pid=0;curr_pid<8192;curr_pid++)
+  for(curr_pid=0;curr_pid<8193;curr_pid++)
     //file descriptors for the demuxer (used to set the filters)
     //we check if we need to open the file descriptor (some cards are limited)
     if ((asked_pid[curr_pid] != 0)&& (fds->fd_demuxer[curr_pid]==0) )
@@ -189,7 +189,7 @@ void set_filters(uint8_t *asked_pid, fds_t *fds)
 
   int curr_pid = 0;
 
-  for(curr_pid=0;curr_pid<8192;curr_pid++)
+  for(curr_pid=0;curr_pid<8193;curr_pid++)
     if ((asked_pid[curr_pid] == PID_ASKED) )
       {
 	set_ts_filt (fds->fd_demuxer[curr_pid], curr_pid);
@@ -208,7 +208,7 @@ close_card_fd(fds_t fds)
 {
   int curr_pid = 0;
 
-  for(curr_pid=0;curr_pid<8192;curr_pid++)
+  for(curr_pid=0;curr_pid<8193;curr_pid++)
     {
 	close(fds.fd_demuxer[curr_pid]);
     }
