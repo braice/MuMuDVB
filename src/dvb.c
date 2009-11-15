@@ -36,6 +36,10 @@
 #include <errno.h>
 #include <string.h>
 #include "log.h"
+#ifdef HAVE_LIBPTHREAD
+#include <pthread.h>
+#endif
+
 
 /**
  * @brief Open the frontend associated with card
@@ -89,6 +93,7 @@ set_ts_filt (int fd, uint16_t pid)
     }
 }
 
+#ifdef HAVE_LIBPTHREAD
 
 /**
  * @brief Show the reception power.
@@ -117,6 +122,7 @@ void *show_power_func(void* arg)
   }
   return 0;
 }
+#endif
 
 /**
  * @brief Open file descriptors for the card. open dvr and one demuxer fd per asked pid. This function can be called 
@@ -211,3 +217,43 @@ close_card_fd(fds_t fds)
   close (fds.fd_frontend);
 
 }
+
+
+#ifdef HAVE_LIBPTHREAD
+/**
+ * @brief Function for the tread reading data from the card
+ * @param arg the structure with the thread parameters
+ */
+void *read_card_thread_func(void* arg)
+{
+  card_thread_parameters_t  *threadparams;
+  threadparams= (card_thread_parameters_t  *) arg;
+
+  struct pollfd pfds[2];	// Local poll file descriptors containing DVR device
+
+  //File descriptor for polling the DVB card
+  pfds[0].fd = threadparams->fds->fd_dvr;
+  //POLLIN : data available for read
+  pfds[0].events = POLLIN | POLLPRI; 
+  pfds[1].fd = 0;
+  pfds[1].events = POLLIN | POLLPRI;
+
+  log_message( MSG_DEBUG, "Reading thread start\n");
+
+  usleep(100000); //some waiting to be sure the main program is waiting //it is probably useless
+
+  while(!threadparams->threadshutdown)
+  {
+    log_message( MSG_DEBUG, "Lock mutex -------\n");
+    pthread_mutex_lock(&threadparams->carddatamutex);
+    threadparams->card_buffer->bytes_in_thread_buffer++;
+    usleep(2000000);
+    log_message( MSG_DEBUG, "Thread signalling -------\n");
+    pthread_cond_signal(&threadparams->threadcond);
+    pthread_mutex_unlock(&threadparams->carddatamutex);
+    log_message( MSG_DEBUG, "Unlock mutex -------\n");
+    usleep(2000000);
+  }
+  return NULL;
+}
+#endif

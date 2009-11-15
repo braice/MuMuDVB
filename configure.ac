@@ -25,7 +25,7 @@ AC_PROG_MAKE_SET
 AC_CHECK_LIB([dvbapi], [dvbdemux_set_section_filter])
 AC_CHECK_LIB([ucsi], [atsc_text_segment_decode],[atsc_long_names="yes"], [atsc_long_names="no"])
 #AC_CHECK_LIB([dvben50221], [en50221_stdcam_create],,,[ucsi,pthread])
-AC_CHECK_LIB([pthread], [pthread_create],[], [])
+AC_CHECK_LIB([pthread], [pthread_create], [pthread="yes"], [pthread="no"])
 
 
 dnl
@@ -147,6 +147,12 @@ if test "${atsc_long_names}" = "yes" ; then
         echo "Build with ATSC long names support:                 yes"
 else
         echo "Build with ATSC long names support:                  no"
+fi
+
+if test "${pthread}" = "yes" ; then
+        echo "Builded with threads support:                       yes"
+else
+        echo "Builded with threads support:                       no"
 fi
 
 echo ""

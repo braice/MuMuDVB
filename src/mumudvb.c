@@ -85,6 +85,8 @@
 
 #define _GNU_SOURCE		//in order to use program_invocation_short_name (extension gnu)
 
+#include "config.h"
+
 // Linux includes:
 #include <stdio.h>
 #include <stdlib.h>
@@ -169,6 +171,8 @@ int  write_streamed_channels=1;
 
 #ifdef HAVE_LIBPTHREAD
 pthread_t signalpowerthread;
+pthread_t cardthread;
+card_thread_parameters_t cardthreadparams;
 #endif
 
 mumudvb_chan_and_pids_t chan_and_pids={
@@ -300,8 +304,6 @@ int verbosity = MSG_INFO+1; /** the verbosity level for log messages */
 // prototypes
 static void SignalHandler (int signum);//below
 int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb_channel_t *current_channel, int *ip_ok, char *substring); //in multicast.c
-int mumudvb_poll(fds_t *fds); //below
-
 
 
 int
@@ -313,17 +315,11 @@ int
   //MPEG2-TS reception and sort
   int pid;			/** pid of the current mpeg2 packet */
   int ScramblingControl;
-  int bytes_read;		/** number of bytes actually read */
-  //temporary buffers
-  /**Buffer containing one packet*/
-  unsigned char actual_ts_packet[TS_PACKET_SIZE];
-  /**The buffer from the DVR wich can contain several TS packets*/
-  unsigned char *temp_buffer_from_dvr;
-  /** The maximum number of packets in the buffer from DVR*/
-  int dvr_buffer_size=DEFAULT_TS_BUFFER_SIZE;
-  int buffpos;
-  int poll_ret;
 
+  /** The buffer for the card */
+  card_buffer_t card_buffer;
+  memset (&card_buffer, 0, sizeof (card_buffer_t));
+  card_buffer.dvr_buffer_size=DEFAULT_TS_BUFFER_SIZE;
   /** List of mandatory pids */
   uint8_t mandatory_pid[MAX_MANDATORY_PID_NUMBER];
 
@@ -576,19 +572,34 @@ int
     else if (!strcmp (substring, "dvr_buffer_size"))
     {
       substring = strtok (NULL, delimiteurs);
-      dvr_buffer_size = atoi (substring);
-      if(dvr_buffer_size<=0)
+      card_buffer.dvr_buffer_size = atoi (substring);
+      if(card_buffer.dvr_buffer_size<=0)
       {
         log_message( MSG_WARN,
                      "Warning : the buffer size MUST be >0, forced to 1 packet\n");
-        dvr_buffer_size = 1;
+        card_buffer.dvr_buffer_size = 1;
       }
-      if(dvr_buffer_size>1)
+      if(card_buffer.dvr_buffer_size>1)
         log_message( MSG_WARN,
                      "Warning : You set a buffer size > 1, this feature is experimental, please report bugs/problems or results\n");
       show_buffer_stats=1;
     }
-
+    else if (!strcmp (substring, "dvr_thread"))
+    {
+      substring = strtok (NULL, delimiteurs);
+      card_buffer.threaded_read = atoi (substring);
+      if(card_buffer.threaded_read)
+      {
+#ifdef HAVE_LIBPTHREAD
+        log_message( MSG_WARN,
+                     "Warning : You want to use a thread for reading the card, this feature is experimental, please report bugs/problems or results\n");
+#else
+        log_message( MSG_WARN,
+                     "Warning : You want to use a thread for reading the card, this feature is experimental, please report bugs/problems or results\n");
+	card_buffer.threaded_read=0;
+#endif
+      }
+    }
     else if (!strcmp (substring, "ts_id"))
     {
       if ( ip_ok == 0)
@@ -875,6 +886,20 @@ int
   strengthparams.fds = &fds;
   strengthparams.tuneparams = &tuneparams;
   pthread_create(&(signalpowerthread), NULL, show_power_func, &strengthparams);
+  //Thread for reading from the DVB card initialisation
+  if(card_buffer.threaded_read)
+  {
+    cardthreadparams.thread_running=1;
+    cardthreadparams.fds = &fds;
+    cardthreadparams.card_buffer=&card_buffer;
+    pthread_mutex_init(&cardthreadparams.carddatamutex,NULL);
+    pthread_cond_init(&cardthreadparams.threadcond,NULL);
+    cardthreadparams.card_buffer->bytes_in_thread_buffer=0;
+    cardthreadparams.threadshutdown=0;
+  }
+  else
+    cardthreadparams.thread_running=0;
+
 #endif
 
   /******************************************************/
@@ -1046,7 +1071,7 @@ int
   /*****************************************************/
 
   //We alloc the buffer
-  temp_buffer_from_dvr=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*dvr_buffer_size);
+  card_buffer.temp_buffer_from_dvr=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*card_buffer.dvr_buffer_size);
 
   //We fill the asked_pid array
   for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
@@ -1143,11 +1168,40 @@ int
   if(autoconf_vars.autoconfiguration)
     log_message(MSG_INFO,"Autoconfiguration Start\n");
 
+#ifdef HAVE_LIBPTHREAD
+  //Thread for reading from the DVB card RUNNING
+  if(card_buffer.threaded_read)
+  {
+    pthread_create(&(cardthread), NULL, read_card_thread_func, &cardthreadparams);
+  }
+#endif
   /******************************************************/
   //Main loop where we get the packets and send them
   /******************************************************/
+  int poll_ret;
+  /**Buffer containing one packet*/
+  unsigned char actual_ts_packet[TS_PACKET_SIZE];
   while (!Interrupted)
   {
+    /** @todo Put the read of the card in a thread  -- in fact two threads, one for the card, one for the rest
+     use mutex to avoid conflict on the thread data buffer*/
+#ifdef HAVE_LIBPTHREAD
+    if(card_buffer.threaded_read)
+    {
+      pthread_mutex_lock(&cardthreadparams.carddatamutex);
+      log_message( MSG_DEBUG, "Main waiting -------\n");
+      pthread_cond_wait(&cardthreadparams.threadcond,&cardthreadparams.carddatamutex);
+      log_message( MSG_DEBUG, "Main got it -------\n");
+      cardthreadparams.card_buffer->bytes_in_thread_buffer=0;
+      card_buffer.bytes_read=0;
+      pthread_mutex_unlock(&cardthreadparams.carddatamutex);
+    }
+    else
+    {
+#else
+    if(1)
+    {
+#endif
     /* Poll the open file descriptors : we wait for data*/
     poll_ret=mumudvb_poll(&fds);
     if(poll_ret)
@@ -1171,37 +1225,38 @@ int
     /**************************************************************/ 
 
     /* Attempt to read 188 bytes from /dev/____/dvr */
-    /** @todo Put the read of the card in a thread  -- in fact two threads, one for the card, one for the rest
-     use pthread_cond_wait or mutex or similar to wait for data*/
-    if ((bytes_read = read (fds.fd_dvr, temp_buffer_from_dvr, TS_PACKET_SIZE*dvr_buffer_size)) > 0)
+    if ((card_buffer.bytes_read = read (fds.fd_dvr, card_buffer.temp_buffer_from_dvr, TS_PACKET_SIZE*card_buffer.dvr_buffer_size)) > 0)
     {
 
-      if((bytes_read>0 )&& (bytes_read % TS_PACKET_SIZE))
+      if((card_buffer.bytes_read>0 )&& (card_buffer.bytes_read % TS_PACKET_SIZE))
       {
-        log_message( MSG_WARN, "Warning : partial packet received len %d\n", bytes_read);
+        log_message( MSG_WARN, "Warning : partial packet received len %d\n", card_buffer.bytes_read);
         partial_packet_number++;
-        bytes_read-=bytes_read % TS_PACKET_SIZE;
-        if(bytes_read<=0)
+        card_buffer.bytes_read-=card_buffer.bytes_read % TS_PACKET_SIZE;
+        if(card_buffer.bytes_read<=0)
           continue;
       }
     }
 
-    if(bytes_read<0)
+    if(card_buffer.bytes_read<0)
     {
       if(errno!=EAGAIN)
         log_message( MSG_WARN,"Error : DVR Read error : %s \n",strerror(errno));
       continue;
     }
+    }
 
-    if(dvr_buffer_size!=1)
+    if(card_buffer.dvr_buffer_size!=1)
     {
-      stats_num_packets_received+=(int) bytes_read/188;
+      stats_num_packets_received+=(int) card_buffer.bytes_read/188;
       stats_num_reads++;
     }
  
-    for(buffpos=0;(buffpos+TS_PACKET_SIZE)<=bytes_read;buffpos+=TS_PACKET_SIZE)//we loop on the subpackets
+    for(card_buffer.dvr_buff_pos=0;
+	(card_buffer.dvr_buff_pos+TS_PACKET_SIZE)<=card_buffer.bytes_read;
+	card_buffer.dvr_buff_pos+=TS_PACKET_SIZE)//we loop on the subpackets
     {
-      memcpy( actual_ts_packet,temp_buffer_from_dvr+buffpos,TS_PACKET_SIZE);
+      memcpy( actual_ts_packet,card_buffer.temp_buffer_from_dvr+card_buffer.dvr_buff_pos,TS_PACKET_SIZE);
 
       pid = ((actual_ts_packet[1] & 0x1f) << 8) | (actual_ts_packet[2]);
 
@@ -1451,6 +1506,12 @@ int mumudvb_close(int Interrupted)
   {
     tuneparams.strengththreadshutdown=1;
     pthread_join(signalpowerthread, NULL);
+  }
+  if(cardthreadparams.thread_running)
+  {
+    cardthreadparams.threadshutdown=1;
+    pthread_mutex_destroy(&cardthreadparams.carddatamutex);
+    pthread_cond_destroy(&cardthreadparams.threadcond);
   }
 #endif
 
@@ -1782,48 +1843,3 @@ static void SignalHandler (int signum)
   signal (signum, SignalHandler);
 }
 
-/** @brief : poll the file descriptors fds with a limit in the number of errors
- *
- * @param fds : the file descriptors
- */
-int mumudvb_poll(fds_t *fds)
-{
-  int poll_try;
-  int poll_eintr=0;
-  int last_poll_error;
-  int Interrupted;
-
-  poll_try=0;
-  poll_eintr=0;
-  last_poll_error=0;
-  while((poll (fds->pfds, fds->pfdsnum, 500)<0)&&(poll_try<MAX_POLL_TRIES))
-  {
-    if(errno != EINTR) //EINTR means Interrupted System Call, it normally shouldn't matter so much so we don't count it for our Poll tries
-    {
-      poll_try++;
-      last_poll_error=errno;
-    }
-    else
-    {
-      poll_eintr++;
-      if(poll_eintr==10)
-      {
-        log_message( MSG_DEBUG, "Poll : 10 successive EINTR\n");
-        poll_eintr=0;
-      }
-    }
-    /**@todo : put a maximum number of interrupted system calls per unit time*/
-  }
-
-  if(poll_try==MAX_POLL_TRIES)
-  {
-    log_message( MSG_ERROR, "Poll : We reach the maximum number of polling tries\n\tLast error when polling: %s\n", strerror (errno));
-    Interrupted=errno<<8; //the <<8 is to make difference beetween signals and errors;
-    return Interrupted;
-  }
-  else if(poll_try)
-  {
-    log_message( MSG_WARN, "Poll : Warning : error when polling: %s\n", strerror (last_poll_error));
-  }
-  return 0;
-}

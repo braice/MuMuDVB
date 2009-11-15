@@ -106,7 +106,7 @@ From sources
 From a snapshot
 ^^^^^^^^^^^^^^^
 
-If you downloaded a snapshot, you will have to generate the auto(conf make etc ...) files. In order to do this you will need the autotools and automake and, type in the folder of MuMuDVB
+If you downloaded a snapshot, you will have to generate the auto(conf make etc ...) files. In order to do this you will need the autotools, automake and libtool and, type in the folder of MuMuDVB
 
 ----------------
 autoreconf -i -f

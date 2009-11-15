@@ -101,15 +101,6 @@ We cannot discover easily the MTU with unconnected UDP
 
 enum
   {
-    MSG_ERROR=-2,
-    MSG_WARN,
-    MSG_INFO,
-    MSG_DETAIL,
-    MSG_DEBUG
-  };
-
-enum
-  {
     FULLY_UNSCRAMBLED=0,
     PARTIALLY_UNSCRAMBLED,
     HIGHLY_SCRAMBLED
@@ -132,7 +123,7 @@ typedef enum option_status {
 } option_status_t;
 
 
-  /** The different PID types*/
+/** The different PID types*/
 enum
 {
   PID_UNKNOW=0,
@@ -162,8 +153,28 @@ typedef struct {
   int pfdsnum;
 }fds_t;
 
-struct unicast_client_t;
 
+
+/**@brief Structure containing the card buffers*/
+typedef struct card_buffer_t{
+  /**The buffer from the DVR wich can contain several TS packets*/
+  unsigned char *temp_buffer_from_dvr;
+  /** The maximum number of packets in the buffer from DVR*/
+  int dvr_buffer_size;
+  /** The position in the DVR buffer */
+  int dvr_buff_pos;
+  /** number of bytes actually read */
+  int bytes_read;
+  /** Do the read is made using a thread */
+  int threaded_read;
+  /** The thread data buffer */
+  int bytes_in_thread_buffer;
+}card_buffer_t;
+
+
+
+
+struct unicast_client_t;
 /** @brief Structure for storing channels
  *
  */
@@ -300,5 +311,6 @@ typedef struct mumudvb_chan_and_pids_t{
 
 
 int mumudvb_close(int Interrupted);
+int mumudvb_poll(fds_t *fds);
 
 #endif
