@@ -1012,8 +1012,8 @@ int
     chan_and_pids.channels[curr_channel].streamed_channel_old = 1;
     chan_and_pids.channels[curr_channel].scrambled_channel = 0;
     chan_and_pids.channels[curr_channel].scrambled_channel_old = 0;
-      
-      //We alloc the channel pmt_packet (useful for autoconf and cam
+
+    //We alloc the channel pmt_packet (useful for autoconf and cam)
     /**@todo : allocate only if autoconf or cam*/
     if(chan_and_pids.channels[curr_channel].pmt_packet==NULL)
     {
@@ -1180,7 +1180,7 @@ int
   /******************************************************/
   int poll_ret;
   /**Buffer containing one packet*/
-  unsigned char actual_ts_packet[TS_PACKET_SIZE];
+  unsigned char *actual_ts_packet;
   while (!Interrupted)
   {
     /** @todo Put the read of the card in a thread  -- in fact two threads, one for the card, one for the rest
@@ -1256,7 +1256,7 @@ int
 	(card_buffer.dvr_buff_pos+TS_PACKET_SIZE)<=card_buffer.bytes_read;
 	card_buffer.dvr_buff_pos+=TS_PACKET_SIZE)//we loop on the subpackets
     {
-      memcpy( actual_ts_packet,card_buffer.temp_buffer_from_dvr+card_buffer.dvr_buff_pos,TS_PACKET_SIZE);
+      actual_ts_packet=card_buffer.temp_buffer_from_dvr+card_buffer.dvr_buff_pos;
 
       pid = ((actual_ts_packet[1] & 0x1f) << 8) | (actual_ts_packet[2]);
 
