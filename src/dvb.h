@@ -42,10 +42,6 @@
 #include <resolv.h>
 #include <sys/poll.h>
 
-#define PID_NOT_ASKED 0
-#define PID_ASKED 1
-#define PID_FILTERED 2
-
 // DVB includes:
 #include <linux/dvb/dmx.h>
 #include <linux/dvb/frontend.h>
@@ -56,6 +52,13 @@
 #define FRONTEND_DEV_PATH "/dev/dvb/adapter%d/frontend0"
 #define DEMUX_DEV_PATH    "/dev/dvb/adapter%d/demux0"
 #define DVR_DEV_PATH      "/dev/dvb/adapter%d/dvr0"
+
+enum
+{
+  PID_NOT_ASKED=0,
+  PID_ASKED,
+  PID_FILTERED,
+};
 
 #ifdef HAVE_LIBPTHREAD
 
