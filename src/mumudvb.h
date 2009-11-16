@@ -157,18 +157,26 @@ typedef struct {
 
 /**@brief Structure containing the card buffers*/
 typedef struct card_buffer_t{
-  /**The buffer from the DVR wich can contain several TS packets*/
-  unsigned char *temp_buffer_from_dvr;
+  /** The two buffers (we put from the card with one, we read from the other one)*/
+  unsigned char *buffer1,*buffer2;
+  int actual_read_buffer;
+  /**The pointer to the reading buffer*/
+  unsigned char *reading_buffer;
+  /**The pointer to the writing buffer*/
+  unsigned char *writing_buffer;
   /** The maximum number of packets in the buffer from DVR*/
   int dvr_buffer_size;
   /** The position in the DVR buffer */
-  int dvr_buff_pos;
+  int read_buff_pos;
   /** number of bytes actually read */
   int bytes_read;
   /** Do the read is made using a thread */
   int threaded_read;
   /** The thread data buffer */
-  int bytes_in_thread_buffer;
+  int bytes_in_write_buffer;
+  int write_buffer_size; /** @todo put a size for each buffer*/
+  /** The number of partial packets received*/
+  int partial_packet_number;
 }card_buffer_t;
 
 
@@ -311,6 +319,7 @@ typedef struct mumudvb_chan_and_pids_t{
 
 
 int mumudvb_close(int Interrupted);
-int mumudvb_poll(fds_t *fds);
+int mumudvb_poll(struct pollfd *pfds, int pfdsnum);
+
 
 #endif

@@ -349,8 +349,6 @@ int
   uint8_t lo_mappids[8193];
 
 
-  /**The number of partial packets received*/
-  int partial_packet_number=0;
   /**Do we avoid sending scrambled packets ?*/
   int dont_send_scrambled=0;
 
@@ -894,7 +892,6 @@ int
     cardthreadparams.card_buffer=&card_buffer;
     pthread_mutex_init(&cardthreadparams.carddatamutex,NULL);
     pthread_cond_init(&cardthreadparams.threadcond,NULL);
-    cardthreadparams.card_buffer->bytes_in_thread_buffer=0;
     cardthreadparams.threadshutdown=0;
   }
   else
@@ -1070,9 +1067,6 @@ int
   //Set the filters
   /*****************************************************/
 
-  //We alloc the buffer
-  card_buffer.temp_buffer_from_dvr=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*card_buffer.dvr_buffer_size);
-
   //We fill the asked_pid array
   for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
   {
@@ -1168,13 +1162,29 @@ int
   if(autoconf_vars.autoconfiguration)
     log_message(MSG_INFO,"Autoconfiguration Start\n");
 
+
 #ifdef HAVE_LIBPTHREAD
   //Thread for reading from the DVB card RUNNING
   if(card_buffer.threaded_read)
   {
     pthread_create(&(cardthread), NULL, read_card_thread_func, &cardthreadparams);
-  }
+    //We alloc the buffers
+    card_buffer.write_buffer_size=1000*TS_PACKET_SIZE*card_buffer.dvr_buffer_size;
+    card_buffer.buffer1=malloc(sizeof(unsigned char)*card_buffer.write_buffer_size);
+    card_buffer.buffer2=malloc(sizeof(unsigned char)*card_buffer.write_buffer_size);
+    card_buffer.actual_read_buffer=1;
+    card_buffer.reading_buffer=card_buffer.buffer1;
+    card_buffer.writing_buffer=card_buffer.buffer2;
+    cardthreadparams.main_waiting=0;
+  }else
+  {
+#else
+  if (1)
+  {
 #endif
+    //We alloc the buffer
+    card_buffer.reading_buffer=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*card_buffer.dvr_buffer_size);
+  }
   /******************************************************/
   //Main loop where we get the packets and send them
   /******************************************************/
@@ -1189,11 +1199,31 @@ int
     if(card_buffer.threaded_read)
     {
       pthread_mutex_lock(&cardthreadparams.carddatamutex);
-      log_message( MSG_DEBUG, "Main waiting -------\n");
-      pthread_cond_wait(&cardthreadparams.threadcond,&cardthreadparams.carddatamutex);
-      log_message( MSG_DEBUG, "Main got it -------\n");
-      cardthreadparams.card_buffer->bytes_in_thread_buffer=0;
-      card_buffer.bytes_read=0;
+      if(!card_buffer.bytes_in_write_buffer)
+      {
+        //log_message( MSG_DEBUG, "Main waiting -------\n");
+        cardthreadparams.main_waiting=1;
+        pthread_cond_wait(&cardthreadparams.threadcond,&cardthreadparams.carddatamutex);
+	//pthread_mutex_lock(&cardthreadparams.carddatamutex);
+        cardthreadparams.main_waiting=0;
+      }
+      //log_message( MSG_DEBUG, "Main got it %d bytes\n", card_buffer.bytes_in_write_buffer);
+      if(card_buffer.actual_read_buffer==1)
+      {
+	card_buffer.reading_buffer=card_buffer.buffer2;
+	card_buffer.writing_buffer=card_buffer.buffer1;
+	card_buffer.actual_read_buffer=2;
+	
+      }
+      else
+      {
+	card_buffer.reading_buffer=card_buffer.buffer1;
+	card_buffer.writing_buffer=card_buffer.buffer2;
+	card_buffer.actual_read_buffer=1;
+	
+      }
+      card_buffer.bytes_read=card_buffer.bytes_in_write_buffer;
+      card_buffer.bytes_in_write_buffer=0;
       pthread_mutex_unlock(&cardthreadparams.carddatamutex);
     }
     else
@@ -1202,48 +1232,30 @@ int
     if(1)
     {
 #endif
-    /* Poll the open file descriptors : we wait for data*/
-    poll_ret=mumudvb_poll(&fds);
-    if(poll_ret)
-    {
-      Interrupted=poll_ret;
-      continue;
-    }
-    /**************************************************************/
-    /* UNICAST HTTP                                               */
-    /**************************************************************/ 
-    if((!(fds.pfds[0].revents&POLLIN)) && (!(fds.pfds[0].revents&POLLPRI))) //Priority to the DVB packets so if there is dvb packets and something else, we look first to dvb packets
-    {
-      iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels);
-      if(iRet)
-        Interrupted=iRet;
-	  //no DVB packet, we continue
-      continue;
-    }
-    /**************************************************************/
-    /* END OF UNICAST HTTP                                        */
-    /**************************************************************/ 
-
-    /* Attempt to read 188 bytes from /dev/____/dvr */
-    if ((card_buffer.bytes_read = read (fds.fd_dvr, card_buffer.temp_buffer_from_dvr, TS_PACKET_SIZE*card_buffer.dvr_buffer_size)) > 0)
-    {
-
-      if((card_buffer.bytes_read>0 )&& (card_buffer.bytes_read % TS_PACKET_SIZE))
+      /* Poll the open file descriptors : we wait for data*/
+      poll_ret=mumudvb_poll(fds.pfds, fds.pfdsnum);
+      if(poll_ret)
       {
-        log_message( MSG_WARN, "Warning : partial packet received len %d\n", card_buffer.bytes_read);
-        partial_packet_number++;
-        card_buffer.bytes_read-=card_buffer.bytes_read % TS_PACKET_SIZE;
-        if(card_buffer.bytes_read<=0)
-          continue;
+	Interrupted=poll_ret;
+	continue;
       }
-    }
+      /**************************************************************/
+      /* UNICAST HTTP                                               */
+      /**************************************************************/ 
+      if((!(fds.pfds[0].revents&POLLIN)) && (!(fds.pfds[0].revents&POLLPRI))) //Priority to the DVB packets so if there is dvb packets and something else, we look first to dvb packets
+      {
+	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels);
+	if(iRet)
+	  Interrupted=iRet;
+	//no DVB packet, we continue
+	continue;
+      }
+      /**************************************************************/
+      /* END OF UNICAST HTTP                                        */
+      /**************************************************************/ 
 
-    if(card_buffer.bytes_read<0)
-    {
-      if(errno!=EAGAIN)
-        log_message( MSG_WARN,"Error : DVR Read error : %s \n",strerror(errno));
-      continue;
-    }
+      if((card_buffer.bytes_read=card_read(fds.fd_dvr,  card_buffer.reading_buffer, card_buffer.dvr_buffer_size, &card_buffer.partial_packet_number))==0)
+	continue;
     }
 
     if(card_buffer.dvr_buffer_size!=1)
@@ -1252,11 +1264,11 @@ int
       stats_num_reads++;
     }
  
-    for(card_buffer.dvr_buff_pos=0;
-	(card_buffer.dvr_buff_pos+TS_PACKET_SIZE)<=card_buffer.bytes_read;
-	card_buffer.dvr_buff_pos+=TS_PACKET_SIZE)//we loop on the subpackets
+    for(card_buffer.read_buff_pos=0;
+	(card_buffer.read_buff_pos+TS_PACKET_SIZE)<=card_buffer.bytes_read;
+	card_buffer.read_buff_pos+=TS_PACKET_SIZE)//we loop on the subpackets
     {
-      actual_ts_packet=card_buffer.temp_buffer_from_dvr+card_buffer.dvr_buff_pos;
+      actual_ts_packet=card_buffer.reading_buffer+card_buffer.read_buff_pos;
 
       pid = ((actual_ts_packet[1] & 0x1f) << 8) | (actual_ts_packet[2]);
 
@@ -1475,9 +1487,9 @@ int
   log_message( MSG_INFO,
                "\nEnd of streaming. We streamed during %d:%02d:%02d\n",(tv.tv_sec - real_start_time)/3600,((tv.tv_sec - real_start_time) % 3600)/60,(tv.tv_sec - real_start_time) %60 );
 
-  if(partial_packet_number)
+  if(card_buffer.partial_packet_number)
     log_message( MSG_INFO,
-                 "We received %d partial packets :-( \n",partial_packet_number );
+                 "We received %d partial packets :-( \n",card_buffer.partial_packet_number );
 
   return mumudvb_close(Interrupted);
 
@@ -1609,7 +1621,7 @@ int mumudvb_close(int Interrupted)
     free(unicast_vars.fd_info);
   unicast_vars.fd_info=NULL;
 
-//    if(temp_buffer_from_dvr)
+//   plop if(temp_buffer_from_dvr)
 //       free(temp_buffer_from_dvr);
 
   if(Interrupted<(1<<8))

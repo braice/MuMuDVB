@@ -39,8 +39,9 @@
 #ifdef HAVE_LIBPTHREAD
 #include <pthread.h>
 #endif
+#include <unistd.h>
 
-
+extern int Interrupted;
 /**
  * @brief Open the frontend associated with card
  * Return 1 in case of succes, -1 otherwise
@@ -230,11 +231,13 @@ void *read_card_thread_func(void* arg)
   threadparams= (card_thread_parameters_t  *) arg;
 
   struct pollfd pfds[2];	// Local poll file descriptors containing DVR device
-
+  int poll_ret;
+  threadparams->card_buffer->bytes_in_write_buffer=0;
+  int throwing_packets=0;
   //File descriptor for polling the DVB card
   pfds[0].fd = threadparams->fds->fd_dvr;
   //POLLIN : data available for read
-  pfds[0].events = POLLIN | POLLPRI; 
+  pfds[0].events = POLLIN | POLLPRI;
   pfds[1].fd = 0;
   pfds[1].events = POLLIN | POLLPRI;
 
@@ -242,18 +245,74 @@ void *read_card_thread_func(void* arg)
 
   usleep(100000); //some waiting to be sure the main program is waiting //it is probably useless
 
-  while(!threadparams->threadshutdown)
+  while(!threadparams->threadshutdown&& !Interrupted)
   {
-    log_message( MSG_DEBUG, "Lock mutex -------\n");
+    poll_ret=mumudvb_poll(pfds,1);
+    if(poll_ret)
+    {
+      Interrupted=poll_ret;
+      log_message( MSG_DEBUG, "Thread PPPRRROOOBBBLLLEEEMMM\n");
+      return NULL;
+    }
+    if((threadparams->card_buffer->bytes_in_write_buffer+TS_PACKET_SIZE*threadparams->card_buffer->dvr_buffer_size)>threadparams->card_buffer->write_buffer_size)
+    {
+      if(!throwing_packets)
+      {
+	throwing_packets=1; /** @todo count them*/
+	log_message( MSG_DEBUG, "Thread trowing dvb packets\n");
+      }
+      if(threadparams->main_waiting)
+      {
+        //log_message( MSG_DEBUG, "Thread signalling -------\n");
+        pthread_cond_signal(&threadparams->threadcond);
+      }
+      continue;
+    }
+    throwing_packets=0;
     pthread_mutex_lock(&threadparams->carddatamutex);
-    threadparams->card_buffer->bytes_in_thread_buffer++;
-    usleep(2000000);
-    log_message( MSG_DEBUG, "Thread signalling -------\n");
-    pthread_cond_signal(&threadparams->threadcond);
+    threadparams->card_buffer->bytes_in_write_buffer+=card_read(threadparams->fds->fd_dvr,
+							       threadparams->card_buffer->writing_buffer+threadparams->card_buffer->bytes_in_write_buffer,
+							       threadparams->card_buffer->dvr_buffer_size,
+							       &threadparams->card_buffer->partial_packet_number);
+
+    if(threadparams->main_waiting)
+    {
+      //log_message( MSG_DEBUG, "Thread signalling -------\n");
+      pthread_cond_signal(&threadparams->threadcond);
+    }
     pthread_mutex_unlock(&threadparams->carddatamutex);
-    log_message( MSG_DEBUG, "Unlock mutex -------\n");
-    usleep(2000000);
+    //usleep(2000000);
   }
   return NULL;
 }
 #endif
+
+
+
+/** @brief : Read data from the card
+ * This function have to be called after a poll to ensure there is data to read
+ * 
+ */
+int card_read(int fd_dvr, unsigned char *dest_buffer, int dvr_buffer_size, int *partial_packet_number)
+{
+  /* Attempt to read 188 bytes * dvr_buffer_size from /dev/____/dvr */
+  int bytes_read;
+  if ((bytes_read = read (fd_dvr, dest_buffer, TS_PACKET_SIZE*dvr_buffer_size)) > 0)
+  {
+    if((bytes_read>0 )&& (bytes_read % TS_PACKET_SIZE))
+    {
+      log_message( MSG_WARN, "Warning : partial packet received len %d\n", bytes_read);
+      (*partial_packet_number)++;
+      bytes_read-=bytes_read % TS_PACKET_SIZE;
+      if(bytes_read<=0)
+	return 0;
+    }
+  }
+  if(bytes_read<0)
+  {
+    if(errno!=EAGAIN)
+      log_message( MSG_WARN,"Error : DVR Read error : %s \n",strerror(errno));
+    return 0;
+  }
+  return bytes_read;
+}

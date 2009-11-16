@@ -38,11 +38,12 @@
 #include <string.h>
 
 
+
 /** @brief : poll the file descriptors fds with a limit in the number of errors
  *
  * @param fds : the file descriptors
  */
-int mumudvb_poll(fds_t *fds)
+int mumudvb_poll(struct pollfd *pfds, int pfdsnum)
 {
   int poll_try;
   int poll_eintr=0;
@@ -52,7 +53,7 @@ int mumudvb_poll(fds_t *fds)
   poll_try=0;
   poll_eintr=0;
   last_poll_error=0;
-  while((poll (fds->pfds, fds->pfdsnum, 500)<0)&&(poll_try<MAX_POLL_TRIES))
+  while((poll (pfds, pfdsnum, 500)<0)&&(poll_try<MAX_POLL_TRIES))
   {
     if(errno != EINTR) //EINTR means Interrupted System Call, it normally shouldn't matter so much so we don't count it for our Poll tries
     {
@@ -83,3 +84,4 @@ int mumudvb_poll(fds_t *fds)
   }
   return 0;
 }
+
