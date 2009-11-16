@@ -84,6 +84,7 @@ typedef struct card_thread_parameters_t{
   int thread_running;
   /** Is main waiting ?*/
   int main_waiting;
+  int unicast_data;
 }card_thread_parameters_t;
 
 void *read_card_thread_func(void* arg);

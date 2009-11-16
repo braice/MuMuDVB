@@ -244,16 +244,31 @@ void *read_card_thread_func(void* arg)
   log_message( MSG_DEBUG, "Reading thread start\n");
 
   usleep(100000); //some waiting to be sure the main program is waiting //it is probably useless
-
+  threadparams->unicast_data=0;
   while(!threadparams->threadshutdown&& !Interrupted)
   {
-    poll_ret=mumudvb_poll(pfds,1);
+    //If we know that there is unicast data waiting, we don't poll the unicast file descriptors
+    if(threadparams->unicast_data)
+      poll_ret=mumudvb_poll(pfds,1);
+    else
+      poll_ret=mumudvb_poll(threadparams->fds->pfds,threadparams->fds->pfdsnum);
     if(poll_ret)
     {
       Interrupted=poll_ret;
       log_message( MSG_DEBUG, "Thread PPPRRROOOBBBLLLEEEMMM\n");
       return NULL;
     }
+    if((!(threadparams->fds->pfds[0].revents&POLLIN)) && (!(threadparams->fds->pfds[0].revents&POLLPRI))) //Unicast information
+      {
+	threadparams->unicast_data=1;
+	if(threadparams->main_waiting)
+        {
+        //log_message( MSG_DEBUG, "Thread signalling -------\n");
+        pthread_cond_signal(&threadparams->threadcond);
+        }
+	//no DVB packet, we continue
+	continue;
+      }
     if((threadparams->card_buffer->bytes_in_write_buffer+TS_PACKET_SIZE*threadparams->card_buffer->dvr_buffer_size)>threadparams->card_buffer->write_buffer_size)
     {
       if(!throwing_packets)

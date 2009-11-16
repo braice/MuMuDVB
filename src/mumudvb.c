@@ -1169,7 +1169,7 @@ int
   {
     pthread_create(&(cardthread), NULL, read_card_thread_func, &cardthreadparams);
     //We alloc the buffers
-    card_buffer.write_buffer_size=1000*TS_PACKET_SIZE*card_buffer.dvr_buffer_size;
+    card_buffer.write_buffer_size=10000*TS_PACKET_SIZE*card_buffer.dvr_buffer_size;
     card_buffer.buffer1=malloc(sizeof(unsigned char)*card_buffer.write_buffer_size);
     card_buffer.buffer2=malloc(sizeof(unsigned char)*card_buffer.write_buffer_size);
     card_buffer.actual_read_buffer=1;
@@ -1198,17 +1198,23 @@ int
 #ifdef HAVE_LIBPTHREAD
     if(card_buffer.threaded_read)
     {
-      pthread_mutex_lock(&cardthreadparams.carddatamutex);
-      if(!card_buffer.bytes_in_write_buffer)
+      
+      if(!card_buffer.bytes_in_write_buffer && !cardthreadparams.unicast_data)
       {
         //log_message( MSG_DEBUG, "Main waiting -------\n");
+	pthread_mutex_lock(&cardthreadparams.carddatamutex);
         cardthreadparams.main_waiting=1;
         pthread_cond_wait(&cardthreadparams.threadcond,&cardthreadparams.carddatamutex);
 	//pthread_mutex_lock(&cardthreadparams.carddatamutex);
         cardthreadparams.main_waiting=0;
       }
+      else
+	pthread_mutex_lock(&cardthreadparams.carddatamutex);
+      
       //log_message( MSG_DEBUG, "Main got it %d bytes\n", card_buffer.bytes_in_write_buffer);
-      if(card_buffer.actual_read_buffer==1)
+      if(card_buffer.bytes_in_write_buffer)
+      {
+	if(card_buffer.actual_read_buffer==1)
       {
 	card_buffer.reading_buffer=card_buffer.buffer2;
 	card_buffer.writing_buffer=card_buffer.buffer1;
@@ -1222,9 +1228,23 @@ int
 	card_buffer.actual_read_buffer=1;
 	
       }
-      card_buffer.bytes_read=card_buffer.bytes_in_write_buffer;
-      card_buffer.bytes_in_write_buffer=0;
+        card_buffer.bytes_read=card_buffer.bytes_in_write_buffer;
+        card_buffer.bytes_in_write_buffer=0;
+      }
       pthread_mutex_unlock(&cardthreadparams.carddatamutex);
+      if(cardthreadparams.unicast_data)
+      {
+	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels);
+	if(iRet)
+	{
+	  Interrupted=iRet;
+	  continue;
+	}
+	pthread_mutex_lock(&cardthreadparams.carddatamutex);
+	cardthreadparams.unicast_data=0;
+	pthread_mutex_unlock(&cardthreadparams.carddatamutex);
+
+      }
     }
     else
     {
