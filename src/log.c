@@ -110,7 +110,7 @@ void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels, 
 	       (number_of_channels <= 1 ? "" : "s"));
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
-      log_message( MSG_INFO, "Channel number : %3d, name : \"%s\"\n", curr_channel, channels[curr_channel].name);
+	  log_message( MSG_INFO, "Channel number : %3d, name : \"%s\"  TS id %d \n", curr_channel, channels[curr_channel].name, channels[curr_channel].ts_id);
       if(multicast)
 	log_message( MSG_INFO, "\tMulticast ip : %s:%d\n", channels[curr_channel].ipOut, channels[curr_channel].portOut);
       if(unicast)
@@ -525,9 +525,9 @@ void print_info ()
                "Builded with support for DVB API Version 5 (DVB-S2).\n"
 #endif
 #ifdef HAVE_LIBPTHREAD
-               "Builded with pthread support (used for periodic signal strength display, cam support and transcoding).\n"
+               "Builded with pthread support (used for periodic signal strength display, cam support, transcoding, and threaded read).\n"
 #else
-               "Builded without pthread support (NO periodic signal strength display, NO cam support and NO transcoding).\n"
+               "Builded without pthread support (NO periodic signal strength display, NO cam support, NO transcoding and NO threaded read).\n"
 #endif
                "---------\n"
                "Originally based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
