@@ -320,6 +320,7 @@ int
   card_buffer_t card_buffer;
   memset (&card_buffer, 0, sizeof (card_buffer_t));
   card_buffer.dvr_buffer_size=DEFAULT_TS_BUFFER_SIZE;
+  card_buffer.thread_buffer_size=DEFAULT_THREAD_BUFFER_SIZE;
   /** List of mandatory pids */
   uint8_t mandatory_pid[MAX_MANDATORY_PID_NUMBER];
 
@@ -598,6 +599,11 @@ int
 #endif
       }
     }
+    else if (!strcmp (substring, "dvr_thread_buffer_size"))
+    {
+      substring = strtok (NULL, delimiteurs);
+      card_buffer.max_thread_buffer_size = atoi (substring);
+    }
     else if (!strcmp (substring, "ts_id"))
     {
       if ( ip_ok == 0)
@@ -708,7 +714,12 @@ int
                    "Full autoconfiguration, we activate sorting of the EIT PID. if you want to desactivate it see the README.\n");
     }
   }
-
+  if(card_buffer.max_thread_buffer_size<card_buffer.dvr_buffer_size)
+  {
+    log_message( MSG_WARN,
+		 "Warning : You set a thread buffer size lower than your dvr buffer size, it's not possible to use such values. I increase your dvr_thread_buffer_size ...\n");
+		 card_buffer.max_thread_buffer_size=card_buffer.dvr_buffer_size;
+  }
   /******************************************************/
   //end of config file reading
   /******************************************************/
@@ -1169,7 +1180,7 @@ int
   {
     pthread_create(&(cardthread), NULL, read_card_thread_func, &cardthreadparams);
     //We alloc the buffers
-    card_buffer.write_buffer_size=10000*TS_PACKET_SIZE*card_buffer.dvr_buffer_size;
+    card_buffer.write_buffer_size=card_buffer.max_thread_buffer_size*TS_PACKET_SIZE;
     card_buffer.buffer1=malloc(sizeof(unsigned char)*card_buffer.write_buffer_size);
     card_buffer.buffer2=malloc(sizeof(unsigned char)*card_buffer.write_buffer_size);
     card_buffer.actual_read_buffer=1;
@@ -1193,15 +1204,11 @@ int
   unsigned char *actual_ts_packet;
   while (!Interrupted)
   {
-    /** @todo Put the read of the card in a thread  -- in fact two threads, one for the card, one for the rest
-     use mutex to avoid conflict on the thread data buffer*/
 #ifdef HAVE_LIBPTHREAD
     if(card_buffer.threaded_read)
     {
-      
       if(!card_buffer.bytes_in_write_buffer && !cardthreadparams.unicast_data)
       {
-        //log_message( MSG_DEBUG, "Main waiting -------\n");
 	pthread_mutex_lock(&cardthreadparams.carddatamutex);
         cardthreadparams.main_waiting=1;
         pthread_cond_wait(&cardthreadparams.threadcond,&cardthreadparams.carddatamutex);
@@ -1210,26 +1217,25 @@ int
       }
       else
 	pthread_mutex_lock(&cardthreadparams.carddatamutex);
-      
-      //log_message( MSG_DEBUG, "Main got it %d bytes\n", card_buffer.bytes_in_write_buffer);
+
       if(card_buffer.bytes_in_write_buffer)
       {
 	if(card_buffer.actual_read_buffer==1)
-      {
-	card_buffer.reading_buffer=card_buffer.buffer2;
-	card_buffer.writing_buffer=card_buffer.buffer1;
-	card_buffer.actual_read_buffer=2;
-	
-      }
-      else
-      {
-	card_buffer.reading_buffer=card_buffer.buffer1;
-	card_buffer.writing_buffer=card_buffer.buffer2;
-	card_buffer.actual_read_buffer=1;
-	
-      }
-        card_buffer.bytes_read=card_buffer.bytes_in_write_buffer;
-        card_buffer.bytes_in_write_buffer=0;
+	{
+	  card_buffer.reading_buffer=card_buffer.buffer2;
+	  card_buffer.writing_buffer=card_buffer.buffer1;
+	  card_buffer.actual_read_buffer=2;
+	  
+	}
+	else
+	{
+	  card_buffer.reading_buffer=card_buffer.buffer1;
+	  card_buffer.writing_buffer=card_buffer.buffer2;
+	  card_buffer.actual_read_buffer=1;
+	  
+	}
+	card_buffer.bytes_read=card_buffer.bytes_in_write_buffer;
+	card_buffer.bytes_in_write_buffer=0;
       }
       pthread_mutex_unlock(&cardthreadparams.carddatamutex);
       if(cardthreadparams.unicast_data)
@@ -1243,7 +1249,7 @@ int
 	pthread_mutex_lock(&cardthreadparams.carddatamutex);
 	cardthreadparams.unicast_data=0;
 	pthread_mutex_unlock(&cardthreadparams.carddatamutex);
-
+	
       }
     }
     else
