@@ -57,7 +57,7 @@ Fonctionalités principales
 - MuMuDVB peux réécrire le PID PAT (table d'allocation des programmes) pour n'annoncer que les chaînes présentes (utile pour certaines set-top box). Voir la section <<pat_rewrite, réécriture du PAT>>.
 - MuMuDVB peux réécrire le PID SDT (table de description des programmes) pour n'annoncer que les chaînes présentes (utile pour certains clients). Voir la section <<sdt_rewrite, réécriture du SDT>>.
 - Support des chaines cryptées (si vous n'avez pas de CAM vous pouvez utiliser sasc-ng mais vérifiez que c'est autorisé dans votre pays/par votre abonnement)
-- Configuration automatique, i.e. dçouverte automatique des chaînes, référez-vous à la section <<autoconfiguration,Autoconfiguration>>.
+- Configuration automatique, i.e. déouverte automatique des chaînes, référez-vous à la section <<autoconfiguration,Autoconfiguration>>.
 - Génération des annonces SAP, voir la section <<sap, annonces SAP>>.
 - Support pour DVB-S2 (satellite), DVB-S (satellite), DVB-C (cable), DVB-T (terrestre) et ATSC (terrestre ou cable en amérique du nord)
 - Support pour l'unicast HTTP. voir la section <<unicast,unicast HTTP>>
@@ -89,6 +89,7 @@ Liste détaillée des fonctionalités
 - Détecte automatiquement si une chaîne est brouillée
 - Peut réinitialiser le module CAM si l'initialisation échoue
 - Peut trier le PID EIT pour envoyer seulement ceux correspondant a la chaine courante
+- La lecture des données peux se faire via un thread, voir la section <<threaded_read, lecture par thread>>
 
 D'autres petits programmes sont disponibles depuis le http://gitweb.braice.net/gitweb?p=mumudvb_tools;a=summary[dépot MuMuDVB Tools] :
 
@@ -546,8 +547,8 @@ Si vous n'utilisez pas l'autoconfiguration complète, le tri du PID EIT nécessi
 
 
 [[reduce_cpu]]
-Réduire l'utilisation processeur (Expérimental)
------------------------------------------------
+Réduire l'utilisation processeur
+--------------------------------
 
 Normalement MuMuDVB lit les paquets de la carte un par un et demande à la carte après chaque lecture si il y a un nouveau paquet disponible ( poll ). Mais souvent les cartes on un tampon interne ( la carte a plusieurs paquets de disponible d'un coup ) ce qui rends certains "polls" inutiles. Ces "polls" consomme du temps processeur.
 
@@ -562,9 +563,18 @@ Pour voir si la valeur que vous avez choisie est trop grande ou trop basse, exé
 
 La réduction de l'utilisation processeur peut être entre 20 et 50%.
 
-Cette fonctionalité est assez jeune et peut avoir des effets de bord, merci de contacter si vous en constatez.
+[[threaded_read]]
+Lecture des données via un thread
+---------------------------------
 
-Si vous utilisez cette option, n'hésitez pas a reporter les améliorations constatées à mumudvb @AT@ braice DOT net
+Pour rendre MuMuDVB plus robuste ( au prix d'un légère augmentation de l'utiliation CPU ), MuMuDVB peux lire les données en provenance de la carte via un thread, ce qui rends la lecture "indépendante" du reste du programme.
+
+Pour activer cette fonctionalitée, utilisez l'option `dvr_thread`.
+
+Cette lecture utilise deux tampons : un pour les données reçues par la carte, un pour les données actuellement traitées par le programme principal. Vous pouvez ajuster la taille de ces tampons en utilisant l'option `dvr_thread_buffer_size`. La valeur par défaut ( 5000 packets de 188 octets ) devrait suffire pour la plupart des cas. 
+
+Le message "Thread trowing dvb packets" vous informe que le thread recoit plus de paquets que la taille du tampon et est obligé d'en "jeter". Augmenter la taille du tampon résoudra probablement le problème. 
+
 
 Détails techniques (en vrac)
 ----------------------------

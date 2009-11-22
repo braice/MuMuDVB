@@ -255,7 +255,7 @@ void *read_card_thread_func(void* arg)
     if(poll_ret)
     {
       Interrupted=poll_ret;
-      log_message( MSG_DEBUG, "Thread PPPRRROOOBBBLLLEEEMMM\n");
+      log_message( MSG_WARN, "Thread polling issue\n");
       return NULL;
     }
     if((!(threadparams->fds->pfds[0].revents&POLLIN)) && (!(threadparams->fds->pfds[0].revents&POLLPRI))) //Unicast information
@@ -271,10 +271,11 @@ void *read_card_thread_func(void* arg)
       }
     if((threadparams->card_buffer->bytes_in_write_buffer+TS_PACKET_SIZE*threadparams->card_buffer->dvr_buffer_size)>threadparams->card_buffer->write_buffer_size)
     {
+      /**@todo : use a dynamic buffer ?*/
       if(!throwing_packets)
       {
 	throwing_packets=1; /** @todo count them*/
-	log_message( MSG_DEBUG, "Thread trowing dvb packets\n");
+	log_message( MSG_INFO, "Thread trowing dvb packets\n");
       }
       if(threadparams->main_waiting)
       {
@@ -331,3 +332,11 @@ int card_read(int fd_dvr, unsigned char *dest_buffer, int dvr_buffer_size, int *
   }
   return bytes_read;
 }
+
+
+/*
+int tune_dvr_buffer_size(int bytes_read, card_buffer_t *card_buffers)
+{
+  return 0;
+}
+*/

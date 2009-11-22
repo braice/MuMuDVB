@@ -63,6 +63,9 @@
 /**Default Maximum Number of TS packets in the TS buffer*/
 #define DEFAULT_TS_BUFFER_SIZE 1
 
+/**Default Maximum Number of TS packets in the thread buffer*/
+#define DEFAULT_THREAD_BUFFER_SIZE 5000
+
 /** How often (in seconds) to update the "now" variable*/
 #define ALARM_TIME 2
 #define ALARM_TIME_TIMEOUT 60
@@ -177,6 +180,8 @@ typedef struct card_buffer_t{
   int write_buffer_size; /** @todo put a size for each buffer*/
   /** The number of partial packets received*/
   int partial_packet_number;
+  /**The maximum size of the thread buffer (in packets)*/
+  int max_thread_buffer_size;
 }card_buffer_t;
 
 

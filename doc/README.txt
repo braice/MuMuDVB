@@ -90,6 +90,7 @@ Detailled feature list
 - Automatically detect the scrambling status of a channel
 - Can reset the CAM module in case of a bad initialisation
 - Can sort the EIT PID to send only the ones corresponding to the current channel
+- Data reading can be done using a thread, see <<threaded_read, thread reading>> section.
 
 Others small programs are availaible from http://gitweb.braice.net/gitweb?p=mumudvb_tools;a=summary[MuMuDVB Tools Repository] :
 
@@ -550,8 +551,8 @@ To enable EIT sorting, add `sort_eit=1` to your config file.
 If you don't use full autoconfiguration, EIT sorting needs the `ts_id` option for each channel to specify the transport stream id, also known as service id.
 
 [[reduce_cpu]]
-Reduce MuMuDVB CPU usage (Experimental)
----------------------------------------
+Reduce MuMuDVB CPU usage
+------------------------
 
 Normally MuMuDVB reads the packets from the card one by one and ask the card if there is data avalaible between each packets (poll). But often the cards have an internal buffer. Because of this buffer, some pollings are useless. These pollings eat some CPU time.
 
@@ -566,9 +567,17 @@ To see if the value you put is too big or to low, run MuMuDVB in verbose mode, t
 
 The CPU usage reduction can be between 20% and 50%.
 
-This feature is very new and can have sides effets, please contact if you see any.
+[[threaded_read]]
+Data reading using a thread
+---------------------------
 
-If you use this option feel free to report the improvements at mumudvb @AT@ braice DOT net
+In order to make MuMuDVB more robust (at the cost of a slight CPU consumption increase), MuMuDVB can read the data from the card using a thread. This make the data reading "independant" of the rest of the program.
+
+In order to enable this feature, use the option `dvr_thread`.
+
+This reading uses two buffers: one for the data just received from the card, one for the data treated by the main program. You can adjust the size of this buffers using the option `dvr_thread_buffer_size`. The default value  (5000 packets of 188 bytes) should be sufficient for most of the cases. 
+
+The message "Thread trowing dvb packets" informs you that the thread buffer is full and some packets are dropped. Increase the buffer size will probably solve the problem.
 
 
 Technical details (not sorted)
