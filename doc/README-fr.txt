@@ -695,3 +695,15 @@ Je veux diffuser tout le transpondeur sur une "chaîne"
 
 MuMuDVB peut diffuser toutes les données reçues par la carte sur une "chaîne" (multicast ou unicast). Pour cela, vous devez ajouter le PID 8192 dans la liste des PIDs de la chaîne.
 
+
+J'ai plusieurs interfaces réseau et je veux choisir sur laquelle le traffic multicast sera envoyé
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Pour spécifier l'interface, vous povez définir une route pour le traffic multicast comme : 
+
+---------------------------------------------------
+route add -net 224.0.0.0 netmask 240.0.0.0 dev eth2
+---------------------------------------------------
+
+
+

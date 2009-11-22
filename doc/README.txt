@@ -698,5 +698,13 @@ I want to stream the whole transponder on one "channel"
 
 MuMuDVB can stream all the data received by the card to one "channel" (multicast or unicast). In order to do this you have to use the put the PID 8192 in the channel PID list.
 
+I have several network interfaces and I want to choose on which interface the multicast traffic will go
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In order to specify the interface, you can specify a route for the multicast traffic like : 
+
+---------------------------------------------------
+route add -net 224.0.0.0 netmask 240.0.0.0 dev eth2
+---------------------------------------------------
 
 
