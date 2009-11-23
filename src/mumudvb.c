@@ -1353,9 +1353,15 @@ int
       /******************************************************/
       if( (pid == 17) && //This is a SDT PID
            rewrite_vars.rewrite_sdt == OPTION_ON ) //AND we asked for rewrite
-      {
-        sdt_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars);
-      }
+	   {
+	     //we check the new packet and if it's fully updated we set the skip to 0
+	     if(sdt_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars))
+	     {
+	       log_message(MSG_DETAIL,"The SDT version changed, we force the update of all the channels.\n");
+	       for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
+	        chan_and_pids.channels[curr_channel].sdt_rewrite_skip=0;
+	     }
+	   }
 
 
       /******************************************************/
