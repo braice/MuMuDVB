@@ -227,6 +227,7 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
  */
 int sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars)
 {
+  sdt_t       *sdt=NULL;
   /*Check the version before getting the full packet*/
   if(!rewrite_vars->sdt_needs_update)
   {
@@ -239,12 +240,23 @@ int sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
   {
     if(get_ts_packet(ts_packet,rewrite_vars->full_sdt))
     {
-      log_message(MSG_DETAIL,"SDT rewrite : Full sdt updated\n");
-      /*We've got the FULL SDT packet*/
-      update_sdt_version(rewrite_vars);
-      rewrite_vars->sdt_needs_update=0;
-      rewrite_vars->full_sdt_ok=1;
-      return 1;
+      sdt=(sdt_t*)(rewrite_vars->full_sdt->packet);
+      if(sdt->table_id!=0x42)
+      {
+        rewrite_vars->sdt_needs_update=1;
+        rewrite_vars->full_sdt->empty=1;
+        log_message(MSG_DETAIL,"SDT rewrite :We didn't got the good SDT (wrong table id) we search for a new one\n");
+        return 0;
+      }
+      else
+      {
+	log_message(MSG_DETAIL,"SDT rewrite : Full sdt updated\n");
+	/*We've got the FULL SDT packet*/
+	update_sdt_version(rewrite_vars);
+	rewrite_vars->sdt_needs_update=0;
+	rewrite_vars->full_sdt_ok=1;
+	return 1;
+       }
     }
   }
   //To avoid the duplicates, we have to update the continuity counter
