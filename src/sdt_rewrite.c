@@ -61,7 +61,7 @@ int sdt_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf)
       {
 	log_message(MSG_DEBUG,"SDT rewrite : Need update. stored version : %d, new: %d\n",rewrite_vars->sdt_version,sdt->version_number);
 	if(rewrite_vars->sdt_version!=-1)
-	  log_message(MSG_WARN,"The SDT version changed, so the channels changed probably. If you are using autoconfiguration it's safer to relaunch MuMuDVB or if the pids are set manually, check them.\n");
+	  log_message(MSG_INFO,"The SDT version changed, so the channels names changed probably.\n");
 	return 1;
       }
   return 0;
@@ -223,8 +223,9 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
 
 /** @brief This function is called when a new SDT packet for all channels is there and we asked for rewrite
  * this function save the full SDT wich will be the source SDT for all the channels
+ * @return return 1 when the packet is updated
  */
-void sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars)
+int sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars)
 {
   /*Check the version before getting the full packet*/
   if(!rewrite_vars->sdt_needs_update)
@@ -238,16 +239,18 @@ void sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_
   {
     if(get_ts_packet(ts_packet,rewrite_vars->full_sdt))
     {
-      log_message(MSG_DEBUG,"SDT rewrite : Full sdt updated\n");
+      log_message(MSG_DETAIL,"SDT rewrite : Full sdt updated\n");
       /*We've got the FULL SDT packet*/
       update_sdt_version(rewrite_vars);
       rewrite_vars->sdt_needs_update=0;
       rewrite_vars->full_sdt_ok=1;
+      return 1;
     }
   }
   //To avoid the duplicates, we have to update the continuity counter
   rewrite_vars->sdt_continuity_counter++;
   rewrite_vars->sdt_continuity_counter= rewrite_vars->sdt_continuity_counter % 32;
+  return 0;
 }
 
 

@@ -79,7 +79,7 @@ void pat_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_
 int pat_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel, int curr_channel);
 
 
-void sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars);
+int sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars);
 int sdt_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel, int curr_channel);
 
 void set_continuity_counter(unsigned char *buf,int continuity_counter);
