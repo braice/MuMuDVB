@@ -1,3 +1,30 @@
+/* 
+ * MuMuDVB - UDP-ize a DVB transport stream.
+ * Code for transcoding
+ * 
+ * Code written by Utelisys Communications B.V.
+ * Copyright (C) 2009 Utelisys Communications B.V.
+ * Copyright (C) 2009 Brice DUBOST
+ *
+ * The latest version can be found at http://mumudvb.braice.net
+ * 
+ * Copyright notice:
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ */
 #include "transcode.h"
 #include "transcode_queues.h"
 #include "transcode_avlib.h"
@@ -169,7 +196,7 @@ int transcode_enqueue_data(void *transcode_handle, void *data, int data_size)
 else if (!strcmp(*substring, config_option_name)) {\
     if (0 == ip_ok) {\
         log_message( MSG_ERROR,\
-            config_option_name" : You must precise ip first\n");\
+            config_option_name" : You have to start a channel first (using ip= or channel_next)\n");\
         exit(ERROR_CONF);\
     }\
     if (NULL == channel->struct_option_name) {\
@@ -182,7 +209,7 @@ else if (!strcmp(*substring, config_option_name)) {\
 else if (!strcmp(*substring, config_option_name)) {\
     if (0 == ip_ok) {\
         log_message( MSG_ERROR,\
-            config_option_name" : You must precise ip first\n");\
+            config_option_name" : You have to start a channel first (using ip= or channel_next)\n");\
         exit(ERROR_CONF);\
     }\
     if (NULL == channel->struct_option_name) {\
@@ -195,7 +222,7 @@ else if (!strcmp(*substring, config_option_name)) {\
 else if (!strcmp(*substring, config_option_name)) {\
     if (0 == ip_ok) {\
         log_message( MSG_ERROR,\
-            config_option_name" : You must precise ip first\n");\
+            config_option_name" : You have to start a channel first (using ip= or channel_next)\n");\
         exit(ERROR_CONF);\
     }\
     *substring = strtok(NULL, delimiteurs);\
@@ -243,7 +270,7 @@ int transcode_read_option(mumudvb_channel_t *channel, int ip_ok, char *delimiteu
     if (!strcmp(*substring, "transcode_streaming_type")) {
         if (0 == ip_ok) {
             log_message( MSG_ERROR,
-                "transcode_streaming_type : You must precise ip first\n");
+                "transcode_streaming_type : You have to start a channel first (using ip= or channel_next)\n");
             exit(ERROR_CONF);
         }
 
@@ -286,7 +313,7 @@ int transcode_read_option(mumudvb_channel_t *channel, int ip_ok, char *delimiteu
     else if (!strcmp(*substring, "transcode_x264_profile")) {
         if (0 == ip_ok) {
             log_message( MSG_ERROR,
-                "transcode_x264_profile : You must precise ip first\n");
+                "transcode_x264_profile : You have to start a channel first (using ip= or channel_next)\n");
             exit(ERROR_CONF);
         }
 
@@ -363,7 +390,7 @@ int transcode_read_option(mumudvb_channel_t *channel, int ip_ok, char *delimiteu
     else if (!strcmp(*substring, "transcode_aac_profile")) {
         if (0 == ip_ok) {
             log_message( MSG_ERROR,
-                "transcode_aac_profile : You must precise ip first\n");
+                "transcode_aac_profile : You have to start a channel first (using ip= or channel_next)\n");
             exit(ERROR_CONF);
         }
 

@@ -109,7 +109,7 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
     if ( ip_ok == 0)
     {
       log_message( MSG_ERROR,
-                   "sap_group : this is a channel option, You must precise ip first\n");
+                   "sap_group : this is a channel option, You have to start a channel first (using ip= or channel_next)\n");
       return -1;
     }
 

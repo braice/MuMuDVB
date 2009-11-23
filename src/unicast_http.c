@@ -141,7 +141,7 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
     if ( ip_ok == 0)
     {
       log_message( MSG_ERROR,
-                   "unicast_port : You must precise ip first\n");
+                   "unicast_port : You have to start a channel first (using ip= or channel_next)\n");
       exit(ERROR_CONF);
     }
     substring = strtok (NULL, delimiteurs);

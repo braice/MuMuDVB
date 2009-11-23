@@ -303,7 +303,7 @@ int verbosity = MSG_INFO+1; /** the verbosity level for log messages */
 
 // prototypes
 static void SignalHandler (int signum);//below
-int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb_channel_t *current_channel, int *ip_ok, char *substring); //in multicast.c
+int read_multicast_configuration(multicast_parameters_t *, mumudvb_channel_t *, int, int *, char *); //in multicast.c
 
 
 int
@@ -340,7 +340,7 @@ int
   int curr_channel = 0;
   int curr_pid = 0;
   int send_packet=0;
-  int ip_ok = 0;
+  int channel_start = 0;
   char current_line[CONF_LINELEN];
   char *substring=NULL;
   char delimiteurs[] = CONFIG_FILE_SEPARATOR;
@@ -466,7 +466,7 @@ int
     exit(ERROR_CONF_FILE);
   }
 
-  curr_channel=0;
+  curr_channel=-1;
   // we scan config file
   // see doc/README_CONF* for further information
   int line_len;
@@ -478,9 +478,17 @@ int
     if(current_line[line_len-1]=='\r' ||current_line[line_len-1]=='\n')
       current_line[line_len-1]=0;
 
-      //Line without "=" we continue
+    //Line without "=" we continue
     if(strstr(current_line,"=")==NULL)
-      continue;
+    {
+      //We check if it's not a channel_next line
+      substring = strtok (current_line, delimiteurs);
+      //If nothing in the substring we avoid the segfault in the next line
+      if(substring == NULL)
+        continue;
+      if(strcmp (substring, "channel_next") )
+        continue;
+    }
       //commentary
     if (current_line[0] == '#')
       continue;
@@ -495,6 +503,10 @@ int
     if (substring[0] == '#')
       continue;
 
+    if(curr_channel<0)
+      channel_start=0;
+    else
+      channel_start=1;
     if((iRet=read_tuning_configuration(&tuneparams, substring))) //Read the line concerning the tuning parameters
     {
       if(iRet==-1)
@@ -505,24 +517,24 @@ int
       if(iRet==-1)
         exit(ERROR_CONF);
     }
-    else if((iRet=read_sap_configuration(&sap_vars, &chan_and_pids.channels[curr_channel], ip_ok, substring))) //Read the line concerning the sap parameters
+    else if((iRet=read_sap_configuration(&sap_vars, &chan_and_pids.channels[curr_channel], channel_start, substring))) //Read the line concerning the sap parameters
     {
       if(iRet==-1)
         exit(ERROR_CONF);
     }
 #ifdef ENABLE_CAM_SUPPORT
-    else if((iRet=read_cam_configuration(&cam_vars, &chan_and_pids.channels[curr_channel], ip_ok, substring))) //Read the line concerning the cam parameters
+    else if((iRet=read_cam_configuration(&cam_vars, &chan_and_pids.channels[curr_channel], channel_start, substring))) //Read the line concerning the cam parameters
     {
       if(iRet==-1)
         exit(ERROR_CONF);
     }
 #endif
-    else if((iRet=read_unicast_configuration(&unicast_vars, &chan_and_pids.channels[curr_channel], ip_ok, substring))) //Read the line concerning the unicast parameters
+    else if((iRet=read_unicast_configuration(&unicast_vars, &chan_and_pids.channels[curr_channel], channel_start, substring))) //Read the line concerning the unicast parameters
     {
       if(iRet==-1)
         exit(ERROR_CONF);
     }
-    else if((iRet=read_multicast_configuration(&multicast_vars, &chan_and_pids.channels[curr_channel], &ip_ok, substring))) //Read the line concerning the multicast parameters
+    else if((iRet=read_multicast_configuration(&multicast_vars, chan_and_pids.channels, channel_start, &curr_channel, substring))) //Read the line concerning the multicast parameters
     {
       if(iRet==-1)
         exit(ERROR_CONF);
@@ -533,11 +545,16 @@ int
         exit(ERROR_CONF);
     }
 #ifdef ENABLE_TRANSCODING
-    else if (transcode_read_option(&chan_and_pids.channels[curr_channel], ip_ok, delimiteurs, &substring))
+    else if (transcode_read_option(&chan_and_pids.channels[curr_channel], channel_start, delimiteurs, &substring))
     {
       continue;
     }
 #endif
+    else if (!strcmp (substring, "channel_next"))
+    {
+      curr_channel++;
+      log_message(MSG_WARN,"channel next\n");
+    }
     else if (!strcmp (substring, "timeout_no_diff"))
     {
       substring = strtok (NULL, delimiteurs);
@@ -606,10 +623,10 @@ int
     }
     else if (!strcmp (substring, "ts_id"))
     {
-      if ( ip_ok == 0)
+      if ( channel_start == 0)
       {
         log_message( MSG_ERROR,
-                     "ts_id : You must precise ip first\n");
+                     "ts_id : You have to start a channel first (using ip= or channel_next)\n");
         exit(ERROR_CONF);
       }
       substring = strtok (NULL, delimiteurs);
@@ -617,10 +634,11 @@ int
     }
     else if (!strcmp (substring, "pids"))
     {
-      if ( ip_ok == 0)
+      curr_pid = 0;
+      if ( channel_start == 0)
       {
         log_message( MSG_ERROR,
-                     "pids : You must precise ip first\n");
+                     "pids : You have to start a channel first (using ip= or channel_next)\n");
         exit(ERROR_CONF);
       }
       if (multicast_vars.common_port!=0 && chan_and_pids.channels[curr_channel].portOut == 0)
@@ -628,7 +646,7 @@ int
       while ((substring = strtok (NULL, delimiteurs)) != NULL)
       {
         chan_and_pids.channels[curr_channel].pids[curr_pid] = atoi (substring);
-	      // we see if the given pid is good
+	 // we see if the given pid is good
         if (chan_and_pids.channels[curr_channel].pids[curr_pid] < 10 || chan_and_pids.channels[curr_channel].pids[curr_pid] >= 8193)
         {
           log_message( MSG_ERROR,
@@ -646,16 +664,13 @@ int
         }
       }
       chan_and_pids.channels[curr_channel].num_pids = curr_pid;
-      curr_pid = 0;
-      curr_channel++;
-      ip_ok = 0;
     }
     else if (!strcmp (substring, "name"))
     {
-      if ( ip_ok == 0)
+      if ( channel_start == 0)
       {
         log_message( MSG_ERROR,
-                     "name : You must precise ip first\n");
+                     "name : You have to start a channel first (using ip= or channel_next)\n");
         exit(ERROR_CONF);
       }
 	  // other substring extraction method in order to keep spaces

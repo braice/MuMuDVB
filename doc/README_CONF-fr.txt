@@ -35,7 +35,24 @@ Partie concernant les chaînes
 
 Si vous n'utilisez pas l'autoconfiguration complète, vous devez définir les chaînes que vous voulez diffuser.
 
-Chaque définition de chaîne commence par une ligne `ip=` et fini par une ligne `pids=`.
+Chaque définition de chaîne commence par une ligne `ip=` ou `channel_next`.
+
+
+.Example (unicast seulement)
+---------------------------
+channel_next
+name=Barcelona TV
+unicast_port=8090
+pids=272
+---------------------------
+
+.Example
+---------------------------
+ip=239.100.0.0
+port=1234
+name=Barcelona TV
+pids=272 256 257 258
+---------------------------
 
 Référez vous a la section <<channel_parameters,configuration des chaînes>> pour une liste détaillée des différents paramètres.
 
@@ -235,7 +252,7 @@ Paramètres concernant l'unicast HTTP
 Paramètres concernant les chaînes
 ---------------------------------
 
-Chaque définition de chaîne doit commencer par une ligne `ip=` et finir par une ligne `pids=`. Le seul autre paramètre obligatoire est le paramètre `name`.
+Chaque définition de chaîne commence par une ligne `ip=` ou `channel_next`. Le seul autre paramètre obligatoire est le paramètre `name`.
 
 Concernant les PIDs, référez vous à la section <<getpids,obtenir les PIDs>>.
 
@@ -243,7 +260,7 @@ Concernant les PIDs, référez vous à la section <<getpids,obtenir les PIDs>>.
 [width="80%",cols="2,8,1,4",options="header"]
 |==================================================================================================================
 |Nom |Description | Valeur par défaut |  Commentaires
-|ip |Adresse ip multicast sur laquelle la chaîne sera diffusée | |  Obligatoire
+|ip |Adresse ip multicast sur laquelle la chaîne sera diffusée | |  Optionnel si multicast=0 (si non utilisé, channel_next doit être utilisé à la place)
 |port | Le port | 1234 ou common_port |  Les ports inférieurs à 1024 nécessitent les droits root.
 |unicast_port | Le port pour l'unicast HTTP ( associé à cette chaîne ) | | Les ports inférieurs à 1024 nécessitent les droits root. Vous devez activer l'unicast HTTP avec l'option `ip_http`
 |sap_group | Le groupe de liste de lecture pour les annonces SAP | |  optionnel

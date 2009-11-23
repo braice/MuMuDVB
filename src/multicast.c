@@ -41,13 +41,13 @@
  * @param multicast_vars the multicast parameters
  * @param substring The currrent line
   */
-int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb_channel_t *current_channel, int *ip_ok, char *substring)
+int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb_channel_t *channels, int channel_start, int *curr_channel, char *substring)
 {
   char delimiteurs[] = CONFIG_FILE_SEPARATOR;
 
   if (!strcmp (substring, "common_port"))
   {
-    if ( *ip_ok )
+    if ( channel_start )
     {
       log_message( MSG_ERROR,
                    "You have to set common_port before the channels\n");
@@ -73,13 +73,7 @@ int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb
   }
   else if (!strcmp (substring, "ip"))
   {
-    if ( *ip_ok )
-    {
-      log_message( MSG_ERROR,
-                   "You must precise the pids last, or you forgot the pids\n");
-      return -1;
-    }
-
+    (*curr_channel)++;
     substring = strtok (NULL, delimiteurs);
     if(strlen(substring)>19)
     {
@@ -87,19 +81,19 @@ int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb
                    "The Ip address %s is too long.\n", substring);
       return -1;
     }
-    sscanf (substring, "%s\n", current_channel->ipOut);
-    *ip_ok = 1;
+    sscanf (substring, "%s\n", channels[*curr_channel].ipOut);
+
   }
   else if (!strcmp (substring, "port"))
   {
-    if ( *ip_ok == 0)
+    if ( channel_start == 0)
     {
       log_message( MSG_ERROR,
-                   "port : You must precise ip first\n");
+                   "port : You have to start a channel first (using ip= or channel_next)\n");
       return -1;
     }
     substring = strtok (NULL, delimiteurs);
-    current_channel->portOut = atoi (substring);
+    channels[*curr_channel].portOut = atoi (substring);
   }
   else if (!strcmp (substring, "rtp_header"))
   {

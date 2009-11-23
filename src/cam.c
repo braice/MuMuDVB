@@ -136,7 +136,7 @@ int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *curren
     if ( ip_ok == 0)
     {
       log_message( MSG_ERROR,
-                   "cam_pmt_pid : You must precise ip first\n");
+                   "cam_pmt_pid : You have to start a channel first (using ip= or channel_next)\n");
       return -1;
     }
     substring = strtok (NULL, delimiteurs);

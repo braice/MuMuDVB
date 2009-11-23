@@ -33,7 +33,25 @@ Channels part
 ~~~~~~~~~~~~~
 
 If you are not using full autoconfiguration you need to set the list of the channels you want to stream.
-Each channel start with an `ip=` line and ends with a `pids=` line.
+Each channel start with an `ip=` or `channel_next` line.
+
+
+.Example (unicast only)
+---------------------------
+channel_next
+name=Barcelona TV
+unicast_port=8090
+pids=272
+---------------------------
+
+.Example
+---------------------------
+ip=239.100.0.0
+port=1234
+name=Barcelona TV
+pids=272 256 257 258
+---------------------------
+
 
 See <<channel_parameters,channel parameters>> section for a list of detailled parameters.
 
@@ -229,7 +247,7 @@ HTTP unicast parameters
 Channel parameters
 ------------------
 
-Each channel must start with a `ip=` line and ends with a `pids=` line. The only other mandatory parameter is the `name` of the channel.
+Each channel start with an `ip=` or `channel_next` line. The only other mandatory parameter is the `name` of the channel.
 
 Concerning the PIDs see the <<getpids,getting the PIDs>> section
 
@@ -237,7 +255,7 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 [width="80%",cols="2,8,1,1,3",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
-|ip |multicast (can also be unicast, in raw UDP ) ip where the chanel will be streamed | | | Mandatory
+|ip |multicast (can also be unicast, in raw UDP ) ip where the chanel will be streamed | | | Optionnal if you set multicast=0 (if not used you must use channel_next)
 |port | The port | 1234 or common_port | | Ports below 1024 needs root rights.
 |unicast_port | The HTTP unicast port for this channel | | | Ports below 1024 needs root rights. You need to activate HTTP unicast with `ip_http`
 |sap_group |The playlist group for SAP announces | | string | optionnal
