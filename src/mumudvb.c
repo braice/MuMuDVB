@@ -320,7 +320,7 @@ int
   card_buffer_t card_buffer;
   memset (&card_buffer, 0, sizeof (card_buffer_t));
   card_buffer.dvr_buffer_size=DEFAULT_TS_BUFFER_SIZE;
-  card_buffer.thread_buffer_size=DEFAULT_THREAD_BUFFER_SIZE;
+  card_buffer.max_thread_buffer_size=DEFAULT_THREAD_BUFFER_SIZE;
   /** List of mandatory pids */
   uint8_t mandatory_pid[MAX_MANDATORY_PID_NUMBER];
 
