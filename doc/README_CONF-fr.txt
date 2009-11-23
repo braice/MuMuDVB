@@ -38,21 +38,23 @@ Si vous n'utilisez pas l'autoconfiguration complète, vous devez définir les ch
 Chaque définition de chaîne commence par une ligne `ip=` ou `channel_next`.
 
 
-.Example (unicast seulement)
----------------------------
+
+.Example
+------------------------------
 channel_next
 name=Barcelona TV
 unicast_port=8090
 pids=272
----------------------------
+------------------------------
+
 
 .Example
----------------------------
+------------------------------
 ip=239.100.0.0
 port=1234
 name=Barcelona TV
 pids=272 256 257 258
----------------------------
+------------------------------
 
 Référez vous a la section <<channel_parameters,configuration des chaînes>> pour une liste détaillée des différents paramètres.
 
