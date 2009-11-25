@@ -715,5 +715,28 @@ Pour spécifier l'interface, vous povez définir une route pour le traffic multi
 route add -net 224.0.0.0 netmask 240.0.0.0 dev eth2
 ---------------------------------------------------
 
+Que veulent dire les codes d'erreur de MuMuDVB ?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Voici une courte description des codes d'erreur
+
+------------------------------
+    ERROR_ARGS=1,
+    ERROR_CONF_FILE,
+    ERROR_CONF,
+    ERROR_TOO_CHANNELS,
+    ERROR_CREATE_FILE,
+    ERROR_DEL_FILE,
+    ERROR_TUNE,
+    ERROR_NO_DIFF,
+    ERROR_MEMORY,
+    ERROR_NETWORK,
+    ERROR_CAM,
+    ERROR_GENERIC,
+    ERROR_NO_CAM_INIT,
+------------------------------
+
+
+
 
 
