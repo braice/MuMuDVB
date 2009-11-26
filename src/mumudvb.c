@@ -400,7 +400,7 @@ int
         if (!conf_filename)
         {
           log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-          exit(errno);
+          exit(ERROR_MEMORY);
         }
         strncpy (conf_filename, optarg, strlen (optarg) + 1);
         break;
