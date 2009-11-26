@@ -35,7 +35,11 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <string.h>
-#include <libavcodec/avcodec.h>
+#ifdef HAVE_LIBAVCODEC_AVCODEC_H
+#   include <libavcodec/avcodec.h>
+#elif defined(HAVE_FFMPEG_AVCODEC_H)
+#   include <ffmpeg/avcodec.h>
+#endif
 
 #define TRANSCODE_QUEUE_SIZE (5 * 1024 * 1024)
 

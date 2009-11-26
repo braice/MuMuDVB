@@ -34,10 +34,26 @@
 #include <string.h>
 #include <errno.h>
 #include <netinet/in.h>
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
+#ifdef HAVE_LIBAVCODEC_AVCODEC_H
+#   include <libavcodec/avcodec.h>
+#elif defined(HAVE_FFMPEG_AVCODEC_H)
+#   include <ffmpeg/avcodec.h>
+#endif
+
+#ifdef HAVE_LIBAVFORMAT_AVFORMAT_H
+#   include <libavformat/avformat.h>
+#elif defined(HAVE_FFMPEG_AVFORMAT_H)
+#   include <ffmpeg/avformat.h>
+#endif
+
+#ifdef HAVE_LIBSWSCALE_SWSCALE_H
+#   include <libswscale/swscale.h>
+#elif defined(HAVE_FFMPEG_SWSCALE_H)
+#   include <ffmpeg/swscale.h>
+#endif
+
 #include <sys/time.h>
-#include <libswscale/swscale.h>
+
 
 #define TRANSCODE_BUF_SIZE (5 * 1024 * 1024)
 #define TRANSCODE_INPUT_BUFFER_SIZE (5 * 1024 * 1024)

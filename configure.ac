@@ -57,6 +57,9 @@ AC_ARG_ENABLE(transcoding,
 if test "${enable_transcoding}" = "yes"
 then
   AC_CHECK_LIB([pthread], [pthread_create],[], [enable_transcoding="no"])
+  AC_CHECK_HEADERS([libavcodec/avcodec.h ffmpeg/avcodec.h])
+  AC_CHECK_HEADERS([libavformat/avformat.h ffmpeg/avformat.h])
+  AC_CHECK_HEADERS([libswscale/swscale.h ffmpeg/swscale.h])
   AC_CHECK_LIB([avcodec], [av_picture_copy],[], [enable_transcoding="no"])
   AC_CHECK_LIB([avformat], [av_get_frame_filename],[], [enable_transcoding="no"])
   AC_CHECK_LIB([swscale], [sws_freeContext],[], [enable_transcoding="no"])
