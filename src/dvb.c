@@ -35,6 +35,8 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <dirent.h>
+#include <sys/types.h>
 #include "log.h"
 #ifdef HAVE_LIBPTHREAD
 #include <pthread.h>
@@ -340,3 +342,138 @@ int tune_dvr_buffer_size(int bytes_read, card_buffer_t *card_buffers)
   return 0;
 }
 */
+
+typedef struct frontend_cap_t
+{
+  int flag;
+  char descr[128];
+}frontend_cap_t;
+
+/** @brief : List the capabilities of one card
+ * 
+ * 
+ */
+void show_card_capabilities( int card )
+{
+  int frontend_fd;
+  int i_ret;
+  int display_sr;
+
+  //Open the frontend
+  if(!open_fe (&frontend_fd, card))
+    return;
+
+  //if(ioctl(fd_frontend,FE_READ_STATUS,&festatus) >= 0)
+  //print_status(festatus);
+
+  //get frontend info
+  struct dvb_frontend_info fe_info;
+  if ( (i_ret = ioctl(frontend_fd,FE_GET_INFO, &fe_info) < 0)){
+    log_message( MSG_ERROR, "FE_GET_INFO: %s \n", strerror(errno));
+    return;
+  }
+  log_message( MSG_INFO, "=========== Card %d ===========\n", card);
+  log_message( MSG_INFO, " Frontend : %s\n", fe_info.name);
+  display_sr=0;
+  switch(fe_info.type)
+  {
+    case FE_OFDM:
+      log_message( MSG_INFO, " Terrestrial (DVB-T) card\n");
+      break;
+    case FE_QPSK:
+      log_message( MSG_INFO, " Satellite (DVB-S) card\n");
+      display_sr=1;
+      break;
+    case FE_QAM:
+      log_message( MSG_INFO, " Cable (DVB-C) card\n");
+      display_sr=1;
+      break;
+    case FE_ATSC:
+      log_message( MSG_INFO, " ATSC card\n");
+      break;
+  }
+  log_message( MSG_INFO, " Frequency: %d ... %dHz\n", fe_info.frequency_min, fe_info.frequency_max);
+  if(display_sr)
+    log_message( MSG_INFO, " Symbol rate: %d ... %d\n", fe_info.symbol_rate_min, fe_info.symbol_rate_max);
+
+  log_message( MSG_DETAIL, "\n== Card capabilities ==\n");
+  frontend_cap_t caps[]={
+    {0x1,"FE_CAN_INVERSION_AUTO"},
+    {0x2,"FE_CAN_FEC_1_2"},
+    {0x4,"FE_CAN_FEC_2_3"},
+    {0x8,"FE_CAN_FEC_3_4"},
+    {0x10,"FE_CAN_FEC_4_5"},
+    {0x20,"FE_CAN_FEC_5_6"},
+    {0x40,"FE_CAN_FEC_6_7"},
+    {0x80,"FE_CAN_FEC_7_8"},
+    {0x100,"FE_CAN_FEC_8_9"},
+    {0x200,"FE_CAN_FEC_AUTO"},
+    {0x400,"FE_CAN_QPSK"},
+    {0x800,"FE_CAN_QAM_16"},
+    {0x1000,"FE_CAN_QAM_32"},
+    {0x2000,"FE_CAN_QAM_64"},
+    {0x4000,"FE_CAN_QAM_128"},
+    {0x8000,"FE_CAN_QAM_256"},
+    {0x10000,"FE_CAN_QAM_AUTO"},
+    {0x20000,"FE_CAN_TRANSMISSION_MODE_AUTO"},
+    {0x40000,"FE_CAN_BANDWIDTH_AUTO"},
+    {0x80000,"FE_CAN_GUARD_INTERVAL_AUTO"},
+    {0x100000,"FE_CAN_HIERARCHY_AUTO"},
+    {0x200000,"FE_CAN_8VSB"},
+    {0x400000,"FE_CAN_16VSB"},
+    {0x800000,"FE_HAS_EXTENDED_CAPS /* We need more bitspace for newer APIs, indicate this. */"},
+    {0x1000000,"FE_CAN_2G_MODULATION /* frontend supports '2nd generation modulation' (DVB-S2) */"},
+    {0x2000000,"FE_NEEDS_BENDING /* not supported anymore */"},
+    {0x4000000,"FE_CAN_RECOVER /* frontend can recover from a cable unplug automatically */"},
+    {0x8000000,"FE_CAN_MUTE_TS /* frontend can stop spurious TS data output */"},
+  };
+  int numcaps=28;
+  int i;
+  //todo : do a loop on a structure which contains the capabilities
+  for(i=0;i<numcaps;i++)
+    if(fe_info.caps & caps[i].flag)
+      log_message( MSG_DETAIL, "%s\n", caps[i].descr);
+  close (frontend_fd);
+
+  log_message( MSG_INFO, "\n");
+
+}
+
+/** @brief : List the DVB cards of the system and their capabilities
+ * 
+ * 
+ */
+void list_dvb_cards ()
+{
+  DIR *dvb_dir;
+  log_message(MSG_INFO,"==================================\n");
+  log_message(MSG_INFO,"        DVB CARDS LISTING\n");
+  log_message(MSG_INFO,"==================================\n\n");
+
+  dvb_dir = opendir ("/dev/dvb/");
+  if (dvb_dir == NULL)
+  {
+    log_message( MSG_ERROR, "Cannot open /dev/dvb : %s\n", strerror (errno));
+    return;
+  }
+
+  int card_number;
+  int num_cards;
+  num_cards=0;
+  struct dirent *d_adapter;
+  while ((d_adapter=readdir(dvb_dir))!=NULL)
+  {
+    if(strlen(d_adapter->d_name)<8)
+      continue;
+    if(strncmp(d_adapter->d_name,"adapter",7))
+      continue;
+    card_number= atoi(d_adapter->d_name+7);
+    log_message( MSG_DEBUG, "found adapter %d\n", card_number);
+    num_cards++;
+    show_card_capabilities( card_number );
+    /**@todo sort the adapters*/
+    
+  }
+
+}
+

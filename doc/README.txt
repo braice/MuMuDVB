@@ -195,6 +195,9 @@ Possible options are:
 -t, --traffic
 	Print the traffic of the channels every 10 seconds
 
+-l, --list-cards
+	List the DVB cards and exit
+
 -h, --help
 	Show help
 
@@ -715,5 +718,26 @@ In order to specify the interface, you can specify a route for the multicast tra
 ---------------------------------------------------
 route add -net 224.0.0.0 netmask 240.0.0.0 dev eth2
 ---------------------------------------------------
+
+What does the MuMuDVB error code means ?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Here's a short description of the error codes
+
+------------------------------
+    ERROR_ARGS=1,
+    ERROR_CONF_FILE,
+    ERROR_CONF,
+    ERROR_TOO_CHANNELS,
+    ERROR_CREATE_FILE,
+    ERROR_DEL_FILE,
+    ERROR_TUNE,
+    ERROR_NO_DIFF,
+    ERROR_MEMORY,
+    ERROR_NETWORK,
+    ERROR_CAM,
+    ERROR_GENERIC,
+    ERROR_NO_CAM_INIT,
+------------------------------
 
 
