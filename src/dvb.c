@@ -345,7 +345,7 @@ int tune_dvr_buffer_size(int bytes_read, card_buffer_t *card_buffers)
 
 typedef struct frontend_cap_t
 {
-  int flag;
+  long int flag;
   char descr[128];
 }frontend_cap_t;
 
@@ -358,6 +358,7 @@ void show_card_capabilities( int card )
   int frontend_fd;
   int i_ret;
   int display_sr;
+  int frequency_factor;
 
   //Open the frontend
   if(!open_fe (&frontend_fd, card))
@@ -392,9 +393,11 @@ void show_card_capabilities( int card )
       log_message( MSG_INFO, " ATSC card\n");
       break;
   }
-  log_message( MSG_INFO, " Frequency: %d ... %dHz\n", fe_info.frequency_min, fe_info.frequency_max);
+  if(fe_info.type==FE_QPSK)
+    frequency_factor=1000;
+  log_message( MSG_INFO, " Frequency: %d kHz to %d kHz\n",(int) fe_info.frequency_min/1000*frequency_factor,(int) fe_info.frequency_max/1000*frequency_factor);
   if(display_sr)
-    log_message( MSG_INFO, " Symbol rate: %d ... %d\n", fe_info.symbol_rate_min, fe_info.symbol_rate_max);
+    log_message( MSG_INFO, " Symbol rate: %d k symbols/s to %d k symbols/s \n", (int)fe_info.symbol_rate_min/1000, (int)fe_info.symbol_rate_max/1000);
 
   log_message( MSG_DETAIL, "\n== Card capabilities ==\n");
   frontend_cap_t caps[]={
@@ -435,12 +438,11 @@ void show_card_capabilities( int card )
       log_message( MSG_DETAIL, "%s\n", caps[i].descr);
   close (frontend_fd);
 
-  log_message( MSG_INFO, "\n");
+  log_message( MSG_INFO, "\n\n");
 
 }
 
 /** @brief : List the DVB cards of the system and their capabilities
- * 
  * 
  */
 void list_dvb_cards ()
@@ -459,6 +461,7 @@ void list_dvb_cards ()
 
   int card_number;
   int num_cards;
+  int cards[256];
   num_cards=0;
   struct dirent *d_adapter;
   while ((d_adapter=readdir(dvb_dir))!=NULL)
@@ -469,11 +472,26 @@ void list_dvb_cards ()
       continue;
     card_number= atoi(d_adapter->d_name+7);
     log_message( MSG_DEBUG, "found adapter %d\n", card_number);
+    cards[num_cards]=card_number;
     num_cards++;
-    show_card_capabilities( card_number );
-    /**@todo sort the adapters*/
-    
+    if(num_cards==256)
+    {
+      log_message(MSG_ERROR, "Wow You have a system with more than 256 DVB cards, Please Contact me :D\n");
+      return;
+    }
   }
 
+  //Basic card sorting (O(N^2))
+  int i,j,old_card;
+  old_card=-1;
+  for(i=0;i<num_cards;i++)
+  {
+    card_number=cards[0];
+    for(j=1;j<num_cards;j++)
+      if((cards[j]>old_card) && (cards[j]<card_number))
+	card_number=cards[j];
+    old_card=card_number;
+    show_card_capabilities( card_number );
+  }
 }
 
