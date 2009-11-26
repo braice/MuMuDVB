@@ -395,11 +395,14 @@ void show_card_capabilities( int card )
   }
   if(fe_info.type==FE_QPSK)
     frequency_factor=1000;
+  else
+    frequency_factor=1;
   log_message( MSG_INFO, " Frequency: %d kHz to %d kHz\n",(int) fe_info.frequency_min/1000*frequency_factor,(int) fe_info.frequency_max/1000*frequency_factor);
   if(display_sr)
     log_message( MSG_INFO, " Symbol rate: %d k symbols/s to %d k symbols/s \n", (int)fe_info.symbol_rate_min/1000, (int)fe_info.symbol_rate_max/1000);
 
   log_message( MSG_DETAIL, "\n== Card capabilities ==\n");
+  log_message( MSG_DEBUG, "caps 0x%x\n",fe_info.caps);
   frontend_cap_t caps[]={
     {0x1,"FE_CAN_INVERSION_AUTO"},
     {0x2,"FE_CAN_FEC_1_2"},
@@ -425,10 +428,10 @@ void show_card_capabilities( int card )
     {0x200000,"FE_CAN_8VSB"},
     {0x400000,"FE_CAN_16VSB"},
     {0x800000,"FE_HAS_EXTENDED_CAPS /* We need more bitspace for newer APIs, indicate this. */"},
-    {0x1000000,"FE_CAN_2G_MODULATION /* frontend supports '2nd generation modulation' (DVB-S2) */"},
-    {0x2000000,"FE_NEEDS_BENDING /* not supported anymore */"},
-    {0x4000000,"FE_CAN_RECOVER /* frontend can recover from a cable unplug automatically */"},
-    {0x8000000,"FE_CAN_MUTE_TS /* frontend can stop spurious TS data output */"},
+    {0x10000000,"FE_CAN_2G_MODULATION /* frontend supports '2nd generation modulation' (DVB-S2) */"},
+    {0x20000000,"FE_NEEDS_BENDING /* not supported anymore */"},
+    {0x40000000,"FE_CAN_RECOVER /* frontend can recover from a cable unplug automatically */"},
+    {0x80000000,"FE_CAN_MUTE_TS /* frontend can stop spurious TS data output */"},
   };
   int numcaps=28;
   int i;
