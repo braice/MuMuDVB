@@ -83,6 +83,26 @@ if (NULL != options->config_option) {\
     out_stream->codec->codec_option = *options->config_option;\
 }
 
+
+#if LIBAVCODEC_VERSION_MAJOR < 53
+#warning You are using an "old" version of libavcodec, the audio resampling might not work
+ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
+                                        int output_rate, int input_rate,
+                                        enum SampleFormat sample_fmt_out,
+                                        enum SampleFormat sample_fmt_in,
+                                        int filter_length, int log2_phase_count,
+                                        int linear, double cutoff)
+{
+  (void) sample_fmt_out;
+  (void) sample_fmt_in;
+  (void) filter_length; //to make compiler happy
+  (void) log2_phase_count;
+  (void) linear;
+  (void) cutoff;
+  return audio_resample_init( output_channels,  input_channels, output_rate,  input_rate);
+}
+#endif
+
 /* FIXME: don't know another way to include this ffmpeg function */
 void url_split(char *proto, int proto_size,
            char *authorization, int authorization_size,
