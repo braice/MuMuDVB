@@ -101,4 +101,6 @@ void close_card_fd(fds_t fds);
 
 void *show_power_func(void* arg);
 int card_read(int fd_dvr, unsigned char *dest_buffer, int dvr_buffer_size, int *partial_packet_number);
+
+void list_dvb_cards ();
 #endif

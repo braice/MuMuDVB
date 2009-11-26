@@ -195,6 +195,9 @@ Possible options are:
 -t, --traffic
 	Print the traffic of the channels every 10 seconds
 
+-l, --list-cards
+	List the DVB cards and exit
+
 -h, --help
 	Show help
 

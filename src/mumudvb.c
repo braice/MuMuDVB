@@ -364,22 +364,23 @@ int
   /******************************************************/
   //Getopt
   /******************************************************/
-  const char short_options[] = "c:sdthvq";
+  const char short_options[] = "c:sdthvql";
   const struct option long_options[] = {
     {"config", required_argument, NULL, 'c'},
     {"signal", no_argument, NULL, 's'},
     {"traffic", no_argument, NULL, 't'},
     {"debug", no_argument, NULL, 'd'},
     {"help", no_argument, NULL, 'h'},
+    {"list-cards", no_argument, NULL, 'l'},
     {0, 0, 0, 0}
   };
   int c, option_index = 0;
-
+  int list_cards=0;
 
 
   if (argc == 1)
   {
-    usage (argv[0]);
+    usage (program_invocation_short_name);
     exit(ERROR_ARGS);
   }
 
@@ -422,6 +423,9 @@ int
         usage (program_invocation_short_name);
         exit(ERROR_ARGS);
         break;
+      case 'l':
+	list_cards=1;
+        break;
     }
   }
   if (optind < argc)
@@ -430,6 +434,12 @@ int
     exit(ERROR_ARGS);
   }
 
+  if(list_cards)
+    {
+      print_info ();
+      list_dvb_cards ();
+      exit(0);
+    }
   /******************************************************/
   //end of command line options parsing
   /******************************************************/

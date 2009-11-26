@@ -195,6 +195,9 @@ Les différentes options sont :
 -t, --traffic
 	Affiche toutes les 10 secondes la bande passante prise par chaque chaîne
 
+-l, --list-cards
+	Liste les cartes DVB et quitte
+
 -h, --help
 	Montre l'aide ( en Anglais )
 
