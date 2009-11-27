@@ -84,7 +84,19 @@ if (NULL != options->config_option) {\
 }
 
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
+/************ Compatibility for "old" libavcodec ********************/
+//see http://lists.mplayerhq.hu/pipermail/ffmpeg-cvslog/2009-February/019812.html
+#undef OLD_LIBAVCODEC
+#if LIBAVCODEC_VERSION_MAJOR < 52
+#define OLD_LIBAVCODEC 1
+#endif
+
+#if LIBAVCODEC_VERSION_MAJOR == 52
+#if LIBAVCODEC_VERSION_MAJOR < 15
+#define OLD_LIBAVCODEC 1
+#endif
+#endif
+#if OLD_LIBAVCODEC
 #warning You are using an "old" version of libavcodec, the audio resampling might not work
 ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
                                         int output_rate, int input_rate,
@@ -102,6 +114,9 @@ ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
   return audio_resample_init( output_channels,  input_channels, output_rate,  input_rate);
 }
 #endif
+
+/************ End of Compatibility for "old" libavcodec *****************/
+
 
 /* FIXME: don't know another way to include this ffmpeg function */
 void url_split(char *proto, int proto_size,
