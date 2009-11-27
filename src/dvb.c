@@ -489,9 +489,9 @@ void list_dvb_cards ()
   old_card=-1;
   for(i=0;i<num_cards;i++)
   {
-    card_number=cards[0];
-    for(j=1;j<num_cards;j++)
-      if((cards[j]>old_card) && (cards[j]<card_number))
+    card_number=-1;
+    for(j=0;j<num_cards;j++)
+      if((card_number<=old_card)||((cards[j]>old_card) && (cards[j]<card_number)))
 	card_number=cards[j];
     old_card=card_number;
     show_card_capabilities( card_number );
