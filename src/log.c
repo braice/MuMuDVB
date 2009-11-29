@@ -61,7 +61,6 @@ void log_message( int type,
 
   priority=LOG_USER;
   va_start( args, psz_format );
-  
 
   if(type<verbosity)
     {

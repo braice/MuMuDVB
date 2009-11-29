@@ -226,7 +226,6 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
 
 int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels);
 
-int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int num_of_channels);
 int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *channel);
 
 void unicast_freeing(unicast_parameters_t *unicast_vars, mumudvb_channel_t *channels);
