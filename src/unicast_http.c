@@ -730,13 +730,13 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 	      unicast_send_streamed_channels_list_js (number_of_channels, channels, client->Socket);
 	      return -2; //We close the connection afterwards
 	    }
-	  else if(strstr(client->buffer +pos ,"/signal_power.js")==(client->buffer +pos))
+	  else if(strstr(client->buffer +pos ,"/monitor/signal_power.js")==(client->buffer +pos))
 	    {
 	      log_message(MSG_DETAIL,"Signal power json\n");
               unicast_send_signal_power_js(client->Socket, fds);
 	      return -2; //We close the connection afterwards
 	    }
-	  else if(strstr(client->buffer +pos ,"/channel_traffic.js")==(client->buffer +pos))
+	  else if(strstr(client->buffer +pos ,"/monitor/channels_traffic.js")==(client->buffer +pos))
             {
 	      log_message(MSG_DETAIL,"Channel traffic json\n");
 	      unicast_send_channel_traffic_js(number_of_channels, channels, client->Socket);
@@ -1213,8 +1213,6 @@ unicast_send_signal_power_js (int Socket, fds_t *fds)
 int 
 unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *channels, int Socket)
 {
-  static time_t last_epoch = 0;    /* holds the time returned from time() */
-  time_t time_interval;
   int curr_channel;
   extern long real_start_time;
 
@@ -1224,22 +1222,17 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
     return -1;
   }
 
-  if (last_epoch == 0)
-    last_epoch = real_start_time;
-  time_t now = time((time_t*)0L);       /* get the time */
-  time_interval = now - last_epoch;
-  if (time_interval >= 10) 
+  if ((time((time_t*)0L) - real_start_time) >= 10) //10 seconds for the traffic calculation to be done
     {
       unicast_reply_write(reply, "[");
       for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	unicast_reply_write(reply, "{\"curr_channel\":%d, \"name\":\"%s\", \"traffic\":%.2f},\n", curr_channel, channels[curr_channel].name, channels[curr_channel].traffic);
       reply->used -= 2; // dirty hack to erase the last comma
       unicast_reply_write(reply, "]\n");
-      last_epoch = now;
     }
 
   unicast_reply_send_as_text(reply, Socket);
-  
+
   if (0 != unicast_reply_free(reply)) {
     log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
     return -1;
