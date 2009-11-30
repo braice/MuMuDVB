@@ -30,6 +30,7 @@
 #define _UNICAST_H
 
 #include "mumudvb.h"
+#include "unicast_queue.h"
 
 /** @brief The different fd/socket types */
 enum
@@ -45,9 +46,7 @@ enum
 /**@brief the timeout for disconnecting a client with only consecutive errors*/
 #define UNICAST_CONSECUTIVE_ERROR_TIMEOUT 5
 
-#define UNICAST_DEFAULT_QUEUE_MAX 1024*512
-/**How many packets we try to send from the queue per new packet. This value MUST be at least 2*/
-#define UNICAST_MULTIPLE_QUEUE_SEND 3
+
 
 #define HTTP_OK_REPLY "HTTP/1.0 200 OK\r\n"\
                       "Content-type: application/octet-stream\r\n"\
@@ -106,25 +105,6 @@ Applications should use this field to indicate the size of the
 #define HTTP_503_REPLY "HTTP/1.0 503 Too many clients\r\n"\
                       "\r\n"
 
-/** @brief A data packet in queue.
- *
- */
-typedef struct unicast_queue_data_t{
-  int data_length;
-  unsigned char *data;
-  struct unicast_queue_data_t *next;
-}unicast_queue_data_t;
-
-/** @brief The header of a data queue.
- *
- */
-typedef struct unicast_queue_header_t{
-  int packets_in_queue;
-  int data_bytes_in_queue;
-  int full;
-  unicast_queue_data_t *first;
-  unicast_queue_data_t *last;
-}unicast_queue_header_t;
 
 /** @brief A client connected to the unicast connection.
  *
@@ -226,7 +206,6 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
 
 void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *channels, fds_t *fds, unicast_parameters_t *unicast_vars);
 
-void unicast_queue_clear(unicast_queue_header_t *header);
 
 
 
