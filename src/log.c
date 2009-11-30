@@ -506,28 +506,28 @@ void print_info ()
                VERSION
                "\n --- Build information ---\n"
 #ifdef ENABLE_CAM_SUPPORT
-               "Builded with CAM support.\n"
+               "Built with CAM support.\n"
 #else
-               "Builded without CAM support.\n"
+               "Built without CAM support.\n"
 #endif
 #ifdef ENABLE_TRANSCODING
-               "Builded with transcoding support.\n"
+               "Built with transcoding support.\n"
 #else
-               "Builded without transcoding support.\n"
+               "Built without transcoding support.\n"
 #endif
 #ifdef ATSC
-               "Builded with ATSC support.\n"
+               "Built with ATSC support.\n"
 #ifdef HAVE_LIBUCSI
-               "Builded with ATSC long channel names support.\n"
+               "Built with ATSC long channel names support.\n"
 #endif
 #endif
 #if DVB_API_VERSION >= 5
-               "Builded with support for DVB API Version 5 (DVB-S2).\n"
+               "Built with support for DVB API Version 5 (DVB-S2).\n"
 #endif
 #ifdef HAVE_LIBPTHREAD
-               "Builded with pthread support (used for periodic signal strength display, cam support, transcoding, and threaded read).\n"
+               "Built with pthread support (used for periodic signal strength display, cam support, transcoding, and threaded read).\n"
 #else
-               "Builded without pthread support (NO periodic signal strength display, NO cam support, NO transcoding and NO threaded read).\n"
+               "Built without pthread support (NO periodic signal strength display, NO cam support, NO transcoding and NO threaded read).\n"
 #endif
                "---------\n"
                "Originally based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
