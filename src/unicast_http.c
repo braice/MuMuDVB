@@ -923,7 +923,7 @@ static int unicast_reply_send(struct unicast_reply *reply, int socket, const cha
     return 0;
   } 
   int size = 0;
-  size += fprintf(file, "HTTP/1.0 200 OK\r\n"); // FIXME: should use HTTP_OK_TEXT_REPLY but w/o \r\n ending the string
+  size += fprintf(file, "HTTP/1.0 200 OK\r\n");
   size += fprintf(file, "Server: mumudvb/" VERSION "\r\n");
   size += fprintf(file, "Content-type: %s\r\n", content_type);
   size += fprintf(file, "Content-length: %d\r\n", reply->used);
@@ -1018,6 +1018,7 @@ unicast_send_streamed_channels_list_txt (int number_of_channels, mumudvb_channel
       return -1;
     }
 
+  unicast_reply_write(reply, "#Warning : this file is obsolete, use the JSON version instead\r\n");
   unicast_reply_write(reply, HTTP_CHANNELS_REPLY_TEXT_START);
 
   //"#Channel number::name::sap playlist group::multicast ip::multicast port::num unicast clients::scrambling ratio\r\n"
@@ -1063,7 +1064,6 @@ unicast_send_statistics_txt(int number_of_channels, mumudvb_channel_t *channels,
   int curr_channel;
   unicast_client_t *unicast_client=NULL;
   int clients=0;
-  char str_service_type[81];
   int i;
   struct timeval tv;
   extern long real_start_time;
@@ -1092,11 +1092,10 @@ unicast_send_statistics_txt(int number_of_channels, mumudvb_channel_t *channels,
       unicast_client=unicast_client->chan_next;
       clients++;
     }
-    service_type_to_str(str_service_type,channels[curr_channel].channel_type);
-	unicast_reply_write(reply, "Channel number %d\r\nName %s\r\nService type %s\r\nTs_id %d\r\nSap Group %s\r\nMulticast Ip %s\r\nMulticast Port %d\r\nUnicast port %d\r\nNumber of Unicast clients %d\r\nRatio of scrambled packets %d\r\nTraffic (kB/s) %f\r\nNumber of pids %d\r\n",
+    unicast_reply_write(reply, "Channel number %d\r\nName %s\r\nService type %s\r\nTs_id %d\r\nSap Group %s\r\nMulticast Ip %s\r\nMulticast Port %d\r\nUnicast port %d\r\nNumber of Unicast clients %d\r\nRatio of scrambled packets %d\r\nTraffic (kB/s) %f\r\nNumber of pids %d\r\n",
                   curr_channel,
                   channels[curr_channel].name,
-                  str_service_type,
+                  service_type_to_str(channels[curr_channel].channel_type),
                   channels[curr_channel].ts_id,
                   channels[curr_channel].sap_group,
                   channels[curr_channel].ipOut,
@@ -1133,13 +1132,13 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
   int curr_channel;
   unicast_client_t *unicast_client=NULL;
   int clients=0;
-  
+
   struct unicast_reply* reply = unicast_reply_init();
   if (NULL == reply) {
     log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
     return -1;
   }
-  
+
   unicast_reply_write(reply, "[");
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
   {
@@ -1150,7 +1149,7 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
       unicast_client=unicast_client->chan_next;
       clients++;
     }
-    unicast_reply_write(reply, "{\"number\":%d, \"name\":\"%s\", \"sap_group\":\"%s\", \"ip_multicast\":\"%s\", \"port_multicast\":%d, \"num_clients\":%d, \"scrambling_ratio\":%d, \"is_up\":%d},\n",
+    unicast_reply_write(reply, "{\"number\":%d, \"name\":\"%s\", \"sap_group\":\"%s\", \"ip_multicast\":\"%s\", \"port_multicast\":%d, \"num_clients\":%d, \"scrambling_ratio\":%d, \"is_up\":%d,",
 			curr_channel,
 			channels[curr_channel].name,
 			channels[curr_channel].sap_group,
@@ -1159,6 +1158,18 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
 			clients,
 			channels[curr_channel].ratio_scrambled,
 			channels[curr_channel].streamed_channel_old);
+
+    unicast_reply_write(reply, "\"unicast_port\":%d, \"ts_id\":%d, \"service_type\":\"%s\", \"pids_num\":%d, \n",
+			channels[curr_channel].unicast_port,
+			channels[curr_channel].ts_id,
+			service_type_to_str(channels[curr_channel].channel_type),
+			channels[curr_channel].num_pids);
+    unicast_reply_write(reply, "\"pids\":[");
+    for(int i=0;i<channels[curr_channel].num_pids;i++)
+      unicast_reply_write(reply, "{\"number\":%d, \"type\":\"%s\"}\n", channels[curr_channel].pids[i], pid_type_to_str(channels[curr_channel].pids_type[i]));
+    unicast_reply_write(reply, "]");
+    unicast_reply_write(reply, "},\n");
+
   }
   reply->used -= 2; // dirty hack to erase the last comma
   unicast_reply_write(reply, "]\n");

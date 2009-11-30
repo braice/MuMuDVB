@@ -59,13 +59,6 @@ Applications should use this field to indicate the size of the
    entity. A valid Content-Length field value is required on all
    HTTP/1.0 request messages containing an entity body.
 */
-#define HTTP_OK_TEXT_REPLY "HTTP/1.0 200 OK\r\n"\
-                      "Content-type: text/plain\r\n"\
-                      "\r\n"
-
-#define HTTP_OK_HTML_REPLY "HTTP/1.0 200 OK\r\n"\
-                      "Content-type: text/html\r\n"\
-                      "\r\n"
 
 #define HTTP_404_REPLY "HTTP/1.0 404 Not found\r\n"\
                       "Content-type: text/html\r\n"\

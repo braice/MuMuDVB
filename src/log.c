@@ -398,56 +398,55 @@ void display_ca_sys_id(int id)
  * @param type the type to display
  * @param dest : the destination string
  */
-int service_type_to_str(char *dest, int type)
+char *service_type_to_str(int type)
 {
   if(type>=0x80 && type<=0xFE)
-    return snprintf(dest,80*sizeof(char), "User defined");
+    return "User defined";
 
   switch(type)
   {
     case 0x01:
-      return snprintf(dest,80*sizeof(char), "Television");
+      return "Television";
     case 0x02:
-      return snprintf(dest,80*sizeof(char), "Radio");
+      return "Radio";
     case 0x03:
-      return snprintf(dest,80*sizeof(char), "Teletext");
+      return "Teletext";
     case 0x04:
-      return snprintf(dest,80*sizeof(char), "NVOD Reference service");
+      return "NVOD Reference service";
     case 0x05:
-      return snprintf(dest,80*sizeof(char), "NVOD Time shifted service");
+      return "NVOD Time shifted service";
     case 0x06:
-      return snprintf(dest,80*sizeof(char), "Mosaic service");
+      return "Mosaic service";
     case 0x0a:
-      return snprintf(dest,80*sizeof(char), "Advanced codec Radio");
+      return "Advanced codec Radio";
     case 0x0b:
-      return snprintf(dest,80*sizeof(char), "Advanced codec mosaic");
+      return "Advanced codec mosaic";
     case 0x0c:
-      return snprintf(dest,80*sizeof(char), "Data broadcast service");
+      return "Data broadcast service";
     case 0x0d:
-      return snprintf(dest,80*sizeof(char), "Reserved for common interface usage");
+      return "Reserved for common interface usage";
     case 0x0e:
-      return snprintf(dest,80*sizeof(char), "RCS Map");
+      return "RCS Map";
     case 0x0f:
-      return snprintf(dest,80*sizeof(char), "RCS FLS");
+      return "RCS FLS";
     case 0x10:
-      return snprintf(dest,80*sizeof(char), "DVB MHP (multimedia home platform)");
+      return "DVB MHP (multimedia home platform)";
     case 0x11:
-      return snprintf(dest,80*sizeof(char), "Television MPEG2-HD");
+      return "Television MPEG2-HD";
     case 0x16:
-      return snprintf(dest,80*sizeof(char), "Advanced codec SD Television");
+      return "Advanced codec SD Television";
     case 0x17:
-      return snprintf(dest,80*sizeof(char), "Advanced codec SD NVOD Time shifted service");
+      return "Advanced codec SD NVOD Time shifted service";
     case 0x18:
-      return snprintf(dest,80*sizeof(char), "Advanced codec SD NVOD Reference service");
+      return "Advanced codec SD NVOD Reference service";
     case 0x19:
-      return snprintf(dest,80*sizeof(char), "Advanced codec HD Television");
+      return "Advanced codec HD Television";
     case 0x1a:
-      return snprintf(dest,80*sizeof(char), "Advanced codec HD NVOD Time shifted service");
+      return "Advanced codec HD NVOD Time shifted service";
     case 0x1b:
-      return snprintf(dest,80*sizeof(char), "Advanced codec HD NVOD Reference service");
+      return "Advanced codec HD NVOD Reference service";
     default:
-      return snprintf(dest,80*sizeof(char), "Please report : Unknown service type (0x%02x), doc : EN 300 468 v1.10.1 table 81",
-                  type);
+      return "Please report : Unknown service type doc : EN 300 468 v1.10.1 table 81";
   }
 }
 
@@ -458,9 +457,7 @@ int service_type_to_str(char *dest, int type)
  */
 void display_service_type(int type, int loglevel)
 {
-  char type_str[81];
-  service_type_to_str(type_str,type);
-  log_message(loglevel, "Autoconf : service type : %s \n", type_str);
+  log_message(loglevel, "Autoconf : service type: 0x%x : %s \n", type, service_type_to_str(type));
 }
 
 /** @brief Write the PID type into a string

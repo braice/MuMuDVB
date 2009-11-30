@@ -48,7 +48,7 @@ void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *
 void display_ca_sys_id(int id);
 void display_service_type(int type, int loglevel);
 char *pid_type_to_str(int type);
-int service_type_to_str(char *dest, int type);
+char *service_type_to_str(int type);
 
 
 #endif
