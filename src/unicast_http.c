@@ -1133,36 +1133,36 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
   int curr_channel;
   unicast_client_t *unicast_client=NULL;
   int clients=0;
-
+  
   struct unicast_reply* reply = unicast_reply_init();
   if (NULL == reply) {
     log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
-      return -1;
-    }
-
+    return -1;
+  }
+  
   unicast_reply_write(reply, "[");
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+  {
+    clients=0;
+    unicast_client=channels[curr_channel].clients;
+    while(unicast_client!=NULL)
     {
-      clients=0;
-      unicast_client=channels[curr_channel].clients;
-      while(unicast_client!=NULL)
-	{
-	  unicast_client=unicast_client->chan_next;
-	  clients++;
-  }
-      unicast_reply_write(reply, "{\"number\":%d, \"name\":\"%s\", \"sap_group\":\"%s\", \"ip_multicast\":\"%s\", \"port_multicast\":%d, \"num_clients\":%d, \"scrambling_ratio\":%d, \"is_up\":%d},\n",
-			  curr_channel,
-			  channels[curr_channel].name,
-			  channels[curr_channel].sap_group,
-			  channels[curr_channel].ipOut,
-			  channels[curr_channel].portOut,
-			  clients,
-			  channels[curr_channel].ratio_scrambled,
-			  channels[curr_channel].streamed_channel_old);
+      unicast_client=unicast_client->chan_next;
+      clients++;
     }
+    unicast_reply_write(reply, "{\"number\":%d, \"name\":\"%s\", \"sap_group\":\"%s\", \"ip_multicast\":\"%s\", \"port_multicast\":%d, \"num_clients\":%d, \"scrambling_ratio\":%d, \"is_up\":%d},\n",
+			curr_channel,
+			channels[curr_channel].name,
+			channels[curr_channel].sap_group,
+			channels[curr_channel].ipOut,
+			channels[curr_channel].portOut,
+			clients,
+			channels[curr_channel].ratio_scrambled,
+			channels[curr_channel].streamed_channel_old);
+  }
   reply->used -= 2; // dirty hack to erase the last comma
   unicast_reply_write(reply, "]\n");
-  
+
   unicast_reply_send_as_text(reply, Socket);
 
   if (0 != unicast_reply_free(reply)) {
