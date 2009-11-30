@@ -242,6 +242,10 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
         continue;
       else if (!strcmp (substring, "autoconf_pid_update"))
         continue;
+      else if (!strcmp (substring, "autoconf_tsid_list"))
+        continue;
+      else if (!strcmp (substring, "channel_next"))
+        continue;
       else if (!strcmp (substring, "ip"))
 	continue;
       else if (!strcmp (substring, "port"))
