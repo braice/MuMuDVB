@@ -1114,7 +1114,7 @@ void autoconf_free_services(mumudvb_service_t *services)
  * @param unicast_vars The unicast parameters
  * @param fds The file descriptors (for filters and unicast)
  */
-int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card, unicast_parameters_t *unicast_vars)
+int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card, unicast_parameters_t *unicast_vars, int multicast_out)
 {
 
   mumudvb_service_t *actual_service;
@@ -1173,11 +1173,14 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 	      channels[channel_number].pids[0]=actual_service->pmt_pid;
               channels[channel_number].pids_type[0]=PID_PMT;
 	      channels[channel_number].num_pids=1;
-	      channels[channel_number].portOut=port;
 	      strcpy(channels[channel_number].name,actual_service->name);
-	      sprintf(ip,"%s.%d.%d", parameters.autoconf_ip_header, card, channel_number);
-	      strcpy(channels[channel_number].ipOut,ip);
-	      log_message(MSG_DEBUG,"Autoconf : Channel Ip : \"%s\" port : %d\n",channels[channel_number].ipOut,port);
+	      if(multicast_out)
+	      {
+	        channels[channel_number].portOut=port;
+	        sprintf(ip,"%s.%d.%d", parameters.autoconf_ip_header, card, channel_number);
+	        strcpy(channels[channel_number].ipOut,ip);
+	        log_message(MSG_DEBUG,"Autoconf : Channel Ip : \"%s\" port : %d\n",channels[channel_number].ipOut,port);
+	      }
 
 	      //This is a scrambled channel, we will have to ask the cam for descrambling it
 	      if(parameters.autoconf_scrambled && actual_service->free_ca_mode)
@@ -1204,6 +1207,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
                 if(actual_unicast_port && unicast_vars->unicast)
                 {
                   channels[channel_number].unicast_port=actual_unicast_port;
+		  log_message(MSG_DEBUG,"Autoconf : Channel (direct) unicast port  %d\n",channels[channel_number].unicast_port);
                   actual_unicast_port++;
                 }
 
@@ -1245,7 +1249,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parameters_t *autoconf_vars, multicast_parameters_t *multicast_vars, int card, fds_t *fds, unicast_parameters_t *unicast_vars)
 {
   int curr_channel,curr_pid;
-  chan_and_pids->number_of_channels=autoconf_services_to_channels(*autoconf_vars, chan_and_pids->channels, multicast_vars->common_port, card, unicast_vars); //Convert the list of services into channels
+  chan_and_pids->number_of_channels=autoconf_services_to_channels(*autoconf_vars, chan_and_pids->channels, multicast_vars->common_port, card, unicast_vars, multicast_vars->multicast); //Convert the list of services into channels
   //we got the pmt pids for the channels, we open the filters
   for (curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
   {
