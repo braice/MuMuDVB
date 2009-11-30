@@ -193,15 +193,12 @@ int unicast_create_listening_socket(int socket_type, int socket_channel, char *i
 
 int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels);
 
-unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, int socketIn);
-unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in SocketAddr, int Socket);
-void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, int Socket, mumudvb_channel_t *channels);
-
 int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels);
 
 int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *channel);
 
 void unicast_freeing(unicast_parameters_t *unicast_vars, mumudvb_channel_t *channels);
+
 int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
 
 void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *channels, fds_t *fds, unicast_parameters_t *unicast_vars);

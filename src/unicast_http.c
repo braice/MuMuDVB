@@ -65,6 +65,10 @@ Todo list
 
 extern int Interrupted;
 
+unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in SocketAddr, int Socket);
+unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, int socketIn);
+void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, int Socket, mumudvb_channel_t *channels);
+
 int 
 unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *host);
 int 

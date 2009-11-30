@@ -41,6 +41,7 @@
 int unicast_queue_remove_data(unicast_queue_header_t *header);
 int unicast_queue_add_data(unicast_queue_header_t *header, unsigned char *data, int data_len);
 unsigned char *unicast_queue_get_data(unicast_queue_header_t* , int* );
+void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, int Socket, mumudvb_channel_t *channels);
 
 /** @brief Send the buffer for the channel
  *
