@@ -656,7 +656,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 		  return -2; //to delete the client
 		}
 		
-	      pos+=10;
+	      pos+=strlen("/bynumber/");
 	      substring = strtok (client->buffer+pos, " ");
 	      if(substring == NULL)
 		err404=1;
@@ -673,6 +673,39 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 		    }
 		}
 	    }
+	  //Channel by ts_id
+	  //GET /bytsid/tsid
+	  else if(strstr(client->buffer +pos ,"/bytsid/")==(client->buffer +pos))
+	    {
+	      if(client->channel!=-1)
+		{
+		  log_message(MSG_INFO,"Unicast : A channel (%d) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->channel);
+		  iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
+		  return -2; //to delete the client
+		}
+	      pos+=strlen("/bytsid/");
+	      substring = strtok (client->buffer+pos, " ");
+	      if(substring == NULL)
+		err404=1;
+	      else
+		{
+		  int requested_tsid;
+		  requested_tsid=atoi(substring);
+		  for(int current_channel=0; current_channel<number_of_channels;current_channel++)
+		  {
+		    if(channels[current_channel].ts_id == requested_tsid)
+		      requested_channel=current_channel+1;
+		  }
+		  if(requested_channel)
+		    log_message(MSG_DEBUG,"Unicast : Channel by ts id,  ts_id %d number %d\n", requested_tsid, requested_channel);
+		  else
+		    {
+		      log_message(MSG_INFO,"Unicast : Channel by ts id, ts id  %d not found\n",requested_tsid);
+		      err404=1;
+		      requested_channel=0;
+		    }
+		}
+	    }
 	  //Channel by name
 	  //GET /byname/channelname
 	  else if(strstr(client->buffer +pos ,"/byname/")==(client->buffer +pos))
@@ -683,7 +716,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 		  iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY));//iRet is to make the copiler happy we will close the connection anyways
 		  return -2; //to delete the client
 		}
-	      pos+=8;
+	      pos+=strlen("/byname/");
 	      log_message(MSG_DEBUG,"Unicast : Channel by number\n");
 	      substring = strtok (client->buffer+pos, " ");
 	      if(substring == NULL)

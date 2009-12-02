@@ -394,6 +394,19 @@ vlc http://10.0.0.1:4242/bynumber/3
 
 will give you the channel number 3. This works also with xine and mplayer.
 
+Get the channel by transport stream id
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can ask the channel by the transport stream id.
+
+If you server is listening on the ip 10.0.0.1 and the port 4242,
+
+------------------------------------
+vlc http://10.0.0.1:4242/bytsid/100
+------------------------------------
+
+will give you the channel with the ts id 100, or a 404 error if there is no channel with this ts id. This works also with xine and mplayer.
+
 Get the channel by name
 ^^^^^^^^^^^^^^^^^^^^^^^
 

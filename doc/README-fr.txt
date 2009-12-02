@@ -391,6 +391,18 @@ vlc http://10.0.0.1:4242/bynumber/3
 
 vous donnera la chaîne numéro 3. Ceci marche aussi avec xine et mplayer.
 
+Obtenir les chaînes par leur transport stream id
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Vous pouvez obtenir les chaînes en utilisant leur transport stream id.
+
+Si votre serveur écoute sur l'ip 10.0.0.1 et le port 4242,
+
+------------------------------------
+vlc http://10.0.0.1:4242/bytsid/100
+------------------------------------
+
+vous donnera la chaîne numéro avec le transport stream id 100 (ou une erreur 404 si il n'y a pas de chaine avec ce transport stream id). Ceci marche aussi avec xine et mplayer.
 
 Obtenir les chaînes par leur nom
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
