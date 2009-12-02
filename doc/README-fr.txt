@@ -90,6 +90,7 @@ Liste détaillée des fonctionalités
 - Peut réinitialiser le module CAM si l'initialisation échoue
 - Peut trier le PID EIT pour envoyer seulement ceux correspondant a la chaine courante
 - La lecture des données peux se faire via un thread, voir la section <<threaded_read, lecture par thread>>
+- Génération de listes de lecture, voir <<playlist, playlist>>
 
 D'autres petits programmes sont disponibles depuis le http://gitweb.braice.net/gitweb?p=mumudvb_tools;a=summary[dépot MuMuDVB Tools] :
 
@@ -366,6 +367,22 @@ Pour les chaînes pour lesquelles avoir une connexion en écoute, vous devez dé
 Coté client, les différentes méthodes pour obtenir les chaînes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+[[playlist]]
+Utilisation d'une playlist
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+MuMuDVB génère des playlist au format m3u. 
+
+Si votre serveur écoute sur l'ip 10.0.0.1 et le port 4242,
+
+-------------------------------------
+vlc http://10.0.0.1:4242/playlist.m3u
+-------------------------------------
+
+Pour que cette playlist fonctionne correctement, vous devez spécifier l'option `ip_http` pour une ip de votre serveur. (sinon la playlist pointera vers 0.0.0.0)
+
+[NOTE]
+Des playlists pour la lecture multicast sont aussi générées, elles sont accessibles aux addresses suivantes : "playlist_multicast.m3u" et "playlist_multicast_vlc.m3u"
 
 Cas d'une connexion pour une chaîne
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

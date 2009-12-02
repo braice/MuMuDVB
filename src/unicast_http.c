@@ -74,6 +74,10 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
 int 
 unicast_send_streamed_channels_list_txt (int number_of_channels, mumudvb_channel_t *channels, int Socket);
 int 
+unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *unicast_ipout, int unicast_portOut);
+int 
+unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t* channels, int Socket, int vlc);
+int 
     unicast_send_statistics_txt(int number_of_channels, mumudvb_channel_t *channels, int Socket);
 int
 unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_channel_t *channels, int Socket);
@@ -752,6 +756,25 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
               unicast_send_streamed_channels_list_txt (number_of_channels, channels, client->Socket);
               return -2; //We close the connection afterwards
             }
+	   //playlist, m3u
+          else if(strstr(client->buffer +pos ,"/playlist.m3u")==(client->buffer +pos))
+            {
+	      log_message(MSG_DETAIL,"play list\n");
+              unicast_send_play_list_unicast (number_of_channels, channels, client->Socket, unicast_vars->ipOut, unicast_vars->portOut );
+              return -2; //We close the connection afterwards
+            }
+	  else if(strstr(client->buffer +pos ,"/playlist_multicast.m3u")==(client->buffer +pos))
+            {
+	      log_message(MSG_DETAIL,"play list\n");
+              unicast_send_play_list_multicast (number_of_channels, channels, client->Socket, 0 );
+              return -2; //We close the connection afterwards
+            }
+	   else if(strstr(client->buffer +pos ,"/playlist_multicast_vlc.m3u")==(client->buffer +pos))
+            {
+	      log_message(MSG_DETAIL,"play list\n");
+              unicast_send_play_list_multicast (number_of_channels, channels, client->Socket, 1 );
+              return -2; //We close the connection afterwards
+            }
             //statistics, text version
           else if(strstr(client->buffer +pos ,"/monitor/statistics.txt")==(client->buffer +pos))
             {
@@ -1086,6 +1109,101 @@ unicast_send_streamed_channels_list_txt (int number_of_channels, mumudvb_channel
 
   return 0;
 }
+
+/** @brief Send a basic text file containig the playlist
+ *
+ * @param number_of_channels the number of channels
+ * @param channels the channels array
+ * @param Socket the socket on wich the information have to be sent
+ */
+int 
+unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *unicast_ipout, int unicast_portOut)
+{
+  int curr_channel;
+
+  struct unicast_reply* reply = unicast_reply_init();
+  if (NULL == reply) {
+    log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
+      return -1;
+    }
+
+  unicast_reply_write(reply, "#EXTM3U\r\n");
+
+  //"#EXTINF:0,title\r\nURL"
+  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+    if (channels[curr_channel].streamed_channel_old)
+      {
+	unicast_reply_write(reply, "#EXTINF:0,%s\r\nhttp://%s:%d/bynumber/%d\r\n",
+		      channels[curr_channel].name,
+		      unicast_ipout ,
+		      unicast_portOut ,
+		      curr_channel+1);
+      }
+
+  unicast_reply_send_as_text(reply, Socket);
+  
+  if (0 != unicast_reply_free(reply)) {
+    log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+      return -1;
+    }
+
+  return 0;
+}
+
+/** @brief Send a basic text file containig the playlist
+ *
+ * @param number_of_channels the number of channels
+ * @param channels the channels array
+ * @param Socket the socket on wich the information have to be sent
+ */
+int 
+unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int vlc)
+{
+  int curr_channel;
+  char urlheader[4];
+  char vlcchar[2];
+  extern multicast_parameters_t multicast_vars;
+
+  struct unicast_reply* reply = unicast_reply_init();
+  if (NULL == reply) {
+    log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
+      return -1;
+    }
+
+  unicast_reply_write(reply, "#EXTM3U\r\n");
+  
+  if(vlc)
+    strcpy(vlcchar,"@");
+  else
+    vlcchar[0]='\0';
+
+  if(multicast_vars.rtp_header)
+    strcpy(urlheader,"rtp");
+  else
+    strcpy(urlheader,"udp");
+
+  //"#EXTINF:0,title\r\nURL"
+  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+    if (channels[curr_channel].streamed_channel_old)
+      {
+	unicast_reply_write(reply, "#EXTINF:0,%s\r\n%s://%s%s:%d\r\n",
+		      channels[curr_channel].name,
+		      urlheader,
+		      vlcchar,
+		      channels[curr_channel].ipOut,
+		      channels[curr_channel].portOut);
+      }
+
+  unicast_reply_send_as_text(reply, Socket);
+  
+  if (0 != unicast_reply_free(reply)) {
+    log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+      return -1;
+    }
+
+  return 0;
+}
+
 
 /** @brief Send a basic text file containig statistics
  *
