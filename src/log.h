@@ -45,7 +45,7 @@ void gen_file_streamed_channels (char *nom_fich_chaines_diff, char *nom_fich_cha
 void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels, int multicast, int unicast, int unicast_master_port, char *unicastipOut);
 void gen_config_file_header(char *orig_conf_filename, char *saving_filename);
 void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *saving_filename);
-void display_ca_sys_id(int id);
+char *ca_sys_id_to_str(int id);
 void display_service_type(int type, int loglevel);
 char *pid_type_to_str(int type);
 char *service_type_to_str(int type);

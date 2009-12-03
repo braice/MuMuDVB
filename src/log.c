@@ -330,65 +330,141 @@ void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *
 }
 
 
+typedef struct ca_sys_id_t
+{
+  int beginning;
+  int end;
+  char descr[128];
+}ca_sys_id_t;
+
+
+  ca_sys_id_t casysids[]={
+  {0x01,0, "IPDC SPP (TS 102 474) Annex A "},
+  {0x02,0, "IPDC SPP (TS 102 474) Annex B"},
+  {0x04,0, "OMA DRM Content Format"},
+  {0x05,0, "OMA BCAST 1.0"},
+  {0x06,0, "OMA BCAST 1.0 (U)SIM"},
+  {0x07,0, "Reserved for Open IPTV Forum"},
+  {0x00,0xFF, "Standardized systems"},
+  {0x0100,0x01ff, "Canal Plus"},
+  {0x0200,0x02ff, "CCETT"},
+  {0x0300,0x03ff, "Kabel Deutschland"},
+  {0x0400,0x04ff, "Eurodec"},
+  {0x0500,0x05ff, "France Telecom"},
+  {0x0600,0x06ff, "Irdeto"},
+  {0x0700,0x07ff, "Jerrold/GI/Motorola"},
+  {0x0800,0x08ff, "Matra Communication"},
+  {0x0900,0x09ff, "News Datacom"},
+  {0x0A00,0x0Aff, "Nokia"},
+  {0x0B00,0x0Bff, "Norwegian Telekom"},
+  {0x0C00,0x0Cff, "NTL"},
+  {0x0D00,0x0Dff, "CrytoWorks (Irdeto)"},
+  {0x0E00,0x0Eff, "Scientific Atlanta"},
+  {0x0F00,0x0Fff, "Sony"},
+  {0x1000,0x10ff, "Tandberg Television"},
+  {0x1100,0x11ff, "Thomson"},
+  {0x1200,0x12ff, "TV/Com"},
+  {0x1300,0x13ff, "HPT - Croatian Post and Telecommunications"},
+  {0x1400,0x14ff, "HRT - Croatian Radio and Television"},
+  {0x1500,0x15ff, "IBM"},
+  {0x1600,0x16ff, "Nera"},
+  {0x1700,0x17ff, "BetaTechnik"},
+  {0x1800,0x18ff, "Kudelski SA"},
+  {0x1900,0x19ff, "Titan Information Systems"},
+  {0x2000,0x20ff, "Telefonica Servicios Audiovisuales"},
+  {0x2100,0x21ff, "STENTOR (France Telecom, CNES and DGA)"},
+  {0x2200,0x22ff, "Scopus Network Technologies"},
+  {0x2300,0x23ff, "BARCO AS"},
+  {0x2400,0x24ff, "StarGuide Digital Networks"},
+  {0x2500,0x25ff, "Mentor Data System, Inc."},
+  {0x2600,0x26ff, "European Broadcasting Union"},
+  {0x2700 ,0x270F , "PolyCipher (NGNA, LLC)"},
+  {0x4347 ,0 , "Crypton"},
+  {0x4700 ,0x47FF , "General Instrument (Motorola)"},
+  {0x4800 ,0x48FF , "Telemann"},
+  {0x4900 ,0x49FF , "CrytoWorks (China) (Irdeto)"},
+  {0x4A10 ,0x4A1F , "Easycas"},
+  {0x4A20 ,0x4A2F , "AlphaCrypt"},
+  {0x4A30 ,0x4A3F , "DVN Holdings"},
+  {0x4A40 ,0x4A4F , "Shanghai Advanced Digital Technology Co. Ltd. (ADT)"},
+  {0x4A50 ,0x4A5F , "Shenzhen Kingsky Company (China) Ltd."},
+  {0x4A60 ,0x4A6F , "@Sky"},
+  {0x4A70 ,0x4A7F , "Dreamcrypt"},
+  {0x4A80 ,0x4A8F , "THALESCrypt"},
+  {0x4A90 ,0x4A9F , "Runcom Technologies"},
+  {0x4AA0 ,0x4AAF , "SIDSA"},
+  {0x4AB0 ,0x4ABF , "Beijing Compunicate Technology Inc."},
+  {0x4AC0 ,0x4ACF , "Latens Systems Ltd"},
+  {0x4AD0 ,0x4AD1 , "XCrypt Inc."},
+  {0x4AD2 ,0x4AD3 , "Beijing Digital Video Technology Co., Ltd."},
+  {0x4AD4 ,0x4AD5 , "Widevine Technologies, Inc."},
+  {0x4AD6 ,0x4AD7 , "SK Telecom Co., Ltd."},
+  {0x4AD8 ,0x4AD9 , "Enigma Systems"},
+  {0x4ADA ,0 , "Wyplay SAS"},
+  {0x4ADB ,0 , "Jinan Taixin Electronics, Co., Ltd."},
+  {0x4ADC ,0 , "LogiWays"},
+  {0x4ADD ,0 , "ATSC System Renewability Message (SRM)"},
+  {0x4ADE ,0 , "CerberCrypt"},
+  {0x4ADF ,0 , "Caston Co., Ltd."},
+  {0x4AE0 ,0x4AE1 , "Digi Raum Electronics Co. Ltd."},
+  {0x4AE2 ,0x4AE3 , "Microsoft Corp."},
+  {0x4AE4 ,0 , "Coretrust, Inc."},
+  {0x4AE5 ,0 , "IK SATPROF"},
+  {0x4AE6 ,0 , "SypherMedia International"},
+  {0x4AE7 ,0 , "Guangzhou Ewider Technology Corporation Limited"},
+  {0x4AE8 ,0 , "FG DIGITAL Ltd."},
+  {0x4AE9 ,0 , "Dreamer-i Co., Ltd."},
+  {0x4AEA ,0 , "Cryptoguard AB"},
+  {0x4AEB ,0 , "Abel DRM Systems AS"},
+  {0x4AEC ,0 , "FTS DVL SRL"},
+  {0x4AED ,0 , "Unitend Technologies, Inc."},
+  {0x4AEE ,0 , "Deltacom Electronics OOD"},
+  {0x4AEF ,0 , "NetUP Inc."},
+  {0x4AF0 ,0 , "Beijing Alliance Broadcast Vision Technology Co., Ltd."},
+  {0x4AF1 ,0 , "China DTV Media Inc., Ltd. #1"},
+  {0x4AF2 ,0 , "China DTV Media Inc., Ltd. #2"},
+  {0x4AF3 ,0 , "Baustem Information Technologies, Ltd."},
+  {0x4AF4 ,0 , "Marlin Developer Community, LLC"},
+  {0x4AF5 ,0 , "SecureMedia"},
+  {0x4AF6 ,0 , "Tongfang CAS"},
+  {0x4AF7 ,0 , "MSA"},
+  {0x4AF8 ,0 , "Griffin CAS"},
+  {0x4AF9 ,0x4AFA , "Beijing Topreal Technologies Co., Ltd"},
+  {0x4AFB ,0 , "NST"},
+  {0x4AFC ,0 , "Panaccess Systems GmbH"},
+  {0x4B00 ,0x4B02 , "Tongfang CAS"},
+  {0x4B03 ,0 , "DuoCrypt"},
+  {0x4B04 ,0 , "Great Wall CAS"},
+  {0x4B05 ,0x4B06 , "DIGICAP"},
+  {0x5347 ,0 , "GkWare e.K."},
+  {0x5601 ,0 , "Verimatrix, Inc. #1"},
+  {0x5602 ,0 , "Verimatrix, Inc. #2"},
+  {0x5603 ,0 , "Verimatrix, Inc. #3"},
+  {0x5604 ,0 , "Verimatrix, Inc. #4"},
+  {0x5605 ,0x5606 , "Sichuan Juizhou Electronic Co. Ltd"},
+  {0x5607 ,0x5608 , "Viewscenes"},
+  {0xAA00 ,0 , "Best CAS Ltd"},
+  };
+  int num_casysids=105;
+
+
 /** @brief Display the ca system id according to ETR 162 
  *
  * @param id the id to display
  */
 
-void display_ca_sys_id(int id)
+char *ca_sys_id_to_str(int id)
 {
-  //cf ETR 162
+  //cf ETR 162 and http://www.dvbservices.com/identifiers/ca_system_id
 
-  if(id<=0xFF)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : Standardized systems\n",id);
-  else if(id>=0x0100&&id<0x01ff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : Canal Plus\n",id);
-  else if(id>=0x0200&&id<0x02ff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : CCETT\n",id);
-  else if(id>=0x0300&&id<0x03ff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : Deutsche Telecom\n",id);
-  else if(id>=0x0400&&id<0x04ff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : Eurodec\n",id);
-  else if(id>=0x0500&&id<0x05ff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : France Telecom\n",id);
-  else if(id>=0x0600&&id<0x06ff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : Irdeto\n",id);
-  else if(id>=0x0700&&id<0x07ff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : Jerrold/GI\n",id);
-  else if(id>=0x0800&&id<0x08ff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : Matra Communication\n",id);
-  else if(id>=0x0900&&id<0x09ff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : News Datacom\n",id);
-  else if(id>=0x0A00&&id<0x0Aff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : Nokia\n",id);
-  else if(id>=0x0B00&&id<0x0Bff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : Norwegian Telekom\n",id);
-  else if(id>=0x0C00&&id<0x0Cff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : NTL\n",id);
-  else if(id>=0x0D00&&id<0x0Dff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : Philips\n",id);
-  else if(id>=0x0E00&&id<0x0Eff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : Scientific Atlanta\n",id);
-  else if(id>=0x0F00&&id<0x0Fff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : Sony\n",id);
-  else if(id>=0x1000&&id<0x10ff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : Tandberg Television\n",id);
-  else if(id>=0x1100&&id<0x11ff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : Thomson\n",id);
-  else if(id>=0x1200&&id<0x12ff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : TV/Com\n",id);
-  else if(id>=0x1300&&id<0x13ff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : HPT - Croatian Post and Telecommunications\n",id);
-  else if(id>=0x1400&&id<0x14ff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : HRT - Croatian Radio and Television\n",id);
-  else if(id>=0x1500&&id<0x15ff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : IBM\n",id);
-  else if(id>=0x1600&&id<0x16ff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : Nera\n",id);
-  else if(id>=0x1700&&id<0x17ff)
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : BetaTechnik\n",id);
-  else
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : UNKNOWN\n",id);
+
+
+  for(int i=0;i<num_casysids;i++)
+  {
+    if((casysids[i].end == 0 && casysids[i].beginning == id) || ( casysids[i].beginning <= id && casysids[i].end >= id))
+      return casysids[i].descr;
+  }
+  return "UNKNOWN, please report";
 
 }
 

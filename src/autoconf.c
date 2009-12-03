@@ -452,12 +452,12 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
         if(!channel->ca_sys_id[casysid])
         {
           channel->ca_sys_id[casysid]=HILO(ca_descriptor->CA_type);
-          display_ca_sys_id(HILO(ca_descriptor->CA_type)); //we display it with the description
+	  log_message( MSG_DETAIL,"Autoconf: Ca system id 0x%04x : %s\n", HILO(ca_descriptor->CA_type), ca_sys_id_to_str(HILO(ca_descriptor->CA_type)));//we display it with the description
         }
         pos+=ca_descriptor->descriptor_length+2;
       }
     }
-  
+
     if(channel_update)
     {
       temp_pids[temp_num_pids]=pid;
@@ -986,7 +986,7 @@ void autoconf_show_CA_identifier_descriptor(unsigned char *buf)
   for(i=0;i<length;i+=2)
   {
     ca_id=(buf[i]<<8)+buf[i+1];
-    display_ca_sys_id(ca_id);
+    log_message( MSG_DETAIL,"Autoconf: Ca system id 0x%04x : %s\n",ca_id, ca_sys_id_to_str(ca_id));
   }
 }
 
