@@ -333,11 +333,11 @@ void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *
 typedef struct ca_sys_id_t
 {
   int beginning;
-  int end;
+  int end; //if == 0 equivalent to have end=beginning
   char descr[128];
 }ca_sys_id_t;
 
-
+//updated 2009 12 02
   ca_sys_id_t casysids[]={
   {0x01,0, "IPDC SPP (TS 102 474) Annex A "},
   {0x02,0, "IPDC SPP (TS 102 474) Annex B"},
