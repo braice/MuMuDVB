@@ -1143,8 +1143,10 @@ int
   fds.pfds[0].fd = fds.fd_dvr;
   //POLLIN : data available for read
   fds.pfds[0].events = POLLIN | POLLPRI; 
+  fds.pfds[0].revents = 0;
   fds.pfds[1].fd = 0;
   fds.pfds[1].events = POLLIN | POLLPRI;
+  fds.pfds[1].revents = 0;
 
   //We record the starting time
   gettimeofday (&tv, (struct timezone *) NULL);

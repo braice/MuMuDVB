@@ -195,8 +195,10 @@ int unicast_create_listening_socket(int socket_type, int socket_channel, char *i
     }
     fds->pfds[fds->pfdsnum-1].fd = *socketIn;
     fds->pfds[fds->pfdsnum-1].events = POLLIN | POLLPRI;
+    fds->pfds[fds->pfdsnum-1].revents = 0;
     fds->pfds[fds->pfdsnum].fd = 0;
     fds->pfds[fds->pfdsnum].events = POLLIN | POLLPRI;
+    fds->pfds[fds->pfdsnum].revents = 0;
           //Information about the descriptor
     unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
     if (unicast_vars->fd_info==NULL)
@@ -270,8 +272,10 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
               //We poll the new socket
               fds->pfds[fds->pfdsnum-1].fd = tempSocket;
               fds->pfds[fds->pfdsnum-1].events = POLLIN | POLLPRI | POLLHUP; //We also poll the deconnections
+	      fds->pfds[fds->pfdsnum-1].revents = 0;
               fds->pfds[fds->pfdsnum].fd = 0;
               fds->pfds[fds->pfdsnum].events = POLLIN | POLLPRI;
+	      fds->pfds[fds->pfdsnum].revents = 0;
 
               //Information about the descriptor
               unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
