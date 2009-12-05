@@ -86,7 +86,7 @@ void autoconf_free_services(mumudvb_service_t *services);
 int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services);
 int autoconf_read_psip(autoconf_parameters_t *parameters);
 int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int card, uint8_t *asked_pid, uint8_t *number_chan_asked_pid,fds_t *fds);
-
+void autoconf_sort_services(mumudvb_service_t *services);
 
 
 /** @brief Read a line of the configuration file to check if there is a autoconf parameter
@@ -449,6 +449,59 @@ void autoconf_free_services(mumudvb_service_t *services)
     }
 }
 
+/**@brief Sort the chained list of services.
+ *
+ * This function sort the services using their ts_id, this service doesn't sort the first one :( (but I think it's empty)
+ * Unefficient sorting : O(n^2) but the number of services is never big and this function is called once
+ * @param services the chained list of services
+ */
+void autoconf_sort_services(mumudvb_service_t *services)
+{
+
+  mumudvb_service_t *actual_service;
+  mumudvb_service_t *next_service;
+  mumudvb_service_t *actual_service_int;
+  mumudvb_service_t *next_service_int;
+  mumudvb_service_t *prev_service_int;
+  mumudvb_service_t *temp_service_int;
+  prev_service_int=NULL;
+  log_message(MSG_DEBUG,"Autoconf : Service sorting\n");
+    log_message(MSG_FLOOD,"Autoconf : Service sorting BEFORE\n");
+  for(actual_service=services;actual_service != NULL; actual_service=next_service)
+  {
+    log_message(MSG_FLOOD,"Service sorting, services : %s id %d \n",actual_service->name,actual_service->id);
+    next_service= actual_service->next;
+  }
+  for(actual_service=services;actual_service != NULL; actual_service=next_service)
+  {
+
+    for(actual_service_int=services;actual_service_int != NULL; actual_service_int=next_service_int)
+    {
+      next_service_int= actual_service_int->next;
+      if((prev_service_int != NULL) &&(next_service_int != NULL) &&(next_service_int->id)&&(actual_service_int->id) && next_service_int->id < actual_service_int->id)
+      {
+	log_message(MSG_FLOOD,"Service sorting, we swap services : %s id %d and %s id %d\n",actual_service_int->name,actual_service_int->id, next_service_int->name, next_service_int->id);
+	prev_service_int->next=next_service_int;
+	actual_service_int->next=next_service_int->next;
+	next_service_int->next=actual_service_int;
+	if(actual_service_int==actual_service)
+	  actual_service=next_service_int;
+	temp_service_int=next_service_int;
+	next_service_int=actual_service_int;
+	actual_service_int=temp_service_int;
+      }
+      prev_service_int=actual_service_int;
+    }
+    next_service= actual_service->next;
+  }
+  log_message(MSG_FLOOD,"Autoconf : Service sorting AFTER\n");
+  for(actual_service=services;actual_service != NULL; actual_service=next_service)
+  {
+    log_message(MSG_FLOOD,"Service sorting, services : %s id %d \n",actual_service->name,actual_service->id);
+    next_service= actual_service->next;
+  }
+}
+
 /** @brief Convert the chained list of services into channels
  *
  * This function is called when We've got all the services, we now fill the channels structure
@@ -595,6 +648,8 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parameters_t *autoconf_vars, multicast_parameters_t *multicast_vars, int card, fds_t *fds, unicast_parameters_t *unicast_vars)
 {
   int curr_channel,curr_pid;
+  //We sort the services
+  autoconf_sort_services(autoconf_vars->services);
   chan_and_pids->number_of_channels=autoconf_services_to_channels(*autoconf_vars, chan_and_pids->channels, multicast_vars->common_port, card, unicast_vars, multicast_vars->multicast); //Convert the list of services into channels
   //we got the pmt pids for the channels, we open the filters
   for (curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
