@@ -84,6 +84,7 @@ void log_message( int type,
 	      priority|=LOG_NOTICE;
 	    break;
 	    case MSG_DEBUG:
+	    case MSG_FLOOD:
 	      priority|=LOG_DEBUG;
 	      break;
 	    }

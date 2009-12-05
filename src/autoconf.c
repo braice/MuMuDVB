@@ -788,7 +788,7 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
 		  log_message(MSG_DEBUG, "running_status : starts in a few seconds\t");  break;
 		case 3:
 		  log_message(MSG_DEBUG, "running_status : pausing\t");  break;
-		  /* 		case 4:  log_message(MSG_DEBUG, "running\t");  break; *///too usual to be printed
+		case 4:  log_message(MSG_FLOOD, "running_status : running\t");  break; //too usual to be printed as debug
 		case 5:
 		  log_message(MSG_DEBUG, "running_status : service off-air\t");  break;
 		}
@@ -830,8 +830,8 @@ void parse_sdt_descriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_s
       parse_service_descriptor(buf,service);
     else if( descriptor_tag==0x53) //53 : CA identifier descriptor. This descriptor contains the CA_systems_id (the scrambling algorithms)
       autoconf_show_CA_identifier_descriptor(buf);
-    //else
-    //log_message(MSG_DEBUG, "Autoconf SDT descriptor_tag : 0x%2x\n", descriptor_tag);
+    else
+      log_message(MSG_FLOOD, "Autoconf SDT descriptor_tag : 0x%2x\n", descriptor_tag);
 
     buf += descriptor_len;
     descriptors_loop_len -= descriptor_len;

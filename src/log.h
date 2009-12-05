@@ -33,7 +33,8 @@ enum
     MSG_WARN,
     MSG_INFO,
     MSG_DETAIL,
-    MSG_DEBUG
+    MSG_DEBUG,
+    MSG_FLOOD
   };
 
 

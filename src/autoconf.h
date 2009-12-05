@@ -47,7 +47,7 @@
 */
 typedef struct mumudvb_service_t{
   /**The channel name*/
-  char name[MAX_NAME_LEN];  
+  char name[MAX_NAME_LEN];
   /**Is the channel running ? Not used for the moment*/
   int running_status; 
   /**The service type : television, radio, data, ...*/
