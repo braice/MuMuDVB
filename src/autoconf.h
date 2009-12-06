@@ -38,6 +38,8 @@
 #define AUTOCONF_MODE_PIDS 1
 /**find the pmt pids and the channels from the pat, and go to AUTOCONF_MODE_PIDS*/
 #define AUTOCONF_MODE_FULL 2
+/**parse the NIT*/
+#define AUTOCONF_MODE_NIT 3
 
 //timeout for autoconfiguration
 #define AUTOCONFIGURE_TIME 10
@@ -86,12 +88,14 @@ Possible values for this variable
   int autoconf_scrambled;
   /** Do we follow pmt changes*/
   int autoconf_pid_update;
-  
+  /**Do we search the logical channel number */
+  int autoconf_lcn;
   //Different packets used by autoconfiguration
   mumudvb_ts_packet_t *autoconf_temp_pat;
   mumudvb_ts_packet_t *autoconf_temp_sdt;
+  mumudvb_ts_packet_t *autoconf_temp_nit;
   /**For ATSC Program and System Information Protocol*/
-  mumudvb_ts_packet_t *autoconf_temp_psip; /**@todo : see if it's really necesarry to split it from the sdt*/
+  mumudvb_ts_packet_t *autoconf_temp_psip;
   mumudvb_service_t   *services;
 
   /**the starting http unicast port */

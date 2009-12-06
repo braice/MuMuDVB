@@ -174,6 +174,96 @@ void parse_sdt_descriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_s
   }
 }
 
+int convert_en399468_string(char *string, int max_len)
+{
+
+  int encoding_control_char=8; //cf encodings_en300468 
+  char *dest;
+  char *tempdest, *tempbuf;
+  unsigned char *src;
+  /* remove control characters and convert to UTF-8 the channel name */
+  //If no channel encoding is specified, it seems that most of the broadcasters
+  //uses ISO/IEC 8859-9. But the norm (EN 300 468) said that it should be Latin-1 (ISO/IEC 6937 + euro)
+
+  //temporary buffers allocation
+  tempdest=tempbuf=malloc(sizeof(char)*2*strlen(string));
+  if(tempdest==NULL)
+  {
+    log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    Interrupted=ERROR_MEMORY<<8;
+    return -1;
+  }
+
+  int len=0;
+  for (src = (unsigned char *) string; *src; src++)
+  {
+    if (*src >= 0x20 && (*src < 0x80 || *src > 0x9f))
+    {
+      //We copy non-control characters
+      *tempdest++ = *src;
+      len++;
+    }
+    else if(*src <= 0x20)
+    {
+      //control character recognition based on EN 300 468 v1.9.1 Annex A
+      if(*src<=0x0b){
+	encoding_control_char=(int) *src+4-1;
+      }
+      else if(*src==0x10)
+      { //ISO/IEC 8859 : See table A.4
+      src++;//we skip the current byte
+      src++;//This one is always set to 0
+      if(*src >= 0x01 && *src <=0x0f)
+	encoding_control_char=(int) *src-1;
+      }
+      else if(*src==0x11)//ISO/IEC 10646 : Basic Multilingual Plane
+	encoding_control_char=15;
+      else if(*src==0x12)//KSX1001-2004 : Korean Character Set
+	log_message(MSG_WARN, "\t\t Encoding KSX1001-2004 (korean character set) not implemented yet by iconv, we'll use the default encoding for service name\n");
+      else if(*src==0x13)//GB-2312-1980 : Simplified Chinese Character
+	encoding_control_char=16;
+      else if(*src==0x14)//Big5 subset of ISO/IEC 10646 : Traditional Chinese
+	encoding_control_char=17;
+      else if(*src==0x15)//UTF-8 encoding of ISO/IEC 10646 : Basic Multilingual Plane
+	encoding_control_char=18;
+      else
+	log_message(MSG_WARN, "\t\t Encoding not implemented yet (0x%02x), we'll use the default encoding for service name\n",*src);
+    }
+    else if (*src >= 0x80 && *src <= 0x9f)
+    {
+      //to encode in UTF-8 we add 0xc2 before this control character
+      if(*src==0x86 || *src==0x87 || *src>=0x8a )
+      { 
+	*tempdest++ = 0xc2;
+	len++;
+	*tempdest++ = *src;
+	len++;
+      }
+      else
+	log_message(MSG_DEBUG, "\tUnimplemented name control_character : %x ", *src);
+    }
+  }
+
+  //Conversion to utf8
+  iconv_t cd;
+  //we open the conversion table
+  cd = iconv_open( "UTF8", encodings_en300468[encoding_control_char] );
+
+  size_t inSize, outSize=max_len;
+  inSize=len;
+  //pointers initialisation because iconv change them, we store
+  dest=string;
+  tempdest=tempbuf;
+  //conversion
+  iconv(cd, &tempdest, &inSize, &dest, &outSize );
+  *dest = '\0';
+  free(tempbuf);
+  iconv_close( cd );
+
+  log_message(MSG_FLOOD, "Autoconf : Converted name : \"%s\" (name encoding : %s)\n", string,encodings_en300468[encoding_control_char]);
+  return encoding_control_char;
+
+}
 
 
 /** @brief Parse the service descriptor
@@ -197,10 +287,9 @@ void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *service)
      }
    */
   int len;
-  unsigned char *src;
-  char *dest;
-  char *tempdest, *tempbuf;
-  int encoding_control_char=8; //cf encodings_en300468 
+
+  int encoding_control_char;
+
 
   buf += 2;
   service->type=*buf;
@@ -222,85 +311,9 @@ void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *service)
   //We store the channel name with the raw encoding
   memcpy (service->name, buf, len);
   service->name[len] = '\0';
-
-  /* remove control characters and convert to UTF-8 the channel name */
-  //If no channel encoding is specified, it seems that most of the broadcasters
-  //uses ISO/IEC 8859-9. But the norm (EN 300 468) said that it should be Latin-1 (ISO/IEC 6937 + euro)
-
-  //temporary buffers allocation
-  tempdest=tempbuf=malloc(sizeof(char)*MAX_NAME_LEN);
-  if(tempdest==NULL)
-    {
-      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      Interrupted=ERROR_MEMORY<<8;
-      return;
-    }
-
-  len=0;
-  for (src = (unsigned char *) service->name; *src; src++)
-    {
-      if (*src >= 0x20 && (*src < 0x80 || *src > 0x9f))
-	{
-	  //We copy non-control characters
-	  *tempdest++ = *src;
-	  len++;
-	}
-      else if(*src <= 0x20)
-	{
-	  //control character recognition based on EN 300 468 v1.9.1 Annex A
-	  if(*src<=0x0b){
-	    encoding_control_char=(int) *src+4-1;
-	  }
-	  else if(*src==0x10)
-	    { //ISO/IEC 8859 : See table A.4
-	      src++;//we skip the current byte
-	      src++;//This one is always set to 0
-	      if(*src >= 0x01 && *src <=0x0f)
-		encoding_control_char=(int) *src-1;
-	    }
-	  else if(*src==0x11)//ISO/IEC 10646 : Basic Multilingual Plane
-	    encoding_control_char=15;
-	  else if(*src==0x12)//KSX1001-2004 : Korean Character Set
-	    log_message(MSG_WARN, "\t\t Encoding KSX1001-2004 (korean character set) not implemented yet by iconv, we'll use the default encoding for service name\n");
-	  else if(*src==0x13)//GB-2312-1980 : Simplified Chinese Character
-	    encoding_control_char=16;
-	  else if(*src==0x14)//Big5 subset of ISO/IEC 10646 : Traditional Chinese
-	    encoding_control_char=17;
-	  else if(*src==0x15)//UTF-8 encoding of ISO/IEC 10646 : Basic Multilingual Plane
-	    encoding_control_char=18;
-       	  else
-	    log_message(MSG_WARN, "\t\t Encoding not implemented yet (0x%02x), we'll use the default encoding for service name\n",*src);
-	}
-      else if (*src >= 0x80 && *src <= 0x9f)
-	{
-	  //to encode in UTF-8 we add 0xc2 before this control character
-	  if(*src==0x86 || *src==0x87 || *src>=0x8a )
-	    { 
-	      *tempdest++ = 0xc2;
-	      len++;
-	      *tempdest++ = *src;
-	      len++;
-	    }
-	  else
-	    log_message(MSG_DEBUG, "\tUnimplemented name control_character : %x ", *src);
-	}
-    }
-
-  //Conversion to utf8
-  iconv_t cd;
-  //we open the conversion table
-  cd = iconv_open( "UTF8", encodings_en300468[encoding_control_char] );
-
-  size_t inSize, outSize=MAX_NAME_LEN;
-  inSize=len;
-  //pointers initialisation because iconv change them, we store
-  dest=service->name;
-  tempdest=tempbuf;
-  //conversion
-  iconv(cd, &tempdest, &inSize, &dest, &outSize );
-  *dest = '\0';
-  free(tempbuf);
-  iconv_close( cd );
+  encoding_control_char=convert_en399468_string(service->name,MAX_NAME_LEN);
+  if(encoding_control_char==-1)
+    return;
 
   log_message(MSG_DEBUG, "Autoconf : service_name : \"%s\" (name encoding : %s)\n", service->name,encodings_en300468[encoding_control_char]);
 
