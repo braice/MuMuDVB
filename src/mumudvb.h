@@ -192,6 +192,8 @@ struct unicast_client_t;
  *
  */
 typedef struct mumudvb_channel_t{
+  /** The logical channel number*/
+  int logical_channel_number;
   /**tell if this channel is actually streamed*/
   int streamed_channel;
   /**Tell the total packet number (without pmt) for the scrambling ratio*/

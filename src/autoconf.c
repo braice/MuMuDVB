@@ -87,7 +87,7 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services);
 int autoconf_read_psip(autoconf_parameters_t *parameters);
 int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int card, uint8_t *asked_pid, uint8_t *number_chan_asked_pid,fds_t *fds);
 void autoconf_sort_services(mumudvb_service_t *services);
-int autoconf_read_nit(autoconf_parameters_t *parameters);
+int autoconf_read_nit(autoconf_parameters_t *parameters, mumudvb_channel_t *channels, int number_of_channels);
 
 /** @brief Read a line of the configuration file to check if there is a autoconf parameter
  *
@@ -877,7 +877,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
       if(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_nit))
       {
 	log_message(MSG_FLOOD,"Autoconf : New NIT\n");
-        if(autoconf_read_nit(autoconf_vars)==0)
+        if(autoconf_read_nit(autoconf_vars, chan_and_pids->channels, chan_and_pids->number_of_channels)==0)
 	{
 	  autoconf_vars->autoconfiguration=0;
 	  free(autoconf_vars->autoconf_temp_nit);

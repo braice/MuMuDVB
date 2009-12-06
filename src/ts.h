@@ -434,6 +434,23 @@ typedef struct {
    /* descriptors  */
 }nit_ts_t;
 
+#define NIT_LCN_LEN 4
+
+typedef struct {
+   u_char service_id_hi                          :8;
+   u_char service_id_lo                          :8;
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char visible_service_flag                   :1;
+   u_char reserved                               :5;
+   u_char logical_channel_number_hi              :2;
+#else
+   u_char logical_channel_number_hi              :2;
+   u_char reserved                               :5;
+   u_char visible_service_flag                   :1;
+#endif
+   u_char logical_channel_number_lo              :8;
+}nit_lcn_t;
+
 /***************************************************
  *                ATSC PSIP tables                 *
  * See A/65C                                       *
