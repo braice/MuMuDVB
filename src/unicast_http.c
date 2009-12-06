@@ -1306,8 +1306,9 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
       unicast_client=unicast_client->chan_next;
       clients++;
     }
-    unicast_reply_write(reply, "{\"number\":%d, \"name\":\"%s\", \"sap_group\":\"%s\", \"ip_multicast\":\"%s\", \"port_multicast\":%d, \"num_clients\":%d, \"scrambling_ratio\":%d, \"is_up\":%d,",
+    unicast_reply_write(reply, "{\"number\":%d, \"lcn\":%d, \"name\":\"%s\", \"sap_group\":\"%s\", \"ip_multicast\":\"%s\", \"port_multicast\":%d, \"num_clients\":%d, \"scrambling_ratio\":%d, \"is_up\":%d,",
 			curr_channel,
+			channels[curr_channel].logical_channel_number,
 			channels[curr_channel].name,
 			channels[curr_channel].sap_group,
 			channels[curr_channel].ipOut,
