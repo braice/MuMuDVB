@@ -32,11 +32,13 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 #include "unicast_http.h"
 #include "unicast_queue.h"
 #include "mumudvb.h"
 #include "errors.h"
 #include "log.h"
+
 
 int unicast_queue_remove_data(unicast_queue_header_t *header);
 int unicast_queue_add_data(unicast_queue_header_t *header, unsigned char *data, int data_len);
@@ -122,8 +124,10 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 	    {
 	      //We store the non sent data in the queue
 	      if((actual_client->queue.data_bytes_in_queue+buffer_len-written_len)< unicast_vars->queue_max_size)
-	      unicast_queue_add_data(&actual_client->queue, buffer+written_len, buffer_len-written_len);
-	      log_message(MSG_DEBUG,"Unicast: We start queuing packets ... \n");
+	      {
+		unicast_queue_add_data(&actual_client->queue, buffer+written_len, buffer_len-written_len);
+		log_message(MSG_DEBUG,"Unicast: We start queuing packets ... \n");
+	      }
 	    }
 
 	  if(!actual_client->consecutive_errors)
