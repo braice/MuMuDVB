@@ -769,7 +769,8 @@ int
     fclose (pidfile);
   }
 
-  chan_and_pids.number_of_channels = curr_channel;
+  // + 1 Because of the new syntax
+  chan_and_pids.number_of_channels = curr_channel+1;
   /*****************************************************/
   //Autoconfiguration init
   /*****************************************************/
