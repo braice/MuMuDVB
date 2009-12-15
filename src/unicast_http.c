@@ -1256,7 +1256,8 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
 			channels[curr_channel].num_pids);
     unicast_reply_write(reply, "\"pids\":[");
     for(int i=0;i<channels[curr_channel].num_pids;i++)
-      unicast_reply_write(reply, "{\"number\":%d, \"type\":\"%s\"}\n", channels[curr_channel].pids[i], pid_type_to_str(channels[curr_channel].pids_type[i]));
+      unicast_reply_write(reply, "{\"number\":%d, \"type\":\"%s\"},\n", channels[curr_channel].pids[i], pid_type_to_str(channels[curr_channel].pids_type[i]));
+    reply->used -= 2; // dirty hack to erase the last comma
     unicast_reply_write(reply, "]");
     unicast_reply_write(reply, "},\n");
 
