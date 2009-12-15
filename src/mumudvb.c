@@ -1288,7 +1288,7 @@ int
     {
 #endif
       /* Poll the open file descriptors : we wait for data*/
-      poll_ret=mumudvb_poll(fds.pfds, fds.pfdsnum);
+      poll_ret=mumudvb_poll(&fds);
       if(poll_ret)
       {
 	Interrupted=poll_ret;

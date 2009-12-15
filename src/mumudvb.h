@@ -326,7 +326,7 @@ typedef struct mumudvb_chan_and_pids_t{
 
 
 int mumudvb_close(int Interrupted);
-int mumudvb_poll(struct pollfd *pfds, int pfdsnum);
+int mumudvb_poll(fds_t *fds);
 
 
 #endif

@@ -43,7 +43,7 @@
  *
  * @param fds : the file descriptors
  */
-int mumudvb_poll(struct pollfd *pfds, int pfdsnum)
+int mumudvb_poll(fds_t *fds)
 {
   int poll_try;
   int poll_eintr=0;
@@ -53,7 +53,7 @@ int mumudvb_poll(struct pollfd *pfds, int pfdsnum)
   poll_try=0;
   poll_eintr=0;
   last_poll_error=0;
-  while((poll (pfds, pfdsnum, 500)<0)&&(poll_try<MAX_POLL_TRIES))
+  while((poll (fds->pfds, fds->pfdsnum, 500)<0)&&(poll_try<MAX_POLL_TRIES))
   {
     if(errno != EINTR) //EINTR means Interrupted System Call, it normally shouldn't matter so much so we don't count it for our Poll tries
     {
