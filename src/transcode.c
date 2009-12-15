@@ -35,6 +35,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 #ifdef HAVE_LIBAVCODEC_AVCODEC_H
 #   include <libavcodec/avcodec.h>
 #elif defined(HAVE_FFMPEG_AVCODEC_H)

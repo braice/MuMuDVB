@@ -34,6 +34,7 @@
 #include <string.h>
 #include <errno.h>
 #include <netinet/in.h>
+#include <stdlib.h>
 #ifdef HAVE_LIBAVCODEC_AVCODEC_H
 #   include <libavcodec/avcodec.h>
 #elif defined(HAVE_FFMPEG_AVCODEC_H)

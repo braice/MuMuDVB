@@ -55,7 +55,7 @@ Todo list
 #include <linux/dvb/frontend.h>
 #include <sys/ioctl.h>
 #include <time.h>
-
+#include <stdlib.h>
 
 #include "unicast_http.h"
 #include "unicast_queue.h"

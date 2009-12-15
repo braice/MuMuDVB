@@ -32,6 +32,7 @@
 #include "network.h"
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h>
 #include "log.h"
 
 int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumudvb_sap_message_t *sap_message, multicast_parameters_t multicast_vars);

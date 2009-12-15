@@ -36,6 +36,7 @@
 #include <errno.h>
 #include <string.h>
 #include <iconv.h>
+#include <stdlib.h>
 
 #include "errors.h"
 #include "mumudvb.h"
