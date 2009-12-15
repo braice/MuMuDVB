@@ -18,7 +18,7 @@ MuMuDVB (Multi Multicast DVB) is originally a modification of dvbstream that htt
 
 Now, it's a standalone project.
 
-MuMuDVB is a program that redistributes streams from DVB (Digital Television) on a network using
+MuMuDVB is a program that redistributes streams from DVB (Digital Television) on a network (also called IPTV) using
 multicasting or HTTP unicast. It can multicast a whole DVB transponder by assigning
 each channel a different multicast IP.
 
