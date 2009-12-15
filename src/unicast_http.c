@@ -77,8 +77,6 @@ int
 unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *unicast_ipout, int unicast_portOut);
 int 
 unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t* channels, int Socket, int vlc);
-int 
-    unicast_send_statistics_txt(int number_of_channels, mumudvb_channel_t *channels, int Socket);
 int
 unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_channel_t *channels, int Socket);
 int
@@ -780,12 +778,6 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
               return -2; //We close the connection afterwards
             }
             //statistics, text version
-          else if(strstr(client->buffer +pos ,"/monitor/statistics.txt")==(client->buffer +pos))
-            {
-	      log_message(MSG_DETAIL,"Statistics\n");
-              unicast_send_statistics_txt (number_of_channels, channels, client->Socket);
-              return -2; //We close the connection afterwards
-            }
 	  else if(strstr(client->buffer +pos ,"/channels_list.json")==(client->buffer +pos))
 	    {
 	      log_message(MSG_DETAIL,"Channel list Json\n");
@@ -1216,73 +1208,6 @@ unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t *cha
 }
 
 
-/** @brief Send a basic text file containig statistics
- *
- * @param number_of_channels the number of channels
- * @param channels the channels array
- * @param Socket the socket on wich the information have to be sent
- */
-int 
-unicast_send_statistics_txt(int number_of_channels, mumudvb_channel_t *channels, int Socket)
-{
-  int curr_channel;
-  unicast_client_t *unicast_client=NULL;
-  int clients=0;
-  int i;
-  struct timeval tv;
-  extern long real_start_time;
-
-  struct unicast_reply* reply = unicast_reply_init();
-  if (NULL == reply) {
-    log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
-    return -1;
-  }
-
-  unicast_reply_write(reply, HTTP_STATISTICS_TEXT_START);
-
-  /**@todo : send general statistics*/
-  gettimeofday (&tv, (struct timezone *) NULL);
-  unicast_reply_write(reply, "Uptime  %d:%02d:%02d\r\n\r\n#Channel statistics \r\n",
-                ((int)(tv.tv_sec - real_start_time)/3600),
-                ((int)((tv.tv_sec - real_start_time) % 3600)/60),
-                ((int)(tv.tv_sec - real_start_time) %60));
-  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-    if (channels[curr_channel].streamed_channel_old)
-  {
-    clients=0;
-    unicast_client=channels[curr_channel].clients;
-    while(unicast_client!=NULL)
-    {
-      unicast_client=unicast_client->chan_next;
-      clients++;
-    }
-    unicast_reply_write(reply, "Channel number %d\r\nName %s\r\nService type %s\r\nTs_id %d\r\nSap Group %s\r\nMulticast Ip %s\r\nMulticast Port %d\r\nUnicast port %d\r\nNumber of Unicast clients %d\r\nRatio of scrambled packets %d\r\nTraffic (kB/s) %f\r\nNumber of pids %d\r\n",
-                  curr_channel,
-                  channels[curr_channel].name,
-                  service_type_to_str(channels[curr_channel].channel_type),
-                  channels[curr_channel].ts_id,
-                  channels[curr_channel].sap_group,
-                  channels[curr_channel].ipOut,
-                  channels[curr_channel].portOut,
-                  channels[curr_channel].unicast_port,
-                  clients,
-                  channels[curr_channel].ratio_scrambled,
-                  channels[curr_channel].traffic,
-			    channels[curr_channel].num_pids);
-	unicast_reply_write(reply, "Pids :\r\n");
-	for(i=0;i<channels[curr_channel].num_pids;i++)
-	  unicast_reply_write(reply, "  Pid %d type %s\r\n", channels[curr_channel].pids[i], pid_type_to_str(channels[curr_channel].pids_type[i]));
-      }
-	
-  unicast_reply_send_as_text(reply, Socket);
-
-  if (0 != unicast_reply_free(reply)) {
-    log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
-    return -1;
-  }
-
-  return 0;
-}
 
 
 /** @brief Send a basic JSON file containig the list of streamed channels
