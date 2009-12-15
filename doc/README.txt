@@ -439,15 +439,16 @@ If you server is listening on the ip 10.0.1 and the port 4242,
 
 To get the channel list (in basic html) just enter the adress `http://10.0.0.1:4242/channels_list.html` in your web browser.
 
-To get the channel list (in basic plain text with more informations) just enter the adress `http://10.0.0.1:4242/channels_list.txt` in your web browser.
+To get the channel list (in JSON) just enter the adress `http://10.0.0.1:4242/channels_list.json` in your web browser.
 
 HTTP unicast and monitoring
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This HTTP connection can be used to monitor MuMuDVB. This feature will be implemented in a near future release. Please tell wich data can be interesting for you.
+This HTTP connection can be used to monitor MuMuDVB.
 
-You can get statistics using the following url `http://10.0.0.1:4242/monitor/statistics.txt`
+Monitoring information is avalaible in JSON format (http://en.wikipedia.org/wiki/JSON) vis the following urls `/monitor/signal_power.json` and `/monitor/channels_traffic.json`
 
+It's quite easy to add new informations to these files if needed.
 
 Monitoring
 ----------

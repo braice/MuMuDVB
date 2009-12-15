@@ -434,14 +434,17 @@ Si votre serveur écoute sur l'ip 10.0.0.1 et le port 4242,
 
 Pour obtenir la liste des chaînes ( format HTML "basique" ) entrez l'adresse `http://10.0.0.1:4242/channels_list.html` dans votre navigateur.
 
-Pour obtenir la liste des chaînes ( en texte brut avec plus de détails que la version HTML ) entrez l'adresse `http://10.0.0.1:4242/channels_list.txt` dans votre navigateur.
+Pour obtenir la liste des chaînes ( format JSON ) entrez l'adresse `http://10.0.0.1:4242/channels_list.json` dans votre navigateur.
 
 Unicast HTTP et surveillance de MuMuDVB
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Cette connexion HTTP peut être utilisée pour surveiller MuMuDVB. Cette fonctionnalité sera implémentée dans un futur proche. Merci de signaler quelles informations pourraient vous intéresser.
+Cette connexion HTTP peut être utilisée pour surveiller MuMuDVB.
 
-Vous pouver obtenir des statistiques en utilisant l'adresse `http://10.0.0.1:4242/monitor/statistics.txt`
+Des informations de surveillance sont disponibles au format JSON ( http://fr.wikipedia.org/wiki/JSON ) via les URLs suivantes : `/monitor/signal_power.json` et `/monitor/channels_traffic.json`
+
+Il est assez aisé d'ajouter de nouvelles informations si nécessaire.
+
 
 Surveillance de MuMuDVB
 -----------------------

@@ -786,19 +786,19 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
               unicast_send_statistics_txt (number_of_channels, channels, client->Socket);
               return -2; //We close the connection afterwards
             }
-	  else if(strstr(client->buffer +pos ,"/channels_list.js")==(client->buffer +pos))
+	  else if(strstr(client->buffer +pos ,"/channels_list.json")==(client->buffer +pos))
 	    {
 	      log_message(MSG_DETAIL,"Channel list Json\n");
 	      unicast_send_streamed_channels_list_js (number_of_channels, channels, client->Socket);
 	      return -2; //We close the connection afterwards
 	    }
-	  else if(strstr(client->buffer +pos ,"/monitor/signal_power.js")==(client->buffer +pos))
+	  else if(strstr(client->buffer +pos ,"/monitor/signal_power.json")==(client->buffer +pos))
 	    {
 	      log_message(MSG_DETAIL,"Signal power json\n");
               unicast_send_signal_power_js(client->Socket, fds);
 	      return -2; //We close the connection afterwards
 	    }
-	  else if(strstr(client->buffer +pos ,"/monitor/channels_traffic.js")==(client->buffer +pos))
+	  else if(strstr(client->buffer +pos ,"/monitor/channels_traffic.json")==(client->buffer +pos))
             {
 	      log_message(MSG_DETAIL,"Channel traffic json\n");
 	      unicast_send_channel_traffic_js(number_of_channels, channels, client->Socket);
@@ -1000,6 +1000,13 @@ static int unicast_reply_send(struct unicast_reply *reply, int socket, const cha
  */
 static int unicast_reply_send_as_text(struct unicast_reply *reply, int socket) {
   return unicast_reply_send(reply, socket, "text/plain");
+}
+
+/*
+ * Sent filled buffer with HTTP header informations as json
+ */
+static int unicast_reply_send_as_json(struct unicast_reply *reply, int socket) {
+  return unicast_reply_send(reply, socket, "application/json");
 }
 
 /*
@@ -1332,7 +1339,7 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
   reply->used -= 2; // dirty hack to erase the last comma
   unicast_reply_write(reply, "]\n");
 
-  unicast_reply_send_as_text(reply, Socket);
+  unicast_reply_send_as_json(reply, Socket);
 
   if (0 != unicast_reply_free(reply)) {
     log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
@@ -1362,7 +1369,7 @@ unicast_send_signal_power_js (int Socket, fds_t *fds)
       if (ioctl (fds->fd_frontend, FE_READ_SNR, &snr) >= 0)
 	unicast_reply_write(reply, "[{\"ber\":%d, \"strength\":%d, \"snr\":%d}]\n", ber,strength,snr);
 
-  unicast_reply_send_as_text(reply, Socket);
+  unicast_reply_send_as_json(reply, Socket);
 
   if (0 != unicast_reply_free(reply)) {
     log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
@@ -1400,7 +1407,7 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
       unicast_reply_write(reply, "]\n");
     }
 
-  unicast_reply_send_as_text(reply, Socket);
+  unicast_reply_send_as_json(reply, Socket);
 
   if (0 != unicast_reply_free(reply)) {
     log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
