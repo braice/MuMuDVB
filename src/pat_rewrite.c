@@ -132,13 +132,7 @@ int pat_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
   while((delta+PAT_PROG_LEN)<(section_length))
   {
     prog=(pat_prog_t*)((char*)rewrite_vars->full_pat->packet+delta);
-    if(HILO(prog->program_number)==0)
-    {
-      /*we found the announce for the EIT pid*/
-      memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->packet+delta,PAT_PROG_LEN);
-      buf_dest_pos+=PAT_PROG_LEN;
-    }
-    else
+    if(HILO(prog->program_number)!=0)
     {
       /*We check the transport stream id if present and the size of the packet*/
       /* + 4 for the CRC32*/
