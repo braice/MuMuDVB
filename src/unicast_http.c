@@ -850,6 +850,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
         else
         {
           log_message(MSG_INFO,"Unicast : Unhandled HTTP method : \"%s\", error 501 but we keep the client connected\n",  strtok (client->buffer+pos, " "));
+          iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY));//iRet is to make the copiler happy we will close the connection anyways
           return 0;
         }
       }
@@ -1251,29 +1252,29 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
                         channels[curr_channel].ratio_scrambled,
                         channels[curr_channel].streamed_channel_old);
 
-                        unicast_reply_write(reply, "\"unicast_port\":%d, \"ts_id\":%d, \"service_type\":\"%s\", \"pids_num\":%d, \n",
-                                                           channels[curr_channel].unicast_port,
-                                                           channels[curr_channel].ts_id,
-                                                           service_type_to_str(channels[curr_channel].channel_type),
-                                                           channels[curr_channel].num_pids);
-                                                           unicast_reply_write(reply, "\"pids\":[");
-                                                           for(int i=0;i<channels[curr_channel].num_pids;i++)
-                                                             unicast_reply_write(reply, "{\"number\":%d, \"type\":\"%s\"},\n", channels[curr_channel].pids[i], pid_type_to_str(channels[curr_channel].pids_type[i]));
-                                                           reply->used_body -= 2; // dirty hack to erase the last comma
-                                                           unicast_reply_write(reply, "]");
-                                                           unicast_reply_write(reply, "},\n");
+    unicast_reply_write(reply, "\"unicast_port\":%d, \"ts_id\":%d, \"service_type\":\"%s\", \"pids_num\":%d, \n",
+                        channels[curr_channel].unicast_port,
+                        channels[curr_channel].ts_id,
+                        service_type_to_str(channels[curr_channel].channel_type),
+                        channels[curr_channel].num_pids);
+                        unicast_reply_write(reply, "\"pids\":[");
+                        for(int i=0;i<channels[curr_channel].num_pids;i++)
+                          unicast_reply_write(reply, "{\"number\":%d, \"type\":\"%s\"},\n", channels[curr_channel].pids[i], pid_type_to_str(channels[curr_channel].pids_type[i]));
+                        reply->used_body -= 2; // dirty hack to erase the last comma
+                        unicast_reply_write(reply, "]");
+                        unicast_reply_write(reply, "},\n");
 
-}
-reply->used_body -= 2; // dirty hack to erase the last comma
-unicast_reply_write(reply, "]\n");
+  }
+  reply->used_body -= 2; // dirty hack to erase the last comma
+  unicast_reply_write(reply, "]\n");
 
-unicast_reply_send(reply, Socket, 200, "application/json");
+  unicast_reply_send(reply, Socket, 200, "application/json");
 
-if (0 != unicast_reply_free(reply)) {
-  log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
-  return -1;
-}
-return 0;
+  if (0 != unicast_reply_free(reply)) {
+    log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+    return -1;
+  }
+  return 0;
 }
 
 
@@ -1286,7 +1287,8 @@ unicast_send_signal_power_js (int Socket, fds_t *fds)
 {
   int strength, ber, snr;
   struct unicast_reply* reply = unicast_reply_init();
-  if (NULL == reply) {
+  if (NULL == reply)
+  {
     log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
     return -1;
   }
@@ -1297,52 +1299,52 @@ unicast_send_signal_power_js (int Socket, fds_t *fds)
       if (ioctl (fds->fd_frontend, FE_READ_SNR, &snr) >= 0)
         unicast_reply_write(reply, "[{\"ber\":%d, \"strength\":%d, \"snr\":%d}]\n", ber,strength,snr);
 
-      unicast_reply_send(reply, Socket, 200, "application/json");
+  unicast_reply_send(reply, Socket, 200, "application/json");
 
-    if (0 != unicast_reply_free(reply)) {
-      log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
-      return -1;
-    }
-    return 0;
-    }
+  if (0 != unicast_reply_free(reply)) {
+    log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+    return -1;
+  }
+  return 0;
+}
 
 
 
-    /** @brief Send a basic JSON file containig the channel traffic
-    *
-    * @param number_of_channels the number of channels
-    * @param channels the channels array
-    * @param Socket the socket on wich the information have to be sent
-    */
-    int
-    unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *channels, int Socket)
-    {
-      int curr_channel;
-      extern long real_start_time;
+/** @brief Send a basic JSON file containig the channel traffic
+*
+* @param number_of_channels the number of channels
+* @param channels the channels array
+* @param Socket the socket on wich the information have to be sent
+*/
+int
+unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *channels, int Socket)
+{
+  int curr_channel;
+  extern long real_start_time;
 
-      struct unicast_reply* reply = unicast_reply_init();
-      if (NULL == reply) {
-        log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
-        return -1;
-      }
+  struct unicast_reply* reply = unicast_reply_init();
+  if (NULL == reply) {
+    log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
+    return -1;
+  }
 
-      if ((time((time_t*)0L) - real_start_time) >= 10) //10 seconds for the traffic calculation to be done
-      {
-        unicast_reply_write(reply, "[");
-        for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-          unicast_reply_write(reply, "{\"curr_channel\":%d, \"name\":\"%s\", \"traffic\":%.2f},\n", curr_channel, channels[curr_channel].name, channels[curr_channel].traffic);
-        reply->used_body -= 2; // dirty hack to erase the last comma
-        unicast_reply_write(reply, "]\n");
-    }
+  if ((time((time_t*)0L) - real_start_time) >= 10) //10 seconds for the traffic calculation to be done
+  {
+    unicast_reply_write(reply, "[");
+    for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+      unicast_reply_write(reply, "{\"curr_channel\":%d, \"name\":\"%s\", \"traffic\":%.2f},\n", curr_channel, channels[curr_channel].name, channels[curr_channel].traffic);
+    reply->used_body -= 2; // dirty hack to erase the last comma
+    unicast_reply_write(reply, "]\n");
+  }
 
-    unicast_reply_send(reply, Socket, 200, "application/json");
+  unicast_reply_send(reply, Socket, 200, "application/json");
 
-    if (0 != unicast_reply_free(reply)) {
-      log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
-      return -1;
-    }
-    return 0;
-    }
+  if (0 != unicast_reply_free(reply)) {
+    log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+    return -1;
+  }
+  return 0;
+}
 
 
 
