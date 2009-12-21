@@ -47,18 +47,9 @@ enum
 #define UNICAST_CONSECUTIVE_ERROR_TIMEOUT 5
 
 
-
 #define HTTP_OK_REPLY "HTTP/1.0 200 OK\r\n"\
                       "Content-type: application/octet-stream\r\n"\
                       "\r\n"
-
-/**@todo : Content length
-Applications should use this field to indicate the size of the
-   Entity-Body to be transferred, regardless of the media type of the
-   entity. A valid Content-Length field value is required on all
-   HTTP/1.0 request messages containing an entity body.
-*/
-
 
 #define HTTP_404_REPLY_HTML "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml10/DTD/xhtml10strict.dtd\">\r\n"\
                             "<html lang=\"en\">\r\n"\
@@ -89,11 +80,6 @@ Applications should use this field to indicate the size of the
                             "</body>\r\n"\
                             "</html>\r\n"\
                             "\r\n"
-
-#define HTTP_CHANNELS_REPLY_TEXT_START "#Channels list\r\n"\
-                            "#Channel number::name::sap playlist group::multicast ip::multicast port::num unicast clients::scrambling ratio\r\n"
-
-#define HTTP_STATISTICS_TEXT_START "#MuMuDVB Statistics\r\n"
 
 #define HTTP_501_REPLY "HTTP/1.0 501 Not implemented\r\n"\
                       "\r\n"
