@@ -905,85 +905,140 @@ void unicast_freeing(unicast_parameters_t *unicast_vars, mumudvb_channel_t *chan
 // HTTP Toolbox //
 //////////////////
 
+#define REPLY_HEADER 0
+#define REPLY_BODY 1
+#define REPLY_SIZE_STEP 256
+
 struct unicast_reply {
-  char* buffer;
-  int length;
-  int used;
+  char* buffer_header;
+  char* buffer_body;
+  int length_header;
+  int length_body;
+  int used_header;
+  int used_body;
+  int type;
 };
 
-/*
- * Init reply structure
+/** @brief Init reply structure
+ *
  */
 static struct unicast_reply* unicast_reply_init() {
   struct unicast_reply* reply = malloc(sizeof (struct unicast_reply));
   if (NULL == reply)
+  {
+    log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     return NULL;
-  reply->buffer = malloc(256 * sizeof (char));
-  if (NULL == reply->buffer)
+  }
+  reply->buffer_header = malloc(REPLY_SIZE_STEP * sizeof (char));
+  if (NULL == reply->buffer_header)
+  {
+    free(reply);
+    log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     return NULL;
-  reply->length = 256;
-  reply->used = 0;
+  }
+  reply->length_header = REPLY_SIZE_STEP;
+  reply->used_header = 0;
+  reply->buffer_body = malloc(REPLY_SIZE_STEP * sizeof (char));
+  if (NULL == reply->buffer_body)
+  {
+    free(reply->buffer_header);
+    free(reply);
+    log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    return NULL;
+  }
+  reply->length_body = REPLY_SIZE_STEP;
+  reply->used_body = 0;
+  reply->type = REPLY_BODY;
   return reply;
 }
 
-/*
- * Release the reply structure
+/** @brief Release the reply structure
+ *
  */
 static int unicast_reply_free(struct unicast_reply *reply) {
   if (NULL == reply)
     return 1;
-  if (NULL == reply->buffer)
+  if ((NULL == reply->buffer_header)&&(NULL == reply->buffer_body))
     return 1;
-  free(reply->buffer);
+  if(reply->buffer_header != NULL)
+    free(reply->buffer_header);
+  if(reply->buffer_body != NULL)
+    free(reply->buffer_body);
   free(reply);
   return 0;
 }
 
-/*
- * Write data in a buffer using the same syntax that printf()
+/** @brief Write data in a buffer using the same syntax that printf()
  *
  * auto-realloc buffer if needed
  */
 static int unicast_reply_write(struct unicast_reply *reply, const char* msg, ...)
 {
+  char **buffer;
+  char *temp_buffer;
+  int *length;
+  int *used;
+  buffer=NULL;
   va_list args;
   if (NULL == msg)
     return -1;
+  switch(reply->type)
+  {
+    case REPLY_HEADER:
+      buffer=&reply->buffer_header;
+      length=&reply->length_header;
+      used=&reply->used_header;
+      break;
+    case REPLY_BODY:
+      buffer=&reply->buffer_body;
+      length=&reply->length_body;
+      used=&reply->used_body;
+      break;
+    default:
+      log_message(MSG_WARN,"Unicast : unicast_reply_write with wrong type, please contact\n");
+      return -1;
+  }
   va_start(args, msg);
   int estimated_len = vsnprintf(NULL, 0, msg, args); /* !! imply gcc -std=c99 */
   //Since vsnprintf put the mess we reinitiate the args
   va_end(args);
   va_start(args, msg);
-  while (reply->length - reply->used < estimated_len) {
-    reply->buffer = realloc(reply->buffer, 2 * reply->length);
-    reply->length *= 2;
+  while (*length - *used < estimated_len) {
+    temp_buffer = realloc(*buffer, *length + REPLY_SIZE_STEP);
+    if(temp_buffer == NULL)
+    {
+      log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      return -1;
+    }
+    *buffer=temp_buffer;
+    *length += REPLY_SIZE_STEP;
   }
-  int real_len = vsnprintf(&reply->buffer[reply->used], reply->length - reply->used, msg, args);
+  int real_len = vsnprintf(*buffer+*used, *length - *used, msg, args);
   if (real_len != estimated_len) {
-    log_message(MSG_INFO,"Unicast : Error when writing the HTTP reply\n");
+    log_message(MSG_WARN,"Unicast : Error when writing the HTTP reply\n");
   }
-  reply->used += real_len;
+  *used += real_len;
   va_end(args);
   return 0;
 }
 
-/*
- * Dump the filled buffer on the socket adding HTTP header informations
+/** @brief Dump the filled buffer on the socket adding HTTP header informations
  */
-static int unicast_reply_send(struct unicast_reply *reply, int socket, const char* content_type) {
-  FILE* file;
-  if (NULL == (file = fdopen(socket, "w+"))) {
-    log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
-    return 0;
-  } 
-  int size = 0;
-  size += fprintf(file, "HTTP/1.0 200 OK\r\n");
-  size += fprintf(file, "Server: mumudvb/" VERSION "\r\n");
-  size += fprintf(file, "Content-type: %s\r\n", content_type);
-  size += fprintf(file, "Content-length: %d\r\n", reply->used);
-  size += fprintf(file, "\r\n"); /* end header */
-  fflush(file);
-  size += write(socket, reply->buffer, reply->used);
+static int unicast_reply_send(struct unicast_reply *reply, int socket, const char* content_type)
+{
+  //we add the header information
+  reply->type = REPLY_HEADER;
+  unicast_reply_write(reply, "HTTP/1.0 200 OK\r\n");
+  unicast_reply_write(reply, "Server: mumudvb/" VERSION "\r\n");
+  unicast_reply_write(reply, "Content-type: %s\r\n", content_type);
+  unicast_reply_write(reply, "Content-length: %d\r\n", reply->used_body);
+  unicast_reply_write(reply, "\r\n"); /* end header */
+  //we merge the header and the body
+  reply->buffer_header = realloc(reply->buffer_header, reply->used_header+reply->used_body);
+  memcpy(&reply->buffer_header[reply->used_header],reply->buffer_body,sizeof(char)*reply->used_body);
+  reply->used_header+=reply->used_body;
+  //now we write the data
+  int size = write(socket, reply->buffer_header, reply->used_header);
   return size;
 }
 
@@ -1257,12 +1312,12 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
     unicast_reply_write(reply, "\"pids\":[");
     for(int i=0;i<channels[curr_channel].num_pids;i++)
       unicast_reply_write(reply, "{\"number\":%d, \"type\":\"%s\"},\n", channels[curr_channel].pids[i], pid_type_to_str(channels[curr_channel].pids_type[i]));
-    reply->used -= 2; // dirty hack to erase the last comma
+    reply->used_body -= 2; // dirty hack to erase the last comma
     unicast_reply_write(reply, "]");
     unicast_reply_write(reply, "},\n");
 
   }
-  reply->used -= 2; // dirty hack to erase the last comma
+  reply->used_body -= 2; // dirty hack to erase the last comma
   unicast_reply_write(reply, "]\n");
 
   unicast_reply_send_as_json(reply, Socket);
@@ -1329,7 +1384,7 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
       unicast_reply_write(reply, "[");
       for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	unicast_reply_write(reply, "{\"curr_channel\":%d, \"name\":\"%s\", \"traffic\":%.2f},\n", curr_channel, channels[curr_channel].name, channels[curr_channel].traffic);
-      reply->used -= 2; // dirty hack to erase the last comma
+      reply->used_body -= 2; // dirty hack to erase the last comma
       unicast_reply_write(reply, "]\n");
     }
 
