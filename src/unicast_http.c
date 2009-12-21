@@ -651,6 +651,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
       requested_channel=0;
       pos=0;
       err404=0;
+      struct unicast_reply* reply=NULL;
 
       log_message(MSG_DEBUG,"Unicast : End of HTTP request, we parse it\n");
 
@@ -823,16 +824,16 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 	  if(err404)
 	  {
 	    log_message(MSG_INFO,"Unicast : Path not found i.e. 404\n");
-	    struct unicast_reply* reply = unicast_reply_init();
+	    reply = unicast_reply_init();
 	    if (NULL == reply) {
 	      log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
-	      return -1;
+	      return -2;
 	    }
 	    unicast_reply_write(reply, HTTP_404_REPLY_HTML, VERSION);
 	    unicast_reply_send(reply, client->Socket, 404, "text/html");
 	    if (0 != unicast_reply_free(reply)) {
 	      log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
-	      return -1;
+	      return -2;
 	    }
 	    return -2; //to delete the client
 	  }
