@@ -322,7 +322,7 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
           else if(unicast_vars->fd_info[actual_fd].type==UNICAST_CLIENT)
           {
             //Event on a client connectio i.e. the client asked something
-            log_message(MSG_DEBUG,"Unicast : New message for socket %d\n", fds->pfds[actual_fd].fd);
+            log_message(MSG_FLOOD,"Unicast : New message for socket %d\n", fds->pfds[actual_fd].fd);
             iRet=unicast_handle_message(unicast_vars,unicast_vars->fd_info[actual_fd].client, channels, number_of_channels, fds);
             if (iRet==-2 ) //iRet==-2 --> 0 received data or error, we close the connection
             {
@@ -628,7 +628,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
       if(client->bufferpos==0)
 	log_message(MSG_DEBUG,"Unicast : beginning of buffer %c%c%c%c%c\n",client->buffer[0],client->buffer[1],client->buffer[2],client->buffer[3],client->buffer[4]);
       client->bufferpos+=received_len;
-      log_message(MSG_DEBUG,"Unicast : We received %d, buffer len %d new buffer pos %d\n",received_len,client->buffersize, client->bufferpos);
+      log_message(MSG_FLOOD,"Unicast : We received %d, buffer len %d new buffer pos %d\n",received_len,client->buffersize, client->bufferpos);
     }
 
   if(received_len==-1)
