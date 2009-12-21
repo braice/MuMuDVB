@@ -59,10 +59,6 @@ Applications should use this field to indicate the size of the
    HTTP/1.0 request messages containing an entity body.
 */
 
-#define HTTP_404_REPLY "HTTP/1.0 404 Not found\r\n"\
-                      "Content-type: text/html\r\n"\
-                      "\r\n"
-
 
 #define HTTP_404_REPLY_HTML "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml10/DTD/xhtml10strict.dtd\">\r\n"\
                             "<html lang=\"en\">\r\n"\
@@ -72,7 +68,7 @@ Applications should use this field to indicate the size of the
                             "<body>\r\n"\
                             "   <h1>404 Not found</h1>\r\n"\
                             "<hr />\r\n"\
-                            "<a href=\"http://mumudvb.braice.net\">MuMuDVB</a>\r\n"\
+                            "<a href=\"http://mumudvb.braice.net\">MuMuDVB</a> version %s\r\n"\
                             "</body>\r\n"\
                             "</html>\r\n"\
                             "\r\n"

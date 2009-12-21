@@ -86,7 +86,26 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
 
 int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int num_of_channels, fds_t *fds);
 
-/**@todo : deal with the RTP over http case ie implement RTSP  --> is it useful over TCP ?*/
+#define REPLY_HEADER 0
+#define REPLY_BODY 1
+#define REPLY_SIZE_STEP 256
+
+struct unicast_reply {
+  char* buffer_header;
+  char* buffer_body;
+  int length_header;
+  int length_body;
+  int used_header;
+  int used_body;
+  int type;
+};
+static struct unicast_reply* unicast_reply_init();
+static int unicast_reply_free(struct unicast_reply *reply);
+static int unicast_reply_write(struct unicast_reply *reply, const char* msg, ...);
+static int unicast_reply_send(struct unicast_reply *reply, int socket, int code, const char* content_type);
+
+
+/**@todo : deal with the RTP over http case ie implement RTSP*/
 
 
 /** @brief Read a line of the configuration file to check if there is a unicast parameter
@@ -802,13 +821,21 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 
 
 	  if(err404)
-	    {
-	      log_message(MSG_INFO,"Unicast : Path not found i.e. 404\n");
-	      iRet=write(client->Socket,HTTP_404_REPLY, strlen(HTTP_404_REPLY));//iRet is to make the copiler happy we will close the connection anyways
-	      iRet=write(client->Socket,HTTP_404_REPLY_HTML, strlen(HTTP_404_REPLY_HTML));//iRet is to make the copiler happy we will close the connection anyways
-	      return -2; //to delete the client
+	  {
+	    log_message(MSG_INFO,"Unicast : Path not found i.e. 404\n");
+	    struct unicast_reply* reply = unicast_reply_init();
+	    if (NULL == reply) {
+	      log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
+	      return -1;
 	    }
-
+	    unicast_reply_write(reply, HTTP_404_REPLY_HTML, VERSION);
+	    unicast_reply_send(reply, client->Socket, 404, "text/html");
+	    if (0 != unicast_reply_free(reply)) {
+	      log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+	      return -1;
+	    }
+	    return -2; //to delete the client
+	  }
 	  //We have found a channel, we add the client
 	  if(requested_channel)
 	    {
@@ -905,24 +932,13 @@ void unicast_freeing(unicast_parameters_t *unicast_vars, mumudvb_channel_t *chan
 // HTTP Toolbox //
 //////////////////
 
-#define REPLY_HEADER 0
-#define REPLY_BODY 1
-#define REPLY_SIZE_STEP 256
 
-struct unicast_reply {
-  char* buffer_header;
-  char* buffer_body;
-  int length_header;
-  int length_body;
-  int used_header;
-  int used_body;
-  int type;
-};
 
 /** @brief Init reply structure
  *
  */
-static struct unicast_reply* unicast_reply_init() {
+struct unicast_reply* unicast_reply_init()
+{
   struct unicast_reply* reply = malloc(sizeof (struct unicast_reply));
   if (NULL == reply)
   {
@@ -955,7 +971,8 @@ static struct unicast_reply* unicast_reply_init() {
 /** @brief Release the reply structure
  *
  */
-static int unicast_reply_free(struct unicast_reply *reply) {
+int unicast_reply_free(struct unicast_reply *reply)
+{
   if (NULL == reply)
     return 1;
   if ((NULL == reply->buffer_header)&&(NULL == reply->buffer_body))
@@ -972,7 +989,7 @@ static int unicast_reply_free(struct unicast_reply *reply) {
  *
  * auto-realloc buffer if needed
  */
-static int unicast_reply_write(struct unicast_reply *reply, const char* msg, ...)
+int unicast_reply_write(struct unicast_reply *reply, const char* msg, ...)
 {
   char **buffer;
   char *temp_buffer;
@@ -1024,11 +1041,23 @@ static int unicast_reply_write(struct unicast_reply *reply, const char* msg, ...
 
 /** @brief Dump the filled buffer on the socket adding HTTP header informations
  */
-static int unicast_reply_send(struct unicast_reply *reply, int socket, const char* content_type)
+int unicast_reply_send(struct unicast_reply *reply, int socket, int code, const char* content_type)
 {
   //we add the header information
   reply->type = REPLY_HEADER;
-  unicast_reply_write(reply, "HTTP/1.0 200 OK\r\n");
+  unicast_reply_write(reply, "HTTP/1.0 ");
+  switch(code)
+  {
+    case 200:
+      unicast_reply_write(reply, "200 OK\r\n");
+      break;
+    case 404:
+      unicast_reply_write(reply, "404 Not found\r\n");
+      break;
+    default:
+      log_message(MSG_ERROR,"reply send with bad code please contact\n");
+      return 0;
+  }
   unicast_reply_write(reply, "Server: mumudvb/" VERSION "\r\n");
   unicast_reply_write(reply, "Content-type: %s\r\n", content_type);
   unicast_reply_write(reply, "Content-length: %d\r\n", reply->used_body);
@@ -1042,26 +1071,6 @@ static int unicast_reply_send(struct unicast_reply *reply, int socket, const cha
   return size;
 }
 
-/*
- * Sent filled buffer with HTTP header informations as text
- */
-static int unicast_reply_send_as_text(struct unicast_reply *reply, int socket) {
-  return unicast_reply_send(reply, socket, "text/plain");
-}
-
-/*
- * Sent filled buffer with HTTP header informations as json
- */
-static int unicast_reply_send_as_json(struct unicast_reply *reply, int socket) {
-  return unicast_reply_send(reply, socket, "application/json");
-}
-
-/*
- * Sent filled buffer with HTTP header informations as html
- */
-static int unicast_reply_send_as_html(struct unicast_reply *reply, int socket) {
-  return unicast_reply_send(reply, socket, "text/html");
-}
 
 //////////////////////
 // End HTTP Toolbox //
@@ -1100,12 +1109,11 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
 			channels[curr_channel].ipOut,channels[curr_channel].portOut);
 	else
 	  unicast_reply_write(reply, "Channel number %d : \"%s\"<br>Multicast ip : %s:%d<br><br>\r\n",curr_channel,channels[curr_channel].name,channels[curr_channel].ipOut,channels[curr_channel].portOut);
-     
       }
   unicast_reply_write(reply, HTTP_CHANNELS_REPLY_END);
 
-  unicast_reply_send_as_html(reply, Socket);
-  
+  unicast_reply_send(reply, Socket, 200, "text/html");
+
   if (0 != unicast_reply_free(reply)) {
     log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
       return -1;
@@ -1158,7 +1166,7 @@ unicast_send_streamed_channels_list_txt (int number_of_channels, mumudvb_channel
 		      channels[curr_channel].ratio_scrambled);
       }
 
-  unicast_reply_send_as_text(reply, Socket);
+  unicast_reply_send(reply, Socket, 200, "text/plain");
   
   if (0 != unicast_reply_free(reply)) {
     log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
@@ -1198,7 +1206,7 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
 		      curr_channel+1);
       }
 
-  unicast_reply_send_as_text(reply, Socket);
+  unicast_reply_send(reply, Socket, 200, "text/plain");
   
   if (0 != unicast_reply_free(reply)) {
     log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
@@ -1252,7 +1260,7 @@ unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t *cha
 		      channels[curr_channel].portOut);
       }
 
-  unicast_reply_send_as_text(reply, Socket);
+  unicast_reply_send(reply, Socket, 200, "text/plain");
   
   if (0 != unicast_reply_free(reply)) {
     log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
@@ -1320,7 +1328,7 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
   reply->used_body -= 2; // dirty hack to erase the last comma
   unicast_reply_write(reply, "]\n");
 
-  unicast_reply_send_as_json(reply, Socket);
+  unicast_reply_send(reply, Socket, 200, "application/json");
 
   if (0 != unicast_reply_free(reply)) {
     log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
@@ -1350,7 +1358,7 @@ unicast_send_signal_power_js (int Socket, fds_t *fds)
       if (ioctl (fds->fd_frontend, FE_READ_SNR, &snr) >= 0)
 	unicast_reply_write(reply, "[{\"ber\":%d, \"strength\":%d, \"snr\":%d}]\n", ber,strength,snr);
 
-  unicast_reply_send_as_json(reply, Socket);
+  unicast_reply_send(reply, Socket, 200, "application/json");
 
   if (0 != unicast_reply_free(reply)) {
     log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
@@ -1388,7 +1396,7 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
       unicast_reply_write(reply, "]\n");
     }
 
-  unicast_reply_send_as_json(reply, Socket);
+  unicast_reply_send(reply, Socket, 200, "application/json");
 
   if (0 != unicast_reply_free(reply)) {
     log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
