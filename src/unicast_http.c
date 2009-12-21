@@ -755,7 +755,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 		}
 	    }
 	  //Channels list
-	  else if(strstr(client->buffer +pos ,"/channels_list.html")==(client->buffer +pos))
+	  else if(strstr(client->buffer +pos ,"/channels_list.html ")==(client->buffer +pos))
 	    {
 	      //We get the host name if availaible
 	      char *hoststr;
@@ -771,45 +771,45 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 	      return -2; //We close the connection afterwards
 	    }
 	  //Channels list, text version
-          else if(strstr(client->buffer +pos ,"/channels_list.txt")==(client->buffer +pos))
+          else if(strstr(client->buffer +pos ,"/channels_list.txt ")==(client->buffer +pos))
             {
 	      log_message(MSG_DETAIL,"Channel list\n");
               unicast_send_streamed_channels_list_txt (number_of_channels, channels, client->Socket);
               return -2; //We close the connection afterwards
             }
 	   //playlist, m3u
-          else if(strstr(client->buffer +pos ,"/playlist.m3u")==(client->buffer +pos))
+          else if(strstr(client->buffer +pos ,"/playlist.m3u ")==(client->buffer +pos))
             {
 	      log_message(MSG_DETAIL,"play list\n");
               unicast_send_play_list_unicast (number_of_channels, channels, client->Socket, unicast_vars->ipOut, unicast_vars->portOut );
               return -2; //We close the connection afterwards
             }
-	  else if(strstr(client->buffer +pos ,"/playlist_multicast.m3u")==(client->buffer +pos))
+	  else if(strstr(client->buffer +pos ,"/playlist_multicast.m3u ")==(client->buffer +pos))
             {
 	      log_message(MSG_DETAIL,"play list\n");
               unicast_send_play_list_multicast (number_of_channels, channels, client->Socket, 0 );
               return -2; //We close the connection afterwards
             }
-	   else if(strstr(client->buffer +pos ,"/playlist_multicast_vlc.m3u")==(client->buffer +pos))
+	   else if(strstr(client->buffer +pos ,"/playlist_multicast_vlc.m3u ")==(client->buffer +pos))
             {
 	      log_message(MSG_DETAIL,"play list\n");
               unicast_send_play_list_multicast (number_of_channels, channels, client->Socket, 1 );
               return -2; //We close the connection afterwards
             }
             //statistics, text version
-	  else if(strstr(client->buffer +pos ,"/channels_list.json")==(client->buffer +pos))
+	  else if(strstr(client->buffer +pos ,"/channels_list.json ")==(client->buffer +pos))
 	    {
 	      log_message(MSG_DETAIL,"Channel list Json\n");
 	      unicast_send_streamed_channels_list_js (number_of_channels, channels, client->Socket);
 	      return -2; //We close the connection afterwards
 	    }
-	  else if(strstr(client->buffer +pos ,"/monitor/signal_power.json")==(client->buffer +pos))
+	  else if(strstr(client->buffer +pos ,"/monitor/signal_power.json ")==(client->buffer +pos))
 	    {
 	      log_message(MSG_DETAIL,"Signal power json\n");
               unicast_send_signal_power_js(client->Socket, fds);
 	      return -2; //We close the connection afterwards
 	    }
-	  else if(strstr(client->buffer +pos ,"/monitor/channels_traffic.json")==(client->buffer +pos))
+	  else if(strstr(client->buffer +pos ,"/monitor/channels_traffic.json ")==(client->buffer +pos))
             {
 	      log_message(MSG_DETAIL,"Channel traffic json\n");
 	      unicast_send_channel_traffic_js(number_of_channels, channels, client->Socket);
