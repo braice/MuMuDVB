@@ -115,24 +115,24 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
     }
 
     substring = strtok (NULL, "=");
-    if(strlen(substring)>19)
+    if(strlen(substring)>(SAP_GROUP_LENGTH-1))
     {
       log_message( MSG_ERROR,
                    "The sap group is too long\n");
       return -1;
     }
-    sscanf (substring, "%s\n", current_channel->sap_group);
+    strcpy (current_channel->sap_group, substring);
   }
   else if (!strcmp (substring, "sap_default_group"))
   {
     substring = strtok (NULL, "=");
-    if(strlen(substring)>19)
+    if(strlen(substring)>(SAP_GROUP_LENGTH-1))
     {
       log_message( MSG_ERROR,
                    "The sap default group is too long\n");
       return -1;
     }
-    sscanf (substring, "%s\n", sap_vars->sap_default_group);
+    strcpy (sap_vars->sap_default_group, substring);
   }
   else
     return 0; //Nothing concerning sap, we return 0 to explore the other possibilities
@@ -269,7 +269,7 @@ int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumud
   int payload_len=0;
 
   char temp_string[256];
-
+  char temp_group[SAP_GROUP_LENGTH];
 
   //we check if it's an alive channel
   if(!channel.streamed_channel_old)
@@ -397,7 +397,11 @@ int sap_add_program(mumudvb_channel_t channel, sap_parameters_t *sap_vars, mumud
       if(strlen(channel.sap_group))
 	sprintf(temp_string,"a=x-plgroup:%s\r\n", channel.sap_group);
       else
-	sprintf(temp_string,"a=x-plgroup:%s\r\n", sap_vars->sap_default_group);
+      {
+        int len=SAP_GROUP_LENGTH;
+        strcpy(temp_group,sap_vars->sap_default_group);
+        sprintf(temp_string,"a=x-plgroup:%s\r\n", mumu_string_replace(temp_group,&len,0,"%type",simple_service_type_to_str(channel.channel_type) ));
+      }
       if( (sap_message->len+payload_len+strlen(temp_string))>1024)
 	{
 	  log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel.name);

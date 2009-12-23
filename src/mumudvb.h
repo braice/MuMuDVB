@@ -102,6 +102,7 @@ We cannot discover easily the MTU with unconnected UDP
 /**RTP header length*/
 #define RTP_HEADER_LEN 12
 
+#define SAP_GROUP_LENGTH 20
 enum
   {
     FULLY_UNSCRAMBLED=0,
@@ -269,7 +270,7 @@ typedef struct mumudvb_channel_t{
   int socketIn;
 
   /**The sap playlist group*/
-  char sap_group[20];
+  char sap_group[SAP_GROUP_LENGTH];
 
   /**The generated pat to be sent*/
   unsigned char generated_pat[TS_PACKET_SIZE]; /**@todo: allocate dynamically*/

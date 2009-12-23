@@ -527,6 +527,31 @@ char *service_type_to_str(int type)
   }
 }
 
+/** @brief Convert the service type to str according to EN 300 468 v1.10.1 table 81
+ *
+ * @param type the type to display
+ * @param dest : the destination string
+ */
+char *simple_service_type_to_str(int type)
+{
+  if(type>=0x80 && type<=0xFE)
+    return "User defined";
+
+  switch(type)
+  {
+    case 0x01:
+    case 0x11:
+    case 0x16:
+    case 0x19:
+      return "Television";
+    case 0x02:
+    case 0x0a:
+      return "Radio";
+    default:
+      return "";
+  }
+}
+
 /** @brief Display the service type according to EN 300 468 v1.10.1 table 81
  *
  * @param type the type to display

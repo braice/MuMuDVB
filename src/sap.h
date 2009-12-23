@@ -71,7 +71,7 @@ typedef struct sap_parameters_t{
   /** The ip address of the server that sends the sap announces*/
   char sap_sending_ip[20];
   /**the x-plgroup default : ie the playlist group (mainly for vlc)*/
-  char sap_default_group[20];
+  char sap_default_group[SAP_GROUP_LENGTH];
   /**The URI The URI should be a pointer to additional information about the
   conference*/
   char sap_uri[256];

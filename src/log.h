@@ -50,6 +50,7 @@ char *ca_sys_id_to_str(int id);
 void display_service_type(int type, int loglevel);
 char *pid_type_to_str(int type);
 char *service_type_to_str(int type);
+char *simple_service_type_to_str(int type);
 
 
 #endif
