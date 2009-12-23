@@ -105,7 +105,8 @@ Possible values for this variable
   int ts_id_list[MAX_CHANNELS];
   /**number of TS ID*/
   int num_ts_id;
-
+  /** the template for the channel name*/
+  char name_template[MAX_NAME_LEN];
 
 }autoconf_parameters_t;
 

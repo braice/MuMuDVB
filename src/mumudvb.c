@@ -249,6 +249,7 @@ autoconf_parameters_t autoconf_vars={
   .services=NULL,
   .autoconf_unicast_start_port=0,
   .num_ts_id=0,
+  .name_template="\0",
 };
 
 #ifdef ENABLE_CAM_SUPPORT
@@ -692,6 +693,7 @@ int
       {
         log_message( MSG_WARN,"Channel name too long\n");
         strncpy(chan_and_pids.channels[curr_channel].name,strtok(substring,"\n"),MAX_NAME_LEN-1);
+        chan_and_pids.channels[curr_channel].name[MAX_NAME_LEN-1]='\0';
       }
     }
     else

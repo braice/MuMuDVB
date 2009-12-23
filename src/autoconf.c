@@ -180,6 +180,19 @@ int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, c
       autoconf_vars->num_ts_id++;
     }
   }
+  else if (!strcmp (substring, "autoconf_name_template"))
+    {
+      // other substring extraction method in order to keep spaces
+      substring = strtok (NULL, "=");
+      if (!(strlen (substring) >= MAX_NAME_LEN - 1))
+        strcpy(autoconf_vars->name_template,strtok(substring,"\n"));
+      else
+      {
+        log_message( MSG_WARN,"Autoconfiguration: Channel name template too long\n");
+        strncpy(autoconf_vars->name_template,strtok(substring,"\n"),MAX_NAME_LEN-1);
+        autoconf_vars->name_template[MAX_NAME_LEN-1]='\0';
+      }
+    }
   else
     return 0; //Nothing concerning autoconfiguration, we return 0 to explore the other possibilities
 
@@ -594,7 +607,14 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 	      channels[channel_number].pids[0]=actual_service->pmt_pid;
               channels[channel_number].pids_type[0]=PID_PMT;
 	      channels[channel_number].num_pids=1;
-	      strcpy(channels[channel_number].name,actual_service->name);
+              if(strlen(parameters.name_template))
+              {
+                strcpy(channels[channel_number].name,parameters.name_template);
+                int len=MAX_NAME_LEN;
+                mumu_string_replace(channels[channel_number].name,&len,0,"%name",actual_service->name);
+              }
+              else
+                strcpy(channels[channel_number].name,actual_service->name);
 	      if(multicast_out)
 	      {
 	        channels[channel_number].portOut=port;
@@ -751,7 +771,7 @@ int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parame
  * @param number_chan_asked_pid the number of channels who want this pid
  * @param fds the file descriptors
 */
-void autoconf_end(int card, mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds, int multicast, unicast_parameters_t *unicast_vars)
+void autoconf_end(int card, mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
 {
   int curr_channel;
   int curr_pid;
@@ -776,7 +796,10 @@ void autoconf_end(int card, mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds, 
 
   log_message(MSG_DETAIL,"Autoconf : Add the new filters\n");
   set_filters(chan_and_pids->asked_pid, fds);
+}
 
+void autoconf_definite_end(int card, mumudvb_chan_and_pids_t *chan_and_pids, int multicast, unicast_parameters_t *unicast_vars)
+{
   log_message(MSG_INFO,"Autoconfiguration done\n");
 
   log_streamed_channels(chan_and_pids->number_of_channels, chan_and_pids->channels, multicast, unicast_vars->unicast, unicast_vars->portOut, unicast_vars->ipOut);
@@ -859,11 +882,13 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
             //if it's finished, we open the new descriptors and add the new filters
             if(autoconf_vars->autoconfiguration!=AUTOCONF_MODE_PIDS)
             {
-              autoconf_end(tuneparams->card, chan_and_pids, fds, multicast_vars->multicast, unicast_vars);
+              autoconf_end(tuneparams->card, chan_and_pids, fds);
               //We free autoconf memory
               autoconf_freeing(autoconf_vars);
 	      if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_NIT)
 		log_message(MSG_DETAIL,"Autoconf : We search for the NIT\n");
+              else
+                autoconf_definite_end(tuneparams->card, chan_and_pids, multicast_vars->multicast, unicast_vars);
             }
           }
         }
@@ -880,7 +905,21 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
         if(autoconf_read_nit(autoconf_vars, chan_and_pids->channels, chan_and_pids->number_of_channels)==0)
 	{
 	  autoconf_vars->autoconfiguration=0;
+          int curr_channel;
+          char lcn[4];
+          int len=MAX_NAME_LEN;
+          for(curr_channel=0;curr_channel<MAX_CHANNELS;curr_channel++)
+          {
+            if(chan_and_pids->channels[curr_channel].logical_channel_number)
+            {
+              sprintf(lcn,"%03d",chan_and_pids->channels[curr_channel].logical_channel_number);
+              mumu_string_replace(chan_and_pids->channels[curr_channel].name,&len,0,"%lcn",lcn);
+            }
+            else
+              mumu_string_replace(chan_and_pids->channels[curr_channel].name,&len,0,"%lcn","");
+          }
 	  free(autoconf_vars->autoconf_temp_nit);
+          autoconf_definite_end(tuneparams->card, chan_and_pids, multicast_vars->multicast, unicast_vars);
 	}
       }
     }
@@ -904,11 +943,20 @@ int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_a
     {
       log_message(MSG_WARN,"Autoconf : Warning : Not all the channels were configured before timeout\n");
       autoconf_vars->autoconfiguration=0;
-      autoconf_end(tuneparams->card, chan_and_pids, fds, multicast_vars->multicast, unicast_vars);
+      autoconf_end(tuneparams->card, chan_and_pids, fds);
       //We free autoconf memory
       autoconf_freeing(autoconf_vars);
-      if(autoconf_vars->autoconf_temp_nit)
-	free(autoconf_vars->autoconf_temp_nit);
+      if(autoconf_vars->autoconf_lcn)
+      {
+          autoconf_vars->autoconfiguration=AUTOCONF_MODE_NIT;
+          autoconf_vars->time_start_autoconfiguration=now;
+      }
+      else
+      {
+        autoconf_definite_end(tuneparams->card, chan_and_pids, multicast_vars->multicast, unicast_vars);
+        if(autoconf_vars->autoconf_temp_nit)
+	  free(autoconf_vars->autoconf_temp_nit);
+      }
     }
     else if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL)
     {
@@ -917,6 +965,14 @@ int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_a
       //We continue with the partial list of services
       autoconf_vars->time_start_autoconfiguration=now;
       iRet = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams->card, fds, unicast_vars);
+    }
+    else if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_NIT)
+    {
+      log_message(MSG_WARN,"Autoconf : Warning : No NIT found before timeout\n");
+      autoconf_definite_end(tuneparams->card, chan_and_pids, multicast_vars->multicast, unicast_vars);
+      if(autoconf_vars->autoconf_temp_nit)
+        free(autoconf_vars->autoconf_temp_nit);
+      autoconf_vars->autoconfiguration=0;
     }
   }
   return iRet;

@@ -135,7 +135,7 @@ char *mumu_string_replace(char *source, int *length, int can_realloc, char *tore
       if(reallocresult==NULL)
       {
         log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-        return mumudvb_close(ERROR_MEMORY<<8);
+        return NULL;
       }
       source=reallocresult;
       *length=lengthtempstring;
