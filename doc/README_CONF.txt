@@ -203,7 +203,7 @@ CAM support parameters
 
 Autoconfiguration parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-[width="80%",cols="2,8,1,2,3",options="header"]
+[width="80%",cols="2,6,1,2,4",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |autoconfiguration |autoconfiguration 1, partial: find audio and video PIDs, 2, full: full autoconfiguration | 0 | 0, 1, 2, partial or full | see the README for more details
@@ -213,6 +213,7 @@ Autoconfiguration parameters
 |autoconf_pid_update |Do we follow the changes in the PIDs when the PMT is updated ? | 1 | 0 or 1 | 
 |autoconf_unicast_start_port |The unicast port for the first discovered channel |  |  | See README for more details.
 |autoconf_tsid_list | If you don't want to configure all the channels of the transponder in full autoconfiguration mode, specify with this option the list of the transport stream ids of the channels you want to autoconfigure. | empty |  | 
+|autoconf_name_template | The template for the channel name, ex `%number-%name` | empty | | See README for more details
 |==================================================================================================================
 
 SAP announces parameters
@@ -225,7 +226,7 @@ SAP announces parameters
 |sap_uri |URI  field sent in the SAP announces |  | | Optionnal
 |sap_sending_ip |The SAP sender IP address | 0.0.0.0 | | Optionnal, not autodetected
 |sap_interval |Interval in seconds between sap announces | 5 | positive integers | 
-|sap_default_group | The default playlist group for sap announces | | string | Optionnal 
+|sap_default_group | The default playlist group for sap announces | | string | Optionnal. You can use the keyword %type, see README
 |sap_ttl |The TTL for the multicast SAP packets | 255 |  | The RFC 2974 says "SAP announcements ... SHOULD be sent with an IP time-to-live of 255 (the use of TTL scoping for multicast is discouraged [RFC 2365])."
 |==================================================================================================================
 

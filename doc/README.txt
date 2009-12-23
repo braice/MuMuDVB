@@ -240,18 +240,18 @@ In this mode, MuMuDVB will find for you the different channels, their name and t
 
 In order to use this mode you have to:
 - Set the tuning parameters to your config file
-- Add `autoconfiguration=2` to your config file
+- Add `autoconfiguration=full` to your config file
 - You don't have to set any channels
 - For a first use don't forget to put the `-d` parameter when you launch MuMuDVB:
    e.g. `mumudvb -d -c your_config_file`
 
 .Example config file for satellite at frequency 11.296GHz with horizontal polarization
---------------------
+----------------------
 freq=11296
 pol=h
 srate=27500
-autoconfiguration=2
---------------------
+autoconfiguration=full
+----------------------
 
 The channels will be streamed over the multicasts ip adresses 239.100.c.n where c is the card number (0 by default) and n is the channel number.
 
@@ -259,12 +259,39 @@ If you don't use the common_port directive, MuMuDVB will use the port 1234.
 
 [NOTE]
 By default, SAP announces are activated if you use this autoconfiguration mode. To desactivate them put `sap=0` in your config file.
-By default, SDT rewriting is activated if you use this autoconfiguration mode. To desactivate them put `rewrite_sdt=0` in your config file.
-By default, PAT rewriting is activated if you use this autoconfiguration mode. To desactivate them put `rewrite_pat=0` in your config file.
-By default, EIT sorting activated if you use this autoconfiguration mode. To desactivate them put `sort_eit=0` in your config file.
+By default, SDT rewriting is activated if you use this autoconfiguration mode. To desactivate it put `rewrite_sdt=0` in your config file.
+By default, PAT rewriting is activated if you use this autoconfiguration mode. To desactivate it put `rewrite_pat=0` in your config file.
+By default, EIT sorting activated if you use this autoconfiguration mode. To desactivate it put `sort_eit=0` in your config file.
 
 [NOTE]
 A detailled, documented example configuration file can be found in `doc/configuration_examples/autoconf_full.conf`
+
+Name templates and autoconfiguration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+By default the name of the channel will be the name of the service defined by the provider. If you want more flexibility you can use a template.
+
+For example, if you use `autoconf_name_template=%number-%name` The channels name will be in the form : 
+
+- `1-CNN`
+- `2-Euronews`
+
+
+There is different keywords available:
+
+[width="80%",cols="2,8",options="header"]
+|==================================================================================================================
+|Keyword |Description 
+|%name | The name given by the provider 
+|%number | The MuMuDVB channel number 
+|%lcn | The logical channel number (channel number given by the provider). You have to put `autoconf_lcn=1` in your conffiguration file and your provider have to stream LCN. The LCN will be displayed with three digits including 0. Ex "002". If the LCN is not detected, %lcn will be replaced by an empty string.
+|%2lcn | Same as above but with a two digits format
+|==================================================================================================================
+
+
+Other keywords can be easily added if necessary.
+
+
 
 [[autoconfiguration_simple]]
 Simple autoconfiguration
@@ -273,9 +300,10 @@ Simple autoconfiguration
 Use this when you want to control the name of the channels, and wich channel you want to stream.
 
 
-- You have to add 'autoconfiguration=1' in the head of your config file.
+- You have to add 'autoconfiguration=partial' in the head of your config file.
 - For each channel, you have to set:
- * the Ip adress
+ * the Ip adress (except if multicast=0)
+ * the Unicast port (if you use unicast)
  * the name
  * the PMT PID
 
@@ -308,6 +336,15 @@ Asking MuMuDVB to generate SAP announces
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For sending SAP announces you have to add `sap=1` to your config file. The other parameters concerning the sap announces are documented in the `doc/README_CONF.txt` file (link:README_CONF.html[HTML version]).
+
+SAP announces and full autoconfiguration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you use full autoconfiguration, you can use the keyword '%type' in the sap_default_group option. This keyword will be replaced by the type of the channel: Television or Radio.
+
+.Example
+If you put `sap_default_group=%type`, you will get two sap groups: Television and Radio, each containing the corresponding services.
+
 
 Configuring the client to get the SAP announces
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
