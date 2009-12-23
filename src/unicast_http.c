@@ -1116,7 +1116,7 @@ unicast_send_signal_power_js (int Socket, fds_t *fds)
   if (ioctl (fds->fd_frontend, FE_READ_BER, &ber) >= 0)
     if (ioctl (fds->fd_frontend, FE_READ_SIGNAL_STRENGTH, &strength) >= 0)
       if (ioctl (fds->fd_frontend, FE_READ_SNR, &snr) >= 0)
-        unicast_reply_write(reply, "[{\"ber\":%d, \"strength\":%d, \"snr\":%d}]\n", ber,strength,snr);
+        unicast_reply_write(reply, "{\"ber\":%d, \"strength\":%d, \"snr\":%d}\n", ber,strength,snr);
 
   unicast_reply_send(reply, Socket, 200, "application/json");
 
