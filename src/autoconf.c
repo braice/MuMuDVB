@@ -611,7 +611,10 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
               {
                 strcpy(channels[channel_number].name,parameters.name_template);
                 int len=MAX_NAME_LEN;
+                char number[10];
                 mumu_string_replace(channels[channel_number].name,&len,0,"%name",actual_service->name);
+                sprintf(number,"%d",channel_number+1);
+                mumu_string_replace(channels[channel_number].name,&len,0,"%number",number);
               }
               else
                 strcpy(channels[channel_number].name,actual_service->name);
@@ -914,9 +917,14 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
             {
               sprintf(lcn,"%03d",chan_and_pids->channels[curr_channel].logical_channel_number);
               mumu_string_replace(chan_and_pids->channels[curr_channel].name,&len,0,"%lcn",lcn);
+              sprintf(lcn,"%02d",chan_and_pids->channels[curr_channel].logical_channel_number);
+              mumu_string_replace(chan_and_pids->channels[curr_channel].name,&len,0,"%2lcn",lcn);
             }
             else
+            {
               mumu_string_replace(chan_and_pids->channels[curr_channel].name,&len,0,"%lcn","");
+              mumu_string_replace(chan_and_pids->channels[curr_channel].name,&len,0,"%2lcn","");
+            }
           }
 	  free(autoconf_vars->autoconf_temp_nit);
           autoconf_definite_end(tuneparams->card, chan_and_pids, multicast_vars->multicast, unicast_vars);
