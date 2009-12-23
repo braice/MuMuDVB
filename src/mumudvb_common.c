@@ -32,10 +32,12 @@
 
 #include "mumudvb.h"
 #include "log.h"
+#include "errors.h"
 
 #include <sys/poll.h>
 #include <errno.h>
 #include <string.h>
+#include <stdlib.h>
 
 
 
@@ -85,3 +87,69 @@ int mumudvb_poll(fds_t *fds)
   return 0;
 }
 
+/** @brief replace a tring by another
+* @param source
+* @param length the length of the source buffer
+* @param can_realloc Is the source string allocated by a malloc or fixed. The realloc is done only when the dest is bigger
+* @param toreplace the pattern to replace
+* @param replacement the replacement string for the pattern
+*/
+char *mumu_string_replace(char *source, int *length, int can_realloc, char *toreplace, char *replacement)
+{
+  char *pospattern;
+  char *reallocresult;
+  char *tempstring=NULL;
+  int lengthpattern;
+  int lengthreplacment;
+  int lengthtempstring;
+  int lengthsource;
+
+  pospattern=strstr(source,toreplace);
+  if(pospattern==NULL)
+    return source;
+  lengthpattern=strlen(toreplace);
+  lengthreplacment=strlen(replacement);
+  lengthsource=strlen(source);
+  lengthtempstring=lengthsource+1;
+  tempstring=malloc(sizeof(char)*lengthtempstring);
+  strcpy(tempstring,source);
+  pospattern=strstr(tempstring,toreplace);
+  while(pospattern!=NULL)
+  {
+    if(lengthreplacment>lengthpattern)
+    {
+      tempstring=realloc(tempstring,sizeof(char)*(lengthtempstring+lengthreplacment-lengthpattern+1));
+      pospattern=strstr(tempstring,toreplace);
+    }
+    memmove(pospattern+lengthreplacment,pospattern+lengthpattern,lengthtempstring-((int)(pospattern-tempstring))-lengthpattern-1);
+    memcpy(pospattern,replacement,lengthreplacment);
+    lengthtempstring+=lengthreplacment-lengthpattern;
+    pospattern=strstr(tempstring,toreplace);
+  }
+  tempstring[lengthtempstring-1]='\0';
+  if(can_realloc)
+  {
+    if(lengthtempstring>*length)
+    {
+      reallocresult=realloc(source,sizeof(char)*(lengthtempstring));
+      if(reallocresult==NULL)
+      {
+        log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+        return mumudvb_close(ERROR_MEMORY<<8);
+      }
+      source=reallocresult;
+      *length=lengthtempstring;
+    }
+    strcpy(source,tempstring);
+  }
+  else if(lengthtempstring<=*length)
+  {
+    strcpy(source,tempstring);
+  }
+  else
+  {
+    strncpy(source,tempstring,*length-1);
+    source[*length-1]='\0';
+  }
+  return source;
+}

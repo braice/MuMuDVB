@@ -327,6 +327,6 @@ typedef struct mumudvb_chan_and_pids_t{
 
 int mumudvb_close(int Interrupted);
 int mumudvb_poll(fds_t *fds);
-
+char *mumu_string_replace(char *source, int *length, int can_realloc, char *toreplace, char *replacement);
 
 #endif
