@@ -292,8 +292,7 @@ void *read_card_thread_func(void* arg)
     pthread_mutex_lock(&threadparams->carddatamutex);
     threadparams->card_buffer->bytes_in_write_buffer+=card_read(threadparams->fds->fd_dvr,
 							       threadparams->card_buffer->writing_buffer+threadparams->card_buffer->bytes_in_write_buffer,
-							       threadparams->card_buffer->dvr_buffer_size,
-							       &threadparams->card_buffer->partial_packet_number);
+							       threadparams->card_buffer);
 
     if(threadparams->main_waiting)
     {
@@ -313,16 +312,16 @@ void *read_card_thread_func(void* arg)
  * This function have to be called after a poll to ensure there is data to read
  * 
  */
-int card_read(int fd_dvr, unsigned char *dest_buffer, int dvr_buffer_size, int *partial_packet_number)
+int card_read(int fd_dvr, unsigned char *dest_buffer, card_buffer_t *card_buffer)
 {
   /* Attempt to read 188 bytes * dvr_buffer_size from /dev/____/dvr */
   int bytes_read;
-  if ((bytes_read = read (fd_dvr, dest_buffer, TS_PACKET_SIZE*dvr_buffer_size)) > 0)
+  if ((bytes_read = read (fd_dvr, dest_buffer, TS_PACKET_SIZE*card_buffer->dvr_buffer_size)) > 0)
   {
     if((bytes_read>0 )&& (bytes_read % TS_PACKET_SIZE))
     {
       log_message( MSG_WARN, "Warning : partial packet received len %d\n", bytes_read);
-      (*partial_packet_number)++;
+      card_buffer->partial_packet_number++;
       bytes_read-=bytes_read % TS_PACKET_SIZE;
       if(bytes_read<=0)
 	return 0;
@@ -332,6 +331,10 @@ int card_read(int fd_dvr, unsigned char *dest_buffer, int dvr_buffer_size, int *
   {
     if(errno!=EAGAIN)
       log_message( MSG_WARN,"Error : DVR Read error : %s \n",strerror(errno));
+    if(errno==EOVERFLOW)
+    {
+      card_buffer->overflow_number++;
+    }
     return 0;
   }
   return bytes_read;

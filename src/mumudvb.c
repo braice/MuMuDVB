@@ -1311,7 +1311,7 @@ int
       /* END OF UNICAST HTTP                                        */
       /**************************************************************/ 
 
-      if((card_buffer.bytes_read=card_read(fds.fd_dvr,  card_buffer.reading_buffer, card_buffer.dvr_buffer_size, &card_buffer.partial_packet_number))==0)
+      if((card_buffer.bytes_read=card_read(fds.fd_dvr,  card_buffer.reading_buffer, &card_buffer))==0)
 	continue;
     }
 
@@ -1553,7 +1553,9 @@ int
   if(card_buffer.partial_packet_number)
     log_message( MSG_INFO,
                  "We received %d partial packets :-( \n",card_buffer.partial_packet_number );
-
+  if(card_buffer.partial_packet_number)
+    log_message( MSG_INFO,
+                 "We have got %d overflow errors\n",card_buffer.overflow_number );
   return mumudvb_close(Interrupted);
 
 }

@@ -181,6 +181,8 @@ typedef struct card_buffer_t{
   int write_buffer_size; /** @todo put a size for each buffer*/
   /** The number of partial packets received*/
   int partial_packet_number;
+  /** The number of overflow errors*/
+  int overflow_number;
   /**The maximum size of the thread buffer (in packets)*/
   int max_thread_buffer_size;
 }card_buffer_t;
