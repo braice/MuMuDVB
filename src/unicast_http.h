@@ -48,7 +48,7 @@ enum
 
 
 #define HTTP_OK_REPLY "HTTP/1.0 200 OK\r\n"\
-                      "Content-type: application/octet-stream\r\n"\
+                      "Content-type: video/mpeg\r\n"\
                       "\r\n"
 
 #define HTTP_404_REPLY_HTML "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml10/DTD/xhtml10strict.dtd\">\r\n"\
