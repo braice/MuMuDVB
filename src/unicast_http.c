@@ -1151,7 +1151,7 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
   {
     unicast_reply_write(reply, "[");
     for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-      unicast_reply_write(reply, "{\"curr_channel\":%d, \"name\":\"%s\", \"traffic\":%.2f},\n", curr_channel, channels[curr_channel].name, channels[curr_channel].traffic);
+      unicast_reply_write(reply, "{\"number\":%d, \"name\":\"%s\", \"traffic\":%.2f},\n", curr_channel, channels[curr_channel].name, channels[curr_channel].traffic);
     reply->used_body -= 2; // dirty hack to erase the last comma
     unicast_reply_write(reply, "]\n");
   }
