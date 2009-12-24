@@ -1763,7 +1763,7 @@ static void SignalHandler (int signum)
                      chan_and_pids.channels[curr_channel].name, tuneparams.card);
         chan_and_pids.channels[curr_channel].streamed_channel_old = 1;	// update
         if(sap_vars.sap == OPTION_ON)
-          sap_update(chan_and_pids.channels[curr_channel], &sap_vars, curr_channel, multicast_vars); //Channel status changed, we update the sap announces
+          sap_update(&chan_and_pids.channels[curr_channel], &sap_vars, curr_channel, multicast_vars); //Channel status changed, we update the sap announces
       }
       else if ((chan_and_pids.channels[curr_channel].streamed_channel_old) && (chan_and_pids.channels[curr_channel].streamed_channel/ALARM_TIME < 30))
       {
@@ -1772,7 +1772,7 @@ static void SignalHandler (int signum)
                      chan_and_pids.channels[curr_channel].name, tuneparams.card);
         chan_and_pids.channels[curr_channel].streamed_channel_old = 0;	// update
         if(sap_vars.sap == OPTION_ON)
-          sap_update(chan_and_pids.channels[curr_channel], &sap_vars, curr_channel, multicast_vars); //Channel status changed, we update the sap announces
+          sap_update(&chan_and_pids.channels[curr_channel], &sap_vars, curr_channel, multicast_vars); //Channel status changed, we update the sap announces
       }
     }
 
