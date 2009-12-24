@@ -383,6 +383,9 @@ vlc http://10.0.0.1:4242/playlist.m3u
 -------------------------------------
 
 [NOTE]
+Dans la playlist, les chaînes seront annoncées avec des URL du type `/bynumber/` ( voir plus bas ), si vous voulez des URLs de chaîne par port utilisez l'URL `/playlist_port.m3u`.
+
+[NOTE]
 Des playlists pour la lecture multicast sont aussi générées, elles sont accessibles aux addresses suivantes : "playlist_multicast.m3u" et "playlist_multicast_vlc.m3u"
 
 Cas d'une connexion pour une chaîne

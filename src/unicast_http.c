@@ -75,7 +75,7 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
 int
 unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *host);
 int
-unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut);
+unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int perport);
 int
 unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t* channels, int Socket, int vlc);
 int
@@ -651,7 +651,14 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
         else if(strstr(client->buffer +pos ,"/playlist.m3u ")==(client->buffer +pos))
         {
           log_message(MSG_DETAIL,"play list\n");
-          unicast_send_play_list_unicast (number_of_channels, channels, client->Socket, unicast_vars->portOut );
+          unicast_send_play_list_unicast (number_of_channels, channels, client->Socket, unicast_vars->portOut, 0 );
+          return -2; //We close the connection afterwards
+        }
+        //playlist, m3u
+        else if(strstr(client->buffer +pos ,"/playlist_port.m3u ")==(client->buffer +pos))
+        {
+          log_message(MSG_DETAIL,"play list\n");
+          unicast_send_play_list_unicast (number_of_channels, channels, client->Socket, unicast_vars->portOut, 1 );
           return -2; //We close the connection afterwards
         }
         else if(strstr(client->buffer +pos ,"/playlist_multicast.m3u ")==(client->buffer +pos))
@@ -943,9 +950,10 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
 * @param number_of_channels the number of channels
 * @param channels the channels array
 * @param Socket the socket on wich the information have to be sent
+* @param perport says if the channel have to be given by the url /bynumber or by their port
 */
 int
-unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut)
+unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int perport)
 {
   int curr_channel;
 
@@ -967,14 +975,24 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     if (channels[curr_channel].streamed_channel_old)
     {
-      unicast_reply_write(reply, "#EXTINF:0,%s\r\nhttp://%s:%d/bynumber/%d\r\n",
+      if(!perport)
+      {
+        unicast_reply_write(reply, "#EXTINF:0,%s\r\nhttp://%s:%d/bynumber/%d\r\n",
                           channels[curr_channel].name,
                           inet_ntoa(tempSocketAddr.sin_addr) ,
                           unicast_portOut ,
                           curr_channel+1);
+      }
+      else if(channels[curr_channel].unicast_port)
+      {
+        unicast_reply_write(reply, "#EXTINF:0,%s\r\nhttp://%s:%d/\r\n",
+                          channels[curr_channel].name,
+                          inet_ntoa(tempSocketAddr.sin_addr) ,
+                          channels[curr_channel].unicast_port);
+      }
     }
 
-    unicast_reply_send(reply, Socket, 200, "text/plain");
+    unicast_reply_send(reply, Socket, 200, "audio/x-mpegurl");
 
   if (0 != unicast_reply_free(reply)) {
     log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
@@ -1028,7 +1046,7 @@ unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t *cha
                           channels[curr_channel].portOut);
     }
 
-    unicast_reply_send(reply, Socket, 200, "text/plain");
+    unicast_reply_send(reply, Socket, 200, "audio/x-mpegurl");
 
     if (0 != unicast_reply_free(reply)) {
       log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
