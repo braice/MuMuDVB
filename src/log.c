@@ -651,6 +651,7 @@ void usage (char *name)
           "-s, --signal : Display signal power\n"
           "-t, --traffic : Display channels traffic\n"
           "-l, --list-cards : List the DVB cards and exit\n"
+          "--card       : The DVB card to use (overrided by the configuration file)\n"
           "-d, --debug  : Don't deamonize\n"
           "-v           : More verbose\n"
           "-q           : Less verbose\n"

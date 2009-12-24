@@ -374,6 +374,7 @@ int
     {"debug", no_argument, NULL, 'd'},
     {"help", no_argument, NULL, 'h'},
     {"list-cards", no_argument, NULL, 'l'},
+    {"card", required_argument, NULL, 'a'},
     {0, 0, 0, 0}
   };
   int c, option_index = 0;
@@ -405,6 +406,9 @@ int
           exit(ERROR_MEMORY);
         }
         strncpy (conf_filename, optarg, strlen (optarg) + 1);
+        break;
+      case 'a':
+        tuneparams.card=atoi(optarg);
         break;
       case 's':
         tuneparams.display_strenght = 1;

@@ -199,6 +199,9 @@ Possible options are:
 -l, --list-cards
 	List the DVB cards and exit
 
+--card
+	The DVB card to use (overrided by the configuration file)
+
 -h, --help
 	Show help
 

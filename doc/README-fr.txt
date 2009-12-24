@@ -199,6 +199,9 @@ Les différentes options sont :
 -l, --list-cards
 	Liste les cartes DVB et quitte
 
+--card
+	La carte DVB a utiliser ( le fichier de configuration est prioritaire en cas de conflit )
+
 -h, --help
 	Montre l'aide ( en Anglais )
 
