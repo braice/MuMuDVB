@@ -75,7 +75,7 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
 int
 unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *host);
 int
-unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *unicast_ipout, int unicast_portOut);
+unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut);
 int
 unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t* channels, int Socket, int vlc);
 int
@@ -368,7 +368,10 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
     log_message(MSG_WARN,"Unicast : Error when accepting the incoming connection : %s\n", strerror(errno));
     return NULL;
   }
-  log_message(MSG_DETAIL,"Unicast : New connection from %s:%d\n",inet_ntoa(tempSocketAddrIn.sin_addr), tempSocketAddrIn.sin_port);
+  struct sockaddr_in tempSocketAddr;
+  l = sizeof(struct sockaddr);
+  getsockname(tempSocket, (struct sockaddr *) &tempSocketAddr, &l);
+  log_message(MSG_DETAIL,"Unicast : New connection from %s:%d to %s:%d \n",inet_ntoa(tempSocketAddrIn.sin_addr), tempSocketAddrIn.sin_port,inet_ntoa(tempSocketAddr.sin_addr), tempSocketAddr.sin_port);
 
   //Now we set this socket to be non blocking because we poll it
   int flags;
@@ -648,7 +651,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
         else if(strstr(client->buffer +pos ,"/playlist.m3u ")==(client->buffer +pos))
         {
           log_message(MSG_DETAIL,"play list\n");
-          unicast_send_play_list_unicast (number_of_channels, channels, client->Socket, unicast_vars->ipOut, unicast_vars->portOut );
+          unicast_send_play_list_unicast (number_of_channels, channels, client->Socket, unicast_vars->portOut );
           return -2; //We close the connection afterwards
         }
         else if(strstr(client->buffer +pos ,"/playlist_multicast.m3u ")==(client->buffer +pos))
@@ -942,7 +945,7 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
 * @param Socket the socket on wich the information have to be sent
 */
 int
-unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *unicast_ipout, int unicast_portOut)
+unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut)
 {
   int curr_channel;
 
@@ -952,6 +955,12 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
     return -1;
   }
 
+  //We get the ip address on which the client is connected
+  struct sockaddr_in tempSocketAddr;
+  unsigned int l;
+  l = sizeof(struct sockaddr);
+  getsockname(Socket, (struct sockaddr *) &tempSocketAddr, &l);
+  //we write the playlist
   unicast_reply_write(reply, "#EXTM3U\r\n");
 
   //"#EXTINF:0,title\r\nURL"
@@ -960,7 +969,7 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
     {
       unicast_reply_write(reply, "#EXTINF:0,%s\r\nhttp://%s:%d/bynumber/%d\r\n",
                           channels[curr_channel].name,
-                          unicast_ipout ,
+                          inet_ntoa(tempSocketAddr.sin_addr) ,
                           unicast_portOut ,
                           curr_channel+1);
     }

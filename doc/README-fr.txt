@@ -382,8 +382,6 @@ Si votre serveur écoute sur l'ip 10.0.0.1 et le port 4242,
 vlc http://10.0.0.1:4242/playlist.m3u
 -------------------------------------
 
-Pour que cette playlist fonctionne correctement, vous devez spécifier l'option `ip_http` pour une ip de votre serveur. (sinon la playlist pointera vers 0.0.0.0)
-
 [NOTE]
 Des playlists pour la lecture multicast sont aussi générées, elles sont accessibles aux addresses suivantes : "playlist_multicast.m3u" et "playlist_multicast_vlc.m3u"
 
