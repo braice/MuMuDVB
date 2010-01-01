@@ -42,8 +42,9 @@ define KernelPackage/dvb-usb
   DEPENDS:=@USB_SUPPORT +kmod-dvb-core +kmod-usb-core
   KCONFIG:= \
 	CONFIG_DVB_USB \
-	CONFIG_INPUT=y
-  FILES:=$(LINUX_DIR)/drivers/media/dvb/dvb-usb/dvb-usb.$(LINUX_KMOD_SUFFIX)
+	CONFIG_INPUT
+  FILES:=$(LINUX_DIR)/drivers/media/dvb/dvb-usb/dvb-usb.$(LINUX_KMOD_SUFFIX) \
+	$(LINUX_DIR)/drivers/input/input-core.$(LINUX_KMOD_SUFFIX)
 #  AUTOLOAD:=$(call AutoLoad,55,dvb-usb)
 endef
 
