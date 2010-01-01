@@ -1,7 +1,7 @@
 /* dvb.c
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB - Stream a DVB transport stream.
  * 
- * (C) 2004-2009 Brice DUBOST
+ * (C) 2004-2010 Brice DUBOST
  * (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
  * The latest version can be found at http://mumudvb.braice.net
@@ -21,7 +21,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *     
+ *
  */
 
 /** @file
@@ -52,12 +52,12 @@ extern int Interrupted;
  * @param card the card number 
 */
 int
-open_fe (int *fd_frontend, int card)
+open_fe (int *fd_frontend, char *base_path)
 {
 
   char *frontend_name=NULL;
   int asprintf_ret;
-  asprintf_ret=asprintf(&frontend_name,FRONTEND_DEV_PATH,card);
+  asprintf_ret=asprintf(&frontend_name,"%s/%s",base_path,FRONTEND_DEV_NAME);
   if(asprintf_ret==-1)
     return -1;
   if ((*fd_frontend = open (frontend_name, O_RDWR | O_NONBLOCK)) < 0)
@@ -136,7 +136,7 @@ void *show_power_func(void* arg)
  * @param fds the structure with the file descriptors
  */
 int
-create_card_fd(int card, uint8_t *asked_pid, fds_t *fds)
+create_card_fd(char *base_path, uint8_t *asked_pid, fds_t *fds)
 {
 
   int curr_pid = 0;
@@ -144,7 +144,7 @@ create_card_fd(int card, uint8_t *asked_pid, fds_t *fds)
   char *dvrdev_name=NULL;
   int asprintf_ret;
 
-  asprintf_ret=asprintf(&demuxdev_name,DEMUX_DEV_PATH,card);
+  asprintf_ret=asprintf(&demuxdev_name,"%s/%s",base_path,DEMUX_DEV_NAME);
   if(asprintf_ret==-1)
     return -1;
 
@@ -161,7 +161,7 @@ create_card_fd(int card, uint8_t *asked_pid, fds_t *fds)
 	}
 
 
-  asprintf_ret=asprintf(&dvrdev_name,DVR_DEV_PATH,card);
+  asprintf_ret=asprintf(&dvrdev_name,"%s/%s",base_path,DVR_DEV_NAME);
   if(asprintf_ret==-1)
     return -1;
   if (fds->fd_dvr==0)  //this function can be called more than one time, we check if we opened it before
@@ -364,9 +364,11 @@ void show_card_capabilities( int card )
   int i_ret;
   int display_sr;
   int frequency_factor;
-
+  /** The path of the card */
+  char card_dev_path[256];
+  sprintf(card_dev_path,DVB_DEV_PATH,card);
   //Open the frontend
-  if(!open_fe (&frontend_fd, card))
+  if(!open_fe (&frontend_fd, card_dev_path))
     return;
 
   //if(ioctl(fd_frontend,FE_READ_STATUS,&festatus) >= 0)

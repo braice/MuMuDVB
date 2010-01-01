@@ -1,8 +1,8 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB - UDP-ize a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * (C) 2004-2009 Brice DUBOST
+ * (C) 2004-2010 Brice DUBOST
  * 
  * Code for dealing with libdvben50221 inspired from zap_ca
  * Copyright (C) 2004, 2005 Manu Abraham <abraham.manu@gmail.com>
@@ -28,7 +28,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *     
+ *
  */
 
 
@@ -139,27 +139,10 @@ long now;
 long time_no_diff;
 long real_start_time;
 
-//statistics for the big buffer
-int stats_num_packets_received=0;
-int stats_num_reads=0;
-int show_buffer_stats=0;
-long show_buffer_stats_time = 0; /** */
-int show_buffer_stats_interval = 120; /** How often we how the statistics about the DVR buffer*/
-//statistics for the traffic
-int show_traffic = 0; /** do we periodically show the traffic ?*/
-long show_traffic_time = 0; /** */
-int show_traffic_time_usec = 0; /** */
-long compute_traffic_time = 0; /** */
-int compute_traffic_time_usec = 0; /** */
-int show_traffic_interval = 10; /** The interval for the traffic display */
-int compute_traffic_interval = 10; /** The interval for the traffic calculation */
-
-int no_daemon = 0; /** do we deamonize mumudvb ? */
-
 int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
 // file descriptors
 fds_t fds; /** File descriptors associated with the card */
-
+int no_daemon = 0;
 
 int Interrupted = 0;
 char filename_channels_diff[256];
@@ -174,6 +157,23 @@ pthread_t signalpowerthread;
 pthread_t cardthread;
 card_thread_parameters_t cardthreadparams;
 #endif
+
+
+stats_infos_t stats_infos={
+  .stats_num_packets_received=0,
+  .stats_num_reads=0,
+  .show_buffer_stats=0,
+  .show_buffer_stats_time = 0,
+  .show_buffer_stats_interval = 120,
+  .show_traffic = 0,
+  .show_traffic_time = 0,
+  .show_traffic_time_usec = 0,
+  .compute_traffic_time = 0,
+  .compute_traffic_time_usec = 0,
+  .show_traffic_interval = 10,
+  .compute_traffic_interval = 10,
+};
+
 
 mumudvb_chan_and_pids_t chan_and_pids={
   .number_of_channels=0,
@@ -192,10 +192,11 @@ multicast_parameters_t multicast_vars={
 //tuning parameters
 tuning_parameters_t tuneparams={
   .card = 0,
+  .card_dev_path="",
   .card_tuned = 0,
   .tuning_timeout = ALARM_TIME_TIMEOUT,
-  .freq = 0,  
-  .srate = 0, 
+  .freq = 0,
+  .srate = 0,
   .pol = 0,
   .lnb_voltage_off=0,
   .lnb_type=LNB_UNIVERSAL,
@@ -414,7 +415,7 @@ int
         tuneparams.display_strenght = 1;
         break;
       case 't':
-        show_traffic = 1;
+        stats_infos.show_traffic = 1;
         break;
       case 'd':
         no_daemon = 1;
@@ -579,20 +580,20 @@ int
     else if (!strcmp (substring, "show_traffic_interval"))
     {
       substring = strtok (NULL, delimiteurs);
-      show_traffic_interval= atoi (substring);
-      if(show_traffic_interval<ALARM_TIME)
+      stats_infos.show_traffic_interval= atoi (substring);
+      if(stats_infos.show_traffic_interval<ALARM_TIME)
       {
-        show_traffic_interval=ALARM_TIME;
+        stats_infos.show_traffic_interval=ALARM_TIME;
         log_message(MSG_WARN,"Sorry the minimum interval for showing the traffic is %ds\n",ALARM_TIME);
       }
     }
     else if (!strcmp (substring, "compute_traffic_interval"))
     {
       substring = strtok (NULL, delimiteurs);
-      compute_traffic_interval= atoi (substring);
-      if(compute_traffic_interval<ALARM_TIME)
+      stats_infos.compute_traffic_interval= atoi (substring);
+      if(stats_infos.compute_traffic_interval<ALARM_TIME)
       {
-        compute_traffic_interval=ALARM_TIME;
+        stats_infos.compute_traffic_interval=ALARM_TIME;
         log_message(MSG_WARN,"Sorry the minimum interval for computing the traffic is %ds\n",ALARM_TIME);
       }
     }
@@ -614,7 +615,7 @@ int
       if(card_buffer.dvr_buffer_size>1)
         log_message( MSG_WARN,
                      "Warning : You set a buffer size > 1, this feature is experimental, please report bugs/problems or results\n");
-      show_buffer_stats=1;
+      stats_infos.show_buffer_stats=1;
     }
     else if (!strcmp (substring, "dvr_thread"))
     {
@@ -752,6 +753,10 @@ int
 		 "Warning : You set a thread buffer size lower than your dvr buffer size, it's not possible to use such values. I increase your dvr_thread_buffer_size ...\n");
 		 card_buffer.max_thread_buffer_size=card_buffer.dvr_buffer_size;
   }
+  //if no specific path for the DVB device, we use the default one
+  if(!strlen(tuneparams.card_dev_path))
+    sprintf(tuneparams.card_dev_path,DVB_DEV_PATH,tuneparams.card);
+
   /******************************************************/
   //end of config file reading
   /******************************************************/
@@ -906,7 +911,7 @@ int
   // We tune the card
   iRet =-1;
 
-  if (open_fe (&fds.fd_frontend, tuneparams.card))
+  if (open_fe (&fds.fd_frontend, tuneparams.card_dev_path))
   {
     iRet = 
         tune_it (fds.fd_frontend, &tuneparams);
@@ -963,8 +968,8 @@ int
 
   alarm (ALARM_TIME);
 
-  if(show_traffic)
-    log_message(MSG_INFO,"The traffic will be shown every %d seconds\n",show_traffic_interval);
+  if(stats_infos.show_traffic)
+    log_message(MSG_INFO,"The traffic will be shown every %d seconds\n",stats_infos.show_traffic_interval);
 
 
   /*****************************************************/
@@ -1123,7 +1128,7 @@ int
   }
 
   // we open the file descriptors
-  if (create_card_fd (tuneparams.card, chan_and_pids.asked_pid, &fds) < 0)
+  if (create_card_fd (tuneparams.card_dev_path, chan_and_pids.asked_pid, &fds) < 0)
     return mumudvb_close(ERROR_GENERIC<<8);
 
   set_filters(chan_and_pids.asked_pid, &fds);
@@ -1319,10 +1324,10 @@ int
 	continue;
     }
 
-    if(card_buffer.dvr_buffer_size!=1)
+    if(card_buffer.dvr_buffer_size!=1 && stats_infos.show_buffer_stats)
     {
-      stats_num_packets_received+=(int) card_buffer.bytes_read/188;
-      stats_num_reads++;
+      stats_infos.stats_num_packets_received+=(int) card_buffer.bytes_read/188;
+      stats_infos.stats_num_reads++;
     }
  
     for(card_buffer.read_buff_pos=0;
@@ -1439,7 +1444,7 @@ int
              (chan_and_pids.channels[curr_channel].pmt_pid==pid) &&     //And we see the PMT
              pid)
         {
-          autoconf_pmt_follow( actual_ts_packet, &fds, &chan_and_pids.channels[curr_channel], tuneparams.card, &chan_and_pids );
+          autoconf_pmt_follow( actual_ts_packet, &fds, &chan_and_pids.channels[curr_channel], tuneparams.card_dev_path, &chan_and_pids );
         }
 	  
         /******************************************************/
@@ -1722,6 +1727,7 @@ static void SignalHandler (int signum)
   int curr_channel = 0;
   int count_of_active_channels=0;
   int iRet;
+  static int num_big_buffer_show=0;
 
   if (signum == SIGALRM && !Interrupted)
   {
@@ -1779,13 +1785,13 @@ static void SignalHandler (int signum)
 
     /*compute the bandwith occupied by each channel*/
     float time_interval;
-    if(!compute_traffic_time)
-      compute_traffic_time=now;
-    if((now-compute_traffic_time)>=compute_traffic_interval)
+    if(!stats_infos.compute_traffic_time)
+      stats_infos.compute_traffic_time=now;
+    if((now-stats_infos.compute_traffic_time)>=stats_infos.compute_traffic_interval)
     {
-      time_interval=now+tv.tv_usec/1000000-compute_traffic_time-compute_traffic_time_usec/1000000;
-      compute_traffic_time=now;
-      compute_traffic_time_usec=tv.tv_usec;
+      time_interval=now+tv.tv_usec/1000000-stats_infos.compute_traffic_time-stats_infos.compute_traffic_time_usec/1000000;
+      stats_infos.compute_traffic_time=now;
+      stats_infos.compute_traffic_time_usec=tv.tv_usec;
       for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
       {
         chan_and_pids.channels[curr_channel].traffic=((float)chan_and_pids.channels[curr_channel].sent_data)/time_interval*1/1204;
@@ -1794,34 +1800,26 @@ static void SignalHandler (int signum)
     }
 
     /*show the bandwith measurement*/
-    if(show_traffic)
+    if(stats_infos.show_traffic)
     {
-      if(!show_traffic_time)
-        show_traffic_time=now;
-      if((now-show_traffic_time)>=show_traffic_interval)
-      {
-        show_traffic_time=now;
-        for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
-        {
-          log_message( MSG_INFO, "Traffic :  %.2f kB/s \t  for channel \"%s\"\n",
-                       chan_and_pids.channels[curr_channel].traffic,
-                       chan_and_pids.channels[curr_channel].name);
-        }
-      }
+      show_traffic(now, stats_infos.show_traffic_interval, &chan_and_pids);
     }
 
 
     /*Show the statistics for the big buffer*/
-    if(show_buffer_stats)
+    if(stats_infos.show_buffer_stats)
     {
-      if(!show_buffer_stats_time)
-        show_buffer_stats_time=now;
-      if((now-show_buffer_stats_time)>=show_buffer_stats_interval)
+      if(!stats_infos.show_buffer_stats_time)
+        stats_infos.show_buffer_stats_time=now;
+      if((now-stats_infos.show_buffer_stats_time)>=stats_infos.show_buffer_stats_interval)
       {
-        show_buffer_stats_time=now;
-        log_message( MSG_DETAIL, "DETAIL : Average packets in the buffer %d\n", stats_num_packets_received/stats_num_reads);
-        stats_num_packets_received=0;
-        stats_num_reads=0;
+        stats_infos.show_buffer_stats_time=now;
+        log_message( MSG_DETAIL, "DETAIL : Average packets in the buffer %d\n", stats_infos.stats_num_packets_received/stats_infos.stats_num_reads);
+        stats_infos.stats_num_packets_received=0;
+        stats_infos.stats_num_reads=0;
+	num_big_buffer_show++;
+	if(num_big_buffer_show==10)
+	  stats_infos.show_buffer_stats=0;
       }
     }
 
@@ -1890,7 +1888,7 @@ static void SignalHandler (int signum)
     if (write_streamed_channels)
       gen_file_streamed_channels(filename_channels_diff, filename_channels_not_streamed, chan_and_pids.number_of_channels, chan_and_pids.channels);
 
-    /* reinit*/
+    /* reinit */
     for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
     {
       chan_and_pids.channels[curr_channel].streamed_channel = 0;
@@ -1911,9 +1909,9 @@ static void SignalHandler (int signum)
   }
   else if (signum == SIGUSR2)
   {
-    show_traffic = show_traffic ? 0 : 1;
-    if(show_traffic)
-      log_message(MSG_INFO,"The traffic will be shown every %d seconds\n",show_traffic_interval);
+    stats_infos.show_traffic = stats_infos.show_traffic ? 0 : 1;
+    if(stats_infos.show_traffic)
+      log_message(MSG_INFO,"The traffic will be shown every %d seconds\n",stats_infos.show_traffic_interval);
     else
       log_message(MSG_INFO,"The traffic will not be shown anymore\n");
   }

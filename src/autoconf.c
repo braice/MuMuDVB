@@ -1,27 +1,27 @@
 /* 
  * MuMuDVB - Stream a DVB transport stream.
  * File for Autoconfiguration
- * 
- * (C) 2008-2009 Brice DUBOST <mumudvb@braice.net>
+ *
+ * (C) 2008-2010 Brice DUBOST <mumudvb@braice.net>
  *
  * Parts of this code come from libdvb, modified for mumudvb
- * by Brice DUBOST 
+ * by Brice DUBOST
  * Libdvb part : Copyright (C) 2000 Klaus Schmidinger
- * 
+ *
  * The latest version can be found at http://mumudvb.braice.net
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -85,7 +85,7 @@ mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,
 void autoconf_free_services(mumudvb_service_t *services);
 int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services);
 int autoconf_read_psip(autoconf_parameters_t *parameters);
-int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int card, uint8_t *asked_pid, uint8_t *number_chan_asked_pid,fds_t *fds);
+int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char *card_base_path, uint8_t *asked_pid, uint8_t *number_chan_asked_pid,fds_t *fds);
 void autoconf_sort_services(mumudvb_service_t *services);
 int autoconf_read_nit(autoconf_parameters_t *parameters, mumudvb_channel_t *channels, int number_of_channels);
 
@@ -689,12 +689,12 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
  * @param channels the array of channels
  * @param fds the file descriptors
 */
-int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parameters_t *autoconf_vars, multicast_parameters_t *multicast_vars, int card, fds_t *fds, unicast_parameters_t *unicast_vars)
+int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parameters_t *autoconf_vars, multicast_parameters_t *multicast_vars, tuning_parameters_t *tuneparams, fds_t *fds, unicast_parameters_t *unicast_vars)
 {
   int curr_channel,curr_pid;
   //We sort the services
   autoconf_sort_services(autoconf_vars->services);
-  chan_and_pids->number_of_channels=autoconf_services_to_channels(*autoconf_vars, chan_and_pids->channels, multicast_vars->common_port, card, unicast_vars, multicast_vars->multicast); //Convert the list of services into channels
+  chan_and_pids->number_of_channels=autoconf_services_to_channels(*autoconf_vars, chan_and_pids->channels, multicast_vars->common_port, tuneparams->card, unicast_vars, multicast_vars->multicast); //Convert the list of services into channels
   //we got the pmt pids for the channels, we open the filters
   for (curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
   {
@@ -707,7 +707,7 @@ int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parame
   }
 
   // we open the file descriptors
-  if (create_card_fd (card, chan_and_pids->asked_pid, fds) < 0)
+  if (create_card_fd (tuneparams->card_dev_path, chan_and_pids->asked_pid, fds) < 0)
   {
     log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors. Some channels will probably not work\n");
   }
@@ -773,7 +773,7 @@ int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parame
  * @param number_chan_asked_pid the number of channels who want this pid
  * @param fds the file descriptors
 */
-void autoconf_end(int card, mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
+void autoconf_set_channel_filt(char *card_base_path, mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
 {
   int curr_channel;
   int curr_pid;
@@ -791,7 +791,7 @@ void autoconf_end(int card, mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
 	}
     }
   // we open the file descriptors
-  if (create_card_fd (card, chan_and_pids->asked_pid, fds) < 0)
+  if (create_card_fd (card_base_path, chan_and_pids->asked_pid, fds) < 0)
     {
       log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors. Some channels will probably not work\n");
     }
@@ -831,7 +831,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
         {
           log_message(MSG_DEBUG,"Autoconf : It seems that we have finished to get the services list\n");
           //we finish full autoconfiguration
-          iRet = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams->card, fds, unicast_vars);
+          iRet = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams, fds, unicast_vars);
         }
         else
           memset (autoconf_vars->autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
@@ -864,7 +864,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
         if(get_ts_packet(ts_packet,chan_and_pids->channels[curr_channel].pmt_packet))
 	{
 	  //Now we have the PMT, we parse it
-          if(autoconf_read_pmt(chan_and_pids->channels[curr_channel].pmt_packet, &chan_and_pids->channels[curr_channel], tuneparams->card, chan_and_pids->asked_pid, chan_and_pids->number_chan_asked_pid, fds)==0)
+          if(autoconf_read_pmt(chan_and_pids->channels[curr_channel].pmt_packet, &chan_and_pids->channels[curr_channel], tuneparams->card_dev_path, chan_and_pids->asked_pid, chan_and_pids->number_chan_asked_pid, fds)==0)
           {
             log_message(MSG_DETAIL,"Autoconf : Final PIDs for channel %d \"%s\" : ",curr_channel, chan_and_pids->channels[curr_channel].name);
             for(i=0;i<chan_and_pids->channels[curr_channel].num_pids;i++)
@@ -884,7 +884,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
             //if it's finished, we open the new descriptors and add the new filters
             if(autoconf_vars->autoconfiguration!=AUTOCONF_MODE_PIDS)
             {
-              autoconf_end(tuneparams->card, chan_and_pids, fds);
+              autoconf_set_channel_filt(tuneparams->card_dev_path, chan_and_pids, fds);
               //We free autoconf memory
               autoconf_freeing(autoconf_vars);
 	      if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_NIT)
@@ -950,7 +950,7 @@ int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_a
     {
       log_message(MSG_WARN,"Autoconf : Warning : Not all the channels were configured before timeout\n");
       autoconf_vars->autoconfiguration=0;
-      autoconf_end(tuneparams->card, chan_and_pids, fds);
+      autoconf_set_channel_filt(tuneparams->card_dev_path, chan_and_pids, fds);
       //We free autoconf memory
       autoconf_freeing(autoconf_vars);
       if(autoconf_vars->autoconf_lcn)
@@ -971,7 +971,7 @@ int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_a
       //This happend when we are not able to get all the services of the PAT,
       //We continue with the partial list of services
       autoconf_vars->time_start_autoconfiguration=now;
-      iRet = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams->card, fds, unicast_vars);
+      iRet = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams, fds, unicast_vars);
     }
     else if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_NIT)
     {

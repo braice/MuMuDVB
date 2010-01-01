@@ -2,7 +2,7 @@
  * mumudvb - UDP-ize a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * (C) 2004-2009 Brice DUBOST
+ * (C) 2004-2010 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -21,7 +21,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *     
+ *
  */
 
 /** @file
@@ -49,9 +49,10 @@
 #include "mumudvb.h"
 #include "tune.h"
 
-#define FRONTEND_DEV_PATH "/dev/dvb/adapter%d/frontend0"
-#define DEMUX_DEV_PATH    "/dev/dvb/adapter%d/demux0"
-#define DVR_DEV_PATH      "/dev/dvb/adapter%d/dvr0"
+#define DVB_DEV_PATH "/dev/dvb/adapter%d"
+#define FRONTEND_DEV_NAME "frontend0"
+#define DEMUX_DEV_NAME    "demux0"
+#define DVR_DEV_NAME      "dvr0"
 
 enum
 {
@@ -93,9 +94,9 @@ void *read_card_thread_func(void* arg);
 #endif
 
 
-int open_fe (int *fd_frontend, int card);
+int open_fe (int *fd_frontend, char *base_path);
 void set_ts_filt (int fd,uint16_t pid);
-int create_card_fd(int card, uint8_t *asked_pid, fds_t *fds);
+int create_card_fd(char *base_path, uint8_t *asked_pid, fds_t *fds);
 void set_filters(uint8_t *asked_pid, fds_t *fds);
 void close_card_fd(fds_t fds);
 

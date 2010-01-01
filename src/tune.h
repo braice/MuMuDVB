@@ -1,12 +1,12 @@
 /* dvbtune - tune.c
 
-   part of mumudvb
+   part of MuMuDVB
 
    last version availaible from http://mumudvb.braice.net/
 
-   Copyright (C) 2004-2009 Brice DUBOST
+   Copyright (C) 2004-2010 Brice DUBOST
    Copyright (C) Dave Chapman 2001,2002
-  
+
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
    as published by the Free Software Foundation; either version 2
@@ -77,6 +77,8 @@
 typedef struct tuning_parameters_t{
   /**The card number*/
   int card;
+  /** The path of the card */
+  char card_dev_path[256];
   /**Is the card actually tuned ?*/
   int card_tuned;
   /**The timeout for tuninh the card*/

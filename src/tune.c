@@ -179,6 +179,17 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
     substring = strtok (NULL, delimiteurs);
     tuneparams->card = atoi (substring);
   }
+  else if (!strcmp (substring, "card_dev_path"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    if(strlen(substring)>(256-1))
+    {
+      log_message( MSG_ERROR,
+                   "The card dev path is too long\n");
+      return -1;
+    }
+    strcpy (tuneparams->card_dev_path, substring);
+  }
   else if (!strcmp (substring, "qam"))
   {
   // DVB-T

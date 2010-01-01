@@ -661,3 +661,23 @@ void usage (char *name)
           "\n", name);
   print_info ();
 }
+
+void show_traffic(long now, int show_traffic_interval, mumudvb_chan_and_pids_t *chan_and_pids)
+{
+  static long show_traffic_time=0;
+
+  if(!show_traffic_time)
+    show_traffic_time=now;
+  if((now-show_traffic_time)>=show_traffic_interval)
+    {
+      show_traffic_time=now;
+      for (int curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
+        {
+          log_message( MSG_INFO, "Traffic :  %.2f kB/s \t  for channel \"%s\"\n",
+                       chan_and_pids->channels[curr_channel].traffic,
+                       chan_and_pids->channels[curr_channel].name);
+        }
+    }
+  
+
+}

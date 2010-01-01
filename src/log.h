@@ -37,6 +37,34 @@ enum
     MSG_FLOOD
   };
 
+typedef struct stats_infos_t{
+  //statistics for the big buffer
+  /** */
+  int stats_num_packets_received;
+  /** */
+  int stats_num_reads;
+  /** */
+  int show_buffer_stats;
+  /** */
+  long show_buffer_stats_time;
+  /** How often we how the statistics about the DVR buffer*/
+  int show_buffer_stats_interval;
+  //statistics for the traffic
+  /** do we periodically show the traffic ?*/
+  int show_traffic;
+  /** */
+  long show_traffic_time;
+  /** */
+  int show_traffic_time_usec;
+  /** */
+  long compute_traffic_time;
+  /** */
+  int compute_traffic_time_usec;
+  /** The interval for the traffic display */
+  int show_traffic_interval;
+  /** The interval for the traffic calculation */
+  int compute_traffic_interval; 
+}stats_infos_t;
 
 
 void print_info ();
@@ -51,6 +79,6 @@ void display_service_type(int type, int loglevel);
 char *pid_type_to_str(int type);
 char *service_type_to_str(int type);
 char *simple_service_type_to_str(int type);
-
+void show_traffic(long now, int show_traffic_interval, mumudvb_chan_and_pids_t *chan_and_pids);
 
 #endif

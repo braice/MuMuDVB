@@ -2,7 +2,7 @@
  * MuMuDVB - Stream a DVB transport stream.
  * File for Autoconfiguration
  * 
- * (C) 2008-2009 Brice DUBOST <mumudvb@braice.net>
+ * (C) 2008-2010 Brice DUBOST <mumudvb@braice.net>
  *
  * Parts of this code come from libdvb, modified for mumudvb
  * by Brice DUBOST 
@@ -65,7 +65,7 @@ int autoconf_read_psip(autoconf_parameters_t *parameters);
  * @param pmt the pmt packet
  * @param channel the associated channel
  */
-int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int card, uint8_t *asked_pid, uint8_t *number_chan_asked_pid,fds_t *fds)
+int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char *card_base_path, uint8_t *asked_pid, uint8_t *number_chan_asked_pid,fds_t *fds)
 {
   int section_len, descr_section_len, i,j;
   int pid,pcr_pid;
@@ -315,7 +315,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int 
 
         log_message(MSG_DETAIL,"Autoconf : Add the new filters\n");
 	// we open the file descriptors
-        if (create_card_fd (card, asked_pid, fds) < 0)
+        if (create_card_fd (card_base_path, asked_pid, fds) < 0)
         {
           log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors. Some channels will probably not work\n");
 	  //return; //FIXME : what do we do here ?
@@ -482,7 +482,7 @@ void update_pmt_version(mumudvb_channel_t *channel)
 
 
 /** @brief This function is called when a new PMT packet is there and we asked to check if there is updates*/
-void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t *actual_channel, int card,mumudvb_chan_and_pids_t *chan_and_pids)
+void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t *actual_channel, char *card_base_path,mumudvb_chan_and_pids_t *chan_and_pids)
 {
   /*Note : the pmt version is initialised during autoconfiguration*/
   /*Check the version stored in the channel*/
@@ -503,7 +503,7 @@ void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t
       {
         log_message(MSG_DETAIL,"Autoconfiguration : PMT packet updated, we have now to check if there is new things\n");
         /*We've got the FULL PMT packet*/
-        if(autoconf_read_pmt(actual_channel->pmt_packet, actual_channel, card, chan_and_pids->asked_pid, chan_and_pids->number_chan_asked_pid, fds)==0)
+        if(autoconf_read_pmt(actual_channel->pmt_packet, actual_channel, card_base_path, chan_and_pids->asked_pid, chan_and_pids->number_chan_asked_pid, fds)==0)
         {
           if(actual_channel->need_cam_ask==CAM_ASKED)
             actual_channel->need_cam_ask=CAM_NEED_UPDATE; //We we resend this packet to the CAM
