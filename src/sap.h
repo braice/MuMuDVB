@@ -65,13 +65,13 @@ typedef struct sap_parameters_t{
   /**the sap messages array*/
   mumudvb_sap_message_t *sap_messages; 
   /**do we send sap announces ?*/
-  int sap; 
+  option_status_t sap; 
   /**Interval between two sap announces in second*/
   int sap_interval;
   /** The ip address of the server that sends the sap announces*/
   char sap_sending_ip[20];
   /**the x-plgroup default : ie the playlist group (mainly for vlc)*/
-  char sap_default_group[20];
+  char sap_default_group[SAP_GROUP_LENGTH];
   /**The URI The URI should be a pointer to additional information about the
   conference*/
   char sap_uri[256];
@@ -90,8 +90,10 @@ typedef struct sap_parameters_t{
 }sap_parameters_t;
 
 
-int init_sap(sap_parameters_t *sap_vars);
+int init_sap(sap_parameters_t *sap_vars, multicast_parameters_t multicast_vars);
 void sap_send(sap_parameters_t *sap_vars, int num_messages);
-int sap_update(mumudvb_channel_t channel, sap_parameters_t *sap_vars, int curr_channel);
+int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_channel, multicast_parameters_t multicast_vars);
+int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
+void sap_poll(sap_parameters_t *sap_vars,int number_of_channels,mumudvb_channel_t  *channels, multicast_parameters_t multicast_vars, long now);
 
 #endif

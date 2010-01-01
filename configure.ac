@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.63])
-AC_INIT([MuMuDVB], [1.6], [mumudvb@braice.net])
+AC_PREREQ([2.61])
+AC_INIT([MuMuDVB], [1.6.1b_20100101], [mumudvb@braice.net])
 AC_CONFIG_SRCDIR([src/mumudvb.c])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([src/config.h])
@@ -19,12 +19,18 @@ fi
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
+AC_PROG_CC_C99
+
+dnl
+dnl Iconv stuff
+dnl
+AM_ICONV
 
 
-# HACK: there is no function in dvbapi, it is checkeb by the header. but we want to create a good LIBS
-AC_CHECK_LIB([dvbapi], [main])
+AC_CHECK_LIB([dvbapi], [dvbdemux_set_section_filter])
 AC_CHECK_LIB([ucsi], [atsc_text_segment_decode],[atsc_long_names="yes"], [atsc_long_names="no"])
 #AC_CHECK_LIB([dvben50221], [en50221_stdcam_create],,,[ucsi,pthread])
+AC_CHECK_LIB([pthread], [pthread_create], [pthread="yes"], [pthread="no"])
 
 
 dnl
@@ -46,6 +52,30 @@ then
   fi
 fi
 AM_CONDITIONAL(BUILD_CAMSUPPORT, [test "${enable_cam_support}" != "no"])
+
+dnl
+dnl transcoding support
+dnl
+AC_ARG_ENABLE(transcoding,
+  [  --enable-transcoding          transcoding support (default disabled)],,[enable_transcoding="no"])
+
+if test "${enable_transcoding}" = "yes"
+then
+  AC_CHECK_LIB([pthread], [pthread_create],[], [enable_transcoding="no"])
+  AC_CHECK_HEADERS([libavcodec/avcodec.h ffmpeg/avcodec.h])
+  AC_CHECK_HEADERS([libavformat/avformat.h ffmpeg/avformat.h])
+  AC_CHECK_HEADERS([libswscale/swscale.h ffmpeg/swscale.h])
+  AC_CHECK_LIB([avcodec], [av_picture_copy],[], [enable_transcoding="no"])
+  AC_CHECK_LIB([avformat], [av_get_frame_filename],[], [enable_transcoding="no"])
+  AC_CHECK_LIB([swscale], [sws_freeContext],[], [enable_transcoding="no"])
+  if test "${enable_transcoding}" != "no"
+  then
+    AC_DEFINE(ENABLE_TRANSCODING, 1, Define if you want the transcoding support)
+  else
+    AC_MSG_WARN([libpthread, libavcodev, libavformat and libswscale are needed for transcoding support])
+  fi
+fi
+AM_CONDITIONAL(BUILD_TRANSCODING, [test "${enable_transcoding}" != "no"])
 
 
 dnl
@@ -114,10 +144,23 @@ else
         echo "Build with CAM support:                              no"
 fi
 
+
+if test "${enable_transcoding}" != "no" ; then
+        echo "Build with transcoding support:                     yes"
+else
+        echo "Build with transcoding support:                      no"
+fi
+
 if test "${atsc_long_names}" = "yes" ; then
         echo "Build with ATSC long names support:                 yes"
 else
         echo "Build with ATSC long names support:                  no"
+fi
+
+if test "${pthread}" = "yes" ; then
+        echo "Builded with threads support:                       yes"
+else
+        echo "Builded with threads support:                       no"
 fi
 
 echo ""

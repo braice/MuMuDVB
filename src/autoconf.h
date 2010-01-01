@@ -1,7 +1,7 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB -Stream a DVB transport stream.
  * 
- * (C) 2008-2009 Brice DUBOST
+ * (C) 2008-2010 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -32,11 +32,14 @@
 #include "mumudvb.h"
 #include "unicast_http.h"
 #include "ts.h"
+#include "tune.h"
 
 /**find the audio and video pids from the PMT*/
 #define AUTOCONF_MODE_PIDS 1
 /**find the pmt pids and the channels from the pat, and go to AUTOCONF_MODE_PIDS*/
 #define AUTOCONF_MODE_FULL 2
+/**parse the NIT*/
+#define AUTOCONF_MODE_NIT 3
 
 //timeout for autoconfiguration
 #define AUTOCONFIGURE_TIME 10
@@ -46,7 +49,7 @@
 */
 typedef struct mumudvb_service_t{
   /**The channel name*/
-  char name[MAX_NAME_LEN];  
+  char name[MAX_NAME_LEN];
   /**Is the channel running ? Not used for the moment*/
   int running_status; 
   /**The service type : television, radio, data, ...*/
@@ -69,9 +72,9 @@ Possible values for this variable
 
  0 : none (or autoconf finished)
 
- 1 or AUTOCONF_MODE_PIDS : we have the PMT pids and the channels, we search the audio and video
+ AUTOCONF_MODE_PIDS : we have the PMT pids and the channels, we search the audio and video
 
- 2 or AUTOCONF_MODE_FULL : we have only the tuning parameters, we search the channels and their pmt pids*/
+ AUTOCONF_MODE_FULL : we have only the tuning parameters, we search the channels and their pmt pids*/
   int autoconfiguration;
   /**do we autoconfigure the radios ?*/
   int autoconf_radios;
@@ -85,34 +88,35 @@ Possible values for this variable
   int autoconf_scrambled;
   /** Do we follow pmt changes*/
   int autoconf_pid_update;
-  
+  /**Do we search the logical channel number */
+  int autoconf_lcn;
   //Different packets used by autoconfiguration
   mumudvb_ts_packet_t *autoconf_temp_pat;
   mumudvb_ts_packet_t *autoconf_temp_sdt;
+  mumudvb_ts_packet_t *autoconf_temp_nit;
   /**For ATSC Program and System Information Protocol*/
-  mumudvb_ts_packet_t *autoconf_temp_psip; /**@todo : see if it's really necesarry to split it from the sdt*/
+  mumudvb_ts_packet_t *autoconf_temp_psip;
   mumudvb_service_t   *services;
 
   /**the starting http unicast port */
   int autoconf_unicast_start_port;
-  /**The unicast "HTTP" ip address*/
-  char unicast_ipOut[20];
+
+  /**the list of TS ID for full autoconfiguration*/
+  int ts_id_list[MAX_CHANNELS];
+  /**number of TS ID*/
+  int num_ts_id;
+  /** the template for the channel name*/
+  char name_template[MAX_NAME_LEN];
+
 }autoconf_parameters_t;
 
 
 
 int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *channels,int number_of_channels);
-int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, int card, uint8_t *asked_pid, uint8_t *number_chan_asked_pid, fds_t *fds);
-int autoconf_read_sdt(unsigned char *buf, int len, mumudvb_service_t *services);
-int autoconf_read_psip(autoconf_parameters_t *);
 void autoconf_freeing(autoconf_parameters_t *);
-int autoconf_read_pat(autoconf_parameters_t *);
-int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card, unicast_parameters_t *unicast_vars, fds_t *fds);
-int autoconf_finish_full(int *number_of_channels, mumudvb_channel_t *channels, autoconf_parameters_t *autoconf_vars, int common_port, int card, fds_t *fds,uint8_t *asked_pid, uint8_t *number_chan_asked_pid, int multicast_ttl, unicast_parameters_t *unicast_vars);
-void autoconf_end(int card, int number_of_channels, mumudvb_channel_t *channels, uint8_t *asked_pid, uint8_t *number_chan_asked_pid, fds_t *fds);
-void autoconf_free_services(mumudvb_service_t *services);
-int pmt_need_update(mumudvb_channel_t *channel, unsigned char *buf, int ts_header);
-void update_pmt_version(mumudvb_channel_t *channel);
-
+int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, char *substring);
+int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, fds_t *fds, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars,  unicast_parameters_t *unicast_vars);
+int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars, fds_t *fds, unicast_parameters_t *unicast_vars);
+void autoconf_pmt_follow( unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t *actual_channel, char *card_base_path,mumudvb_chan_and_pids_t *chan_and_pids );
 
 #endif

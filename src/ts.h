@@ -309,6 +309,147 @@ typedef struct {
    u_char descriptors_loop_length_lo             :8;
 } sdt_descr_t;
 
+/*
+ *
+ *    3) Event Information Table (EIT):
+ * 
+ *       - the EIT contains data concerning events or programmes such as event
+ *         name, start time, duration, etc.; - the use of different descriptors
+ *         allows the transmission of different kinds of event information e.g.
+ *         for different service types.
+ *
+ */
+
+#define EIT_LEN 14
+
+typedef struct {
+  u_char table_id                               :8;
+#if BYTE_ORDER == BIG_ENDIAN
+  u_char section_syntax_indicator               :1;
+  u_char                                        :3;
+  u_char section_length_hi                      :4;
+#else
+  u_char section_length_hi                      :4;
+  u_char                                        :3;
+  u_char section_syntax_indicator               :1;
+#endif
+  u_char section_length_lo                      :8;
+  u_char service_id_hi                          :8;
+  u_char service_id_lo                          :8;
+#if BYTE_ORDER == BIG_ENDIAN
+  u_char                                        :2;
+  u_char version_number                         :5;
+  u_char current_next_indicator                 :1;
+#else
+  u_char current_next_indicator                 :1;
+  u_char version_number                         :5;
+  u_char                                        :2;
+#endif
+  u_char section_number                         :8;
+  u_char last_section_number                    :8;
+  u_char transport_stream_id_hi                 :8;
+  u_char transport_stream_id_lo                 :8;
+  u_char original_network_id_hi                 :8;
+  u_char original_network_id_lo                 :8;
+  u_char segment_last_section_number            :8;
+  u_char segment_last_table_id                  :8;
+} eit_t;
+
+/*
+ *
+ *    5) Network Information Table (NIT):
+ *
+ *       - the NIT is intended to provide information about the physical
+ *         network. The syntax and semantics of the NIT are defined in
+ *         ETSI EN 300 468.
+ *
+ */
+
+#define NIT_LEN 10
+
+typedef struct {
+   u_char table_id                               :8;
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char section_syntax_indicator               :1;
+   u_char                                        :3;
+   u_char section_length_hi                      :4;
+#else
+   u_char section_length_hi                      :4;
+   u_char                                        :3;
+   u_char section_syntax_indicator               :1;
+#endif
+   u_char section_length_lo                      :8;
+   u_char network_id_hi                          :8;
+   u_char network_id_lo                          :8;
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char                                        :2;
+   u_char version_number                         :5;
+   u_char current_next_indicator                 :1;
+#else
+   u_char current_next_indicator                 :1;
+   u_char version_number                         :5;
+   u_char                                        :2;
+#endif
+   u_char section_number                         :8;
+   u_char last_section_number                    :8;
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char                                        :4;
+   u_char network_descriptor_length_hi           :4;
+#else
+   u_char network_descriptor_length_hi           :4;
+   u_char                                        :4;
+#endif
+   u_char network_descriptor_length_lo           :8;
+  /* descriptors */
+}nit_t;
+
+#define SIZE_NIT_MID 2
+
+typedef struct {                                 // after descriptors
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char                                        :4;
+   u_char transport_stream_loop_length_hi        :4;
+#else
+   u_char transport_stream_loop_length_hi        :4;
+   u_char                                        :4;
+#endif
+   u_char transport_stream_loop_length_lo        :8;
+}nit_mid_t;
+
+#define NIT_TS_LEN 6
+
+typedef struct {
+   u_char transport_stream_id_hi                 :8;
+   u_char transport_stream_id_lo                 :8;
+   u_char original_network_id_hi                 :8;
+   u_char original_network_id_lo                 :8;
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char                                        :4;
+   u_char transport_descriptors_length_hi        :4;
+#else
+   u_char transport_descriptors_length_hi        :4;
+   u_char                                        :4;
+#endif
+   u_char transport_descriptors_length_lo        :8;
+   /* descriptors  */
+}nit_ts_t;
+
+#define NIT_LCN_LEN 4
+
+typedef struct {
+   u_char service_id_hi                          :8;
+   u_char service_id_lo                          :8;
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char visible_service_flag                   :1;
+   u_char reserved                               :5;
+   u_char logical_channel_number_hi              :2;
+#else
+   u_char logical_channel_number_hi              :2;
+   u_char reserved                               :5;
+   u_char visible_service_flag                   :1;
+#endif
+   u_char logical_channel_number_lo              :8;
+}nit_lcn_t;
 
 /***************************************************
  *                ATSC PSIP tables                 *
@@ -461,5 +602,6 @@ int AddPacketContinue  (unsigned char *packet, unsigned char *buf, unsigned int 
 
 struct mumudvb_channel_t;
 int check_pmt_ts_id(mumudvb_ts_packet_t *pmt, struct mumudvb_channel_t *channel);
+
 
 #endif

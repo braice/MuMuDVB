@@ -1,41 +1,42 @@
-/* 
- * MuMuDVB - UDP-ize a DVB transport stream.
- * 
- * (C) 2009 Brice DUBOST
- * 
- * The latest version can be found at http://mumudvb.braice.net
- * 
- * Copyright notice:
- * 
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- */
+/*
+* MuMuDVB - UDP-ize a DVB transport stream.
+*
+* (C) 2009 Brice DUBOST
+*
+* The latest version can be found at http://mumudvb.braice.net
+*
+* Copyright notice:
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
 
 /** @file
- * @brief File for HTTP unicast
- * @author Brice DUBOST
- * @date 2009
- */
+* @brief File for HTTP unicast
+* @author Brice DUBOST
+* @date 2009
+*/
 
 /***********************
 Todo list
- * implement a measurement of the "load" -- almost done with the traffic display
- * implement channel by name
- * implement monitoring features
- * implement channels by port  --- in progress
+* implement a measurement of the "load" -- almost done with the traffic display
+* implement channel by name
+* implement monitoring features
 
 ***********************/
+//in order to use asprintf (extension gnu)
+#define _GNU_SOURCE
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -47,33 +48,159 @@ Todo list
 #include <string.h>
 #include <poll.h>
 #include <fcntl.h>
-
-
+#include <stdio.h>
+#include <sys/time.h>
+#include <string.h>
+#include <stdarg.h>
+#include <linux/dvb/frontend.h>
+#include <sys/ioctl.h>
+#include <time.h>
+#include <stdlib.h>
 
 #include "unicast_http.h"
+#include "unicast_queue.h"
 #include "mumudvb.h"
 #include "errors.h"
+#include "log.h"
 
 extern int Interrupted;
 
-int 
+//from unicast_client.c
+unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in SocketAddr, int Socket);
+int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *channel);
+
+unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, int socketIn);
+void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, int Socket, mumudvb_channel_t *channels);
+
+int
 unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *host);
-int 
-unicast_send_streamed_channels_list_txt (int number_of_channels, mumudvb_channel_t *channels, int Socket);
+int
+unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int perport);
+int
+unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t* channels, int Socket, int vlc);
+int
+unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_channel_t *channels, int Socket);
+int
+unicast_send_signal_power_js (int Socket, fds_t *fds);
+int
+unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *channels, int Socket);
 
-/**@todo : deal with the RTP over http case ie implement RTSP  --> is it useful over TCP ?*/
-extern int rtp_header;
+int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int num_of_channels, fds_t *fds);
+
+#define REPLY_HEADER 0
+#define REPLY_BODY 1
+#define REPLY_SIZE_STEP 256
+
+struct unicast_reply {
+  char* buffer_header;
+  char* buffer_body;
+  int length_header;
+  int length_body;
+  int used_header;
+  int used_body;
+  int type;
+};
+static struct unicast_reply* unicast_reply_init();
+static int unicast_reply_free(struct unicast_reply *reply);
+static int unicast_reply_write(struct unicast_reply *reply, const char* msg, ...);
+static int unicast_reply_send(struct unicast_reply *reply, int socket, int code, const char* content_type);
 
 
-/** @brief Create a listening socket and add it to the list of polling file descriptors if success 
- *
- *
- *
- */
+/**@todo : deal with the RTP over http case ie implement RTSP*/
+
+
+/** @brief Read a line of the configuration file to check if there is a unicast parameter
+*
+* @param unicast_vars the unicast parameters
+* @param substring The currrent line
+*/
+int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring)
+{
+
+  char delimiteurs[] = CONFIG_FILE_SEPARATOR;
+
+  if (!strcmp (substring, "ip_http"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    if(strlen(substring)>19)
+    {
+      log_message( MSG_ERROR,
+                   "The Ip address %s is too long.\n", substring);
+                   exit(ERROR_CONF);
+    }
+    sscanf (substring, "%s\n", unicast_vars->ipOut);
+    if(unicast_vars->ipOut)
+    {
+      if(unicast_vars->unicast==0)
+      {
+        log_message( MSG_WARN,"You should use the option \"unicast\" to activate unicast instead of ip_http\n");
+        unicast_vars->unicast=1;
+        log_message( MSG_WARN,"You have enabled the support for HTTP Unicast. This feature is quite youg, please report any bug/comment\n");
+      }
+    }
+  }
+  else if (!strcmp (substring, "unicast"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    unicast_vars->unicast = atoi (substring);
+    if(unicast_vars->unicast)
+    {
+      log_message( MSG_WARN,
+                   "You have enabled the support for HTTP Unicast. This feature is quite youg, please report any bug/comment\n");
+    }
+  }
+  else if (!strcmp (substring, "unicast_consecutive_errors_timeout"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    unicast_vars->consecutive_errors_timeout = atoi (substring);
+    if(unicast_vars->consecutive_errors_timeout<=0)
+      log_message( MSG_WARN,
+                   "Warning : You have desactivated the unicast timeout for disconnecting clients, this can lead to an accumulation of zombie clients, this is unadvised, prefer a long timeout\n");
+  }
+  else if (!strcmp (substring, "unicast_max_clients"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    unicast_vars->max_clients = atoi (substring);
+  }
+  else if (!strcmp (substring, "unicast_queue_size"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    unicast_vars->queue_max_size = atoi (substring);
+  }
+  else if (!strcmp (substring, "port_http"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    unicast_vars->portOut = atoi (substring);
+  }
+  else if (!strcmp (substring, "unicast_port"))
+  {
+    if ( ip_ok == 0)
+    {
+      log_message( MSG_ERROR,
+                   "unicast_port : You have to start a channel first (using ip= or channel_next)\n");
+                   exit(ERROR_CONF);
+    }
+    substring = strtok (NULL, delimiteurs);
+    current_channel->unicast_port = atoi (substring);
+  }
+  else
+    return 0; //Nothing concerning tuning, we return 0 to explore the other possibilities
+
+    return 1;//We found something for tuning, we tell main to go for the next line
+
+}
+
+
+
+/** @brief Create a listening socket and add it to the list of polling file descriptors if success
+*
+*
+*
+*/
 int unicast_create_listening_socket(int socket_type, int socket_channel, char *ipOut, int port, struct sockaddr_in *sIn, int *socketIn, fds_t *fds, unicast_parameters_t *unicast_vars)
 {
   *socketIn= makeTCPclientsocket(ipOut, port, sIn);
-      //We add them to the poll descriptors
+  //We add them to the poll descriptors
   if(*socketIn>0)
   {
     fds->pfdsnum++;
@@ -86,16 +213,18 @@ int unicast_create_listening_socket(int socket_type, int socket_channel, char *i
     }
     fds->pfds[fds->pfdsnum-1].fd = *socketIn;
     fds->pfds[fds->pfdsnum-1].events = POLLIN | POLLPRI;
+    fds->pfds[fds->pfdsnum-1].revents = 0;
     fds->pfds[fds->pfdsnum].fd = 0;
     fds->pfds[fds->pfdsnum].events = POLLIN | POLLPRI;
-          //Information about the descriptor
+    fds->pfds[fds->pfdsnum].revents = 0;
+    //Information about the descriptor
     unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
     if (unicast_vars->fd_info==NULL)
     {
       log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       return -1;
     }
-          //Master connection
+    //Master connection
     unicast_vars->fd_info[fds->pfdsnum-1].type=socket_type;
     unicast_vars->fd_info[fds->pfdsnum-1].channel=socket_channel;
     unicast_vars->fd_info[fds->pfdsnum-1].client=NULL;
@@ -111,11 +240,11 @@ int unicast_create_listening_socket(int socket_type, int socket_channel, char *i
 }
 
 /** @brief Handle an "event" on the unicast file descriptors
- * If the event is on an already open client connection, it handle the message
- * If the event is on the master connection, it accepts the new connection
- * If the event is on a channel specific socket, it accepts the new connection and starts streaming
- *
- */
+* If the event is on an already open client connection, it handle the message
+* If the event is on the master connection, it accepts the new connection
+* If the event is on a channel specific socket, it accepts the new connection and starts streaming
+*
+*/
 int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels)
 {
   int iRet;
@@ -124,89 +253,91 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
 
 
   for(actual_fd=1;actual_fd<fds->pfdsnum;actual_fd++)
+  {
+    iRet=0;
+    if((fds->pfds[actual_fd].revents&POLLHUP)&&(unicast_vars->fd_info[actual_fd].type==UNICAST_CLIENT))
     {
-      iRet=0;
-      if((fds->pfds[actual_fd].revents&POLLHUP)&&(unicast_vars->fd_info[actual_fd].type==UNICAST_CLIENT))
+      log_message(MSG_DEBUG,"Unicast : We've got a POLLHUP. Actual_fd %d socket %d we close the connection \n", actual_fd, fds->pfds[actual_fd].fd );
+      unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels);
+      //We check if we hage to parse fds->pfds[actual_fd].revents (the last fd moved to the actual one)
+      if(fds->pfds[actual_fd].revents)
+        actual_fd--;//Yes, we force the loop to see it
+    }
+    if((fds->pfds[actual_fd].revents&POLLIN)||(fds->pfds[actual_fd].revents&POLLPRI))
+    {
+      if((unicast_vars->fd_info[actual_fd].type==UNICAST_MASTER)||
+        (unicast_vars->fd_info[actual_fd].type==UNICAST_LISTEN_CHANNEL))
       {
-        log_message(MSG_DEBUG,"Unicast : We've got a POLLHUP. Actual_fd %d socket %d we close the connection \n", actual_fd, fds->pfds[actual_fd].fd );
-        unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels);
-          //We check if we hage to parse fds->pfds[actual_fd].revents (the last fd moved to the actual one)
-        if(fds->pfds[actual_fd].revents)
-          actual_fd--;//Yes, we force the loop to see it 
-      }
-      if((fds->pfds[actual_fd].revents&POLLIN)||(fds->pfds[actual_fd].revents&POLLPRI))
+        //Event on the master connection or listenin channel
+        //New connection, we accept the connection
+        log_message(MSG_DEBUG,"Unicast : New client\n");
+        int tempSocket;
+        unicast_client_t *tempClient;
+        //we accept the incoming connection
+        tempClient=unicast_accept_connection(unicast_vars, fds->pfds[actual_fd].fd);
+
+        if(tempClient!=NULL)
         {
-          if((unicast_vars->fd_info[actual_fd].type==UNICAST_MASTER)||
-              (unicast_vars->fd_info[actual_fd].type==UNICAST_LISTEN_CHANNEL))
+          tempSocket=tempClient->Socket;
+          fds->pfdsnum++;
+          fds->pfds=realloc(fds->pfds,(fds->pfdsnum+1)*sizeof(struct pollfd));
+          if (fds->pfds==NULL)
           {
-            //Event on the master connection or listenin channel 
-            //New connection, we accept the connection
-            log_message(MSG_DEBUG,"Unicast : New client\n");
-            int tempSocket;
-            unicast_client_t *tempClient;
-            //we accept the incoming connection
-            tempClient=unicast_accept_connection(unicast_vars, fds->pfds[actual_fd].fd);
-
-            if(tempClient!=NULL)
-            {
-              tempSocket=tempClient->Socket;
-              fds->pfdsnum++;
-              fds->pfds=realloc(fds->pfds,(fds->pfdsnum+1)*sizeof(struct pollfd));
-              if (fds->pfds==NULL)
-              {
-                log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-                Interrupted=ERROR_MEMORY<<8;
-                return -1;
-              }
-              //We poll the new socket
-              fds->pfds[fds->pfdsnum-1].fd = tempSocket;
-              fds->pfds[fds->pfdsnum-1].events = POLLIN | POLLPRI | POLLHUP; //We also poll the deconnections
-              fds->pfds[fds->pfdsnum].fd = 0;
-              fds->pfds[fds->pfdsnum].events = POLLIN | POLLPRI;
-
-              //Information about the descriptor
-              unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
-              if (unicast_vars->fd_info==NULL)
-              {
-                log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-                Interrupted=ERROR_MEMORY<<8;
-                return -1;
-              }
-              //client connection
-              unicast_vars->fd_info[fds->pfdsnum-1].type=UNICAST_CLIENT;
-              unicast_vars->fd_info[fds->pfdsnum-1].channel=-1;
-              unicast_vars->fd_info[fds->pfdsnum-1].client=tempClient;
-
-
-              log_message(MSG_DEBUG,"Unicast : Number of clients : %d\n", unicast_vars->client_number);
-
-              if(unicast_vars->fd_info[actual_fd].type==UNICAST_LISTEN_CHANNEL)
-              {
-                //Event on a channel connection, we open a new socket for this client and 
-                //we store the wanted channel for when we will get the GET
-                log_message(MSG_DEBUG,"Unicast : Connection on a channel socket the client  will get the channel %d\n", unicast_vars->fd_info[actual_fd].channel);
-                tempClient->askedChannel=unicast_vars->fd_info[actual_fd].channel;
-              }
-            }
+            log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+            Interrupted=ERROR_MEMORY<<8;
+            return -1;
           }
-          else if(unicast_vars->fd_info[actual_fd].type==UNICAST_CLIENT)
+          //We poll the new socket
+          fds->pfds[fds->pfdsnum-1].fd = tempSocket;
+          fds->pfds[fds->pfdsnum-1].events = POLLIN | POLLPRI | POLLHUP; //We also poll the deconnections
+          fds->pfds[fds->pfdsnum-1].revents = 0;
+          fds->pfds[fds->pfdsnum].fd = 0;
+          fds->pfds[fds->pfdsnum].events = POLLIN | POLLPRI;
+          fds->pfds[fds->pfdsnum].revents = 0;
+
+          //Information about the descriptor
+          unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
+          if (unicast_vars->fd_info==NULL)
           {
-            //Event on a client connectio i.e. the client asked something
-            log_message(MSG_DEBUG,"Unicast : New message for socket %d\n", fds->pfds[actual_fd].fd);
-            iRet=unicast_handle_message(unicast_vars,unicast_vars->fd_info[actual_fd].client, channels, number_of_channels);
-            if (iRet==-2 ) //iRet==-2 --> 0 received data or error, we close the connection
-            {
-              unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels);
-              //We check if we hage to parse fds->pfds[actual_fd].revents (the last fd moved to the actual one)
-              if(fds->pfds[actual_fd].revents)
-                actual_fd--;//Yes, we force the loop to see it again
-            }
+            log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+            Interrupted=ERROR_MEMORY<<8;
+            return -1;
           }
-          else
+          //client connection
+          unicast_vars->fd_info[fds->pfdsnum-1].type=UNICAST_CLIENT;
+          unicast_vars->fd_info[fds->pfdsnum-1].channel=-1;
+          unicast_vars->fd_info[fds->pfdsnum-1].client=tempClient;
+
+
+          log_message(MSG_DEBUG,"Unicast : Number of clients : %d\n", unicast_vars->client_number);
+
+          if(unicast_vars->fd_info[actual_fd].type==UNICAST_LISTEN_CHANNEL)
           {
-            log_message(MSG_WARN,"Unicast : File descriptor with bad type, please contact\n Debug information : actual_fd %d unicast_vars->fd_info[actual_fd].type %d\n",
-                        actual_fd, unicast_vars->fd_info[actual_fd].type);
+            //Event on a channel connection, we open a new socket for this client and
+            //we store the wanted channel for when we will get the GET
+            log_message(MSG_DEBUG,"Unicast : Connection on a channel socket the client  will get the channel %d\n", unicast_vars->fd_info[actual_fd].channel);
+            tempClient->askedChannel=unicast_vars->fd_info[actual_fd].channel;
           }
+        }
+      }
+      else if(unicast_vars->fd_info[actual_fd].type==UNICAST_CLIENT)
+      {
+        //Event on a client connectio i.e. the client asked something
+        log_message(MSG_FLOOD,"Unicast : New message for socket %d\n", fds->pfds[actual_fd].fd);
+        iRet=unicast_handle_message(unicast_vars,unicast_vars->fd_info[actual_fd].client, channels, number_of_channels, fds);
+        if (iRet==-2 ) //iRet==-2 --> 0 received data or error, we close the connection
+        {
+          unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels);
+          //We check if we hage to parse fds->pfds[actual_fd].revents (the last fd moved to the actual one)
+          if(fds->pfds[actual_fd].revents)
+            actual_fd--;//Yes, we force the loop to see it again
+        }
+      }
+      else
+      {
+        log_message(MSG_WARN,"Unicast : File descriptor with bad type, please contact\n Debug information : actual_fd %d unicast_vars->fd_info[actual_fd].type %d\n",
+                    actual_fd, unicast_vars->fd_info[actual_fd].type);
+      }
     }
   }
   return 0;
@@ -217,11 +348,11 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
 
 
 /** @brief Accept an incoming connection
- *
- *
- * @param unicast_vars the unicast parameters
- * @param socketIn the socket on wich the connection was made
- */
+*
+*
+* @param unicast_vars the unicast parameters
+* @param socketIn the socket on wich the connection was made
+*/
 unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, int socketIn)
 {
 
@@ -232,211 +363,56 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
 
   l = sizeof(struct sockaddr);
   tempSocket = accept(socketIn, (struct sockaddr *) &tempSocketAddrIn, &l);
-  if (tempSocket < 0)
-    {
-      log_message(MSG_ERROR,"Unicast : Error when accepting the incoming connection : %s\n", strerror(errno));
-      return NULL;
-    }
-  log_message(MSG_DETAIL,"Unicast : New connection from %s:%d\n",inet_ntoa(tempSocketAddrIn.sin_addr), tempSocketAddrIn.sin_port);
+  if (tempSocket < 0 )
+  {
+    log_message(MSG_WARN,"Unicast : Error when accepting the incoming connection : %s\n", strerror(errno));
+    return NULL;
+  }
+  struct sockaddr_in tempSocketAddr;
+  l = sizeof(struct sockaddr);
+  getsockname(tempSocket, (struct sockaddr *) &tempSocketAddr, &l);
+  log_message(MSG_DETAIL,"Unicast : New connection from %s:%d to %s:%d \n",inet_ntoa(tempSocketAddrIn.sin_addr), tempSocketAddrIn.sin_port,inet_ntoa(tempSocketAddr.sin_addr), tempSocketAddr.sin_port);
 
   //Now we set this socket to be non blocking because we poll it
   int flags;
   flags = fcntl(tempSocket, F_GETFL, 0);
   flags |= O_NONBLOCK;
   if (fcntl(tempSocket, F_SETFL, flags) < 0)
-    {
-      log_message(MSG_ERROR,"Set non blocking failed : %s\n",strerror(errno));
-      return NULL;
-    }
+  {
+    log_message(MSG_ERROR,"Set non blocking failed : %s\n",strerror(errno));
+    return NULL;
+  }
 
   /* if the maximum number of clients is reached, raise a temporary error*/
   if((unicast_vars->max_clients>0)&&(unicast_vars->client_number>=unicast_vars->max_clients))
-    {
-      int iRet;
-      log_message(MSG_INFO,"Unicast : Too many clients connected, we raise an error to  %s\n", inet_ntoa(tempSocketAddrIn.sin_addr));
-      iRet=write(tempSocket,HTTP_503_REPLY, strlen(HTTP_503_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
-      close(tempSocket);
-      return NULL;
-    }
+  {
+    int iRet;
+    log_message(MSG_INFO,"Unicast : Too many clients connected, we raise an error to  %s\n", inet_ntoa(tempSocketAddrIn.sin_addr));
+    iRet=write(tempSocket,HTTP_503_REPLY, strlen(HTTP_503_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
+    close(tempSocket);
+    return NULL;
+  }
 
   tempClient=unicast_add_client(unicast_vars, tempSocketAddrIn, tempSocket);
   if( tempClient == NULL)
-    {
-      //We cannot create the client, we close the socket cleanly
-      close(tempSocket);
-      return NULL;
-    }
+  {
+    //We cannot create the client, we close the socket cleanly
+    close(tempSocket);
+    return NULL;
+  }
 
   return tempClient;
 
 }
 
-/** @brief Add a client to the chained list of clients
- * Will allocate the memory and fill the structure
- *
- * @param unicast_vars the unicast parameters
- * @param SocketAddr The socket address
- * @param Socket The socket number
- */
-unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in SocketAddr, int Socket)
-{
-
-  unicast_client_t *client;
-  unicast_client_t *prev_client;
-  log_message(MSG_DEBUG,"Unicast : We create a client associated with the socket %d\n",Socket);
-  //We allocate a new client
-  if(unicast_vars->clients==NULL)
-    {
-      log_message(MSG_DEBUG,"Unicast : first client\n");
-      client=unicast_vars->clients=malloc(sizeof(unicast_client_t));
-      prev_client=NULL;
-    }
-  else
-    {
-      log_message(MSG_DEBUG,"Unicast : there is already clients\n");
-      client=unicast_vars->clients;
-      while(client->next!=NULL)
-	client=client->next;
-      client->next=malloc(sizeof(unicast_client_t));
-      prev_client=client;
-      client=client->next;
-    }
-  if(client==NULL)
-    {
-      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      close(Socket); 
-      return NULL;
-    }
-
-  //We fill the client data
-  client->SocketAddr=SocketAddr;
-  client->Socket=Socket;
-  client->buffer=NULL;
-  client->buffersize=0;
-  client->bufferpos=0;
-  client->channel=-1;
-  client->askedChannel=-1;
-  client->consecutive_errors=0;
-  client->next=NULL;
-  client->prev=prev_client;
-  client->chan_next=NULL;
-  client->chan_prev=NULL;
-
-  unicast_vars->client_number++;
-
-  return client;
-}
-
-
-
-/** @brief Delete a client to the chained list of clients and in the associated channel
- * This function close the socket of the client
- * remove it from the associated channel if there is one
- * and free the memory of the client (including the buffer)
- *
- * @param unicast_vars the unicast parameters
- * @param client the client we want to delete
- * @param channels the array of channels
- */
-int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels)
-{
-  unicast_client_t *prev_client,*next_client;
-  unicast_client_t *clienttmp;
-
-  log_message(MSG_DETAIL,"Unicast : We delete the client %s:%d, socket %d\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port, client->Socket);
-
-  log_message(MSG_DEBUG,"Unicast : ---------------Before-------------\n");
-  if(unicast_vars->clients==NULL)
-    log_message(MSG_ERROR,"Unicast : 0 client\n");
-  else
-    {
-      int i;
-      i=0;
-      clienttmp=unicast_vars->clients;
-      while(clienttmp!=NULL)
-	{
-	  log_message(MSG_DEBUG,"We see socket %d\n",clienttmp->Socket);
-	  clienttmp=clienttmp->next;
-	  i++;
-	}
-    }
-  
-
-
-  if (client->Socket >= 0)
-    {
-      close(client->Socket);
-    }
-  
-  prev_client=client->prev;
-  next_client=client->next;
-  if(prev_client==NULL)
-    {
-      log_message(MSG_DEBUG,"Unicast : We delete the first client\n");
-      unicast_vars->clients=client->next;
-    }
-  else
-    prev_client->next=client->next;
-
-  if(next_client)
-    next_client->prev=prev_client;
-
-  //We delete the client in the channel
-  if(client->channel!=-1)
-    {
-      log_message(MSG_DEBUG,"Unicast : We remove the client from the channel \"%s\"\n",channels[client->channel].name);
-
-      if(client->chan_prev==NULL)
-	{
-          channels[client->channel].clients=client->chan_next;
-	  if(channels[client->channel].clients)
-	    channels[client->channel].clients->chan_prev=NULL;
-	}
-      else
-	{
-          client->chan_prev->chan_next=client->chan_next;
-          if(client->chan_next)
-            client->chan_next->chan_prev=client->chan_prev;
-        }
-    }
-
-
-  if(client->buffer)
-    free(client->buffer);
-  free(client);
-
-  log_message(MSG_DEBUG,"Unicast : --------------- After -------------\n");
-  if(unicast_vars->clients==NULL)
-    log_message(MSG_ERROR,"Unicast : 0 client\n");
-  else
-    {
-      int i;
-      i=0;
-      clienttmp=unicast_vars->clients;
-      while(clienttmp!=NULL)
-	{
-	  log_message(MSG_DEBUG,"We see socket %d\n",clienttmp->Socket);
-	  clienttmp=clienttmp->next;
-	  i++;
-	}
-    }
-
-
-  unicast_vars->client_number--;
-
-
-  return 0;
-}
-
-
 
 /** @brief Close an unicast connection and delete the client
- *
- * @param unicast_vars the unicast parameters
- * @param fds The polling file descriptors
- * @param Socket The socket of the client we want to disconnect
- * @param channels The channel list
- */
+*
+* @param unicast_vars the unicast parameters
+* @param fds The polling file descriptors
+* @param Socket The socket of the client we want to disconnect
+* @param channels The channel list
+*/
 void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, int Socket, mumudvb_channel_t *channels)
 {
 
@@ -447,17 +423,17 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
     actual_fd++;
 
   if(actual_fd==fds->pfdsnum)
+  {
+    log_message(MSG_ERROR,"Unicast : close connection : we did't find the file descriptor this should never happend, please contact\n");
+    actual_fd=0;
+    //We find the FD correspondig to this client
+    while(actual_fd<fds->pfdsnum)
     {
-      log_message(MSG_ERROR,"Unicast : close connection : we did't find the file descriptor this should never happend, please contact\n");
-      actual_fd=0;
-      //We find the FD correspondig to this client
-      while(actual_fd<fds->pfdsnum) 
-	{
-	  log_message(MSG_ERROR,"Unicast : fds->pfds[actual_fd].fd %d Socket %d \n", fds->pfds[actual_fd].fd,Socket);
-	  actual_fd++;
-	}
-      return;
+      log_message(MSG_ERROR,"Unicast : fds->pfds[actual_fd].fd %d Socket %d \n", fds->pfds[actual_fd].fd,Socket);
+      actual_fd++;
     }
+    return;
+  }
 
   log_message(MSG_DEBUG,"Unicast : We close the connection\n");
   //We delete the client
@@ -493,55 +469,56 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
 
 
 /** @brief Deal with an incoming message on the unicast client connection
- * This function will store and answer the HTTP requests
- *
- *
- * @param unicast_vars the unicast parameters
- * @param client The client from which the message was received
- * @param channels the channel array
- * @param number_of_channels quite explicit ...
- */
-int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels)
+* This function will store and answer the HTTP requests
+*
+*
+* @param unicast_vars the unicast parameters
+* @param client The client from which the message was received
+* @param channels the channel array
+* @param number_of_channels quite explicit ...
+*/
+int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels, fds_t *fds)
 {
   int received_len;
   (void) unicast_vars;
 
   /************ auto increasing buffer to receive the message **************/
   if((client->buffersize-client->bufferpos)<RECV_BUFFER_MULTIPLE)
+  {
+    client->buffer=realloc(client->buffer,(client->buffersize + RECV_BUFFER_MULTIPLE+1)*sizeof(char)); //the +1 if for the \0 at the end
+    if(client->buffer==NULL)
     {
-      client->buffer=realloc(client->buffer,(client->buffersize + RECV_BUFFER_MULTIPLE)*sizeof(char));
-      if(client->buffer==NULL)
-	{
-          log_message(MSG_ERROR,"Unicast : Problem with realloc for the client buffer : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-	  client->buffersize=0;
-	  client->bufferpos=0;
-	  return -1;
-	}
-        memset (client->buffer+client->buffersize, 0, RECV_BUFFER_MULTIPLE*sizeof(char)); //We fill the buffer with zeros to be sure
-        client->buffersize += RECV_BUFFER_MULTIPLE;
+      log_message(MSG_ERROR,"Unicast : Problem with realloc for the client buffer : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      client->buffersize=0;
+      client->bufferpos=0;
+      return -1;
     }
+    memset (client->buffer+client->buffersize, 0, RECV_BUFFER_MULTIPLE*sizeof(char)); //We fill the buffer with zeros to be sure
+    client->buffersize += RECV_BUFFER_MULTIPLE;
+  }
 
   received_len=recv(client->Socket, client->buffer+client->bufferpos, RECV_BUFFER_MULTIPLE, 0);
 
   if(received_len>0)
-    {
-      client->bufferpos+=received_len;
-      log_message(MSG_DEBUG,"Unicast : We received %d, buffer len %d new buffer pos %d\n",received_len,client->buffersize, client->bufferpos);
-      //log_message(MSG_DEBUG,"Unicast : Actual message :\n--------------\n%s\n----------\n",client->buffer);
-    }
+  {
+    if(client->bufferpos==0)
+      log_message(MSG_DEBUG,"Unicast : beginning of buffer %c%c%c%c%c\n",client->buffer[0],client->buffer[1],client->buffer[2],client->buffer[3],client->buffer[4]);
+    client->bufferpos+=received_len;
+    log_message(MSG_FLOOD,"Unicast : We received %d, buffer len %d new buffer pos %d\n",received_len,client->buffersize, client->bufferpos);
+  }
 
   if(received_len==-1)
-    {
-      log_message(MSG_ERROR,"Unicast : Problem with recv : %s\n",strerror(errno));
-      return -1;
-    }
+  {
+    log_message(MSG_ERROR,"Unicast : Problem with recv : %s\n",strerror(errno));
+    return -1;
+  }
   if(received_len==0)
     return -2; //To say to the main program to close the connection
 
-  /***************** Now we parse the message to see if something was asked  *****************/
-
-  //We search for the end of the HTTP request
-  if(strlen(client->buffer)>5 && strstr(client->buffer, "\n\r\n\0"))
+    /***************** Now we parse the message to see if something was asked  *****************/
+    client->buffer[client->buffersize]='\0'; //For avoiding strlen to look too far (other option is to use the gnu extension strnlen)
+    //We search for the end of the HTTP request
+    if(strlen(client->buffer)>5 && strstr(client->buffer, "\n\r\n\0"))
     {
       int pos,err404;
       char *substring=NULL;
@@ -550,138 +527,218 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
       requested_channel=0;
       pos=0;
       err404=0;
+      struct unicast_reply* reply=NULL;
 
       log_message(MSG_DEBUG,"Unicast : End of HTTP request, we parse it\n");
 
       if(strstr(client->buffer,"GET ")==client->buffer)
-	{
-	  //to implement : 
-	  //Information ???
-	  //GET /monitor/???
+      {
+        //to implement :
+        //Information ???
+        //GET /monitor/???
 
-	  pos=4;
+        pos=4;
 
-          /* preselected channels via the port of the connection */
-          //if the client have already an asked channel we don't parse the GET
-          if(client->askedChannel!=-1)
+        /* preselected channels via the port of the connection */
+        //if the client have already an asked channel we don't parse the GET
+        if(client->askedChannel!=-1)
+        {
+          requested_channel=client->askedChannel+1; //+1 because requested channel starts at 1 and asked channel starts at 0
+          log_message(MSG_DEBUG,"Unicast : Channel by socket, number %d\n",requested_channel);
+          client->askedChannel=-1;
+        }
+        //Channel by number
+        //GET /bynumber/channelnumber
+        else if(strstr(client->buffer +pos ,"/bynumber/")==(client->buffer +pos))
+        {
+          if(client->channel!=-1)
           {
-            requested_channel=client->askedChannel+1; //+1 because requested channel starts at 1 and asked channel starts at 0
-            log_message(MSG_DEBUG,"Unicast : Channel by socket, number %d\n",requested_channel);
-            client->askedChannel=-1;
+            log_message(MSG_INFO,"Unicast : A channel (%d) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->channel);
+            iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
+            return -2; //to delete the client
           }
-	  //Channel by number
-	  //GET /bynumber/channelnumber
-	  else if(strstr(client->buffer +pos ,"/bynumber/")==(client->buffer +pos))
-	    {
-	      if(client->channel!=-1)
-		{
-		  log_message(MSG_INFO,"Unicast : A channel (%d) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->channel);
-		  iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
-		  return -2; //to delete the client
-		}
-		
-	      pos+=10;
-	      substring = strtok (client->buffer+pos, " ");
-	      if(substring == NULL)
-		err404=1;
-	      else
-		{
-		  requested_channel=atoi(substring);
-		  if(requested_channel && requested_channel<=number_of_channels)
-		    log_message(MSG_DEBUG,"Unicast : Channel by number, number %d\n",requested_channel);
-		  else
-		    {
-		      log_message(MSG_INFO,"Unicast : Channel by number, number %d out of range\n",requested_channel);
-		      err404=1;
-		      requested_channel=0;
-		    }
-		}
-	    }
-	  //Channel by name
-	  //GET /byname/channelname
-	  else if(strstr(client->buffer +pos ,"/byname/")==(client->buffer +pos))
-	    {
-	      if(client->channel!=-1)
-		{
-		  log_message(MSG_INFO,"Unicast : A channel is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n");
-		  iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY));//iRet is to make the copiler happy we will close the connection anyways
-		  return -2; //to delete the client
-		}
-	      pos+=8;
-	      log_message(MSG_DEBUG,"Unicast : Channel by number\n");
-	      substring = strtok (client->buffer+pos, " ");
-	      if(substring == NULL)
-		err404=1;
-	      else
-		{
-		  log_message(MSG_DEBUG,"Unicast : Channel by name, name %s\n",substring);
-		  //search the channel
-		  err404=1;//Temporary
-		  /** @todo implement the search without the spaces*/
-		}
-	    }
-	  //Channels list
-	  else if(strstr(client->buffer +pos ,"/channels_list.html")==(client->buffer +pos))
-	    {
-	      //We get the host name if availaible
-	      char *hoststr;
-	      hoststr=strstr(client->buffer ,"Host: ");
-	      if(hoststr)
-		{
-		  substring = strtok (hoststr+6, "\r");
-		}
-	      else 
-		substring=NULL;
 
-	      unicast_send_streamed_channels_list (number_of_channels, channels, client->Socket, substring);
-	      return -2; //We close the connection afterwards
-	    }
-	  //Channels list, text version
-	  else if(strstr(client->buffer +pos ,"/channels_list.txt")==(client->buffer +pos))
-	    {
-	      unicast_send_streamed_channels_list_txt (number_of_channels, channels, client->Socket);
-	      return -2; //We close the connection afterwards
-	    }
-	  //Not implemented path --> 404
-	  else
-	      err404=1;
+          pos+=strlen("/bynumber/");
+          substring = strtok (client->buffer+pos, " ");
+          if(substring == NULL)
+            err404=1;
+          else
+          {
+            requested_channel=atoi(substring);
+            if(requested_channel && requested_channel<=number_of_channels)
+              log_message(MSG_DEBUG,"Unicast : Channel by number, number %d\n",requested_channel);
+            else
+            {
+              log_message(MSG_INFO,"Unicast : Channel by number, number %d out of range\n",requested_channel);
+              err404=1;
+              requested_channel=0;
+            }
+          }
+        }
+        //Channel by ts_id
+        //GET /bytsid/tsid
+        else if(strstr(client->buffer +pos ,"/bytsid/")==(client->buffer +pos))
+        {
+          if(client->channel!=-1)
+          {
+            log_message(MSG_INFO,"Unicast : A channel (%d) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->channel);
+            iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
+            return -2; //to delete the client
+          }
+          pos+=strlen("/bytsid/");
+          substring = strtok (client->buffer+pos, " ");
+          if(substring == NULL)
+            err404=1;
+          else
+          {
+            int requested_tsid;
+            requested_tsid=atoi(substring);
+            for(int current_channel=0; current_channel<number_of_channels;current_channel++)
+            {
+              if(channels[current_channel].ts_id == requested_tsid)
+                requested_channel=current_channel+1;
+            }
+            if(requested_channel)
+              log_message(MSG_DEBUG,"Unicast : Channel by ts id,  ts_id %d number %d\n", requested_tsid, requested_channel);
+            else
+            {
+              log_message(MSG_INFO,"Unicast : Channel by ts id, ts id  %d not found\n",requested_tsid);
+              err404=1;
+              requested_channel=0;
+            }
+          }
+        }
+        //Channel by name
+        //GET /byname/channelname
+        else if(strstr(client->buffer +pos ,"/byname/")==(client->buffer +pos))
+        {
+          if(client->channel!=-1)
+          {
+            log_message(MSG_INFO,"Unicast : A channel is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n");
+            iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY));//iRet is to make the copiler happy we will close the connection anyways
+            return -2; //to delete the client
+          }
+          pos+=strlen("/byname/");
+          log_message(MSG_DEBUG,"Unicast : Channel by number\n");
+          substring = strtok (client->buffer+pos, " ");
+          if(substring == NULL)
+            err404=1;
+          else
+          {
+            log_message(MSG_DEBUG,"Unicast : Channel by name, name %s\n",substring);
+            //search the channel
+            err404=1;//Temporary
+            /** @todo implement the search without the spaces*/
+          }
+        }
+        //Channels list
+        else if(strstr(client->buffer +pos ,"/channels_list.html ")==(client->buffer +pos))
+        {
+          //We get the host name if availaible
+          char *hoststr;
+          hoststr=strstr(client->buffer ,"Host: ");
+          if(hoststr)
+          {
+            substring = strtok (hoststr+6, "\r");
+          }
+          else
+            substring=NULL;
+          log_message(MSG_DETAIL,"Channel list\n");
+          unicast_send_streamed_channels_list (number_of_channels, channels, client->Socket, substring);
+          return -2; //We close the connection afterwards
+        }
+        //playlist, m3u
+        else if(strstr(client->buffer +pos ,"/playlist.m3u ")==(client->buffer +pos))
+        {
+          log_message(MSG_DETAIL,"play list\n");
+          unicast_send_play_list_unicast (number_of_channels, channels, client->Socket, unicast_vars->portOut, 0 );
+          return -2; //We close the connection afterwards
+        }
+        //playlist, m3u
+        else if(strstr(client->buffer +pos ,"/playlist_port.m3u ")==(client->buffer +pos))
+        {
+          log_message(MSG_DETAIL,"play list\n");
+          unicast_send_play_list_unicast (number_of_channels, channels, client->Socket, unicast_vars->portOut, 1 );
+          return -2; //We close the connection afterwards
+        }
+        else if(strstr(client->buffer +pos ,"/playlist_multicast.m3u ")==(client->buffer +pos))
+        {
+          log_message(MSG_DETAIL,"play list\n");
+          unicast_send_play_list_multicast (number_of_channels, channels, client->Socket, 0 );
+          return -2; //We close the connection afterwards
+        }
+        else if(strstr(client->buffer +pos ,"/playlist_multicast_vlc.m3u ")==(client->buffer +pos))
+        {
+          log_message(MSG_DETAIL,"play list\n");
+          unicast_send_play_list_multicast (number_of_channels, channels, client->Socket, 1 );
+          return -2; //We close the connection afterwards
+        }
+        //statistics, text version
+        else if(strstr(client->buffer +pos ,"/channels_list.json ")==(client->buffer +pos))
+        {
+          log_message(MSG_DETAIL,"Channel list Json\n");
+          unicast_send_streamed_channels_list_js (number_of_channels, channels, client->Socket);
+          return -2; //We close the connection afterwards
+        }
+        else if(strstr(client->buffer +pos ,"/monitor/signal_power.json ")==(client->buffer +pos))
+        {
+          log_message(MSG_DETAIL,"Signal power json\n");
+          unicast_send_signal_power_js(client->Socket, fds);
+          return -2; //We close the connection afterwards
+        }
+        else if(strstr(client->buffer +pos ,"/monitor/channels_traffic.json ")==(client->buffer +pos))
+        {
+          log_message(MSG_DETAIL,"Channel traffic json\n");
+          unicast_send_channel_traffic_js(number_of_channels, channels, client->Socket);
+          return -2; //We close the connection afterwards
+        }
+        //Not implemented path --> 404
+        else
+          err404=1;
 
 
+        if(err404)
+        {
+          log_message(MSG_INFO,"Unicast : Path not found i.e. 404\n");
+          reply = unicast_reply_init();
+          if (NULL == reply) {
+            log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
+            return -2;
+          }
+          unicast_reply_write(reply, HTTP_404_REPLY_HTML, VERSION);
+          unicast_reply_send(reply, client->Socket, 404, "text/html");
+          if (0 != unicast_reply_free(reply)) {
+            log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+            return -2;
+          }
+          return -2; //to delete the client
+        }
+        //We have found a channel, we add the client
+        if(requested_channel)
+        {
+          if(!channel_add_unicast_client(client,&channels[requested_channel-1]))
+            client->channel=requested_channel-1;
+          else
+            return -2;
+        }
 
-
-	  if(err404)
-	    {
-	      log_message(MSG_INFO,"Unicast : Path not found i.e. 404\n");
-	      iRet=write(client->Socket,HTTP_404_REPLY, strlen(HTTP_404_REPLY));//iRet is to make the copiler happy we will close the connection anyways
-	      iRet=write(client->Socket,HTTP_404_REPLY_HTML, strlen(HTTP_404_REPLY_HTML));//iRet is to make the copiler happy we will close the connection anyways
-	      return -2; //to delete the client
-	    }
-
-	  //We have found a channel, we add the client
-	  if(requested_channel)
-	    {
-	      if(!channel_add_unicast_client(client,&channels[requested_channel-1]))
-		client->channel=requested_channel-1;
-	      else
-		return -2;
-	    }
-
-	}
+      }
       else
-	{
-	  //We don't implement this http method, but if the client is already connected, we keep the connection
-	  if(client->channel==-1)
-	    {
-	      log_message(MSG_INFO,"Unicast : Unhandled HTTP method : \"%s\", error 501\n",  strtok (client->buffer+pos, " "));
-	      iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY));//iRet is to make the copiler happy we will close the connection anyways
-	      return -2; //to delete the client
-	    }
-	  else
-	    {
-	      log_message(MSG_INFO,"Unicast : Unhandled HTTP method : \"%s\", error 501 but we keep the client connected\n",  strtok (client->buffer+pos, " "));
-	      return 0;
-	    }
-	}
+      {
+        //We don't implement this http method, but if the client is already connected, we keep the connection
+        if(client->channel==-1)
+        {
+          log_message(MSG_INFO,"Unicast : Unhandled HTTP method : \"%s\", error 501\n",  strtok (client->buffer+pos, " "));
+          iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY));//iRet is to make the copiler happy we will close the connection anyways
+          return -2; //to delete the client
+        }
+        else
+        {
+          log_message(MSG_INFO,"Unicast : Unhandled HTTP method : \"%s\", error 501 but we keep the client connected\n",  strtok (client->buffer+pos, " "));
+          iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY));//iRet is to make the copiler happy we will close the connection anyways
+          return 0;
+        }
+      }
       //We don't need the buffer anymore
       free(client->buffer);
       client->buffer=NULL;
@@ -689,193 +746,460 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
       client->buffersize=0;
     }
 
-  return 0;
+    return 0;
 }
 
 
-/** @brief This function add an unicast client to a channel
- *
- * @param client the client
- * @param channel the channel
- */
-int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *channel)
+//////////////////
+// HTTP Toolbox //
+//////////////////
+
+
+
+/** @brief Init reply structure
+*
+*/
+struct unicast_reply* unicast_reply_init()
 {
-  unicast_client_t *last_client;
-  int iRet;
+  struct unicast_reply* reply = malloc(sizeof (struct unicast_reply));
+  if (NULL == reply)
+  {
+    log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    return NULL;
+  }
+  reply->buffer_header = malloc(REPLY_SIZE_STEP * sizeof (char));
+  if (NULL == reply->buffer_header)
+  {
+    free(reply);
+    log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    return NULL;
+  }
+  reply->length_header = REPLY_SIZE_STEP;
+  reply->used_header = 0;
+  reply->buffer_body = malloc(REPLY_SIZE_STEP * sizeof (char));
+  if (NULL == reply->buffer_body)
+  {
+    free(reply->buffer_header);
+    free(reply);
+    log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    return NULL;
+  }
+  reply->length_body = REPLY_SIZE_STEP;
+  reply->used_body = 0;
+  reply->type = REPLY_BODY;
+  return reply;
+}
 
-  log_message(MSG_INFO,"Unicast : We add the client %s:%d to the channel \"%s\"\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port,channel->name);
+/** @brief Release the reply structure
+*
+*/
+int unicast_reply_free(struct unicast_reply *reply)
+{
+  if (NULL == reply)
+    return 1;
+  if ((NULL == reply->buffer_header)&&(NULL == reply->buffer_body))
+    return 1;
+  if(reply->buffer_header != NULL)
+    free(reply->buffer_header);
+  if(reply->buffer_body != NULL)
+    free(reply->buffer_body);
+  free(reply);
+  return 0;
+}
 
-  iRet=write(client->Socket,HTTP_OK_REPLY, strlen(HTTP_OK_REPLY));
-  if(iRet!=strlen(HTTP_OK_REPLY))
+/** @brief Write data in a buffer using the same syntax that printf()
+*
+* auto-realloc buffer if needed
+*/
+int unicast_reply_write(struct unicast_reply *reply, const char* msg, ...)
+{
+  char **buffer;
+  char *temp_buffer;
+  int *length;
+  int *used;
+  buffer=NULL;
+  va_list args;
+  if (NULL == msg)
+    return -1;
+  switch(reply->type)
+  {
+    case REPLY_HEADER:
+      buffer=&reply->buffer_header;
+      length=&reply->length_header;
+      used=&reply->used_header;
+      break;
+    case REPLY_BODY:
+      buffer=&reply->buffer_body;
+      length=&reply->length_body;
+      used=&reply->used_body;
+      break;
+    default:
+      log_message(MSG_WARN,"Unicast : unicast_reply_write with wrong type, please contact\n");
+      return -1;
+  }
+  va_start(args, msg);
+  int estimated_len = vsnprintf(NULL, 0, msg, args); /* !! imply gcc -std=c99 */
+  //Since vsnprintf put the mess we reinitiate the args
+  va_end(args);
+  va_start(args, msg);
+  while (*length - *used < estimated_len) {
+    temp_buffer = realloc(*buffer, *length + REPLY_SIZE_STEP);
+    if(temp_buffer == NULL)
     {
-      log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
+      log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       return -1;
     }
-
-  client->chan_next=NULL;
-
-  if(channel->clients==NULL)
-    {
-      channel->clients=client;
-      client->chan_prev=NULL;
-    }
-  else
-    {
-      last_client=channel->clients;
-      while(last_client->chan_next!=NULL)
-	last_client=last_client->chan_next;
-      last_client->chan_next=client;
-      client->chan_prev=last_client;
-    }
+    *buffer=temp_buffer;
+    *length += REPLY_SIZE_STEP;
+  }
+  int real_len = vsnprintf(*buffer+*used, *length - *used, msg, args);
+  if (real_len != estimated_len) {
+    log_message(MSG_WARN,"Unicast : Error when writing the HTTP reply\n");
+  }
+  *used += real_len;
+  va_end(args);
   return 0;
 }
 
-
-/** @brief Delete all the clients
- *
- * @param unicast_vars the unicast parameters
- * @param channels : the channels structure
- */
-void unicast_freeing(unicast_parameters_t *unicast_vars, mumudvb_channel_t *channels)
+/** @brief Dump the filled buffer on the socket adding HTTP header informations
+*/
+int unicast_reply_send(struct unicast_reply *reply, int socket, int code, const char* content_type)
 {
-  unicast_client_t *actual_client;
-  unicast_client_t *next_client;
-
-  for(actual_client=unicast_vars->clients; actual_client != NULL; actual_client=next_client)
-    {
-      next_client= actual_client->next;
-      unicast_del_client(unicast_vars, actual_client, channels);
-    }
+  //we add the header information
+  reply->type = REPLY_HEADER;
+  unicast_reply_write(reply, "HTTP/1.0 ");
+  switch(code)
+  {
+    case 200:
+      unicast_reply_write(reply, "200 OK\r\n");
+      break;
+    case 404:
+      unicast_reply_write(reply, "404 Not found\r\n");
+      break;
+    default:
+      log_message(MSG_ERROR,"reply send with bad code please contact\n");
+      return 0;
+  }
+  unicast_reply_write(reply, "Server: mumudvb/" VERSION "\r\n");
+  unicast_reply_write(reply, "Content-type: %s\r\n", content_type);
+  unicast_reply_write(reply, "Content-length: %d\r\n", reply->used_body);
+  unicast_reply_write(reply, "\r\n"); /* end header */
+  //we merge the header and the body
+  reply->buffer_header = realloc(reply->buffer_header, reply->used_header+reply->used_body);
+  memcpy(&reply->buffer_header[reply->used_header],reply->buffer_body,sizeof(char)*reply->used_body);
+  reply->used_header+=reply->used_body;
+  //now we write the data
+  int size = write(socket, reply->buffer_header, reply->used_header);
+  return size;
 }
+
+
+//////////////////////
+// End HTTP Toolbox //
+//////////////////////
+
 
 
 /** @brief Send a basic html file containig the list of streamed channels
- *
- * @param number_of_channels the number of channels
- * @param channels the channels array
- * @param Socket the socket on wich the information have to be sent
- * @param host The server ip address/name (got in the HTTP GET request)
- */
-int 
+*
+* @param number_of_channels the number of channels
+* @param channels the channels array
+* @param Socket the socket on wich the information have to be sent
+* @param host The server ip address/name (got in the HTTP GET request)
+*/
+int
 unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *host)
 {
+
+  struct unicast_reply* reply = unicast_reply_init();
+  if (NULL == reply) {
+    log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
+    return -1;
+  }
+
+  unicast_reply_write(reply, HTTP_CHANNELS_REPLY_START);
+
+  for (int curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+    if (channels[curr_channel].streamed_channel_old)
+    {
+      if(host)
+        unicast_reply_write(reply, "Channel number %d : %s<br>Unicast link : <a href=\"http://%s/bynumber/%d\">http://%s/bynumber/%d</a><br>Multicast ip : %s:%d<br><br>\r\n",
+                            curr_channel,
+                            channels[curr_channel].name,
+                            host,curr_channel+1,
+                            host,curr_channel+1,
+                            channels[curr_channel].ipOut,channels[curr_channel].portOut);
+                            else
+                              unicast_reply_write(reply, "Channel number %d : \"%s\"<br>Multicast ip : %s:%d<br><br>\r\n",curr_channel,channels[curr_channel].name,channels[curr_channel].ipOut,channels[curr_channel].portOut);
+    }
+    unicast_reply_write(reply, HTTP_CHANNELS_REPLY_END);
+
+    unicast_reply_send(reply, Socket, 200, "text/html");
+
+    if (0 != unicast_reply_free(reply)) {
+      log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+      return -1;
+    }
+
+    return 0;
+}
+
+
+/** @brief Send a basic text file containig the playlist
+*
+* @param number_of_channels the number of channels
+* @param channels the channels array
+* @param Socket the socket on wich the information have to be sent
+* @param perport says if the channel have to be given by the url /bynumber or by their port
+*/
+int
+unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int perport)
+{
   int curr_channel;
-  int iRet;
-  char buffer[255];
 
+  struct unicast_reply* reply = unicast_reply_init();
+  if (NULL == reply) {
+    log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
+    return -1;
+  }
 
-  iRet=write(Socket,HTTP_OK_HTML_REPLY, strlen(HTTP_OK_HTML_REPLY));
-  if(iRet!=strlen(HTTP_OK_HTML_REPLY))
-    {
-      log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
-      return -1;
-    }
-  iRet=write(Socket,HTTP_CHANNELS_REPLY_START, strlen(HTTP_CHANNELS_REPLY_START));
-  if(iRet!=strlen(HTTP_CHANNELS_REPLY_START))
-    {
-      log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
-      return -1;
-    }
+  //We get the ip address on which the client is connected
+  struct sockaddr_in tempSocketAddr;
+  unsigned int l;
+  l = sizeof(struct sockaddr);
+  getsockname(Socket, (struct sockaddr *) &tempSocketAddr, &l);
+  //we write the playlist
+  unicast_reply_write(reply, "#EXTM3U\r\n");
 
-
+  //"#EXTINF:0,title\r\nURL"
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     if (channels[curr_channel].streamed_channel_old)
-      {
-	if(host)
-	  iRet=snprintf(buffer, 255, "Channel number %d : %s<br>Unicast link : <a href=\"http://%s/bynumber/%d\">http://%s/bynumber/%d</a><br>Multicast ip : %s:%d<br><br>\r\n",
-			curr_channel,
-			channels[curr_channel].name,
-			host,curr_channel+1,
-			host,curr_channel+1,
-			channels[curr_channel].ipOut,channels[curr_channel].portOut);
-	else
-	  iRet=snprintf(buffer, 255, "Channel number %d : \"%s\"<br>Multicast ip : %s:%d<br><br>\r\n",curr_channel,channels[curr_channel].name,channels[curr_channel].ipOut,channels[curr_channel].portOut);
-     
-	iRet=write(Socket,buffer, strlen(buffer));
-	if(iRet!=(int)strlen(buffer)) //Cast to make compiler happy
-	  {
-	    log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
-	    return -1;
-	  }
-      }
-
-  iRet=write(Socket,HTTP_CHANNELS_REPLY_END, strlen(HTTP_CHANNELS_REPLY_END));
-  if(iRet!=strlen(HTTP_CHANNELS_REPLY_END))
     {
-      log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
-      return -1;
+      if(!perport)
+      {
+        unicast_reply_write(reply, "#EXTINF:0,%s\r\nhttp://%s:%d/bynumber/%d\r\n",
+                          channels[curr_channel].name,
+                          inet_ntoa(tempSocketAddr.sin_addr) ,
+                          unicast_portOut ,
+                          curr_channel+1);
+      }
+      else if(channels[curr_channel].unicast_port)
+      {
+        unicast_reply_write(reply, "#EXTINF:0,%s\r\nhttp://%s:%d/\r\n",
+                          channels[curr_channel].name,
+                          inet_ntoa(tempSocketAddr.sin_addr) ,
+                          channels[curr_channel].unicast_port);
+      }
     }
 
+    unicast_reply_send(reply, Socket, 200, "audio/x-mpegurl");
+
+  if (0 != unicast_reply_free(reply)) {
+    log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+    return -1;
+  }
 
   return 0;
 }
 
-
-
-/** @brief Send a basic text file containig the list of streamed channels
- *
- * @param number_of_channels the number of channels
- * @param channels the channels array
- * @param Socket the socket on wich the information have to be sent
- */
-int 
-unicast_send_streamed_channels_list_txt (int number_of_channels, mumudvb_channel_t *channels, int Socket)
+/** @brief Send a basic text file containig the playlist
+*
+* @param number_of_channels the number of channels
+* @param channels the channels array
+* @param Socket the socket on wich the information have to be sent
+*/
+int
+unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int vlc)
 {
   int curr_channel;
-  int iRet;
-  char buffer[1024];
+  char urlheader[4];
+  char vlcchar[2];
+  extern multicast_parameters_t multicast_vars;
+
+  struct unicast_reply* reply = unicast_reply_init();
+  if (NULL == reply) {
+    log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
+    return -1;
+  }
+
+  unicast_reply_write(reply, "#EXTM3U\r\n");
+
+  if(vlc)
+    strcpy(vlcchar,"@");
+  else
+    vlcchar[0]='\0';
+
+  if(multicast_vars.rtp_header)
+    strcpy(urlheader,"rtp");
+  else
+    strcpy(urlheader,"udp");
+
+  //"#EXTINF:0,title\r\nURL"
+  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+    if (channels[curr_channel].streamed_channel_old)
+    {
+      unicast_reply_write(reply, "#EXTINF:0,%s\r\n%s://%s%s:%d\r\n",
+                          channels[curr_channel].name,
+                          urlheader,
+                          vlcchar,
+                          channels[curr_channel].ipOut,
+                          channels[curr_channel].portOut);
+    }
+
+    unicast_reply_send(reply, Socket, 200, "audio/x-mpegurl");
+
+    if (0 != unicast_reply_free(reply)) {
+      log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+      return -1;
+    }
+
+    return 0;
+}
+
+
+
+
+/** @brief Send a basic JSON file containig the list of streamed channels
+*
+* @param number_of_channels the number of channels
+* @param channels the channels array
+* @param Socket the socket on wich the information have to be sent
+*/
+int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_channel_t *channels, int Socket)
+{
+  int curr_channel;
   unicast_client_t *unicast_client=NULL;
   int clients=0;
 
+  struct unicast_reply* reply = unicast_reply_init();
+  if (NULL == reply) {
+    log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
+    return -1;
+  }
 
-  iRet=write(Socket,HTTP_OK_TEXT_REPLY, strlen(HTTP_OK_TEXT_REPLY));
-  if(iRet!=strlen(HTTP_OK_TEXT_REPLY))
-    {
-      log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
-      return -1;
-    }
-  iRet=write(Socket,HTTP_CHANNELS_REPLY_TEXT_START, strlen(HTTP_CHANNELS_REPLY_TEXT_START));
-  if(iRet!=strlen(HTTP_CHANNELS_REPLY_TEXT_START))
-    {
-      log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
-      return -1;
-    }
-
-  //"#Channel number::name::sap playlist group::multicast ip::multicast port::num unicast clients::scrambling ratio\r\n"
+  unicast_reply_write(reply, "[");
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-    if (channels[curr_channel].streamed_channel_old)
-      {
-	clients=0;
-	unicast_client=channels[curr_channel].clients;
-	while(unicast_client!=NULL)
-	  {
-	    unicast_client=unicast_client->chan_next;
-	    clients++;
-	  }
-	iRet=snprintf(buffer, 1024, "%d::%s::%s::%s::%d::%d::%d\r\n",
-		      curr_channel,
-		      channels[curr_channel].name,
-		      channels[curr_channel].sap_group,
-		      channels[curr_channel].ipOut,
-		      channels[curr_channel].portOut,
-		      clients,
-		      channels[curr_channel].ratio_scrambled);
-				  
-	iRet=write(Socket,buffer, strlen(buffer));
-	if(iRet!=(int)strlen(buffer)) //Cast to make compiler happy
-	  {
-	    log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
-	    return -1;
-	  }
-      }
-
-  iRet=write(Socket,"\r\n\r\n", strlen("\r\n\r\n"));
-  if(iRet!=strlen("\r\n\r\n"))
+  {
+    clients=0;
+    unicast_client=channels[curr_channel].clients;
+    while(unicast_client!=NULL)
     {
-      log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
-      return -1;
+      unicast_client=unicast_client->chan_next;
+      clients++;
     }
+    unicast_reply_write(reply, "{\"number\":%d, \"lcn\":%d, \"name\":\"%s\", \"sap_group\":\"%s\", \"ip_multicast\":\"%s\", \"port_multicast\":%d, \"num_clients\":%d, \"scrambling_ratio\":%d, \"is_up\":%d,",
+                        curr_channel,
+                        channels[curr_channel].logical_channel_number,
+                        channels[curr_channel].name,
+                        channels[curr_channel].sap_group,
+                        channels[curr_channel].ipOut,
+                        channels[curr_channel].portOut,
+                        clients,
+                        channels[curr_channel].ratio_scrambled,
+                        channels[curr_channel].streamed_channel_old);
 
+    unicast_reply_write(reply, "\"unicast_port\":%d, \"ts_id\":%d, \"service_type\":\"%s\", \"pids_num\":%d, \n",
+                        channels[curr_channel].unicast_port,
+                        channels[curr_channel].ts_id,
+                        service_type_to_str(channels[curr_channel].channel_type),
+                        channels[curr_channel].num_pids);
+                        unicast_reply_write(reply, "\"pids\":[");
+                        for(int i=0;i<channels[curr_channel].num_pids;i++)
+                          unicast_reply_write(reply, "{\"number\":%d, \"type\":\"%s\"},\n", channels[curr_channel].pids[i], pid_type_to_str(channels[curr_channel].pids_type[i]));
+                        reply->used_body -= 2; // dirty hack to erase the last comma
+                        unicast_reply_write(reply, "]");
+                        unicast_reply_write(reply, "},\n");
 
+  }
+  reply->used_body -= 2; // dirty hack to erase the last comma
+  unicast_reply_write(reply, "]\n");
+
+  unicast_reply_send(reply, Socket, 200, "application/json");
+
+  if (0 != unicast_reply_free(reply)) {
+    log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+    return -1;
+  }
   return 0;
 }
+
+
+/** @brief Send a basic JSON file containig the reception power
+*
+* @param Socket the socket on wich the information have to be sent
+*/
+int
+unicast_send_signal_power_js (int Socket, fds_t *fds)
+{
+  int strength, ber, snr;
+  struct unicast_reply* reply = unicast_reply_init();
+  if (NULL == reply)
+  {
+    log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
+    return -1;
+  }
+
+  strength = ber = snr = 0;
+  if (ioctl (fds->fd_frontend, FE_READ_BER, &ber) >= 0)
+    if (ioctl (fds->fd_frontend, FE_READ_SIGNAL_STRENGTH, &strength) >= 0)
+      if (ioctl (fds->fd_frontend, FE_READ_SNR, &snr) >= 0)
+        unicast_reply_write(reply, "{\"ber\":%d, \"strength\":%d, \"snr\":%d}\n", ber,strength,snr);
+
+  unicast_reply_send(reply, Socket, 200, "application/json");
+
+  if (0 != unicast_reply_free(reply)) {
+    log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+    return -1;
+  }
+  return 0;
+}
+
+
+
+/** @brief Send a basic JSON file containig the channel traffic
+*
+* @param number_of_channels the number of channels
+* @param channels the channels array
+* @param Socket the socket on wich the information have to be sent
+*/
+int
+unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *channels, int Socket)
+{
+  int curr_channel;
+  extern long real_start_time;
+
+  struct unicast_reply* reply = unicast_reply_init();
+  if (NULL == reply) {
+    log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
+    return -1;
+  }
+
+  if ((time((time_t*)0L) - real_start_time) >= 10) //10 seconds for the traffic calculation to be done
+  {
+    unicast_reply_write(reply, "[");
+    for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+      unicast_reply_write(reply, "{\"number\":%d, \"name\":\"%s\", \"traffic\":%.2f},\n", curr_channel, channels[curr_channel].name, channels[curr_channel].traffic);
+    reply->used_body -= 2; // dirty hack to erase the last comma
+    unicast_reply_write(reply, "]\n");
+  }
+
+  unicast_reply_send(reply, Socket, 200, "application/json");
+
+  if (0 != unicast_reply_free(reply)) {
+    log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+    return -1;
+  }
+  return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+

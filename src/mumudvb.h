@@ -1,5 +1,5 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB - UDP-ize a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
  * (C) 2004-2009 Brice DUBOST
@@ -21,7 +21,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *     
+ *
  */
 
 /**@file
@@ -36,6 +36,21 @@
 #include "ts.h"
 #include "config.h"
 
+#ifdef ENABLE_TRANSCODING
+#include "transcode_common.h"
+#endif
+
+/*Do we support ATSC ?*/
+#undef ATSC
+#if defined(DVB_API_VERSION_MINOR)
+#if DVB_API_VERSION == 3 && DVB_API_VERSION_MINOR >= 1
+#define ATSC 1
+#endif
+#endif
+#if DVB_API_VERSION > 3
+#define ATSC 1
+#endif
+
 /**the number of pids by channel*/
 #define MAX_PIDS_PAR_CHAINE     18
 
@@ -47,6 +62,9 @@
 
 /**Default Maximum Number of TS packets in the TS buffer*/
 #define DEFAULT_TS_BUFFER_SIZE 1
+
+/**Default Maximum Number of TS packets in the thread buffer*/
+#define DEFAULT_THREAD_BUFFER_SIZE 5000
 
 /** How often (in seconds) to update the "now" variable*/
 #define ALARM_TIME 2
@@ -67,6 +85,7 @@ We cannot discover easily the MTU with unconnected UDP
 /**config line length*/
 #define CONF_LINELEN 	        512
 #define MAX_NAME_LEN		256
+#define CONFIG_FILE_SEPARATOR   " ="
 
 /**Maximum number of polling tries (excepted EINTR)*/
 #define MAX_POLL_TRIES		5
@@ -80,17 +99,10 @@ We cannot discover easily the MTU with unconnected UDP
 /**The path for the cam_info*/
 #define CAM_INFO_LIST_PATH "/var/run/mumudvb/caminfo_carte%d"
 
+/**RTP header length*/
+#define RTP_HEADER_LEN 12
 
-
-enum
-  {
-    MSG_ERROR=-2,
-    MSG_WARN,
-    MSG_INFO,
-    MSG_DETAIL,
-    MSG_DEBUG
-  };
-
+#define SAP_GROUP_LENGTH 20
 enum
   {
     FULLY_UNSCRAMBLED=0,
@@ -103,9 +115,34 @@ enum
   {
     CAM_NO_ASK=0,
     CAM_NEED_ASK,
+    CAM_NEED_UPDATE,
     CAM_ASKED
   };
 
+/** Enum to tell if the option is set*/
+typedef enum option_status {
+  OPTION_UNDEFINED,
+  OPTION_OFF,
+  OPTION_ON
+} option_status_t;
+
+
+/** The different PID types*/
+enum
+{
+  PID_UNKNOW=0,
+  PID_PMT,
+  PID_PCR,
+  PID_VIDEO,
+  PID_VIDEO_MPEG4,
+  PID_AUDIO,
+  PID_AUDIO_AAC,
+  PID_AUDIO_AC3,
+  PID_AUDIO_EAC3,
+  PID_AUDIO_DTS,
+  PID_SUBTITLE,
+  PID_TELETEXT,
+};
 
 /**@brief file descriptors*/
 typedef struct {
@@ -114,18 +151,52 @@ typedef struct {
   /** the dvb frontend*/
   int fd_frontend;
   /** demuxer file descriptors */
-  int fd_demuxer[8192];
+  int fd_demuxer[8193];
   /** poll file descriptors */
   struct pollfd *pfds;	//  DVR device + unicast http clients
   int pfdsnum;
 }fds_t;
 
-struct unicast_client_t;
 
+
+/**@brief Structure containing the card buffers*/
+typedef struct card_buffer_t{
+  /** The two buffers (we put from the card with one, we read from the other one)*/
+  unsigned char *buffer1,*buffer2;
+  int actual_read_buffer;
+  /**The pointer to the reading buffer*/
+  unsigned char *reading_buffer;
+  /**The pointer to the writing buffer*/
+  unsigned char *writing_buffer;
+  /** The maximum number of packets in the buffer from DVR*/
+  int dvr_buffer_size;
+  /** The position in the DVR buffer */
+  int read_buff_pos;
+  /** number of bytes actually read */
+  int bytes_read;
+  /** Do the read is made using a thread */
+  int threaded_read;
+  /** The thread data buffer */
+  int bytes_in_write_buffer;
+  int write_buffer_size; /** @todo put a size for each buffer*/
+  /** The number of partial packets received*/
+  int partial_packet_number;
+  /** The number of overflow errors*/
+  int overflow_number;
+  /**The maximum size of the thread buffer (in packets)*/
+  int max_thread_buffer_size;
+}card_buffer_t;
+
+
+
+
+struct unicast_client_t;
 /** @brief Structure for storing channels
  *
  */
 typedef struct mumudvb_channel_t{
+  /** The logical channel number*/
+  int logical_channel_number;
   /**tell if this channel is actually streamed*/
   int streamed_channel;
   /**Tell the total packet number (without pmt) for the scrambling ratio*/
@@ -145,9 +216,13 @@ typedef struct mumudvb_channel_t{
 
   /**the channel pids*/
   int pids[MAX_PIDS_PAR_CHAINE];
+  /**the channel pids type (PMT, audio, video etc)*/
+  int pids_type[MAX_PIDS_PAR_CHAINE];
   /**number of channel pids*/
   int num_pids;
 
+  /** Channel Type (Radio, TV, etc) / service type*/
+  int channel_type;
   /**Transport stream ID*/
   int ts_id;
   /**pmt pid number*/
@@ -163,6 +238,8 @@ typedef struct mumudvb_channel_t{
   /**The PMT packet*/
   mumudvb_ts_packet_t *pmt_packet;
 
+  /**the RTP header (just before the buffer so it can be sended together)*/
+  unsigned char buf_with_rtp_header[RTP_HEADER_LEN];
   /**the buffer wich will be sent once it's full*/
   unsigned char buf[MAX_UDP_SIZE];
   /**number of bytes actually in the buffer*/
@@ -195,26 +272,64 @@ typedef struct mumudvb_channel_t{
   int socketIn;
 
   /**The sap playlist group*/
-  char sap_group[20];
+  char sap_group[SAP_GROUP_LENGTH];
 
   /**The generated pat to be sent*/
   unsigned char generated_pat[TS_PACKET_SIZE]; /**@todo: allocate dynamically*/
   /** The version of the generated pat */
   int generated_pat_version;
+  /**The generated sdt to be sent*/
+  unsigned char generated_sdt[TS_PACKET_SIZE]; /**@todo: allocate dynamically*/
+  /** The version of the generated sdt */
+  int generated_sdt_version;
+  /** If there is no channel found, we skip sdt rewrite */
+  int sdt_rewrite_skip;
 
+  /** The occupied traffic (in kB/s) */
+  float traffic;
 
+  /** Are we dropping the current EIT packet for this channel*/ 
+  int eit_dropping;
+  /**The continuity counter for the EIT*/
+  int eit_continuity_counter;
+
+#ifdef ENABLE_TRANSCODING
+  void *transcode_handle;
+  struct transcode_options_t transcode_options;
+#endif
 
 }mumudvb_channel_t;
 
+/**The parameters concerning the multicast*/
+typedef struct multicast_parameters_t{
+  /** Do we activate multicast ? */
+  int multicast;
+  /** Time to live of sent packets */
+  int ttl;
+  /** the default port*/
+  int common_port;
+  /** Does MuMuDVB have to join the created multicast groups ?*/
+  int auto_join;
+  /**Do we send the rtp header ? */
+  int rtp_header;
+}multicast_parameters_t;
 
-//logging
-void log_message( int , const char *, ... );
-void gen_file_streamed_channels (char *nom_fich_chaines_diff, char *nom_fich_chaines_non_diff, int nb_flux, mumudvb_channel_t *channels);
-void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels);
+/** structure containing the channels and the asked pids information*/
+typedef struct mumudvb_chan_and_pids_t{
+  /** The number of channels ... */
+  int number_of_channels;
+  /** The channels array */
+  mumudvb_channel_t channels[MAX_CHANNELS];  /**@todo use realloc*/
+//Asked pids //used for filtering
+  /** this array contains the pids we want to filter,*/
+  uint8_t asked_pid[8193];
+  /** the number of channels who want this pid (used by autoconfiguration update)*/
+  uint8_t number_chan_asked_pid[8193];
+}mumudvb_chan_and_pids_t;
 
-void gen_config_file_header(char *orig_conf_filename, char *saving_filename);
-void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *saving_filename);
-void display_ca_sys_id(int id);
+
 int mumudvb_close(int Interrupted);
+int mumudvb_poll(fds_t *fds);
+char *mumu_string_replace(char *source, int *length, int can_realloc, char *toreplace, char *replacement);
 
 #endif

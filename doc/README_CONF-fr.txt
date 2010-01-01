@@ -1,7 +1,7 @@
 MuMuDVB - README concernant le fichier de configuration
 =======================================================
 Brice Dubost <mumudvb@braice.net>
-Version 1.6
+Version 1.6.1
 
 Comportement général
 ---------------------
@@ -35,7 +35,26 @@ Partie concernant les chaînes
 
 Si vous n'utilisez pas l'autoconfiguration complète, vous devez définir les chaînes que vous voulez diffuser.
 
-Chaque définition de chaîne commence par une ligne `ip=` et fini par une ligne `pids=`.
+Chaque définition de chaîne commence par une ligne `ip=` ou `channel_next`.
+
+
+
+.Example
+------------------------------
+channel_next
+name=Barcelona TV
+unicast_port=8090
+pids=272
+------------------------------
+
+
+.Example
+------------------------------
+ip=239.100.0.0
+port=1234
+name=Barcelona TV
+pids=272 256 257 258
+------------------------------
 
 Référez vous a la section <<channel_parameters,configuration des chaînes>> pour une liste détaillée des différents paramètres.
 
@@ -54,19 +73,21 @@ Pour la réception terrestre et câblée, vous pouvez utiliser w_scan pour savoi
 Le site  http://www.kingofsat.net[King Of Sat] référence les chaînes satellite pouvant être reçues en Europe
 
 
-Paramètres communs à tous les modes de réception (terrestre, satellite et câble)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Paramètres communs à tous les modes de réception (terrestre, satellite, câble et ATSC)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Dans la liste suivante, seul le paramètre `freq` est obligatoire
 
-[width="80%",cols="2,8,1,3",options="header"]
+[width="80%",cols="2,7,2,3",options="header"]
 |==================================================================================================================
 |Nom |Description | Valeur par défaut | Commentaires
 |freq | Fréquence du transpondeur en MHz  | | Obligatoire
+|modulation | Le type de modulation utilisé (valeurs possibles : QPSK QAM16 QAM32 QAM64 QAM128 QAM256 QAMAUTO VSB8 VSB16 8PSK 16APSK 32APSK DQPSK)  | ATSC: VSB_8, cable/terrestrial: QAM_AUTO, satellite: QPSK | Optionnel la plupart du temps
+|delivery_system | Le type de système utilisé (valeurs possibles : DVBT DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC) | Non défini | Spécifiez le si vous voulez utiliser la nouvelle API pour l'accord des cartes (DVB API 5/S2API). Obligatoire pour le DVB-S2
 |card | Le numéro de carte DVB/ATSC| 0 | Limité seulement par l'OS
+|card_dev_path | Le chemin vers le répertoire contenant les "devices" DVB. Utilisez cette option si vous utilisez des chemins personalisés comme /dev/dvb/card_astra | /dev/dvb/adapter%d | 
 |tuning_timeout | Temps d'attente pour l'accord de la carte | 300 | 0 = attente infinie
 |timeout_no_diff | Si aucune chaîne n'est diffusée, MuMuDVB se "suicidera" au bout de ce délai ( en secondes ) | 600 |  0 = attente infinie
-|dont_tune | MuMuDVB n'accordera pas la carte si ce paramètre est spécifié (un autre programme comme tzap l'a fait) | | Ceci est principalement pour le DVB-S2
 |==================================================================================================================
 
 
@@ -86,6 +107,7 @@ Paramètres spécifiques à la réception satellite
 |sat_number | Le numéro de satellite si vous avez plusieurs LNB. Aucun effet si égal à 0 (seulement ton 22kHz et 13/18V), envoie un message diseqc si différent de 0 | 0 | 0, 1 à 4 | 
 |lnb_voltage_off |Force la tension pour le LNB à 0V (au lieu de 13V ou 18V). Ceci est utile si votre LNB possède sa propre alimentation. | 0 | 0 ou 1 | 
 |coderate  |coderate, appelé aussi FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto | 
+|rolloff  |rolloff important seulement pour le DVB-S2 | 35 | 35, 20, 25, auto | La valeur par défaut devrait marcher la plupart du temps
 |==================================================================================================================
 
 Fréquences pour l'oscillateur local : 
@@ -118,7 +140,7 @@ Paramètres spécifiques a la réception par câble (DVB-C)
 |==================================================================================================================
 |Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
 |srate  |Le taux de symboles (Symbol rate)| | | obligatoire
-|qam | Modulation : quadrature amplitude modulation | auto | qpsk, 16, 32, 64, 128, 256, auto |
+|qam | Modulation : quadrature amplitude modulation | auto | qpsk, 16, 32, 64, 128, 256, auto | Cette option est obsolète, utilisez le paramètre modulation
 |coderate  |coderate aussi appelé FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto  |
 |==================================================================================================================
 
@@ -128,10 +150,10 @@ http://www.rfcafe.com/references/electrical/spectral-inv.htm[L'inversion spectra
 Paramètres pour la réception ATSC (Câble ou Terrestre)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[width="80%",cols="1,3,1,2",options="header"]
+[width="80%",cols="1,3,1,2,2",options="header"]
 |==================================================================================================================
-|Nom |Description | Valeur par défaut | Valeurs possibles 
-|atsc_modulation | La modulation | vsb8 | vsb8, vsb16, qam256, qam64, qamauto 
+|Nom |Description | Valeur par défaut | Valeurs possibles  | Commentaires
+|atsc_modulation | La modulation | vsb8 | vsb8, vsb16, qam256, qam64, qamauto | Cette option est obsolète, utilisez le paramètre modulation
 |==================================================================================================================
 
 [NOTE]
@@ -142,41 +164,91 @@ VSB 8 est la modulation par défaut pour la plupart des diffuseurs ATSC terrestr
 Autres paramètres globaux
 -------------------------
 
+Paramètres divers
+~~~~~~~~~~~~~~~~~
+
 [width="80%",cols="2,8,1,2,3",options="header"]
 |==================================================================================================================
 |Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
+|dont_send_scrambled | Si positionné à 1, MuMuDVB n'enverra pas les paquets brouillés. Cela retirera (indirectement) les annonces SAP pour les chaînes brouillées |0 | |
+|show_traffic_interval | Le temps en secondes entre deux affichages du trafic | 10 | >2 | 
+|compute_traffic_interval | Le temps en secondes entre deux calculs du trafic | 10 | >2 | 
+|rtp_header | Envoie les en-têtes RTP avec le flux (excepté pour l'unicast HTTP) | 0 | 0 ou 1 | 
+|dvr_buffer_size | La taille du  "tampon DVR" en paquets de 188 octets | 1 | >=1 | Se référer au README 
+|dvr_thread | Est ce que les packets sont reçus par un thread ? | 0 | 0 ou 1 | Fonctionnalité "expérimentale", se référer au README 
+|dvr_thread_buffer_size | La taille du tampon pour le thread en packets de 188 octets | 5000 | >=1 | se référer au README 
+|rewrite_pat | Est ce que MuMuDVB doit réécrire le PID PAT | 0 | 0 ou 1 | cf README 
+|rewrite_sdt | Est ce que MuMuDVB doit réécrire le PID SDT | 0 | 0 ou 1 | cf README 
+|sort_eit | Est ce que MuMuDVB doit trier les PID EIT | 0 | 0 ou 1 | cf README 
+|==================================================================================================================
+
+Paramètres concernant le multicast
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[width="80%",cols="2,8,1,2,3",options="header"]
+|==================================================================================================================
+|Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
+|multicast | Est ce que le multicast est activé ? | 1 | 0 ou 1 | 
 |common_port | Le port par défaut pour la diffusion multicast | 1234 | | 
 |multicast_ttl | Le TTL multicast | 2 | |
 |multicast_auto_join | Si positionné à 1 MuMuDVB joindra automatiquement tous les groupes multicast créés | 0 | 0 or 1 | cf problèmes connus dans le README
-|dont_send_sdt |Si positionné à 1, MuMuDVB n'enverra pas le PID SDT, c'est un contournement d'un bug de VLC | 0 | | voir le README pour plus de détails
-|dont_send_scrambled | Si positionné à 1, MuMuDVB n'enverra pas les paquets brouillés. Cela retirera (indirectement) les annonces SAP pour les chaînes brouillées |0 | |
-|show_traffic_interval | Le temps en secondes entre deux affichages du trafic | 10 | >2 | 
-|rtp_header | Envoie les en-têtes RTP avec le flux (excepté pour l'unicast HTTP) | 0 | 0 ou 1 | 
-|dvr_buffer_size | La taille du  "tampon DVR" en paquets de 188 octets | 1 | >=1 | Fonctionnalité "expérimentale", se référer au README 
-5+^s|Paramètres concernant le support des cartes CAM
+|==================================================================================================================
+
+
+
+Paramètres concernant le support des cartes CAM
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[width="80%",cols="2,8,1,2,3",options="header"]
+|==================================================================================================================
+|Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
 |cam_support |Indique si l'on veux le support pour les chaînes brouillées | 0 | 0 ou 1 |
 |cam_number |Le numéro du module CAM que l'on veux utiliser| 0 | | Dans le cas ou vouz avez plusieurs modules CAM sur une carte DVB
 |cam_reset_interval |Le temps (en secondes) que MuMuDVB attends pour que la CAM soit initialisée. Après ce délai, MuMuDVB tentera de réinitialiser le module CAM. | 30 | | Si la réinitialisation échoue, MuMuDVB retentera de réinitialiser le module après cet intervelle de temps. Le nombre maximum de tentatives de réinitialisations avant de quitter est 5.
-5+^s|Paramètres pour l'autoconfiguration
-|autoconfiguration |autoconfiguration 1: Trouve les PIDs audio et video, 2: autoconfiguration complète | 0 | 0, 1 or 2 | Se référer au README pour plus de détails
+|==================================================================================================================
+
+Paramètres pour l'autoconfiguration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[width="80%",cols="2,6,1,2,4",options="header"]
+|==================================================================================================================
+|Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
+|autoconfiguration |autoconfiguration 1, partial: Trouve les PIDs audio et video, 2, full: autoconfiguration complète | 0 | 0, 1, 2, partial ou full | Se référer au README pour plus de détails
 |autoconf_ip_header |Pour l'autoconfiguration complète, la première partie de l'ip des chaînes diffusées | 239.100 | | Se référer au README pour plus de détails
 |autoconf_radios | Lors de l'autoconfiguration complète, est ce que les radios seront diffusées ?| 0 | 0 ou 1 | 
 |autoconf_scrambled |Lors de l'autoconfiguration complète, est ce que les chaînes brouillées seront diffusées ? | 0 | 0 or 1 | Automatique lorsque cam_support=1. Parfois, une chaîne en clair peut être marquée comme étant cryptée. Cette option est aussi nécessaire lorsqu'une softcam est utilisée.
 |autoconf_pid_update |Est ce que MuMuDVB se reconfigure lorsque le PMT est mis à jour ? | 1 | 0 or 1 | 
 |autoconf_unicast_start_port |Le port unicast pour la première chaine découverte |  |  | Voir README-fr pour plus de détails.
-5+^s|Paramètres concernant les annonces SAP
+|autoconf_tsid_list |Pour ne pas autoconfigurer toutes les chaînes du transpondeur en autoconfiguration complète, spécifiez avec cette option la liste des transport stream id (numeros de programme) des chaînes que vous voulez configurer | vide |  | 
+|autoconf_name_template |Le modèle pour le nom des chaînes en autoconfiguration complète, ex `%number-%name` | vide |  | Voir README-fr pour plus de détails.
+|==================================================================================================================
+
+Paramètres concernant les annonces SAP
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[width="80%",cols="2,8,1,2,3",options="header"]
+|==================================================================================================================
+|Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
 |sap | Génération des annonces SAP | 0 (1 si autoconfiguration complète) | 0 or 1 | 
 |sap_organisation |Champ "organisation" envoyé avec les annonces SAP | MuMuDVB | | Optionnel
 |sap_uri |Champ "URI" envoyé avec les annonces SAP |  | | Optionnel
 |sap_sending_ip |L'IP d'envoi des annonces SAP | 0.0.0.0 | | Optionnel, non détecté automatiquement
 |sap_interval |Intervalle en secondes entre les annonces SAP | 5 | entiers positifs | 
-|sap_default_group | Le groupe de liste de lecture par défaut pour les annonces SAP | | string | Optionnel 
+|sap_default_group | Le groupe de liste de lecture par défaut pour les annonces SAP | | | Optionnel. Vous pouvez utiliser le mot clef %type, voir le README-fr pour plus de détails
 |sap_ttl |Le TTL pour les paquets SAP multicast | 255 |  | RFC 2974 : "SAP announcements ... SHOULD be sent with an IP time-to-live of 255 (the use of TTL scoping for multicast is discouraged [RFC 2365])."
-5+^s|Paramètres concernant l'unicast HTTP
-|ip_http | L'ip d'écoute du serveur unicast. Si vous voulez écouter sur toutes les interfaces mettez 0.0.0.0 | vide  |  | Cette option active l'unicast HTTP, se référer au README pour plus de détails.
+|==================================================================================================================
+
+Paramètres concernant l'unicast HTTP
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[width="80%",cols="2,8,1,2,3",options="header"]
+|==================================================================================================================
+|Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
+|unicast | Utilisez cette option pour activer l'unicast HTTP | 0  |  | se référer au README pour plus de détails
+|ip_http | L'ip d'écoute du serveur unicast. Si vous voulez écouter sur toutes les interfaces mettez 0.0.0.0 | 0.0.0.0  |  |  se référer au README pour plus de détails.
 |port_http | Le port d'écoute pour l'unicast HTTP | 4242 | | se référer au README pour plus de détails.
 |unicast_consecutive_errors_timeout | Le délai pour déconnecter un client qui ne réponds pas | 5 | | Un client sera déconnecté si aucune donnée n'a été envoyée avec succès durant cet intervalle. Une valeur 0 désactive cette fonctionnalité (déconseillé).
 |unicast_max_clients | Limite sur le nombre de clients simultanés | 0 | | 0 : pas de limite.
+|unicast_queue_size | La taille maximum du tampon utilisé lorsque l'écriture pour un client échoue. | 512k octets| | en octets.
 |==================================================================================================================
 
 
@@ -184,7 +256,7 @@ Autres paramètres globaux
 Paramètres concernant les chaînes
 ---------------------------------
 
-Chaque définition de chaîne doit commencer par une ligne `ip=` et finir par une ligne `pids=`. Le seul autre paramètre obligatoire est le paramètre `name`.
+Chaque définition de chaîne commence par une ligne `ip=` ou `channel_next`. Le seul autre paramètre obligatoire est le paramètre `name`.
 
 Concernant les PIDs, référez vous à la section <<getpids,obtenir les PIDs>>.
 
@@ -192,12 +264,12 @@ Concernant les PIDs, référez vous à la section <<getpids,obtenir les PIDs>>.
 [width="80%",cols="2,8,1,4",options="header"]
 |==================================================================================================================
 |Nom |Description | Valeur par défaut |  Commentaires
-|ip |Adresse ip multicast sur laquelle la chaîne sera diffusée | |  Obligatoire
+|ip |Adresse ip multicast sur laquelle la chaîne sera diffusée | |  Optionnel si multicast=0 (si non utilisé, channel_next doit être utilisé à la place)
 |port | Le port | 1234 ou common_port |  Les ports inférieurs à 1024 nécessitent les droits root.
 |unicast_port | Le port pour l'unicast HTTP ( associé à cette chaîne ) | | Les ports inférieurs à 1024 nécessitent les droits root. Vous devez activer l'unicast HTTP avec l'option `ip_http`
 |sap_group | Le groupe de liste de lecture pour les annonces SAP | |  optionnel
 |cam_pmt_pid |Uniquement pour les chaînes brouillées. Le PID PMT pour le module CAM | |  
-|ts_id |Le  "transport stream id" (appelé aussi "program number"), uniquement pour l'autoconfiguration ou la réécriture du PID PAT, se référer au README pour plus de détails | | 
+|ts_id |Le  "transport stream id" (appelé aussi "program number"), uniquement pour l'autoconfiguration ou la réécriture du PID PAT ou SDT, se référer au README pour plus de détails | | 
 |name | Le nom de la chaîne. Sera utilisé pour /var/run/mumudvb/chaines_diffusees%d, les journaux et les annonces SAP | | Obligatoire
 |pids | La liste des PIDs, séparés par des espaces. | |  Certains PIDs sont systématiquement envoyés (PAT CAT EIT SDT TDT NIT).
 |==================================================================================================================

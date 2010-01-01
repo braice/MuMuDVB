@@ -2,7 +2,7 @@
  * mumudvb - UDP-ize a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * (C) 2004-2009 Brice DUBOST
+ * (C) 2004-2010 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -21,7 +21,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *     
+ *
  */
 
 /** @file
@@ -42,26 +42,66 @@
 #include <resolv.h>
 #include <sys/poll.h>
 
-#define PID_NOT_ASKED 0
-#define PID_ASKED 1
-#define PID_FILTERED 2
-
 // DVB includes:
 #include <linux/dvb/dmx.h>
 #include <linux/dvb/frontend.h>
 
 #include "mumudvb.h"
+#include "tune.h"
 
-#define FRONTEND_DEV_PATH "/dev/dvb/adapter%d/frontend0"
-#define DEMUX_DEV_PATH    "/dev/dvb/adapter%d/demux0"
-#define DVR_DEV_PATH      "/dev/dvb/adapter%d/dvr0"
+#define DVB_DEV_PATH "/dev/dvb/adapter%d"
+#define FRONTEND_DEV_NAME "frontend0"
+#define DEMUX_DEV_NAME    "demux0"
+#define DVR_DEV_NAME      "dvr0"
+
+enum
+{
+  PID_NOT_ASKED=0,
+  PID_ASKED,
+  PID_FILTERED,
+};
+
+#ifdef HAVE_LIBPTHREAD
+
+/** The parameters for the thread for showing the strength */
+typedef struct strength_parameters_t{
+  tuning_parameters_t *tuneparams;
+  fds_t *fds;
+}strength_parameters_t;
+
+/** The parameters for the thread for reading the data from the card */
+typedef struct card_thread_parameters_t{
+  //mutex for the data buffer
+  pthread_mutex_t carddatamutex;
+  //Condition variable for locking the main program in order to wait for new data
+  pthread_cond_t threadcond;
+  //file descriptors
+  fds_t *fds;
+  //The shutdown for the thread
+  int threadshutdown;
+  //The buffer for the card
+  card_buffer_t *card_buffer;
+  //
+  int thread_running;
+  /** Is main waiting ?*/
+  int main_waiting;
+  int unicast_data;
+}card_thread_parameters_t;
+
+void *read_card_thread_func(void* arg);
 
 
+#endif
 
-int open_fe (int *fd_frontend, int card);
+
+int open_fe (int *fd_frontend, char *base_path);
 void set_ts_filt (int fd,uint16_t pid);
-void show_power (fds_t fds);
-int create_card_fd(int card, uint8_t *asked_pid, fds_t *fds);
+int create_card_fd(char *base_path, uint8_t *asked_pid, fds_t *fds);
 void set_filters(uint8_t *asked_pid, fds_t *fds);
 void close_card_fd(fds_t fds);
+
+void *show_power_func(void* arg);
+int card_read(int fd_dvr, unsigned char *dest_buffer, card_buffer_t *card_buffer);
+
+void list_dvb_cards ();
 #endif

@@ -1,5 +1,5 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB - UDP-ize a DVB transport stream.
  * File for Conditionnal Access Modules support
  * 
  * (C) 2009 Brice DUBOST
@@ -40,6 +40,7 @@
 
 #include "ts.h"
 #include "mumudvb.h"
+#include "autoconf.h"
 
 /**@file
  * @brief cam support
@@ -77,6 +78,7 @@ typedef struct cam_parameters_t{
   int need_reset;
   int reset_counts;
   int max_reset_number;
+  int timeout_no_cam_init;
   int reset_interval;
   struct en50221_transport_layer *tl;
   struct en50221_session_layer *sl;
@@ -89,7 +91,6 @@ typedef struct cam_parameters_t{
   int mmi_state;
   int mmi_enq_blind;
   int mmi_enq_length;
-
 }cam_parameters_t;
 
 /*****************************************************************************
@@ -122,6 +123,6 @@ typedef struct cam_parameters_t{
 
 int cam_start(cam_parameters_t *, int, char *);
 void cam_stop(cam_parameters_t *);
-int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_pmt_ptr);
-
+int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
+void cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, cam_parameters_t *cam_vars, mumudvb_channel_t *actual_channel);
 #endif

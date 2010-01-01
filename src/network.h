@@ -40,7 +40,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "mumudvb.h"
 
 /** The default time to live*/
 #define DEFAULT_TTL		2
