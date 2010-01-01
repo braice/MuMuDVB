@@ -81,6 +81,7 @@ In the following list, only the parameter `freq` is mandatory
 |modulation | The kind of modulation used (can be : QPSK QAM16 QAM32 QAM64 QAM128 QAM256 QAMAUTO VSB8 VSB16 8PSK 16APSK 32APSK DQPSK)  | ATSC: VSB_8, cable/terrestrial: QAM_AUTO, satellite: QPSK | Optionnal most of the times
 |delivery_system | the delivery system used (can be DVBT DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC) | Undefined | Set it if you want to use the new tuning API (DVB API 5/S2API). Mandatory for DVB-S2
 |card | The DVB/ATSC card number | 0 | only limited by your OS
+|card_dev_path | The path of the DVB card devices. Use it if you have a personalised path like /dev/dvb/card_astra | /dev/dvb/adapter%d | 
 |tuning_timeout |tuning timeout in seconds. | 300 | 0 = no timeout
 |timeout_no_diff |If no channels are streamed, MuMuDVB will kill himself after this time (specified in seconds) | 600 |  0 = infinite timeout
 |==================================================================================================================

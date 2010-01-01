@@ -38,8 +38,8 @@ Authors and contacts
 - mailto:manu@REMOVEMEcrans.ens-cachan.fr[Manuel Sabban] (getopt)
 - mailto:glondu@REMOVEMEcrans.ens-cachan.fr[Stéphane Glondu] (makefile cleaning, man page, debian package)
 - Special thanks to Dave Chapman (dvbstream author)
-- Pierre Gronlier, Sébastien Raillard
-
+- Pierre Gronlier, Sébastien Raillard, Ludovic Boué
+- Utelisys Communications B.V. for the transcoding code
 
 .Mailing list:
 - mailto:mumudvb-dev@REMOVEMElists.crans.org[MuMuDVB dev]
@@ -63,6 +63,7 @@ Features overview
 - Possibility to partially rewrite the stream for better compatibility with set-top boxes and some clients. See <<pat_rewrite,PAT Rewrite>> and <<sdt_rewrite,SDT Rewrite>> sections.
 - Support for HTTP unicast see <<unicast,http unicast>> section
 - Support for RTP headers (only for multicast)
+- Ability to transcode the stream (only for multicast, in beta test) see the <<transcoding,Transcoding>> section
 
 Detailled feature list
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -287,7 +288,7 @@ There is different keywords available:
 |Keyword |Description 
 |%name | The name given by the provider 
 |%number | The MuMuDVB channel number 
-|%lcn | The logical channel number (channel number given by the provider). You have to put `autoconf_lcn=1` in your conffiguration file and your provider have to stream LCN. The LCN will be displayed with three digits including 0. Ex "002". If the LCN is not detected, %lcn will be replaced by an empty string.
+|%lcn | The logical channel number (channel number given by the provider). You have to put `autoconf_lcn=1` in your configuration file and your provider have to stream LCN. The LCN will be displayed with three digits including 0. Ex "002". If the LCN is not detected, %lcn will be replaced by an empty string.
 |%2lcn | Same as above but with a two digits format
 |==================================================================================================================
 
@@ -305,8 +306,7 @@ Use this when you want to control the name of the channels, and wich channel you
 
 - You have to add 'autoconfiguration=partial' in the head of your config file.
 - For each channel, you have to set:
- * the Ip adress (except if multicast=0)
- * the Unicast port (if you use unicast)
+ * the Ip adress (except if you use unicast)
  * the name
  * the PMT PID
 
@@ -656,6 +656,52 @@ This reading uses two buffers: one for the data just received from the card, one
 
 The message "Thread trowing dvb packets" informs you that the thread buffer is full and some packets are dropped. Increase the buffer size will probably solve the problem.
 
+
+[[transcoding]]
+Transcoding
+-----------
+
+MuMuDVB supports transcoding to various formats to save bandwith. The transcoding is made using ffmpeg librairies. This feature is pretty new, so feel free to contact if you have comments/suggestions
+
+[NOTE]
+Transcoding doesn't work for the moment with full autoconfiguration/unicast
+
+
+Compiling MuMuDVB with transcoding support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In order to compile MuMuDVB with transcoding you will need the following librairies: libavcodec, libavformat and libswscale
+
+Then you have to add the --enable-transcoding flag to your configure. Ex: `./configure --enable-transcoding`
+
+Check at the end of the configure that the transcoding is effectively enabled. If not there is probably a library missing.
+
+
+Using transcoding
+~~~~~~~~~~~~~~~~~
+Please read the documentation file concerning the transcoding options and the examples
+
+Future developments for transcoding
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Making it work with unicast, in particular RTSP
+
+Common problems
+~~~~~~~~~~~~~~~
+
+Broken ffmpeg default settings detected
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you get a message saying "Broken ffmpeg default settings detected"
+
+Adding the following options to your transcoding configuration will make it work
+
+------------------------------
+transcode_me_range=16
+transcode_qdiff=4
+transcode_qmin=10
+transcode_qmax=51
+------------------------------
 
 Technical details (not sorted)
 ------------------------------

@@ -11,7 +11,7 @@ channel to a different multicast IP. The SAP announces will automatically be gen
 
 For HTTP unicast or more advanced features, please refer to the full documentation.
 
-I'll take an example for DVB-S (satellite) and DVB-T (terrestrial)
+I'll take an example for DVB-S (satellite) and DVB-T (terrestrial). DVB-C and ATSC are similar.
 
 I suppose you have one DVB card wich is already working, if you have more than
 one card refer to the full documentation.
@@ -21,7 +21,7 @@ DVB-S
 
 - First install mumudvb
  * Use the debian package, or 
- * type `make` in the mumudvb directory and, as root, `make install`
+ * type `./configure` then `make` in the mumudvb directory and, as root, `make install`
 
 - You have to find wich transponder you want to stream.
  * For European users you can use http://www.kingofsat.net/[King Of Sat]
@@ -30,7 +30,7 @@ DVB-S
 - Now create a config file, wich contains : 
 
 ------------------------------------
-autoconfiguration=2
+autoconfiguration=full
 freq=__tranponder frequency in MHz__
 pol=__polarisation H, V, L or R__
 srate=__symbol rate__
@@ -38,7 +38,7 @@ srate=__symbol rate__
 
 .Example : 
 ------------------------------------
-autoconfiguration=2
+autoconfiguration=full
 freq=11785
 pol=h
 srate=27500
@@ -52,7 +52,7 @@ mumudvb -d -c __path to config file__
 
 
 - That's all, you should get a list of the streamed channels with their IP
-adress
+adresses
 
 [NOTE]
 The SAP (session announcement protocol) announces will be sent automatically.
@@ -69,7 +69,7 @@ package
 Your config file will be : 
 
 -------------------------------------
-autoconfiguration=2
+autoconfiguration=full
 freq=__frequency in kHz__
 -------------------------------------
 
@@ -84,7 +84,7 @@ The SAP (session announcement protocol) announces will be sent automatically.
 Troubleshooting
 ---------------
 
-- Try adding -v to the mumudvb command line to have more detailled messages
+- Try adding one ore several `-v` to the mumudvb command line to have more detailled messages
 - If you experience tuning issues, try with other dvb software like scan or
 szap and check your parameters
 - If it still don't work, look at common issues in the README and you can

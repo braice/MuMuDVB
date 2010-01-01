@@ -85,6 +85,7 @@ Dans la liste suivante, seul le paramètre `freq` est obligatoire
 |modulation | Le type de modulation utilisé (valeurs possibles : QPSK QAM16 QAM32 QAM64 QAM128 QAM256 QAMAUTO VSB8 VSB16 8PSK 16APSK 32APSK DQPSK)  | ATSC: VSB_8, cable/terrestrial: QAM_AUTO, satellite: QPSK | Optionnel la plupart du temps
 |delivery_system | Le type de système utilisé (valeurs possibles : DVBT DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC) | Non défini | Spécifiez le si vous voulez utiliser la nouvelle API pour l'accord des cartes (DVB API 5/S2API). Obligatoire pour le DVB-S2
 |card | Le numéro de carte DVB/ATSC| 0 | Limité seulement par l'OS
+|card_dev_path | Le chemin vers le répertoire contenant les "devices" DVB. Utilisez cette option si vous utilisez des chemins personalisés comme /dev/dvb/card_astra | /dev/dvb/adapter%d | 
 |tuning_timeout | Temps d'attente pour l'accord de la carte | 300 | 0 = attente infinie
 |timeout_no_diff | Si aucune chaîne n'est diffusée, MuMuDVB se "suicidera" au bout de ce délai ( en secondes ) | 600 |  0 = attente infinie
 |==================================================================================================================
@@ -208,7 +209,7 @@ Paramètres concernant le support des cartes CAM
 Paramètres pour l'autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[width="80%",cols="2,8,1,2,3",options="header"]
+[width="80%",cols="2,6,1,2,4",options="header"]
 |==================================================================================================================
 |Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
 |autoconfiguration |autoconfiguration 1, partial: Trouve les PIDs audio et video, 2, full: autoconfiguration complète | 0 | 0, 1, 2, partial ou full | Se référer au README pour plus de détails
@@ -218,6 +219,7 @@ Paramètres pour l'autoconfiguration
 |autoconf_pid_update |Est ce que MuMuDVB se reconfigure lorsque le PMT est mis à jour ? | 1 | 0 or 1 | 
 |autoconf_unicast_start_port |Le port unicast pour la première chaine découverte |  |  | Voir README-fr pour plus de détails.
 |autoconf_tsid_list |Pour ne pas autoconfigurer toutes les chaînes du transpondeur en autoconfiguration complète, spécifiez avec cette option la liste des transport stream id (numeros de programme) des chaînes que vous voulez configurer | vide |  | 
+|autoconf_name_template |Le modèle pour le nom des chaînes en autoconfiguration complète, ex `%number-%name` | vide |  | Voir README-fr pour plus de détails.
 |==================================================================================================================
 
 Paramètres concernant les annonces SAP
@@ -231,7 +233,7 @@ Paramètres concernant les annonces SAP
 |sap_uri |Champ "URI" envoyé avec les annonces SAP |  | | Optionnel
 |sap_sending_ip |L'IP d'envoi des annonces SAP | 0.0.0.0 | | Optionnel, non détecté automatiquement
 |sap_interval |Intervalle en secondes entre les annonces SAP | 5 | entiers positifs | 
-|sap_default_group | Le groupe de liste de lecture par défaut pour les annonces SAP | | string | Optionnel 
+|sap_default_group | Le groupe de liste de lecture par défaut pour les annonces SAP | | | Optionnel. Vous pouvez utiliser le mot clef %type, voir le README-fr pour plus de détails
 |sap_ttl |Le TTL pour les paquets SAP multicast | 255 |  | RFC 2974 : "SAP announcements ... SHOULD be sent with an IP time-to-live of 255 (the use of TTL scoping for multicast is discouraged [RFC 2365])."
 |==================================================================================================================
 

@@ -243,7 +243,7 @@ Dans ce mode, MuMuDVB trouvera pour vous les différentes chaînes, leurs noms e
 
 Pour utiliser ce mode, vous devez :
 - Définir les paramètres d'accord dans votre fichier de configuration
-- Ajouter `autoconfiguration=2` à votre fichier de configuration
+- Ajouter `autoconfiguration=full` à votre fichier de configuration
 - Vous n'avez a spécifier aucune chaîne
 - Pour une première utilisation, n'oubliez pas d'ajouter la paramètre `-d` lorsque vous lancez MuMuDVB :
    ex `mumudvb -d -c your_config_file`
@@ -253,7 +253,7 @@ Pour utiliser ce mode, vous devez :
 freq=11296
 pol=h
 srate=27500
-autoconfiguration=2
+autoconfiguration=full
 --------------------
 
 Les chaînes seront diffusées sur les adresses ip de multicast 239.100.c.n où c est le numéro de carte ( 0 par défaut ) et n est le numéro de chaîne.
@@ -262,12 +262,37 @@ Si vous n'utilisez pas l'option common_port, MuMuDVB utilisera le port 1234.
 
 [NOTE]
 Par défaut, les annnonces SAP sont activées si vous utilisez ce mode d'autoconfiguration. Pour les désactiver, ajoutez `sap=0` dans votre fichier de configuration.
-Par défaut, la réécriture du PID SDT est activée si vous utilisez ce mode d'autoconfiguration. Pour les désactiver, ajoutez `rewrite_sdt=0` dans votre fichier de configuration.
-Par défaut, la réécriture du PID PAT est activée si vous utilisez ce mode d'autoconfiguration. Pour les désactiver, ajoutez `rewrite_pat=0` dans votre fichier de configuration.
-Par défaut, le tri du PID EITT est activée si vous utilisez ce mode d'autoconfiguration. Pour les désactiver, ajoutez `sort_eit=0` dans votre fichier de configuration.
+Par défaut, la réécriture du PID SDT est activée si vous utilisez ce mode d'autoconfiguration. Pour la désactiver, ajoutez `rewrite_sdt=0` dans votre fichier de configuration.
+Par défaut, la réécriture du PID PAT est activée si vous utilisez ce mode d'autoconfiguration. Pour la désactiver, ajoutez `rewrite_pat=0` dans votre fichier de configuration.
+Par défaut, le tri du PID EITT est activée si vous utilisez ce mode d'autoconfiguration. Pour le désactiver, ajoutez `sort_eit=0` dans votre fichier de configuration.
 
 [NOTE]
-Un fichier de configuration d'exemple, documenté (en anglais) peux être est disponible : `doc/configuration_examples/autoconf_full.conf`
+Un fichier de configuration d'exemple, documenté (en anglais) est disponible : `doc/configuration_examples/autoconf_full.conf`
+
+Modèles de nom et autoconfiguration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Par défaut le nom de la chaîne sera le nom du service définit par le diffuseur. Si vous voulez plus de flexibilité vous pouvez utiliser un modèle.
+
+Par exemple, si vous utilisez `autoconf_name_template=%number-%name` Les noms de chaîne auront la forme suivante : 
+
+- `1-CNN`
+- `2-Euronews`
+
+Il y a différents mot-clef disponibles
+
+[width="80%",cols="2,8",options="header"]
+|==================================================================================================================
+|Mot clef |Description 
+|%name | Le nom donné par le diffuseur
+|%number | Le numéro de chaîne de MuMuDVB 
+|%lcn | Le "logical channel number" ( numéro de chaîne attribué par le diffuseur ). Vous devez mettre `autoconf_lcn=1` dans votre fichier de configuration et votre diffuseur doit diffuser le LCN. Le LCN sera "affiché" avec trois chiffre incluant des 0. Ex "002". Si le LCN n'est pas détecté, %lcn sera remplacé par une chaîne de caractères vide
+|%2lcn | Idem que précédemment mais avec un format à deux chiffres.
+|==================================================================================================================
+
+D'autres mot clefs peuvent être facilement ajoutés si nécessaire.
+
+
 
 [[autoconfiguration_simple]]
 Autoconfiguration "simple"
@@ -275,9 +300,9 @@ Autoconfiguration "simple"
 
 Utilisez ce mode lorsque vous voulez contrôler le nom des chaînes et quelle chaînes vous voulez diffuser.
 
-- Vous devez ajouter 'autoconfiguration=1' dans le début de votre fichier de configuration.
+- Vous devez ajouter 'autoconfiguration=partial' dans le début de votre fichier de configuration.
 - Pour chaque chaîne, vous devez préciser : 
- * L'adresse IP
+ * L'adresse IP ( si vous n'utilisez pas l'unicast )
  * Le nom
  * Le PID PMT
 
@@ -312,6 +337,15 @@ Demander à MuMuDVB de générer les annonces SAP
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Pour envoyer les annonces SAP, vous devez ajouter `sap=1` à votre fichier de configuration. Les autres paramètres concernant les annonces SAP sont documentés dans le fichier `doc/README_CONF-fr` ( link:README_CONF-fr.html[Version HTML] ).
+
+Annonces SAP et autoconfiguration complète
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Si vous utilisez l'autoconfiguration complète, vous pouvez utiliser le mot-clef '%type' dans l'option sap_default_group. Ce mot clef sera remplacé par le type de la chaîne : Television ou Radio.
+
+.Example
+Si vous mettez `sap_default_group=%type`, vous obtiendrez deux groupes SAP : Television et Radio, chacun contenant les services coresspondants.
+
 
 Configurer le client pour recevoir les annonces SAP
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -613,6 +647,54 @@ Pour activer cette fonctionalitée, utilisez l'option `dvr_thread`.
 Cette lecture utilise deux tampons : un pour les données reçues par la carte, un pour les données actuellement traitées par le programme principal. Vous pouvez ajuster la taille de ces tampons en utilisant l'option `dvr_thread_buffer_size`. La valeur par défaut ( 5000 packets de 188 octets ) devrait suffire pour la plupart des cas. 
 
 Le message "Thread trowing dvb packets" vous informe que le thread recoit plus de paquets que la taille du tampon et est obligé d'en "jeter". Augmenter la taille du tampon résoudra probablement le problème. 
+
+[[transcoding]]
+Transcoding
+-----------
+
+MuMuDVB peux transcoder le flux dans différents formats pour économiser de la bande passante. Le transcodage est effectué en utilisant les librairies du projet ffmpeg. Cette fonctionnalité est assez nouvelle, n'hesitez pas à envoyer vos remarques/suggestions.
+
+[NOTE]
+Le transcodage ne fonctionne pas pour le moment avec l'autoconfiguratin complète/l'unicast.
+
+
+Compiler MuMuDVB avec le support pour le transcodage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Pour compiler MuMuDVB avec le support pour le transcodage, vous aurez besoin des librairies suivantes : libavcodec, libavformat et libswscale
+
+Vous devez aussi ajouter l'option --enable-transcoding à votre configure. Ex: `./configure --enable-transcoding`
+
+Vérifiez à la fin du configure que le transcoding est effectivement activé. Si ce n'est pas le cas, une librairie est probablement manquante.
+
+
+Utiliser le transcodage
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Merci de lire la documentation concernant les options de transcodage et les exemples.
+
+Futurs développements concernant le transcodage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Faire fonctionner le transcodage avec l'unicast, en particulier une fois le support RTSP achevé.
+
+Problèmes courants
+~~~~~~~~~~~~~~~~~~
+
+Broken ffmpeg default settings detected
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Si vous obtenez un messaage disant : "Broken ffmpeg default settings detected"
+
+Ajouter les options suivante a votre configuration de transcodage lui permettra de fonctionner : 
+
+------------------------------
+transcode_me_range=16
+transcode_qdiff=4
+transcode_qmin=10
+transcode_qmax=51
+------------------------------
+
 
 
 Détails techniques (en vrac)
