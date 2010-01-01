@@ -17,9 +17,9 @@ And it will generate a dvb.mk file with all these informations
 
 """
 
-KERNEL_PATH = "/usr/src/linux-2.6.28.10/"
+KERNEL_PATH = "/usr/src/linux-2.6.32/"
 DEST_DIR = "/tmp/"
-DEST_FILE = "dvb.mk"
+DEST_FILE = "dvb.2.6.32.mk"
 
 _NEXT_LINE = """ \\
 	"""
@@ -46,10 +46,12 @@ define KernelPackage/dvb-core
   TITLE:=DVB core support
   DEPENDS:=@LINUX_2_6 +kmod-i2c-core
   KCONFIG:= \\
+	CONFIG_MEDIA_SUPPORT \\
 	CONFIG_DVB_CORE \\
 	CONFIG_DVB_CAPTURE_DRIVERS=y \\
-	MEDIA_TUNER_CUSTOMIZE=y \\
-	DVB_FE_CUSTOMISE=y \\
+	CONFIG_MEDIA_TUNER_CUSTOMIZE=y \\
+	CONFIG_DVB_FE_CUSTOMISE=y \\
+	CONFIG_DVB_DYNAMIC_MINORS=n \\
 	CONFIG_CRC32 
   FILES:=$(LINUX_DIR)/drivers/media/dvb/dvb-core/dvb-core.$(LINUX_KMOD_SUFFIX)
   AUTOLOAD:=$(call AutoLoad,50,dvb-core)
