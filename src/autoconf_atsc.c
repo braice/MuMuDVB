@@ -2,7 +2,7 @@
  * MuMuDVB - Stream a DVB transport stream.
  * File for Autoconfiguration
  * 
- * (C) 2008-2009 Brice DUBOST <mumudvb@braice.net>
+ * (C) 2008-2010 Brice DUBOST <mumudvb@braice.net>
  *
  * Parts of this code come from libdvb, modified for mumudvb
  * by Brice DUBOST 
