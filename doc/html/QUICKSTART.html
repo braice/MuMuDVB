@@ -471,7 +471,7 @@ function generateToc(toclevels) {
 multiplexed on the same carrier frequency) over a network, by assigning each
 channel to a different multicast IP. The SAP announces will automatically be generated.</p></div>
 <div class="paragraph"><p>For HTTP unicast or more advanced features, please refer to the full documentation.</p></div>
-<div class="paragraph"><p>I&#8217;ll take an example for DVB-S (satellite) and DVB-T (terrestrial)</p></div>
+<div class="paragraph"><p>I&#8217;ll take an example for DVB-S (satellite) and DVB-T (terrestrial). DVB-C and ATSC are similar.</p></div>
 <div class="paragraph"><p>I suppose you have one DVB card wich is already working, if you have more than
 one card refer to the full documentation.</p></div>
 </div>
@@ -490,7 +490,7 @@ Use the debian package, or
 </li>
 <li>
 <p>
-type <tt>make</tt> in the mumudvb directory and, as root, <tt>make install</tt>
+type <tt>./configure</tt> then <tt>make</tt> in the mumudvb directory and, as root, <tt>make install</tt>
 </p>
 </li>
 </ul></div>
@@ -520,7 +520,7 @@ Now create a config file, wich contains :
 </ul></div>
 <div class="listingblock">
 <div class="content">
-<pre><tt>autoconfiguration=2
+<pre><tt>autoconfiguration=full
 freq=__tranponder frequency in MHz__
 pol=__polarisation H, V, L or R__
 srate=__symbol rate__</tt></pre>
@@ -528,7 +528,7 @@ srate=__symbol rate__</tt></pre>
 <div class="listingblock">
 <div class="title">Example :</div>
 <div class="content">
-<pre><tt>autoconfiguration=2
+<pre><tt>autoconfiguration=full
 freq=11785
 pol=h
 srate=27500</tt></pre>
@@ -548,7 +548,7 @@ Now launch MuMuDVB with :
 <li>
 <p>
 That&#8217;s all, you should get a list of the streamed channels with their IP
-adress
+adresses
 </p>
 </li>
 </ul></div>
@@ -576,7 +576,7 @@ package</p></div>
 <div class="paragraph"><p>Your config file will be :</p></div>
 <div class="listingblock">
 <div class="content">
-<pre><tt>autoconfiguration=2
+<pre><tt>autoconfiguration=full
 freq=__frequency in kHz__</tt></pre>
 </div></div>
 <div class="admonitionblock">
@@ -603,7 +603,7 @@ guardinterval, coderate</td>
 <div class="ulist"><ul>
 <li>
 <p>
-Try adding -v to the mumudvb command line to have more detailled messages
+Try adding one ore several <tt>-v</tt> to the mumudvb command line to have more detailled messages
 </p>
 </li>
 <li>
@@ -630,7 +630,7 @@ contact (see the README for getting the e-mail addresses)
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2009-06-29 08:16:31 CEST
+Last updated 2010-01-01 18:49:56 CEST
 </div>
 </div>
 </body>

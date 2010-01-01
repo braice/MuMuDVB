@@ -461,7 +461,7 @@ function generateToc(toclevels) {
 <h1>MuMuDVB - README concernant le fichier de configuration</h1>
 <span id="author">Brice Dubost</span><br />
 <span id="email"><tt>&lt;<a href="mailto:mumudvb@braice.net">mumudvb@braice.net</a>&gt;</tt></span><br />
-Version 1.6
+Version 1.6.1
 <div id="toc">
   <div id="toctitle">Table of Contents</div>
   <noscript><p><b>JavaScript must be enabled in your browser to display the table of contents.</b></p></noscript>
@@ -485,7 +485,23 @@ freq=11987</tt></pre>
 <div class="paragraph"><p>Pour les paramètres concernant l&#8217;accord de la carte, référez vous à la section <a href="#tuning">paramètres d&#8217;accord</a>. Pour les autres paramètres globaux, référez vous à la section <a href="#other_global">paramètres globaux</a></p></div>
 <h3 id="_partie_concernant_les_cha_nes">1.2. Partie concernant les chaînes</h3><div style="clear:left"></div>
 <div class="paragraph"><p>Si vous n&#8217;utilisez pas l&#8217;autoconfiguration complète, vous devez définir les chaînes que vous voulez diffuser.</p></div>
-<div class="paragraph"><p>Chaque définition de chaîne commence par une ligne <tt>ip=</tt> et fini par une ligne <tt>pids=</tt>.</p></div>
+<div class="paragraph"><p>Chaque définition de chaîne commence par une ligne <tt>ip=</tt> ou <tt>channel_next</tt>.</p></div>
+<div class="listingblock">
+<div class="title">Example</div>
+<div class="content">
+<pre><tt>channel_next
+name=Barcelona TV
+unicast_port=8090
+pids=272</tt></pre>
+</div></div>
+<div class="listingblock">
+<div class="title">Example</div>
+<div class="content">
+<pre><tt>ip=239.100.0.0
+port=1234
+name=Barcelona TV
+pids=272 256 257 258</tt></pre>
+</div></div>
 <div class="paragraph"><p>Référez vous a la section <a href="#channel_parameters">configuration des chaînes</a> pour une liste détaillée des différents paramètres.</p></div>
 </div>
 <h2 id="_fichiers_d_8217_exemple">2. Fichiers d&#8217;exemple</h2>
@@ -503,7 +519,7 @@ freq=11987</tt></pre>
 Le site  <a href="http://www.kingofsat.net">King Of Sat</a> référence les chaînes satellite pouvant être reçues en Europe</td>
 </tr></table>
 </div>
-<h3 id="_param_tres_communs_tous_les_modes_de_r_ception_terrestre_satellite_et_c_ble">3.1. Paramètres communs à tous les modes de réception (terrestre, satellite et câble)</h3><div style="clear:left"></div>
+<h3 id="_param_tres_communs_tous_les_modes_de_r_ception_terrestre_satellite_c_ble_et_atsc">3.1. Paramètres communs à tous les modes de réception (terrestre, satellite, câble et ATSC)</h3><div style="clear:left"></div>
 <div class="paragraph"><p>Dans la liste suivante, seul le paramètre <tt>freq</tt> est obligatoire</p></div>
 <div class="tableblock">
 <table rules="all"
@@ -511,8 +527,8 @@ width="80%"
 frame="border"
 cellspacing="0" cellpadding="4">
 <col width="14%" />
-<col width="57%" />
-<col width="7%" />
+<col width="50%" />
+<col width="14%" />
 <col width="21%" />
 <thead>
 <tr>
@@ -530,10 +546,28 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">Obligatoire</p></td>
 </tr>
 <tr>
+<td align="left" valign="top"><p class="table">modulation</p></td>
+<td align="left" valign="top"><p class="table">Le type de modulation utilisé (valeurs possibles : QPSK QAM16 QAM32 QAM64 QAM128 QAM256 QAMAUTO VSB8 VSB16 8PSK 16APSK 32APSK DQPSK)</p></td>
+<td align="left" valign="top"><p class="table">ATSC: VSB_8, cable/terrestrial: QAM_AUTO, satellite: QPSK</p></td>
+<td align="left" valign="top"><p class="table">Optionnel la plupart du temps</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">delivery_system</p></td>
+<td align="left" valign="top"><p class="table">Le type de système utilisé (valeurs possibles : DVBT DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC)</p></td>
+<td align="left" valign="top"><p class="table">Non défini</p></td>
+<td align="left" valign="top"><p class="table">Spécifiez le si vous voulez utiliser la nouvelle API pour l&#8217;accord des cartes (DVB API 5/S2API). Obligatoire pour le DVB-S2</p></td>
+</tr>
+<tr>
 <td align="left" valign="top"><p class="table">card</p></td>
 <td align="left" valign="top"><p class="table">Le numéro de carte DVB/ATSC</p></td>
 <td align="left" valign="top"><p class="table">0</p></td>
 <td align="left" valign="top"><p class="table">Limité seulement par l&#8217;OS</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">card_dev_path</p></td>
+<td align="left" valign="top"><p class="table">Le chemin vers le répertoire contenant les "devices" DVB. Utilisez cette option si vous utilisez des chemins personalisés comme /dev/dvb/card_astra</p></td>
+<td align="left" valign="top"><p class="table">/dev/dvb/adapter%d</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">tuning_timeout</p></td>
@@ -546,12 +580,6 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">Si aucune chaîne n&#8217;est diffusée, MuMuDVB se "suicidera" au bout de ce délai ( en secondes )</p></td>
 <td align="left" valign="top"><p class="table">600</p></td>
 <td align="left" valign="top"><p class="table">0 = attente infinie</p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">dont_tune</p></td>
-<td align="left" valign="top"><p class="table">MuMuDVB n&#8217;accordera pas la carte si ce paramètre est spécifié (un autre programme comme tzap l&#8217;a fait)</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table">Ceci est principalement pour le DVB-S2</p></td>
 </tr>
 </tbody>
 </table>
@@ -646,6 +674,13 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">auto</p></td>
 <td align="left" valign="top"><p class="table">none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">rolloff</p></td>
+<td align="left" valign="top"><p class="table">rolloff important seulement pour le DVB-S2</p></td>
+<td align="left" valign="top"><p class="table">35</p></td>
+<td align="left" valign="top"><p class="table">35, 20, 25, auto</p></td>
+<td align="left" valign="top"><p class="table">La valeur par défaut devrait marcher la plupart du temps</p></td>
 </tr>
 </tbody>
 </table>
@@ -760,7 +795,7 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">Modulation : quadrature amplitude modulation</p></td>
 <td align="left" valign="top"><p class="table">auto</p></td>
 <td align="left" valign="top"><p class="table">qpsk, 16, 32, 64, 128, 256, auto</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Cette option est obsolète, utilisez le paramètre modulation</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">coderate</p></td>
@@ -786,16 +821,18 @@ cellspacing="0" cellpadding="4">
 width="80%"
 frame="border"
 cellspacing="0" cellpadding="4">
-<col width="14%" />
-<col width="42%" />
-<col width="14%" />
-<col width="28%" />
+<col width="11%" />
+<col width="33%" />
+<col width="11%" />
+<col width="22%" />
+<col width="22%" />
 <thead>
 <tr>
 <th align="left" valign="top">Nom </th>
 <th align="left" valign="top">Description </th>
 <th align="left" valign="top"> Valeur par défaut </th>
-<th align="left" valign="top"> Valeurs possibles</th>
+<th align="left" valign="top"> Valeurs possibles  </th>
+<th align="left" valign="top"> Commentaires</th>
 </tr>
 </thead>
 <tbody>
@@ -804,6 +841,7 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">La modulation</p></td>
 <td align="left" valign="top"><p class="table">vsb8</p></td>
 <td align="left" valign="top"><p class="table">vsb8, vsb16, qam256, qam64, qamauto</p></td>
+<td align="left" valign="top"><p class="table">Cette option est obsolète, utilisez le paramètre modulation</p></td>
 </tr>
 </tbody>
 </table>
@@ -819,6 +857,7 @@ cellspacing="0" cellpadding="4">
 </div>
 <h2 id="other_global">4. Autres paramètres globaux</h2>
 <div class="sectionbody">
+<h3 id="_param_tres_divers">4.1. Paramètres divers</h3><div style="clear:left"></div>
 <div class="tableblock">
 <table rules="all"
 width="80%"
@@ -840,6 +879,107 @@ cellspacing="0" cellpadding="4">
 </thead>
 <tbody>
 <tr>
+<td align="left" valign="top"><p class="table">dont_send_scrambled</p></td>
+<td align="left" valign="top"><p class="table">Si positionné à 1, MuMuDVB n&#8217;enverra pas les paquets brouillés. Cela retirera (indirectement) les annonces SAP pour les chaînes brouillées</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">show_traffic_interval</p></td>
+<td align="left" valign="top"><p class="table">Le temps en secondes entre deux affichages du trafic</p></td>
+<td align="left" valign="top"><p class="table">10</p></td>
+<td align="left" valign="top"><p class="table">&gt;2</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">compute_traffic_interval</p></td>
+<td align="left" valign="top"><p class="table">Le temps en secondes entre deux calculs du trafic</p></td>
+<td align="left" valign="top"><p class="table">10</p></td>
+<td align="left" valign="top"><p class="table">&gt;2</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">rtp_header</p></td>
+<td align="left" valign="top"><p class="table">Envoie les en-têtes RTP avec le flux (excepté pour l&#8217;unicast HTTP)</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 ou 1</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">dvr_buffer_size</p></td>
+<td align="left" valign="top"><p class="table">La taille du  "tampon DVR" en paquets de 188 octets</p></td>
+<td align="left" valign="top"><p class="table">1</p></td>
+<td align="left" valign="top"><p class="table">&gt;=1</p></td>
+<td align="left" valign="top"><p class="table">Se référer au README</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">dvr_thread</p></td>
+<td align="left" valign="top"><p class="table">Est ce que les packets sont reçus par un thread ?</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 ou 1</p></td>
+<td align="left" valign="top"><p class="table">Fonctionnalité "expérimentale", se référer au README</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">dvr_thread_buffer_size</p></td>
+<td align="left" valign="top"><p class="table">La taille du tampon pour le thread en packets de 188 octets</p></td>
+<td align="left" valign="top"><p class="table">5000</p></td>
+<td align="left" valign="top"><p class="table">&gt;=1</p></td>
+<td align="left" valign="top"><p class="table">se référer au README</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">rewrite_pat</p></td>
+<td align="left" valign="top"><p class="table">Est ce que MuMuDVB doit réécrire le PID PAT</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 ou 1</p></td>
+<td align="left" valign="top"><p class="table">cf README</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">rewrite_sdt</p></td>
+<td align="left" valign="top"><p class="table">Est ce que MuMuDVB doit réécrire le PID SDT</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 ou 1</p></td>
+<td align="left" valign="top"><p class="table">cf README</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">sort_eit</p></td>
+<td align="left" valign="top"><p class="table">Est ce que MuMuDVB doit trier les PID EIT</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 ou 1</p></td>
+<td align="left" valign="top"><p class="table">cf README</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="_param_tres_concernant_le_multicast">4.2. Paramètres concernant le multicast</h3><div style="clear:left"></div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="12%" />
+<col width="50%" />
+<col width="6%" />
+<col width="12%" />
+<col width="18%" />
+<thead>
+<tr>
+<th align="left" valign="top">Nom </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Valeur par défaut </th>
+<th align="left" valign="top"> Valeurs possibles </th>
+<th align="left" valign="top"> Commentaires</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left" valign="top"><p class="table">multicast</p></td>
+<td align="left" valign="top"><p class="table">Est ce que le multicast est activé ?</p></td>
+<td align="left" valign="top"><p class="table">1</p></td>
+<td align="left" valign="top"><p class="table">0 ou 1</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
 <td align="left" valign="top"><p class="table">common_port</p></td>
 <td align="left" valign="top"><p class="table">Le port par défaut pour la diffusion multicast</p></td>
 <td align="left" valign="top"><p class="table">1234</p></td>
@@ -860,44 +1000,30 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">0 or 1</p></td>
 <td align="left" valign="top"><p class="table">cf problèmes connus dans le README</p></td>
 </tr>
+</tbody>
+</table>
+</div>
+<h3 id="_param_tres_concernant_le_support_des_cartes_cam">4.3. Paramètres concernant le support des cartes CAM</h3><div style="clear:left"></div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="12%" />
+<col width="50%" />
+<col width="6%" />
+<col width="12%" />
+<col width="18%" />
+<thead>
 <tr>
-<td align="left" valign="top"><p class="table">dont_send_sdt</p></td>
-<td align="left" valign="top"><p class="table">Si positionné à 1, MuMuDVB n&#8217;enverra pas le PID SDT, c&#8217;est un contournement d&#8217;un bug de VLC</p></td>
-<td align="left" valign="top"><p class="table">0</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table">voir le README pour plus de détails</p></td>
+<th align="left" valign="top">Nom </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Valeur par défaut </th>
+<th align="left" valign="top"> Valeurs possibles </th>
+<th align="left" valign="top"> Commentaires</th>
 </tr>
-<tr>
-<td align="left" valign="top"><p class="table">dont_send_scrambled</p></td>
-<td align="left" valign="top"><p class="table">Si positionné à 1, MuMuDVB n&#8217;enverra pas les paquets brouillés. Cela retirera (indirectement) les annonces SAP pour les chaînes brouillées</p></td>
-<td align="left" valign="top"><p class="table">0</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">show_traffic_interval</p></td>
-<td align="left" valign="top"><p class="table">Le temps en secondes entre deux affichages du trafic</p></td>
-<td align="left" valign="top"><p class="table">10</p></td>
-<td align="left" valign="top"><p class="table">&gt;2</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">rtp_header</p></td>
-<td align="left" valign="top"><p class="table">Envoie les en-têtes RTP avec le flux (excepté pour l&#8217;unicast HTTP)</p></td>
-<td align="left" valign="top"><p class="table">0</p></td>
-<td align="left" valign="top"><p class="table">0 ou 1</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">dvr_buffer_size</p></td>
-<td align="left" valign="top"><p class="table">La taille du  "tampon DVR" en paquets de 188 octets</p></td>
-<td align="left" valign="top"><p class="table">1</p></td>
-<td align="left" valign="top"><p class="table">&gt;=1</p></td>
-<td align="left" valign="top"><p class="table">Fonctionnalité "expérimentale", se référer au README</p></td>
-</tr>
-<tr>
-<td colspan="5" align="center" valign="top"><p class="table"><strong>Paramètres concernant le support des cartes CAM</strong></p></td>
-</tr>
+</thead>
+<tbody>
 <tr>
 <td align="left" valign="top"><p class="table">cam_support</p></td>
 <td align="left" valign="top"><p class="table">Indique si l&#8217;on veux le support pour les chaînes brouillées</p></td>
@@ -919,14 +1045,35 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">Si la réinitialisation échoue, MuMuDVB retentera de réinitialiser le module après cet intervelle de temps. Le nombre maximum de tentatives de réinitialisations avant de quitter est 5.</p></td>
 </tr>
+</tbody>
+</table>
+</div>
+<h3 id="_param_tres_pour_l_8217_autoconfiguration">4.4. Paramètres pour l&#8217;autoconfiguration</h3><div style="clear:left"></div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="13%" />
+<col width="40%" />
+<col width="6%" />
+<col width="13%" />
+<col width="26%" />
+<thead>
 <tr>
-<td colspan="5" align="center" valign="top"><p class="table"><strong>Paramètres pour l&#8217;autoconfiguration</strong></p></td>
+<th align="left" valign="top">Nom </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Valeur par défaut </th>
+<th align="left" valign="top"> Valeurs possibles </th>
+<th align="left" valign="top"> Commentaires</th>
 </tr>
+</thead>
+<tbody>
 <tr>
 <td align="left" valign="top"><p class="table">autoconfiguration</p></td>
-<td align="left" valign="top"><p class="table">autoconfiguration 1: Trouve les PIDs audio et video, 2: autoconfiguration complète</p></td>
+<td align="left" valign="top"><p class="table">autoconfiguration 1, partial: Trouve les PIDs audio et video, 2, full: autoconfiguration complète</p></td>
 <td align="left" valign="top"><p class="table">0</p></td>
-<td align="left" valign="top"><p class="table">0, 1 or 2</p></td>
+<td align="left" valign="top"><p class="table">0, 1, 2, partial ou full</p></td>
 <td align="left" valign="top"><p class="table">Se référer au README pour plus de détails</p></td>
 </tr>
 <tr>
@@ -965,8 +1112,43 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">Voir README-fr pour plus de détails.</p></td>
 </tr>
 <tr>
-<td colspan="5" align="center" valign="top"><p class="table"><strong>Paramètres concernant les annonces SAP</strong></p></td>
+<td align="left" valign="top"><p class="table">autoconf_tsid_list</p></td>
+<td align="left" valign="top"><p class="table">Pour ne pas autoconfigurer toutes les chaînes du transpondeur en autoconfiguration complète, spécifiez avec cette option la liste des transport stream id (numeros de programme) des chaînes que vous voulez configurer</p></td>
+<td align="left" valign="top"><p class="table">vide</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
 </tr>
+<tr>
+<td align="left" valign="top"><p class="table">autoconf_name_template</p></td>
+<td align="left" valign="top"><p class="table">Le modèle pour le nom des chaînes en autoconfiguration complète, ex <tt>%number-%name</tt></p></td>
+<td align="left" valign="top"><p class="table">vide</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Voir README-fr pour plus de détails.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="_param_tres_concernant_les_annonces_sap">4.5. Paramètres concernant les annonces SAP</h3><div style="clear:left"></div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="12%" />
+<col width="50%" />
+<col width="6%" />
+<col width="12%" />
+<col width="18%" />
+<thead>
+<tr>
+<th align="left" valign="top">Nom </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Valeur par défaut </th>
+<th align="left" valign="top"> Valeurs possibles </th>
+<th align="left" valign="top"> Commentaires</th>
+</tr>
+</thead>
+<tbody>
 <tr>
 <td align="left" valign="top"><p class="table">sap</p></td>
 <td align="left" valign="top"><p class="table">Génération des annonces SAP</p></td>
@@ -1006,8 +1188,8 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">sap_default_group</p></td>
 <td align="left" valign="top"><p class="table">Le groupe de liste de lecture par défaut pour les annonces SAP</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table">string</p></td>
-<td align="left" valign="top"><p class="table">Optionnel</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Optionnel. Vous pouvez utiliser le mot clef %type, voir le README-fr pour plus de détails</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">sap_ttl</p></td>
@@ -1016,15 +1198,43 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">RFC 2974 : "SAP announcements &#8230; SHOULD be sent with an IP time-to-live of 255 (the use of TTL scoping for multicast is discouraged [RFC 2365])."</p></td>
 </tr>
+</tbody>
+</table>
+</div>
+<h3 id="_param_tres_concernant_l_8217_unicast_http">4.6. Paramètres concernant l&#8217;unicast HTTP</h3><div style="clear:left"></div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="12%" />
+<col width="50%" />
+<col width="6%" />
+<col width="12%" />
+<col width="18%" />
+<thead>
 <tr>
-<td colspan="5" align="center" valign="top"><p class="table"><strong>Paramètres concernant l&#8217;unicast HTTP</strong></p></td>
+<th align="left" valign="top">Nom </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Valeur par défaut </th>
+<th align="left" valign="top"> Valeurs possibles </th>
+<th align="left" valign="top"> Commentaires</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left" valign="top"><p class="table">unicast</p></td>
+<td align="left" valign="top"><p class="table">Utilisez cette option pour activer l&#8217;unicast HTTP</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">se référer au README pour plus de détails</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">ip_http</p></td>
 <td align="left" valign="top"><p class="table">L&#8217;ip d'écoute du serveur unicast. Si vous voulez écouter sur toutes les interfaces mettez 0.0.0.0</p></td>
-<td align="left" valign="top"><p class="table">vide</p></td>
+<td align="left" valign="top"><p class="table">0.0.0.0</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table">Cette option active l&#8217;unicast HTTP, se référer au README pour plus de détails.</p></td>
+<td align="left" valign="top"><p class="table">se référer au README pour plus de détails.</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">port_http</p></td>
@@ -1047,13 +1257,20 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">0 : pas de limite.</p></td>
 </tr>
+<tr>
+<td align="left" valign="top"><p class="table">unicast_queue_size</p></td>
+<td align="left" valign="top"><p class="table">La taille maximum du tampon utilisé lorsque l'écriture pour un client échoue.</p></td>
+<td align="left" valign="top"><p class="table">512k octets</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">en octets.</p></td>
+</tr>
 </tbody>
 </table>
 </div>
 </div>
 <h2 id="channel_parameters">5. Paramètres concernant les chaînes</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Chaque définition de chaîne doit commencer par une ligne <tt>ip=</tt> et finir par une ligne <tt>pids=</tt>. Le seul autre paramètre obligatoire est le paramètre <tt>name</tt>.</p></div>
+<div class="paragraph"><p>Chaque définition de chaîne commence par une ligne <tt>ip=</tt> ou <tt>channel_next</tt>. Le seul autre paramètre obligatoire est le paramètre <tt>name</tt>.</p></div>
 <div class="paragraph"><p>Concernant les PIDs, référez vous à la section <a href="#getpids">obtenir les PIDs</a>.</p></div>
 <div class="tableblock">
 <table rules="all"
@@ -1077,7 +1294,7 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">ip</p></td>
 <td align="left" valign="top"><p class="table">Adresse ip multicast sur laquelle la chaîne sera diffusée</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table">Obligatoire</p></td>
+<td align="left" valign="top"><p class="table">Optionnel si multicast=0 (si non utilisé, channel_next doit être utilisé à la place)</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">port</p></td>
@@ -1105,7 +1322,7 @@ cellspacing="0" cellpadding="4">
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">ts_id</p></td>
-<td align="left" valign="top"><p class="table">Le  "transport stream id" (appelé aussi "program number"), uniquement pour l&#8217;autoconfiguration ou la réécriture du PID PAT, se référer au README pour plus de détails</p></td>
+<td align="left" valign="top"><p class="table">Le  "transport stream id" (appelé aussi "program number"), uniquement pour l&#8217;autoconfiguration ou la réécriture du PID PAT ou SDT, se référer au README pour plus de détails</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 </tr>
@@ -1267,7 +1484,7 @@ TV3                      (0x0321) 01: PCR == V   V 0x006f A 0x0070 (cat) 0x0072 
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2009-09-26 18:03:40 CEST
+Last updated 2010-01-01 18:49:56 CEST
 </div>
 </div>
 </body>

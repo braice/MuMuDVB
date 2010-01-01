@@ -461,7 +461,7 @@ function generateToc(toclevels) {
 <h1>MuMuDVB - README for the configuration file</h1>
 <span id="author">Brice Dubost</span><br />
 <span id="email"><tt>&lt;<a href="mailto:mumudvb@braice.net">mumudvb@braice.net</a>&gt;</tt></span><br />
-Version 1.6
+Version 1.6.1
 <div id="toc">
   <div id="toctitle">Table of Contents</div>
   <noscript><p><b>JavaScript must be enabled in your browser to display the table of contents.</b></p></noscript>
@@ -485,7 +485,23 @@ freq=11987</tt></pre>
 <div class="paragraph"><p>See the <a href="#tuning">tuning</a> section for the list of parameters used to tune the card. and <a href="#other_global">other global parameters</a> section for parameters like autoconfiguration, cam support etc &#8230;</p></div>
 <h3 id="_channels_part">1.2. Channels part</h3><div style="clear:left"></div>
 <div class="paragraph"><p>If you are not using full autoconfiguration you need to set the list of the channels you want to stream.
-Each channel start with an <tt>ip=</tt> line and ends with a <tt>pids=</tt> line.</p></div>
+Each channel start with an <tt>ip=</tt> or <tt>channel_next</tt> line.</p></div>
+<div class="listingblock">
+<div class="title">Example (unicast only)</div>
+<div class="content">
+<pre><tt>channel_next
+name=Barcelona TV
+unicast_port=8090
+pids=272</tt></pre>
+</div></div>
+<div class="listingblock">
+<div class="title">Example</div>
+<div class="content">
+<pre><tt>ip=239.100.0.0
+port=1234
+name=Barcelona TV
+pids=272 256 257 258</tt></pre>
+</div></div>
 <div class="paragraph"><p>See <a href="#channel_parameters">channel parameters</a> section for a list of detailled parameters.</p></div>
 </div>
 <h2 id="_example_config_files">2. Example config files</h2>
@@ -504,7 +520,7 @@ Otherwise you can have a look at the initial tuning files given with linuxtv&#82
 For european satellite users, you can have a look at <a href="http://www.kingofsat.net">King Of Sat</a></td>
 </tr></table>
 </div>
-<h3 id="_parameters_concerning_all_modes_terrestrial_satellite_cable">3.1. Parameters concerning all modes (terrestrial, satellite, cable)</h3><div style="clear:left"></div>
+<h3 id="_parameters_concerning_all_modes_terrestrial_satellite_cable_atsc">3.1. Parameters concerning all modes (terrestrial, satellite, cable, ATSC)</h3><div style="clear:left"></div>
 <div class="paragraph"><p>In the following list, only the parameter <tt>freq</tt> is mandatory</p></div>
 <div class="tableblock">
 <table rules="all"
@@ -512,8 +528,8 @@ width="80%"
 frame="border"
 cellspacing="0" cellpadding="4">
 <col width="14%" />
-<col width="57%" />
-<col width="7%" />
+<col width="50%" />
+<col width="14%" />
 <col width="21%" />
 <thead>
 <tr>
@@ -531,10 +547,28 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">Mandatory</p></td>
 </tr>
 <tr>
+<td align="left" valign="top"><p class="table">modulation</p></td>
+<td align="left" valign="top"><p class="table">The kind of modulation used (can be : QPSK QAM16 QAM32 QAM64 QAM128 QAM256 QAMAUTO VSB8 VSB16 8PSK 16APSK 32APSK DQPSK)</p></td>
+<td align="left" valign="top"><p class="table">ATSC: VSB_8, cable/terrestrial: QAM_AUTO, satellite: QPSK</p></td>
+<td align="left" valign="top"><p class="table">Optionnal most of the times</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">delivery_system</p></td>
+<td align="left" valign="top"><p class="table">the delivery system used (can be DVBT DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC)</p></td>
+<td align="left" valign="top"><p class="table">Undefined</p></td>
+<td align="left" valign="top"><p class="table">Set it if you want to use the new tuning API (DVB API 5/S2API). Mandatory for DVB-S2</p></td>
+</tr>
+<tr>
 <td align="left" valign="top"><p class="table">card</p></td>
 <td align="left" valign="top"><p class="table">The DVB/ATSC card number</p></td>
 <td align="left" valign="top"><p class="table">0</p></td>
 <td align="left" valign="top"><p class="table">only limited by your OS</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">card_dev_path</p></td>
+<td align="left" valign="top"><p class="table">The path of the DVB card devices. Use it if you have a personalised path like /dev/dvb/card_astra</p></td>
+<td align="left" valign="top"><p class="table">/dev/dvb/adapter%d</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">tuning_timeout</p></td>
@@ -547,12 +581,6 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">If no channels are streamed, MuMuDVB will kill himself after this time (specified in seconds)</p></td>
 <td align="left" valign="top"><p class="table">600</p></td>
 <td align="left" valign="top"><p class="table">0 = infinite timeout</p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">dont_tune</p></td>
-<td align="left" valign="top"><p class="table">We do not try to tune the card (another program,like tzap, did it for us)</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table">This is mainly a workaround for DVB-S2</p></td>
 </tr>
 </tbody>
 </table>
@@ -647,6 +675,13 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">auto</p></td>
 <td align="left" valign="top"><p class="table">none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">rolloff</p></td>
+<td align="left" valign="top"><p class="table">rolloff important only for DVB-S2</p></td>
+<td align="left" valign="top"><p class="table">35</p></td>
+<td align="left" valign="top"><p class="table">35, 20, 25, auto</p></td>
+<td align="left" valign="top"><p class="table">The default value should work most of the times</p></td>
 </tr>
 </tbody>
 </table>
@@ -761,7 +796,7 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">quadrature amplitude modulation</p></td>
 <td align="left" valign="top"><p class="table">auto</p></td>
 <td align="left" valign="top"><p class="table">qpsk, 16, 32, 64, 128, 256, auto</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">This option is obsolete, use modulation instead</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">coderate</p></td>
@@ -787,16 +822,18 @@ cellspacing="0" cellpadding="4">
 width="80%"
 frame="border"
 cellspacing="0" cellpadding="4">
-<col width="14%" />
-<col width="42%" />
-<col width="14%" />
-<col width="28%" />
+<col width="11%" />
+<col width="33%" />
+<col width="11%" />
+<col width="22%" />
+<col width="22%" />
 <thead>
 <tr>
 <th align="left" valign="top">Parameter name </th>
 <th align="left" valign="top">Description </th>
 <th align="left" valign="top"> Default value </th>
-<th align="left" valign="top"> Possible values</th>
+<th align="left" valign="top"> Possible values </th>
+<th align="left" valign="top"> Comments</th>
 </tr>
 </thead>
 <tbody>
@@ -805,6 +842,7 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">the modulation for ATSC</p></td>
 <td align="left" valign="top"><p class="table">vsb8</p></td>
 <td align="left" valign="top"><p class="table">vsb8, vsb16, qam256, qam64, qamauto</p></td>
+<td align="left" valign="top"><p class="table">This option is obsolete, use modulation instead</p></td>
 </tr>
 </tbody>
 </table>
@@ -820,6 +858,7 @@ cellspacing="0" cellpadding="4">
 </div>
 <h2 id="other_global">4. Other global parameters</h2>
 <div class="sectionbody">
+<h3 id="_various_parameters">4.1. Various parameters</h3><div style="clear:left"></div>
 <div class="tableblock">
 <table rules="all"
 width="80%"
@@ -841,6 +880,107 @@ cellspacing="0" cellpadding="4">
 </thead>
 <tbody>
 <tr>
+<td align="left" valign="top"><p class="table">dont_send_scrambled</p></td>
+<td align="left" valign="top"><p class="table">If set to 1 don&#8217;t send the packets detected as scrambled. this will also remove indirectly the sap announces for the scrambled channels</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">show_traffic_interval</p></td>
+<td align="left" valign="top"><p class="table">the interval in second between two displays of the traffic</p></td>
+<td align="left" valign="top"><p class="table">10</p></td>
+<td align="left" valign="top"><p class="table">&gt;2</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">compute_traffic_interval</p></td>
+<td align="left" valign="top"><p class="table">the interval in second between two computations of the traffic</p></td>
+<td align="left" valign="top"><p class="table">10</p></td>
+<td align="left" valign="top"><p class="table">&gt;2</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">rtp_header</p></td>
+<td align="left" valign="top"><p class="table">Send the stream with the rtp headers (execpt for HTTP unicast)</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 or 1</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">dvr_buffer_size</p></td>
+<td align="left" valign="top"><p class="table">The size of the "DVR buffer" in packets</p></td>
+<td align="left" valign="top"><p class="table">1</p></td>
+<td align="left" valign="top"><p class="table">&gt;=1</p></td>
+<td align="left" valign="top"><p class="table">see README</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">dvr_thread</p></td>
+<td align="left" valign="top"><p class="table">Are the packets retrieved from the card in a thread</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 or 1</p></td>
+<td align="left" valign="top"><p class="table">Experimental, see README</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">dvr_thread_buffer_size</p></td>
+<td align="left" valign="top"><p class="table">The size of the "DVR thread buffer" in packets</p></td>
+<td align="left" valign="top"><p class="table">5000</p></td>
+<td align="left" valign="top"><p class="table">&gt;=1</p></td>
+<td align="left" valign="top"><p class="table">see README</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">rewrite_pat</p></td>
+<td align="left" valign="top"><p class="table">Do we rewrite the PAT PID</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 or 1</p></td>
+<td align="left" valign="top"><p class="table">See README</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">rewrite_sdt</p></td>
+<td align="left" valign="top"><p class="table">Do we rewrite the SDT PID</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 or 1</p></td>
+<td align="left" valign="top"><p class="table">See README</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">sort_eit</p></td>
+<td align="left" valign="top"><p class="table">Do we sort the EIT PID</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 or 1</p></td>
+<td align="left" valign="top"><p class="table">See README</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="_multicast_parameters">4.2. Multicast parameters</h3><div style="clear:left"></div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="12%" />
+<col width="50%" />
+<col width="6%" />
+<col width="12%" />
+<col width="18%" />
+<thead>
+<tr>
+<th align="left" valign="top">Parameter name </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Default value </th>
+<th align="left" valign="top"> Possible values </th>
+<th align="left" valign="top"> Comments</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left" valign="top"><p class="table">multicast</p></td>
+<td align="left" valign="top"><p class="table">Do we activate multicast</p></td>
+<td align="left" valign="top"><p class="table">1</p></td>
+<td align="left" valign="top"><p class="table">0 or 1</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
 <td align="left" valign="top"><p class="table">common_port</p></td>
 <td align="left" valign="top"><p class="table">Default port for the streaming</p></td>
 <td align="left" valign="top"><p class="table">1234</p></td>
@@ -861,44 +1001,30 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">0 or 1</p></td>
 <td align="left" valign="top"><p class="table">See known problems in the README</p></td>
 </tr>
+</tbody>
+</table>
+</div>
+<h3 id="_cam_support_parameters">4.3. CAM support parameters</h3><div style="clear:left"></div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="12%" />
+<col width="50%" />
+<col width="6%" />
+<col width="12%" />
+<col width="18%" />
+<thead>
 <tr>
-<td align="left" valign="top"><p class="table">dont_send_sdt</p></td>
-<td align="left" valign="top"><p class="table">If set to 1, don&#8217;t send the SDT pid. This is a VLC workaround</p></td>
-<td align="left" valign="top"><p class="table">0</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table">see README for details</p></td>
+<th align="left" valign="top">Parameter name </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Default value </th>
+<th align="left" valign="top"> Possible values </th>
+<th align="left" valign="top"> Comments</th>
 </tr>
-<tr>
-<td align="left" valign="top"><p class="table">dont_send_scrambled</p></td>
-<td align="left" valign="top"><p class="table">If set to 1 don&#8217;t send the packets detected as scrambled. this will also remove indirectly the sap announces for the scrambled channels</p></td>
-<td align="left" valign="top"><p class="table">0</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">show_traffic_interval</p></td>
-<td align="left" valign="top"><p class="table">the interval in second between two displays of the traffic</p></td>
-<td align="left" valign="top"><p class="table">10</p></td>
-<td align="left" valign="top"><p class="table">&gt;2</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">rtp_header</p></td>
-<td align="left" valign="top"><p class="table">Send the stream with the rtp headers (execpt for HTTP unicast)</p></td>
-<td align="left" valign="top"><p class="table">0</p></td>
-<td align="left" valign="top"><p class="table">0 or 1</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">dvr_buffer_size</p></td>
-<td align="left" valign="top"><p class="table">The size of the "DVR buffer" in packets</p></td>
-<td align="left" valign="top"><p class="table">1</p></td>
-<td align="left" valign="top"><p class="table">&gt;=1</p></td>
-<td align="left" valign="top"><p class="table">Experimental feature, see README</p></td>
-</tr>
-<tr>
-<td colspan="5" align="center" valign="top"><p class="table"><strong>CAM support parameters</strong></p></td>
-</tr>
+</thead>
+<tbody>
 <tr>
 <td align="left" valign="top"><p class="table">cam_support</p></td>
 <td align="left" valign="top"><p class="table">Specify if we wants the support for scrambled channels</p></td>
@@ -920,14 +1046,35 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">If the reset is not successful, MuMuDVB will reset the CAM again after this interval. The maximum number of resets before exiting is 5</p></td>
 </tr>
+</tbody>
+</table>
+</div>
+<h3 id="_autoconfiguration_parameters">4.4. Autoconfiguration parameters</h3><div style="clear:left"></div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="13%" />
+<col width="40%" />
+<col width="6%" />
+<col width="13%" />
+<col width="26%" />
+<thead>
 <tr>
-<td colspan="5" align="center" valign="top"><p class="table"><strong>Autoconfiguration parameters</strong></p></td>
+<th align="left" valign="top">Parameter name </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Default value </th>
+<th align="left" valign="top"> Possible values </th>
+<th align="left" valign="top"> Comments</th>
 </tr>
+</thead>
+<tbody>
 <tr>
 <td align="left" valign="top"><p class="table">autoconfiguration</p></td>
-<td align="left" valign="top"><p class="table">autoconfiguration 1: find audio and video PIDs, 2: full autoconfiguration</p></td>
+<td align="left" valign="top"><p class="table">autoconfiguration 1, partial: find audio and video PIDs, 2, full: full autoconfiguration</p></td>
 <td align="left" valign="top"><p class="table">0</p></td>
-<td align="left" valign="top"><p class="table">0, 1 or 2</p></td>
+<td align="left" valign="top"><p class="table">0, 1, 2, partial or full</p></td>
 <td align="left" valign="top"><p class="table">see the README for more details</p></td>
 </tr>
 <tr>
@@ -966,8 +1113,43 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">See README for more details.</p></td>
 </tr>
 <tr>
-<td colspan="5" align="center" valign="top"><p class="table"><strong>SAP announces parameters</strong></p></td>
+<td align="left" valign="top"><p class="table">autoconf_tsid_list</p></td>
+<td align="left" valign="top"><p class="table">If you don&#8217;t want to configure all the channels of the transponder in full autoconfiguration mode, specify with this option the list of the transport stream ids of the channels you want to autoconfigure.</p></td>
+<td align="left" valign="top"><p class="table">empty</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
 </tr>
+<tr>
+<td align="left" valign="top"><p class="table">autoconf_name_template</p></td>
+<td align="left" valign="top"><p class="table">The template for the channel name, ex <tt>%number-%name</tt></p></td>
+<td align="left" valign="top"><p class="table">empty</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">See README for more details</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="_sap_announces_parameters">4.5. SAP announces parameters</h3><div style="clear:left"></div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="12%" />
+<col width="50%" />
+<col width="6%" />
+<col width="12%" />
+<col width="18%" />
+<thead>
+<tr>
+<th align="left" valign="top">Parameter name </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Default value </th>
+<th align="left" valign="top"> Possible values </th>
+<th align="left" valign="top"> Comments</th>
+</tr>
+</thead>
+<tbody>
 <tr>
 <td align="left" valign="top"><p class="table">sap</p></td>
 <td align="left" valign="top"><p class="table">Generation of SAP announces</p></td>
@@ -1008,7 +1190,7 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">The default playlist group for sap announces</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">string</p></td>
-<td align="left" valign="top"><p class="table">Optionnal</p></td>
+<td align="left" valign="top"><p class="table">Optionnal. You can use the keyword %type, see README</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">sap_ttl</p></td>
@@ -1017,13 +1199,41 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">The RFC 2974 says "SAP announcements &#8230; SHOULD be sent with an IP time-to-live of 255 (the use of TTL scoping for multicast is discouraged [RFC 2365])."</p></td>
 </tr>
+</tbody>
+</table>
+</div>
+<h3 id="_http_unicast_parameters">4.6. HTTP unicast parameters</h3><div style="clear:left"></div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="12%" />
+<col width="50%" />
+<col width="6%" />
+<col width="12%" />
+<col width="18%" />
+<thead>
 <tr>
-<td colspan="5" align="center" valign="top"><p class="table"><strong>HTTP unicast parameters</strong></p></td>
+<th align="left" valign="top">Parameter name </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Default value </th>
+<th align="left" valign="top"> Possible values </th>
+<th align="left" valign="top"> Comments</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left" valign="top"><p class="table">unicast</p></td>
+<td align="left" valign="top"><p class="table">Set this option to one to activate HTTP unicast</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">see the README for more details</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">ip_http</p></td>
 <td align="left" valign="top"><p class="table">the listening ip for http unicast, if you want to listen to all interfaces put 0.0.0.0</p></td>
-<td align="left" valign="top"><p class="table">empty</p></td>
+<td align="left" valign="top"><p class="table">0.0.0.0</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">see the README for more details</p></td>
 </tr>
@@ -1048,13 +1258,20 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">0 : no limit.</p></td>
 </tr>
+<tr>
+<td align="left" valign="top"><p class="table">unicast_queue_size</p></td>
+<td align="left" valign="top"><p class="table">The maximum size of the buffering when writting to a client fails</p></td>
+<td align="left" valign="top"><p class="table">512kBytes</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">in Bytes.</p></td>
+</tr>
 </tbody>
 </table>
 </div>
 </div>
 <h2 id="channel_parameters">5. Channel parameters</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Each channel must start with a <tt>ip=</tt> line and ends with a <tt>pids=</tt> line. The only other mandatory parameter is the <tt>name</tt> of the channel.</p></div>
+<div class="paragraph"><p>Each channel start with an <tt>ip=</tt> or <tt>channel_next</tt> line. The only other mandatory parameter is the <tt>name</tt> of the channel.</p></div>
 <div class="paragraph"><p>Concerning the PIDs see the <a href="#getpids">getting the PIDs</a> section</p></div>
 <div class="tableblock">
 <table rules="all"
@@ -1081,7 +1298,7 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">multicast (can also be unicast, in raw UDP ) ip where the chanel will be streamed</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table">Mandatory</p></td>
+<td align="left" valign="top"><p class="table">Optionnal if you set multicast=0 (if not used you must use channel_next)</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">port</p></td>
@@ -1094,36 +1311,43 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">unicast_port</p></td>
 <td align="left" valign="top"><p class="table">The HTTP unicast port for this channel</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">Ports below 1024 needs root rights. You need to activate HTTP unicast with <tt>ip_http</tt></p></td>
-<td align="left" valign="top"><p class="table">sap_group</p></td>
 </tr>
 <tr>
+<td align="left" valign="top"><p class="table">sap_group</p></td>
 <td align="left" valign="top"><p class="table">The playlist group for SAP announces</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">string</p></td>
 <td align="left" valign="top"><p class="table">optionnal</p></td>
-<td align="left" valign="top"><p class="table">cam_pmt_pid</p></td>
 </tr>
 <tr>
+<td align="left" valign="top"><p class="table">cam_pmt_pid</p></td>
 <td align="left" valign="top"><p class="table">Only for scrambled channels. The PMT PID for CAM support</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
 <td align="left" valign="top"><p class="table">ts_id</p></td>
+<td align="left" valign="top"><p class="table">The transport stream id (program number), olny for autoconfiguration, or rewrite (PAT or SDT) see README for more details</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
 </tr>
 <tr>
-<td align="left" valign="top"><p class="table">The transport stream id (program number), olny for autoconfiguration, or pat rewrite see README for more details</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">name</p></td>
-</tr>
-<tr>
 <td align="left" valign="top"><p class="table">The name of the channel. Will be used for /var/run/mumudvb/chaines_diffusees%d, logging and SAP announces</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">Mandatory</p></td>
+</tr>
+<tr>
 <td align="left" valign="top"><p class="table">pids</p></td>
+<td align="left" valign="top"><p class="table">The PIDs list, separated by spaces</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">some pids are always sent (PAT CAT EIT SDT TDT NIT), see README for more details</p></td>
 </tr>
 </tbody>
 </table>
@@ -1253,7 +1477,7 @@ TV3                      (0x0321) 01: PCR == V   V 0x006f A 0x0070 (cat) 0x0072 
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2009-09-26 18:01:08 CEST
+Last updated 2010-01-01 18:49:56 CEST
 </div>
 </div>
 </body>

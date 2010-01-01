@@ -461,7 +461,7 @@ function generateToc(toclevels) {
 <h1>MuMuDVB - README</h1>
 <span id="author">Brice Dubost</span><br />
 <span id="email"><tt>&lt;<a href="mailto:mumudvb@braice.net">mumudvb@braice.net</a>&gt;</tt></span><br />
-Version 1.6
+Version 1.6.1
 <div id="toc">
   <div id="toctitle">Table of Contents</div>
   <noscript><p><b>JavaScript must be enabled in your browser to display the table of contents.</b></p></noscript>
@@ -561,12 +561,17 @@ MuMuDVB peux réécrire le PID PAT (table d&#8217;allocation des programmes) pou
 </li>
 <li>
 <p>
+MuMuDVB peux réécrire le PID SDT (table de description des programmes) pour n&#8217;annoncer que les chaînes présentes (utile pour certains clients). Voir la section <a href="#sdt_rewrite">réécriture du SDT</a>.
+</p>
+</li>
+<li>
+<p>
 Support des chaines cryptées (si vous n&#8217;avez pas de CAM vous pouvez utiliser sasc-ng mais vérifiez que c&#8217;est autorisé dans votre pays/par votre abonnement)
 </p>
 </li>
 <li>
 <p>
-Configuration automatique, i.e. dçouverte automatique des chaînes, référez-vous à la section <a href="#autoconfiguration">Autoconfiguration</a>.
+Configuration automatique, i.e. déouverte automatique des chaînes, référez-vous à la section <a href="#autoconfiguration">Autoconfiguration</a>.
 </p>
 </li>
 <li>
@@ -576,7 +581,7 @@ Génération des annonces SAP, voir la section <a href="#sap">annonces SAP</a>.
 </li>
 <li>
 <p>
-Support pour DVB-S (satellite), DVB-C (cable), DVB-T (terrestre) et ATSC (terrestre ou cable en amérique du nord)
+Support pour DVB-S2 (satellite), DVB-S (satellite), DVB-C (cable), DVB-T (terrestre) et ATSC (terrestre ou cable en amérique du nord)
 </p>
 </li>
 <li>
@@ -688,11 +693,6 @@ Scripts d&#8217;initialisation style Debian
 </li>
 <li>
 <p>
-Peut utiliser une carte accordée par un autre programme. Ceci est utile pour le DVB-S2 qui n&#8217;est pas encore supporté nativement
-</p>
-</li>
-<li>
-<p>
 La taille du tampon peux être réglée pour réduire l&#8217;utilisation processeur. Voir la section <a href="#reduce_cpu">réduire l&#8217;utilisation processseur</a>
 </p>
 </li>
@@ -709,6 +709,21 @@ Détecte automatiquement si une chaîne est brouillée
 <li>
 <p>
 Peut réinitialiser le module CAM si l&#8217;initialisation échoue
+</p>
+</li>
+<li>
+<p>
+Peut trier le PID EIT pour envoyer seulement ceux correspondant a la chaine courante
+</p>
+</li>
+<li>
+<p>
+La lecture des données peux se faire via un thread, voir la section <a href="#threaded_read">lecture par thread</a>
+</p>
+</li>
+<li>
+<p>
+Génération de listes de lecture, voir <a href="#playlist">playlist</a>
 </p>
 </li>
 </ul></div>
@@ -730,7 +745,7 @@ recup_sap: très petit et basique client sap. Récupère les annonces pendant 60
 <div class="sectionbody">
 <h3 id="_partir_des_sources">4.1. À partir des sources</h3><div style="clear:left"></div>
 <h4 id="_partir_d_8217_un_snapshot">4.1.1. À partir d&#8217;un snapshot</h4>
-<div class="paragraph"><p>Si vous avez téléchargé un snapshot, vous devez regénérer les fichiers d&#8217;auto(conf make etc &#8230;). Pour faire cela, vous avec besoin des autotools et automake et taper, dans le répertoire de MuMuDVB :</p></div>
+<div class="paragraph"><p>Si vous avez téléchargé un snapshot, vous devez regénérer les fichiers d&#8217;auto(conf make etc &#8230;). Pour faire cela, vous avec besoin des autotools, automake et libtool et taper, dans le répertoire de MuMuDVB :</p></div>
 <div class="listingblock">
 <div class="content">
 <pre><tt>autoreconf -i -f</tt></pre>
@@ -823,6 +838,12 @@ mumudvb [options] --config fichier_de_configuration</tt></pre>
 -t, --traffic
         Affiche toutes les 10 secondes la bande passante prise par chaque chaîne
 
+-l, --list-cards
+        Liste les cartes DVB et quitte
+
+--card
+        La carte DVB a utiliser ( le fichier de configuration est prioritaire en cas de conflit )
+
 -h, --help
         Montre l'aide ( en Anglais )
 
@@ -852,7 +873,7 @@ mumudvb [options] --config fichier_de_configuration</tt></pre>
 <div class="paragraph"><p>Dans ce mode, MuMuDVB trouvera pour vous les différentes chaînes, leurs noms et leurs PIDs (PMT, PCR, Audio, Vidéo, Sous-titres, Télétexte et AC3).</p></div>
 <div class="paragraph"><p>Pour utiliser ce mode, vous devez :
 - Définir les paramètres d&#8217;accord dans votre fichier de configuration
-- Ajouter <tt>autoconfiguration=2</tt> à votre fichier de configuration
+- Ajouter <tt>autoconfiguration=full</tt> à votre fichier de configuration
 - Vous n&#8217;avez a spécifier aucune chaîne
 - Pour une première utilisation, n&#8217;oubliez pas d&#8217;ajouter la paramètre <tt>-d</tt> lorsque vous lancez MuMuDVB :
    ex <tt>mumudvb -d -c your_config_file</tt></p></div>
@@ -862,7 +883,7 @@ mumudvb [options] --config fichier_de_configuration</tt></pre>
 <pre><tt>freq=11296
 pol=h
 srate=27500
-autoconfiguration=2</tt></pre>
+autoconfiguration=full</tt></pre>
 </div></div>
 <div class="paragraph"><p>Les chaînes seront diffusées sur les adresses ip de multicast 239.100.c.n où c est le numéro de carte ( 0 par défaut ) et n est le numéro de chaîne.</p></div>
 <div class="paragraph"><p>Si vous n&#8217;utilisez pas l&#8217;option common_port, MuMuDVB utilisera le port 1234.</p></div>
@@ -871,7 +892,10 @@ autoconfiguration=2</tt></pre>
 <td class="icon">
 <div class="title">Note</div>
 </td>
-<td class="content">Par défaut, les annnonces SAP sont activées si vous utilisez ce mode d&#8217;autoconfiguration. Pour les désactiver, ajoutez <tt>sap=0</tt> après la ligne <tt>autoconfiguration=2</tt>.</td>
+<td class="content">Par défaut, les annnonces SAP sont activées si vous utilisez ce mode d&#8217;autoconfiguration. Pour les désactiver, ajoutez <tt>sap=0</tt> dans votre fichier de configuration.
+Par défaut, la réécriture du PID SDT est activée si vous utilisez ce mode d&#8217;autoconfiguration. Pour la désactiver, ajoutez <tt>rewrite_sdt=0</tt> dans votre fichier de configuration.
+Par défaut, la réécriture du PID PAT est activée si vous utilisez ce mode d&#8217;autoconfiguration. Pour la désactiver, ajoutez <tt>rewrite_pat=0</tt> dans votre fichier de configuration.
+Par défaut, le tri du PID EITT est activée si vous utilisez ce mode d&#8217;autoconfiguration. Pour le désactiver, ajoutez <tt>sort_eit=0</tt> dans votre fichier de configuration.</td>
 </tr></table>
 </div>
 <div class="admonitionblock">
@@ -879,15 +903,65 @@ autoconfiguration=2</tt></pre>
 <td class="icon">
 <div class="title">Note</div>
 </td>
-<td class="content">Un fichier de configuration d&#8217;exemple, documenté (en anglais) peux être est disponible : <tt>doc/configuration_examples/autoconf_full.conf</tt></td>
+<td class="content">Un fichier de configuration d&#8217;exemple, documenté (en anglais) est disponible : <tt>doc/configuration_examples/autoconf_full.conf</tt></td>
 </tr></table>
 </div>
+<h4 id="_mod_les_de_nom_et_autoconfiguration">6.1.1. Modèles de nom et autoconfiguration</h4>
+<div class="paragraph"><p>Par défaut le nom de la chaîne sera le nom du service définit par le diffuseur. Si vous voulez plus de flexibilité vous pouvez utiliser un modèle.</p></div>
+<div class="paragraph"><p>Par exemple, si vous utilisez <tt>autoconf_name_template=%number-%name</tt> Les noms de chaîne auront la forme suivante :</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+<tt>1-CNN</tt>
+</p>
+</li>
+<li>
+<p>
+<tt>2-Euronews</tt>
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>Il y a différents mot-clef disponibles</p></div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="20%" />
+<col width="80%" />
+<thead>
+<tr>
+<th align="left" valign="top">Mot clef </th>
+<th align="left" valign="top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left" valign="top"><p class="table">%name</p></td>
+<td align="left" valign="top"><p class="table">Le nom donné par le diffuseur</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">%number</p></td>
+<td align="left" valign="top"><p class="table">Le numéro de chaîne de MuMuDVB</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">%lcn</p></td>
+<td align="left" valign="top"><p class="table">Le "logical channel number" ( numéro de chaîne attribué par le diffuseur ). Vous devez mettre <tt>autoconf_lcn=1</tt> dans votre fichier de configuration et votre diffuseur doit diffuser le LCN. Le LCN sera "affiché" avec trois chiffre incluant des 0. Ex "002". Si le LCN n&#8217;est pas détecté, %lcn sera remplacé par une chaîne de caractères vide</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">%2lcn</p></td>
+<td align="left" valign="top"><p class="table">Idem que précédemment mais avec un format à deux chiffres.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="paragraph"><p>D&#8217;autres mot clefs peuvent être facilement ajoutés si nécessaire.</p></div>
 <h3 id="autoconfiguration_simple">6.2. Autoconfiguration "simple"</h3><div style="clear:left"></div>
 <div class="paragraph"><p>Utilisez ce mode lorsque vous voulez contrôler le nom des chaînes et quelle chaînes vous voulez diffuser.</p></div>
 <div class="ulist"><ul>
 <li>
 <p>
-Vous devez ajouter <em>autoconfiguration=1</em> dans le début de votre fichier de configuration.
+Vous devez ajouter <em>autoconfiguration=partial</em> dans le début de votre fichier de configuration.
 </p>
 </li>
 <li>
@@ -897,7 +971,7 @@ Pour chaque chaîne, vous devez préciser :
 <div class="ulist"><ul>
 <li>
 <p>
-L&#8217;adresse IP
+L&#8217;adresse IP ( si vous n&#8217;utilisez pas l&#8217;unicast )
 </p>
 </li>
 <li>
@@ -947,6 +1021,9 @@ Le PID PMT
 <div class="paragraph"><p>Les annonces SAP seront envoyées uniquement pour les chaînes actives. Quand une chaîne devient inactive, MuMuDVB arrête automatiquement d&#8217;envoyer les annonces pour cette chaîne jusqu'à ce qu&#8217;elle redevienne active.</p></div>
 <h3 id="_demander_mumudvb_de_g_n_rer_les_annonces_sap">7.1. Demander à MuMuDVB de générer les annonces SAP</h3><div style="clear:left"></div>
 <div class="paragraph"><p>Pour envoyer les annonces SAP, vous devez ajouter <tt>sap=1</tt> à votre fichier de configuration. Les autres paramètres concernant les annonces SAP sont documentés dans le fichier <tt>doc/README_CONF-fr</tt> ( <a href="README_CONF-fr.html">Version HTML</a> ).</p></div>
+<h4 id="_annonces_sap_et_autoconfiguration_compl_te">7.1.1. Annonces SAP et autoconfiguration complète</h4>
+<div class="paragraph"><p>Si vous utilisez l&#8217;autoconfiguration complète, vous pouvez utiliser le mot-clef <em>%type</em> dans l&#8217;option sap_default_group. Ce mot clef sera remplacé par le type de la chaîne : Television ou Radio.</p></div>
+<div class="paragraph"><div class="title">Example</div><p>Si vous mettez <tt>sap_default_group=%type</tt>, vous obtiendrez deux groupes SAP : Television et Radio, chacun contenant les services coresspondants.</p></div>
 <h3 id="_configurer_le_client_pour_recevoir_les_annonces_sap">7.2. Configurer le client pour recevoir les annonces SAP</h3><div style="clear:left"></div>
 <h4 id="_vlc_gt_0_8_2">7.2.1. VLC &gt; 0.8.2</h4>
 <div class="paragraph"><p>Vous devez aller dans paramètres, puis paramètres avancés. Les annonces SAP peuvent êtres activés dans liste de lecture &#8594; découverte de services.</p></div>
@@ -972,11 +1049,11 @@ Le PID PMT
 <td class="icon">
 <div class="title">Note</div>
 </td>
-<td class="content">Si vous ne voulez pas que le flux multicast (toujours présent) aille sur votre réseau, utilisez l&#8217;option <tt>multicast_ttl=0</tt></td>
+<td class="content">Si vous ne voulez pas que le flux multicast (toujours présent) aille sur votre réseau, utilisez l&#8217;option <tt>multicast=0</tt></td>
 </tr></table>
 </div>
 <h3 id="_activer_l_8217_unicast_http">8.1. Activer l&#8217;unicast HTTP</h3><div style="clear:left"></div>
-<div class="paragraph"><p>Pour activer l&#8217;unicast HTTP vous devez définir l&#8217;option <tt>ip_http</tt>. Cette option vous permet de définir l&#8217;adresse IP sur laquelle vous voulez écouter les connections entrantes. Si vous voulez écouter sur toutes vos interfaces, mettez <tt>0.0.0.0</tt>.</p></div>
+<div class="paragraph"><p>Pour activer l&#8217;unicast HTTP vous devez définir l&#8217;option <tt>unicast</tt>. Par défaut, MuMuDVB écoute sur toutes vos interfaces.</p></div>
 <div class="paragraph"><p>Vous pouvez aussi définir le port d'écoute en utilisant l&#8217;option <tt>port_http</tt>. Si le port n&#8217;est pas défini, MuMuDVB utilisera le port par défaut : 4242.</p></div>
 <h3 id="_activer_l_8217_unicast_par_cha_ne">8.2. Activer l&#8217;unicast par chaîne</h3><div style="clear:left"></div>
 <div class="paragraph"><p>Vous pouvez créer des connections en écoute seulement pour une chaîne. Dans ce cas, quand un client se connecte dessus, il obtiendra toujours la même chaîne indépendamment du chemin HTTP.</p></div>
@@ -985,14 +1062,37 @@ Le PID PMT
 <h4 id="_vous_n_8217_utilisez_pas_l_8217_autoconfiguration_compl_te">8.2.2. Vous n&#8217;utilisez pas l&#8217;autoconfiguration complète</h4>
 <div class="paragraph"><p>Pour les chaînes pour lesquelles avoir une connexion en écoute, vous devez définir l&#8217;option <tt>unicast_port</tt> qui permet de spécifier le port d'écoute.</p></div>
 <h3 id="_cot_client_les_diff_rentes_m_thodes_pour_obtenir_les_cha_nes">8.3. Coté client, les différentes méthodes pour obtenir les chaînes</h3><div style="clear:left"></div>
-<h4 id="_cas_d_8217_une_connexion_pour_une_cha_ne">8.3.1. Cas d&#8217;une connexion pour une chaîne</h4>
+<h4 id="playlist">8.3.1. Utilisation d&#8217;une playlist</h4>
+<div class="paragraph"><p>MuMuDVB génère des playlist au format m3u.</p></div>
+<div class="paragraph"><p>Si votre serveur écoute sur l&#8217;ip 10.0.0.1 et le port 4242,</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>vlc http://10.0.0.1:4242/playlist.m3u</tt></pre>
+</div></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">Dans la playlist, les chaînes seront annoncées avec des URL du type <tt>/bynumber/</tt> ( voir plus bas ), si vous voulez des URLs de chaîne par port utilisez l&#8217;URL <tt>/playlist_port.m3u</tt>.</td>
+</tr></table>
+</div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">Des playlists pour la lecture multicast sont aussi générées, elles sont accessibles aux addresses suivantes : "playlist_multicast.m3u" et "playlist_multicast_vlc.m3u"</td>
+</tr></table>
+</div>
+<h4 id="_cas_d_8217_une_connexion_pour_une_cha_ne">8.3.2. Cas d&#8217;une connexion pour une chaîne</h4>
 <div class="paragraph"><p>Si le client se connecte au serveur sur un port qui est pour une seule chaîne, il obtiendra cette chaîne indépendamment du chemin demandé</p></div>
 <div class="paragraph"><p>Si votre serveur écoute sur l&#8217;ip 10.0.0.1 et le port pour la chaîne est 5000,</p></div>
 <div class="listingblock">
 <div class="content">
 <pre><tt>vlc http://10.0.0.1:5000/</tt></pre>
 </div></div>
-<h4 id="_obtenir_les_cha_nes_par_num_ro">8.3.2. Obtenir les chaînes par numéro</h4>
+<h4 id="_obtenir_les_cha_nes_par_num_ro">8.3.3. Obtenir les chaînes par numéro</h4>
 <div class="paragraph"><p>Vous pouvez obtenir les chaînes en utilisant leur numéro ( la première chaine est numéroté 1 ).</p></div>
 <div class="paragraph"><p>Si votre serveur écoute sur l&#8217;ip 10.0.0.1 et le port 4242,</p></div>
 <div class="listingblock">
@@ -1000,7 +1100,15 @@ Le PID PMT
 <pre><tt>vlc http://10.0.0.1:4242/bynumber/3</tt></pre>
 </div></div>
 <div class="paragraph"><p>vous donnera la chaîne numéro 3. Ceci marche aussi avec xine et mplayer.</p></div>
-<h4 id="_obtenir_les_cha_nes_par_leur_nom">8.3.3. Obtenir les chaînes par leur nom</h4>
+<h4 id="_obtenir_les_cha_nes_par_leur_transport_stream_id">8.3.4. Obtenir les chaînes par leur transport stream id</h4>
+<div class="paragraph"><p>Vous pouvez obtenir les chaînes en utilisant leur transport stream id.</p></div>
+<div class="paragraph"><p>Si votre serveur écoute sur l&#8217;ip 10.0.0.1 et le port 4242,</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>vlc http://10.0.0.1:4242/bytsid/100</tt></pre>
+</div></div>
+<div class="paragraph"><p>vous donnera la chaîne numéro avec le transport stream id 100 (ou une erreur 404 si il n&#8217;y a pas de chaine avec ce transport stream id). Ceci marche aussi avec xine et mplayer.</p></div>
+<h4 id="_obtenir_les_cha_nes_par_leur_nom">8.3.5. Obtenir les chaînes par leur nom</h4>
 <div class="admonitionblock">
 <table><tr>
 <td class="icon">
@@ -1009,12 +1117,14 @@ Le PID PMT
 <td class="content">Cette fonctionnalité n&#8217;est pas implémentée pour le moment. Elle sera implémentée dans une prochaine version.</td>
 </tr></table>
 </div>
-<h4 id="_obtenir_la_liste_des_cha_nes">8.3.4. Obtenir la liste des chaînes</h4>
+<h4 id="_obtenir_la_liste_des_cha_nes">8.3.6. Obtenir la liste des chaînes</h4>
 <div class="paragraph"><p>Si votre serveur écoute sur l&#8217;ip 10.0.0.1 et le port 4242,</p></div>
 <div class="paragraph"><p>Pour obtenir la liste des chaînes ( format HTML "basique" ) entrez l&#8217;adresse <tt>http://10.0.0.1:4242/channels_list.html</tt> dans votre navigateur.</p></div>
-<div class="paragraph"><p>Pour obtenir la liste des chaînes ( en texte brut avec plus de détails que la version HTML ) entrez l&#8217;adresse <tt>http://10.0.0.1:4242/channels_list.txt</tt> dans votre navigateur.</p></div>
+<div class="paragraph"><p>Pour obtenir la liste des chaînes ( format JSON ) entrez l&#8217;adresse <tt>http://10.0.0.1:4242/channels_list.json</tt> dans votre navigateur.</p></div>
 <h3 id="_unicast_http_et_surveillance_de_mumudvb">8.4. Unicast HTTP et surveillance de MuMuDVB</h3><div style="clear:left"></div>
-<div class="paragraph"><p>Cette connexion HTTP peut être utilisée pour surveiller MuMuDVB. Cette fonctionnalité sera implémentée dans un futur proche. Merci de signaler quelles informations pourraient vous intéresser.</p></div>
+<div class="paragraph"><p>Cette connexion HTTP peut être utilisée pour surveiller MuMuDVB.</p></div>
+<div class="paragraph"><p>Des informations de surveillance sont disponibles au format JSON ( <a href="http://fr.wikipedia.org/wiki/JSON">http://fr.wikipedia.org/wiki/JSON</a> ) via les URLs suivantes : <tt>/monitor/signal_power.json</tt> et <tt>/monitor/channels_traffic.json</tt></p></div>
+<div class="paragraph"><p>Il est assez aisé d&#8217;ajouter de nouvelles informations si nécessaire.</p></div>
 </div>
 <h2 id="_surveillance_de_mumudvb">9. Surveillance de MuMuDVB</h2>
 <div class="sectionbody">
@@ -1133,8 +1243,8 @@ HighlyScrambled : plus de 95% de paquets brouillés
 </div>
 <h2 id="pat_rewrite">11. Réécriture du PID PAT (Program Allocation Table)</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Cette fonctionnalité est principalement destinée pour les set-top boxes. Cet option permet d&#8217;annoncer uniquement la chaîne diffusée dans le PID PAT (Program Allocation Table) au lieu de toutes les chaînes du transpondeur. Les clients sur ordinateur regardent cette table et décode le premier programme avec des PIDs audio/vidéo. Les set-top boxes décodent habituellement le premier programme de cette table ce qui résulte en un écran noir pour la plupart des chaînes.</p></div>
-<div class="paragraph"><p>Pour activer la réécriture du PAT, ajoutez <tt>rewrite_pat=1</tt> à votre fichier de configuration. Cet fonctionnalité utilise peu de puissance processeur, la table PAT étant réécrite une fois par chaîne et stockée en mémoire.</p></div>
+<div class="paragraph"><p>Cette fonctionnalité est principalement destinée pour les set-top boxes. Cette option permet d&#8217;annoncer uniquement la chaîne diffusée dans le PID PAT (Program Allocation Table) au lieu de toutes les chaînes du transpondeur. Les clients sur ordinateur regardent cette table et décode le premier programme avec des PIDs audio/vidéo. Les set-top boxes décodent habituellement le premier programme de cette table ce qui résulte en un écran noir pour la plupart des chaînes.</p></div>
+<div class="paragraph"><p>Pour activer la réécriture du PAT, ajoutez <tt>rewrite_pat=1</tt> à votre fichier de configuration. Cette fonctionnalité utilise peu de puissance processeur, la table PAT étant réécrite une fois par chaîne et stockée en mémoire.</p></div>
 <div class="admonitionblock">
 <table><tr>
 <td class="icon">
@@ -1144,7 +1254,33 @@ HighlyScrambled : plus de 95% de paquets brouillés
 </tr></table>
 </div>
 </div>
-<h2 id="reduce_cpu">12. Réduire l&#8217;utilisation processeur (Expérimental)</h2>
+<h2 id="sdt_rewrite">12. Réécriture du PID SDT (Service Description Table)</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Cette option permet d&#8217;annoncer uniquement la chaîne diffusée dans le PID SDT (Service Description Table) au lieu de toutes les chaînes du transpondeur. Certains clients regardent cette table et peuvent ainsi montrer/sélectionner  des programmes fantomes si cette table n&#8217;est pas réécrite (même si le PAT est réécrit). Ceci peut se manifester par un écran noir de manière aléatoire.</p></div>
+<div class="paragraph"><p>Pour activer la réécriture du SDT, ajoutez <tt>rewrite_sdt=1</tt> à votre fichier de configuration. Cette fonctionnalité utilise peu de puissance processeur, la table SDT étant réécrite une fois par chaîne et stockée en mémoire.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">Si vous n&#8217;utilisez pas l&#8217;autoconfiguration complète, la réécriture du SDT nécessite l&#8217;option <tt>ts_id</tt> pour spécifier le "transport stream id", encore appelé "service id" ou numéro de programme.</td>
+</tr></table>
+</div>
+</div>
+<h2 id="_tri_du_pid_eit_event_information_table">13. Tri du PID EIT (Event Information Table)</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Cette option permet de ne diffuser que les packets EIT (Event Information Table) correspondant à la chaîne diffusée au lieu de toutes les chaînes du transpondeur. Certains clients regardent cette table et peuvent ainsi montrer/sélectionner des programmes fantomes si cette table n&#8217;est pas réécrite (même si le PAT et le SDT sont réécrits).</p></div>
+<div class="paragraph"><p>Pour activer le tri du PID EIT, ajoutez <tt>sort_eit=1</tt> à votre fichier de configuration.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">Si vous n&#8217;utilisez pas l&#8217;autoconfiguration complète, le tri du PID EIT nécessite l&#8217;option <tt>ts_id</tt> pour spécifier le "transport stream id", encore appelé "service id" ou numéro de programme.</td>
+</tr></table>
+</div>
+</div>
+<h2 id="reduce_cpu">14. Réduire l&#8217;utilisation processeur</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>Normalement MuMuDVB lit les paquets de la carte un par un et demande à la carte après chaque lecture si il y a un nouveau paquet disponible ( poll ). Mais souvent les cartes on un tampon interne ( la carte a plusieurs paquets de disponible d&#8217;un coup ) ce qui rends certains "polls" inutiles. Ces "polls" consomme du temps processeur.</p></div>
 <div class="paragraph"><p>Pour réduire l&#8217;utilisation CPU, une solution est d&#8217;essayer de lire plusieurs paquets à la fois. Pour faire cela, utilisez l&#8217;option <tt>dvr_buffer_size</tt>.</p></div>
@@ -1155,10 +1291,46 @@ HighlyScrambled : plus de 95% de paquets brouillés
 </div></div>
 <div class="paragraph"><p>Pour voir si la valeur que vous avez choisie est trop grande ou trop basse, exécutez MuMuDVB en mode verbeux, le nombre moyen de paquets reçus en même temps sera affiché toutes les deux minutes. Si ce nombre est plus faible que votre taille de tampon il est inutile de l&#8217;augmenter.</p></div>
 <div class="paragraph"><p>La réduction de l&#8217;utilisation processeur peut être entre 20 et 50%.</p></div>
-<div class="paragraph"><p>Cette fonctionalité est assez jeune et peut avoir des effets de bord, merci de contacter si vous en constatez.</p></div>
-<div class="paragraph"><p>Si vous utilisez cette option, n&#8217;hésitez pas a reporter les améliorations constatées à mumudvb @AT@ braice DOT net</p></div>
 </div>
-<h2 id="_d_tails_techniques_en_vrac">13. Détails techniques (en vrac)</h2>
+<h2 id="threaded_read">15. Lecture des données via un thread</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Pour rendre MuMuDVB plus robuste ( au prix d&#8217;un légère augmentation de l&#8217;utiliation CPU ), MuMuDVB peux lire les données en provenance de la carte via un thread, ce qui rends la lecture "indépendante" du reste du programme.</p></div>
+<div class="paragraph"><p>Pour activer cette fonctionalitée, utilisez l&#8217;option <tt>dvr_thread</tt>.</p></div>
+<div class="paragraph"><p>Cette lecture utilise deux tampons : un pour les données reçues par la carte, un pour les données actuellement traitées par le programme principal. Vous pouvez ajuster la taille de ces tampons en utilisant l&#8217;option <tt>dvr_thread_buffer_size</tt>. La valeur par défaut ( 5000 packets de 188 octets ) devrait suffire pour la plupart des cas.</p></div>
+<div class="paragraph"><p>Le message "Thread trowing dvb packets" vous informe que le thread recoit plus de paquets que la taille du tampon et est obligé d&#8217;en "jeter". Augmenter la taille du tampon résoudra probablement le problème.</p></div>
+</div>
+<h2 id="transcoding">16. Transcoding</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>MuMuDVB peux transcoder le flux dans différents formats pour économiser de la bande passante. Le transcodage est effectué en utilisant les librairies du projet ffmpeg. Cette fonctionnalité est assez nouvelle, n&#8217;hesitez pas à envoyer vos remarques/suggestions.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">Le transcodage ne fonctionne pas pour le moment avec l&#8217;autoconfiguratin complète/l&#8217;unicast.</td>
+</tr></table>
+</div>
+<h3 id="_compiler_mumudvb_avec_le_support_pour_le_transcodage">16.1. Compiler MuMuDVB avec le support pour le transcodage</h3><div style="clear:left"></div>
+<div class="paragraph"><p>Pour compiler MuMuDVB avec le support pour le transcodage, vous aurez besoin des librairies suivantes : libavcodec, libavformat et libswscale</p></div>
+<div class="paragraph"><p>Vous devez aussi ajouter l&#8217;option --enable-transcoding à votre configure. Ex: <tt>./configure --enable-transcoding</tt></p></div>
+<div class="paragraph"><p>Vérifiez à la fin du configure que le transcoding est effectivement activé. Si ce n&#8217;est pas le cas, une librairie est probablement manquante.</p></div>
+<h3 id="_utiliser_le_transcodage">16.2. Utiliser le transcodage</h3><div style="clear:left"></div>
+<div class="paragraph"><p>Merci de lire la documentation concernant les options de transcodage et les exemples.</p></div>
+<h3 id="_futurs_d_veloppements_concernant_le_transcodage">16.3. Futurs développements concernant le transcodage</h3><div style="clear:left"></div>
+<div class="paragraph"><p>Faire fonctionner le transcodage avec l&#8217;unicast, en particulier une fois le support RTSP achevé.</p></div>
+<h3 id="_probl_mes_courants">16.4. Problèmes courants</h3><div style="clear:left"></div>
+<h4 id="_broken_ffmpeg_default_settings_detected">16.4.1. Broken ffmpeg default settings detected</h4>
+<div class="paragraph"><p>Si vous obtenez un messaage disant : "Broken ffmpeg default settings detected"</p></div>
+<div class="paragraph"><p>Ajouter les options suivante a votre configuration de transcodage lui permettra de fonctionner :</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>transcode_me_range=16
+transcode_qdiff=4
+transcode_qmin=10
+transcode_qmax=51</tt></pre>
+</div></div>
+</div>
+<h2 id="_d_tails_techniques_en_vrac">17. Détails techniques (en vrac)</h2>
 <div class="sectionbody">
 <div class="ulist"><ul>
 <li>
@@ -1193,9 +1365,9 @@ MuMuDVB supporte la réception satellite en bande Ku avec des LNB universel ou s
 </li>
 </ul></div>
 </div>
-<h2 id="_probl_mes_connus">14. Problèmes connus</h2>
+<h2 id="_probl_mes_connus">18. Problèmes connus</h2>
 <div class="sectionbody">
-<h3 id="_vlc_n_8217_arrive_pas_lire_le_flux_mais_cela_marche_avec_xine_ou_mplayer">14.1. VLC n&#8217;arrive pas à lire le flux mais cela marche avec xine ou mplayer</h3><div style="clear:left"></div>
+<h3 id="_vlc_n_8217_arrive_pas_lire_le_flux_mais_cela_marche_avec_xine_ou_mplayer">18.1. VLC n&#8217;arrive pas à lire le flux mais cela marche avec xine ou mplayer</h3><div style="clear:left"></div>
 <div class="ulist"><ul>
 <li>
 <p>
@@ -1204,7 +1376,7 @@ C&#8217;est un problème fréquent. Pour le résoudre, vous pouvez utilisez le m
 </p>
 </li>
 </ul></div>
-<h3 id="_vlc_arrive_a_lire_la_vid_o_mais_pas_le_son">14.2. VLC arrive a lire la vidéo mais pas le son</h3><div style="clear:left"></div>
+<h3 id="_vlc_arrive_a_lire_la_vid_o_mais_pas_le_son">18.2. VLC arrive a lire la vidéo mais pas le son</h3><div style="clear:left"></div>
 <div class="ulist"><ul>
 <li>
 <p>
@@ -1212,7 +1384,7 @@ Ce problème peut arriver lorsque le PID PCR ( i.e. l&#8217;horloge ) n&#8217;es
 </p>
 </li>
 </ul></div>
-<h3 id="_mumudvb_ne_marche_pas_en_mode_d_mon">14.3. MuMuDVB ne marche pas en mode démon</h3><div style="clear:left"></div>
+<h3 id="_mumudvb_ne_marche_pas_en_mode_d_mon">18.3. MuMuDVB ne marche pas en mode démon</h3><div style="clear:left"></div>
 <div class="ulist"><ul>
 <li>
 <p>
@@ -1220,7 +1392,7 @@ Pour passer en mode démon, MuMuDVB a besoin que le répertoire <tt>/var/run/mum
 </p>
 </li>
 </ul></div>
-<h3 id="_le_syst_me_plante_ou_g_le">14.4. Le système plante ou gèle</h3><div style="clear:left"></div>
+<h3 id="_le_syst_me_plante_ou_g_le">18.4. Le système plante ou gèle</h3><div style="clear:left"></div>
 <div class="ulist"><ul>
 <li>
 <p>
@@ -1228,7 +1400,7 @@ Les vieux chipset VIA ou nForce sont des chipset grand public. Ils ne peuvent pa
 </p>
 </li>
 </ul></div>
-<h3 id="_probl_mes_d_8217_accord_en_dvb_t">14.5. Problèmes d&#8217;accord en DVB-T</h3><div style="clear:left"></div>
+<h3 id="_probl_mes_d_8217_accord_en_dvb_t">18.5. Problèmes d&#8217;accord en DVB-T</h3><div style="clear:left"></div>
 <div class="ulist"><ul>
 <li>
 <p>
@@ -1236,7 +1408,7 @@ Vous devez vérifier les paramètres d&#8217;accord, sachant que la détection a
 </p>
 </li>
 </ul></div>
-<h3 id="_ma_set_top_box_affiche_un_cran_noir">14.6. Ma set top box affiche un écran noir</h3><div style="clear:left"></div>
+<h3 id="_ma_set_top_box_affiche_un_cran_noir">18.6. Ma set top box affiche un écran noir</h3><div style="clear:left"></div>
 <div class="ulist"><ul>
 <li>
 <p>
@@ -1244,7 +1416,7 @@ Si le flux fonctionne bien lorsqu&#8217;il est lu via un ordinateur et pas sur v
 </p>
 </li>
 </ul></div>
-<h3 id="_l_8217_autoconfiguration_partielle_ne_trouve_pas_les_bon_pids">14.7. L&#8217;autoconfiguration partielle ne trouve pas les bon PIDs</h3><div style="clear:left"></div>
+<h3 id="_l_8217_autoconfiguration_partielle_ne_trouve_pas_les_bon_pids">18.7. L&#8217;autoconfiguration partielle ne trouve pas les bon PIDs</h3><div style="clear:left"></div>
 <div class="ulist"><ul>
 <li>
 <p>
@@ -1252,7 +1424,7 @@ Ceci peut arriver lorsqu&#8217;un PID PMT est partagé entre plusieurs chaînes.
 </p>
 </li>
 </ul></div>
-<h3 id="_le_module_cam_refuse_de_d_crypter_des_cha_nes_locked">14.8. Le module CAM refuse de décrypter des chaînes "locked"</h3><div style="clear:left"></div>
+<h3 id="_le_module_cam_refuse_de_d_crypter_des_cha_nes_locked">18.8. Le module CAM refuse de décrypter des chaînes "locked"</h3><div style="clear:left"></div>
 <div class="ulist"><ul>
 <li>
 <p>
@@ -1261,12 +1433,9 @@ Certains modules CAM viaccess peuvent avoir un verrou pour les chaînes "adultes
 </li>
 </ul></div>
 <div class="paragraph"><p>Vous devez mettre le "maturity rating" au maximum et déverrouiller "Maturity rating" dans le sous-menu "Bolts".</p></div>
-<h3 id="_vlc_ne_choisit_pas_le_bon_programme_m_me_avec_la_r_criture_du_pat">14.9. VLC ne choisit pas le bon programme même avec la réécriture du PAT</h3><div style="clear:left"></div>
-<div class="paragraph"><p>Ceci est un bug de VLC <a href="https://trac.videolan.org/vlc/ticket/2782">https://trac.videolan.org/vlc/ticket/2782</a></p></div>
-<div class="paragraph"><p>La réécriture du PAT permet d&#8217;annoncer que la chaîne présente dans le flux dans la table PAT. Mais VLC lit aussi la table SDT pour trouver les chaînes (il devrait seulement se référer au PAT) et sélectionne parfois le mauvais programme.
-Une solution temporaire est de ne pas envoyer le PID SDT. Vous pouvez faire cela en utilisant l&#8217;option <tt>dont_send_sdt</tt>.</p></div>
-<div class="paragraph"><p>Cet option sera remplacée par une réécriture du PID SDT.</p></div>
-<h3 id="problems_hp">14.10. À L&#8217;AIDE ! mon traffic multicast inonde le réseau (J&#8217;utilise un commutateur HP procurve)</h3><div style="clear:left"></div>
+<h3 id="_vlc_ne_choisit_pas_le_bon_programme_m_me_avec_la_r_criture_du_pat">18.9. VLC ne choisit pas le bon programme même avec la réécriture du PAT</h3><div style="clear:left"></div>
+<div class="paragraph"><p>Vous devez aussi réécrire le PID SDT en utilisant l&#8217;option <tt>rewrite_sdt</tt></p></div>
+<h3 id="problems_hp">18.10. À L&#8217;AIDE ! mon traffic multicast inonde le réseau (J&#8217;utilise un commutateur HP procurve)</h3><div style="clear:left"></div>
 <div class="paragraph"><p>La meilleure explication est fournie dans le guide de routage du multicast de HP.</p></div>
 <div class="paragraph"><p>On switches that do not support Data-Driven IGMP, unregistered multicast
 groups are flooded to the VLAN rather than pruned. In this scenario, Fast-Leave IGMP can actually increase the problem of multicast flooding by removing the IGMP group filter before the Querier has recognized the IGMP leave. The Querier will continue to transmit the multicast group during this short time, and because the group is no longer registered the switch will then flood the multicast group to all ports.</p></div>
@@ -1349,14 +1518,44 @@ Switch 6108
 </li>
 </ul></div>
 <div class="paragraph"><p>En conclusion, si vous avez un commutateur de la deuxième liste, c&#8217;est "normal". La solution est de faire en sorte que MuMuDVB joigne le groupe multicast. Pour cela, ajoutez <tt>multicast_auto_join=1</tt> dans votre fichier de configuration.</p></div>
-<h3 id="_mumudvb_utilise_beaucoup_de_temps_processeur_avec_sasc_ng">14.11. MuMuDVB utilise beaucoup de temps processeur avec sasc-ng !</h3><div style="clear:left"></div>
+<h3 id="_mumudvb_utilise_beaucoup_de_temps_processeur_avec_sasc_ng">18.11. MuMuDVB utilise beaucoup de temps processeur avec sasc-ng !</h3><div style="clear:left"></div>
 <div class="paragraph"><p>Si vous utilisez sasc-ng + dvbloopback, MuMuDVB consommera plus de temps processeur que nécessaire.</p></div>
 <div class="paragraph"><p>Une partie de ce temps CPU est utilisé pour débrouiller les chaînes, une autre part est due à la manière dont dvbloopback est implémenté et à la manière dont MuMuDVB interroge la carte.</p></div>
 <div class="paragraph"><p>Pour réduire l&#8217;utilisation processeur référez vous à la section <a href="#reduce_cpu">réduire l&#8217;utilisation processeur de MuMuDVB</a>. Dans le cas de l&#8217;utilisation de MuMuDVB avec sasc-ng cette amélioration peut être importante.</p></div>
+<h3 id="_la_r_ception_est_bonne_mais_mumudvb_indique_toutes_les_cha_nes_down">18.12. La réception est bonne mais MuMuDVB indique toutes les chaînes "down"</h3><div style="clear:left"></div>
+<div class="paragraph"><p>Si le signal est bon mais MuMuDVB vous indique que toutes les chaînes sont "down", cela peut être dû à votre module CAM si vous en possédez un. Essayez après avoir retiré votre module</p></div>
+<h3 id="_je_veux_diffuser_partir_de_plusieurs_cartes">18.13. Je veux diffuser à partir de plusieurs cartes</h3><div style="clear:left"></div>
+<div class="paragraph"><p>La solution est simple : lancez un processus de MuMuDVB pour chaque carte.</p></div>
+<h3 id="_je_veux_diffuser_tout_le_transpondeur_sur_une_cha_ne">18.14. Je veux diffuser tout le transpondeur sur une "chaîne"</h3><div style="clear:left"></div>
+<div class="paragraph"><p>MuMuDVB peut diffuser toutes les données reçues par la carte sur une "chaîne" (multicast ou unicast). Pour cela, vous devez ajouter le PID 8192 dans la liste des PIDs de la chaîne.</p></div>
+<h3 id="_j_8217_ai_plusieurs_interfaces_r_seau_et_je_veux_choisir_sur_laquelle_le_traffic_multicast_sera_envoy">18.15. J&#8217;ai plusieurs interfaces réseau et je veux choisir sur laquelle le traffic multicast sera envoyé</h3><div style="clear:left"></div>
+<div class="paragraph"><p>Pour spécifier l&#8217;interface, vous povez définir une route pour le traffic multicast comme :</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>route add -net 224.0.0.0 netmask 240.0.0.0 dev eth2</tt></pre>
+</div></div>
+<h3 id="_que_veulent_dire_les_codes_d_8217_erreur_de_mumudvb">18.16. Que veulent dire les codes d&#8217;erreur de MuMuDVB ?</h3><div style="clear:left"></div>
+<div class="paragraph"><p>Voici une courte description des codes d&#8217;erreur</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>    ERROR_ARGS=1,
+    ERROR_CONF_FILE,
+    ERROR_CONF,
+    ERROR_TOO_CHANNELS,
+    ERROR_CREATE_FILE,
+    ERROR_DEL_FILE,
+    ERROR_TUNE,
+    ERROR_NO_DIFF,
+    ERROR_MEMORY,
+    ERROR_NETWORK,
+    ERROR_CAM,
+    ERROR_GENERIC,
+    ERROR_NO_CAM_INIT,</tt></pre>
+</div></div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2009-09-26 18:35:56 CEST
+Last updated 2010-01-01 18:49:56 CEST
 </div>
 </div>
 </body>
