@@ -35,13 +35,16 @@
 
 #include <errno.h>
 #include <string.h>
-#include <iconv.h>
 #include <stdlib.h>
 
 #include "errors.h"
 #include "mumudvb.h"
 #include "autoconf.h"
 #include "log.h"
+
+#ifdef HAVE_ICONV
+#include <iconv.h>
+#endif
 
 extern int Interrupted;
 
@@ -245,6 +248,7 @@ int convert_en399468_string(char *string, int max_len)
     }
   }
 
+#ifdef HAVE_ICONV
   //Conversion to utf8
   iconv_t cd;
   //we open the conversion table
@@ -260,6 +264,9 @@ int convert_en399468_string(char *string, int max_len)
   *dest = '\0';
   free(tempbuf);
   iconv_close( cd );
+#else
+  log_message(MSG_DETAIL, "Autoconf : Iconv not present, no name encoding conversion \n");
+#endif
 
   log_message(MSG_FLOOD, "Autoconf : Converted name : \"%s\" (name encoding : %s)\n", string,encodings_en300468[encoding_control_char]);
   return encoding_control_char;

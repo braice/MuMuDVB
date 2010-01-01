@@ -34,13 +34,15 @@
 
 #include <errno.h>
 #include <string.h>
-#include <iconv.h>
 
 #include "errors.h"
 #include "mumudvb.h"
 #include "autoconf.h"
 #include "log.h"
 
+#ifdef HAVE_ICONV
+#include <iconv.h>
+#endif
 
 //LIBUCSI for long channel names
 #ifdef HAVE_LIBUCSI
@@ -124,7 +126,9 @@ int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parame
 {
   psip_vct_channel_t *vct_channel;
   char unconverted_short_name[15];//2*7 + 1 (for '\0')
+#ifdef HAVE_ICONV
   char *inbuf, *dest; //Pointers for iconv conversion
+#endif
   char utf8_short_name[15];
   char *channel_name=NULL;
   char long_name[MAX_NAME_LEN];
@@ -139,6 +143,7 @@ int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parame
   memcpy (unconverted_short_name, vct_channel->short_name, 14*sizeof(uint8_t));
   unconverted_short_name[14] = '\0';
 
+#ifdef HAVE_ICONV
   //Conversion to utf8 of the short name
   iconv_t cd;
   //we open the conversion table
@@ -153,6 +158,11 @@ int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parame
   iconv(cd, &inbuf, &inSize, &dest, &outSize );
   *dest = '\0';
   iconv_close( cd );
+#else
+  log_message(MSG_DETAIL, "Autoconf : Iconv not present, no name encoding conversion the reseult will be probably bad\n");
+  memcpy (utf8_short_name, vct_channel->short_name, 14*sizeof(uint8_t));
+  utf8_short_name[14] = '\0';
+#endif
   log_message(MSG_DEBUG, "Autoconf : \tchannel short_name : \"%s\"\n", utf8_short_name);
 
 

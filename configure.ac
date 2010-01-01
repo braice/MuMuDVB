@@ -21,6 +21,10 @@ AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 AC_PROG_CC_C99
 
+dnl
+dnl Iconv stuff
+dnl
+AM_ICONV
 
 
 AC_CHECK_LIB([dvbapi], [dvbdemux_set_section_filter])
