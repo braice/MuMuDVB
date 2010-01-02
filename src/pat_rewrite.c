@@ -1,7 +1,7 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB - Stream a DVB transport stream.
  * 
- * (C) 2004-2009 Brice DUBOST
+ * (C) 2004-2010 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -20,7 +20,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *     
+ *
  */
 
 /**@file
@@ -137,7 +137,7 @@ int pat_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
       /*We check the transport stream id if present and the size of the packet*/
       /* + 4 for the CRC32*/
       if((buf_dest_pos+PAT_PROG_LEN+4<TS_PACKET_SIZE) &&
-          (!channel->ts_id || (channel->ts_id == HILO(prog->program_number)) ))
+          (!channel->service_id || (channel->service_id == HILO(prog->program_number)) ))
       {
         for(i=0;i<channel->num_pids;i++)
           if(channel->pids[i]==HILO(prog->network_pid))
@@ -157,10 +157,10 @@ int pat_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
         }
       }
       else
-        log_message(MSG_DEBUG,"Pat rewrite : Program dropped because of ts_id. channel %d :\"%s\". ts_id chan : %d ts_id prog %d\n", 
+        log_message(MSG_DEBUG,"Pat rewrite : Program dropped because of service_id. channel %d :\"%s\". service_id chan : %d service_id prog %d\n",
                     curr_channel,
                     channel->name,
-                    channel->ts_id,
+                    channel->service_id,
                     HILO(prog->program_number));
     }
     delta+=PAT_PROG_LEN;

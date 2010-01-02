@@ -103,46 +103,44 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
   //0x42 service_description_section - actual_transport_stream
   //0x46 service_description_section - other_transport_stream 
   if((header->table_id==0x42)||(header->table_id==0x46))
+  {
+    log_message(MSG_DEBUG, "Autoconf : -- SDT : Service Description Table --\n");
+    //Loop over different services in the SDT
+    delta=SDT_LEN;
+    while((len-delta)>=(4+SDT_DESCR_LEN))
     {
-      log_message(MSG_DEBUG, "Autoconf : -- SDT : Service Description Table --\n");
-
-      //Loop over different services in the SDT
-      delta=SDT_LEN;
-      while((len-delta)>=(4+SDT_DESCR_LEN))
-	{	  
-	  descr_header=(sdt_descr_t *)(buf +delta );
-	  //we search if we already have service id
-	  new_service=autoconf_find_service_for_add(services,HILO(descr_header->service_id));
-	  if(new_service)
-	    {
-	      log_message(MSG_DEBUG, "Autoconf : We discovered a new service, service_id : 0x%x  ", HILO(descr_header->service_id));
-
-	      //For information only
-	      switch(descr_header->running_status)
-		{
-		case 0:
-		  log_message(MSG_DEBUG, "running_status : undefined\t");  break;
-		case 1:
-		  log_message(MSG_DEBUG, "running_status : not running\t");  break;
-		case 2:
-		  log_message(MSG_DEBUG, "running_status : starts in a few seconds\t");  break;
-		case 3:
-		  log_message(MSG_DEBUG, "running_status : pausing\t");  break;
-		case 4:  log_message(MSG_FLOOD, "running_status : running\t");  break; //too usual to be printed as debug
-		case 5:
-		  log_message(MSG_DEBUG, "running_status : service off-air\t");  break;
-		}
-	      //we store the data
-	      new_service->id=HILO(descr_header->service_id);
-	      new_service->running_status=descr_header->running_status;
-	      new_service->free_ca_mode=descr_header->free_ca_mode;
-	      log_message(MSG_DEBUG, "free_ca_mode : 0x%x\n", descr_header->free_ca_mode);
-	      //We read the descriptor
-	      parse_sdt_descriptor(buf+delta+SDT_DESCR_LEN,HILO(descr_header->descriptors_loop_length),new_service);
-	    }
-	  delta+=HILO(descr_header->descriptors_loop_length)+SDT_DESCR_LEN;
-	}
+      descr_header=(sdt_descr_t *)(buf +delta );
+      //we search if we already have service id
+      new_service=autoconf_find_service_for_add(services,HILO(descr_header->service_id));
+      if(new_service)
+      {
+        log_message(MSG_DEBUG, "Autoconf : We discovered a new service, service_id : 0x%x  ", HILO(descr_header->service_id));
+        //For information only
+        switch(descr_header->running_status)
+        {
+          case 0:
+            log_message(MSG_DEBUG, "running_status : undefined\t");  break;
+          case 1:
+            log_message(MSG_DEBUG, "running_status : not running\t");  break;
+          case 2:
+            log_message(MSG_DEBUG, "running_status : starts in a few seconds\t");  break;
+          case 3:
+            log_message(MSG_DEBUG, "running_status : pausing\t");  break;
+          case 4:  log_message(MSG_FLOOD, "running_status : running\t");  break; //too usual to be printed as debug
+          case 5:
+            log_message(MSG_DEBUG, "running_status : service off-air\t");  break;
+        }
+        //we store the data
+        new_service->id=HILO(descr_header->service_id);
+        new_service->running_status=descr_header->running_status;
+        new_service->free_ca_mode=descr_header->free_ca_mode;
+        log_message(MSG_DEBUG, "free_ca_mode : 0x%x\n", descr_header->free_ca_mode);
+        //We read the descriptor
+        parse_sdt_descriptor(buf+delta+SDT_DESCR_LEN,HILO(descr_header->descriptors_loop_length),new_service);
+      }
+    delta+=HILO(descr_header->descriptors_loop_length)+SDT_DESCR_LEN;
     }
+  }
   return 0;
 }
 
@@ -170,7 +168,8 @@ void parse_sdt_descriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_s
       parse_service_descriptor(buf,service);
     else if( descriptor_tag==0x53) //53 : CA identifier descriptor. This descriptor contains the CA_systems_id (the scrambling algorithms)
       autoconf_show_CA_identifier_descriptor(buf);
-    else
+    else /** @todo : Add descriptor 0x50 Component descriptor (multilingual 0x5E)*/
+       /** @todo : Add descriptor 0x5D  multilingual_service_name_descriptor*/
       log_message(MSG_FLOOD, "Autoconf SDT descriptor_tag : 0x%2x\n", descriptor_tag);
 
     buf += descriptor_len;

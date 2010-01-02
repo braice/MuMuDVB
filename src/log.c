@@ -1,8 +1,8 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * mumudvb - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * (C) 2004-2009 Brice DUBOST
+ * (C) 2004-2010 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -21,7 +21,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *     
+ *
  */
 
 /** @file
@@ -110,7 +110,7 @@ void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels, 
 	       (number_of_channels <= 1 ? "" : "s"));
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
-	  log_message( MSG_INFO, "Channel number : %3d, name : \"%s\"  TS id %d \n", curr_channel, channels[curr_channel].name, channels[curr_channel].ts_id);
+	  log_message( MSG_INFO, "Channel number : %3d, name : \"%s\"  TS id %d \n", curr_channel, channels[curr_channel].name, channels[curr_channel].service_id);
       if(multicast)
 	log_message( MSG_INFO, "\tMulticast ip : %s:%d\n", channels[curr_channel].ipOut, channels[curr_channel].portOut);
       if(unicast)
@@ -257,6 +257,8 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
         continue;
       else if (!strcmp (substring, "ts_id"))
         continue;
+      else if (!strcmp (substring, "service_id"))
+        continue;
       else if (!strcmp (substring, "cam_pmt_pid"))
 	continue;
       else if (!strcmp (substring, "pids"))
@@ -317,8 +319,8 @@ void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *
 	fprintf ( config_file, "sap_group=%s\n", channels[curr_channel].sap_group);
       if (channels[curr_channel].need_cam_ask)
         fprintf ( config_file, "cam_pmt_pid=%d\n", channels[curr_channel].pmt_pid);
-      if (channels[curr_channel].ts_id)
-        fprintf ( config_file, "ts_id=%d\n", channels[curr_channel].ts_id);
+      if (channels[curr_channel].service_id)
+        fprintf ( config_file, "service_id=%d\n", channels[curr_channel].service_id);
       if (channels[curr_channel].unicast_port)
         fprintf ( config_file, "unicast_port=%d\n", channels[curr_channel].unicast_port);
       fprintf ( config_file, "pids=");

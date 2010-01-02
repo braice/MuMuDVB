@@ -1,7 +1,7 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB - Stream a DVB transport stream.
  * 
- * (C) 2004-2009 Brice DUBOST <mumudvb@braice.net>
+ * (C) 2004-2010 Brice DUBOST <mumudvb@braice.net>
  *
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -220,14 +220,14 @@ int ts_check_CRC( mumudvb_ts_packet_t *pmt)
 
 
 
-/** @brief compare the TS_ID contained in the channel and in the PMT
+/** @brief compare the SERVICE_ID contained in the channel and in the PMT
  *
- * Return 1 if match or no ts_id info, 0 otherwise
+ * Return 1 if match or no service_id info, 0 otherwise
  * 
  * @param pmt the pmt packet
  * @param channel the channel to be checked
  */
-int check_pmt_ts_id(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
+int check_pmt_service_id(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 {
 
   pmt_t *header;
@@ -241,17 +241,17 @@ int check_pmt_ts_id(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
     return 0;
   }
 
-	//We check if this PMT belongs to the current channel. (Only works with autoconfiguration full for the moment because it stores the ts_id)
-  if(channel->ts_id && (channel->ts_id != HILO(header->program_number)) )
+	//We check if this PMT belongs to the current channel. (Only works with autoconfiguration full for the moment because it stores the service_id)
+  if(channel->service_id && (channel->service_id != HILO(header->program_number)) )
   {
     log_message( MSG_DETAIL,"TS : The PMT %d not belongs to channel \"%s\"\n", pmt->pid, channel->name);
     return 0;
   }
-  else if(channel->ts_id)
-    log_message( MSG_DETAIL,"TS : GOOD ts_id for PMT %d and channel \"%s\"\n", pmt->pid, channel->name);
+  else if(channel->service_id)
+    log_message( MSG_DETAIL,"TS : GOOD service_id for PMT %d and channel \"%s\"\n", pmt->pid, channel->name);
 
-  if(!channel->ts_id)
-    log_message( MSG_DEBUG,"TS : no ts_id information for channel \"%s\"\n", channel->name);
+  if(!channel->service_id)
+    log_message( MSG_DEBUG,"TS : no service_id information for channel \"%s\"\n", channel->name);
 
   return 1;
 

@@ -218,7 +218,7 @@ Paramètres pour l'autoconfiguration
 |autoconf_scrambled |Lors de l'autoconfiguration complète, est ce que les chaînes brouillées seront diffusées ? | 0 | 0 or 1 | Automatique lorsque cam_support=1. Parfois, une chaîne en clair peut être marquée comme étant cryptée. Cette option est aussi nécessaire lorsqu'une softcam est utilisée.
 |autoconf_pid_update |Est ce que MuMuDVB se reconfigure lorsque le PMT est mis à jour ? | 1 | 0 or 1 | 
 |autoconf_unicast_start_port |Le port unicast pour la première chaine découverte |  |  | Voir README-fr pour plus de détails.
-|autoconf_tsid_list |Pour ne pas autoconfigurer toutes les chaînes du transpondeur en autoconfiguration complète, spécifiez avec cette option la liste des transport stream id (numeros de programme) des chaînes que vous voulez configurer | vide |  | 
+|autoconf_sid_list |Pour ne pas autoconfigurer toutes les chaînes du transpondeur en autoconfiguration complète, spécifiez avec cette option la liste des service id (numeros de programme) des chaînes que vous voulez configurer | vide |  | 
 |autoconf_name_template |Le modèle pour le nom des chaînes en autoconfiguration complète, ex `%number-%name` | vide |  | Voir README-fr pour plus de détails.
 |==================================================================================================================
 
@@ -269,7 +269,7 @@ Concernant les PIDs, référez vous à la section <<getpids,obtenir les PIDs>>.
 |unicast_port | Le port pour l'unicast HTTP ( associé à cette chaîne ) | | Les ports inférieurs à 1024 nécessitent les droits root. Vous devez activer l'unicast HTTP avec l'option `ip_http`
 |sap_group | Le groupe de liste de lecture pour les annonces SAP | |  optionnel
 |cam_pmt_pid |Uniquement pour les chaînes brouillées. Le PID PMT pour le module CAM | |  
-|ts_id |Le  "transport stream id" (appelé aussi "program number"), uniquement pour l'autoconfiguration ou la réécriture du PID PAT ou SDT, se référer au README pour plus de détails | | 
+|service_id |Le  "service id" (appelé aussi "program number"), uniquement pour l'autoconfiguration ou la réécriture du PID PAT ou SDT, se référer au README pour plus de détails | | 
 |name | Le nom de la chaîne. Sera utilisé pour /var/run/mumudvb/chaines_diffusees%d, les journaux et les annonces SAP | | Obligatoire
 |pids | La liste des PIDs, séparés par des espaces. | |  Certains PIDs sont systématiquement envoyés (PAT CAT EIT SDT TDT NIT).
 |==================================================================================================================

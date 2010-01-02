@@ -1,7 +1,7 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB - Stream a DVB transport stream.
  * 
- * (C) 2004-2009 Brice DUBOST
+ * (C) 2004-2010 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -601,7 +601,7 @@ int AddPacketStart (unsigned char *packet, unsigned char *buf, unsigned int len)
 int AddPacketContinue  (unsigned char *packet, unsigned char *buf, unsigned int len, unsigned int act_len);
 
 struct mumudvb_channel_t;
-int check_pmt_ts_id(mumudvb_ts_packet_t *pmt, struct mumudvb_channel_t *channel);
+int check_pmt_service_id(mumudvb_ts_packet_t *pmt, struct mumudvb_channel_t *channel);
 
 
 #endif

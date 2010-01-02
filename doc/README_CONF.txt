@@ -213,7 +213,7 @@ Autoconfiguration parameters
 |autoconf_scrambled |Do we consider scrambled channels valid channels during full autoconfiguration ? | 0 | 0 or 1 | Automatic when cam_support=1. Sometimes a clear channel can be marked as scrambled. This option allows you to bypass the ckecking.
 |autoconf_pid_update |Do we follow the changes in the PIDs when the PMT is updated ? | 1 | 0 or 1 | 
 |autoconf_unicast_start_port |The unicast port for the first discovered channel |  |  | See README for more details.
-|autoconf_tsid_list | If you don't want to configure all the channels of the transponder in full autoconfiguration mode, specify with this option the list of the transport stream ids of the channels you want to autoconfigure. | empty |  | 
+|autoconf_sid_list | If you don't want to configure all the channels of the transponder in full autoconfiguration mode, specify with this option the list of the service ids of the channels you want to autoconfigure. | empty |  | 
 |autoconf_name_template | The template for the channel name, ex `%number-%name` | empty | | See README for more details
 |==================================================================================================================
 
@@ -262,7 +262,7 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 |unicast_port | The HTTP unicast port for this channel | | | Ports below 1024 needs root rights. You need to activate HTTP unicast with `ip_http`
 |sap_group |The playlist group for SAP announces | | string | optionnal
 |cam_pmt_pid |Only for scrambled channels. The PMT PID for CAM support | | | 
-|ts_id |The transport stream id (program number), olny for autoconfiguration, or rewrite (PAT or SDT) see README for more details | | | 
+|service_id |The service id (program number), olny for autoconfiguration, or rewrite (PAT or SDT) see README for more details | | | 
 |name | The name of the channel. Will be used for /var/run/mumudvb/chaines_diffusees%d, logging and SAP announces | | | Mandatory
 |pids | The PIDs list, separated by spaces | | | some pids are always sent (PAT CAT EIT SDT TDT NIT), see README for more details
 |==================================================================================================================

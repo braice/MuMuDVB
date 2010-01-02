@@ -1,8 +1,8 @@
 /* 
- * MuMuDVB - UDP-ize a DVB transport stream.
+ * MuMuDVB - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * (C) 2004-2009 Brice DUBOST
+ * (C) 2004-2010 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -224,7 +224,7 @@ typedef struct mumudvb_channel_t{
   /** Channel Type (Radio, TV, etc) / service type*/
   int channel_type;
   /**Transport stream ID*/
-  int ts_id;
+  int service_id;
   /**pmt pid number*/
   int pmt_pid;
   /**Say if we need to ask this channel to the cam*/

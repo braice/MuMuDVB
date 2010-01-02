@@ -165,19 +165,21 @@ int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, c
     substring = strtok (NULL, delimiteurs);
     autoconf_vars->autoconf_unicast_start_port = atoi (substring);
   }
-  else if (!strcmp (substring, "autoconf_tsid_list"))
+  else if ((!strcmp (substring, "autoconf_tsid_list"))||(!strcmp (substring, "autoconf_sid_list")))
   {
+    if(!strcmp (substring, "autoconf_tsid_list"))
+      log_message( MSG_WARN, "Warning: The option autoconf_tsid_list is deprecated, use autoconf_sid_list instead\n");
     while ((substring = strtok (NULL, delimiteurs)) != NULL)
     {
-      if (autoconf_vars->num_ts_id >= MAX_CHANNELS)
+      if (autoconf_vars->num_service_id >= MAX_CHANNELS)
       {
         log_message( MSG_ERROR,
                      "Autoconfiguration : Too many ts id : %d\n",
-                     autoconf_vars->num_ts_id);
+                     autoconf_vars->num_service_id);
         return -1;
       }
-      autoconf_vars->ts_id_list[autoconf_vars->num_ts_id] = atoi (substring);
-      autoconf_vars->num_ts_id++;
+      autoconf_vars->service_id_list[autoconf_vars->num_service_id] = atoi (substring);
+      autoconf_vars->num_service_id++;
     }
   }
   else if (!strcmp (substring, "autoconf_name_template"))
@@ -313,7 +315,7 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
   //PAT reading
   section_length=HILO(pat->section_length);
 
-  log_message(MSG_DEBUG,  "Autoconf : pat info : ts_id 0x%04x section_length %d version %i last_section_number %x \n"
+  log_message(MSG_DEBUG,  "Autoconf : pat info : transport stream id 0x%04x section_length %d version %i last_section_number %x \n"
 	      ,HILO(pat->transport_stream_id)
 	      ,HILO(pat->section_length)
 	      ,pat->version_number
@@ -486,7 +488,7 @@ void autoconf_free_services(mumudvb_service_t *services)
 
 /**@brief Sort the chained list of services.
  *
- * This function sort the services using their ts_id, this service doesn't sort the first one :( (but I think it's empty)
+ * This function sort the services using their service_id, this service doesn't sort the first one :( (but I think it's empty)
  * Unefficient sorting : O(n^2) but the number of services is never big and this function is called once
  * @param services the chained list of services
  */
@@ -553,7 +555,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 
   mumudvb_service_t *actual_service;
   int channel_number=0;
-  int found_in_tsid_list;
+  int found_in_service_id_list;
   char ip[20];
   int actual_unicast_port=parameters.autoconf_unicast_start_port;
   actual_service=parameters.services;
@@ -563,29 +565,29 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
       if(parameters.autoconf_scrambled && actual_service->free_ca_mode)
 	  log_message(MSG_DETAIL,"Service scrambled. Name \"%s\"\n", actual_service->name);
 
-      //If there is a ts_id list we look if we find it
-      if(parameters.num_ts_id)
+      //If there is a service_id list we look if we find it
+      if(parameters.num_service_id)
       {
-	int actual_tsid;
-	found_in_tsid_list=0;
-	for(actual_tsid=0;actual_tsid<parameters.num_ts_id && !found_in_tsid_list;actual_tsid++)
+	int actual_service_id;
+	found_in_service_id_list=0;
+	for(actual_service_id=0;actual_service_id<parameters.num_service_id && !found_in_service_id_list;actual_service_id++)
 	{
-	  if(parameters.ts_id_list[actual_tsid]==actual_service->id)
+	  if(parameters.service_id_list[actual_service_id]==actual_service->id)
 	  {
-	    found_in_tsid_list=1;
-            log_message(MSG_DEBUG,"Service found in the ts_id list. Name \"%s\"\n", actual_service->name);
+	    found_in_service_id_list=1;
+            log_message(MSG_DEBUG,"Service found in the service_id list. Name \"%s\"\n", actual_service->name);
 	  }
 	}
       }
       else //No ts id list so it is found
-	found_in_tsid_list=1;
+	found_in_service_id_list=1;
 
       if(!parameters.autoconf_scrambled && actual_service->free_ca_mode)
 	log_message(MSG_DETAIL,"Service scrambled and no cam support. Name \"%s\"\n", actual_service->name);
       else if(!actual_service->pmt_pid)
 	log_message(MSG_DETAIL,"Service without a PMT pid, we skip. Name \"%s\"\n", actual_service->name);
-      else if(!found_in_tsid_list)
-	log_message(MSG_DETAIL,"Service NOT in the ts_id list, we skip. Name \"%s\", id %d\n", actual_service->name, actual_service->id);
+      else if(!found_in_service_id_list)
+	log_message(MSG_DETAIL,"Service NOT in the service_id list, we skip. Name \"%s\", id %d\n", actual_service->name, actual_service->id);
       else
 	{
 	  //Cf EN 300 468 v1.9.1 Table 81
@@ -632,7 +634,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 
 	      //We store the PMT and the service id in the channel
 	      channels[channel_number].pmt_pid=actual_service->pmt_pid;
-	      channels[channel_number].ts_id=actual_service->id;
+	      channels[channel_number].service_id=actual_service->id;
 	      init_rtp_header(&channels[channel_number]); //We init the rtp header in all cases
 
 	      if(channels[channel_number].pmt_packet==NULL)

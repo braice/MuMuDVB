@@ -1,7 +1,7 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB - Stream a DVB transport stream.
  * 
- * (C) 2004-2009 Brice DUBOST
+ * (C) 2004-2010 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -20,7 +20,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *     
+ *
  */
 
 /**@file
@@ -145,7 +145,7 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
       //We check the transport stream id if present and the size of the packet
       // + 4 for the CRC32
     if((buf_dest_pos+SDT_DESCR_LEN+descriptor_length+4<TS_PACKET_SIZE) &&
-          (channel->ts_id == HILO(sdt_descr->service_id) ))
+          (channel->service_id == HILO(sdt_descr->service_id) ))
       {
         if(buf_dest_pos+SDT_DESCR_LEN+descriptor_length+4+1>TS_PACKET_SIZE) //The +4 is for CRC32 +1 is because indexing starts at 0
           {
@@ -153,7 +153,7 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
           }
           else
           {
-            log_message(MSG_DETAIL,"SDT rewrite : NEW program for channel %d : \"%s\". ts_id : %d\n", curr_channel, channel->name,channel->ts_id);
+            log_message(MSG_DETAIL,"SDT rewrite : NEW program for channel %d : \"%s\". service_id : %d\n", curr_channel, channel->name,channel->service_id);
             //we found a announce for a program in our stream, we keep it
             memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_sdt->packet+buffer_pos,SDT_DESCR_LEN+descriptor_length);
             buf_dest_pos+=SDT_DESCR_LEN+descriptor_length;
@@ -161,10 +161,10 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
           }
       }
       else
-        log_message(MSG_DEBUG,"SDT rewrite : Program dropped. channel %d :\"%s\". ts_id chan : %d ts_id prog %d\n", 
+        log_message(MSG_DEBUG,"SDT rewrite : Program dropped. channel %d :\"%s\". service_id chan : %d service_id prog %d\n",
                     curr_channel,
                     channel->name,
-                    channel->ts_id,
+                    channel->service_id,
                     HILO(sdt_descr->service_id));
       buffer_pos+=SDT_DESCR_LEN+descriptor_length;
   }
@@ -213,7 +213,7 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
   }
   else
   {
-    log_message(MSG_WARN,"SDT rewrite : The SDT rewrite failed (no program found, have you set ts_id ?) we desactivate for this channel %d : \"%s\"\n", curr_channel, channel->name);
+    log_message(MSG_WARN,"SDT rewrite : The SDT rewrite failed (no program found, have you set service_id ?) we desactivate for this channel %d : \"%s\"\n", curr_channel, channel->name);
     channel->sdt_rewrite_skip=1;
   }
 

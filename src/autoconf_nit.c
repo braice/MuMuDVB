@@ -2,7 +2,7 @@
  * MuMuDVB - Stream a DVB transport stream.
  * File for Autoconfiguration
  * 
- * (C) 2008-2009 Brice DUBOST <mumudvb@braice.net>
+ * (C) 2008-2010 Brice DUBOST <mumudvb@braice.net>
  *  
  * Parts of this code come from libdvb, modified for mumudvb
  * by Brice DUBOST 
@@ -251,21 +251,21 @@ void parse_lcn_descriptor(unsigned char* buf, mumudvb_channel_t* channels, int n
   nit_lcn_t *lcn;
   unsigned char descriptor_len = buf[1];
   buf += 2;
-  int ts_id, i_lcn, curr_channel;
+  int service_id, i_lcn, curr_channel;
   log_message(MSG_DEBUG, "Autoconf NIT  0x83 descriptor (probably LCN) \n");
   log_message(MSG_FLOOD, "Autoconf NIT  0x83 descriptor (probably LCN) descriptor_len %d\n",descriptor_len);
 
   while (descriptor_len > 0) {
     lcn=(nit_lcn_t *)buf;
     buf+=NIT_LCN_LEN;
-    ts_id= HILO(lcn->service_id);
+    service_id= HILO(lcn->service_id);
     i_lcn=HILO(lcn->logical_channel_number);
-    log_message(MSG_DEBUG, "Autoconf NIT LCN channel number %d, service id %d visible %d\n",i_lcn ,ts_id, lcn->visible_service_flag);
+    log_message(MSG_DEBUG, "Autoconf NIT LCN channel number %d, service id %d visible %d\n",i_lcn ,service_id, lcn->visible_service_flag);
     for(curr_channel=0;curr_channel<number_of_channels;curr_channel++)
     {
-      if(channels[curr_channel].ts_id==ts_id)
+      if(channels[curr_channel].service_id==service_id)
       {
-	log_message(MSG_DETAIL, "Autoconf NIT LCN channel FOUND id %d, LCN %d name \"%s\"\n",ts_id,i_lcn, channels[curr_channel].name);
+	log_message(MSG_DETAIL, "Autoconf NIT LCN channel FOUND id %d, LCN %d name \"%s\"\n",service_id,i_lcn, channels[curr_channel].name);
 	channels[curr_channel].logical_channel_number=i_lcn;
       }
     }

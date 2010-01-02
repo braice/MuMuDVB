@@ -1,7 +1,7 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB - Stream a DVB transport stream.
  * 
- * (C) 2004-2009 Brice DUBOST
+ * (C) 2004-2010 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -20,12 +20,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *     
+ *
  */
 
 /**@file
- * @brief This file contains the general functions for rewriting 
-
+ * @brief This file contains the general functions for rewriting
  */
 
 #include <stdlib.h>
@@ -111,8 +110,8 @@ int eit_sort_new_packet(unsigned char *ts_packet, mumudvb_channel_t *channel)
   eit_t       *eit_header=(eit_t*)(ts_packet+TS_HEADER_LEN);
   if(ts_header->payload_unit_start_indicator) //New packet ?
   {
-    if((channel->ts_id) &&
-        (channel->ts_id!= (HILO(eit_header->service_id))))
+    if((channel->service_id) &&
+        (channel->service_id!= (HILO(eit_header->service_id))))
     {
       send_packet=0;
       channel->eit_dropping=1; //We say that we will drop all the other parts of this packet

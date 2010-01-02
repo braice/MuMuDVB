@@ -320,7 +320,7 @@ If you put more than one PID for a channel, MuMuDVB will desactivate autoconfigu
 A detailled, documented example configuration file can be found in `doc/configuration_examples/autoconf1.conf`
 
 [NOTE]
-Simple autoconfiguration can fail finding the good pids if a PMT pid is shared within multiples channels. In this case you have to add the `ts_id` option to the channel to specify the transport stream id, also known as service id.
+Simple autoconfiguration can fail finding the good pids if a PMT pid is shared within multiples channels. In this case you have to add the `service_id` option to the channel to specify the service id.
 
 [[sap]]
 SAP announces
@@ -454,18 +454,18 @@ vlc http://10.0.0.1:4242/bynumber/3
 
 will give you the channel number 3. This works also with xine and mplayer.
 
-Get the channel by transport stream id
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Get the channel by service id
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can ask the channel by the transport stream id.
+You can ask the channel by the service id.
 
 If you server is listening on the ip 10.0.0.1 and the port 4242,
 
-------------------------------------
-vlc http://10.0.0.1:4242/bytsid/100
-------------------------------------
+----------------------------------
+vlc http://10.0.0.1:4242/bysid/100
+----------------------------------
 
-will give you the channel with the ts id 100, or a 404 error if there is no channel with this ts id. This works also with xine and mplayer.
+will give you the channel with the service id 100, or a 404 error if there is no channel with this service id. This works also with xine and mplayer.
 
 Get the channel by name
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -602,7 +602,7 @@ This feature is mainly intended for set-top boxes. This option will announce onl
 To enable PAT rewriting, add `rewrite_pat=1` to your config file. This feature consumes few CPU, since the rewritten PAT is stored in memory and computed only once per channel.
 
 [NOTE]
-PAT rewrite can fail (i.e. doesn't solve the previous symptoms) for some channels if their PMT pid is shared. In this case you have to add the `ts_id` option to the channel to specify the transport stream id, also known as service id.
+PAT rewrite can fail (i.e. doesn't solve the previous symptoms) for some channels if their PMT pid is shared. In this case you have to add the `service_id` option to the channel to specify the service id.
 
 [[sdt_rewrite]]
 SDT (Service Description Table) Rewriting
@@ -613,7 +613,7 @@ This option will announce only the streamed channel in the Service Description T
 To enable SDT rewriting, add `rewrite_sdt=1` to your config file. This feature consumes few CPU, since the rewritten SDT is stored in memory and computed only once per channel.
 
 [NOTE]
-If you don't use full autoconfiguration, SDT rewrite needs the `ts_id` option for each channel to specify the transport stream id, also known as service id.
+If you don't use full autoconfiguration, SDT rewrite needs the `service_id` option for each channel to specify the service id.
 
 
 
@@ -625,7 +625,7 @@ This option will make MuMuDVB stream only the EIT packets corresponding to the s
 To enable EIT sorting, add `sort_eit=1` to your config file. 
 
 [NOTE]
-If you don't use full autoconfiguration, EIT sorting needs the `ts_id` option for each channel to specify the transport stream id, also known as service id.
+If you don't use full autoconfiguration, EIT sorting needs the `service_id` option for each channel to specify the service id.
 
 [[reduce_cpu]]
 Reduce MuMuDVB CPU usage

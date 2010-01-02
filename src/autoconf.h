@@ -102,9 +102,9 @@ Possible values for this variable
   int autoconf_unicast_start_port;
 
   /**the list of TS ID for full autoconfiguration*/
-  int ts_id_list[MAX_CHANNELS];
+  int service_id_list[MAX_CHANNELS];
   /**number of TS ID*/
-  int num_ts_id;
+  int num_service_id;
   /** the template for the channel name*/
   char name_template[MAX_NAME_LEN];
 

@@ -1,8 +1,8 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB - Stream a DVB transport stream.
  * File for Conditionnal Access Modules support
  * 
- * (C) 2004-2009 Brice DUBOST <mumudvb@braice.net>
+ * (C) 2004-2010 Brice DUBOST <mumudvb@braice.net>
  *
  * The latest version can be found at http://mumudvb.braice.net
  *
@@ -779,7 +779,7 @@ void cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autocon
         (!autoconf_vars->autoconf_pid_update && get_ts_packet(ts_packet,actual_channel->pmt_packet))) 
     {
       //We check the transport stream id of the packet
-      if(check_pmt_ts_id(actual_channel->pmt_packet, actual_channel))
+      if(check_pmt_service_id(actual_channel->pmt_packet, actual_channel))
       {
         cam_vars->delay=0;
         iRet=mumudvb_cam_new_pmt(cam_vars, actual_channel->pmt_packet,actual_channel->need_cam_ask);
@@ -796,7 +796,7 @@ void cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autocon
       }
       else
       {
-        actual_channel->pmt_packet->empty=1;//The ts_id is bad, we will try to get another PMT packet
+        actual_channel->pmt_packet->empty=1;//The service_id is bad, we will try to get another PMT packet
       }
     }
   }

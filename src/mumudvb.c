@@ -249,7 +249,7 @@ autoconf_parameters_t autoconf_vars={
   .autoconf_temp_psip=NULL,
   .services=NULL,
   .autoconf_unicast_start_port=0,
-  .num_ts_id=0,
+  .num_service_id=0,
   .name_template="\0",
 };
 
@@ -638,16 +638,18 @@ int
       substring = strtok (NULL, delimiteurs);
       card_buffer.max_thread_buffer_size = atoi (substring);
     }
-    else if (!strcmp (substring, "ts_id"))
+    else if ((!strcmp (substring, "service_id")) || (!strcmp (substring, "ts_id")))
     {
+      if(!strcmp (substring, "ts_id"))
+        log_message( MSG_WARN, "Warning : the option ts_id is deprecated, use service_in instead.\n");
       if ( channel_start == 0)
       {
         log_message( MSG_ERROR,
-                     "ts_id : You have to start a channel first (using ip= or channel_next)\n");
+                     "service_id : You have to start a channel first (using ip= or channel_next)\n");
         exit(ERROR_CONF);
       }
       substring = strtok (NULL, delimiteurs);
-      chan_and_pids.channels[curr_channel].ts_id = atoi (substring);
+      chan_and_pids.channels[curr_channel].service_id = atoi (substring);
     }
     else if (!strcmp (substring, "pids"))
     {
@@ -1469,7 +1471,7 @@ int
         /******************************************************/
         if((send_packet==1) &&//no need to check paquets we don't send
            (pid == 18) && //This is a EIT PID
-            (chan_and_pids.channels[curr_channel].ts_id) && //we have the ts_id
+            (chan_and_pids.channels[curr_channel].service_id) && //we have the service_id
             rewrite_vars.eit_sort ) //AND we asked for EIT sorting
         {
           send_packet=eit_sort_new_packet(actual_ts_packet, &chan_and_pids.channels[curr_channel]);

@@ -317,7 +317,7 @@ Si vous mettez plus d'un PID pour une chaîne, MuMuDVB désactivera l'autoconfig
 Un fichier de configuration détaillé et documenté (en anglais) se trouve à l'emplacement : `doc/configuration_examples/autoconf1.conf`
 
 [NOTE]
-L'autoconfiguration simple peut ne pas réussir à trouver les bon PIDs si le PID PMT est partagé entre plusieurs chaînes. Dans ce cas, vous devez spécifier le numéro de programme ( transport stream identifier ou stream identifier ) via l'option `ts_id`.
+L'autoconfiguration simple peut ne pas réussir à trouver les bon PIDs si le PID PMT est partagé entre plusieurs chaînes. Dans ce cas, vous devez spécifier le numéro de programme ( service identifier ou stream identifier ) via l'option `service_id`.
 
 
 [[sap]]
@@ -446,18 +446,18 @@ vlc http://10.0.0.1:4242/bynumber/3
 
 vous donnera la chaîne numéro 3. Ceci marche aussi avec xine et mplayer.
 
-Obtenir les chaînes par leur transport stream id
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Obtenir les chaînes par leur service id
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Vous pouvez obtenir les chaînes en utilisant leur transport stream id.
+Vous pouvez obtenir les chaînes en utilisant leur service id.
 
 Si votre serveur écoute sur l'ip 10.0.0.1 et le port 4242,
 
 ------------------------------------
-vlc http://10.0.0.1:4242/bytsid/100
+vlc http://10.0.0.1:4242/bysid/100
 ------------------------------------
 
-vous donnera la chaîne numéro avec le transport stream id 100 (ou une erreur 404 si il n'y a pas de chaine avec ce transport stream id). Ceci marche aussi avec xine et mplayer.
+vous donnera la chaîne numéro avec le service id 100 (ou une erreur 404 si il n'y a pas de chaine avec ce service id). Ceci marche aussi avec xine et mplayer.
 
 Obtenir les chaînes par leur nom
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -595,7 +595,7 @@ Cette fonctionnalité est principalement destinée pour les set-top boxes. Cette
 Pour activer la réécriture du PAT, ajoutez `rewrite_pat=1` à votre fichier de configuration. Cette fonctionnalité utilise peu de puissance processeur, la table PAT étant réécrite une fois par chaîne et stockée en mémoire.
 
 [NOTE]
-La réécriture du PAT peu échouer (i.e. ne résout pas les symptômes précédents) pour certaines chaînes si le PID PMT est partagé par plusieurs chaînes. Dans ce cas, vous devez ajouter l'option `ts_id` pour spécifier le "transport stream id", encore appelé "service id" ou numéro de programme.
+La réécriture du PAT peu échouer (i.e. ne résout pas les symptômes précédents) pour certaines chaînes si le PID PMT est partagé par plusieurs chaînes. Dans ce cas, vous devez ajouter l'option `service_id` pour spécifier le "service id" ou numéro de programme.
 
 [[sdt_rewrite]]
 Réécriture du PID SDT (Service Description Table)
@@ -606,7 +606,7 @@ Cette option permet d'annoncer uniquement la chaîne diffusée dans le PID SDT (
 Pour activer la réécriture du SDT, ajoutez `rewrite_sdt=1` à votre fichier de configuration. Cette fonctionnalité utilise peu de puissance processeur, la table SDT étant réécrite une fois par chaîne et stockée en mémoire.
 
 [NOTE]
-Si vous n'utilisez pas l'autoconfiguration complète, la réécriture du SDT nécessite l'option `ts_id` pour spécifier le "transport stream id", encore appelé "service id" ou numéro de programme.
+Si vous n'utilisez pas l'autoconfiguration complète, la réécriture du SDT nécessite l'option `service_id` pour spécifier le "service id" ou numéro de programme.
 
 Tri du PID EIT (Event Information Table)
 ----------------------------------------
@@ -616,7 +616,7 @@ Cette option permet de ne diffuser que les packets EIT (Event Information Table)
 Pour activer le tri du PID EIT, ajoutez `sort_eit=1` à votre fichier de configuration.
 
 [NOTE]
-Si vous n'utilisez pas l'autoconfiguration complète, le tri du PID EIT nécessite l'option `ts_id` pour spécifier le "transport stream id", encore appelé "service id" ou numéro de programme.
+Si vous n'utilisez pas l'autoconfiguration complète, le tri du PID EIT nécessite l'option `service_id` pour spécifier le "service id" ou numéro de programme.
 
 
 [[reduce_cpu]]

@@ -1,7 +1,7 @@
 /*
-* MuMuDVB - UDP-ize a DVB transport stream.
+* MuMuDVB - Stream a DVB transport stream.
 *
-* (C) 2009 Brice DUBOST
+* (C) 2009-2010 Brice DUBOST
 *
 * The latest version can be found at http://mumudvb.braice.net
 *
@@ -25,7 +25,7 @@
 /** @file
 * @brief File for HTTP unicast
 * @author Brice DUBOST
-* @date 2009
+* @date 2009-2010
 */
 
 /***********************
@@ -575,9 +575,9 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
             }
           }
         }
-        //Channel by ts_id
+        //Channel by autoconf_sid_list
         //GET /bytsid/tsid
-        else if(strstr(client->buffer +pos ,"/bytsid/")==(client->buffer +pos))
+        else if(strstr(client->buffer +pos ,"/bysid/")==(client->buffer +pos))
         {
           if(client->channel!=-1)
           {
@@ -591,18 +591,18 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
             err404=1;
           else
           {
-            int requested_tsid;
-            requested_tsid=atoi(substring);
+            int requested_sid;
+            requested_sid=atoi(substring);
             for(int current_channel=0; current_channel<number_of_channels;current_channel++)
             {
-              if(channels[current_channel].ts_id == requested_tsid)
+              if(channels[current_channel].service_id == requested_sid)
                 requested_channel=current_channel+1;
             }
             if(requested_channel)
-              log_message(MSG_DEBUG,"Unicast : Channel by ts id,  ts_id %d number %d\n", requested_tsid, requested_channel);
+              log_message(MSG_DEBUG,"Unicast : Channel by service id,  service_id %d number %d\n", requested_sid, requested_channel);
             else
             {
-              log_message(MSG_INFO,"Unicast : Channel by ts id, ts id  %d not found\n",requested_tsid);
+              log_message(MSG_INFO,"Unicast : Channel by service id, service_id  %d not found\n",requested_sid);
               err404=1;
               requested_channel=0;
             }
@@ -1098,9 +1098,9 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
                         channels[curr_channel].ratio_scrambled,
                         channels[curr_channel].streamed_channel_old);
 
-    unicast_reply_write(reply, "\"unicast_port\":%d, \"ts_id\":%d, \"service_type\":\"%s\", \"pids_num\":%d, \n",
+    unicast_reply_write(reply, "\"unicast_port\":%d, \"service_id\":%d, \"service_type\":\"%s\", \"pids_num\":%d, \n",
                         channels[curr_channel].unicast_port,
-                        channels[curr_channel].ts_id,
+                        channels[curr_channel].service_id,
                         service_type_to_str(channels[curr_channel].channel_type),
                         channels[curr_channel].num_pids);
                         unicast_reply_write(reply, "\"pids\":[");
