@@ -1,10 +1,10 @@
 /* dvbtune - tune.c
 
-   part of mumudvb
+   part of MuMuDVB
 
    last version availaible from http://mumudvb.braice.net/
 
-   Copyright (C) 2004-2009 Brice DUBOST
+   Copyright (C) 2004-2010 Brice DUBOST
    Copyright (C) Dave Chapman 2001,2002
   
    This program is free software; you can redistribute it and/or
@@ -393,7 +393,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
                  "You will use DVB API version 5 for tuning your card.\n");
 #else
     log_message( MSG_ERROR,
-                 "Config issue : delivery_system. You are trying to set the delivery system but your MuMuDVB have not been built with DVB-S2/DVB API 5 support.\n");
+                 "Config issue : delivery_system. You are trying to set the rolloff but your MuMuDVB have not been built with DVB-S2/DVB API 5 support.\n");
     return -1;
 #endif
   }
@@ -484,28 +484,27 @@ struct diseqc_cmd {
  * As defined in the DiseqC norm, we stop the 22kHz tone, we set the voltage. Wait. send the command. Wait. put back the 22kHz tone
  *
  */
-static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd,
-		     fe_sec_tone_mode_t t)
+static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd, fe_sec_tone_mode_t t)
 {
-   if(ioctl(fd, FE_SET_TONE, SEC_TONE_OFF) < 0)
-   	return -1;
-   if(ioctl(fd, FE_SET_VOLTAGE, v) < 0)
-   	return -1;
-   usleep(15 * 1000);
-   //1.x compatible equipment
-   if(ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd->cmd) < 0)
-     return -1;
-   usleep(15 * 1000);
-   if(ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd->cmd) < 0)
-     return -1;
-   usleep(cmd->wait * 1000);
+  if(ioctl(fd, FE_SET_TONE, SEC_TONE_OFF) < 0)
+    return -1;
+  if(ioctl(fd, FE_SET_VOLTAGE, v) < 0)
+    return -1;
+  usleep(15 * 1000);
+  //1.x compatible equipment
+  if(ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd->cmd) < 0)
+    return -1;
+  usleep(15 * 1000);
+  if(ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd->cmd) < 0)
+    return -1;
+  usleep(cmd->wait * 1000);
    usleep(15 * 1000);
 
 
-   if(ioctl(fd, FE_SET_TONE, t) < 0)
-   	return -1;
+  if(ioctl(fd, FE_SET_TONE, t) < 0)
+    return -1;
 
-   return 0;
+  return 0;
 }
 
 /** @brief generate and sent the digital satellite equipment control "message",
@@ -532,60 +531,57 @@ static int do_diseqc(int fd, unsigned char sat_no, int pol_v_r, int hi_lo, int l
 
   //Compute the lnb voltage : 0 if we asked, of 13V for vertical and circular right, 18 for horizontal and circular left
   if (lnb_voltage_off)
-    {
-      lnb_voltage=SEC_VOLTAGE_OFF;
-      log_message( MSG_INFO, "LNB voltage 0V\n");
-    }
+  {
+    lnb_voltage=SEC_VOLTAGE_OFF;
+    log_message( MSG_INFO, "LNB voltage 0V\n");
+  }
   else if(pol_v_r)
-    {
-      lnb_voltage=SEC_VOLTAGE_13;
-      log_message( MSG_INFO, "LNB voltage 13V\n");
-    }
+  {
+    lnb_voltage=SEC_VOLTAGE_13;
+    log_message( MSG_INFO, "LNB voltage 13V\n");
+  }
   else
-    {
-      lnb_voltage=SEC_VOLTAGE_18;
-      log_message( MSG_INFO, "LNB voltage 18V\n");
-    }
+  {
+    lnb_voltage=SEC_VOLTAGE_18;
+    log_message( MSG_INFO, "LNB voltage 18V\n");
+  }
 
   //Diseqc compliant hardware
   if(sat_no != 0)
-    {
-      /* param: high nibble: reset bits, low nibble set bits,
-       * bits are: option, position, polarization, band
-       */
-      cmd.cmd.msg[3] =
+  {
+    /* param: high nibble: reset bits, low nibble set bits,
+    * bits are: option, position, polarization, band */
+    cmd.cmd.msg[3] =
 	0xf0 | ((((sat_no-1) * 4) & 0x0f) | (pol_v_r ? 0 : 2) | (hi_lo ? 1 : 0)); 
-      
-      return diseqc_send_msg(fd, 
+
+    return diseqc_send_msg(fd, 
 			     lnb_voltage,
 			     &cmd, 
 			     hi_lo ? SEC_TONE_ON : SEC_TONE_OFF);
-    }
+  }
   else 	//only tone and voltage
+  {
+    if(ioctl(fd, FE_SET_VOLTAGE, lnb_voltage) < 0)
     {
-      
-      if(ioctl(fd, FE_SET_VOLTAGE, lnb_voltage) < 0)
-	{
-	  log_message( MSG_WARN, "Warning : problem to set the LNB voltage");
-	  return -1;
-	}
-      
-      if(ioctl(fd, FE_SET_TONE, (hi_lo ? SEC_TONE_ON : SEC_TONE_OFF)) < 0)
-	{
-	  log_message( MSG_WARN, "Warning : problem to set the 22kHz tone");
-	  return -1;
-	}
-      
-      usleep(15 * 1000);
-      
-      return 0;
+      log_message( MSG_WARN, "Warning : problem to set the LNB voltage");
+      return -1;
     }
+
+    if(ioctl(fd, FE_SET_TONE, (hi_lo ? SEC_TONE_ON : SEC_TONE_OFF)) < 0)
+    {
+      log_message( MSG_WARN, "Warning : problem to set the 22kHz tone");
+      return -1;
+    }
+    usleep(15 * 1000);
+    return 0;
+  }
 }
 
 /** @brief Check the status of the card
  *@todo document
  */
-int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_strength) {
+int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_strength)
+{
   int32_t strength;
   fe_status_t festatus;
   struct dvb_frontend_event event;
@@ -982,7 +978,6 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     }
 
   }
-#endif 
- 
+#endif
   return(check_status(fd_frontend,fe_info.type,lo_frequency,tuneparams->display_strenght));
 }
