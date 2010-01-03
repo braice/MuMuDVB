@@ -490,15 +490,15 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd, f
     return -1;
   if(ioctl(fd, FE_SET_VOLTAGE, v) < 0)
     return -1;
-  usleep(15 * 1000);
+  usleep(15 * 1000*10);
   //1.x compatible equipment
   if(ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd->cmd) < 0)
     return -1;
-  usleep(15 * 1000);
+  usleep(15 * 1000*10);
   if(ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd->cmd) < 0)
     return -1;
-  usleep(cmd->wait * 1000);
-   usleep(15 * 1000);
+  usleep(cmd->wait * 1000*10);
+  usleep(15 * 1000*10);
 
 
   if(ioctl(fd, FE_SET_TONE, t) < 0)
@@ -572,7 +572,7 @@ static int do_diseqc(int fd, unsigned char sat_no, int pol_v_r, int hi_lo, int l
       log_message( MSG_WARN, "Warning : problem to set the 22kHz tone");
       return -1;
     }
-    usleep(15 * 1000);
+    usleep(15 * 1000 * 10);
     return 0;
   }
 }
