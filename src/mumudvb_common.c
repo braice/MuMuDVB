@@ -168,9 +168,6 @@ int string_comput(char *string)
   pluspos=strchr(string,'+');
   if(pluspos==NULL)
   {
-    multpos=strchr(string,'*');
-    if(multpos==NULL)
-      return atoi(string);
     len=strlen(string);
   }
   else
@@ -180,24 +177,12 @@ int string_comput(char *string)
   tempchar=malloc(sizeof(char)*(len+1));
   strncpy(tempchar,string,len);
   tempchar[len]='\0';
-  multpos=strchr(string,'*');
-  if(multpos==NULL)
-  {
-    number1=atoi(tempchar);
-  }
-  else //multpos !=NULL which means pluspos==NULL --> only mult
-  {
-    number1=string_mult(tempchar);
-  }
+  number1=string_mult(tempchar);
   free(tempchar);
   if(pluspos==NULL)
     return number1;
   if(strchr(pluspos+1,'+')!=NULL)
     return number1+string_comput(pluspos+1);
-  //no plus, we check if there is a mult
-  multpos=strchr(string,'*');
-  if(multpos==NULL)
-    return number1+atoi(pluspos+1);
   return number1+string_mult(pluspos+1);
 }
 
@@ -208,18 +193,18 @@ int string_comput(char *string)
 int string_mult(char *string)
 {
   int number1,len;
-  char *pluspos=NULL;
+  char *multpos=NULL;
   char *tempchar;
-  pluspos=strchr(string,'*');
-  if(pluspos==NULL)
+  multpos=strchr(string,'*');
+  if(multpos==NULL)
     return atoi(string);
-  len=pluspos-string;
+  len=multpos-string;
   tempchar=malloc(sizeof(char)*(len+1));
   strncpy(tempchar,string,len);
   tempchar[len]='\0';
   number1=atoi(tempchar);
   free(tempchar);
-  if(strchr(pluspos+1,'*')!=NULL)
-    return number1*string_mult(pluspos+1);
-  return number1*atoi(pluspos+1);
+  if(strchr(multpos+1,'*')!=NULL)
+    return number1*string_mult(multpos+1);
+  return number1*atoi(multpos+1);
 }
