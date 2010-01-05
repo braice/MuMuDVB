@@ -294,6 +294,7 @@ unicast_parameters_t unicast_vars={
   .unicast=0,
   .ipOut="0.0.0.0",
   .portOut=4242,
+  .portOut_str=NULL,
   .consecutive_errors_timeout=UNICAST_CONSECUTIVE_ERROR_TIMEOUT,
   .max_clients=-1,
   .queue_max_size=UNICAST_DEFAULT_QUEUE_MAX,
@@ -759,6 +760,18 @@ int
   if(!strlen(tuneparams.card_dev_path))
     sprintf(tuneparams.card_dev_path,DVB_DEV_PATH,tuneparams.card);
 
+
+  //If we specified a string for the unicast port out, we parse it
+  if(unicast_vars.portOut_str!=NULL)
+  {
+    int len;
+    len=strlen(unicast_vars.portOut_str)+1;
+    char card_number[10];
+    sprintf(card_number,"%d",tuneparams.card);
+    unicast_vars.portOut_str=mumu_string_replace(unicast_vars.portOut_str,&len,1,"%card",card_number);
+    unicast_vars.portOut=string_comput(unicast_vars.portOut_str);
+    log_message( MSG_DEBUG, "Unicast: computed unicast master port : %d\n",unicast_vars.portOut);
+  }
   /******************************************************/
   //end of config file reading
   /******************************************************/

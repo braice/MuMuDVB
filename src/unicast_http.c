@@ -169,8 +169,14 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
   }
   else if (!strcmp (substring, "port_http"))
   {
-    substring = strtok (NULL, delimiteurs);
-    unicast_vars->portOut = atoi (substring);
+    substring = strtok (NULL, "");
+    if((strchr(substring,'*')!=NULL)||(strchr(substring,'+')!=NULL)||(strchr(substring,'%')!=NULL))
+    {
+      unicast_vars->portOut_str=malloc(sizeof(char)*(strlen(substring)+1));
+      strcpy(unicast_vars->portOut_str,substring);
+    }
+    else
+      unicast_vars->portOut = atoi (substring);
   }
   else if (!strcmp (substring, "unicast_port"))
   {

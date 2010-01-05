@@ -153,6 +153,8 @@ typedef struct unicast_parameters_t{
   char ipOut[20];
   /** The "HTTP" port*/
   int portOut;
+  /** The "HTTP" port string version before parsing*/
+  char *portOut_str;
   /** The HTTP input socket*/
   struct sockaddr_in sIn;
   /**  The HTTP input socket*/
