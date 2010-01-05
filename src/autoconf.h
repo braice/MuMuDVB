@@ -101,9 +101,9 @@ Possible values for this variable
   /**the starting http unicast port */
   int autoconf_unicast_start_port;
 
-  /**the list of TS ID for full autoconfiguration*/
+  /**the list of SID for full autoconfiguration*/
   int service_id_list[MAX_CHANNELS];
-  /**number of TS ID*/
+  /**number of SID*/
   int num_service_id;
   /** the template for the channel name*/
   char name_template[MAX_NAME_LEN];

@@ -598,7 +598,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
               ((actual_service->type==0x02||
               actual_service->type==0x0a)&&parameters.autoconf_radios))
 	    {
-	      log_message(MSG_DETAIL,"Autoconf : We convert a new service into a channel, id %d pmt_pid %d name \"%s\" \n",
+	      log_message(MSG_DETAIL,"Autoconf : We convert a new service into a channel, sid %d pmt_pid %d name \"%s\" \n",
 			  actual_service->id, actual_service->pmt_pid, actual_service->name);
               display_service_type(actual_service->type, MSG_DETAIL);
 

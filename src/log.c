@@ -110,7 +110,7 @@ void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels, 
 	       (number_of_channels <= 1 ? "" : "s"));
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
-	  log_message( MSG_INFO, "Channel number : %3d, name : \"%s\"  TS id %d \n", curr_channel, channels[curr_channel].name, channels[curr_channel].service_id);
+	  log_message( MSG_INFO, "Channel number : %3d, name : \"%s\"  service id %d \n", curr_channel, channels[curr_channel].name, channels[curr_channel].service_id);
       if(multicast)
 	log_message( MSG_INFO, "\tMulticast ip : %s:%d\n", channels[curr_channel].ipOut, channels[curr_channel].portOut);
       if(unicast)
