@@ -1,8 +1,8 @@
 /* 
- * MuMuDVB - UDP-ize a DVB transport stream.
+ * MuMuDVB - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * (C) 2004-2009 Brice DUBOST
+ * (C) 2004-2010 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -152,4 +152,74 @@ char *mumu_string_replace(char *source, int *length, int can_realloc, char *tore
     source[*length-1]='\0';
   }
   return source;
+}
+
+int string_mult(char *string);
+/** @brief Evaluate a string containing sum and mult keeping the priority of the mult over the +
+ * Ex : string_sum("2+2*3") returns 8
+ * @param string the string to evaluate
+*/
+int string_comput(char *string)
+{
+  int number1,len;
+  char *pluspos=NULL;
+  char *multpos=NULL;
+  char *tempchar;
+  pluspos=strchr(string,'+');
+  if(pluspos==NULL)
+  {
+    multpos=strchr(string,'*');
+    if(multpos==NULL)
+      return atoi(string);
+    len=strlen(string);
+  }
+  else
+  {
+    len=pluspos-string;
+  }
+  tempchar=malloc(sizeof(char)*(len+1));
+  strncpy(tempchar,string,len);
+  tempchar[len]='\0';
+  multpos=strchr(string,'*');
+  if(multpos==NULL)
+  {
+    number1=atoi(tempchar);
+  }
+  else //multpos !=NULL which means pluspos==NULL --> only mult
+  {
+    number1=string_mult(tempchar);
+  }
+  free(tempchar);
+  if(pluspos==NULL)
+    return number1;
+  if(strchr(pluspos+1,'+')!=NULL)
+    return number1+string_comput(pluspos+1);
+  //no plus, we check if there is a mult
+  multpos=strchr(string,'*');
+  if(multpos==NULL)
+    return number1+atoi(pluspos+1);
+  return number1+string_mult(pluspos+1);
+}
+
+/** @brief Evaluate a string containing a multiplication. Doesn't work if there is a sum inside
+ * Ex : string_sum("2*6") returns 6
+ * @param string the string to evaluate
+*/
+int string_mult(char *string)
+{
+  int number1,len;
+  char *pluspos=NULL;
+  char *tempchar;
+  pluspos=strchr(string,'*');
+  if(pluspos==NULL)
+    return atoi(string);
+  len=pluspos-string;
+  tempchar=malloc(sizeof(char)*(len+1));
+  strncpy(tempchar,string,len);
+  tempchar[len]='\0';
+  number1=atoi(tempchar);
+  free(tempchar);
+  if(strchr(pluspos+1,'*')!=NULL)
+    return number1*string_mult(pluspos+1);
+  return number1*atoi(pluspos+1);
 }

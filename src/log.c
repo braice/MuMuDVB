@@ -641,6 +641,7 @@ void print_info ()
                "Latest version available from http://mumudvb.braice.net/\n"
                "Project from the cr@ns (http://www.crans.org)\n"
                "by Brice DUBOST (mumudvb@braice.net)\n\n");
+
 }
 
 
@@ -680,6 +681,4 @@ void show_traffic(long now, int show_traffic_interval, mumudvb_chan_and_pids_t *
                        chan_and_pids->channels[curr_channel].name);
         }
     }
-  
-
 }
