@@ -204,7 +204,7 @@ CAM support parameters
 
 Autoconfiguration parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-[width="80%",cols="2,6,1,2,4",options="header"]
+[width="80%",cols="3,5,1,2,5",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |autoconfiguration |autoconfiguration 1, partial: find audio and video PIDs, 2, full: full autoconfiguration | 0 | 0, 1, 2, partial or full | see the README for more details
@@ -213,13 +213,14 @@ Autoconfiguration parameters
 |autoconf_scrambled |Do we consider scrambled channels valid channels during full autoconfiguration ? | 0 | 0 or 1 | Automatic when cam_support=1. Sometimes a clear channel can be marked as scrambled. This option allows you to bypass the ckecking.
 |autoconf_pid_update |Do we follow the changes in the PIDs when the PMT is updated ? | 1 | 0 or 1 | 
 |autoconf_unicast_start_port |The unicast port for the first discovered channel |  |  | See README for more details.
+|autoconf_unicast_port |The unicast port for each discovered channel (autoconf full). Ex "2000+%number" |  |  | You can unse expressions with `+` `*` `%card` and `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
 |autoconf_sid_list | If you don't want to configure all the channels of the transponder in full autoconfiguration mode, specify with this option the list of the service ids of the channels you want to autoconfigure. | empty |  | 
 |autoconf_name_template | The template for the channel name, ex `%number-%name` | empty | | See README for more details
 |==================================================================================================================
 
 SAP announces parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~
-[width="80%",cols="2,8,1,2,3",options="header"]
+[width="80%",cols="2,6,1,2,5",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |sap | Generation of SAP announces | 0 (1 if full autoconfiguration) | 0 or 1 | 
@@ -233,15 +234,15 @@ SAP announces parameters
 
 HTTP unicast parameters
 ~~~~~~~~~~~~~~~~~~~~~~~
-[width="80%",cols="2,8,1,2,3",options="header"]
+[width="80%",cols="2,8,1,5",options="header"]
 |==================================================================================================================
-|Parameter name |Description | Default value | Possible values | Comments
-|unicast |Set this option to one to activate HTTP unicast | 0  |  | see the README for more details
-|ip_http |the listening ip for http unicast, if you want to listen to all interfaces put 0.0.0.0 | 0.0.0.0  |  | see the README for more details
-|port_http | The listening port for http unicast | 4242 | |  You can use mathematical expressions containing integers, * and +. You can use the %card template. Ex `port_http=%card*100+2`
-|unicast_consecutive_errors_timeout | The timeout for disconnecting a client wich is not responding | 5 | | A client will be disconnected if not data have been sucessfully sent during this interval. A value of 0 desactivate the timeout (unadvised).
-|unicast_max_clients | The limit on the number of connected clients | 0 | | 0 : no limit.
-|unicast_queue_size | The maximum size of the buffering when writting to a client fails | 512kBytes | | in Bytes.
+|Parameter name |Description | Default value |Comments
+|unicast |Set this option to one to activate HTTP unicast | 0  |   see the README for more details
+|ip_http |the listening ip for http unicast, if you want to listen to all interfaces put 0.0.0.0 | 0.0.0.0  |  see the README for more details
+|port_http | The listening port for http unicast | 4242 |  You can use mathematical expressions containing integers, * and +. You can use the %card template. Ex `port_http=2000+%card*100`
+|unicast_consecutive_errors_timeout | The timeout for disconnecting a client wich is not responding | 5 | A client will be disconnected if no data have been sucessfully sent during this interval. A value of 0 desactivate the timeout (unadvised).
+|unicast_max_clients | The limit on the number of connected clients | 0 | 0 : no limit.
+|unicast_queue_size | The maximum size of the buffering when writting to a client fails | 512kBytes | in Bytes.
 |==================================================================================================================
 
 

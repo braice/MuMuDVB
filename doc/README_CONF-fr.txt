@@ -209,7 +209,7 @@ Paramètres concernant le support des cartes CAM
 Paramètres pour l'autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[width="80%",cols="2,6,1,2,4",options="header"]
+[width="80%",cols="3,5,1,2,5",options="header"]
 |==================================================================================================================
 |Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
 |autoconfiguration |autoconfiguration 1, partial: Trouve les PIDs audio et video, 2, full: autoconfiguration complète | 0 | 0, 1, 2, partial ou full | Se référer au README pour plus de détails
@@ -218,6 +218,7 @@ Paramètres pour l'autoconfiguration
 |autoconf_scrambled |Lors de l'autoconfiguration complète, est ce que les chaînes brouillées seront diffusées ? | 0 | 0 or 1 | Automatique lorsque cam_support=1. Parfois, une chaîne en clair peut être marquée comme étant cryptée. Cette option est aussi nécessaire lorsqu'une softcam est utilisée.
 |autoconf_pid_update |Est ce que MuMuDVB se reconfigure lorsque le PMT est mis à jour ? | 1 | 0 or 1 | 
 |autoconf_unicast_start_port |Le port unicast pour la première chaine découverte |  |  | Voir README-fr pour plus de détails.
+|autoconf_unicast_port |Le port unicast pour chaque chaine. Ex "2000+%number" (autoconfiguration complète) |  |  | Vous pouvez utiliser des expressions contenant `+` `*` `%card` et `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
 |autoconf_sid_list |Pour ne pas autoconfigurer toutes les chaînes du transpondeur en autoconfiguration complète, spécifiez avec cette option la liste des service id (numeros de programme) des chaînes que vous voulez configurer | vide |  | 
 |autoconf_name_template |Le modèle pour le nom des chaînes en autoconfiguration complète, ex `%number-%name` | vide |  | Voir README-fr pour plus de détails.
 |==================================================================================================================
@@ -225,7 +226,7 @@ Paramètres pour l'autoconfiguration
 Paramètres concernant les annonces SAP
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[width="80%",cols="2,8,1,2,3",options="header"]
+[width="80%",cols="2,6,1,2,5",options="header"]
 |==================================================================================================================
 |Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
 |sap | Génération des annonces SAP | 0 (1 si autoconfiguration complète) | 0 or 1 | 
@@ -240,15 +241,15 @@ Paramètres concernant les annonces SAP
 Paramètres concernant l'unicast HTTP
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[width="80%",cols="2,8,1,2,3",options="header"]
+[width="80%",cols="2,8,1,5",options="header"]
 |==================================================================================================================
-|Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
-|unicast | Utilisez cette option pour activer l'unicast HTTP | 0  |  | se référer au README pour plus de détails
-|ip_http | L'ip d'écoute du serveur unicast. Si vous voulez écouter sur toutes les interfaces mettez 0.0.0.0 | 0.0.0.0  |  |  se référer au README pour plus de détails.
-|port_http | Le port d'écoute pour l'unicast HTTP | 4242 | | Vous pouvez utiliser des expressions mathématiques contenant des entiers, * et +. Vous pouvex utiliser le mot clef %card. Ex `port_http=%card*100+2`
-|unicast_consecutive_errors_timeout | Le délai pour déconnecter un client qui ne réponds pas | 5 | | Un client sera déconnecté si aucune donnée n'a été envoyée avec succès durant cet intervalle. Une valeur 0 désactive cette fonctionnalité (déconseillé).
-|unicast_max_clients | Limite sur le nombre de clients simultanés | 0 | | 0 : pas de limite.
-|unicast_queue_size | La taille maximum du tampon utilisé lorsque l'écriture pour un client échoue. | 512k octets| | en octets.
+|Nom |Description | Valeur par défaut | Commentaires
+|unicast | Utilisez cette option pour activer l'unicast HTTP | 0  |   se référer au README pour plus de détails
+|ip_http | L'ip d'écoute du serveur unicast. Si vous voulez écouter sur toutes les interfaces mettez 0.0.0.0 | 0.0.0.0  |    se référer au README pour plus de détails.
+|port_http | Le port d'écoute pour l'unicast HTTP | 4242 |  Vous pouvez utiliser des expressions mathématiques contenant des entiers, * et +. Vous pouvex utiliser le mot clef %card. Ex `port_http=2000+%card*100`
+|unicast_consecutive_errors_timeout | Le délai pour déconnecter un client qui ne réponds pas | 5 |  Un client sera déconnecté si aucune donnée n'a été envoyée avec succès durant cet intervalle. Une valeur 0 désactive cette fonctionnalité (déconseillé).
+|unicast_max_clients | Limite sur le nombre de clients simultanés | 0 |  0 : pas de limite.
+|unicast_queue_size | La taille maximum du tampon utilisé lorsque l'écriture pour un client échoue. | 512k octets|  en octets.
 |==================================================================================================================
 
 

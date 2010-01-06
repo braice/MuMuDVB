@@ -248,7 +248,7 @@ autoconf_parameters_t autoconf_vars={
   .autoconf_temp_sdt=NULL,
   .autoconf_temp_psip=NULL,
   .services=NULL,
-  .autoconf_unicast_start_port=0,
+  .autoconf_unicast_port="\0",
   .num_service_id=0,
   .name_template="\0",
 };

@@ -163,7 +163,19 @@ int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, c
   else if (!strcmp (substring, "autoconf_unicast_start_port"))
   {
     substring = strtok (NULL, delimiteurs);
-    autoconf_vars->autoconf_unicast_start_port = atoi (substring);
+    sprintf(autoconf_vars->autoconf_unicast_port,"%d +%%number",atoi (substring));
+  }
+  /**  option for the http unicast port (for autoconf full) parsed version*/
+  else if (!strcmp (substring, "autoconf_unicast_port"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    if(strlen(substring)>255)
+    {
+      log_message( MSG_ERROR,
+                   "The autoconf_unicast_port is too long\n");
+      return -1;
+    }
+    strcpy(autoconf_vars->autoconf_unicast_port,substring);
   }
   else if ((!strcmp (substring, "autoconf_tsid_list"))||(!strcmp (substring, "autoconf_sid_list")))
   {
@@ -557,8 +569,10 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
   int channel_number=0;
   int found_in_service_id_list;
   char ip[20];
-  int actual_unicast_port=parameters.autoconf_unicast_start_port;
+  int port_per_channel;
+  char tempstring[256];
   actual_service=parameters.services;
+  port_per_channel=strlen(parameters.autoconf_unicast_port)?1:0;
 
   do
     {
@@ -650,11 +664,17 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 		    memset (channels[channel_number].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 		}
                 //We update the unicast port, the connection will be created in autoconf_finish_full
-                if(actual_unicast_port && unicast_vars->unicast)
+                if(port_per_channel && unicast_vars->unicast)
                 {
-                  channels[channel_number].unicast_port=actual_unicast_port;
+                  strcpy(tempstring,parameters.autoconf_unicast_port);
+                  int len;len=256;
+                  char number[10];
+                  sprintf(number,"%d",channel_number);
+                  mumu_string_replace(tempstring,&len,0,"%number",number);
+                  sprintf(number,"%d",card);
+                  mumu_string_replace(tempstring,&len,0,"%card",number);
+                  channels[channel_number].unicast_port=string_comput(tempstring);
 		  log_message(MSG_DEBUG,"Autoconf : Channel (direct) unicast port  %d\n",channels[channel_number].unicast_port);
-                  actual_unicast_port++;
                 }
 
                 channel_number++;

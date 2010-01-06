@@ -98,8 +98,8 @@ Possible values for this variable
   mumudvb_ts_packet_t *autoconf_temp_psip;
   mumudvb_service_t   *services;
 
-  /**the starting http unicast port */
-  int autoconf_unicast_start_port;
+  /**the http unicast port (string with %card %number, * and + ) */
+  char autoconf_unicast_port[256];
 
   /**the list of SID for full autoconfiguration*/
   int service_id_list[MAX_CHANNELS];
