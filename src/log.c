@@ -233,19 +233,7 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
       //We remove the channels and parameters concerning autoconfiguration
       if (!strcmp (substring, "autoconfiguration"))
 	continue;
-      else if (!strcmp (substring, "autoconf_ip_header"))
-	continue;
-      else if (!strcmp (substring, "autoconf_scrambled"))
-	continue;
-      else if (!strcmp (substring, "autoconf_radios"))
-	continue;
-      else if (!strcmp (substring, "autoconf_unicast_start_port"))
-        continue;
-      else if (!strcmp (substring, "autoconf_pid_update"))
-        continue;
-      else if (!strcmp (substring, "autoconf_tsid_list"))
-        continue;
-      else if (!strcmp (substring, "autoconf_name_template"))
+      else if (!strncmp (substring, "autoconf_", strlen("autoconf_")))
         continue;
       else if (!strcmp (substring, "channel_next"))
         continue;
