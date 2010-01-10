@@ -213,7 +213,8 @@ Paramètres pour l'autoconfiguration
 |==================================================================================================================
 |Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
 |autoconfiguration |autoconfiguration 1, partial: Trouve les PIDs audio et video, 2, full: autoconfiguration complète | 0 | 0, 1, 2, partial ou full | Se référer au README pour plus de détails
-|autoconf_ip_header |Pour l'autoconfiguration complète, la première partie de l'ip des chaînes diffusées | 239.100 | | Se référer au README pour plus de détails
+|autoconf_ip_header |Pour l'autoconfiguration complète, la première partie de l'ip des chaînes diffusées | | | Option obsolète, utilisez `autoconf_ip` à la place
+|autoconf_ip |Pour l'autoconfiguration complète, le modèle pour l'ip de la chaîne diffusée | 239.100.%card.%number  | |  Vous pouvez utiliser les mot clefs `%card` et `%number`
 |autoconf_radios | Lors de l'autoconfiguration complète, est ce que les radios seront diffusées ?| 0 | 0 ou 1 | 
 |autoconf_scrambled |Lors de l'autoconfiguration complète, est ce que les chaînes brouillées seront diffusées ? | 0 | 0 or 1 | Automatique lorsque cam_support=1. Parfois, une chaîne en clair peut être marquée comme étant cryptée. Cette option est aussi nécessaire lorsqu'une softcam est utilisée.
 |autoconf_pid_update |Est ce que MuMuDVB se reconfigure lorsque le PMT est mis à jour ? | 1 | 0 or 1 | 

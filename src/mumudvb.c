@@ -1,5 +1,5 @@
 /* 
- * MuMuDVB - UDP-ize a DVB transport stream.
+ * MuMuDVB - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
  * (C) 2004-2010 Brice DUBOST
@@ -241,7 +241,7 @@ autoconf_parameters_t autoconf_vars={
   .autoconf_scrambled=0,
   .autoconf_pid_update=1,
   .autoconf_lcn=0,
-  .autoconf_ip_header="239.100",
+  .autoconf_ip="239.100.%card.%number",
   .time_start_autoconfiguration=0,
   .transport_stream_id=-1,
   .autoconf_temp_pat=NULL,

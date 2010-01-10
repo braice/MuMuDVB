@@ -157,7 +157,18 @@ int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, c
                    "The autoconf ip header is too long\n");
       return -1;
     }
-    sscanf (substring, "%s\n", autoconf_vars->autoconf_ip_header);
+    sscanf (substring, "%s.%%card.%%number\n", autoconf_vars->autoconf_ip);
+  }
+  else if (!strcmp (substring, "autoconf_ip"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    if(strlen(substring)>79)
+    {
+      log_message( MSG_ERROR,
+                   "The autoconf ip is too long\n");
+      return -1;
+    }
+    sscanf (substring, "%s\n", autoconf_vars->autoconf_ip);
   }
   /**  option for the starting http unicast port (for autoconf full)*/
   else if (!strcmp (substring, "autoconf_unicast_start_port"))
@@ -568,7 +579,6 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
   mumudvb_service_t *actual_service;
   int channel_number=0;
   int found_in_service_id_list;
-  char ip[20];
   int port_per_channel;
   char tempstring[256];
   actual_service=parameters.services;
@@ -636,8 +646,15 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
                 strcpy(channels[channel_number].name,actual_service->name);
 	      if(multicast_out)
 	      {
-	        channels[channel_number].portOut=port;
-	        sprintf(ip,"%s.%d.%d", parameters.autoconf_ip_header, card, channel_number);
+	        channels[channel_number].portOut=port;//do here the job for evaluating the string
+                char number[10];
+		char ip[80];
+                int len=80;
+		strcpy(ip,parameters.autoconf_ip);
+                sprintf(number,"%d",channel_number);
+                mumu_string_replace(ip,&len,0,"%number",number);
+                sprintf(number,"%d",card);
+                mumu_string_replace(ip,&len,0,"%card",number);
 	        strcpy(channels[channel_number].ipOut,ip);
 	        log_message(MSG_DEBUG,"Autoconf : Channel Ip : \"%s\" port : %d\n",channels[channel_number].ipOut,port);
 	      }
