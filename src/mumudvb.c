@@ -122,6 +122,7 @@
 #include "sap.h"
 #include "rewrite.h"
 #include "unicast_http.h"
+#include "unicast.h"
 #include "rtp.h"
 #include "log.h"
 #ifdef ENABLE_TRANSCODING
@@ -1207,7 +1208,7 @@ int
   if(unicast_vars.unicast)
   {
     log_message(MSG_INFO,"Unicast : We open the Master http socket for address %s:%d\n",unicast_vars.ipOut, unicast_vars.portOut);
-    unicast_create_listening_socket(UNICAST_MASTER, -1, unicast_vars.ipOut, unicast_vars.portOut, &unicast_vars.sIn, &unicast_vars.socketIn, &fds, &unicast_vars);
+    unicast_create_listening_socket(UNICAST_MASTER_HTTP, -1, unicast_vars.ipOut, unicast_vars.portOut, &unicast_vars.sIn, &unicast_vars.socketIn, &fds, &unicast_vars);
     /** open the unicast listening connections fo the channels */
     for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
       if(chan_and_pids.channels[curr_channel].unicast_port)

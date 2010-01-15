@@ -74,6 +74,7 @@
 #include "autoconf.h"
 #include "rtp.h"
 #include "log.h"
+#include "unicast.h"
 
 extern int Interrupted;
 extern int server_id;

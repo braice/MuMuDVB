@@ -26,19 +26,11 @@
  * @brief HTML unicast headers
  */
 
-#ifndef _UNICAST_H
-#define _UNICAST_H
+#ifndef _UNICAST_HTTP_H
+#define _UNICAST_HTTP_H
 
 #include "mumudvb.h"
 #include "unicast_queue.h"
-
-/** @brief The different fd/socket types */
-enum
-  {
-    UNICAST_MASTER=1,
-    UNICAST_LISTEN_CHANNEL,
-    UNICAST_CLIENT,
-  };
 
 
 

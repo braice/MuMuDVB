@@ -62,6 +62,7 @@ Todo list
 #include "mumudvb.h"
 #include "errors.h"
 #include "log.h"
+#include "unicast.h"
 
 extern int Interrupted;
 
@@ -91,7 +92,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 #define REPLY_BODY 1
 #define REPLY_SIZE_STEP 256
 
-struct unicast_reply {
+typedef struct unicast_reply_t {
   char* buffer_header;
   char* buffer_body;
   int length_header;
@@ -99,11 +100,12 @@ struct unicast_reply {
   int used_header;
   int used_body;
   int type;
-};
-static struct unicast_reply* unicast_reply_init();
-static int unicast_reply_free(struct unicast_reply *reply);
-static int unicast_reply_write(struct unicast_reply *reply, const char* msg, ...);
-static int unicast_reply_send(struct unicast_reply *reply, int socket, int code, const char* content_type);
+}unicast_reply_t;
+
+static unicast_reply_t* unicast_reply_init();
+static int unicast_reply_free(unicast_reply_t *reply);
+static int unicast_reply_write(unicast_reply_t *reply, const char* msg, ...);
+static int unicast_reply_send(unicast_reply_t *reply, int socket, int code, const char* content_type);
 
 
 /**@todo : deal with the RTP over http case ie implement RTSP*/
@@ -271,7 +273,7 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
     }
     if((fds->pfds[actual_fd].revents&POLLIN)||(fds->pfds[actual_fd].revents&POLLPRI))
     {
-      if((unicast_vars->fd_info[actual_fd].type==UNICAST_MASTER)||
+      if((unicast_vars->fd_info[actual_fd].type==UNICAST_MASTER_HTTP)||
         (unicast_vars->fd_info[actual_fd].type==UNICAST_LISTEN_CHANNEL))
       {
         //Event on the master connection or listenin channel
@@ -533,7 +535,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
       requested_channel=0;
       pos=0;
       err404=0;
-      struct unicast_reply* reply=NULL;
+      unicast_reply_t* reply=NULL;
 
       log_message(MSG_DEBUG,"Unicast : End of HTTP request, we parse it\n");
 
@@ -765,9 +767,9 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 /** @brief Init reply structure
 *
 */
-struct unicast_reply* unicast_reply_init()
+unicast_reply_t* unicast_reply_init()
 {
-  struct unicast_reply* reply = malloc(sizeof (struct unicast_reply));
+  unicast_reply_t* reply = malloc(sizeof (unicast_reply_t));
   if (NULL == reply)
   {
     log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
@@ -799,7 +801,7 @@ struct unicast_reply* unicast_reply_init()
 /** @brief Release the reply structure
 *
 */
-int unicast_reply_free(struct unicast_reply *reply)
+int unicast_reply_free(unicast_reply_t *reply)
 {
   if (NULL == reply)
     return 1;
@@ -817,7 +819,7 @@ int unicast_reply_free(struct unicast_reply *reply)
 *
 * auto-realloc buffer if needed
 */
-int unicast_reply_write(struct unicast_reply *reply, const char* msg, ...)
+int unicast_reply_write(unicast_reply_t *reply, const char* msg, ...)
 {
   char **buffer;
   char *temp_buffer;
@@ -869,7 +871,7 @@ int unicast_reply_write(struct unicast_reply *reply, const char* msg, ...)
 
 /** @brief Dump the filled buffer on the socket adding HTTP header informations
 */
-int unicast_reply_send(struct unicast_reply *reply, int socket, int code, const char* content_type)
+int unicast_reply_send(unicast_reply_t *reply, int socket, int code, const char* content_type)
 {
   //we add the header information
   reply->type = REPLY_HEADER;
@@ -917,7 +919,7 @@ int
 unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *host)
 {
 
-  struct unicast_reply* reply = unicast_reply_init();
+  unicast_reply_t* reply = unicast_reply_init();
   if (NULL == reply) {
     log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
     return -1;
@@ -935,19 +937,19 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
                             host,curr_channel+1,
                             host,curr_channel+1,
                             channels[curr_channel].ipOut,channels[curr_channel].portOut);
-                            else
-                              unicast_reply_write(reply, "Channel number %d : \"%s\"<br>Multicast ip : %s:%d<br><br>\r\n",curr_channel,channels[curr_channel].name,channels[curr_channel].ipOut,channels[curr_channel].portOut);
+      else
+        unicast_reply_write(reply, "Channel number %d : \"%s\"<br>Multicast ip : %s:%d<br><br>\r\n",curr_channel,channels[curr_channel].name,channels[curr_channel].ipOut,channels[curr_channel].portOut);
     }
-    unicast_reply_write(reply, HTTP_CHANNELS_REPLY_END);
+  unicast_reply_write(reply, HTTP_CHANNELS_REPLY_END);
 
-    unicast_reply_send(reply, Socket, 200, "text/html");
+  unicast_reply_send(reply, Socket, 200, "text/html");
 
-    if (0 != unicast_reply_free(reply)) {
-      log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
-      return -1;
-    }
+  if (0 != unicast_reply_free(reply)) {
+    log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+    return -1;
+  }
 
-    return 0;
+  return 0;
 }
 
 
@@ -963,7 +965,7 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
 {
   int curr_channel;
 
-  struct unicast_reply* reply = unicast_reply_init();
+  unicast_reply_t* reply = unicast_reply_init();
   if (NULL == reply) {
     log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
     return -1;
@@ -998,7 +1000,7 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
       }
     }
 
-    unicast_reply_send(reply, Socket, 200, "audio/x-mpegurl");
+  unicast_reply_send(reply, Socket, 200, "audio/x-mpegurl");
 
   if (0 != unicast_reply_free(reply)) {
     log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
@@ -1022,7 +1024,7 @@ unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t *cha
   char vlcchar[2];
   extern multicast_parameters_t multicast_vars;
 
-  struct unicast_reply* reply = unicast_reply_init();
+  unicast_reply_t* reply = unicast_reply_init();
   if (NULL == reply) {
     log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
     return -1;
@@ -1077,7 +1079,7 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
   unicast_client_t *unicast_client=NULL;
   int clients=0;
 
-  struct unicast_reply* reply = unicast_reply_init();
+  unicast_reply_t* reply = unicast_reply_init();
   if (NULL == reply) {
     log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
     return -1;
@@ -1138,7 +1140,7 @@ int
 unicast_send_signal_power_js (int Socket, fds_t *fds)
 {
   int strength, ber, snr;
-  struct unicast_reply* reply = unicast_reply_init();
+  unicast_reply_t* reply = unicast_reply_init();
   if (NULL == reply)
   {
     log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
@@ -1174,7 +1176,7 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
   int curr_channel;
   extern long real_start_time;
 
-  struct unicast_reply* reply = unicast_reply_init();
+  unicast_reply_t* reply = unicast_reply_init();
   if (NULL == reply) {
     log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
     return -1;
