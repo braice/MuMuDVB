@@ -52,7 +52,7 @@
 #include "errors.h"
 #include "log.h"
 #include "unicast.h"
-
+#include "unicast_common.h"
 
 
 /** @brief Add a client to the chained list of clients
@@ -62,7 +62,7 @@
 * @param SocketAddr The socket address
 * @param Socket The socket number
 */
-unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in SocketAddr, int Socket)
+unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in SocketAddr, int Socket, int client_type)
 {
 
   unicast_client_t *client;
@@ -110,6 +110,7 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
   client->queue.packets_in_queue=0;
   client->queue.first=NULL;
   client->queue.last=NULL;
+  client->client_type=client_type;
 
   unicast_vars->client_number++;
 

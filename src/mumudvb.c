@@ -121,7 +121,6 @@
 #include "autoconf.h"
 #include "sap.h"
 #include "rewrite.h"
-#include "unicast_http.h"
 #include "unicast.h"
 #include "rtp.h"
 #include "log.h"

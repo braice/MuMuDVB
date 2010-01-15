@@ -39,6 +39,7 @@
 #include "errors.h"
 #include "log.h"
 #include "unicast.h"
+#include "unicast_common.h"
 
 
 int unicast_queue_remove_data(unicast_queue_header_t *header);
