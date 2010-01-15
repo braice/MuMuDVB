@@ -178,6 +178,7 @@ Various parameters
 |rewrite_pat | Do we rewrite the PAT PID | 0 | 0 or 1 | See README 
 |rewrite_sdt | Do we rewrite the SDT PID | 0 | 0 or 1 | See README 
 |sort_eit | Do we sort the EIT PID | 0 | 0 or 1 | See README 
+|server_id | The server number for the `%server` template | 0 | | Useful only if you use the %server template
 |==================================================================================================================
 
 Multicast parameters
@@ -209,12 +210,12 @@ Autoconfiguration parameters
 |Parameter name |Description | Default value | Possible values | Comments
 |autoconfiguration |autoconfiguration 1, partial: find audio and video PIDs, 2, full: full autoconfiguration | 0 | 0, 1, 2, partial or full | see the README for more details
 |autoconf_ip_header |For full autoconfiguration, the first part of the ip for streamed channel |  | |  obsolete, use `autoconf_ip` instead
-|autoconf_ip_header |For full autoconfiguration, the template for the ip for streamed channel | 239.100.%card.%number  | |  You can use the keywords `%card` and `%number`
+|autoconf_ip_header |For full autoconfiguration, the template for the ip for streamed channel | 239.100.%card.%number  | |  You can use the keywords `%card`, `%server` and `%number`
 |autoconf_radios |Do we consider radios as valid channels during full autoconfiguration ? | 0 | 0 or 1 | 
 |autoconf_scrambled |Do we consider scrambled channels valid channels during full autoconfiguration ? | 0 | 0 or 1 | Automatic when cam_support=1. Sometimes a clear channel can be marked as scrambled. This option allows you to bypass the ckecking.
 |autoconf_pid_update |Do we follow the changes in the PIDs when the PMT is updated ? | 1 | 0 or 1 | 
 |autoconf_unicast_start_port |The unicast port for the first discovered channel |  |  | See README for more details.
-|autoconf_unicast_port |The unicast port for each discovered channel (autoconf full). Ex "2000+%number" |  |  | You can unse expressions with `+` `*` `%card` and `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
+|autoconf_unicast_port |The unicast port for each discovered channel (autoconf full). Ex "2000+%number" |  |  | You can unse expressions with `+` `*` `%card` `%server` and `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
 |autoconf_sid_list | If you don't want to configure all the channels of the transponder in full autoconfiguration mode, specify with this option the list of the service ids of the channels you want to autoconfigure. | empty |  | 
 |autoconf_name_template | The template for the channel name, ex `%number-%name` | empty | | See README for more details
 |==================================================================================================================
@@ -240,7 +241,7 @@ HTTP unicast parameters
 |Parameter name |Description | Default value |Comments
 |unicast |Set this option to one to activate HTTP unicast | 0  |   see the README for more details
 |ip_http |the listening ip for http unicast, if you want to listen to all interfaces put 0.0.0.0 | 0.0.0.0  |  see the README for more details
-|port_http | The listening port for http unicast | 4242 |  You can use mathematical expressions containing integers, * and +. You can use the %card template. Ex `port_http=2000+%card*100`
+|port_http | The listening port for http unicast | 4242 |  You can use mathematical expressions containing integers, * and +. You can use the %card and %server template. Ex `port_http=2000+%card*100`
 |unicast_consecutive_errors_timeout | The timeout for disconnecting a client wich is not responding | 5 | A client will be disconnected if no data have been sucessfully sent during this interval. A value of 0 desactivate the timeout (unadvised).
 |unicast_max_clients | The limit on the number of connected clients | 0 | 0 : no limit.
 |unicast_queue_size | The maximum size of the buffering when writting to a client fails | 512kBytes | in Bytes.

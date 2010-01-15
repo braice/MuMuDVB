@@ -76,7 +76,7 @@
 #include "log.h"
 
 extern int Interrupted;
-
+extern int server_id;
 
 
 
@@ -655,6 +655,8 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
                 mumu_string_replace(ip,&len,0,"%number",number);
                 sprintf(number,"%d",card);
                 mumu_string_replace(ip,&len,0,"%card",number);
+                sprintf(number,"%d",server_id);
+                mumu_string_replace(ip,&len,0,"%server",number);
 	        strcpy(channels[channel_number].ipOut,ip);
 	        log_message(MSG_DEBUG,"Autoconf : Channel Ip : \"%s\" port : %d\n",channels[channel_number].ipOut,port);
 	      }
@@ -690,6 +692,8 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
                   mumu_string_replace(tempstring,&len,0,"%number",number);
                   sprintf(number,"%d",card);
                   mumu_string_replace(tempstring,&len,0,"%card",number);
+                  sprintf(number,"%d",server_id);
+                  mumu_string_replace(tempstring,&len,0,"%server",number);
                   channels[channel_number].unicast_port=string_comput(tempstring);
 		  log_message(MSG_DEBUG,"Autoconf : Channel (direct) unicast port  %d\n",channels[channel_number].unicast_port);
                 }

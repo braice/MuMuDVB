@@ -143,6 +143,7 @@ int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
 // file descriptors
 fds_t fds; /** File descriptors associated with the card */
 int no_daemon = 0;
+int server_id = 0; /** The server id for the template %server */
 
 int Interrupted = 0;
 char filename_channels_diff[256];
@@ -704,6 +705,11 @@ int
         chan_and_pids.channels[curr_channel].name[MAX_NAME_LEN-1]='\0';
       }
     }
+    else if (!strcmp (substring, "server_id"))
+    {
+      substring = strtok (NULL, delimiteurs);
+      server_id = atoi (substring);
+    }
     else
     {
       if(strlen (current_line) > 1)
@@ -766,9 +772,11 @@ int
   {
     int len;
     len=strlen(unicast_vars.portOut_str)+1;
-    char card_number[10];
-    sprintf(card_number,"%d",tuneparams.card);
-    unicast_vars.portOut_str=mumu_string_replace(unicast_vars.portOut_str,&len,1,"%card",card_number);
+    char number[10];
+    sprintf(number,"%d",tuneparams.card);
+    unicast_vars.portOut_str=mumu_string_replace(unicast_vars.portOut_str,&len,1,"%card",number);
+    sprintf(number,"%d",server_id);
+    unicast_vars.portOut_str=mumu_string_replace(unicast_vars.portOut_str,&len,1,"%server",number);
     unicast_vars.portOut=string_comput(unicast_vars.portOut_str);
     log_message( MSG_DEBUG, "Unicast: computed unicast master port : %d\n",unicast_vars.portOut);
   }
