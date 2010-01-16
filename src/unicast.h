@@ -33,13 +33,16 @@
 #include "unicast_queue.h"
 
 #define RTSP_PORT 554
+#define CLOSE_CONNECTION -2
 
 /** @brief The different fd/socket types */
 enum
   {
     UNICAST_MASTER_HTTP=1,
+    UNICAST_MASTER_RTSP,
     UNICAST_LISTEN_CHANNEL,
-    UNICAST_CLIENT,
+    UNICAST_CLIENT_HTTP,
+    UNICAST_CLIENT_RTSP,
   };
 
 /** @brief The different client types */
@@ -67,6 +70,8 @@ typedef struct unicast_client_t{
   struct sockaddr_in SocketAddr;
   /**HTTP/Contol socket*/
   int Socket;
+  /** Socket closed (RTSP no keep alive)*/
+  int Control_socket_closed;
   /**Reception buffer*/
   char *buffer;
   /**Size of the buffer*/
@@ -122,13 +127,23 @@ typedef struct unicast_parameters_t{
   /**The "HTTP" ip address*/
   char ipOut[20];
   /** The "HTTP" port*/
-  int portOut;
+  int http_portOut;
   /** The "HTTP" port string version before parsing*/
-  char *portOut_str;
+  char *http_portOut_str;
   /** The HTTP input socket*/
-  struct sockaddr_in sIn;
+  struct sockaddr_in http_sIn;
   /**  The HTTP input socket*/
-  int socketIn;
+  int http_socketIn;
+  /** RTSP enable */
+  int unicast_rtsp_enable;
+  /** The "RTSP" port*/
+  int rtsp_portOut;
+  /** The "RTSP" port string version before parsing*/
+  char *rtsp_portOut_str;
+  /** The RTSP input socket*/
+  struct sockaddr_in rtsp_sIn;
+  /**  The RTSP input socket*/
+  int rtsp_socketIn;
   /** The clients, contains all the clients, associated to a channel or not*/
   unicast_client_t *clients;
   /** The number of connected clients*/
@@ -147,5 +162,11 @@ typedef struct unicast_parameters_t{
 int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
 
 int unicast_create_listening_socket(int socket_type, int socket_channel, char *ipOut, int port, struct sockaddr_in *sIn, int *socketIn, fds_t *fds, unicast_parameters_t *unicast_vars);
+
+int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels);
+
+void unicast_freeing(unicast_parameters_t *unicast_vars, mumudvb_channel_t *channels);
+
+void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *channels, fds_t *fds, unicast_parameters_t *unicast_vars);
 
 #endif

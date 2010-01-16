@@ -31,7 +31,7 @@
 
 #include "mumudvb.h"
 #include "unicast_queue.h"
-
+#include "unicast.h"
 
 #define REPLY_HEADER 0
 #define REPLY_BODY 1
@@ -53,5 +53,10 @@ int unicast_reply_write(unicast_reply_t *reply, const char* msg, ...);
 int unicast_reply_send(unicast_reply_t *reply, int socket, int code, const char* content_type);
 
 void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, int Socket, mumudvb_channel_t *channels);
+unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, int socketIn, int client_type);
+unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in SocketAddr, int Socket, int client_type);
+
+
+
 
 #endif

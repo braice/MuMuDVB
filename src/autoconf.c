@@ -848,7 +848,7 @@ void autoconf_definite_end(int card, mumudvb_chan_and_pids_t *chan_and_pids, int
 {
   log_message(MSG_INFO,"Autoconfiguration done\n");
 
-  log_streamed_channels(chan_and_pids->number_of_channels, chan_and_pids->channels, multicast, unicast_vars->unicast, unicast_vars->portOut, unicast_vars->ipOut);
+  log_streamed_channels(chan_and_pids->number_of_channels, chan_and_pids->channels, multicast, unicast_vars->unicast, unicast_vars->http_portOut, unicast_vars->ipOut);
 
   /**@todo : make an option to generate it or not ?*/
   char filename_gen_conf[256];
