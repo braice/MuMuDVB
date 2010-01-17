@@ -37,6 +37,12 @@
 #define RTSP_503_REPLY "RTSP/1.0 503 Too many clients\r\n"\
                       "\r\n"
 
+#define RTSP_454_REPLY "RTSP/1.0 454 Session Not Found\r\n"\
+                      "\r\n"
+
+#define RTSP_461_REPLY "RTSP/1.0 461 Unsupported transport\r\n"\
+                      "\r\n"
+
 int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels, fds_t *fds);
 
 
