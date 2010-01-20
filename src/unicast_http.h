@@ -76,13 +76,7 @@
                       "\r\n"
 
 
-
-
 int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels);
-
-int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *channel);
-
-
 
 int unicast_handle_http_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int num_of_channels, fds_t *fds);
 

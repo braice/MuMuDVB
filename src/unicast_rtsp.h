@@ -43,6 +43,13 @@
 #define RTSP_461_REPLY "RTSP/1.0 461 Unsupported transport\r\n"\
                       "\r\n"
 
+enum
+{
+  TRANSPORT_UNDEFINED=0,
+  RTP_AVP_UDP,
+  RTP_AVP_TCP,
+};
+
 int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels, fds_t *fds);
 
 

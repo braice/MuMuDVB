@@ -70,8 +70,20 @@ typedef struct unicast_client_t{
   struct sockaddr_in SocketAddr;
   /**HTTP/Contol socket*/
   int Socket;
+
   /** Socket closed (RTSP no keep alive)*/
   int Control_socket_closed;
+  /**RTSP ports*/ 
+  int rtsp_client_port;
+  int rtsp_server_port;
+  char rtsp_client_ip[20];
+  /**RTSP socket*/
+  int rtsp_Socket;
+  /**RTSP socket*/
+  struct sockaddr_in rtsp_SocketAddr;
+  /**Session number*/
+  char session[16];
+
   /**Reception buffer*/
   char *buffer;
   /**Size of the buffer*/

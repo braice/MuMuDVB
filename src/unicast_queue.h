@@ -53,11 +53,7 @@ typedef struct unicast_queue_header_t{
 }unicast_queue_header_t;
 
 
-
 void unicast_queue_clear(unicast_queue_header_t *header);
-
-
-
 
 
 #endif

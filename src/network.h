@@ -48,6 +48,8 @@ int makeclientsocket (char *szAddr, unsigned short port, int TTL, struct sockadd
 int sendudp (int fd, struct sockaddr_in *sSockAddr, unsigned char *data, int len);
 int makesocket (char *szAddr, unsigned short port, int TTL, struct sockaddr_in *sSockAddr);
 int makeTCPclientsocket (char *szAddr, unsigned short port, struct sockaddr_in *sSockAddr);
+int makeUDPsocket (char *szAddr, unsigned short port, struct sockaddr_in *sSockAddr);
+
 
 #endif
 

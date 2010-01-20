@@ -106,6 +106,46 @@ makesocket (char *szAddr, unsigned short port, int TTL,
   return iSocket;
 }
 
+
+/** @brief create a sender socket.
+ *
+ * Create a socket for sending data, the socket is udp, with the option REUSE_ADDR set to 1
+ */
+int
+makeUDPsocket (char *szAddr, unsigned short port,
+            struct sockaddr_in *sSockAddr)
+{
+  int iRet, iLoop = 1;
+  struct sockaddr_in sin;
+
+  int iSocket = socket (AF_INET, SOCK_DGRAM, 0);
+
+  if (iSocket < 0)
+    {
+      log_message( MSG_WARN, "socket() failed : %s\n",strerror(errno));
+      Interrupted=ERROR_NETWORK<<8;
+    }
+
+  sSockAddr->sin_family = sin.sin_family = AF_INET;
+  sSockAddr->sin_port = sin.sin_port = htons (port);
+  iRet=inet_aton (szAddr,&sSockAddr->sin_addr);
+  if (iRet == 0)
+    {
+      log_message( MSG_ERROR,"inet_aton failed : %s\n", strerror(errno));
+      Interrupted=ERROR_NETWORK<<8;
+    }
+
+  iRet = setsockopt (iSocket, SOL_SOCKET, SO_REUSEADDR, &iLoop, sizeof (int));
+  if (iRet < 0)
+    {
+      log_message( MSG_ERROR,"setsockopt SO_REUSEADDR failed : %s\n",strerror(errno));
+      Interrupted=ERROR_NETWORK<<8;
+    }
+
+  return iSocket;
+}
+
+
 /** @brief create a receiver socket, i.e. join the multicast group. 
  *@todo document
 */

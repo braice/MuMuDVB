@@ -470,8 +470,63 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
 
 }
 
+/** @brief Store the new message on the socket
+*
+*/
+int unicast_new_message(unicast_client_t *client)
+{
+  int received_len;
+  /************ auto increasing buffer to receive the message **************/
+  if((client->buffersize-client->bufferpos)<RECV_BUFFER_MULTIPLE)
+  {
+    client->buffer=realloc(client->buffer,(client->buffersize + RECV_BUFFER_MULTIPLE+1)*sizeof(char)); //the +1 if for the \0 at the end
+    if(client->buffer==NULL)
+    {
+      log_message(MSG_ERROR,"Unicast : Problem with realloc for the client buffer : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      client->buffersize=0;
+      client->bufferpos=0;
+      return -1;
+    }
+    memset (client->buffer+client->buffersize, 0, RECV_BUFFER_MULTIPLE*sizeof(char)); //We fill the buffer with zeros to be sure
+    client->buffersize += RECV_BUFFER_MULTIPLE;
+  }
 
+  received_len=recv(client->Socket, client->buffer+client->bufferpos, RECV_BUFFER_MULTIPLE, 0);
 
+  if(received_len>0)
+  {
+    if(client->bufferpos==0)
+      log_message(MSG_DEBUG,"Unicast : beginning of buffer %c%c%c%c%c\n",client->buffer[0],client->buffer[1],client->buffer[2],client->buffer[3],client->buffer[4]);
+    client->bufferpos+=received_len;
+    log_message(MSG_FLOOD,"Unicast : We received %d, buffer len %d new buffer pos %d\n",received_len,client->buffersize, client->bufferpos);
+  }
+
+  if(received_len==-1)
+  {
+    log_message(MSG_ERROR,"Unicast : Problem with recv : %s\n",strerror(errno));
+    return -1;
+  }
+  if(received_len==0)
+    return CLOSE_CONNECTION; //To say to the main program to close the connection
+
+  /***************** Now we parse the message to see if something was asked  *****************/
+  client->buffer[client->buffersize]='\0'; //For avoiding strlen to look too far (other option is to use the gnu extension strnlen)
+
+  return 0;
+}
+
+void unicast_flush_client(unicast_client_t *client)
+{
+
+  if(client->buffer)
+    {
+      free(client->buffer);
+      client->buffersize=0;
+      client->bufferpos=0;
+    }
+  client->buffer=NULL;
+
+}
 ////////////////////////
 // HTTP/RTSP Toolbox  //
 ////////////////////////

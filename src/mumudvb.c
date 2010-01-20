@@ -858,10 +858,10 @@ int
       }
     }
 #endif
-      if(multicast_vars.rtp_header)
+      if(multicast_vars.rtp_header && !unicast_vars.unicast_rtsp_enable)
       {
 	multicast_vars.rtp_header=0;
-	log_message( MSG_INFO, "NO Multicast, RTP Header is desactivated.\n");
+	log_message( MSG_INFO, "NO Multicast, NO RTSP, RTP Header is desactivated.\n");
       }
       if(sap_vars.sap==OPTION_ON)
       {
@@ -1084,7 +1084,7 @@ int
   /*****************************************************/
 
   //Initialisation of the channels for RTP
-  if(multicast_vars.rtp_header)
+  if(multicast_vars.rtp_header || unicast_vars.unicast_rtsp_enable)
     for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
       init_rtp_header(&chan_and_pids.channels[curr_channel]);
 
@@ -1533,8 +1533,8 @@ int
 
           chan_and_pids.channels[curr_channel].nb_bytes += TS_PACKET_SIZE;
           //The buffer is full, we send it
-          if ((!multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
-	    ||(multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
+          if ((!(multicast_vars.rtp_header ||unicast_vars.unicast_rtsp_enable) && ((chan_and_pids.channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
+	    ||((multicast_vars.rtp_header ||unicast_vars.unicast_rtsp_enable) && ((chan_and_pids.channels[curr_channel].nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
           {
             //For bandwith measurement (traffic)
             chan_and_pids.channels[curr_channel].sent_data+=chan_and_pids.channels[curr_channel].nb_bytes;
@@ -1566,14 +1566,15 @@ int
 		    (NULL != chan_and_pids.channels[curr_channel].transcode_options.streaming_type &&
 		    STREAMING_TYPE_MPEGTS != *chan_and_pids.channels[curr_channel].transcode_options.streaming_type))
 #endif
+            if( multicast_vars.rtp_header || unicast_vars.unicast_rtsp_enable)
+              rtp_update_sequence_number(&chan_and_pids.channels[curr_channel]);
             /********** MULTICAST *************/
-             //if the multicast TTL is set to 0 we don't send the multicast packets
+            //if the multicast TTL is set to 0 we don't send the multicast packets
             if(multicast_vars.multicast)
 	    {
 	      if(multicast_vars.rtp_header)
 	      {
 		/****** RTP *******/
-		rtp_update_sequence_number(&chan_and_pids.channels[curr_channel]);
                 sendudp (chan_and_pids.channels[curr_channel].socketOut,
 		         &chan_and_pids.channels[curr_channel].sOut,
 		         chan_and_pids.channels[curr_channel].buf_with_rtp_header,
