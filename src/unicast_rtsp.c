@@ -57,6 +57,9 @@
 
 extern int Interrupted;
 
+//from unicast_client.c
+int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *channel);
+
 
 /** @todo handle non keepalive clients, and auto disconnect to old clients without streaming */
 
@@ -206,14 +209,17 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
     l = sizeof(struct sockaddr);
     getsockname(client->Socket, (struct sockaddr *) &tempSocketAddr, &l);
     strcpy(client->rtsp_client_ip,inet_ntoa(tempSocketAddr.sin_addr));
-    log_message(MSG_DETAIL,"Unicast : Client ip %s  \n",client->rtsp_client_ip);
+    log_message(MSG_DETAIL,"Unicast : Client ip %s port %d \n",client->rtsp_client_ip,(unsigned short) client->rtsp_client_port);
 
     client->rtsp_Socket=makeUDPsocket (client->rtsp_client_ip, client->rtsp_client_port,&client->rtsp_SocketAddr);
-    log_message(MSG_DETAIL,"Unicast : New RTSP socket d_IP %s, d_port:%d n°%d\n",inet_ntoa(client->rtsp_SocketAddr.sin_addr), client->rtsp_SocketAddr.sin_port, client->rtsp_Socket);
-    l = sizeof(struct sockaddr);
-    connect(client->rtsp_Socket, &client->rtsp_SocketAddr, l);
-    client->rtsp_SocketAddr.sin_port=4242;
-    bind(client->rtsp_Socket,&client->rtsp_SocketAddr,l);
+    log_message(MSG_DETAIL,"Unicast : New RTSP socket d_IP %s, d_port:%d n°%d\n",inet_ntoa(client->rtsp_SocketAddr.sin_addr), ntohs(client->rtsp_SocketAddr.sin_port), client->rtsp_Socket);
+    l = sizeof(struct sockaddr_in);
+    struct sockaddr_in tempsin;
+    //memcpy(&tempsin, &client->rtsp_SocketAddr,l);
+    //connect(client->rtsp_Socket,(struct sockaddr *) &tempsin, l);
+    memcpy(&tempsin, &client->rtsp_SocketAddr,l);
+    tempsin.sin_port=htons(4242);
+    bind(client->rtsp_Socket,(struct sockaddr *) &tempsin,l);
     //l = sizeof(struct sockaddr);
     //getsockname(client->rtsp_Socket, (struct sockaddr *) &tempSocketAddr, &l);
     //log_message(MSG_DETAIL,"Unicast : after getsockname RTSP socket d_IP %s, d_port:%d n°%d\n",inet_ntoa(client->rtsp_SocketAddr.sin_addr), client->rtsp_SocketAddr.sin_port, client->rtsp_Socket);
@@ -434,7 +440,7 @@ int unicast_send_rtsp_play (int Socket, int CSeq, unicast_client_t *client, mumu
 
   // TODO Ajouter l'IP du client dans la liste des IP unicast.
   client->channel=0;
-  //channel_add_unicast_client(client, &channels[0]); //plop ca ne va pas marcher, il faut le modifier pour prendre en compte le type de client
+  channel_add_unicast_client(client, &channels[0]);
 
 
   if (0 != unicast_reply_free(reply))

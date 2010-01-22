@@ -104,7 +104,7 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 	    actual_client->queue.full=1;
 	    log_message(MSG_DETAIL,"Unicast: The queue is full, we now throw away new packets for client %s:%d\n",
 		        inet_ntoa(clientsocketaddr.sin_addr),
-		        clientsocketaddr.sin_port);
+		        ntohs(clientsocketaddr.sin_port));
 	  }
 	}
 	buffer=unicast_queue_get_data(&actual_client->queue, &buffer_len);
@@ -127,7 +127,7 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 	    {
 	      log_message(MSG_DEBUG,"Unicast: New error when writing to client %s:%d : %s\n",
 			  inet_ntoa(clientsocketaddr.sin_addr),
-			  clientsocketaddr.sin_port,
+			  ntohs(clientsocketaddr.sin_port),
 			  strerror(errno));
 	      actual_client->last_write_error=errno;
 	      written_len=0;
@@ -137,7 +137,7 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 	  {
 	    log_message(MSG_DEBUG,"Unicast: Not all the data was written to %s:%d. Asked len : %d, written len %d\n",
 			inet_ntoa(clientsocketaddr.sin_addr),
-			clientsocketaddr.sin_port,
+			ntohs(clientsocketaddr.sin_port),
 			actual_channel->nb_bytes,
 			written_len);
 	  }
@@ -155,7 +155,7 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 	  {
 	    log_message(MSG_DETAIL,"Unicast: Error when writing to client %s:%d : %s\n",
 			inet_ntoa(clientsocketaddr.sin_addr),
-			clientsocketaddr.sin_port,
+			ntohs(clientsocketaddr.sin_port),
 			strerror(errno));
 			gettimeofday (&tv, (struct timezone *) NULL);
 			actual_client->first_error_time = tv.tv_sec;
@@ -169,7 +169,7 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 	    {
 	      log_message(MSG_INFO,"Unicast: Consecutive errors when writing to client %s:%d during too much time, we disconnect\n",
 			  inet_ntoa(clientsocketaddr.sin_addr),
-			  clientsocketaddr.sin_port);
+			  ntohs(clientsocketaddr.sin_port));
 			  temp_client=actual_client->chan_next;
 			  unicast_close_connection(unicast_vars,fds,clientsocket,channels);
 			  actual_client=temp_client;
@@ -183,7 +183,7 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 	  {
 	    log_message(MSG_DETAIL,"Unicast: We can write again to client %s:%d\n",
 			inet_ntoa(clientsocketaddr.sin_addr),
-			clientsocketaddr.sin_port);
+			ntohs(clientsocketaddr.sin_port));
 	    actual_client->consecutive_errors=0;
 	    actual_client->last_write_error=0;
 	    if(data_from_queue)
@@ -208,7 +208,7 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 	      packets_left=0;
 	      log_message(MSG_DEBUG,"Unicast: The queue is now empty :) client %s:%d \n",
 			  inet_ntoa(clientsocketaddr.sin_addr),
-		          clientsocketaddr.sin_port);
+		          ntohs(clientsocketaddr.sin_port));
 	    }
 	  }
 	}

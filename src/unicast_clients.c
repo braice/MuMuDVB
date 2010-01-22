@@ -132,9 +132,9 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *cli
 {
   unicast_client_t *prev_client,*next_client;
 
-  log_message(MSG_DETAIL,"Unicast : We delete the client %s:%d, socket %d\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port, client->Socket);
+  log_message(MSG_DETAIL,"Unicast : We delete the client %s:%d, socket %d\n",inet_ntoa(client->SocketAddr.sin_addr), ntohs(client->SocketAddr.sin_port), client->Socket);
   if(client->client_type==CLIENT_RTSP && client->rtsp_Socket)
-    log_message(MSG_DETAIL,"Unicast : RTSP %s:%d, Unicast socket %d\n",inet_ntoa(client->rtsp_SocketAddr.sin_addr), client->rtsp_SocketAddr.sin_port, client->rtsp_Socket);
+    log_message(MSG_DETAIL,"Unicast : RTSP %s:%d, Unicast socket %d\n",inet_ntoa(client->rtsp_SocketAddr.sin_addr), ntohs(client->rtsp_SocketAddr.sin_port), client->rtsp_Socket);
 
   if (client->Socket >= 0)
   {
@@ -201,7 +201,7 @@ int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *chann
   unicast_client_t *last_client;
   int iRet;
 
-  log_message(MSG_INFO,"Unicast : We add the client %s:%d to the channel \"%s\"\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port,channel->name);
+  log_message(MSG_INFO,"Unicast : We add the client %s:%d to the channel \"%s\"\n",inet_ntoa(client->SocketAddr.sin_addr), ntohs(client->SocketAddr.sin_port),channel->name);
 
   if(client->client_type==CLIENT_HTTP)
   {
@@ -214,7 +214,7 @@ int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *chann
   }
   if(client->client_type==CLIENT_RTSP)
   {
-    log_message(MSG_INFO,"Unicast : We add the client (RTP) sin_addr : %s: client->rtsp_SocketAddr.sin_port %d to the channel \"%s\"\n",inet_ntoa(client->rtsp_SocketAddr.sin_addr), client->rtsp_SocketAddr.sin_port,channel->name);
+    log_message(MSG_INFO,"Unicast : We add the client (RTP) sin_addr : %s: ntohs(client->rtsp_SocketAddr.sin_port) %d to the channel \"%s\"\n",inet_ntoa(client->rtsp_SocketAddr.sin_addr), ntohs(client->rtsp_SocketAddr.sin_port),channel->name);
   }
 
   client->chan_next=NULL;

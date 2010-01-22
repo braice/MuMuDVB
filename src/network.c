@@ -134,14 +134,23 @@ makeUDPsocket (char *szAddr, unsigned short port,
       log_message( MSG_ERROR,"inet_aton failed : %s\n", strerror(errno));
       Interrupted=ERROR_NETWORK<<8;
     }
+  //We connect the socket
+  connect(iSocket,(struct sockaddr *) sSockAddr, sizeof(struct sockaddr_in));
+  if (iRet == 0)
+    {
+      log_message( MSG_ERROR,"connect failed : %s\n", strerror(errno));
+      Interrupted=ERROR_NETWORK<<8;
+    }
 
+
+  /*
   iRet = setsockopt (iSocket, SOL_SOCKET, SO_REUSEADDR, &iLoop, sizeof (int));
   if (iRet < 0)
     {
       log_message( MSG_ERROR,"setsockopt SO_REUSEADDR failed : %s\n",strerror(errno));
       Interrupted=ERROR_NETWORK<<8;
     }
-
+  */
   return iSocket;
 }
 
