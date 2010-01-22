@@ -99,7 +99,7 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
   requested_channel=0;
   //unicast_reply_t* reply=NULL;
 
-  log_message(MSG_DEBUG,"Unicast : End of HTTP request, we parse it\n");
+  log_message(MSG_DEBUG,"Unicast : End of RTSP request, we parse it\n");
   // We implement RTSP protocol
   /* The client is initially supplied with an RTSP URL, on the form:
       rtsp://server.address:port/object.sdp
@@ -377,7 +377,7 @@ int unicast_send_rtsp_options (int Socket, int CSeq)
 int unicast_send_rtsp_setup (unicast_client_t *client, int CSeq, int Tsprt_type)
 {
   int Socket=client->Socket;
-  char TransportType[20], broadcast_type;
+  char TransportType[20], broadcast_type[20];
   unicast_reply_t* reply = unicast_reply_init();
   if (NULL == reply)
   {
@@ -400,7 +400,7 @@ int unicast_send_rtsp_setup (unicast_client_t *client, int CSeq, int Tsprt_type)
   //TODO Get the broadcast_type from the DESCRIBE request
   //if (Tsprt_type==2) broadcast_type="multicast";
   //  else broadcast_type="unicast";
-
+  strcpy( broadcast_type,"unicast");
   log_message(MSG_DEBUG, "Transport: %s;%s;mode=play;destination=%s;client_port=%d-%d;server_port=%d\r\n", TransportType, broadcast_type, client->rtsp_client_ip, client->rtsp_client_port, client->rtsp_client_port+1, client->rtsp_server_port);
   unicast_reply_write(reply, "Transport: %s;%s;mode=play;destination=%s;client_port=%d-%d;server_port=%d\r\n", TransportType, broadcast_type, client->rtsp_client_ip, client->rtsp_client_port, client->rtsp_client_port+1, client->rtsp_server_port);
   rtsp_reply_send(reply, Socket,"text/plain");
