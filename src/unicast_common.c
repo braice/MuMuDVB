@@ -321,9 +321,9 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
         unicast_client_t *tempClient;
         //we accept the incoming connection
         if(unicast_vars->fd_info[actual_fd].type==UNICAST_MASTER_RTSP)
-          tempClient=unicast_accept_connection(unicast_vars, fds->pfds[actual_fd].fd,CLIENT_HTTP);
-        else
           tempClient=unicast_accept_connection(unicast_vars, fds->pfds[actual_fd].fd,CLIENT_RTSP);
+        else 
+          tempClient=unicast_accept_connection(unicast_vars, fds->pfds[actual_fd].fd,CLIENT_HTTP);
 
         if(tempClient!=NULL)
         {
