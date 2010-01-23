@@ -76,7 +76,7 @@ typedef struct unicast_client_t{
   /**RTSP ports*/ 
   int rtsp_client_port;
   int rtsp_server_port;
-  char rtsp_client_ip[20];
+  char client_ip[20];
   /**RTSP socket*/
   int rtsp_Socket;
   /**RTSP socket*/

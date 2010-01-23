@@ -1,7 +1,7 @@
 /* 
- * MuMuDVB - UDP-ize a DVB transport stream.
+ * MuMuDVB - Stream a DVB transport stream.
  * 
- * (C) 2009 Brice DUBOST
+ * (C) 2009-2010 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -25,7 +25,7 @@
 /** @file
  * @brief File for HTTP unicast Queue and data sending
  * @author Brice DUBOST
- * @date 2009
+ * @date 2009-2010
  */
 
 #include <errno.h>
@@ -45,7 +45,7 @@
 int unicast_queue_remove_data(unicast_queue_header_t *header);
 int unicast_queue_add_data(unicast_queue_header_t *header, unsigned char *data, int data_len);
 unsigned char *unicast_queue_get_data(unicast_queue_header_t* , int* );
-void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, int Socket, mumudvb_channel_t *channels);
+
 
 /** @brief Send the buffer for the channel
  *
@@ -141,15 +141,23 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 			actual_channel->nb_bytes,
 			written_len);
 	  }
-	    if(!data_from_queue)
-	    {
-	      //We store the non sent data in the queue
-	      if((actual_client->queue.data_bytes_in_queue+buffer_len-written_len)< unicast_vars->queue_max_size)
-	      {
-		unicast_queue_add_data(&actual_client->queue, buffer+written_len, buffer_len-written_len);
-		log_message(MSG_DEBUG,"Unicast: We start queuing packets ... \n");
-	      }
-	    }
+          if(actual_client->client_type==CLIENT_RTSP)
+          {
+            log_message(MSG_DEBUG,"RTSP client, we close the connection\n");
+            temp_client=actual_client->chan_next;
+            unicast_del_client(unicast_vars,actual_client, channels);
+            actual_client=temp_client;
+            continue;
+          }
+          if(!data_from_queue)
+          {
+            //We store the non sent data in the queue
+            if((actual_client->queue.data_bytes_in_queue+buffer_len-written_len)< unicast_vars->queue_max_size)
+            {
+              unicast_queue_add_data(&actual_client->queue, buffer+written_len, buffer_len-written_len);
+              log_message(MSG_DEBUG,"Unicast: We start queuing packets ... \n");
+            }
+          }
 
 	  if(!actual_client->consecutive_errors)
 	  {
@@ -157,9 +165,9 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 			inet_ntoa(clientsocketaddr.sin_addr),
 			ntohs(clientsocketaddr.sin_port),
 			strerror(errno));
-			gettimeofday (&tv, (struct timezone *) NULL);
-			actual_client->first_error_time = tv.tv_sec;
-			actual_client->consecutive_errors=1;
+            gettimeofday (&tv, (struct timezone *) NULL);
+            actual_client->first_error_time = tv.tv_sec;
+            actual_client->consecutive_errors=1;
 	  }
 	  else
 	  {
@@ -170,9 +178,9 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 	      log_message(MSG_INFO,"Unicast: Consecutive errors when writing to client %s:%d during too much time, we disconnect\n",
 			  inet_ntoa(clientsocketaddr.sin_addr),
 			  ntohs(clientsocketaddr.sin_port));
-			  temp_client=actual_client->chan_next;
-			  unicast_close_connection(unicast_vars,fds,clientsocket,channels);
-			  actual_client=temp_client;
+              temp_client=actual_client->chan_next;
+              unicast_close_connection(unicast_vars,fds,clientsocket,channels,1);
+              actual_client=temp_client;
 	    }
 	  }
 	}

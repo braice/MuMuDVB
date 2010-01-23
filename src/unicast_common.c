@@ -215,16 +215,15 @@ int unicast_create_listening_socket(int socket_type, int socket_channel, char *i
 
 }
 
-/** @brief Close an unicast connection and delete the client
+/** @brief Close an unicast connection and delete the client if asked
 *
 * @param unicast_vars the unicast parameters
 * @param fds The polling file descriptors
 * @param Socket The socket of the client we want to disconnect
 * @param channels The channel list
 */
-void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, int Socket, mumudvb_channel_t *channels)
+void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, int Socket, mumudvb_channel_t *channels, int delete_client)
 {
-  int delete_client=1;
   int actual_fd;
   actual_fd=0;
   //We find the FD correspondig to this client
@@ -244,10 +243,20 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
     return;
   }
 
-  log_message(MSG_DEBUG,"Unicast : We close the connection\n");
+  
   //We delete the client
   if(delete_client)
+  {
+    log_message(MSG_DEBUG,"Unicast : We close the connection and delete the client\n");
     unicast_del_client(unicast_vars, unicast_vars->fd_info[actual_fd].client, channels);
+  }
+  else
+  {
+    log_message(MSG_DEBUG,"Unicast : We ONLY close the connection\n");
+    close(Socket);
+    unicast_vars->fd_info[actual_fd].client->Socket=0;
+  }
+
   /** @todo : deal with the keep alive, we can close the control connection but keep the client*/
   //We move the last fd to the actual/deleted one, and decrease the number of fds by one
   fds->pfds[actual_fd].fd = fds->pfds[fds->pfdsnum-1].fd;
@@ -300,7 +309,7 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
     {
       /** @todo RTSP : no keep alive */
       log_message(MSG_DEBUG,"Unicast : We've got a POLLHUP. Actual_fd %d socket %d we close the connection \n", actual_fd, fds->pfds[actual_fd].fd );
-      unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels);
+      unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels,1); // !!!!!!!!!!!!! here dont delete the client if RTSP
       //We check if we hage to parse fds->pfds[actual_fd].revents (the last fd moved to the actual one)
       if(fds->pfds[actual_fd].revents)
         actual_fd--;//Yes, we force the loop to see it
@@ -379,7 +388,8 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
         iRet=unicast_handle_http_message(unicast_vars,unicast_vars->fd_info[actual_fd].client, channels, number_of_channels, fds);
         if (iRet==CLOSE_CONNECTION ) //iRet==-2 --> 0 received data or error, we close the connection
         {
-          unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels);
+          log_message(MSG_FLOOD,"Unicast : handle_http_message told us to close the socket %d\n", fds->pfds[actual_fd].fd);
+          unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels,1);
           //We check if we hage to parse fds->pfds[actual_fd].revents (the last fd moved to the actual one)
           if(fds->pfds[actual_fd].revents)
             actual_fd--;//Yes, we force the loop to see it again
@@ -392,7 +402,8 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
         iRet=unicast_handle_rtsp_message(unicast_vars,unicast_vars->fd_info[actual_fd].client, channels, number_of_channels, fds);
         if (iRet==CLOSE_CONNECTION ) //iRet==CLOSE_CONNECTION --> 0 received data or error, we close the connection
         {
-          unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels);
+          log_message(MSG_FLOOD,"Unicast : handle_rtsp_message told us to close the socket %d\n", fds->pfds[actual_fd].fd);
+          unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels,1);
           //We check if we hage to parse fds->pfds[actual_fd].revents (the last fd moved to the actual one)
           if(fds->pfds[actual_fd].revents)
             actual_fd--;//Yes, we force the loop to see it again
@@ -434,7 +445,6 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
   l = sizeof(struct sockaddr);
   getsockname(tempSocket, (struct sockaddr *) &tempSocketAddr, &l);
   log_message(MSG_DETAIL,"Unicast : New connection from %s:%d to %s:%d \n",inet_ntoa(tempSocketAddrIn.sin_addr), ntohs(tempSocketAddrIn.sin_port),inet_ntoa(tempSocketAddr.sin_addr), ntohs(tempSocketAddr.sin_port));
-
   //Now we set this socket to be non blocking because we poll it
   int flags;
   flags = fcntl(tempSocket, F_GETFL, 0);
@@ -465,6 +475,8 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
     close(tempSocket);
     return NULL;
   }
+  strncpy(tempClient->client_ip,inet_ntoa(tempSocketAddrIn.sin_addr),20);
+  tempClient->client_ip[19]='\0';
 
   return tempClient;
 
@@ -507,7 +519,10 @@ int unicast_new_message(unicast_client_t *client)
     return -1;
   }
   if(received_len==0)
+  {
+    log_message(MSG_DEBUG,"Unicast : Empty message\n");
     return CLOSE_CONNECTION; //To say to the main program to close the connection
+  }
 
   /***************** Now we parse the message to see if something was asked  *****************/
   client->buffer[client->buffersize]='\0'; //For avoiding strlen to look too far (other option is to use the gnu extension strnlen)

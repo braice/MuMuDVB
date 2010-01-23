@@ -87,7 +87,10 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
 
   iRet=unicast_new_message(client);
   if(iRet)
+  {
+    log_message(MSG_DEBUG,"Unicast : problem with unicast_new_message iRet %d\n",iRet);
     return iRet;
+  }
 
   //We search for the end of the HTTP request
   if(!(strlen(client->buffer)>5 && strstr(client->buffer, "\n\r\n\0")))
@@ -107,7 +110,7 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
   /* The client is initially supplied with an RTSP URL, on the form:
       rtsp://server.address:port/object.sdp
   */
-
+  /** @todo important : test if the client already exist using the session number*/
   char *poscseq;
   int CSeq=0;
   int pos;
@@ -116,7 +119,7 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
   log_message(MSG_FLOOD,"Buffer : %s\n",client->buffer);
   if(poscseq==NULL)
   {
-    log_message(MSG_DEBUG,"CSeq not found\n");
+    log_message(MSG_DEBUG," !!!!!!!!!!!!!!!! CSeq not found\n");
     /** @todo Implement an error following the RTSP protocol*/
     return CLOSE_CONNECTION; //tu n'est pas content ...
   }
@@ -164,7 +167,7 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
     pos_search=strstr(client->buffer ,"Transport:");
     if(pos_search==NULL)
     {
-      log_message(MSG_DEBUG,"Type de transport non trouve\n");
+      log_message(MSG_DEBUG,"!!!!!!!!!!!!!!!!!!!!!!!!Type de transport non trouve\n");
       return CLOSE_CONNECTION; //tu n'est pas content ...
     }
     log_message(MSG_DEBUG,"Type de transport a la position %d\n", (int)(pos_search-(client->buffer)));
@@ -186,7 +189,7 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
     }
     else
     {
-      log_message(MSG_INFO,"Transport unknown");
+      log_message(MSG_INFO,"!!!!!!!!!!!!!!!!!!!!!!!!!Transport unknown");
       return CLOSE_CONNECTION; /** @todo implement a RTSP error*/
     }
 
@@ -195,7 +198,7 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
     log_message(MSG_FLOOD,"Buffer : %s\n",client->buffer);
     if(pos_search==NULL)
     {
-      log_message(MSG_DEBUG,"Port client non trouve\n");
+      log_message(MSG_DEBUG,"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Port client non trouve\n");
       /** @todo implement RTSP error */
       return CLOSE_CONNECTION; //tu n'est pas content ...
     }
@@ -204,26 +207,29 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
     client->rtsp_client_port = atoi(client->buffer+pos);
     log_message(MSG_INFO,"client_port= %d\n", client->rtsp_client_port);
 
+
+
+    log_message(MSG_DETAIL,"Unicast : Client ip %s port %d \n",client->client_ip,(unsigned short) client->rtsp_client_port);
+
+    client->rtsp_Socket=makeUDPsocket (client->client_ip, client->rtsp_client_port,&client->rtsp_SocketAddr);
+    log_message(MSG_DETAIL,"Unicast : New RTSP socket d_IP %s, d_port:%d n°%d\n",inet_ntoa(client->rtsp_SocketAddr.sin_addr), ntohs(client->rtsp_SocketAddr.sin_port), client->rtsp_Socket);
+
     struct sockaddr_in tempSocketAddr;
     unsigned int l;
     l = sizeof(struct sockaddr);
     getsockname(client->Socket, (struct sockaddr *) &tempSocketAddr, &l);
-    strcpy(client->rtsp_client_ip,inet_ntoa(tempSocketAddr.sin_addr));
-    log_message(MSG_DETAIL,"Unicast : Client ip %s port %d \n",client->rtsp_client_ip,(unsigned short) client->rtsp_client_port);
-
-    client->rtsp_Socket=makeUDPsocket (client->rtsp_client_ip, client->rtsp_client_port,&client->rtsp_SocketAddr);
-    log_message(MSG_DETAIL,"Unicast : New RTSP socket d_IP %s, d_port:%d n°%d\n",inet_ntoa(client->rtsp_SocketAddr.sin_addr), ntohs(client->rtsp_SocketAddr.sin_port), client->rtsp_Socket);
     l = sizeof(struct sockaddr_in);
     struct sockaddr_in tempsin;
-    //memcpy(&tempsin, &client->rtsp_SocketAddr,l);
-    //connect(client->rtsp_Socket,(struct sockaddr *) &tempsin, l);
-    memcpy(&tempsin, &client->rtsp_SocketAddr,l);
+    tempsin.sin_family = AF_INET;
     tempsin.sin_port=htons(4242);
-    bind(client->rtsp_Socket,(struct sockaddr *) &tempsin,l);
-    //l = sizeof(struct sockaddr);
-    //getsockname(client->rtsp_Socket, (struct sockaddr *) &tempSocketAddr, &l);
-    //log_message(MSG_DETAIL,"Unicast : after getsockname RTSP socket d_IP %s, d_port:%d n°%d\n",inet_ntoa(client->rtsp_SocketAddr.sin_addr), client->rtsp_SocketAddr.sin_port, client->rtsp_Socket);
-    //client->rtsp_server_port=client->rtsp_SocketAddr.sin_port;
+    tempsin.sin_addr=tempSocketAddr.sin_addr;
+    int iRet;
+    iRet=bind(client->rtsp_Socket,(struct sockaddr *) &tempsin,l);
+    if (iRet == 0)
+    {
+      log_message( MSG_ERROR,"bind failed : %s\n", strerror(errno));
+    }
+    //client->rtsp_server_port=ntohs(client->rtsp_SocketAddr.sin_port);
     client->rtsp_server_port=4242;
     unicast_send_rtsp_setup(client, CSeq, TransportType);
     unicast_flush_client(client);
@@ -234,6 +240,14 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
     //char *inPort=NULL;
     unicast_send_rtsp_play(client->Socket, CSeq, client, channels);
     unicast_flush_client(client);
+    if (client->Socket >= 0)
+    {
+      log_message(MSG_DEBUG,"Unicast: RTSP We close the control connection\n");
+      unicast_close_connection(unicast_vars, fds, client->Socket, channels, 0);
+      client->Socket=0;
+      client->Control_socket_closed=1;
+      /** @todo important : test if the client already exist when a new client arrives, delete dead clients*/
+    }
     return 0;
   }
   else if(strstr(client->buffer,"TEARDOWN")==client->buffer)
@@ -407,8 +421,8 @@ int unicast_send_rtsp_setup (unicast_client_t *client, int CSeq, int Tsprt_type)
   //if (Tsprt_type==2) broadcast_type="multicast";
   //  else broadcast_type="unicast";
   strcpy( broadcast_type,"unicast");
-  log_message(MSG_DEBUG, "Transport: %s;%s;mode=play;destination=%s;client_port=%d-%d;server_port=%d\r\n", TransportType, broadcast_type, client->rtsp_client_ip, client->rtsp_client_port, client->rtsp_client_port+1, client->rtsp_server_port);
-  unicast_reply_write(reply, "Transport: %s;%s;mode=play;destination=%s;client_port=%d-%d;server_port=%d\r\n", TransportType, broadcast_type, client->rtsp_client_ip, client->rtsp_client_port, client->rtsp_client_port+1, client->rtsp_server_port);
+  log_message(MSG_DEBUG, "Transport: %s;%s;mode=play;destination=%s;client_port=%d-%d;server_port=%d\r\n", TransportType, broadcast_type, client->client_ip, client->rtsp_client_port, client->rtsp_client_port+1, client->rtsp_server_port);
+  unicast_reply_write(reply, "Transport: %s;%s;mode=play;destination=%s;client_port=%d-%d;server_port=%d\r\n", TransportType, broadcast_type, client->client_ip, client->rtsp_client_port, client->rtsp_client_port+1, client->rtsp_server_port);
   rtsp_reply_send(reply, Socket,"text/plain");
 
   if (0 != unicast_reply_free(reply))
@@ -469,8 +483,6 @@ int unicast_send_rtsp_teardown (int Socket, int CSeq, unicast_client_t *client ,
 
   rtsp_reply_prepare_headers(reply, 200, CSeq);
   rtsp_reply_send(reply, Socket, "text/plain");
-
-  //unicast_close_connection(unicast_vars, fds, Socket, channels);
 
   if (0 != unicast_reply_free(reply))
   {

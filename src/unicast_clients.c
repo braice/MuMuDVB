@@ -112,6 +112,7 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
   client->queue.last=NULL;
   client->client_type=client_type;
   client->rtsp_Socket=0;
+  client->Control_socket_closed=0;
   unicast_vars->client_number++;
 
   return client;
