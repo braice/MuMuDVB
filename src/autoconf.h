@@ -30,7 +30,7 @@
 #define _AUTOCONF_H
 
 #include "mumudvb.h"
-#include "unicast_http.h"
+#include "unicast.h"
 #include "ts.h"
 #include "tune.h"
 

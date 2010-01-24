@@ -121,7 +121,7 @@
 #include "autoconf.h"
 #include "sap.h"
 #include "rewrite.h"
-#include "unicast_http.h"
+#include "unicast.h"
 #include "rtp.h"
 #include "log.h"
 #ifdef ENABLE_TRANSCODING
@@ -294,8 +294,11 @@ rewrite_parameters_t rewrite_vars={
 unicast_parameters_t unicast_vars={
   .unicast=0,
   .ipOut="0.0.0.0",
-  .portOut=4242,
-  .portOut_str=NULL,
+  .http_portOut=4242,
+  .http_portOut_str=NULL,
+  .unicast_rtsp_enable=0,
+  .rtsp_portOut=554,
+  .rtsp_portOut_str=NULL,
   .consecutive_errors_timeout=UNICAST_CONSECUTIVE_ERROR_TIMEOUT,
   .max_clients=-1,
   .queue_max_size=UNICAST_DEFAULT_QUEUE_MAX,
@@ -768,17 +771,29 @@ int
 
 
   //If we specified a string for the unicast port out, we parse it
-  if(unicast_vars.portOut_str!=NULL)
+  if(unicast_vars.http_portOut_str!=NULL)
   {
     int len;
-    len=strlen(unicast_vars.portOut_str)+1;
+    len=strlen(unicast_vars.http_portOut_str)+1;
     char number[10];
     sprintf(number,"%d",tuneparams.card);
-    unicast_vars.portOut_str=mumu_string_replace(unicast_vars.portOut_str,&len,1,"%card",number);
+    unicast_vars.http_portOut_str=mumu_string_replace(unicast_vars.http_portOut_str,&len,1,"%card",number);
     sprintf(number,"%d",server_id);
-    unicast_vars.portOut_str=mumu_string_replace(unicast_vars.portOut_str,&len,1,"%server",number);
-    unicast_vars.portOut=string_comput(unicast_vars.portOut_str);
-    log_message( MSG_DEBUG, "Unicast: computed unicast master port : %d\n",unicast_vars.portOut);
+    unicast_vars.http_portOut_str=mumu_string_replace(unicast_vars.http_portOut_str,&len,1,"%server",number);
+    unicast_vars.http_portOut=string_comput(unicast_vars.http_portOut_str);
+    log_message( MSG_DEBUG, "Unicast: computed unicast master port : %d\n",unicast_vars.http_portOut);
+  }
+  if(unicast_vars.unicast_rtsp_enable && unicast_vars.rtsp_portOut_str!=NULL)
+  {
+    int len;
+    len=strlen(unicast_vars.rtsp_portOut_str)+1;
+    char number[10];
+    sprintf(number,"%d",tuneparams.card);
+    unicast_vars.rtsp_portOut_str=mumu_string_replace(unicast_vars.rtsp_portOut_str,&len,1,"%card",number);
+    sprintf(number,"%d",server_id);
+    unicast_vars.rtsp_portOut_str=mumu_string_replace(unicast_vars.rtsp_portOut_str,&len,1,"%server",number);
+    unicast_vars.rtsp_portOut=string_comput(unicast_vars.rtsp_portOut_str);
+    log_message( MSG_DEBUG, "Unicast: computed unicast RTSP port : %d\n",unicast_vars.rtsp_portOut);
   }
   /******************************************************/
   //end of config file reading
@@ -843,10 +858,10 @@ int
       }
     }
 #endif
-      if(multicast_vars.rtp_header)
+      if(multicast_vars.rtp_header && !unicast_vars.unicast_rtsp_enable)
       {
 	multicast_vars.rtp_header=0;
-	log_message( MSG_INFO, "NO Multicast, RTP Header is desactivated.\n");
+	log_message( MSG_INFO, "NO Multicast, NO RTSP, RTP Header is desactivated.\n");
       }
       if(sap_vars.sap==OPTION_ON)
       {
@@ -1069,7 +1084,7 @@ int
   /*****************************************************/
 
   //Initialisation of the channels for RTP
-  if(multicast_vars.rtp_header)
+  if(multicast_vars.rtp_header || unicast_vars.unicast_rtsp_enable)
     for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
       init_rtp_header(&chan_and_pids.channels[curr_channel]);
 
@@ -1206,14 +1221,19 @@ int
   //We open the socket for the http unicast if needed and we update the poll structure
   if(unicast_vars.unicast)
   {
-    log_message(MSG_INFO,"Unicast : We open the Master http socket for address %s:%d\n",unicast_vars.ipOut, unicast_vars.portOut);
-    unicast_create_listening_socket(UNICAST_MASTER, -1, unicast_vars.ipOut, unicast_vars.portOut, &unicast_vars.sIn, &unicast_vars.socketIn, &fds, &unicast_vars);
+    log_message(MSG_INFO,"Unicast : We open the Master HTTP socket for address %s:%d\n",unicast_vars.ipOut, unicast_vars.http_portOut);
+    unicast_create_listening_socket(UNICAST_MASTER_HTTP, -1, unicast_vars.ipOut, unicast_vars.http_portOut, &unicast_vars.http_sIn, &unicast_vars.http_socketIn, &fds, &unicast_vars);
     /** open the unicast listening connections fo the channels */
     for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
       if(chan_and_pids.channels[curr_channel].unicast_port)
     {
       log_message(MSG_INFO,"Unicast : We open the channel %d http socket address %s:%d\n",curr_channel, unicast_vars.ipOut, chan_and_pids.channels[curr_channel].unicast_port);
       unicast_create_listening_socket(UNICAST_LISTEN_CHANNEL, curr_channel, unicast_vars.ipOut,chan_and_pids.channels[curr_channel].unicast_port , &chan_and_pids.channels[curr_channel].sIn, &chan_and_pids.channels[curr_channel].socketIn, &fds, &unicast_vars);
+    }
+    if(unicast_vars.unicast_rtsp_enable)
+    {
+      log_message(MSG_INFO,"Unicast : We open the Master RTSP socket for address %s:%d\n",unicast_vars.ipOut, unicast_vars.rtsp_portOut);
+      unicast_create_listening_socket(UNICAST_MASTER_RTSP, -1, unicast_vars.ipOut, unicast_vars.rtsp_portOut, &unicast_vars.rtsp_sIn, &unicast_vars.rtsp_socketIn, &fds, &unicast_vars);
     }
   }
 
@@ -1231,7 +1251,7 @@ int
   /*****************************************************/
 
   if(autoconf_vars.autoconfiguration!=AUTOCONF_MODE_FULL)
-    log_streamed_channels(chan_and_pids.number_of_channels, chan_and_pids.channels, multicast_vars.multicast, unicast_vars.unicast, unicast_vars.portOut, unicast_vars.ipOut);
+    log_streamed_channels(chan_and_pids.number_of_channels, chan_and_pids.channels, multicast_vars.multicast, unicast_vars.unicast, unicast_vars.http_portOut, unicast_vars.ipOut);
 
   if(autoconf_vars.autoconfiguration)
     log_message(MSG_INFO,"Autoconfiguration Start\n");
@@ -1513,8 +1533,8 @@ int
 
           chan_and_pids.channels[curr_channel].nb_bytes += TS_PACKET_SIZE;
           //The buffer is full, we send it
-          if ((!multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
-	    ||(multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
+          if ((!(multicast_vars.rtp_header ||unicast_vars.unicast_rtsp_enable) && ((chan_and_pids.channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
+	    ||((multicast_vars.rtp_header ||unicast_vars.unicast_rtsp_enable) && ((chan_and_pids.channels[curr_channel].nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
           {
             //For bandwith measurement (traffic)
             chan_and_pids.channels[curr_channel].sent_data+=chan_and_pids.channels[curr_channel].nb_bytes;
@@ -1546,14 +1566,15 @@ int
 		    (NULL != chan_and_pids.channels[curr_channel].transcode_options.streaming_type &&
 		    STREAMING_TYPE_MPEGTS != *chan_and_pids.channels[curr_channel].transcode_options.streaming_type))
 #endif
+            if( multicast_vars.rtp_header || unicast_vars.unicast_rtsp_enable)
+              rtp_update_sequence_number(&chan_and_pids.channels[curr_channel]);
             /********** MULTICAST *************/
-             //if the multicast TTL is set to 0 we don't send the multicast packets
+            //if the multicast TTL is set to 0 we don't send the multicast packets
             if(multicast_vars.multicast)
 	    {
 	      if(multicast_vars.rtp_header)
 	      {
 		/****** RTP *******/
-		rtp_update_sequence_number(&chan_and_pids.channels[curr_channel]);
                 sendudp (chan_and_pids.channels[curr_channel].socketOut,
 		         &chan_and_pids.channels[curr_channel].sOut,
 		         chan_and_pids.channels[curr_channel].buf_with_rtp_header,

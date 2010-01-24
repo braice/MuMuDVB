@@ -4,10 +4,11 @@ AM_LDFLAGS =
 
 bin_PROGRAMS = mumudvb
 mumudvb_SOURCES = autoconf.c crc32.c dvb.h log.c log.h multicast.c mumudvb.h network.h rewrite.h \
-		  rtp.h sap.h ts.h tune.h unicast_http.h autoconf.h dvb.c errors.h \
+		  rtp.h sap.h ts.h tune.h unicast_http.h autoconf.h dvb.c errors.h unicast_common.h \
 		  mumudvb.c mumudvb_common.c network.c pat_rewrite.c rewrite.c sdt_rewrite.c \
 		  rtp.c sap.c ts.c tune.c unicast_http.c unicast_queue.c autoconf_sdt.c autoconf_atsc.c \
-		  autoconf_pmt.c autoconf_nit.c unicast_clients.c
+		  autoconf_pmt.c autoconf_nit.c unicast_clients.c unicast_common.c unicast_common.h \
+		  unicast_rtsp.c unicast_rtsp.h unicast.h
 
 if BUILD_CAMSUPPORT
 mumudvb_SOURCES += $(SOURCES_camsupport)

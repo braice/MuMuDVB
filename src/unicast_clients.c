@@ -51,7 +51,8 @@
 #include "mumudvb.h"
 #include "errors.h"
 #include "log.h"
-
+#include "unicast.h"
+#include "unicast_common.h"
 
 
 /** @brief Add a client to the chained list of clients
@@ -61,7 +62,7 @@
 * @param SocketAddr The socket address
 * @param Socket The socket number
 */
-unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in SocketAddr, int Socket)
+unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in SocketAddr, int Socket, int client_type)
 {
 
   unicast_client_t *client;
@@ -109,7 +110,9 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
   client->queue.packets_in_queue=0;
   client->queue.first=NULL;
   client->queue.last=NULL;
-
+  client->client_type=client_type;
+  client->rtsp_Socket=0;
+  client->Control_socket_closed=0;
   unicast_vars->client_number++;
 
   return client;
@@ -130,11 +133,17 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *cli
 {
   unicast_client_t *prev_client,*next_client;
 
-  log_message(MSG_DETAIL,"Unicast : We delete the client %s:%d, socket %d\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port, client->Socket);
+  log_message(MSG_DETAIL,"Unicast : We delete the client %s:%d, socket %d\n",inet_ntoa(client->SocketAddr.sin_addr), ntohs(client->SocketAddr.sin_port), client->Socket);
+  if(client->client_type==CLIENT_RTSP && client->rtsp_Socket)
+    log_message(MSG_DETAIL,"Unicast : RTSP %s:%d, Unicast socket %d\n",inet_ntoa(client->rtsp_SocketAddr.sin_addr), ntohs(client->rtsp_SocketAddr.sin_port), client->rtsp_Socket);
 
   if (client->Socket >= 0)
   {
     close(client->Socket);
+  }
+  if (client->rtsp_Socket >= 0)
+  {
+    close(client->rtsp_Socket);
   }
 
   prev_client=client->prev;
@@ -193,13 +202,20 @@ int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *chann
   unicast_client_t *last_client;
   int iRet;
 
-  log_message(MSG_INFO,"Unicast : We add the client %s:%d to the channel \"%s\"\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port,channel->name);
+  log_message(MSG_INFO,"Unicast : We add the client %s:%d to the channel \"%s\"\n",inet_ntoa(client->SocketAddr.sin_addr), ntohs(client->SocketAddr.sin_port),channel->name);
 
-  iRet=write(client->Socket,HTTP_OK_REPLY, strlen(HTTP_OK_REPLY));
-  if(iRet!=strlen(HTTP_OK_REPLY))
+  if(client->client_type==CLIENT_HTTP)
   {
-    log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
-    return -1;
+    iRet=write(client->Socket,HTTP_OK_REPLY, strlen(HTTP_OK_REPLY));
+    if(iRet!=strlen(HTTP_OK_REPLY))
+    {
+      log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
+      return -1;
+    }
+  }
+  if(client->client_type==CLIENT_RTSP)
+  {
+    log_message(MSG_INFO,"Unicast : We add the client (RTP) sin_addr : %s: ntohs(client->rtsp_SocketAddr.sin_port) %d to the channel \"%s\"\n",inet_ntoa(client->rtsp_SocketAddr.sin_addr), ntohs(client->rtsp_SocketAddr.sin_port),channel->name);
   }
 
   client->chan_next=NULL;

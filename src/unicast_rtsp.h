@@ -1,7 +1,7 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB - Stream a DVB transport stream.
  * 
- * (C) 2009 Brice DUBOST
+ * (C) 2010 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -23,37 +23,34 @@
  */
 
 /**@file
- * @brief HTML unicast headers for queue
+ * @brief RTSP unicast headers
  */
-#ifndef _UNICAST_QUEUE_H
-#define _UNICAST_QUEUE_H
 
-#define UNICAST_DEFAULT_QUEUE_MAX 1024*512
-/**How many packets we try to send from the queue per new packet. This value MUST be at least 2*/
-#define UNICAST_MULTIPLE_QUEUE_SEND 3
+#ifndef _UNICAST_RTSP_H
+#define _UNICAST_RTSP_H
 
-/** @brief A data packet in queue.
- *
- */
-typedef struct unicast_queue_data_t{
-  int data_length;
-  unsigned char *data;
-  struct unicast_queue_data_t *next;
-}unicast_queue_data_t;
-
-/** @brief The header of a data queue.
- *
- */
-typedef struct unicast_queue_header_t{
-  int packets_in_queue;
-  int data_bytes_in_queue;
-  int full;
-  unicast_queue_data_t *first;
-  unicast_queue_data_t *last;
-}unicast_queue_header_t;
+#include "mumudvb.h"
+#include "unicast_queue.h"
+#include "unicast.h"
 
 
-void unicast_queue_clear(unicast_queue_header_t *header);
+#define RTSP_503_REPLY "RTSP/1.0 503 Too many clients\r\n"\
+                      "\r\n"
+
+#define RTSP_454_REPLY "RTSP/1.0 454 Session Not Found\r\n"\
+                      "\r\n"
+
+#define RTSP_461_REPLY "RTSP/1.0 461 Unsupported transport\r\n"\
+                      "\r\n"
+
+enum
+{
+  TRANSPORT_UNDEFINED=0,
+  RTP_AVP_UDP,
+  RTP_AVP_TCP,
+};
+
+int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels, fds_t *fds);
 
 
 #endif
