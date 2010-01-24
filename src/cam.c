@@ -44,6 +44,7 @@
 #include <linux/dvb/dmx.h>
 #include <linux/dvb/frontend.h>
 
+
 /**@file
  * @brief cam support
  * 
@@ -149,7 +150,6 @@ int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *curren
     }
     current_channel->need_cam_ask=CAM_NEED_ASK;
   }
-  
   else
     return 0; //Nothing concerning cam, we return 0 to explore the other possibilities
 
@@ -293,10 +293,10 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
   cam_params->cam_type = cam_debug_dvbca_get_interface_type(cam_params); //The reset procedure have only been tested on LLCI cams
   switch(cam_params->cam_type)
   {
-    case DVBCA_INTERFACE_LINK: 
+    case DVBCA_INTERFACE_LINK:
       log_message( MSG_DETAIL,  "CAM CAM type : low level interface\n");
       break;
-    case DVBCA_INTERFACE_HLCI: 
+    case DVBCA_INTERFACE_HLCI:
       log_message( MSG_DETAIL,  "CAM CAM type : HIGH level interface\n");
       break;
   }
