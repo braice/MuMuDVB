@@ -100,11 +100,13 @@ int autoconf_read_nit(autoconf_parameters_t *parameters, mumudvb_channel_t *chan
 void parse_nit_descriptors(unsigned char *buf,int descriptors_loop_len)
 {
 
-  while (descriptors_loop_len > 0) {
+  while (descriptors_loop_len > 0)
+  {
     unsigned char descriptor_tag = buf[0];
     unsigned char descriptor_len = buf[1] + 2;
 
-    if (!descriptor_len) {
+    if (!descriptor_len)
+    {
       log_message(MSG_DEBUG, " Autoconf : --- NIT descriptor --- descriptor_tag == 0x%02x, len is 0\n", descriptor_tag);
       break;
     }
@@ -127,7 +129,8 @@ void parse_nit_ts_descriptor(unsigned char* buf, int ts_descriptors_loop_len, mu
   int descriptors_loop_len;
   nit_ts_t *descr_header;
   int ts_id;
-  while (ts_descriptors_loop_len > 0) {
+  while (ts_descriptors_loop_len > 0)
+  {
     descr_header=(nit_ts_t *)(buf);
     descriptors_loop_len=HILO(descr_header->transport_descriptors_length);
     log_message(MSG_FLOOD, " Autoconf : --- NIT ts_descriptors_loop_len %d descriptors_loop_len %d\n", ts_descriptors_loop_len, descriptors_loop_len); 
@@ -135,11 +138,13 @@ void parse_nit_ts_descriptor(unsigned char* buf, int ts_descriptors_loop_len, mu
     log_message(MSG_DEBUG, " Autoconf : --- NIT descriptor concerning the multiplex %d\n", ts_id);
     buf +=NIT_TS_LEN;
     ts_descriptors_loop_len -= (descriptors_loop_len+NIT_TS_LEN);
-    while (descriptors_loop_len > 0) {
+    while (descriptors_loop_len > 0)
+    {
       unsigned char descriptor_tag = buf[0];
       unsigned char descriptor_len = buf[1] + 2;
 
-      if (!descriptor_len) {
+      if (!descriptor_len)
+      {
         log_message(MSG_DEBUG, " Autoconf : --- NIT descriptor --- descriptor_tag == 0x%02x, len is 0\n", descriptor_tag);
         break;
       }
@@ -182,7 +187,8 @@ void parse_multilingual_network_name_descriptor(unsigned char *buf)
 
   log_message(MSG_FLOOD, "Autoconf NIT Multilingual network name descriptor  0x%x len %d\n",descriptor_tag,descriptor_len);
 
-  while (descriptor_len > 0) {
+  while (descriptor_len > 0)
+  {
     language_code[0]=*buf;buf++;
     language_code[1]=*buf;buf++;
     language_code[2]=*buf;buf++;
@@ -255,7 +261,8 @@ void parse_lcn_descriptor(unsigned char* buf, mumudvb_channel_t* channels, int n
   log_message(MSG_DEBUG, "Autoconf NIT  0x83 descriptor (probably LCN) \n");
   log_message(MSG_FLOOD, "Autoconf NIT  0x83 descriptor (probably LCN) descriptor_len %d\n",descriptor_len);
 
-  while (descriptor_len > 0) {
+  while (descriptor_len > 0)
+  {
     lcn=(nit_lcn_t *)buf;
     buf+=NIT_LCN_LEN;
     service_id= HILO(lcn->service_id);

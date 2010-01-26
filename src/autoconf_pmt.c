@@ -254,7 +254,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
   **************************/
 
   pcr_pid=HILO(header->PCR_PID); //The PCR pid.
-	//we check if it's not already included (ie the pcr is carried with the video)
+  //we check if it's not already included (ie the pcr is carried with the video)
   found=0;
   for(i=0;i<channel->num_pids;i++)
   {
@@ -389,23 +389,23 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
 int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_len, int *pos)
 {
   if(pos!=NULL)
-    {
-      buf+=*pos;
-      descriptors_loop_len -= *pos;
-    }
+  {
+    buf+=*pos;
+    descriptors_loop_len -= *pos;
+  }
   while (descriptors_loop_len > 0) 
-    {
-      unsigned char descriptor_tag = buf[0];
-      unsigned char descriptor_len = buf[1] + 2;
+  {
+    unsigned char descriptor_tag = buf[0];
+    unsigned char descriptor_len = buf[1] + 2;
 
-      if (tag == descriptor_tag)
-        return 1;
+    if (tag == descriptor_tag)
+      return 1;
 
-      if(pos!=NULL)
-        *pos += descriptor_len;
-      buf += descriptor_len;
-      descriptors_loop_len -= descriptor_len;
-    }
+    if(pos!=NULL)
+      *pos += descriptor_len;
+    buf += descriptor_len;
+    descriptors_loop_len -= descriptor_len;
+  }
   return 0;
 }
 
@@ -418,14 +418,14 @@ int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_le
 void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len)
 {
   while (descriptors_loop_len > 0) 
-    {
-      unsigned char descriptor_tag = buf[0];
-      unsigned char descriptor_len = buf[1] + 2;
+  {
+    unsigned char descriptor_tag = buf[0];
+    unsigned char descriptor_len = buf[1] + 2;
 
-      log_message( MSG_DEBUG,"0x%02x - ", descriptor_tag);
-      buf += descriptor_len;
-      descriptors_loop_len -= descriptor_len;
-    }
+    log_message( MSG_DEBUG,"0x%02x - ", descriptor_tag);
+    buf += descriptor_len;
+    descriptors_loop_len -= descriptor_len;
+  }
 }
 
 
@@ -447,23 +447,23 @@ int pmt_need_update(mumudvb_channel_t *channel, unsigned char *buf,int ts_header
   ts_header_t *header;
 
   if(ts_header)
-    {
-      pmt=(pmt_t*)(buf+TS_HEADER_LEN);
-      header=(ts_header_t *)buf;
-    }
+  {
+    pmt=(pmt_t*)(buf+TS_HEADER_LEN);
+    header=(ts_header_t *)buf;
+  }
   else
-    {
-      pmt=(pmt_t*)(buf);
-      header=NULL;
-    }
+  {
+    pmt=(pmt_t*)(buf);
+    header=NULL;
+  }
 
   if(pmt->table_id==0x02)
     if(!ts_header || header->payload_unit_start_indicator) //It's a packet without header or the beginning of a new packet 
       if(pmt->version_number!=channel->pmt_version)
-	{
-	  log_message(MSG_DEBUG,"Autoconfiguration : PMT version changed, channel %s . stored version : %d, new: %d.\n",channel->name,channel->pmt_version,pmt->version_number);
-	  return 1;
-	}
+      {
+        log_message(MSG_DEBUG,"Autoconfiguration : PMT version changed, channel %s . stored version : %d, new: %d.\n",channel->name,channel->pmt_version,pmt->version_number);
+        return 1;
+      }
   return 0;
 
 }
@@ -488,7 +488,7 @@ void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t
   /*Check the version stored in the channel*/
   if(!actual_channel->pmt_needs_update)
   {
-	    //Checking without crc32, it there is a change we get the full packet for crc32 checking
+    //Checking without crc32, it there is a change we get the full packet for crc32 checking
     actual_channel->pmt_needs_update=pmt_need_update(actual_channel,ts_packet,1);
 
     if(actual_channel->pmt_needs_update && actual_channel->pmt_packet) //It needs update we mark the packet as empty

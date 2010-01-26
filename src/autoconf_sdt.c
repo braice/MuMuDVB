@@ -154,11 +154,13 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
 void parse_sdt_descriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_service_t *service)
 {
 
-  while (descriptors_loop_len > 0) {
+  while (descriptors_loop_len > 0)
+  {
     unsigned char descriptor_tag = buf[0];
     unsigned char descriptor_len = buf[1] + 2;
 
-    if (!descriptor_len) {
+    if (!descriptor_len)
+    {
       log_message(MSG_DEBUG, " Autoconf : --- SDT descriptor --- descriptor_tag == 0x%02x, len is 0\n", descriptor_tag);
       break;
     }
@@ -214,10 +216,10 @@ int convert_en399468_string(char *string, int max_len)
       }
       else if(*src==0x10)
       { //ISO/IEC 8859 : See table A.4
-      src++;//we skip the current byte
-      src++;//This one is always set to 0
-      if(*src >= 0x01 && *src <=0x0f)
-	encoding_control_char=(int) *src-1;
+        src++;//we skip the current byte
+        src++;//This one is always set to 0
+        if(*src >= 0x01 && *src <=0x0f)
+          encoding_control_char=(int) *src-1;
       }
       else if(*src==0x11)//ISO/IEC 10646 : Basic Multilingual Plane
 	encoding_control_char=15;
