@@ -542,6 +542,90 @@ void unicast_flush_client(unicast_client_t *client)
   client->buffer=NULL;
 
 }
+
+/** @brief get the channel number from the asked path
+
+*/
+int parse_channel_path(char* buf, int *err404, int number_of_channels, mumudvb_channel_t *channels)
+{
+  int pos;
+  char *substring;
+  int requested_channel;
+  requested_channel=0;
+  pos=0;
+
+  //Channel by number
+  //GET /bynumber/channelnumber
+  if(strstr(buf ,"/bynumber/")==(buf))
+  {
+    pos+=strlen("/bynumber/");
+    substring = strtok (buf+pos, " ");
+    if(substring == NULL)
+      *err404=1;
+    else
+    {
+      requested_channel=atoi(substring);
+      if(requested_channel && requested_channel<=number_of_channels)
+        log_message(MSG_DEBUG,"Unicast : Channel by number, number %d\n",requested_channel);
+      else
+      {
+        log_message(MSG_INFO,"Unicast : Channel by number, number %d out of range\n",requested_channel);
+        *err404=1;
+        requested_channel=0;
+      }
+    }
+  }
+  //Channel by autoconf_sid_list
+  //GET /bytsid/tsid
+  else if(strstr(buf ,"/bysid/")==(buf))
+  {
+    pos+=strlen("/bytsid/");
+    substring = strtok (buf+pos, " ");
+    if(substring == NULL)
+      *err404=1;
+    else
+    {
+      int requested_sid;
+      requested_sid=atoi(substring);
+      for(int current_channel=0; current_channel<number_of_channels;current_channel++)
+      {
+        if(channels[current_channel].service_id == requested_sid)
+          requested_channel=current_channel+1;
+      }
+      if(requested_channel)
+        log_message(MSG_DEBUG,"Unicast : Channel by service id,  service_id %d number %d\n", requested_sid, requested_channel);
+      else
+      {
+        log_message(MSG_INFO,"Unicast : Channel by service id, service_id  %d not found\n",requested_sid);
+        *err404=1;
+      }
+    }
+  }
+  //Channel by name
+  //GET /byname/channelname
+  else if(strstr(buf ,"/byname/")==(buf))
+  {
+    pos+=strlen("/byname/");
+    log_message(MSG_DEBUG,"Unicast : Channel by name\n");
+    substring = strtok (buf+pos, " ");
+    if(substring == NULL)
+      *err404=1;
+    else
+    {
+      log_message(MSG_DEBUG,"Unicast : Channel by name, name %s\n",substring);
+      //search the channel
+      *err404=1;//Temporary
+      /** @todo implement the search without the spaces*/
+    }
+  }
+  return requested_channel;
+}
+
+
+
+
+
+
 ////////////////////////
 // HTTP/RTSP Toolbox  //
 ////////////////////////

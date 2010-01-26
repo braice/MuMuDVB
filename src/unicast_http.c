@@ -145,92 +145,17 @@ int unicast_handle_http_message(unicast_parameters_t *unicast_vars, unicast_clie
           log_message(MSG_DEBUG,"Unicast : Channel by socket, number %d\n",requested_channel);
           client->askedChannel=-1;
         }
-        //Channel by number
-        //GET /bynumber/channelnumber
-        else if(strstr(client->buffer +pos ,"/bynumber/")==(client->buffer +pos))
-        {
-          if(client->channel!=-1)
-          {
-            log_message(MSG_INFO,"Unicast : A channel (%d) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->channel);
-            iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
-            return CLOSE_CONNECTION; //to delete the client
-          }
 
-          pos+=strlen("/bynumber/");
-          substring = strtok (client->buffer+pos, " ");
-          if(substring == NULL)
-            err404=1;
-          else
-          {
-            requested_channel=atoi(substring);
-            if(requested_channel && requested_channel<=number_of_channels)
-              log_message(MSG_DEBUG,"Unicast : Channel by number, number %d\n",requested_channel);
-            else
-            {
-              log_message(MSG_INFO,"Unicast : Channel by number, number %d out of range\n",requested_channel);
-              err404=1;
-              requested_channel=0;
-            }
-          }
-        }
-        //Channel by autoconf_sid_list
-        //GET /bytsid/tsid
-        else if(strstr(client->buffer +pos ,"/bysid/")==(client->buffer +pos))
+        requested_channel=parse_channel_path(client->buffer +pos,&err404, number_of_channels,channels);
+        if(requested_channel&& (client->channel!=-1))
         {
-          if(client->channel!=-1)
-          {
-            log_message(MSG_INFO,"Unicast : A channel (%d) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->channel);
-            iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
-            return CLOSE_CONNECTION; //to delete the client
-          }
-          pos+=strlen("/bytsid/");
-          substring = strtok (client->buffer+pos, " ");
-          if(substring == NULL)
-            err404=1;
-          else
-          {
-            int requested_sid;
-            requested_sid=atoi(substring);
-            for(int current_channel=0; current_channel<number_of_channels;current_channel++)
-            {
-              if(channels[current_channel].service_id == requested_sid)
-                requested_channel=current_channel+1;
-            }
-            if(requested_channel)
-              log_message(MSG_DEBUG,"Unicast : Channel by service id,  service_id %d number %d\n", requested_sid, requested_channel);
-            else
-            {
-              log_message(MSG_INFO,"Unicast : Channel by service id, service_id  %d not found\n",requested_sid);
-              err404=1;
-              requested_channel=0;
-            }
-          }
+          log_message(MSG_INFO,"Unicast : A channel (%d) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->channel);
+          iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
+          return CLOSE_CONNECTION; //to delete the client
         }
-        //Channel by name
-        //GET /byname/channelname
-        else if(strstr(client->buffer +pos ,"/byname/")==(client->buffer +pos))
-        {
-          if(client->channel!=-1)
-          {
-            log_message(MSG_INFO,"Unicast : A channel is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n");
-            iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY));//iRet is to make the copiler happy we will close the connection anyways
-            return CLOSE_CONNECTION; //to delete the client
-          }
-          pos+=strlen("/byname/");
-          log_message(MSG_DEBUG,"Unicast : Channel by number\n");
-          substring = strtok (client->buffer+pos, " ");
-          if(substring == NULL)
-            err404=1;
-          else
-          {
-            log_message(MSG_DEBUG,"Unicast : Channel by name, name %s\n",substring);
-            //search the channel
-            err404=1;//Temporary
-            /** @todo implement the search without the spaces*/
-          }
-        }
+
         //Channels list
-        else if(strstr(client->buffer +pos ,"/channels_list.html ")==(client->buffer +pos))
+        if(strstr(client->buffer +pos ,"/channels_list.html ")==(client->buffer +pos))
         {
           //We get the host name if availaible
           char *hoststr;
