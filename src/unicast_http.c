@@ -78,6 +78,8 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
 int
 unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int perport);
 int
+unicast_send_play_list_unicast_rtsp (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int rtsp_portOut, int perport);
+int
 unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t* channels, int Socket, int vlc);
 int
 unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_channel_t *channels, int Socket);
@@ -182,6 +184,13 @@ int unicast_handle_http_message(unicast_parameters_t *unicast_vars, unicast_clie
         {
           log_message(MSG_DETAIL,"play list\n");
           unicast_send_play_list_unicast (number_of_channels, channels, client->Socket, unicast_vars->http_portOut, 1 );
+          return CLOSE_CONNECTION; //We close the connection afterwards
+        }
+        //playlist RTSP, m3u
+        else if( (strstr(client->buffer +pos ,"/playlist_rtsp.m3u ")==(client->buffer +pos)) && unicast_vars->unicast_rtsp_enable )
+        {
+          log_message(MSG_DETAIL,"play list\n");
+          unicast_send_play_list_unicast_rtsp (number_of_channels, channels, client->Socket, unicast_vars->http_portOut, unicast_vars->rtsp_portOut, 0 );
           return CLOSE_CONNECTION; //We close the connection afterwards
         }
         else if(strstr(client->buffer +pos ,"/playlist_multicast.m3u ")==(client->buffer +pos))
@@ -376,6 +385,63 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
 
   return 0;
 }
+
+/** @brief Send a basic text file containig the RTSP playlist
+*
+* @param number_of_channels the number of channels
+* @param channels the channels array
+* @param Socket the socket on wich the information have to be sent
+* @param perport says if the channel have to be given by the url /bynumber or by their port
+*/
+int
+unicast_send_play_list_unicast_rtsp (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int rtsp_portOut, int perport)
+{
+  int curr_channel;
+
+  unicast_reply_t* reply = unicast_reply_init();
+  if (NULL == reply) {
+    log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
+    return -1;
+  }
+
+  //We get the ip address on which the client is connected
+  struct sockaddr_in tempSocketAddr;
+  unsigned int l;
+  l = sizeof(struct sockaddr);
+  getsockname(Socket, (struct sockaddr *) &tempSocketAddr, &l);
+  //we write the playlist
+  unicast_reply_write(reply, "#EXTM3U\r\n");
+
+  //"#EXTINF:0,title\r\nURL"
+  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+    if (channels[curr_channel].streamed_channel_old)
+    {
+      if(!perport)
+      {
+        unicast_reply_write(reply, "#EXTINF:0,%s\r\nrtsp://%s:%d/bynumber/%d\r\n",
+                          channels[curr_channel].name,
+                          inet_ntoa(tempSocketAddr.sin_addr) ,
+                          rtsp_portOut ,
+                          curr_channel+1);
+      }
+      else if(channels[curr_channel].unicast_port)
+      {
+        unicast_reply_write(reply, "#EXTINF:0,%s\r\nrtsp://%s:%d/\r\n",
+                          channels[curr_channel].name,
+                          inet_ntoa(tempSocketAddr.sin_addr) ,
+                          channels[curr_channel].unicast_port);
+      }
+    }
+  unicast_reply_send(reply, Socket, 200, "audio/x-mpegurl");
+
+  if (0 != unicast_reply_free(reply)) {
+    log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+    return -1;
+  }
+
+  return 0;
+}
+
 
 /** @brief Send a basic text file containig the playlist
 *
