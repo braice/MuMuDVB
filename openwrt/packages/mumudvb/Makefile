@@ -15,6 +15,7 @@ PKG_RELEASE:=1
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=http://mumudvb.braice.net/mumudvb/mumudvb-beta
 PKG_BUILD_DIR:=$(BUILD_DIR)/mumudvb
+EXTRA_CPPFLAGS+=-std=gnu99
 
 
 include $(INCLUDE_DIR)/package.mk
