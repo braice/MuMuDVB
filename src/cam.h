@@ -74,6 +74,8 @@ typedef struct cam_parameters_t{
   int cam_support;
   /**The came number (in case of multiple cams)*/
   int cam_number;
+  /** Do we reask channels asked and keept scrambled */
+  int cam_reask;
   int cam_type;
   int need_reset;
   int reset_counts;

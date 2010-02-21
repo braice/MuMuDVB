@@ -259,6 +259,7 @@ autoconf_parameters_t autoconf_vars={
 cam_parameters_t cam_vars={
   .cam_support = 0,
   .cam_number=0,
+  .cam_reask=0,
   .need_reset=0,
   .reset_counts=0,
   .reset_interval=CAM_DEFAULT_RESET_INTERVAL,
@@ -1846,7 +1847,27 @@ static void SignalHandler (int signum)
       }
     }
 
-
+#ifdef ENABLE_CAM_SUPPORT
+  /* Check for fully scrambled channels for a while and CAM support, to re ask the CAM */
+    if(cam_vars.cam_reask)
+    {
+      for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
+      {
+        if((chan_and_pids.channels[curr_channel].scrambled_channel_old == HIGHLY_SCRAMBLED)&&
+          (chan_and_pids.channels[curr_channel].scrambled_channel_time)&&
+          ((now-chan_and_pids.channels[curr_channel].scrambled_channel_time)>60)&&
+          (chan_and_pids.channels[curr_channel].need_cam_ask==CAM_ASKED))
+        {
+          chan_and_pids.channels[curr_channel].need_cam_ask=CAM_NEED_UPDATE;
+          chan_and_pids.channels[curr_channel].pmt_packet->empty=1;
+          chan_and_pids.channels[curr_channel].scrambled_channel_time=now;
+          log_message( MSG_DETAIL,
+                     "Channel \"%s\" highly scrambled for more than a minute. We ask the CAM to update.\n",
+                     chan_and_pids.channels[curr_channel].name);
+        }
+      }
+    }
+    #endif
 
     /* Check if the chanel scrambling state has changed*/
     for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
@@ -1880,6 +1901,7 @@ static void SignalHandler (int signum)
                      "Channel \"%s\" is now higly scrambled (%d%% of scrambled packets). Card %d\n",
                      chan_and_pids.channels[curr_channel].name, chan_and_pids.channels[curr_channel].ratio_scrambled, tuneparams.card);
         chan_and_pids.channels[curr_channel].scrambled_channel_old = HIGHLY_SCRAMBLED;// update
+        chan_and_pids.channels[curr_channel].scrambled_channel_time=now;
       }
     }
 

@@ -210,6 +210,8 @@ typedef struct mumudvb_channel_t{
   int scrambled_channel;
   /** Old state to manage state change display*/
   int scrambled_channel_old;
+  /** When the channel became highly scrambled */
+  long scrambled_channel_time;
 
   /**the channel name*/
   char name[MAX_NAME_LEN];

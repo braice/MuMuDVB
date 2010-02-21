@@ -121,6 +121,11 @@ int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *curren
                    "You have enabled the support for conditionnal acces modules (scrambled channels). Please report any bug/comment\n");
     }
   }
+  else if (!strcmp (substring, "cam_reask"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    cam_vars->cam_reask = atoi (substring);
+  }
   else if (!strcmp (substring, "cam_reset_interval"))
   {
     substring = strtok (NULL, delimiteurs);
@@ -540,7 +545,7 @@ static int mumudvb_cam_ai_callback(void *arg, uint8_t slot_id, uint16_t session_
       fprintf (file_cam_info,"CAM_Manufacturer_Code=%04x\n",manufacturer_code);
       fprintf (file_cam_info,"CAM_Menu_String=%.*s\n",menu_string_length, menu_string);
       fclose (file_cam_info);
-    }  
+    }
 
   return 0;
 }
@@ -577,7 +582,8 @@ static int mumudvb_cam_ca_info_callback(void *arg, uint8_t slot_id, uint16_t ses
       fclose (file_cam_info);
     }
 
-  cam_params->ca_resource_connected = 1; 
+  cam_params->ca_resource_connected = 1;
+
   return 0;
 }
 
@@ -776,7 +782,8 @@ void cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autocon
   {
     //if the packet is already ok, we don't get it (it can be updated by pmt_follow)
     if((autoconf_vars->autoconf_pid_update && !actual_channel->pmt_packet->empty && actual_channel->pmt_packet->packet_ok)||
-        (!autoconf_vars->autoconf_pid_update && get_ts_packet(ts_packet,actual_channel->pmt_packet))) 
+        (!autoconf_vars->autoconf_pid_update && get_ts_packet(ts_packet,actual_channel->pmt_packet))||
+        (autoconf_vars->autoconf_pid_update && !actual_channel->pmt_needs_update && get_ts_packet(ts_packet,actual_channel->pmt_packet)))
     {
       //We check the transport stream id of the packet
       if(check_pmt_service_id(actual_channel->pmt_packet, actual_channel))
@@ -800,7 +807,6 @@ void cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autocon
       }
     }
   }
-    
 }
 
 
