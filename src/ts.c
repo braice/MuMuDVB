@@ -64,8 +64,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
   pid=HILO(header->pid);
 
   //delta used to remove TS HEADER
-  delta = TS_HEADER_LEN-1; 
-
+  delta = TS_HEADER_LEN-1;
 
   //Sometimes there is some more data in the header, the adaptation field say it
   if (header->adaptation_field_control & 0x2)
@@ -108,7 +107,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
           byte of the payload of that Transport Stream packet shall contain the pointer. When no section begins in a given
           Transport Stream packet, then the payload_unit_start_indicator shall be set to 0 and no pointer shall be sent in the
           payload of that packet.
-          
+
           I assume this is always 0
           */
 	  ts_packet->packet_ok=0;
@@ -150,13 +149,13 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 	  return 0;
 	}
 
-    }      
+    }
   //We check if the TS is full
   if (ts_packet->len > ((HILO(((pmt_t *)ts_packet->packet)->section_length))+3)) //+3 is for the header
-    {
-      //Yes, it's full, I check the CRC32 to say it's valid
-      parsed=ts_check_CRC(ts_packet); //TEST CRC32
-    }
+  {
+    //Yes, it's full, I check the CRC32 to say it's valid
+    parsed=ts_check_CRC(ts_packet); //TEST CRC32
+  }
 
   if(parsed)
     ts_packet->packet_ok=1;
@@ -206,14 +205,14 @@ int ts_check_CRC( mumudvb_ts_packet_t *pmt)
   for(i = 0; i < pmt->len; i++) {
     crc32 = (crc32 << 8) ^ crc32_table[((crc32 >> 24) ^ pmt->packet[i])&0xff];
   }
-  
+
   if(crc32!=0)
     {
       //Bad CRC32
       log_message( MSG_DETAIL,"\tBAD CRC32 PID : %d\n", pmt->pid);
       return 0; //We don't send this PMT
     }
-  
+
   return 1;
 
 }
@@ -245,6 +244,7 @@ int check_pmt_service_id(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
   if(channel->service_id && (channel->service_id != HILO(header->program_number)) )
   {
     log_message( MSG_DETAIL,"TS : The PMT %d not belongs to channel \"%s\"\n", pmt->pid, channel->name);
+    log_message( MSG_DETAIL,"TS : Debug channel->service_id %d pmt service_id %d\n", channel->service_id, HILO(header->program_number));
     return 0;
   }
   else if(channel->service_id)
