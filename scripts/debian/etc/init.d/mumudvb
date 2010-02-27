@@ -34,7 +34,7 @@ do_start() {
                 mkdir -p $PIDDIR
         fi
         chown $DAEMONUSER $PIDDIR
-	if [ -x $LAUNCH_BEFORE_MUMU ]; then
+	if [ -x "$LAUNCH_BEFORE_MUMU" ]; then
 		log_daemon_msg "Launching pre script ..."
 		eval $LAUNCH_BEFORE_MUMU
 		log_daemon_msg "Done."
