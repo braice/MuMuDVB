@@ -214,8 +214,9 @@ Autoconfiguration parameters
 |autoconf_radios |Do we consider radios as valid channels during full autoconfiguration ? | 0 | 0 or 1 | 
 |autoconf_scrambled |Do we consider scrambled channels valid channels during full autoconfiguration ? | 0 | 0 or 1 | Automatic when cam_support=1. Sometimes a clear channel can be marked as scrambled. This option allows you to bypass the ckecking.
 |autoconf_pid_update |Do we follow the changes in the PIDs when the PMT is updated ? | 1 | 0 or 1 | 
-|autoconf_unicast_start_port |The unicast port for the first discovered channel |  |  | See README for more details.
-|autoconf_unicast_port |The unicast port for each discovered channel (autoconf full). Ex "2000+%number" |  |  | You can unse expressions with `+` `*` `%card` `%server` and `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
+|autoconf_unicast_start_port |The unicast port for the first discovered channel |  |  | `autoconf_unicast_start_port=value` is equivalent to `autoconf_unicast_port=value + %number`
+|autoconf_unicast_port |The unicast port for each discovered channel (autoconf full). Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%server` and `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
+|autoconf_multicast_port |The multicast port for each discovered channel (autoconf full). Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%server` and `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
 |autoconf_sid_list | If you don't want to configure all the channels of the transponder in full autoconfiguration mode, specify with this option the list of the service ids of the channels you want to autoconfigure. | empty |  | 
 |autoconf_name_template | The template for the channel name, ex `%number-%name` | empty | | See README for more details
 |==================================================================================================================

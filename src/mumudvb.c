@@ -250,6 +250,7 @@ autoconf_parameters_t autoconf_vars={
   .autoconf_temp_psip=NULL,
   .services=NULL,
   .autoconf_unicast_port="\0",
+  .autoconf_multicast_port="\0",
   .num_service_id=0,
   .name_template="\0",
 };

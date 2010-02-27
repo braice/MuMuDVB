@@ -100,6 +100,8 @@ Possible values for this variable
 
   /**the http unicast port (string with %card %number, * and + ) */
   char autoconf_unicast_port[256];
+  /**the multicast port (string with %card %number, * and + ) */
+  char autoconf_multicast_port[256];
 
   /**the list of SID for full autoconfiguration*/
   int service_id_list[MAX_CHANNELS];

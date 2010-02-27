@@ -179,7 +179,7 @@ int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, c
   /**  option for the http unicast port (for autoconf full) parsed version*/
   else if (!strcmp (substring, "autoconf_unicast_port"))
   {
-    substring = strtok (NULL, delimiteurs);
+    substring = strtok (NULL, "=");
     if(strlen(substring)>255)
     {
       log_message( MSG_ERROR,
@@ -187,6 +187,18 @@ int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, c
       return -1;
     }
     strcpy(autoconf_vars->autoconf_unicast_port,substring);
+  }
+  /**  option for the http multicast port (for autoconf full) parsed version*/
+  else if (!strcmp (substring, "autoconf_multicast_port"))
+  {
+    substring = strtok (NULL, "=");
+    if(strlen(substring)>255)
+    {
+      log_message( MSG_ERROR,
+                   "The autoconf_multicast_port is too long\n");
+      return -1;
+    }
+    strcpy(autoconf_vars->autoconf_multicast_port,substring);
   }
   else if ((!strcmp (substring, "autoconf_tsid_list"))||(!strcmp (substring, "autoconf_sid_list")))
   {
@@ -577,10 +589,10 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
   mumudvb_service_t *actual_service;
   int channel_number=0;
   int found_in_service_id_list;
-  int port_per_channel;
+  int unicast_port_per_channel;
   char tempstring[256];
   actual_service=parameters.services;
-  port_per_channel=strlen(parameters.autoconf_unicast_port)?1:0;
+  unicast_port_per_channel=strlen(parameters.autoconf_unicast_port)?1:0;
 
   do
   {
@@ -644,10 +656,24 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
           strcpy(channels[channel_number].name,actual_service->name);
         if(multicast_out)
         {
-          channels[channel_number].portOut=port;//do here the job for evaluating the string
           char number[10];
           char ip[80];
           int len=80;
+          if(strlen(parameters.autoconf_multicast_port))
+          {
+            strcpy(tempstring,parameters.autoconf_multicast_port);
+            sprintf(number,"%d",channel_number);
+            mumu_string_replace(tempstring,&len,0,"%number",number);
+            sprintf(number,"%d",card);
+            mumu_string_replace(tempstring,&len,0,"%card",number);
+            sprintf(number,"%d",server_id);
+            mumu_string_replace(tempstring,&len,0,"%server",number);
+            channels[channel_number].portOut=string_comput(tempstring);
+          }
+          else
+          {
+            channels[channel_number].portOut=port;//do here the job for evaluating the string
+          }
           strcpy(ip,parameters.autoconf_ip);
           sprintf(number,"%d",channel_number);
           mumu_string_replace(ip,&len,0,"%number",number);
@@ -656,7 +682,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
           sprintf(number,"%d",server_id);
           mumu_string_replace(ip,&len,0,"%server",number);
           strcpy(channels[channel_number].ipOut,ip);
-          log_message(MSG_DEBUG,"Autoconf : Channel Ip : \"%s\" port : %d\n",channels[channel_number].ipOut,port);
+          log_message(MSG_DEBUG,"Autoconf : Channel Ip : \"%s\" port : %d\n",channels[channel_number].ipOut,channels[channel_number].portOut);
         }
 
         //This is a scrambled channel, we will have to ask the cam for descrambling it
@@ -681,7 +707,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
             memset (channels[channel_number].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
         }
         //We update the unicast port, the connection will be created in autoconf_finish_full
-        if(port_per_channel && unicast_vars->unicast)
+        if(unicast_port_per_channel && unicast_vars->unicast)
         {
           strcpy(tempstring,parameters.autoconf_unicast_port);
           int len;len=256;
