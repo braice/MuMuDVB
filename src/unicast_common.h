@@ -58,7 +58,7 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 int unicast_new_message(unicast_client_t *client);
 void unicast_flush_client(unicast_client_t *client);
 
-
+int parse_channel_path(char* buf, int* err404, int number_of_channels, mumudvb_channel_t* channels);
 
 
 #endif

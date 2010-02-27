@@ -66,7 +66,7 @@ int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *chann
 int unicast_send_rtsp_describe (int Socket, int CSeq);
 int unicast_send_rtsp_options (int Socket, int CSeq);
 int unicast_send_rtsp_setup (unicast_client_t *client, int CSeq, int Tsprt_type);
-int unicast_send_rtsp_play (int Socket, int CSeq, unicast_client_t *client, mumudvb_channel_t *channels);
+int unicast_send_rtsp_play (int Socket, int CSeq, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels);
 int unicast_send_rtsp_setup (unicast_client_t *client, int CSeq, int Tsprt_type);
 int unicast_send_rtsp_teardown (int Socket, int CSeq, unicast_client_t *client , mumudvb_channel_t *channels, unicast_parameters_t *unicast_vars, fds_t *fds);
 
@@ -96,14 +96,6 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
   if(!(strlen(client->buffer)>5 && strstr(client->buffer, "\n\r\n\0")))
     return 0;
 
-  //      char *substring=NULL;
-  //char *substringcseq=NULL;
-  //char *urlPreSuffix=NULL;
-  //char *urlSuffix=NULL;
-  int requested_channel;
-  //int iRet;
-  requested_channel=0;
-  //unicast_reply_t* reply=NULL;
 
   log_message(MSG_DEBUG,"Unicast : End of RTSP request, we parse it\n");
   // We implement RTSP protocol
@@ -237,8 +229,9 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
   }
   else if(strstr(client->buffer,"PLAY")==client->buffer)
   {
-    //char *inPort=NULL;
-    unicast_send_rtsp_play(client->Socket, CSeq, client, channels);
+    iRet=unicast_send_rtsp_play(client->Socket, CSeq, client, channels, number_of_channels);
+    if(iRet)
+      return CLOSE_CONNECTION;
     unicast_flush_client(client);
     if (client->Socket >= 0)
     {
@@ -438,8 +431,13 @@ int unicast_send_rtsp_setup (unicast_client_t *client, int CSeq, int Tsprt_type)
  *
  * @param Socket the socket on wich the information have to be sent
  */
-int unicast_send_rtsp_play (int Socket, int CSeq, unicast_client_t *client, mumudvb_channel_t *channels)
+int unicast_send_rtsp_play (int Socket, int CSeq, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels)
 {
+  int err404;
+  int requested_channel;
+  requested_channel=0;
+  char *tempstring;
+  err404=0;
   unicast_reply_t* reply = unicast_reply_init();
   if (NULL == reply)
   {
@@ -447,14 +445,42 @@ int unicast_send_rtsp_play (int Socket, int CSeq, unicast_client_t *client, mumu
     return -1;
   }
 
-  log_message(MSG_INFO,"Requete PLAY RTSP\n");
+  log_message(MSG_INFO,"Unicast : Requete PLAY RTSP\n");
+
+  tempstring=strstr(client->buffer,"rtsp://");
+  tempstring=strstr(tempstring+7,"/");
+  if(tempstring)
+    requested_channel=parse_channel_path(tempstring,&err404, number_of_channels, channels);
+  else
+  {
+    log_message(MSG_INFO,"Unicast : Malformed PLAY request, we return 404\n");
+    err404=1;
+  }
+  if(!requested_channel)
+    err404=1;
+  if(err404)
+  {
+    log_message(MSG_INFO,"Unicast : Path not found i.e. 404\n");
+    unicast_reply_write(reply, "Session: %s\r\n", client->session);
+    rtsp_reply_prepare_headers(reply, 404, CSeq);
+    rtsp_reply_send(reply, Socket, "text/plain");;
+    if (0 != unicast_reply_free(reply)) {
+      log_message(MSG_INFO,"Unicast : Error when releasing the RTSP reply after sendinf it\n");
+    }
+    return CLOSE_CONNECTION; //to delete the client
+  }
+
   unicast_reply_write(reply, "Session: %s\r\n", client->session);
   rtsp_reply_prepare_headers(reply, 200, CSeq);
   rtsp_reply_send(reply, Socket, "text/plain");
 
-  // TODO Ajouter l'IP du client dans la liste des IP unicast.
-  client->channel=0;
-  channel_add_unicast_client(client, &channels[0]);
+  if(requested_channel)
+  {
+     log_message(MSG_INFO,"Unicast : PLAY channel %d\n",requested_channel);
+    // TODO Ajouter l'IP du client dans la liste des IP unicast.
+    client->channel=requested_channel-1;
+    channel_add_unicast_client(client, &channels[requested_channel-1]);
+  }
 
 
   if (0 != unicast_reply_free(reply))

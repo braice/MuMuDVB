@@ -78,6 +78,8 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
 int
 unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int perport);
 int
+unicast_send_play_list_unicast_rtsp (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int rtsp_portOut, int perport);
+int
 unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t* channels, int Socket, int vlc);
 int
 unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_channel_t *channels, int Socket);
@@ -145,92 +147,17 @@ int unicast_handle_http_message(unicast_parameters_t *unicast_vars, unicast_clie
           log_message(MSG_DEBUG,"Unicast : Channel by socket, number %d\n",requested_channel);
           client->askedChannel=-1;
         }
-        //Channel by number
-        //GET /bynumber/channelnumber
-        else if(strstr(client->buffer +pos ,"/bynumber/")==(client->buffer +pos))
-        {
-          if(client->channel!=-1)
-          {
-            log_message(MSG_INFO,"Unicast : A channel (%d) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->channel);
-            iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
-            return CLOSE_CONNECTION; //to delete the client
-          }
 
-          pos+=strlen("/bynumber/");
-          substring = strtok (client->buffer+pos, " ");
-          if(substring == NULL)
-            err404=1;
-          else
-          {
-            requested_channel=atoi(substring);
-            if(requested_channel && requested_channel<=number_of_channels)
-              log_message(MSG_DEBUG,"Unicast : Channel by number, number %d\n",requested_channel);
-            else
-            {
-              log_message(MSG_INFO,"Unicast : Channel by number, number %d out of range\n",requested_channel);
-              err404=1;
-              requested_channel=0;
-            }
-          }
-        }
-        //Channel by autoconf_sid_list
-        //GET /bytsid/tsid
-        else if(strstr(client->buffer +pos ,"/bysid/")==(client->buffer +pos))
+        requested_channel=parse_channel_path(client->buffer +pos,&err404, number_of_channels,channels);
+        if(requested_channel&& (client->channel!=-1))
         {
-          if(client->channel!=-1)
-          {
-            log_message(MSG_INFO,"Unicast : A channel (%d) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->channel);
-            iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
-            return CLOSE_CONNECTION; //to delete the client
-          }
-          pos+=strlen("/bytsid/");
-          substring = strtok (client->buffer+pos, " ");
-          if(substring == NULL)
-            err404=1;
-          else
-          {
-            int requested_sid;
-            requested_sid=atoi(substring);
-            for(int current_channel=0; current_channel<number_of_channels;current_channel++)
-            {
-              if(channels[current_channel].service_id == requested_sid)
-                requested_channel=current_channel+1;
-            }
-            if(requested_channel)
-              log_message(MSG_DEBUG,"Unicast : Channel by service id,  service_id %d number %d\n", requested_sid, requested_channel);
-            else
-            {
-              log_message(MSG_INFO,"Unicast : Channel by service id, service_id  %d not found\n",requested_sid);
-              err404=1;
-              requested_channel=0;
-            }
-          }
+          log_message(MSG_INFO,"Unicast : A channel (%d) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->channel);
+          iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
+          return CLOSE_CONNECTION; //to delete the client
         }
-        //Channel by name
-        //GET /byname/channelname
-        else if(strstr(client->buffer +pos ,"/byname/")==(client->buffer +pos))
-        {
-          if(client->channel!=-1)
-          {
-            log_message(MSG_INFO,"Unicast : A channel is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n");
-            iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY));//iRet is to make the copiler happy we will close the connection anyways
-            return CLOSE_CONNECTION; //to delete the client
-          }
-          pos+=strlen("/byname/");
-          log_message(MSG_DEBUG,"Unicast : Channel by number\n");
-          substring = strtok (client->buffer+pos, " ");
-          if(substring == NULL)
-            err404=1;
-          else
-          {
-            log_message(MSG_DEBUG,"Unicast : Channel by name, name %s\n",substring);
-            //search the channel
-            err404=1;//Temporary
-            /** @todo implement the search without the spaces*/
-          }
-        }
+
         //Channels list
-        else if(strstr(client->buffer +pos ,"/channels_list.html ")==(client->buffer +pos))
+        if(strstr(client->buffer +pos ,"/channels_list.html ")==(client->buffer +pos))
         {
           //We get the host name if availaible
           char *hoststr;
@@ -257,6 +184,13 @@ int unicast_handle_http_message(unicast_parameters_t *unicast_vars, unicast_clie
         {
           log_message(MSG_DETAIL,"play list\n");
           unicast_send_play_list_unicast (number_of_channels, channels, client->Socket, unicast_vars->http_portOut, 1 );
+          return CLOSE_CONNECTION; //We close the connection afterwards
+        }
+        //playlist RTSP, m3u
+        else if( (strstr(client->buffer +pos ,"/playlist_rtsp.m3u ")==(client->buffer +pos)) && unicast_vars->unicast_rtsp_enable )
+        {
+          log_message(MSG_DETAIL,"play list\n");
+          unicast_send_play_list_unicast_rtsp (number_of_channels, channels, client->Socket, unicast_vars->http_portOut, unicast_vars->rtsp_portOut, 0 );
           return CLOSE_CONNECTION; //We close the connection afterwards
         }
         else if(strstr(client->buffer +pos ,"/playlist_multicast.m3u ")==(client->buffer +pos))
@@ -451,6 +385,63 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
 
   return 0;
 }
+
+/** @brief Send a basic text file containig the RTSP playlist
+*
+* @param number_of_channels the number of channels
+* @param channels the channels array
+* @param Socket the socket on wich the information have to be sent
+* @param perport says if the channel have to be given by the url /bynumber or by their port
+*/
+int
+unicast_send_play_list_unicast_rtsp (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int rtsp_portOut, int perport)
+{
+  int curr_channel;
+
+  unicast_reply_t* reply = unicast_reply_init();
+  if (NULL == reply) {
+    log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
+    return -1;
+  }
+
+  //We get the ip address on which the client is connected
+  struct sockaddr_in tempSocketAddr;
+  unsigned int l;
+  l = sizeof(struct sockaddr);
+  getsockname(Socket, (struct sockaddr *) &tempSocketAddr, &l);
+  //we write the playlist
+  unicast_reply_write(reply, "#EXTM3U\r\n");
+
+  //"#EXTINF:0,title\r\nURL"
+  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+    if (channels[curr_channel].streamed_channel_old)
+    {
+      if(!perport)
+      {
+        unicast_reply_write(reply, "#EXTINF:0,%s\r\nrtsp://%s:%d/bynumber/%d\r\n",
+                          channels[curr_channel].name,
+                          inet_ntoa(tempSocketAddr.sin_addr) ,
+                          rtsp_portOut ,
+                          curr_channel+1);
+      }
+      else if(channels[curr_channel].unicast_port)
+      {
+        unicast_reply_write(reply, "#EXTINF:0,%s\r\nrtsp://%s:%d/\r\n",
+                          channels[curr_channel].name,
+                          inet_ntoa(tempSocketAddr.sin_addr) ,
+                          channels[curr_channel].unicast_port);
+      }
+    }
+  unicast_reply_send(reply, Socket, 200, "audio/x-mpegurl");
+
+  if (0 != unicast_reply_free(reply)) {
+    log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+    return -1;
+  }
+
+  return 0;
+}
+
 
 /** @brief Send a basic text file containig the playlist
 *
