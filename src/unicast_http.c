@@ -930,13 +930,13 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
     {
       if(host)
         unicast_reply_write(reply, "Channel number %d : %s<br>Unicast link : <a href=\"http://%s/bynumber/%d\">http://%s/bynumber/%d</a><br>Multicast ip : %s:%d<br><br>\r\n",
-                            curr_channel,
+                            curr_channel+1,
                             channels[curr_channel].name,
                             host,curr_channel+1,
                             host,curr_channel+1,
                             channels[curr_channel].ipOut,channels[curr_channel].portOut);
                             else
-                              unicast_reply_write(reply, "Channel number %d : \"%s\"<br>Multicast ip : %s:%d<br><br>\r\n",curr_channel,channels[curr_channel].name,channels[curr_channel].ipOut,channels[curr_channel].portOut);
+                              unicast_reply_write(reply, "Channel number %d : \"%s\"<br>Multicast ip : %s:%d<br><br>\r\n",curr_channel+1,channels[curr_channel].name,channels[curr_channel].ipOut,channels[curr_channel].portOut);
     }
     unicast_reply_write(reply, HTTP_CHANNELS_REPLY_END);
 
@@ -1094,7 +1094,7 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
       clients++;
     }
     unicast_reply_write(reply, "{\"number\":%d, \"lcn\":%d, \"name\":\"%s\", \"sap_group\":\"%s\", \"ip_multicast\":\"%s\", \"port_multicast\":%d, \"num_clients\":%d, \"scrambling_ratio\":%d, \"is_up\":%d,",
-                        curr_channel,
+                        curr_channel+1,
                         channels[curr_channel].logical_channel_number,
                         channels[curr_channel].name,
                         channels[curr_channel].sap_group,
@@ -1184,7 +1184,7 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
   {
     unicast_reply_write(reply, "[");
     for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-      unicast_reply_write(reply, "{\"number\":%d, \"name\":\"%s\", \"traffic\":%.2f},\n", curr_channel, channels[curr_channel].name, channels[curr_channel].traffic);
+      unicast_reply_write(reply, "{\"number\":%d, \"name\":\"%s\", \"traffic\":%.2f},\n", curr_channel+1, channels[curr_channel].name, channels[curr_channel].traffic);
     reply->used_body -= 2; // dirty hack to erase the last comma
     unicast_reply_write(reply, "]\n");
   }
