@@ -50,6 +50,8 @@ then
   else
     AC_MSG_WARN([libpthread, libucsi and libdvben50221 are needed for CAM support])
   fi
+else
+  enable_cam_support="no"
 fi
 AM_CONDITIONAL(BUILD_CAMSUPPORT, [test "${enable_cam_support}" != "no"])
 
@@ -74,6 +76,8 @@ then
   else
     AC_MSG_WARN([libpthread, libavcodev, libavformat and libswscale are needed for transcoding support])
   fi
+else
+  enable_transcoding="no"
 fi
 AM_CONDITIONAL(BUILD_TRANSCODING, [test "${enable_transcoding}" != "no"])
 
