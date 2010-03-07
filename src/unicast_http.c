@@ -582,7 +582,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
           }
         }
         //Channel by autoconf_sid_list
-        //GET /bytsid/tsid
+        //GET /bysid/sid
         else if(strstr(client->buffer +pos ,"/bysid/")==(client->buffer +pos))
         {
           if(client->channel!=-1)
