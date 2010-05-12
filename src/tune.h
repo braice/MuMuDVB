@@ -103,6 +103,8 @@ typedef struct tuning_parameters_t{
   int lnb_voltage_off;
   /**The satellite number ie the LNB number*/
   unsigned char sat_number;
+  /**The type of switch U uncommitted C committed*/
+  char switch_type;
   /** The kind of modulation */
   fe_modulation_t modulation;
   int modulation_set;

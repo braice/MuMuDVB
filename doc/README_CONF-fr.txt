@@ -105,6 +105,7 @@ Paramètres spécifiques à la réception satellite
 |lnb_lof_low |La fréquence de l'oscillateur local du LNB pour la bande basse ( lorsque le type de LNB est universel )  | 9750 |  |En MHz, voir plus bas
 |lnb_lof_high |La fréquence de l'oscillateur local du LNB pour la bande haute ( lorsque le type de LNB est universel ) | 10600 |  | En MHz, voir plus bas
 |sat_number | Le numéro de satellite si vous avez plusieurs LNB. Aucun effet si égal à 0 (seulement ton 22kHz et 13/18V), envoie un message diseqc si différent de 0 | 0 | 0, 1 à 4 | 
+|switch_type | Le type de switch DiSEqC : Committed ou Uncommitted | C | C, c, U or U | 
 |lnb_voltage_off |Force la tension pour le LNB à 0V (au lieu de 13V ou 18V). Ceci est utile si votre LNB possède sa propre alimentation. | 0 | 0 ou 1 | 
 |coderate  |coderate, appelé aussi FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto | 
 |rolloff  |rolloff important seulement pour le DVB-S2 | 35 | 35, 20, 25, auto | La valeur par défaut devrait marcher la plupart du temps

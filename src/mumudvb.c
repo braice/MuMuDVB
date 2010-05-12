@@ -206,6 +206,7 @@ tuning_parameters_t tuneparams={
   .lnb_lof_low=DEFAULT_LOF1_UNIVERSAL,
   .lnb_lof_high=DEFAULT_LOF2_UNIVERSAL,
   .sat_number = 0,
+  .switch_type = 'C',
   .modulation_set = 0,
   .display_strenght = 0,
   .strengththreadshutdown = 0,

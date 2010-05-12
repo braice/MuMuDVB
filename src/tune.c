@@ -444,7 +444,24 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
     substring = strtok (NULL, delimiteurs);	//we extract the substring
     tuneparams->tuning_timeout = atoi (substring);
   }
-
+  else if (!strcmp (substring, "switch_type"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    if (tolower (substring[0]) == 'u')
+    {
+      tuneparams->switch_type = 'U';
+    }
+    else if (tolower (substring[0]) == 'c')
+    {
+      tuneparams->switch_type = 'C';
+    }
+    else
+    {
+      log_message( MSG_ERROR,
+                   "Config issue : switch_type\n");
+                   return -1;
+    }
+  }
   else
     return 0; //Nothing concerning tuning, we return 0 to explore the other possibilities
 
@@ -479,27 +496,41 @@ struct diseqc_cmd {
    uint32_t wait;
 };
 
+
+
+/** @brief Wait msec miliseconds
+ */
+static inline void msleep(uint32_t msec)
+{
+    struct timespec req = { msec / 1000, 1000000 * (msec % 1000) };
+    while (nanosleep(&req, &req));
+}
+
 /** @brief Send a diseqc message
  *
  * As defined in the DiseqC norm, we stop the 22kHz tone, we set the voltage. Wait. send the command. Wait. put back the 22kHz tone
  *
  */
-static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd, fe_sec_tone_mode_t t)
+static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, fe_sec_tone_mode_t t, fe_sec_mini_cmd_t b)
 {
-  if(ioctl(fd, FE_SET_TONE, SEC_TONE_OFF) < 0)
+  int err;
+  if((err = ioctl(fd, FE_SET_TONE, SEC_TONE_OFF)))
     return -1;
-  if(ioctl(fd, FE_SET_VOLTAGE, v) < 0)
+  if((err = ioctl(fd, FE_SET_VOLTAGE, v)))
     return -1;
-  usleep(15 * 1000*10);
+  msleep(15);
   //1.x compatible equipment
-  if(ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd->cmd) < 0)
-    return -1;
-  usleep(15 * 1000*10);
-  if(ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd->cmd) < 0)
-    return -1;
-  usleep(cmd->wait * 1000*10);
-  usleep(15 * 1000*10);
+  while (*cmd) {
+    if((err = ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &(*cmd)->cmd)))
+      return -1;
+    msleep((*cmd)->wait);
+    cmd++;
+  }
 
+  msleep(15);
+  if ((err = ioctl(fd, FE_DISEQC_SEND_BURST, b)))
+    return err;
+  msleep(15);
 
   if(ioctl(fd, FE_SET_TONE, t) < 0)
     return -1;
@@ -515,19 +546,23 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd *cmd, f
  *
  * @param fd : the file descriptor of the frontend
  * @param sat_no : the satellite number (0 for non diseqc compliant hardware, 1 to 4 for diseqc compliant)
+ * @param switch_type the switch type (commited or uncommited)
  * @param pol_v_r : 1 : vertical or circular right, 0 : horizontal or circular left
  * @param hi_lo : the band for a dual band lnb
  * @param lnb_voltage_off : if one, force the 13/18V voltage to be 0 independantly of polarization
  */
-static int do_diseqc(int fd, unsigned char sat_no, int pol_v_r, int hi_lo, int lnb_voltage_off)
+static int do_diseqc(int fd, unsigned char sat_no, char switch_type, int pol_v_r, int hi_lo, int lnb_voltage_off)
 {
 
   fe_sec_voltage_t lnb_voltage;
-  struct diseqc_cmd cmd =  { {{0xe0, 0x10, 0x38, 0xf0, 0x00, 0x00}, 4}, 0 };
-  //Framing byte : Command from master, no reply required, first transmission : 0xe0
-  //Address byte : Any LNB, switcher or SMATV
-  //Command byte : Write to port group 0 (Committed switches)
-
+  struct diseqc_cmd *cmd[2] = { NULL, NULL };
+  cmd[0]=malloc(sizeof(struct diseqc_cmd));
+  if(cmd[0]==NULL)
+  {
+    log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    Interrupted=ERROR_MEMORY<<8;
+    return -1;
+  }
 
   //Compute the lnb voltage : 0 if we asked, of 13V for vertical and circular right, 18 for horizontal and circular left
   if (lnb_voltage_off)
@@ -549,15 +584,31 @@ static int do_diseqc(int fd, unsigned char sat_no, int pol_v_r, int hi_lo, int l
   //Diseqc compliant hardware
   if(sat_no != 0)
   {
+    cmd[0]->wait=0;
+    //Framing byte : Command from master, no reply required, first transmission : 0xe0
+    cmd[0]->cmd.msg[0] = 0xe0;
+    //Address byte : Any LNB, switcher or SMATV
+    cmd[0]->cmd.msg[1] = 0x10;
+    //Command byte : Write to port group 1 (Uncommited switches)
+    //Command byte : Write to port group 0 (Committed switches) 0x38
+    if(switch_type=='U')
+      cmd[0]->cmd.msg[2] = 0x39;
+    else
+      cmd[0]->cmd.msg[2] = 0x38;
     /* param: high nibble: reset bits, low nibble set bits,
     * bits are: option, position, polarization, band */
-    cmd.cmd.msg[3] =
-	0xf0 | ((((sat_no-1) * 4) & 0x0f) | (pol_v_r ? 0 : 2) | (hi_lo ? 1 : 0)); 
+    cmd[0]->cmd.msg[3] =
+	0xf0 | ((((sat_no-1) * 4) & 0x0f) | (pol_v_r ? 0 : 2) | (hi_lo ? 1 : 0));
+    //
+    cmd[0]->cmd.msg[4] = 0x00;
+    cmd[0]->cmd.msg[5] = 0x00;
+    cmd[0]->cmd.msg_len=4;
 
-    return diseqc_send_msg(fd, 
-			     lnb_voltage,
-			     &cmd, 
-			     hi_lo ? SEC_TONE_ON : SEC_TONE_OFF);
+    return diseqc_send_msg(fd,
+                           lnb_voltage,
+                           cmd,
+                           hi_lo ? SEC_TONE_ON : SEC_TONE_OFF,
+                           (sat_no) % 2 ? SEC_MINI_B : SEC_MINI_A);
   }
   else 	//only tone and voltage
   {
@@ -572,7 +623,7 @@ static int do_diseqc(int fd, unsigned char sat_no, int pol_v_r, int hi_lo, int l
       log_message( MSG_WARN, "Warning : problem to set the 22kHz tone");
       return -1;
     }
-    usleep(15 * 1000 * 10);
+    msleep(15);
     return 0;
   }
 }
@@ -778,6 +829,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     //For diseqc vertical==circular right and horizontal == circular left
     if(do_diseqc( dfd, 
                   tuneparams->sat_number,
+                  tuneparams->switch_type,
                   (tuneparams->pol == 'V' ? 1 : 0) + (tuneparams->pol == 'R' ? 1 : 0),
                   hi_lo,
                   tuneparams->lnb_voltage_off) == 0)
