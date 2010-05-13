@@ -81,6 +81,7 @@ In the following list, only the parameter `freq` is mandatory
 |modulation | The kind of modulation used (can be : QPSK QAM16 QAM32 QAM64 QAM128 QAM256 QAMAUTO VSB8 VSB16 8PSK 16APSK 32APSK DQPSK)  | ATSC: VSB_8, cable/terrestrial: QAM_AUTO, satellite: QPSK | Optionnal most of the times
 |delivery_system | the delivery system used (can be DVBT DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC) | Undefined | Set it if you want to use the new tuning API (DVB API 5/S2API). Mandatory for DVB-S2
 |card | The DVB/ATSC card number | 0 | only limited by your OS
+|tuner | The tuner number | 0 | If you have a card with multiple tuners (ie there is several frontend* in /dev/dvb/adapter%d)
 |card_dev_path | The path of the DVB card devices. Use it if you have a personalised path like /dev/dvb/card_astra | /dev/dvb/adapter%d | 
 |tuning_timeout |tuning timeout in seconds. | 300 | 0 = no timeout
 |timeout_no_diff |If no channels are streamed, MuMuDVB will kill himself after this time (specified in seconds) | 600 |  0 = infinite timeout
@@ -268,7 +269,7 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 |sap_group |The playlist group for SAP announces | | string | optionnal
 |cam_pmt_pid |Only for scrambled channels. The PMT PID for CAM support | | | 
 |service_id |The service id (program number), olny for autoconfiguration, or rewrite (PAT or SDT) see README for more details | | | 
-|name | The name of the channel. Will be used for /var/run/mumudvb/chaines_diffusees%d, logging and SAP announces | | | Mandatory
+|name | The name of the channel. Will be used for /var/run/mumudvb/channels_streamed_adapter%d_tuner%d, logging and SAP announces | | | Mandatory
 |pids | The PIDs list, separated by spaces | | | some pids are always sent (PAT CAT EIT SDT TDT NIT), see README for more details
 |==================================================================================================================
 
@@ -278,7 +279,7 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 Get the PID numbers
 -------------------
 
-The simplest way is to use autoconfiguration and modify the generated configuration file : `/var/run/mumudvb/mumudvb_generated_conf_card%d`
+The simplest way is to use autoconfiguration and modify the generated configuration file : `/var/run/mumudvb/mumudvb_generated_conf_card%d_tuner%d`
 
 You use autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~~

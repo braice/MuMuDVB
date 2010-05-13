@@ -85,6 +85,7 @@ Dans la liste suivante, seul le paramètre `freq` est obligatoire
 |modulation | Le type de modulation utilisé (valeurs possibles : QPSK QAM16 QAM32 QAM64 QAM128 QAM256 QAMAUTO VSB8 VSB16 8PSK 16APSK 32APSK DQPSK)  | ATSC: VSB_8, cable/terrestrial: QAM_AUTO, satellite: QPSK | Optionnel la plupart du temps
 |delivery_system | Le type de système utilisé (valeurs possibles : DVBT DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC) | Non défini | Spécifiez le si vous voulez utiliser la nouvelle API pour l'accord des cartes (DVB API 5/S2API). Obligatoire pour le DVB-S2
 |card | Le numéro de carte DVB/ATSC| 0 | Limité seulement par l'OS
+|tuner | Le numéro de tuner | 0 | Si vous avez une carte avec plusieurs tuners (ie il y a plusieurs frontend* dans /dev/dvb/adapter%d)
 |card_dev_path | Le chemin vers le répertoire contenant les "devices" DVB. Utilisez cette option si vous utilisez des chemins personalisés comme /dev/dvb/card_astra | /dev/dvb/adapter%d | 
 |tuning_timeout | Temps d'attente pour l'accord de la carte | 300 | 0 = attente infinie
 |timeout_no_diff | Si aucune chaîne n'est diffusée, MuMuDVB se "suicidera" au bout de ce délai ( en secondes ) | 600 |  0 = attente infinie
@@ -273,7 +274,7 @@ Concernant les PIDs, référez vous à la section <<getpids,obtenir les PIDs>>.
 |sap_group | Le groupe de liste de lecture pour les annonces SAP | |  optionnel
 |cam_pmt_pid |Uniquement pour les chaînes brouillées. Le PID PMT pour le module CAM | |  
 |service_id |Le  "service id" (appelé aussi "program number"), uniquement pour l'autoconfiguration ou la réécriture du PID PAT ou SDT, se référer au README pour plus de détails | | 
-|name | Le nom de la chaîne. Sera utilisé pour /var/run/mumudvb/chaines_diffusees%d, les journaux et les annonces SAP | | Obligatoire
+|name | Le nom de la chaîne. Sera utilisé pour /var/run/mumudvb/channels_streamed_adapter%d_tuner%d, les journaux et les annonces SAP | | Obligatoire
 |pids | La liste des PIDs, séparés par des espaces. | |  Certains PIDs sont systématiquement envoyés (PAT CAT EIT SDT TDT NIT).
 |==================================================================================================================
 
@@ -283,7 +284,7 @@ Concernant les PIDs, référez vous à la section <<getpids,obtenir les PIDs>>.
 Obtenir les PIDs
 ----------------
 
-La manière la plus simple est d'utiliser l'autoconfiguration et de modifier le fichier de configuration généré : `/var/run/mumudvb/mumudvb_generated_conf_card%d`
+La manière la plus simple est d'utiliser l'autoconfiguration et de modifier le fichier de configuration généré : `/var/run/mumudvb/mumudvb_generated_conf_card%d_tuner%d`
 
 Vous utilisez l'autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

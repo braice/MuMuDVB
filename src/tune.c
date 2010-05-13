@@ -179,6 +179,11 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
     substring = strtok (NULL, delimiteurs);
     tuneparams->card = atoi (substring);
   }
+  else if (!strcmp (substring, "tuner"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    tuneparams->tuner = atoi (substring);
+  }
   else if (!strcmp (substring, "card_dev_path"))
   {
     substring = strtok (NULL, delimiteurs);

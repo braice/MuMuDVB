@@ -227,7 +227,7 @@ MuMuDVB is able to find the channels in the transponder and their PIDs (Program 
 
 Without autoconfiguration, you have to set the transponder parameters, and for each channel, the multicast ip, the name and the PIDs (PMT, audio, video, teletext etc...)
 
-At the end of autoconfiguration, MuMuDVB generates a config file with the discovered parameters. This file is: `/var/run/mumudvb/mumudvb_generated_conf_card%d`
+At the end of autoconfiguration, MuMuDVB generates a config file with the discovered parameters. This file is: `/var/run/mumudvb/mumudvb_generated_conf_card%d_tuner%d`
 
 If the PIDs are changed, MuMuDVB will automatically update the channels except if you put `autoconf_pid_update=0` in your configuration file.
 
@@ -530,7 +530,7 @@ The hardware descramblig uses almost no CPU, all the descrambling is made by the
 [NOTE]
 MuMuDVB doesn't query the CAM before asking for descrambling. The query is not reliable. Most of CAMs answer a menu when the descrambling is not possible and MuMuDVB will display it on the standard error.
 
-The information concerning the CAM is stored in '''/var/run/mumudvb/caminfo_carte%d''' where %d is the DVB card number.
+The information concerning the CAM is stored in '''/var/run/mumudvb/caminfo_adapter%d_tuner%d''' where %d is the DVB card number.
 
 .Example contents of '''/var/run/mumudvb/caminfo_carte%d''' 
 ----------------------------------------------------
@@ -710,7 +710,7 @@ Technical details (not sorted)
 
  * Try to avoid old via or nForce chipsets and in general ultra low cost motherboards. They can't deal with a lot of data on the PCI bus.
 
- * When the program starts, he writes the channel list in the file `/var/run/mumudvb/chaines_diffusees_carte%d` (where %d is the card number). This file contains streamed channels (updated every 5 seconds) in the form: "name:ip:port:Scramblingstatus"
+ * When the program starts, he writes the channel list in the file `/var/run/mumudvb/channels_streamed_adapter%d_tuner%d` (where %d are the card number and the tuner number). This file contains streamed channels (updated every 5 seconds) in the form: "name:ip:port:Scramblingstatus"
 
  * MuMuDVB is able to support as many cards as the operating system does. Old versions of udev+glibc were not able to support more than 4 cards but this problem is solved using relatively recent versions (udev > 104 and libc6 > 2.7)
 

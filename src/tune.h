@@ -77,6 +77,8 @@
 typedef struct tuning_parameters_t{
   /**The card number*/
   int card;
+  /**The tuner number*/
+  int tuner;
   /** The path of the card */
   char card_dev_path[256];
   /**Is the card actually tuned ?*/

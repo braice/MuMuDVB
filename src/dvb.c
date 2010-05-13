@@ -52,12 +52,12 @@ extern int Interrupted;
  * @param card the card number 
 */
 int
-open_fe (int *fd_frontend, char *base_path)
+open_fe (int *fd_frontend, char *base_path, int tuner)
 {
 
   char *frontend_name=NULL;
   int asprintf_ret;
-  asprintf_ret=asprintf(&frontend_name,"%s/%s",base_path,FRONTEND_DEV_NAME);
+  asprintf_ret=asprintf(&frontend_name,"%s/%s%d",base_path,FRONTEND_DEV_NAME,tuner);
   if(asprintf_ret==-1)
     return -1;
   if ((*fd_frontend = open (frontend_name, O_RDWR | O_NONBLOCK)) < 0)
@@ -136,7 +136,7 @@ void *show_power_func(void* arg)
  * @param fds the structure with the file descriptors
  */
 int
-create_card_fd(char *base_path, uint8_t *asked_pid, fds_t *fds)
+create_card_fd(char *base_path, int tuner, uint8_t *asked_pid, fds_t *fds)
 {
 
   int curr_pid = 0;
@@ -144,7 +144,7 @@ create_card_fd(char *base_path, uint8_t *asked_pid, fds_t *fds)
   char *dvrdev_name=NULL;
   int asprintf_ret;
 
-  asprintf_ret=asprintf(&demuxdev_name,"%s/%s",base_path,DEMUX_DEV_NAME);
+  asprintf_ret=asprintf(&demuxdev_name,"%s/%s%d",base_path,DEMUX_DEV_NAME,tuner);
   if(asprintf_ret==-1)
     return -1;
 
@@ -161,7 +161,7 @@ create_card_fd(char *base_path, uint8_t *asked_pid, fds_t *fds)
 	}
 
 
-  asprintf_ret=asprintf(&dvrdev_name,"%s/%s",base_path,DVR_DEV_NAME);
+  asprintf_ret=asprintf(&dvrdev_name,"%s/%s%d",base_path,DVR_DEV_NAME,tuner);
   if(asprintf_ret==-1)
     return -1;
   if (fds->fd_dvr==0)  //this function can be called more than one time, we check if we opened it before
@@ -358,7 +358,7 @@ typedef struct frontend_cap_t
  * 
  * 
  */
-void show_card_capabilities( int card )
+void show_card_capabilities( int card, int tuner )
 {
   int frontend_fd;
   int i_ret;
@@ -368,7 +368,7 @@ void show_card_capabilities( int card )
   char card_dev_path[256];
   sprintf(card_dev_path,DVB_DEV_PATH,card);
   //Open the frontend
-  if(!open_fe (&frontend_fd, card_dev_path))
+  if(!open_fe (&frontend_fd, card_dev_path, tuner))
     return;
 
   //if(ioctl(fd_frontend,FE_READ_STATUS,&festatus) >= 0)
@@ -380,7 +380,7 @@ void show_card_capabilities( int card )
     log_message( MSG_ERROR, "FE_GET_INFO: %s \n", strerror(errno));
     return;
   }
-  log_message( MSG_INFO, "=========== Card %d ===========\n", card);
+  log_message( MSG_INFO, "=========== Card %d - Tuner %d ===========\n", card, tuner);
   log_message( MSG_INFO, " Frontend : %s\n", fe_info.name);
   display_sr=0;
   switch(fe_info.type)
@@ -490,10 +490,16 @@ void list_dvb_cards ()
       return;
     }
   }
+  closedir(dvb_dir);
 
   //Basic card sorting (O(N^2))
   int i,j,old_card;
   old_card=-1;
+  DIR *adapter_dir;
+  /** The path of the card */
+  char card_dev_path[256];
+  int tuner_number;
+  struct dirent *d_tuner;
   for(i=0;i<num_cards;i++)
   {
     card_number=-1;
@@ -501,7 +507,27 @@ void list_dvb_cards ()
       if((card_number<=old_card)||((cards[j]>old_card) && (cards[j]<card_number)))
 	card_number=cards[j];
     old_card=card_number;
-    show_card_capabilities( card_number );
+
+
+    sprintf(card_dev_path,DVB_DEV_PATH,card_number);
+    adapter_dir = opendir (card_dev_path);
+    if (adapter_dir == NULL)
+    {
+      log_message( MSG_ERROR, "Cannot open %s : %s\n", adapter_dir, strerror (errno));
+      return;
+    }
+    while ((d_tuner=readdir(adapter_dir))!=NULL)
+    {
+      if(strlen(d_tuner->d_name)<(strlen(FRONTEND_DEV_NAME)+1))
+        continue;
+      if(strncmp(d_tuner->d_name,FRONTEND_DEV_NAME,strlen(FRONTEND_DEV_NAME)))
+        continue;
+      tuner_number= atoi(d_tuner->d_name+strlen(FRONTEND_DEV_NAME));
+      log_message( MSG_DEBUG, "\tfound Frontend %d\n", tuner_number);
+      /** show the current tuner */
+      show_card_capabilities( card_number , tuner_number);
+    }
+    closedir(adapter_dir);
   }
 }
 

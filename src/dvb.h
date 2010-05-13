@@ -50,9 +50,9 @@
 #include "tune.h"
 
 #define DVB_DEV_PATH "/dev/dvb/adapter%d"
-#define FRONTEND_DEV_NAME "frontend0"
-#define DEMUX_DEV_NAME    "demux0"
-#define DVR_DEV_NAME      "dvr0"
+#define FRONTEND_DEV_NAME "frontend"
+#define DEMUX_DEV_NAME    "demux"
+#define DVR_DEV_NAME      "dvr"
 
 enum
 {
@@ -94,9 +94,9 @@ void *read_card_thread_func(void* arg);
 #endif
 
 
-int open_fe (int *fd_frontend, char *base_path);
+int open_fe (int *fd_frontend, char *base_path, int tuner);
 void set_ts_filt (int fd,uint16_t pid);
-int create_card_fd(char *base_path, uint8_t *asked_pid, fds_t *fds);
+int create_card_fd(char *base_path, int tuner, uint8_t *asked_pid, fds_t *fds);
 void set_filters(uint8_t *asked_pid, fds_t *fds);
 void close_card_fd(fds_t fds);
 

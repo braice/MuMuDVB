@@ -226,7 +226,7 @@ MuMuDVB est capable de trouver les différentes chaînes dans le transpondeur et
 
 Sans l'autoconfiguration, vous devez spécifier les paramètres du transpondeur et, pour chaque chaîne, l'ip de multicast, le nom et les PIDs ( PMT, audio, vidéo, télétexte etc... ).
 
-À la fin de l'autoconfiguration MuMuDVB génère un fichier de configuration avec les paramètres obtenus. Le fichier généré est : `/var/run/mumudvb/mumudvb_generated_conf_card%d`
+À la fin de l'autoconfiguration MuMuDVB génère un fichier de configuration avec les paramètres obtenus. Le fichier généré est : `/var/run/mumudvb/mumudvb_generated_conf_card%d_tuner%d`
 
 Si les PIDs sont changés, MuMuDVB mettra automatiquement à jour les chaînes sauf si vous mettez `autoconf_pid_update=0` dans votre fichier de configuration.
 
@@ -523,7 +523,7 @@ Le débrouillage matériel n'utilise quasiment aucune puissance processeur, tout
 [NOTE]
 MuMuDVB ne demande pas au module CAM si le débrouillage est possible. Cette fonctionnalité des modules CAM n'est pas fiable. La plupart des modules CAM répondront par un menu si le débrouillage n'est pas possible et MuMuDVB l'affichera sur la sortie standard d'erreur.
 
-Les informations concernant le module CAM sont stockées dans le fichier '''/var/run/mumudvb/caminfo_carte%d''' où %d est le numéro de carte DVB.
+Les informations concernant le module CAM sont stockées dans le fichier '''/var/run/mumudvb/caminfo_adapter%d_tuner%d''' où %d est le numéro de carte DVB.
 
 .Example 
 ----------------------------------------------------
@@ -704,7 +704,7 @@ Détails techniques (en vrac)
 
  * Essayez d'éviter les vieux chipset via ou nForce et, de manière générale les cartes mères à très bas coût. Ils ne supportent pas d'avoir un important flux de données sur le bus PCI.
 
- * Lorsque le programme démarre, il écrit la liste des chaînes dans le fichier `/var/run/mumudvb/chaines_diffusees_carte%d` ( où %d est le numéro de carte ). Ce fichier contient la liste des chaînes diffusées ( mise à jour toutes les 5 secondes ) sous la forme : "nom:ip:port:EtatDuBrouillage"
+ * Lorsque le programme démarre, il écrit la liste des chaînes dans le fichier `/var/run/mumudvb/channels_streamed_adapter%d_tuner%d` ( où %d sont le numéro de carte et le numéro de tuner ). Ce fichier contient la liste des chaînes diffusées ( mise à jour toutes les 5 secondes ) sous la forme : "nom:ip:port:EtatDuBrouillage"
 
  * MuMuDVB peut supporter autant de cartes que le système d'exploitation. Les anciennes version de udev+glibc ne supportaient pas plus de 4 cartes mais ce problème est résolu en utilisant des versions relativement récentes ( udev > 104 et libc6 > 2.7 )
 

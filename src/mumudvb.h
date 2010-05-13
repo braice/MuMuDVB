@@ -91,13 +91,13 @@ We cannot discover easily the MTU with unconnected UDP
 #define MAX_POLL_TRIES		5
 
 /**The path for the auto generated config file*/
-#define GEN_CONF_PATH "/var/run/mumudvb/mumudvb_generated_conf_card%d"
+#define GEN_CONF_PATH "/var/run/mumudvb/mumudvb_generated_conf_card%d_tuner%d"
 /**The path for the list of streamed channels*/
-#define STREAMED_LIST_PATH "/var/run/mumudvb/chaines_diffusees_carte%d"
+#define STREAMED_LIST_PATH "/var/run/mumudvb/channels_streamed_adapter%d_tuner%d"
 /**The path for the list of *not* streamed channels*/
-#define NOT_STREAMED_LIST_PATH "/var/run/mumudvb/chaines_non_diffusees_carte%d"
+#define NOT_STREAMED_LIST_PATH "/var/run/mumudvb/channels_unstreamed_adapter%d_tuner%d"
 /**The path for the cam_info*/
-#define CAM_INFO_LIST_PATH "/var/run/mumudvb/caminfo_carte%d"
+#define CAM_INFO_LIST_PATH "/var/run/mumudvb/caminfo_adapter%d_tuner%d"
 
 /**RTP header length*/
 #define RTP_HEADER_LEN 12

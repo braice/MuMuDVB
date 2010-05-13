@@ -193,6 +193,7 @@ multicast_parameters_t multicast_vars={
 //tuning parameters
 tuning_parameters_t tuneparams={
   .card = 0,
+  .tuner = 0,
   .card_dev_path="",
   .card_tuned = 0,
   .tuning_timeout = ALARM_TIME_TIMEOUT,
@@ -794,7 +795,7 @@ int
   // We write our pid in a file if we deamonize
   if (!no_daemon)
   {
-    sprintf (filename_pid, "/var/run/mumudvb/mumudvb_carte%d.pid", tuneparams.card);
+    sprintf (filename_pid, "/var/run/mumudvb/mumudvb_adapter%d_tuner%d.pid", tuneparams.card, tuneparams.tuner);
     pidfile = fopen (filename_pid, "w");
     if (pidfile == NULL)
     {
@@ -822,7 +823,7 @@ int
     //In case of autoconfiguration, we generate a config file with the channels discovered
     //Here we generate the header, ie we take the actual config file and copy it removing the channels
     sprintf (filename_gen_conf, GEN_CONF_PATH,
-             tuneparams.card);
+             tuneparams.card, tuneparams.tuner);
     gen_config_file_header(conf_filename, filename_gen_conf);
   }
   else 
@@ -870,11 +871,11 @@ int
 
   // we clear them by paranoia
   sprintf (filename_channels_diff, STREAMED_LIST_PATH,
-           tuneparams.card);
+           tuneparams.card, tuneparams.tuner);
   sprintf (filename_channels_not_streamed, NOT_STREAMED_LIST_PATH,
-           tuneparams.card);
+           tuneparams.card, tuneparams.tuner);
   sprintf (filename_cam_info, CAM_INFO_LIST_PATH,
-           tuneparams.card);
+           tuneparams.card, tuneparams.tuner);
   channels_diff = fopen (filename_channels_diff, "w");
   if (channels_diff == NULL)
   {
@@ -937,7 +938,7 @@ int
   // We tune the card
   iRet =-1;
 
-  if (open_fe (&fds.fd_frontend, tuneparams.card_dev_path))
+  if (open_fe (&fds.fd_frontend, tuneparams.card_dev_path, tuneparams.tuner))
   {
     iRet = 
         tune_it (fds.fd_frontend, &tuneparams);
@@ -1154,7 +1155,7 @@ int
   }
 
   // we open the file descriptors
-  if (create_card_fd (tuneparams.card_dev_path, chan_and_pids.asked_pid, &fds) < 0)
+  if (create_card_fd (tuneparams.card_dev_path, tuneparams.tuner, chan_and_pids.asked_pid, &fds) < 0)
     return mumudvb_close(ERROR_GENERIC<<8);
 
   set_filters(chan_and_pids.asked_pid, &fds);
@@ -1470,7 +1471,7 @@ int
              (chan_and_pids.channels[curr_channel].pmt_pid==pid) &&     //And we see the PMT
              pid)
         {
-          autoconf_pmt_follow( actual_ts_packet, &fds, &chan_and_pids.channels[curr_channel], tuneparams.card_dev_path, &chan_and_pids );
+          autoconf_pmt_follow( actual_ts_packet, &fds, &chan_and_pids.channels[curr_channel], tuneparams.card_dev_path, tuneparams.tuner, &chan_and_pids );
         }
 	  
         /******************************************************/
