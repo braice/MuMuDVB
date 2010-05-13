@@ -556,13 +556,8 @@ static int do_diseqc(int fd, unsigned char sat_no, char switch_type, int pol_v_r
 
   fe_sec_voltage_t lnb_voltage;
   struct diseqc_cmd *cmd[2] = { NULL, NULL };
-  cmd[0]=malloc(sizeof(struct diseqc_cmd));
-  if(cmd[0]==NULL)
-  {
-    log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    Interrupted=ERROR_MEMORY<<8;
-    return -1;
-  }
+  int ret;
+
 
   //Compute the lnb voltage : 0 if we asked, of 13V for vertical and circular right, 18 for horizontal and circular left
   if (lnb_voltage_off)
@@ -584,6 +579,13 @@ static int do_diseqc(int fd, unsigned char sat_no, char switch_type, int pol_v_r
   //Diseqc compliant hardware
   if(sat_no != 0)
   {
+    cmd[0]=malloc(sizeof(struct diseqc_cmd));
+    if(cmd[0]==NULL)
+    {
+      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      Interrupted=ERROR_MEMORY<<8;
+      return -1;
+    }
     cmd[0]->wait=0;
     //Framing byte : Command from master, no reply required, first transmission : 0xe0
     cmd[0]->cmd.msg[0] = 0xe0;
@@ -604,11 +606,13 @@ static int do_diseqc(int fd, unsigned char sat_no, char switch_type, int pol_v_r
     cmd[0]->cmd.msg[5] = 0x00;
     cmd[0]->cmd.msg_len=4;
 
-    return diseqc_send_msg(fd,
+    ret = diseqc_send_msg(fd,
                            lnb_voltage,
                            cmd,
                            hi_lo ? SEC_TONE_ON : SEC_TONE_OFF,
                            (sat_no) % 2 ? SEC_MINI_B : SEC_MINI_A);
+    free(cmd[0]);
+    return ret;
   }
   else 	//only tone and voltage
   {
