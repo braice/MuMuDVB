@@ -33,6 +33,11 @@
 #include <sys/types.h>
 #include <stdint.h>
 
+#include "config.h"
+#ifdef HAVE_LIBPTHREAD
+#include <pthread.h>
+#endif
+
 //0x1ffb=8187 It's the pid for the information tables in ATSC
 #define PSIP_PID 8187
 
@@ -581,9 +586,9 @@ typedef struct {
 /**@brief structure for the build of a ts packet*/
 typedef struct {
   /**say if the packet is empty*/
-  int empty; 
+  int empty;
   /**say if the packet is ok*/
-  int packet_ok; 
+  int packet_ok;
   /**The PID of the packet*/
   int pid;
   /**the countinuity counter, incremented in each packet*/
@@ -592,6 +597,10 @@ typedef struct {
   int len;
   /**the buffer*/
   unsigned char packet[4096];
+#ifdef HAVE_LIBPTHREAD
+  /** If we have threads, the lock on the packet */
+  pthread_mutex_t packetmutex;
+#endif
 }mumudvb_ts_packet_t;
 
 

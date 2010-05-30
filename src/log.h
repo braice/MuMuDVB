@@ -80,5 +80,7 @@ char *pid_type_to_str(int type);
 char *service_type_to_str(int type);
 char *simple_service_type_to_str(int type);
 void show_traffic(long now, int show_traffic_interval, mumudvb_chan_and_pids_t *chan_and_pids);
+char *liben50221_error_to_str(int error);
+char *liben50221_error_to_str_descr(int error);
 
 #endif

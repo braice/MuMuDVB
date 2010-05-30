@@ -74,8 +74,8 @@ typedef struct cam_parameters_t{
   int cam_support;
   /**The came number (in case of multiple cams)*/
   int cam_number;
-  /** Do we reask channels asked and keept scrambled */
-  int cam_reask;
+  /** Do we reask channels asked and keept scrambled and what is the interval between reasks*/
+  int cam_reask_interval;
   int cam_type;
   int need_reset;
   int reset_counts;
@@ -89,10 +89,16 @@ typedef struct cam_parameters_t{
   int camthread_shutdown;
   pthread_t camthread;
   int moveca;
-  int delay; //used to get the menu answer
   int mmi_state;
   int mmi_enq_blind;
   int mmi_enq_length;
+  /** Used to say if we received the CA info callback */
+  long ca_info_ok_time;
+  /** The delay for sending the PMT to the CAM*/
+  int cam_delay_pmt_send;
+  /** The delay between two PMT asking */
+  int cam_interval_pmt_send;
+  long cam_pmt_send_time;
 }cam_parameters_t;
 
 /*****************************************************************************
@@ -126,5 +132,5 @@ typedef struct cam_parameters_t{
 int cam_start(cam_parameters_t *, int, char *);
 void cam_stop(cam_parameters_t *);
 int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
-void cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, cam_parameters_t *cam_vars, mumudvb_channel_t *actual_channel);
+int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, cam_parameters_t *cam_vars, mumudvb_channel_t *actual_channel);
 #endif

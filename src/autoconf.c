@@ -67,6 +67,11 @@
 #include <sys/stat.h>
 #include <sys/poll.h>
 
+#ifdef HAVE_LIBPTHREAD
+#include <pthread.h>
+#endif
+
+
 #include "errors.h"
 #include "ts.h"
 #include "mumudvb.h"
@@ -254,15 +259,20 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
           return -1;
 	}
       memset (autoconf_vars->autoconf_temp_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+#ifdef HAVE_LIBPTHREAD
+      pthread_mutex_init(&autoconf_vars->autoconf_temp_pat->packetmutex,NULL);
+#endif
       autoconf_vars->autoconf_temp_sdt=malloc(sizeof(mumudvb_ts_packet_t));
       if(autoconf_vars->autoconf_temp_sdt==NULL)
 	{
           log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
           Interrupted=ERROR_MEMORY<<8;
           return -1;
-	  
 	}
       memset (autoconf_vars->autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+#ifdef HAVE_LIBPTHREAD
+      pthread_mutex_init(&autoconf_vars->autoconf_temp_sdt->packetmutex,NULL);
+#endif
       autoconf_vars->autoconf_temp_psip=malloc(sizeof(mumudvb_ts_packet_t));
       if(autoconf_vars->autoconf_temp_psip==NULL)
 	{
@@ -272,7 +282,9 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
 	  
 	}
       memset (autoconf_vars->autoconf_temp_psip, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-
+#ifdef HAVE_LIBPTHREAD
+      pthread_mutex_init(&autoconf_vars->autoconf_temp_psip->packetmutex,NULL);
+#endif
       if(autoconf_vars->autoconf_lcn)
       {
 	autoconf_vars->autoconf_temp_nit=malloc(sizeof(mumudvb_ts_packet_t));
@@ -283,6 +295,9 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
           return -1;
         }
         memset (autoconf_vars->autoconf_temp_nit, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+#ifdef HAVE_LIBPTHREAD
+        pthread_mutex_init(&autoconf_vars->autoconf_temp_nit->packetmutex,NULL);
+#endif
       }
       autoconf_vars->services=malloc(sizeof(mumudvb_service_t));
       if(autoconf_vars->services==NULL)
@@ -704,7 +719,12 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
             return -1;
           }
           else
+          {
             memset (channels[channel_number].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+#ifdef HAVE_LIBPTHREAD
+            pthread_mutex_init(&channels[channel_number].pmt_packet->packetmutex,NULL);
+#endif
+          }
         }
         //We update the unicast port, the connection will be created in autoconf_finish_full
         if(unicast_port_per_channel && unicast_vars->unicast)
@@ -898,7 +918,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
           iRet = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams, fds, unicast_vars);
         }
         else
-          memset (autoconf_vars->autoconf_temp_pat, 0, sizeof(mumudvb_ts_packet_t));//we clear it
+          autoconf_vars->autoconf_temp_pat->empty=1;//we clear it
       }
     }
     else if(pid==17) //SDT : contains the names of the services
@@ -906,15 +926,15 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
       if(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_sdt))
       {
         autoconf_read_sdt(autoconf_vars->autoconf_temp_sdt->packet,autoconf_vars->autoconf_temp_sdt->len,autoconf_vars->services);
-        memset (autoconf_vars->autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+        autoconf_vars->autoconf_temp_sdt->empty=1;//we clear it
       }
-    }	 
+    }
     else if(pid==PSIP_PID && tuneparams->fe_type==FE_ATSC) //PSIP : contains the names of the services
     {
       if(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_psip))
       {
         autoconf_read_psip(autoconf_vars);
-        memset (autoconf_vars->autoconf_temp_psip, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+        autoconf_vars->autoconf_temp_psip->empty=1;//we clear it
       }
     }
   }

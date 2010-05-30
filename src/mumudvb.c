@@ -262,7 +262,7 @@ autoconf_parameters_t autoconf_vars={
 cam_parameters_t cam_vars={
   .cam_support = 0,
   .cam_number=0,
-  .cam_reask=0,
+  .cam_reask_interval=0,
   .need_reset=0,
   .reset_counts=0,
   .reset_interval=CAM_DEFAULT_RESET_INTERVAL,
@@ -272,8 +272,11 @@ cam_parameters_t cam_vars={
   .sl=NULL,
   .stdcam=NULL,
   .ca_resource_connected=0,
-  .delay=0,
   .mmi_state = MMI_STATE_CLOSED,
+  .ca_info_ok_time=0,
+  .cam_delay_pmt_send=0,
+  .cam_interval_pmt_send=3,
+  .cam_pmt_send_time=0,
 };
 #endif
 
@@ -1046,6 +1049,9 @@ int
       return mumudvb_close(ERROR_MEMORY<<8);
     }
     memset (rewrite_vars.full_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+#ifdef HAVE_LIBPTHREAD
+    pthread_mutex_init(&rewrite_vars.full_pat->packetmutex,NULL);
+#endif
   }
 
   /*****************************************************/
@@ -1066,6 +1072,9 @@ int
       return mumudvb_close(ERROR_MEMORY<<8);
     }
     memset (rewrite_vars.full_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+#ifdef HAVE_LIBPTHREAD
+    pthread_mutex_init(&rewrite_vars.full_sdt->packetmutex,NULL);
+#endif
   }
 
   /*****************************************************/
@@ -1097,6 +1106,9 @@ int
         return mumudvb_close(ERROR_MEMORY<<8);
       }
       memset (chan_and_pids.channels[curr_channel].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+#ifdef HAVE_LIBPTHREAD
+      pthread_mutex_init(&chan_and_pids.channels[curr_channel].pmt_packet->packetmutex,NULL);
+#endif
     }
 
   }
@@ -1456,9 +1468,11 @@ int
         /******************************************************/
 #ifdef ENABLE_CAM_SUPPORT
         if((cam_vars.cam_support && send_packet==1) &&  //no need to check paquets we don't send
-          (cam_vars.ca_resource_connected && cam_vars.delay>=1 ))
+            cam_vars.ca_resource_connected &&
+            ((now-cam_vars.cam_pmt_send_time)>=cam_vars.cam_interval_pmt_send ))
         {
-          cam_new_packet(pid, curr_channel, actual_ts_packet, &autoconf_vars, &cam_vars, &chan_and_pids.channels[curr_channel]);
+          if(cam_new_packet(pid, curr_channel, actual_ts_packet, &autoconf_vars, &cam_vars, &chan_and_pids.channels[curr_channel]))
+            cam_vars.cam_pmt_send_time=now; //A packet was sent to the CAM
         }
 #endif
 
@@ -1850,27 +1864,6 @@ static void SignalHandler (int signum)
       }
     }
 
-#ifdef ENABLE_CAM_SUPPORT
-  /* Check for fully scrambled channels for a while and CAM support, to re ask the CAM */
-    if(cam_vars.cam_reask)
-    {
-      for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
-      {
-        if((chan_and_pids.channels[curr_channel].scrambled_channel_old == HIGHLY_SCRAMBLED)&&
-          (chan_and_pids.channels[curr_channel].scrambled_channel_time)&&
-          ((now-chan_and_pids.channels[curr_channel].scrambled_channel_time)>60)&&
-          (chan_and_pids.channels[curr_channel].need_cam_ask==CAM_ASKED))
-        {
-          chan_and_pids.channels[curr_channel].need_cam_ask=CAM_NEED_UPDATE;
-          chan_and_pids.channels[curr_channel].pmt_packet->empty=1;
-          chan_and_pids.channels[curr_channel].scrambled_channel_time=now;
-          log_message( MSG_DETAIL,
-                     "Channel \"%s\" highly scrambled for more than a minute. We ask the CAM to update.\n",
-                     chan_and_pids.channels[curr_channel].name);
-        }
-      }
-    }
-    #endif
 
     /* Check if the chanel scrambling state has changed*/
     for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
@@ -1889,22 +1882,21 @@ static void SignalHandler (int signum)
                      chan_and_pids.channels[curr_channel].name, chan_and_pids.channels[curr_channel].ratio_scrambled, tuneparams.card);
         chan_and_pids.channels[curr_channel].scrambled_channel_old = FULLY_UNSCRAMBLED;// update
       }
-      /* Test if we have partiallay unscrambled packets (5%<=ratio<=80%) - scrambled_channel_old=PARTIALLY_UNSCRAMBLED : partially unscrambled*/
-      if ((chan_and_pids.channels[curr_channel].ratio_scrambled >= 5) && (chan_and_pids.channels[curr_channel].ratio_scrambled <= 80) && (chan_and_pids.channels[curr_channel].scrambled_channel_old != PARTIALLY_UNSCRAMBLED))
+      /* Test if we have partiallay unscrambled packets (5%<=ratio<=75%) - scrambled_channel_old=PARTIALLY_UNSCRAMBLED : partially unscrambled*/
+      if ((chan_and_pids.channels[curr_channel].ratio_scrambled >= 5) && (chan_and_pids.channels[curr_channel].ratio_scrambled <= 75) && (chan_and_pids.channels[curr_channel].scrambled_channel_old != PARTIALLY_UNSCRAMBLED))
       {
         log_message( MSG_INFO,
                      "Channel \"%s\" is now partially unscrambled (%d%% of scrambled packets). Card %d\n",
                      chan_and_pids.channels[curr_channel].name, chan_and_pids.channels[curr_channel].ratio_scrambled, tuneparams.card);
         chan_and_pids.channels[curr_channel].scrambled_channel_old = PARTIALLY_UNSCRAMBLED;// update
       }
-      /* Test if we have nearly only scrambled packets (>90%) - scrambled_channel_old=HIGHLY_SCRAMBLED : highly scrambled*/
-      if ((chan_and_pids.channels[curr_channel].ratio_scrambled > 90) && chan_and_pids.channels[curr_channel].scrambled_channel_old != HIGHLY_SCRAMBLED)
+      /* Test if we have nearly only scrambled packets (>80%) - scrambled_channel_old=HIGHLY_SCRAMBLED : highly scrambled*/
+      if ((chan_and_pids.channels[curr_channel].ratio_scrambled > 80) && chan_and_pids.channels[curr_channel].scrambled_channel_old != HIGHLY_SCRAMBLED)
       {
         log_message( MSG_INFO,
                      "Channel \"%s\" is now higly scrambled (%d%% of scrambled packets). Card %d\n",
                      chan_and_pids.channels[curr_channel].name, chan_and_pids.channels[curr_channel].ratio_scrambled, tuneparams.card);
         chan_and_pids.channels[curr_channel].scrambled_channel_old = HIGHLY_SCRAMBLED;// update
-        chan_and_pids.channels[curr_channel].scrambled_channel_time=now;
       }
     }
 
@@ -1943,12 +1935,6 @@ static void SignalHandler (int signum)
       chan_and_pids.channels[curr_channel].num_packet = 0;
       chan_and_pids.channels[curr_channel].scrambled_channel = 0;
     }
-
-#ifdef ENABLE_CAM_SUPPORT
-    if(cam_vars.cam_support)
-      cam_vars.delay++;
-#endif
-
     alarm (ALARM_TIME);
   }
   else if (signum == SIGUSR1)

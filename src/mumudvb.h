@@ -210,9 +210,6 @@ typedef struct mumudvb_channel_t{
   int scrambled_channel;
   /** Old state to manage state change display*/
   int scrambled_channel_old;
-  /** When the channel became highly scrambled */
-  long scrambled_channel_time;
-
   /**the channel name*/
   char name[MAX_NAME_LEN];
 
@@ -231,6 +228,8 @@ typedef struct mumudvb_channel_t{
   int pmt_pid;
   /**Say if we need to ask this channel to the cam*/
   int need_cam_ask;
+  /** When did we asked the channel to the CAM */
+  long cam_asking_time;
   /**The ca system ids*/
   int ca_sys_id[32];
   /** The version of the pmt */
@@ -294,6 +293,7 @@ typedef struct mumudvb_channel_t{
   int eit_dropping;
   /**The continuity counter for the EIT*/
   int eit_continuity_counter;
+
 
 #ifdef ENABLE_TRANSCODING
   void *transcode_handle;

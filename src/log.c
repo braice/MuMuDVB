@@ -41,6 +41,9 @@
 #include "errors.h"
 #include "log.h"
 
+#ifdef ENABLE_CAM_SUPPORT
+#include <libdvben50221/en50221_errno.h>
+#endif
 
 extern int no_daemon;
 extern int verbosity;
@@ -591,6 +594,96 @@ char *pid_type_to_str(int type)
   }
 }
 
+#ifdef ENABLE_CAM_SUPPORT
+/** @brief Write the error from the libdvben50221  into a string
+ *
+ * @param dest : the destination string
+ * @param error the error to display
+ */
+char *liben50221_error_to_str(int error)
+{
+  switch(error)
+  {
+    case 0:
+      return "EN50221ERR_NONE";
+    case EN50221ERR_CAREAD:
+      return "EN50221ERR_CAREAD";
+    case EN50221ERR_CAWRITE:
+      return "EN50221ERR_CAWRITE";
+    case EN50221ERR_TIMEOUT:
+      return "EN50221ERR_TIMEOUT";
+    case EN50221ERR_BADSLOTID:
+      return "EN50221ERR_BADSLOTID";
+    case EN50221ERR_BADCONNECTIONID:
+      return "EN50221ERR_BADCONNECTIONID";
+    case EN50221ERR_BADSTATE:
+      return "EN50221ERR_BADSTATE";
+    case EN50221ERR_BADCAMDATA:
+      return "EN50221ERR_BADCAMDATA";
+    case EN50221ERR_OUTOFMEMORY:
+      return "EN50221ERR_OUTOFMEMORY";
+    case EN50221ERR_ASNENCODE:
+      return "EN50221ERR_ASNENCODE";
+    case EN50221ERR_OUTOFCONNECTIONS:
+      return "EN50221ERR_OUTOFCONNECTIONS";
+    case EN50221ERR_OUTOFSLOTS:
+      return "EN50221ERR_OUTOFSLOTS";
+    case EN50221ERR_IOVLIMIT:
+      return "EN50221ERR_IOVLIMIT";
+    case EN50221ERR_BADSESSIONNUMBER:
+      return "EN50221ERR_BADSESSIONNUMBER";
+    case EN50221ERR_OUTOFSESSIONS:
+      return "EN50221ERR_OUTOFSESSIONS";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+/** @brief Write the error from the libdvben50221  into a string containing the description of the error
+ *
+ * @param dest : the destination string
+ * @param error the error to display
+ */
+char *liben50221_error_to_str_descr(int error)
+{
+  switch(error)
+  {
+    case 0:
+      return "No Error.";
+    case EN50221ERR_CAREAD:
+      return "error during read from CA device.";
+    case EN50221ERR_CAWRITE:
+      return "error during write to CA device.";
+    case EN50221ERR_TIMEOUT:
+      return "timeout occured waiting for a response from a device.";
+    case EN50221ERR_BADSLOTID:
+      return "bad slot ID supplied by user - the offending slot_id will not be set.";
+    case EN50221ERR_BADCONNECTIONID:
+      return "bad connection ID supplied by user.";
+    case EN50221ERR_BADSTATE:
+      return "slot/connection in the wrong state.";
+    case EN50221ERR_BADCAMDATA:
+      return "CAM supplied an invalid request.";
+    case EN50221ERR_OUTOFMEMORY:
+      return "memory allocation failed.";
+    case EN50221ERR_ASNENCODE:
+      return "ASN.1 encode failure - indicates library bug.";
+    case EN50221ERR_OUTOFCONNECTIONS:
+      return "no more connections available.";
+    case EN50221ERR_OUTOFSLOTS:
+      return "no more slots available - the offending slot_id will not be set.";
+    case EN50221ERR_IOVLIMIT:
+      return "Too many struct iovecs were used.";
+    case EN50221ERR_BADSESSIONNUMBER:
+      return "Bad session number suppplied by user.";
+    case EN50221ERR_OUTOFSESSIONS:
+      return "no more sessions available.";
+    default:
+      return "Unknown error, please contact";
+  }
+}
+
+#endif
 
 /** @brief : display mumudvb info*/
 void print_info ()

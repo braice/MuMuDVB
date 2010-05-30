@@ -28,6 +28,10 @@
 
 #include <string.h>
 
+#ifdef HAVE_LIBPTHREAD
+#include <pthread.h>
+#endif
+
 #include "ts.h"
 #include "mumudvb.h"
 #include "log.h"
@@ -53,7 +57,9 @@ extern uint32_t       crc32_table[256];
  */
 int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 {
-
+#ifdef HAVE_LIBPTHREAD
+  pthread_mutex_lock(&ts_packet->packetmutex);
+#endif
   ts_header_t *header;
   int ok=0;
   int parsed=0;
@@ -118,6 +124,9 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
       if(ts_packet->empty)
 	{
 	  //log_message( MSG_DEBUG," TS parse : Kind of Continuity ERROR packet empty and payload start\n");
+          #ifdef HAVE_LIBPTHREAD
+          pthread_mutex_unlock(&ts_packet->packetmutex);
+          #endif
           return 0;
 	}
       // -- pid change in stream? (without packet start). This is not supported
@@ -130,12 +139,18 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
       if  (ts_packet->continuity_counter == header->continuity_counter) 
 	{
 	  log_message( MSG_DETAIL," TS parse : Duplicate packet : ts_packet->continuity_counter %d\n");
+          #ifdef HAVE_LIBPTHREAD
+          pthread_mutex_unlock(&ts_packet->packetmutex);
+          #endif
 	  return 0;
 	}
       if  ((ts_packet->continuity_counter+1)%16 != header->continuity_counter) 
 	{
 	  log_message( MSG_DETAIL," TS parse : Continuity ERROR : ts_packet->continuity_counter %d header->continuity_counter %d\n",ts_packet->continuity_counter,header->continuity_counter);
 	  ts_packet->empty=1;
+          #ifdef HAVE_LIBPTHREAD
+          pthread_mutex_unlock(&ts_packet->packetmutex);
+          #endif
 	  return 0;
 	}
       ts_packet->packet_ok=0;
@@ -146,6 +161,9 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 	{
 	  log_message( MSG_INFO," TS parse ERROR : Packet to big\n");
 	  ts_packet->empty=1;
+          #ifdef HAVE_LIBPTHREAD
+          pthread_mutex_unlock(&ts_packet->packetmutex);
+          #endif
 	  return 0;
 	}
 
@@ -159,6 +177,9 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 
   if(parsed)
     ts_packet->packet_ok=1;
+  #ifdef HAVE_LIBPTHREAD
+  pthread_mutex_unlock(&ts_packet->packetmutex);
+  #endif
   return parsed;
 }
 

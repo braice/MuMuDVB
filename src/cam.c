@@ -99,8 +99,14 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
 					uint8_t blind_answer, uint8_t expected_answer_length,
 					uint8_t *text, uint32_t text_size);
 
-static char *static_nom_fich_cam_info;
+static char *static_nom_fich_cam_info;/** @todo Remove this file for a more general method */
 
+static char *cam_status[] ={
+      "EN50221_STDCAM_CAM_NONE",
+      "EN50221_STDCAM_CAM_INRESET",
+      "EN50221_STDCAM_CAM_OK",
+      "EN50221_STDCAM_CAM_BAD"
+};
 
 
 /** @brief Read a line of the configuration file to check if there is a cam parameter
@@ -121,10 +127,10 @@ int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *curren
                    "You have enabled the support for conditionnal acces modules (scrambled channels). Please report any bug/comment\n");
     }
   }
-  else if (!strcmp (substring, "cam_reask"))
+  else if (!strcmp (substring, "cam_reask_interval"))
   {
     substring = strtok (NULL, delimiteurs);
-    cam_vars->cam_reask = atoi (substring);
+    cam_vars->cam_reask_interval = atoi (substring);
   }
   else if (!strcmp (substring, "cam_reset_interval"))
   {
@@ -136,6 +142,16 @@ int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *curren
   {
     substring = strtok (NULL, delimiteurs);
     cam_vars->cam_number = atoi (substring);
+  }
+  else if (!strcmp (substring, "cam_delay_pmt_send"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    cam_vars->cam_delay_pmt_send = atoi (substring);
+  }
+  else if (!strcmp (substring, "cam_interval_pmt_send"))
+  {
+     substring = strtok (NULL, delimiteurs);
+     cam_vars->cam_interval_pmt_send = atoi (substring);
   }
   else if (!strcmp (substring, "cam_pmt_pid"))
   {
@@ -174,6 +190,7 @@ struct en50221_stdcam_llci {
 /** @brief Reset the CAM */
 void cam_reset_cam(cam_parameters_t *cam_params)
 {
+  log_message( MSG_FLOOD,"CAM Reset");
   struct en50221_stdcam *stdcam=cam_params->stdcam;
   struct en50221_stdcam_llci *llci = (struct en50221_stdcam_llci *) stdcam;
   ioctl(llci->cafd, CA_RESET, (1 << llci->slotnum));
@@ -236,9 +253,17 @@ int cam_debug_dvbca_get_interface_type(cam_parameters_t *cam_params)
 int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_info)
 {
   // Copy the filename pointer into a static local pointer to be accessible from other threads
-  static_nom_fich_cam_info=nom_fich_cam_info;
+  static_nom_fich_cam_info=nom_fich_cam_info; /** @todo Remove this file for a more general method */
 
-  // create transport layer
+  // CAM Log
+  log_message( MSG_FLOOD,"CAM Initialization");
+  log_message( MSG_FLOOD,"CONF cam_reask_interval=%d",cam_params->cam_reask_interval);
+  log_message( MSG_FLOOD,"CONF cam_reset_interval=%d",cam_params->reset_interval);
+  log_message( MSG_FLOOD,"CONF cam_number=%d",cam_params->cam_number);
+  log_message( MSG_FLOOD,"CONF cam_delay_pmt_send=%d",cam_params->cam_delay_pmt_send);
+  log_message( MSG_FLOOD,"CONF cam_interval_pmt_send=%d",cam_params->cam_interval_pmt_send);
+
+  // create transport layer - 1 Slot and 16 sessions maximum
   cam_params->tl = en50221_tl_create(1, 16);
   if (cam_params->tl == NULL) {
     log_message( MSG_ERROR,"ERROR : CAM : Failed to create transport layer\n");
@@ -314,6 +339,8 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
 /** @brief Stops the CAM*/
 void cam_stop(cam_parameters_t *cam_params)
 {
+
+  log_message( MSG_FLOOD,  "CAM Stopping");
   if (cam_params->stdcam == NULL)
     return;
 
@@ -335,7 +362,6 @@ void cam_stop(cam_parameters_t *cam_params)
 }
 
 
-
 /** @brief The thread for polling the cam */
 static void *camthread_func(void* arg)
 {
@@ -346,20 +372,98 @@ static void *camthread_func(void* arg)
   struct timeval tv;
   long real_start_time;
   long now;
+  long last_channel_check;
+
+  extern mumudvb_chan_and_pids_t chan_and_pids; /** @todo ugly way to access channel data */
   //We record the starting time
   gettimeofday (&tv, (struct timezone *) NULL);
   real_start_time = tv.tv_sec;
   now = 0;
+  last_channel_check=0;
 
-  while(!cam_params->camthread_shutdown) { 
+  log_message( MSG_FLOOD,"CAM Thread started");
+
+  // Variables for detecting changes of status and error
+  int status_old=0;
+  int status_new=0;
+  int error_old=0;
+  int error_new=0;
+
+  //Loop
+  while(!cam_params->camthread_shutdown) {
     usleep(500000); //some waiting
-    cam_params->stdcam->poll(cam_params->stdcam);
 
     gettimeofday (&tv, (struct timezone *) NULL);
     now = tv.tv_sec - real_start_time;
 
+    //If the CAM is initialised (ie we received the CA_info) we check if the "safety" delay is over
+    //This behavior is made for some "cray" CAMs like powercam v4 which doesn't accept the PMT just after the ca_info_callback
+    if(cam_params->ca_info_ok_time && cam_params->ca_resource_connected==0)
+      if((tv.tv_sec - cam_params->ca_info_ok_time) > cam_params->cam_delay_pmt_send)
+        cam_params->ca_resource_connected=1;
+
+    /* Check for fully scrambled channels for a while, to re ask the CAM */
+    if(cam_params->ca_resource_connected && (cam_params->cam_reask_interval>0))
+    {
+      //We don't check too often for the reasking of the highly scrambled channels
+      if((now-last_channel_check)>2)
+      {
+        last_channel_check=now;
+        for (int curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
+        {
+          // Check if reasking (ie sending a CAM PMT UPDATE) is needed. IE channel hyghly scrambled and asked a while ago
+          if((chan_and_pids.channels[curr_channel].scrambled_channel_old == HIGHLY_SCRAMBLED)&&
+            (chan_and_pids.channels[curr_channel].need_cam_ask==CAM_ASKED)&&
+            ((chan_and_pids.channels[curr_channel].cam_asking_time-tv.tv_sec)>cam_params->cam_reask_interval))
+          {
+            chan_and_pids.channels[curr_channel].need_cam_ask=CAM_NEED_UPDATE; //No race condition because need_cam_ask is not changed when it is at the value CAM_ASKED
+            log_message( MSG_DETAIL,
+                          "Channel \"%s\" highly scrambled for more than %ds. We ask the CAM to update.\n",
+                          chan_and_pids.channels[curr_channel].name,cam_params->cam_reask_interval);
+            pthread_mutex_lock(&chan_and_pids.channels[curr_channel].pmt_packet->packetmutex);
+            chan_and_pids.channels[curr_channel].pmt_packet->empty=1; //We set the PMT packet as empty to be sure it will be updated
+            pthread_mutex_unlock(&chan_and_pids.channels[curr_channel].pmt_packet->packetmutex);
+            chan_and_pids.channels[curr_channel].cam_asking_time=tv.tv_sec;
+          }
+        }
+      }
+    }
+
+    // Polling CAM and checking status change - List of possible status: (en50221_stdcam.h)
+    // 0: EN50221_STDCAM_CAM_NONE
+    // 1: EN50221_STDCAM_CAM_INRESET
+    // 2: EN50221_STDCAM_CAM_OK
+    // 3: EN50221_STDCAM_CAM_BAD
+    status_new=cam_params->stdcam->poll(cam_params->stdcam);
+
+    if (status_new!=status_old)
+    {
+      if(status_new>3)
+        log_message( MSG_WARN, "CAM: The CAM changed to an unknown status : %d, please contact\n",status_new);
+      else if (status_old >3)
+        log_message( MSG_DEBUG, "CAM: Status change from UNKNOWN (%d) to %s.\n",status_old,cam_status[status_new]);
+      else
+        log_message( MSG_DEBUG, "CAM: Status change from %s to %s.\n",cam_status[status_old],cam_status[status_new]);
+      status_old=status_new;
+    }
+
+    // Try to get the Transport Layer structure from libdvben50221
+    if (cam_params->tl!=NULL)
+    {
+      // Get the last error code
+      error_new=en50221_tl_get_error(cam_params->tl);
+    }
+    // Check if error code has changed - List of error codes: (en50221_errno.h)
+    if (error_new!=error_old)
+    {
+      log_message( MSG_DEBUG, "CAM: Error for Transport Layer change from %s : %s to %s : %s.\n",
+                   liben50221_error_to_str(error_old),liben50221_error_to_str_descr(error_old),
+                   liben50221_error_to_str(error_new),liben50221_error_to_str_descr(error_new));
+    }
+
+
     //check if we need reset
-    if ( cam_params->ca_resource_connected==0 && cam_params->timeout_no_cam_init>0 && now>cam_params->timeout_no_cam_init)
+    if ( cam_params->ca_info_ok_time==0 && cam_params->timeout_no_cam_init>0 && now>cam_params->timeout_no_cam_init && cam_params->reset_interval>0)
     {
       if(cam_params->cam_type==DVBCA_INTERFACE_LINK)
       {
@@ -417,12 +521,16 @@ static void *camthread_func(void* arg)
         i++;
       } while(camstate!=DVBCA_CAMSTATE_INITIALISING && i < MAX_WAIT_AFTER_RESET);
       if(i==MAX_WAIT_AFTER_RESET)
-        log_message( MSG_INFO,  "CAM The CAM isn't in a good state after reset, it will probably don't work :(\n");
+        log_message( MSG_INFO, "CAM The CAM isn't in a good state after reset, it will probably don't work :(\n");
+      else
+        log_message( MSG_FLOOD, "CAM state correct after reset");
       cam_params->need_reset=0;
       cam_params->reset_counts++;
     }
 
   }
+
+  log_message( MSG_FLOOD,"CAM Thread stopped");
 
   return 0;
 }
@@ -524,6 +632,7 @@ static int mumudvb_cam_ai_callback(void *arg, uint8_t slot_id, uint16_t session_
   (void) session_number;
 
   // Write information to log
+  log_message( MSG_FLOOD, "CAM Application_Info_Callback");
   log_message( MSG_INFO, "CAM Application type: %02x\n", application_type);
   log_message( MSG_INFO, "CAM Application manufacturer: %04x\n", application_manufacturer);
   log_message( MSG_INFO, "CAM Manufacturer code: %04x\n", manufacturer_code);
@@ -556,8 +665,10 @@ static int mumudvb_cam_ca_info_callback(void *arg, uint8_t slot_id, uint16_t ses
   cam_params= (cam_parameters_t *) arg;
   (void) slot_id;
   (void) session_number;
+  struct timeval tv;
 
   // Write information to log
+  log_message( MSG_FLOOD,"CAM CA_Info_Callback: %d CA systems supported",ca_id_count);
   log_message( MSG_DETAIL, "CAM supports the following ca system ids:\n");
   uint32_t i;
   for(i=0; i< ca_id_count; i++) {
@@ -569,20 +680,20 @@ static int mumudvb_cam_ca_info_callback(void *arg, uint8_t slot_id, uint16_t ses
   FILE *file_cam_info;
   file_cam_info = fopen (static_nom_fich_cam_info, "a");
   if (file_cam_info == NULL)
-    {
-      log_message( MSG_WARN,
-		   "%s: %s\n",
-		   static_nom_fich_cam_info, strerror (errno));
-    }
+  {
+    log_message( MSG_WARN,
+                  "%s: %s\n",
+                  static_nom_fich_cam_info, strerror (errno));
+  }
   else
-    {
-      for(i=0; i< ca_id_count; i++) 
-	fprintf (file_cam_info,"ID_CA_Supported=%04x\n",ca_ids[i]);
+  {
+    for(i=0; i< ca_id_count; i++)
+      fprintf (file_cam_info,"ID_CA_Supported=%04x\n",ca_ids[i]);
+    fclose (file_cam_info);
+  }
+  gettimeofday (&tv, (struct timezone *) NULL);
 
-      fclose (file_cam_info);
-    }
-
-  cam_params->ca_resource_connected = 1;
+  cam_params->ca_info_ok_time=tv.tv_sec;
 
   return 0;
 }
@@ -774,10 +885,13 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
   return 0;
 }
 
-/** @brief This function is called when a new packet is there*/
-void cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, cam_parameters_t *cam_vars, mumudvb_channel_t *actual_channel)
+/** @brief This function is called when a new PMT packet is there */
+int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, cam_parameters_t *cam_vars, mumudvb_channel_t *actual_channel)
 {
   int iRet;
+  struct timeval tv;
+  gettimeofday (&tv, (struct timezone *) NULL);
+
   if (((actual_channel->need_cam_ask==CAM_NEED_ASK)||(actual_channel->need_cam_ask==CAM_NEED_UPDATE))&& (actual_channel->pmt_pid == pid))
   {
     //if the packet is already ok, we don't get it (it can be updated by pmt_follow)
@@ -788,12 +902,18 @@ void cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autocon
       //We check the transport stream id of the packet
       if(check_pmt_service_id(actual_channel->pmt_packet, actual_channel))
       {
-        cam_vars->delay=0;
         iRet=mumudvb_cam_new_pmt(cam_vars, actual_channel->pmt_packet,actual_channel->need_cam_ask);
         if(iRet==1)
         {
-          log_message( MSG_INFO,"CAM : CA PMT sent for channel %d : \"%s\"\n", curr_channel, actual_channel->name );
+          if(actual_channel->need_cam_ask==CAM_NEED_UPDATE)
+            log_message( MSG_INFO,"CAM : CA PMT (UPDATED) sent for channel %d : \"%s\"\n", curr_channel, actual_channel->name );
+          else
+            log_message( MSG_INFO,"CAM : CA PMT (ADDED) sent for channel %d : \"%s\"\n", curr_channel, actual_channel->name );
           actual_channel->need_cam_ask=CAM_ASKED; //once we have asked the CAM for this PID, we don't have to ask anymore
+
+          //For the feature of reasking we initalise the time
+          actual_channel->cam_asking_time = tv.tv_sec;
+          return 1;
         }
         else if(iRet==-1)
         {
@@ -807,6 +927,7 @@ void cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autocon
       }
     }
   }
+  return 0;
 }
 
 
