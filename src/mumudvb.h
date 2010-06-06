@@ -133,15 +133,23 @@ enum
   PID_UNKNOW=0,
   PID_PMT,
   PID_PCR,
-  PID_VIDEO,
-  PID_VIDEO_MPEG4,
-  PID_AUDIO,
-  PID_AUDIO_AAC,
+  PID_VIDEO_MPEG1,
+  PID_VIDEO_MPEG2,
+  PID_VIDEO_MPEG4_ASP,
+  PID_VIDEO_MPEG4_AVC,
+  PID_AUDIO_MPEG1,
+  PID_AUDIO_MPEG2,
+  PID_AUDIO_AAC_LATM,
+  PID_AUDIO_AAC_ADTS,
+  PID_AUDIO_ATSC,
   PID_AUDIO_AC3,
   PID_AUDIO_EAC3,
   PID_AUDIO_DTS,
-  PID_SUBTITLE,
-  PID_TELETEXT,
+  PID_AUDIO_AAC,
+  PID_EXTRA_VBIDATA,
+  PID_EXTRA_VBITELETEXT,
+  PID_EXTRA_TELETEXT,
+  PID_EXTRA_SUBTITLE
 };
 
 /**@brief file descriptors*/
@@ -217,6 +225,8 @@ typedef struct mumudvb_channel_t{
   int pids[MAX_PIDS_PAR_CHAINE];
   /**the channel pids type (PMT, audio, video etc)*/
   int pids_type[MAX_PIDS_PAR_CHAINE];
+  /**the channel pids language (ISO639 - 3 characters)*/
+  char pids_language[MAX_PIDS_PAR_CHAINE][4];
   /**number of channel pids*/
   int num_pids;
 

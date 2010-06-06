@@ -570,24 +570,40 @@ char *pid_type_to_str(int type)
       return "PMT";
     case PID_PCR:
       return "PCR";
-    case PID_VIDEO:
-      return "Video";
-    case PID_VIDEO_MPEG4:
-      return "Video (MPEG4)";
-    case PID_AUDIO:
-      return "Audio";
-    case PID_AUDIO_AAC:
-      return "Audio (AAC)";
+    case PID_VIDEO_MPEG1:
+      return "Video (MPEG1)";
+    case PID_VIDEO_MPEG2:
+      return "Video (MPEG2)";
+    case PID_VIDEO_MPEG4_ASP:
+      return "Video (MPEG4-ASP)";
+    case PID_VIDEO_MPEG4_AVC:
+      return "Video (MPEG4-AVC)";
+    case PID_AUDIO_MPEG1:
+      return "Audio (MPEG1)";
+    case PID_AUDIO_MPEG2:
+      return "Audio (MPEG2)";
+    case PID_AUDIO_AAC_LATM:
+      return "Audio (AAC-LATM)";
+    case PID_AUDIO_AAC_ADTS:
+      return "Audio (AAC-ADTS)";
+    case PID_AUDIO_ATSC:
+      return "Audio (ATSC A/53B)";
     case PID_AUDIO_AC3:
       return "Audio (AC3)";
     case PID_AUDIO_EAC3:
       return "Audio (E-AC3)";
     case PID_AUDIO_DTS:
       return "Audio (DTS)";
-    case PID_SUBTITLE:
-      return "Subtitle";
-    case PID_TELETEXT:
+    case PID_AUDIO_AAC:
+      return "Audio (AAC)";
+    case PID_EXTRA_VBIDATA:
+      return "VBI Data";
+    case PID_EXTRA_VBITELETEXT:
+      return "VBI Teletext";
+    case PID_EXTRA_TELETEXT:
       return "Teletext";
+    case PID_EXTRA_SUBTITLE:
+      return "Subtitling";
     case PID_UNKNOW:
     default:
       return "Unknown";

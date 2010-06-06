@@ -320,10 +320,12 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
 	  log_message( MSG_DETAIL, "Autoconf : Autoconfiguration desactivated for channel \"%s\" \n", channels[curr_channel].name);
 	  channels[curr_channel].autoconfigurated=1;
 	}
-      else
+      else if (channels[curr_channel].num_pids==1)
 	{
 	  //Only one pid with autoconfiguration=1, it's the PMT pid
 	  channels[curr_channel].pmt_pid=channels[curr_channel].pids[0];
+          channels[curr_channel].pids_type[0]=PID_PMT;
+          snprintf(channels[curr_channel].pids_language[0],4,"%s","---");
 	}
     }
   return 0;
@@ -658,6 +660,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
         channels[channel_number].pids[0]=actual_service->pmt_pid;
         channels[channel_number].pids_type[0]=PID_PMT;
         channels[channel_number].num_pids=1;
+        snprintf(channels[channel_number].pids_language[0],4,"%s","---");
         if(strlen(parameters.name_template))
         {
           strcpy(channels[channel_number].name,parameters.name_template);
