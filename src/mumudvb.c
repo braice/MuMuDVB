@@ -1835,7 +1835,7 @@ static void SignalHandler (int signum)
       stats_infos.compute_traffic_time_usec=tv.tv_usec;
       for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
       {
-        chan_and_pids.channels[curr_channel].traffic=((float)chan_and_pids.channels[curr_channel].sent_data)/time_interval*1/1204;
+        chan_and_pids.channels[curr_channel].traffic=((float)chan_and_pids.channels[curr_channel].sent_data)/time_interval*1/1024;
         chan_and_pids.channels[curr_channel].sent_data=0;
       }
     }
