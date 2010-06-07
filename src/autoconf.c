@@ -162,7 +162,7 @@ int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, c
                    "The autoconf ip header is too long\n");
       return -1;
     }
-    sscanf (substring, "%s.%%card.%%number\n", autoconf_vars->autoconf_ip);
+    snprintf(autoconf_vars->autoconf_ip,79,"%s.%%card.%%number",substring);
   }
   else if (!strcmp (substring, "autoconf_ip"))
   {
