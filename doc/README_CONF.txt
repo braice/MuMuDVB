@@ -221,6 +221,7 @@ Autoconfiguration parameters
 |autoconf_multicast_port |The multicast port for each discovered channel (autoconf full). Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%server` and `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
 |autoconf_sid_list | If you don't want to configure all the channels of the transponder in full autoconfiguration mode, specify with this option the list of the service ids of the channels you want to autoconfigure. | empty |  | 
 |autoconf_name_template | The template for the channel name, ex `%number-%name` | empty | | See README for more details
+|autoconf_lcn | Do we try to get the logical channel number for the %lcn and %2lcn templates ? | 0 | 0 or 1 | See README for more details
 |==================================================================================================================
 
 SAP announces parameters
