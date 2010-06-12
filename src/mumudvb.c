@@ -925,15 +925,15 @@ int
   /******************************************************/
   // Card tuning
   /******************************************************/
-  // alarm for tuning timeout
-  if(tuneparams.tuning_timeout)
-  {
     if (signal (SIGALRM, SignalHandler) == SIG_IGN)
       signal (SIGALRM, SIG_IGN);
     if (signal (SIGUSR1, SignalHandler) == SIG_IGN)
       signal (SIGUSR1, SIG_IGN);
     if (signal (SIGUSR2, SignalHandler) == SIG_IGN)
       signal (SIGUSR2, SIG_IGN);
+  // alarm for tuning timeout
+  if(tuneparams.tuning_timeout)
+  {
     alarm (tuneparams.tuning_timeout);
   }
 
