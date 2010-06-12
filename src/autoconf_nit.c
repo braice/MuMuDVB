@@ -255,7 +255,7 @@ void parse_lcn_descriptor(unsigned char* buf, mumudvb_channel_t* channels, int n
    */
 
   nit_lcn_t *lcn;
-  unsigned char descriptor_len = buf[1];
+  int descriptor_len = buf[1];
   buf += 2;
   int service_id, i_lcn, curr_channel;
   log_message(MSG_DEBUG, "Autoconf NIT  0x83 descriptor (probably LCN) \n");
