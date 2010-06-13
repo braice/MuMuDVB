@@ -109,9 +109,15 @@ void *show_power_func(void* arg)
 {
   strength_parameters_t  *strengthparams;
   strengthparams= (strength_parameters_t  *) arg;
+  fe_status_t festatus;
+  fe_status_t festatus_old;
+  int lock_lost;
   int strength, ber, snr;
   int wait_time=20;//in units of 100ms
   int i;
+
+  memset(&festatus_old,0,sizeof(fe_status_t));
+  lock_lost=0;
   while(!strengthparams->tuneparams->strengththreadshutdown)
   {
     if(strengthparams->tuneparams->display_strenght && strengthparams->tuneparams->card_tuned)
@@ -121,6 +127,23 @@ void *show_power_func(void* arg)
         if (ioctl (strengthparams->fds->fd_frontend, FE_READ_SIGNAL_STRENGTH, &strength) >= 0)
           if (ioctl (strengthparams->fds->fd_frontend, FE_READ_SNR, &snr) >= 0)
             log_message( log_module,  MSG_INFO, "Bit error rate: %10d Signal strength: %10d SNR: %10d\n", ber,strength,snr);
+    }
+    if((strengthparams->tuneparams->check_status ||strengthparams->tuneparams->display_strenght) && strengthparams->tuneparams->card_tuned)
+    {
+      if (ioctl (strengthparams->fds->fd_frontend, FE_READ_STATUS, &festatus) != -1)
+      {
+        if((!(festatus & FE_HAS_LOCK) ) && (festatus_old != festatus))
+        {
+          log_message( log_module,  MSG_INFO, "Card is not locked. Detailled status\n");
+          print_status(festatus);
+          festatus_old = festatus;
+          lock_lost=1;
+        }
+        if((festatus & FE_HAS_LOCK)  && lock_lost)
+        {
+          log_message( log_module,  MSG_INFO, "Card is locked again.\n");
+        }
+      }
     }
     for(i=0;i<wait_time && !strengthparams->tuneparams->strengththreadshutdown;i++)
       usleep(100000);

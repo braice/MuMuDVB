@@ -127,6 +127,8 @@ typedef struct tuning_parameters_t{
   fe_hierarchy_t hier;
   /** do we periodically display the strenght of the signal ?*/
   int display_strenght;
+  /** do we periodically check the status of the card ?*/
+  int check_status;
   /**shutdown the thread for display strength */
   int strengththreadshutdown;
   /**The frontend type*/
@@ -144,5 +146,6 @@ typedef struct tuning_parameters_t{
 
 int tune_it(int, tuning_parameters_t *);
 int read_tuning_configuration(tuning_parameters_t *, char *);
+void print_status(fe_status_t festatus);
 
 #endif

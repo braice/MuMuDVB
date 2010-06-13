@@ -212,6 +212,7 @@ tuning_parameters_t tuneparams={
   .switch_type = 'C',
   .modulation_set = 0,
   .display_strenght = 0,
+  .check_status = 1,
   .strengththreadshutdown = 0,
   .HP_CodeRate = HP_CODERATE_DEFAULT,//cf tune.h
   .LP_CodeRate = LP_CODERATE_DEFAULT,
