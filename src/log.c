@@ -45,6 +45,7 @@
 #include <libdvben50221/en50221_errno.h>
 #endif
 
+#define LOG_HEAD_LEN 6
 extern int no_daemon;
 extern int verbosity;
 extern int log_initialised;
@@ -56,19 +57,55 @@ extern int log_initialised;
  * @param type : message type MSG_*
  * @param psz_format : the message in the printf format
 */
-void log_message( int type,
+void log_message( char* log_module, int type,
                     const char *psz_format, ... )
 {
   va_list args;
   int priority;
+  char *tempchar;
+  int len_log_module=0;
 
-  priority=LOG_USER;
   va_start( args, psz_format );
+
+  if(log_module!=NULL)
+    len_log_module=strlen(log_module);
+
+  tempchar=malloc((strlen(psz_format)+1+LOG_HEAD_LEN+len_log_module)*sizeof(char));
+  memset (tempchar, ' ', LOG_HEAD_LEN+len_log_module);
+  strcpy(tempchar+LOG_HEAD_LEN+len_log_module,psz_format);
+
+  if(len_log_module)
+    memcpy(tempchar+LOG_HEAD_LEN,log_module,len_log_module);
+
+  //The bunch of space at the end of the strings in strncpy is to be shure not to copy the \0 I didn't found a cleaner way
+  switch(type)
+  {
+    case MSG_ERROR:
+      memcpy(tempchar,"ERRO:    ",LOG_HEAD_LEN);
+      break;
+    case MSG_WARN:
+      strncpy(tempchar,"WARN:    ",LOG_HEAD_LEN);
+      break;
+    case MSG_INFO:
+      strncpy(tempchar,"Info:    ",LOG_HEAD_LEN);
+      break;
+    case MSG_DETAIL:
+      strncpy(tempchar,"Deb0:    ",LOG_HEAD_LEN);
+      break;
+    case MSG_DEBUG:
+      strncpy(tempchar,"Deb1:    ",LOG_HEAD_LEN);
+      break;
+    case MSG_FLOOD:
+      strncpy(tempchar,"Deb2:    ",LOG_HEAD_LEN);
+      break;
+  }
+
+
 
   if(type<verbosity)
     {
       if (no_daemon || !log_initialised)
-	vfprintf(stderr, psz_format, args );
+	vfprintf(stderr, tempchar, args );
       else
 	{
 	  //what is the priority ?
@@ -90,11 +127,13 @@ void log_message( int type,
 	    case MSG_FLOOD:
 	      priority|=LOG_DEBUG;
 	      break;
+            default:
+              priority=LOG_USER;
 	    }
-	  vsyslog (priority, psz_format, args );
+	  vsyslog (priority, tempchar, args );
 	}
     }
-
+  free(tempchar);
   va_end( args );
 }
 
@@ -104,28 +143,27 @@ void log_message( int type,
  * @param number_of_channels the number of channels
  * @param channels : the channels array
  */
-void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels, int multicast, int unicast, int unicast_master_port, char *unicastipOut)
+void log_streamed_channels(char *log_module,int number_of_channels, mumudvb_channel_t *channels, int multicast, int unicast, int unicast_master_port, char *unicastipOut)
 {
   int curr_channel;
   int curr_pid;
 
-  log_message( MSG_INFO, "Diffusion %d channel%s\n", number_of_channels,
+  log_message( log_module,  MSG_INFO, "Diffusion %d channel%s\n", number_of_channels,
 	       (number_of_channels <= 1 ? "" : "s"));
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
-	  log_message( MSG_INFO, "Channel number : %3d, name : \"%s\"  service id %d \n", curr_channel, channels[curr_channel].name, channels[curr_channel].service_id);
+	  log_message( log_module,  MSG_INFO, "Channel number : %3d, name : \"%s\"  service id %d \n", curr_channel, channels[curr_channel].name, channels[curr_channel].service_id);
       if(multicast)
-	log_message( MSG_INFO, "\tMulticast ip : %s:%d\n", channels[curr_channel].ipOut, channels[curr_channel].portOut);
+	log_message( log_module,  MSG_INFO, "\tMulticast ip : %s:%d\n", channels[curr_channel].ipOut, channels[curr_channel].portOut);
       if(unicast)
       {
-	log_message( MSG_INFO, "\tUnicast : Channel accessible via the master connection, %s:%d\n",unicastipOut, unicast_master_port);
+	log_message( log_module,  MSG_INFO, "\tUnicast : Channel accessible via the master connection, %s:%d\n",unicastipOut, unicast_master_port);
 	if(channels[curr_channel].unicast_port)
-	  log_message( MSG_INFO, "\tUnicast : Channel accessible directly via %s:%d\n",unicastipOut, channels[curr_channel].unicast_port);
+	  log_message( log_module,  MSG_INFO, "\tUnicast : Channel accessible directly via %s:%d\n",unicastipOut, channels[curr_channel].unicast_port);
       }
-      log_message( MSG_DETAIL, "        pids : ");/**@todo Generate a strind and call log_message after, in syslog it generates one line per pid*/
+      log_message( log_module,  MSG_DETAIL, "        pids : \n");/**@todo Generate a strind and call log_message after, in syslog it generates one line per pid*/
       for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
-	log_message( MSG_DETAIL, "%d (%s) ", channels[curr_channel].pids[curr_pid], pid_type_to_str(channels[curr_channel].pids_type[curr_pid]));
-      log_message( MSG_DETAIL, "\n");
+	log_message( log_module,  MSG_DETAIL, "%d (%s) \n", channels[curr_channel].pids[curr_pid], pid_type_to_str(channels[curr_channel].pids_type[curr_pid]));
     }
 }
 
@@ -150,7 +188,7 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
   file_streamed_channels = fopen (file_streamed_channels_filename, "w");
   if (file_streamed_channels == NULL)
     {
-      log_message( MSG_WARN,
+      log_message( NULL, MSG_WARN,
 		   "%s: %s\n",
 		   file_streamed_channels_filename, strerror (errno));
       return;
@@ -159,7 +197,7 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
   file_not_streamed_channels = fopen (file_not_streamed_channels_filename, "w");
   if (file_not_streamed_channels == NULL)
     {
-      log_message( MSG_WARN,
+      log_message( NULL,  MSG_WARN,
 		   "%s: %s\n",
 		   file_not_streamed_channels_filename, strerror (errno));
       return;
@@ -208,7 +246,7 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
   orig_conf_file = fopen (orig_conf_filename, "r");
   if (orig_conf_file == NULL)
     {
-      log_message( MSG_WARN, "Strange error %s: %s\n",
+      log_message( NULL,  MSG_WARN, "Strange error %s: %s\n",
 		   orig_conf_filename, strerror (errno));
       return;
     }
@@ -217,7 +255,7 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
   config_file = fopen (saving_filename, "w");
   if (config_file == NULL)
     {
-      log_message( MSG_WARN,
+      log_message( NULL,  MSG_WARN,
 		   "%s: %s\n",
 		   saving_filename, strerror (errno));
       return;
@@ -290,7 +328,7 @@ void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *
   config_file = fopen (saving_filename, "a");
   if (config_file == NULL)
     {
-      log_message( MSG_WARN,
+      log_message( NULL,  MSG_WARN,
 		   "%s: %s\n",
 		   saving_filename, strerror (errno));
       return;
@@ -552,9 +590,9 @@ char *simple_service_type_to_str(int type)
  * @param type the type to display
  * @param loglevel : the loglevel for displaying it
  */
-void display_service_type(int type, int loglevel)
+void display_service_type(int type, int loglevel, char *log_module)
 {
-  log_message(loglevel, "Autoconf : service type: 0x%x : %s \n", type, service_type_to_str(type));
+  log_message( log_module, loglevel, "service type: 0x%x : %s \n", type, service_type_to_str(type));
 }
 
 /** @brief Write the PID type into a string
@@ -762,7 +800,7 @@ void usage (char *name)
   print_info ();
 }
 
-void show_traffic(long now, int show_traffic_interval, mumudvb_chan_and_pids_t *chan_and_pids)
+void show_traffic( char *log_module, long now, int show_traffic_interval, mumudvb_chan_and_pids_t *chan_and_pids)
 {
   static long show_traffic_time=0;
 
@@ -773,7 +811,7 @@ void show_traffic(long now, int show_traffic_interval, mumudvb_chan_and_pids_t *
       show_traffic_time=now;
       for (int curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
         {
-          log_message( MSG_INFO, "Traffic :  %.2f kb/s \t  for channel \"%s\"\n",
+          log_message( log_module,  MSG_INFO, "Traffic :  %.2f kb/s \t  for channel \"%s\"\n",
                        chan_and_pids->channels[curr_channel].traffic*8,
                        chan_and_pids->channels[curr_channel].name);
         }

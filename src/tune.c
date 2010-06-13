@@ -53,6 +53,7 @@
 
 
 extern int Interrupted;
+static char *log_module="Tune: ";
 
 /** @brief Read a line of the configuration file to check if there is a tuning parameter
  *
@@ -69,7 +70,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
     tuneparams->sat_number = atoi (substring);
     if (tuneparams->sat_number > 4)
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "Config issue : sat_number. The satellite number must be between 0 and 4. Please report if you have an equipment wich support more\n");
       return -1;
     }
@@ -78,7 +79,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
   else if (!strcmp (substring, "atsc_modulation"))
   {
     tuneparams->modulation_set = 1;
-    log_message( MSG_WARN, "Warning : The option atsc_modulation is deprecated, use the option modulation instead\n"); 
+    log_message( log_module,  MSG_WARN, "The option atsc_modulation is deprecated, use the option modulation instead\n");
     substring = strtok (NULL, delimiteurs);
     if (!strcmp (substring, "vsb8"))
       tuneparams->modulation = VSB_8;
@@ -92,7 +93,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
       tuneparams->modulation = QAM_AUTO;
     else 
     {
-      log_message( MSG_WARN,
+      log_message( log_module,  MSG_WARN,
                    "Bad value for atsc_modulation, will try VSB_8 (usual modulation for terrestrial)\n");
       tuneparams->modulation_set = 0;
     }
@@ -125,7 +126,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
     }
     else
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "Config issue : polarisation\n");
       return -1;
     }
@@ -144,7 +145,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
       tuneparams->lnb_type=LNB_STANDARD;
     else
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "Config issue : lnb_type\n");
       return -1;
     }
@@ -190,7 +191,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
     substring = strtok (NULL, delimiteurs);
     if(strlen(substring)>(256-1))
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "The card dev path is too long\n");
       return -1;
     }
@@ -199,7 +200,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
   else if (!strcmp (substring, "qam"))
   {
   // DVB-T
-    log_message( MSG_WARN, "Warning : The option qam is deprecated, use the option modulation instead\n");
+    log_message( log_module,  MSG_WARN, " The option qam is deprecated, use the option modulation instead\n");
     tuneparams->modulation_set = 1;
     substring = strtok (NULL, delimiteurs);
     sscanf (substring, "%s\n", substring);
@@ -219,7 +220,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
       tuneparams->modulation=QAM_AUTO;
     else
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "Config issue : QAM\n");
       tuneparams->modulation_set = 0;
       return -1;
@@ -238,7 +239,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
       tuneparams->TransmissionMode=TRANSMISSION_MODE_AUTO;
     else
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "Config issue : trans_mode\n");
       return -1;
     }
@@ -258,7 +259,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
       tuneparams->bandwidth=BANDWIDTH_AUTO;
     else
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "Config issue : bandwidth\n");
       return -1;
     }
@@ -280,7 +281,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
       tuneparams->guardInterval=GUARD_INTERVAL_AUTO;
     else
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "Config issue : guardinterval\n");
       return -1;
     }
@@ -318,7 +319,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
 #endif
     else
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "Config issue : coderate\n");
       return -1;
     }
@@ -364,14 +365,14 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
       tuneparams->delivery_system=SYS_DAB;
     else
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "Config issue : delivery_system. Unknown delivery_system : %s\n",substring);
       return -1;
     }
-    log_message( MSG_INFO,
+    log_message( log_module,  MSG_INFO,
                  "You will use DVB API version 5 for tuning your card.\n");
 #else
-    log_message( MSG_ERROR,
+    log_message( log_module,  MSG_ERROR,
                  "Config issue : delivery_system. You are trying to set the delivery system but your MuMuDVB have not been built with DVB-S2/DVB API 5 support.\n");
     return -1;
 #endif
@@ -391,14 +392,14 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
       tuneparams->rolloff=ROLLOFF_AUTO;
     else
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "Config issue : delivery_system. Unknown delivery_system : %s\n",substring);
       return -1;
     }
-    log_message( MSG_INFO,
+    log_message( log_module,  MSG_INFO,
                  "You will use DVB API version 5 for tuning your card.\n");
 #else
-    log_message( MSG_ERROR,
+    log_message( log_module,  MSG_ERROR,
                  "Config issue : delivery_system. You are trying to set the rolloff but your MuMuDVB have not been built with DVB-S2/DVB API 5 support.\n");
     return -1;
 #endif
@@ -439,7 +440,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
 #endif
     else 
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "Config issue : Bad value for modulation\n");
       tuneparams->modulation_set = 0;
       return -1;
@@ -463,7 +464,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
     }
     else
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "Config issue : switch_type\n");
                    return -1;
     }
@@ -485,14 +486,14 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
  * @param festatus the status to display
 */
 void print_status(fe_status_t festatus) {
-  log_message( MSG_INFO, "FE_STATUS:\n");
-  if (festatus & FE_HAS_SIGNAL) log_message( MSG_INFO, "     FE_HAS_SIGNAL : found something above the noise level\n");
-  if (festatus & FE_HAS_CARRIER) log_message( MSG_INFO, "     FE_HAS_CARRIER : found a DVB signal\n");
-  if (festatus & FE_HAS_VITERBI) log_message( MSG_INFO, "     FE_HAS_VITERBI : FEC is stable\n");
-  if (festatus & FE_HAS_SYNC) log_message( MSG_INFO, "     FE_HAS_SYNC : found sync bytes\n");
-  if (festatus & FE_HAS_LOCK) log_message( MSG_INFO, "     FE_HAS_LOCK : everything's working... \n");
-  if (festatus & FE_TIMEDOUT) log_message( MSG_INFO, "     FE_TIMEDOUT : no lock within the last ... seconds\n");
-  if (festatus & FE_REINIT) log_message( MSG_INFO, "     FE_REINIT : frontend was reinitialized\n");
+  log_message( log_module,  MSG_INFO, "FE_STATUS:\n");
+  if (festatus & FE_HAS_SIGNAL) log_message( log_module,  MSG_INFO, "     FE_HAS_SIGNAL : found something above the noise level\n");
+  if (festatus & FE_HAS_CARRIER) log_message( log_module,  MSG_INFO, "     FE_HAS_CARRIER : found a DVB signal\n");
+  if (festatus & FE_HAS_VITERBI) log_message( log_module,  MSG_INFO, "     FE_HAS_VITERBI : FEC is stable\n");
+  if (festatus & FE_HAS_SYNC) log_message( log_module,  MSG_INFO, "     FE_HAS_SYNC : found sync bytes\n");
+  if (festatus & FE_HAS_LOCK) log_message( log_module,  MSG_INFO, "     FE_HAS_LOCK : everything's working... \n");
+  if (festatus & FE_TIMEDOUT) log_message( log_module,  MSG_INFO, "     FE_TIMEDOUT : no lock within the last ... seconds\n");
+  if (festatus & FE_REINIT) log_message( log_module,  MSG_INFO, "     FE_REINIT : frontend was reinitialized\n");
 }
 
 
@@ -569,17 +570,17 @@ static int do_diseqc(int fd, unsigned char sat_no, char switch_type, int pol_v_r
   if (lnb_voltage_off)
   {
     lnb_voltage=SEC_VOLTAGE_OFF;
-    log_message( MSG_INFO, "LNB voltage 0V\n");
+    log_message( log_module,  MSG_INFO, "LNB voltage 0V\n");
   }
   else if(pol_v_r)
   {
     lnb_voltage=SEC_VOLTAGE_13;
-    log_message( MSG_INFO, "LNB voltage 13V\n");
+    log_message( log_module,  MSG_INFO, "LNB voltage 13V\n");
   }
   else
   {
     lnb_voltage=SEC_VOLTAGE_18;
-    log_message( MSG_INFO, "LNB voltage 18V\n");
+    log_message( log_module,  MSG_INFO, "LNB voltage 18V\n");
   }
 
   //Diseqc compliant hardware
@@ -588,7 +589,7 @@ static int do_diseqc(int fd, unsigned char sat_no, char switch_type, int pol_v_r
     cmd[0]=malloc(sizeof(struct diseqc_cmd));
     if(cmd[0]==NULL)
     {
-      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       Interrupted=ERROR_MEMORY<<8;
       return -1;
     }
@@ -624,13 +625,13 @@ static int do_diseqc(int fd, unsigned char sat_no, char switch_type, int pol_v_r
   {
     if(ioctl(fd, FE_SET_VOLTAGE, lnb_voltage) < 0)
     {
-      log_message( MSG_WARN, "Warning : problem to set the LNB voltage");
+      log_message( log_module,  MSG_WARN, "problem to set the LNB voltage");
       return -1;
     }
 
     if(ioctl(fd, FE_SET_TONE, (hi_lo ? SEC_TONE_ON : SEC_TONE_OFF)) < 0)
     {
-      log_message( MSG_WARN, "Warning : problem to set the 22kHz tone");
+      log_message( log_module,  MSG_WARN, "problem to set the 22kHz tone");
       return -1;
     }
     msleep(15);
@@ -654,16 +655,16 @@ int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_str
 
   event.status=0;
   while (((event.status & FE_TIMEDOUT)==0) && ((event.status & FE_HAS_LOCK)==0)) {
-    log_message( MSG_DETAIL, "polling....\n");
+    log_message( log_module,  MSG_DETAIL, "polling....\n");
     if (poll(pfd,1,5000) > 0){
       if (pfd[0].revents & POLLPRI){
-        log_message( MSG_DETAIL, "Getting frontend event\n");
+        log_message( log_module,  MSG_DETAIL, "Getting frontend event\n");
         if ((status = ioctl(fd_frontend, FE_GET_EVENT, &event)) < 0){
 	  if (errno != EOVERFLOW) {
-	    log_message( MSG_ERROR, "FE_GET_EVENT %s. status = %s\n", strerror(errno), status);
+	    log_message( log_module,  MSG_ERROR, "FE_GET_EVENT %s. status = %s\n", strerror(errno), status);
 	    return -1;
 	  }
-	  else log_message( MSG_WARN, "Overflow error, trying again (status = %d, errno = %d)", status, errno);
+	  else log_message( log_module,  MSG_WARN, "Overflow error, trying again (status = %d, errno = %d)\n", status, errno);
         }
       }
       print_status(event.status);
@@ -672,32 +673,32 @@ int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_str
     {
       strength=0;
       if(ioctl(fd_frontend,FE_READ_SIGNAL_STRENGTH,&strength) >= 0)
-        log_message( MSG_INFO, "Strength: %10d ",strength);
+        log_message( log_module,  MSG_INFO, "Strength: %10d\n",strength);
       strength=0;
       if(ioctl(fd_frontend,FE_READ_SNR,&strength) >= 0)
-        log_message( MSG_INFO, "SNR: %10d\n",strength);
+        log_message( log_module,  MSG_INFO, "SNR: %10d\n",strength);
     }
   }
 
   if (event.status & FE_HAS_LOCK) {
       switch(type) {
          case FE_OFDM:
-           log_message( MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);
+           log_message( log_module,  MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);
            break;
          case FE_QPSK:
-           log_message( MSG_INFO, "Event:  Frequency: %d (or %d)\n",(unsigned int)((event.parameters.frequency)+lo_frequency),(unsigned int) abs((event.parameters.frequency)-lo_frequency));
-           log_message( MSG_INFO, "        SymbolRate: %d\n",event.parameters.u.qpsk.symbol_rate);
-           log_message( MSG_INFO, "        FEC_inner:  %d\n",event.parameters.u.qpsk.fec_inner);
-           log_message( MSG_INFO, "\n");
+           log_message( log_module,  MSG_INFO, "Event:  Frequency: %d (or %d)\n",(unsigned int)((event.parameters.frequency)+lo_frequency),(unsigned int) abs((event.parameters.frequency)-lo_frequency));
+           log_message( log_module,  MSG_INFO, "        SymbolRate: %d\n",event.parameters.u.qpsk.symbol_rate);
+           log_message( log_module,  MSG_INFO, "        FEC_inner:  %d\n",event.parameters.u.qpsk.fec_inner);
+           log_message( log_module,  MSG_INFO, "\n");
            break;
          case FE_QAM:
-           log_message( MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);
-           log_message( MSG_INFO, "        SymbolRate: %d\n",event.parameters.u.qpsk.symbol_rate);
-           log_message( MSG_INFO, "        FEC_inner:  %d\n",event.parameters.u.qpsk.fec_inner);
+           log_message( log_module,  MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);
+           log_message( log_module,  MSG_INFO, "        SymbolRate: %d\n",event.parameters.u.qpsk.symbol_rate);
+           log_message( log_module,  MSG_INFO, "        FEC_inner:  %d\n",event.parameters.u.qpsk.fec_inner);
            break;
 #ifdef ATSC
          case FE_ATSC:
-           log_message( MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);
+           log_message( log_module,  MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);
            break;
 #endif
          default:
@@ -706,21 +707,21 @@ int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_str
 
       strength=0;
       if(ioctl(fd_frontend,FE_READ_BER,&strength) >= 0)
-      log_message( MSG_INFO, "Bit error rate: %d\n",strength);
+      log_message( log_module,  MSG_INFO, "Bit error rate: %d\n",strength);
 
       strength=0;
       if(ioctl(fd_frontend,FE_READ_SIGNAL_STRENGTH,&strength) >= 0)
-      log_message( MSG_INFO, "Signal strength: %d\n",strength);
+      log_message( log_module,  MSG_INFO, "Signal strength: %d\n",strength);
 
       strength=0;
       if(ioctl(fd_frontend,FE_READ_SNR,&strength) >= 0)
-      log_message( MSG_INFO, "SNR: %d\n",strength);
+      log_message( log_module,  MSG_INFO, "SNR: %d\n",strength);
 
       festatus=0;
       if(ioctl(fd_frontend,FE_READ_STATUS,&festatus) >= 0)
       print_status(festatus);
     } else {
-    log_message( MSG_ERROR, "Not able to lock to the signal on the given frequency\n");
+    log_message( log_module,  MSG_ERROR, "Not able to lock to the signal on the given frequency\n");
     return -1;
   }
   return 0;
@@ -744,13 +745,13 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
   hi_lo = 0;
 
   if ( (res = ioctl(fd_frontend,FE_GET_INFO, &fe_info) < 0)){
-    log_message( MSG_ERROR, "FE_GET_INFO: %s \n", strerror(errno));
+    log_message( log_module,  MSG_ERROR, "FE_GET_INFO: %s \n", strerror(errno));
     return -1;
   }
 
   /** @todo here check the capabilities of the card*/
 
-  log_message( MSG_INFO, "Using DVB card \"%s\"\n",fe_info.name);
+  log_message( log_module,  MSG_INFO, "Using DVB card \"%s\"\n",fe_info.name);
 
   tuneparams->fe_type=fe_info.type;
   feparams.inversion=INVERSION_AUTO;
@@ -760,7 +761,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
 #if DVB_API_VERSION >= 5
     if((tuneparams->delivery_system!=SYS_UNDEFINED)&&(tuneparams->delivery_system!=SYS_DVBT))
     {
-      log_message( MSG_ERROR, "ERROR : The delivery system does not fit with the card frontend type (DVB-T)..\n");
+      log_message( log_module,  MSG_ERROR, "ERROR : The delivery system does not fit with the card frontend type (DVB-T)..\n");
       Interrupted=ERROR_TUNE<<8;
       return -1;
     }
@@ -792,13 +793,13 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
         dvbt_bandwidth=0;
         break;
     }
-    log_message( MSG_INFO, "Tuning DVB-T to %d Hz, Bandwidth: %d\n", tuneparams->freq,dvbt_bandwidth);
+    log_message( log_module,  MSG_INFO, "Tuning DVB-T to %d Hz, Bandwidth: %d\n", tuneparams->freq,dvbt_bandwidth);
     break;
   case FE_QPSK: //DVB-S
 #if DVB_API_VERSION >= 5
     if((tuneparams->delivery_system!=SYS_UNDEFINED)&&(tuneparams->delivery_system!=SYS_DVBS)&&(tuneparams->delivery_system!=SYS_DVBS2))
     {
-      log_message( MSG_ERROR, "ERROR : The delivery system does not fit with the card frontend type (DVB-S).\n");
+      log_message( log_module,  MSG_ERROR, "ERROR : The delivery system does not fit with the card frontend type (DVB-S).\n");
       Interrupted=ERROR_TUNE<<8;
       return -1;
     }
@@ -826,7 +827,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     feparams.frequency=abs(tuneparams->freq-lo_frequency);
 
 
-    log_message( MSG_INFO, "Tuning DVB-S to Freq: %u kHz, LO frequency %u kHz Pol:%c Srate=%d, LNB number: %d\n",
+    log_message( log_module,  MSG_INFO, "Tuning DVB-S to Freq: %u kHz, LO frequency %u kHz Pol:%c Srate=%d, LNB number: %d\n",
                 feparams.frequency,
                 lo_frequency,
                 tuneparams->pol,
@@ -843,9 +844,9 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
                   (tuneparams->pol == 'V' ? 1 : 0) + (tuneparams->pol == 'R' ? 1 : 0),
                   hi_lo,
                   tuneparams->lnb_voltage_off) == 0)
-      log_message( MSG_INFO, "DISEQC SETTING SUCCEDED\n");
+      log_message( log_module,  MSG_INFO, "DISEQC SETTING SUCCEDED\n");
     else  {
-      log_message( MSG_WARN, "DISEQC SETTING FAILED\n");
+      log_message( log_module,  MSG_WARN, "DISEQC SETTING FAILED\n");
       return -1;
     }
     break;
@@ -853,12 +854,12 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
 #if DVB_API_VERSION >= 5
     if((tuneparams->delivery_system!=SYS_UNDEFINED)&&(tuneparams->delivery_system!=SYS_DVBC_ANNEX_AC)&&(tuneparams->delivery_system!=SYS_DVBC_ANNEX_B))
     {
-      log_message( MSG_ERROR, "ERROR : The delivery system does not fit with the card frontend type (DVB-C).\n");
+      log_message( log_module,  MSG_ERROR, "ERROR : The delivery system does not fit with the card frontend type (DVB-C).\n");
       Interrupted=ERROR_TUNE<<8;
       return -1;
     }
 #endif
-    log_message( MSG_INFO, "tuning DVB-C to %d Hz, srate=%d\n",tuneparams->freq,tuneparams->srate);
+    log_message( log_module,  MSG_INFO, "tuning DVB-C to %d Hz, srate=%d\n",tuneparams->freq,tuneparams->srate);
     feparams.frequency=tuneparams->freq;
     feparams.inversion=INVERSION_OFF;
     feparams.u.qam.symbol_rate = tuneparams->srate;
@@ -872,12 +873,12 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
 #if DVB_API_VERSION >= 5
     if((tuneparams->delivery_system!=SYS_UNDEFINED)&&(tuneparams->delivery_system!=SYS_ATSC))
     {
-      log_message( MSG_ERROR, "ERROR : The delivery system does not fit with the card frontend type (ATSC).\n");
+      log_message( log_module,  MSG_ERROR, "ERROR : The delivery system does not fit with the card frontend type (ATSC).\n");
       Interrupted=ERROR_TUNE<<8;
       return -1;
     }
 #endif
-    log_message( MSG_INFO, "tuning ATSC to %d Hz, modulation=%d\n",tuneparams->freq,tuneparams->modulation);
+    log_message( log_module,  MSG_INFO, "tuning ATSC to %d Hz, modulation=%d\n",tuneparams->freq,tuneparams->modulation);
     feparams.frequency=tuneparams->freq;
     if(!tuneparams->modulation_set)
       tuneparams->modulation=ATSC_MODULATION_DEFAULT;
@@ -885,7 +886,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     break;
 #endif
   default:
-    log_message( MSG_ERROR, "Unknown FE type : %x. Aborting\n", fe_info.type);
+    log_message( log_module,  MSG_ERROR, "Unknown FE type : %x. Aborting\n", fe_info.type);
     Interrupted=ERROR_TUNE<<8;
     return -1;
   }
@@ -906,7 +907,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
 #endif
   {
     if (ioctl(fd_frontend,FE_SET_FRONTEND,&feparams) < 0) {
-      log_message( MSG_ERROR, "ERROR tuning channel : %s \n", strerror(errno));
+      log_message( log_module,  MSG_ERROR, "ERROR tuning channel : %s \n", strerror(errno));
       Interrupted=ERROR_TUNE<<8;
       return -1;
     }
@@ -926,7 +927,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     DTV_HIERARCHY 
     */
     //DVB api version 5 and delivery system defined, we do DVB-API-5 tuning 
-    log_message( MSG_INFO, "Tuning With DVB-API version 5. delivery system : %d\n",tuneparams->delivery_system);
+    log_message( log_module,  MSG_INFO, "Tuning With DVB-API version 5. delivery system : %d\n",tuneparams->delivery_system);
     struct dtv_property pclear[] = {
       { .cmd = DTV_CLEAR,},
     };
@@ -940,7 +941,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     cmdseq = (struct dtv_properties*) calloc(1, sizeof(*cmdseq));
     if (!cmdseq)
     {
-      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       return -1;
     }
 
@@ -948,7 +949,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     if (!(cmdseq->props))
     {
       free(cmdseq);
-      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       return -1;
     }
     if((tuneparams->delivery_system==SYS_DVBS)||(tuneparams->delivery_system==SYS_DVBS2))
@@ -1021,20 +1022,20 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     }
     else
     {
-      log_message( MSG_ERROR, "ERROR : unsupported delivery system. Try tuning using DVB API 3 (do not set delivery_system). And please contact so it can be implemented.\n");
+      log_message( log_module,  MSG_ERROR, "Unsupported delivery system. Try tuning using DVB API 3 (do not set delivery_system). And please contact so it can be implemented.\n");
       Interrupted=ERROR_TUNE<<8;
       return -1;
     }
 
     cmdseq->num = commandnum;
     if ((ioctl(fd_frontend, FE_SET_PROPERTY, &cmdclear)) == -1) {
-      log_message( MSG_ERROR,"FE_SET_PROPERTY clear failed : %s\n", strerror(errno));
+      log_message( log_module,  MSG_ERROR,"FE_SET_PROPERTY clear failed : %s\n", strerror(errno));
       Interrupted=ERROR_TUNE<<8;
       return -1;
     }
 
     if ((ioctl(fd_frontend, FE_SET_PROPERTY, cmdseq)) == -1) {
-      log_message( MSG_ERROR,"FE_SET_PROPERTY failed : %s\n", strerror(errno));
+      log_message( log_module,  MSG_ERROR,"FE_SET_PROPERTY failed : %s\n", strerror(errno));
       Interrupted=ERROR_TUNE<<8;
       return -1;
     }

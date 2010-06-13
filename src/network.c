@@ -37,6 +37,7 @@
 #include "log.h"
 
 extern int Interrupted;
+static char *log_module="Network: ";
 
 /**@brief Send data
  * just send the data over the socket fd
@@ -67,7 +68,7 @@ makesocket (char *szAddr, unsigned short port, int TTL,
 
   if (iSocket < 0)
     {
-      log_message( MSG_WARN, "socket() failed : %s\n",strerror(errno));
+      log_message( log_module,  MSG_WARN, "socket() failed : %s\n",strerror(errno));
       Interrupted=ERROR_NETWORK<<8;
     }
 
@@ -76,14 +77,14 @@ makesocket (char *szAddr, unsigned short port, int TTL,
   iRet=inet_aton (szAddr,&sSockAddr->sin_addr);
   if (iRet == 0)
     {
-      log_message( MSG_ERROR,"inet_aton failed : %s\n", strerror(errno));
+      log_message( log_module,  MSG_ERROR,"inet_aton failed : %s\n", strerror(errno));
       Interrupted=ERROR_NETWORK<<8;
     }
 
   iRet = setsockopt (iSocket, SOL_SOCKET, SO_REUSEADDR, &iLoop, sizeof (int));
   if (iRet < 0)
     {
-      log_message( MSG_ERROR,"setsockopt SO_REUSEADDR failed : %s\n",strerror(errno));
+      log_message( log_module,  MSG_ERROR,"setsockopt SO_REUSEADDR failed : %s\n",strerror(errno));
       Interrupted=ERROR_NETWORK<<8;
     }
 
@@ -91,7 +92,7 @@ makesocket (char *szAddr, unsigned short port, int TTL,
     setsockopt (iSocket, IPPROTO_IP, IP_MULTICAST_TTL, &cTtl, sizeof (char));
   if (iRet < 0)
     {
-      log_message( MSG_ERROR,"setsockopt IP_MULTICAST_TTL failed.  multicast in kernel? error : %s \n",strerror(errno));
+      log_message( log_module,  MSG_ERROR,"setsockopt IP_MULTICAST_TTL failed.  multicast in kernel? error : %s \n",strerror(errno));
       Interrupted=ERROR_NETWORK<<8;
     }
 
@@ -99,7 +100,7 @@ makesocket (char *szAddr, unsigned short port, int TTL,
 		     &cLoop, sizeof (char));
   if (iRet < 0)
     {
-      log_message( MSG_ERROR,"setsockopt IP_MULTICAST_LOOP failed.  multicast in kernel? error : %s\n",strerror(errno));
+      log_message( log_module,  MSG_ERROR,"setsockopt IP_MULTICAST_LOOP failed.  multicast in kernel? error : %s\n",strerror(errno));
       Interrupted=ERROR_NETWORK<<8;
     }
 
@@ -122,7 +123,7 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL,
   sin.sin_addr.s_addr = inet_addr (szAddr);
   if (bind (socket, (struct sockaddr *) &sin, sizeof (sin)))
     {
-      log_message( MSG_ERROR, "bind failed : %s\n", strerror(errno));
+      log_message( log_module,  MSG_ERROR, "bind failed : %s\n", strerror(errno));
       Interrupted=ERROR_NETWORK<<8;
     }
   tempaddr = inet_addr (szAddr);
@@ -133,7 +134,7 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL,
       if (setsockopt
 	  (socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &blub, sizeof (blub)))
 	{
-	  log_message( MSG_ERROR, "setsockopt IP_ADD_MEMBERSHIP failed (multicast kernel?) : %s\n", strerror(errno));
+	  log_message( log_module,  MSG_ERROR, "setsockopt IP_ADD_MEMBERSHIP failed (multicast kernel?) : %s\n", strerror(errno));
           Interrupted=ERROR_NETWORK<<8;
 	}
     }
@@ -155,7 +156,7 @@ makeTCPclientsocket (char *szAddr, unsigned short port,
 
   if (iSocket < 0)
     {
-      log_message( MSG_ERROR, "socket() failed.\n");
+      log_message( log_module,  MSG_ERROR, "socket() failed.\n");
       return -1;
     }
 
@@ -164,28 +165,28 @@ makeTCPclientsocket (char *szAddr, unsigned short port,
   iRet=inet_aton (szAddr,&sSockAddr->sin_addr);
   if (iRet == 0)
     {
-      log_message( MSG_ERROR,"inet_aton failed : %s\n", strerror(errno));
+      log_message( log_module,  MSG_ERROR,"inet_aton failed : %s\n", strerror(errno));
       return -1;
     }
 
   iRet = setsockopt (iSocket, SOL_SOCKET, SO_REUSEADDR, &iLoop, sizeof (int));
   if (iRet < 0)
     {
-      log_message( MSG_ERROR,"setsockopt SO_REUSEADDR failed : %s\n", strerror(errno));
+      log_message( log_module,  MSG_ERROR,"setsockopt SO_REUSEADDR failed : %s\n", strerror(errno));
       return -1;
     }
 
 
   if (bind (iSocket, (struct sockaddr *) sSockAddr, sizeof (*sSockAddr)))
     {
-      log_message( MSG_ERROR, "bind failed : %s\n", strerror(errno));
+      log_message( log_module,  MSG_ERROR, "bind failed : %s\n", strerror(errno));
       return -1;
     }
 
   iRet = listen(iSocket,10);
   if (iRet < 0)
     {
-      log_message( MSG_ERROR,"listen failed : %s\n",strerror(errno));
+      log_message( log_module,  MSG_ERROR,"listen failed : %s\n",strerror(errno));
       return -1;
     }
 
@@ -195,7 +196,7 @@ makeTCPclientsocket (char *szAddr, unsigned short port,
   flags |= O_NONBLOCK;
   if (fcntl(iSocket, F_SETFL, flags) < 0)
     {
-      log_message(MSG_ERROR,"Set non blocking failed : %s\n",strerror(errno));
+      log_message( log_module, MSG_ERROR,"Set non blocking failed : %s\n",strerror(errno));
       return -1;
     }
 

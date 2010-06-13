@@ -32,6 +32,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+static char *log_module="Transcode : ";
+
 void data_queue_init(data_queue_t *queue, int max_data_size)
 {
     queue->first = NULL;
@@ -43,7 +45,7 @@ void data_queue_init(data_queue_t *queue, int max_data_size)
 int data_queue_enqueue(data_queue_t *queue, void *data, int data_size)
 {
     if (queue->max_data_size < data_size) {
-        log_message(MSG_ERROR, "[Transcode] Failed to enqueue data - too big data.\n");
+        log_message( log_module, MSG_ERROR, "Failed to enqueue data - too big data.\n");
         return -1; /* Failed to enqueue */
     }
 
@@ -73,7 +75,7 @@ int data_queue_enqueue(data_queue_t *queue, void *data, int data_size)
     data_queue_item_t *item = malloc(sizeof(data_queue_item_t));
 
     if (NULL == item) {
-        log_message(MSG_ERROR, "[Transcode] Failed to enqueue data.\n");
+        log_message( log_module, MSG_ERROR, "Failed to enqueue data.\n");
         return -1; /* Failed to enqueue */
     }
 
@@ -82,7 +84,7 @@ int data_queue_enqueue(data_queue_t *queue, void *data, int data_size)
     item->data = malloc(data_size);
 
     if (NULL == item->data) {
-        log_message(MSG_ERROR, "[Transcode] Failed to enqueue data.\n");
+        log_message( log_module, MSG_ERROR, "Failed to enqueue data.\n");
         free(item);
         return -1; /* Failed to enqueue */
     }
@@ -189,7 +191,7 @@ int ref_queue_enqueue(ref_queue_t *queue, void *ref)
     }
 
     if (NULL == ref) {
-        log_message(MSG_ERROR, "[Transcode] Can not enqueue NULL ref.\n");
+        log_message( log_module, MSG_ERROR, "Can not enqueue NULL ref.\n");
         return -1; /* Do not enqueue NULLs */
     }
 
@@ -198,7 +200,7 @@ int ref_queue_enqueue(ref_queue_t *queue, void *ref)
     ref_queue_item_t *item = malloc(sizeof(ref_queue_item_t));
 
     if (NULL == item) {
-        log_message(MSG_ERROR, "[Transcode] Can not enqueue.\n");
+        log_message( log_module, MSG_ERROR, "Can not enqueue.\n");
         return -1; /* Failed to enqueue */
     }
 

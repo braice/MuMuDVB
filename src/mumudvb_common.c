@@ -67,7 +67,7 @@ int mumudvb_poll(fds_t *fds)
       poll_eintr++;
       if(poll_eintr==10)
       {
-        log_message( MSG_DEBUG, "Poll : 10 successive EINTR\n");
+        log_message( NULL, MSG_DEBUG, "Poll : 10 successive EINTR\n");
         poll_eintr=0;
       }
     }
@@ -76,13 +76,13 @@ int mumudvb_poll(fds_t *fds)
 
   if(poll_try==MAX_POLL_TRIES)
   {
-    log_message( MSG_ERROR, "Poll : We reach the maximum number of polling tries\n\tLast error when polling: %s\n", strerror (errno));
+    log_message( NULL, MSG_ERROR, "Poll : We reach the maximum number of polling tries\n\tLast error when polling: %s\n", strerror (errno));
     Interrupted=errno<<8; //the <<8 is to make difference beetween signals and errors;
     return Interrupted;
   }
   else if(poll_try)
   {
-    log_message( MSG_WARN, "Poll : Warning : error when polling: %s\n", strerror (last_poll_error));
+    log_message( NULL, MSG_WARN, "Poll : Warning : error when polling: %s\n", strerror (last_poll_error));
   }
   return 0;
 }
@@ -134,7 +134,7 @@ char *mumu_string_replace(char *source, int *length, int can_realloc, char *tore
       reallocresult=realloc(source,sizeof(char)*(lengthtempstring));
       if(reallocresult==NULL)
       {
-        log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+        log_message(NULL, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
         return NULL;
       }
       source=reallocresult;

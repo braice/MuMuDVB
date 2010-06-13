@@ -39,7 +39,7 @@
 /**find the pmt pids and the channels from the pat, and go to AUTOCONF_MODE_PIDS*/
 #define AUTOCONF_MODE_FULL 2
 /**parse the NIT*/
-#define AUTOCONF_MODE_NIT 3
+#define AUTOCONF_MODE_NIT 4
 
 //timeout for autoconfiguration
 #define AUTOCONFIGURE_TIME 10

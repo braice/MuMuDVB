@@ -131,6 +131,8 @@
 /** the table for crc32 claculations */
 extern uint32_t       crc32_table[256];
 
+static char *log_module="Main: ";
+
 /* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
    - see http://www.cadsoft.de/people/kls/vdr/index.htm */
 
@@ -412,7 +414,7 @@ int
         conf_filename = (char *) malloc (strlen (optarg) + 1);
         if (!conf_filename)
         {
-          log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+          log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
           exit(ERROR_MEMORY);
         }
         strncpy (conf_filename, optarg, strlen (optarg) + 1);
@@ -464,7 +466,7 @@ int
   if(!no_daemon)
     if(daemon(42,0))
   {
-    log_message( MSG_WARN, "Cannot daemonize: %s\n",
+    log_message( log_module,  MSG_WARN, "Cannot daemonize: %s\n",
                  strerror (errno));
     exit(666); //FIXME : use an error
   }
@@ -486,7 +488,7 @@ int
   conf_file = fopen (conf_filename, "r");
   if (conf_file == NULL)
   {
-    log_message( MSG_ERROR, "%s: %s\n",
+    log_message( log_module,  MSG_ERROR, "%s: %s\n",
                  conf_filename, strerror (errno));
     free(conf_filename);
     exit(ERROR_CONF_FILE);
@@ -579,7 +581,7 @@ int
     else if (!strcmp (substring, "channel_next"))
     {
       curr_channel++;
-      log_message(MSG_WARN,"channel next\n");
+      log_message( log_module, MSG_WARN,"channel next\n");
     }
     else if (!strcmp (substring, "timeout_no_diff"))
     {
@@ -593,7 +595,7 @@ int
       if(stats_infos.show_traffic_interval<ALARM_TIME)
       {
         stats_infos.show_traffic_interval=ALARM_TIME;
-        log_message(MSG_WARN,"Sorry the minimum interval for showing the traffic is %ds\n",ALARM_TIME);
+        log_message( log_module, MSG_WARN,"Sorry the minimum interval for showing the traffic is %ds\n",ALARM_TIME);
       }
     }
     else if (!strcmp (substring, "compute_traffic_interval"))
@@ -603,7 +605,7 @@ int
       if(stats_infos.compute_traffic_interval<ALARM_TIME)
       {
         stats_infos.compute_traffic_interval=ALARM_TIME;
-        log_message(MSG_WARN,"Sorry the minimum interval for computing the traffic is %ds\n",ALARM_TIME);
+        log_message( log_module, MSG_WARN,"Sorry the minimum interval for computing the traffic is %ds\n",ALARM_TIME);
       }
     }
     else if (!strcmp (substring, "dont_send_scrambled"))
@@ -617,12 +619,12 @@ int
       card_buffer.dvr_buffer_size = atoi (substring);
       if(card_buffer.dvr_buffer_size<=0)
       {
-        log_message( MSG_WARN,
+        log_message( log_module,  MSG_WARN,
                      "Warning : the buffer size MUST be >0, forced to 1 packet\n");
         card_buffer.dvr_buffer_size = 1;
       }
       if(card_buffer.dvr_buffer_size>1)
-        log_message( MSG_WARN,
+        log_message( log_module,  MSG_WARN,
                      "Warning : You set a buffer size > 1, this feature is experimental, please report bugs/problems or results\n");
       stats_infos.show_buffer_stats=1;
     }
@@ -633,10 +635,10 @@ int
       if(card_buffer.threaded_read)
       {
 #ifdef HAVE_LIBPTHREAD
-        log_message( MSG_WARN,
+        log_message( log_module,  MSG_WARN,
                      "Warning : You want to use a thread for reading the card, this feature is experimental, please report bugs/problems or results\n");
 #else
-        log_message( MSG_WARN,
+        log_message( log_module,  MSG_WARN,
                      "Warning : You want to use a thread for reading the card, this feature is experimental, please report bugs/problems or results\n");
 	card_buffer.threaded_read=0;
 #endif
@@ -650,10 +652,10 @@ int
     else if ((!strcmp (substring, "service_id")) || (!strcmp (substring, "ts_id")))
     {
       if(!strcmp (substring, "ts_id"))
-        log_message( MSG_WARN, "Warning : the option ts_id is deprecated, use service_in instead.\n");
+        log_message( log_module,  MSG_WARN, "Warning : the option ts_id is deprecated, use service_in instead.\n");
       if ( channel_start == 0)
       {
-        log_message( MSG_ERROR,
+        log_message( log_module,  MSG_ERROR,
                      "service_id : You have to start a channel first (using ip= or channel_next)\n");
         exit(ERROR_CONF);
       }
@@ -665,7 +667,7 @@ int
       curr_pid = 0;
       if ( channel_start == 0)
       {
-        log_message( MSG_ERROR,
+        log_message( log_module,  MSG_ERROR,
                      "pids : You have to start a channel first (using ip= or channel_next)\n");
         exit(ERROR_CONF);
       }
@@ -677,7 +679,7 @@ int
 	 // we see if the given pid is good
         if (chan_and_pids.channels[curr_channel].pids[curr_pid] < 10 || chan_and_pids.channels[curr_channel].pids[curr_pid] >= 8193)
         {
-          log_message( MSG_ERROR,
+          log_message( log_module,  MSG_ERROR,
                        "Config issue : %s in pids, given pid : %d\n",
                        conf_filename, chan_and_pids.channels[curr_channel].pids[curr_pid]);
           exit(ERROR_CONF);
@@ -685,7 +687,7 @@ int
         curr_pid++;
         if (curr_pid >= MAX_PIDS_PAR_CHAINE)
         {
-          log_message( MSG_ERROR,
+          log_message( log_module,  MSG_ERROR,
                        "Too many pids : %d channel : %d\n",
                        curr_pid, curr_channel);
           exit(ERROR_CONF);
@@ -697,7 +699,7 @@ int
     {
       if ( channel_start == 0)
       {
-        log_message( MSG_ERROR,
+        log_message( log_module,  MSG_ERROR,
                      "name : You have to start a channel first (using ip= or channel_next)\n");
         exit(ERROR_CONF);
       }
@@ -707,7 +709,7 @@ int
         strcpy(chan_and_pids.channels[curr_channel].name,strtok(substring,"\n"));	
       else
       {
-        log_message( MSG_WARN,"Channel name too long\n");
+        log_message( log_module,  MSG_WARN,"Channel name too long\n");
         strncpy(chan_and_pids.channels[curr_channel].name,strtok(substring,"\n"),MAX_NAME_LEN-1);
         chan_and_pids.channels[curr_channel].name[MAX_NAME_LEN-1]='\0';
       }
@@ -720,14 +722,14 @@ int
     else
     {
       if(strlen (current_line) > 1)
-        log_message( MSG_WARN,
+        log_message( log_module,  MSG_WARN,
                      "Config issue : unknow symbol : %s\n\n", substring);
       continue;
     }
 
     if (curr_channel > MAX_CHANNELS)
     {
-      log_message( MSG_ERROR, "Too many channels : %d limit : %d\n",
+      log_message( log_module,  MSG_ERROR, "Too many channels : %d limit : %d\n",
                    curr_channel, MAX_CHANNELS);
       exit(ERROR_TOO_CHANNELS);
     }
@@ -740,32 +742,32 @@ int
   {
     if((sap_vars.sap == OPTION_UNDEFINED) && (multicast_vars.multicast))
     {
-      log_message( MSG_INFO,
+      log_message( log_module,  MSG_INFO,
                    "Full autoconfiguration, we activate SAP announces. if you want to desactivate them see the README.\n");
       sap_vars.sap=OPTION_ON;
     }
     if(rewrite_vars.rewrite_pat == OPTION_UNDEFINED)
     {
       rewrite_vars.rewrite_pat=OPTION_ON;
-      log_message( MSG_INFO,
+      log_message( log_module,  MSG_INFO,
                    "Full autoconfiguration, we activate PAT rewritting. if you want to desactivate it see the README.\n");
     }
     if(rewrite_vars.rewrite_sdt == OPTION_UNDEFINED)
     {
       rewrite_vars.rewrite_sdt=OPTION_ON;
-      log_message( MSG_INFO,
+      log_message( log_module,  MSG_INFO,
                    "Full autoconfiguration, we activate SDT rewritting. if you want to desactivate it see the README.\n");
     }
     if(rewrite_vars.eit_sort == OPTION_UNDEFINED)
     {
       rewrite_vars.eit_sort=OPTION_ON;
-      log_message( MSG_INFO,
+      log_message( log_module,  MSG_INFO,
                    "Full autoconfiguration, we activate sorting of the EIT PID. if you want to desactivate it see the README.\n");
     }
   }
   if(card_buffer.max_thread_buffer_size<card_buffer.dvr_buffer_size)
   {
-    log_message( MSG_WARN,
+    log_message( log_module,  MSG_WARN,
 		 "Warning : You set a thread buffer size lower than your dvr buffer size, it's not possible to use such values. I increase your dvr_thread_buffer_size ...\n");
 		 card_buffer.max_thread_buffer_size=card_buffer.dvr_buffer_size;
   }
@@ -785,7 +787,7 @@ int
     sprintf(number,"%d",server_id);
     unicast_vars.portOut_str=mumu_string_replace(unicast_vars.portOut_str,&len,1,"%server",number);
     unicast_vars.portOut=string_comput(unicast_vars.portOut_str);
-    log_message( MSG_DEBUG, "Unicast: computed unicast master port : %d\n",unicast_vars.portOut);
+    log_message( "Unicast: ", MSG_DEBUG, "computed unicast master port : %d\n",unicast_vars.portOut);
   }
   /******************************************************/
   //end of config file reading
@@ -802,7 +804,7 @@ int
     pidfile = fopen (filename_pid, "w");
     if (pidfile == NULL)
     {
-      log_message( MSG_INFO,"%s: %s\n",
+      log_message( log_module,  MSG_INFO,"%s: %s\n",
                    filename_pid, strerror (errno));
       exit(ERROR_CREATE_FILE);
     }
@@ -820,7 +822,7 @@ int
   {
     if(autoconf_vars.autoconf_pid_update)
     {
-      log_message( MSG_INFO,
+      log_message( "Autoconf: ", MSG_INFO,
                    "The autoconfiguration auto update is enabled. If you want to disable it put \"autoconf_pid_update=0\" in your config file.\n");
     }
     //In case of autoconfiguration, we generate a config file with the channels discovered
@@ -835,7 +837,7 @@ int
   //We desactivate things depending on multicast if multicast is suppressed
   if(!multicast_vars.ttl)
   {
-    log_message( MSG_INFO, "The multicast TTL is set to 0, multicast will be desactivated.\n");
+    log_message( log_module,  MSG_INFO, "The multicast TTL is set to 0, multicast will be desactivated.\n");
     multicast_vars.multicast=0;
   }
   if(!multicast_vars.multicast)
@@ -845,7 +847,7 @@ int
     {
       if(chan_and_pids.channels[curr_channel].transcode_options.enable)
       {
-	log_message( MSG_INFO, "NO Multicast, transcoding desactivated for channel \"%s\".\n", chan_and_pids.channels[curr_channel].name);
+	log_message( log_module,  MSG_INFO, "NO Multicast, transcoding desactivated for channel \"%s\".\n", chan_and_pids.channels[curr_channel].name);
 	chan_and_pids.channels[curr_channel].transcode_options.enable=0;
       }
     }
@@ -853,18 +855,18 @@ int
       if(multicast_vars.rtp_header)
       {
 	multicast_vars.rtp_header=0;
-	log_message( MSG_INFO, "NO Multicast, RTP Header is desactivated.\n");
+	log_message( log_module,  MSG_INFO, "NO Multicast, RTP Header is desactivated.\n");
       }
       if(sap_vars.sap==OPTION_ON)
       {
-	log_message( MSG_INFO, "NO Multicast, SAP announces are desactivated.\n");
+	log_message( log_module,  MSG_INFO, "NO Multicast, SAP announces are desactivated.\n");
 	sap_vars.sap=OPTION_OFF;
       }
   }
   free(conf_filename);
   if(!multicast_vars.multicast && !unicast_vars.unicast)
   {
-    log_message( MSG_ERROR, "NO Multicast AND NO unicast. No data can be send :(, Exciting ....\n");
+    log_message( log_module,  MSG_ERROR, "NO Multicast AND NO unicast. No data can be send :(, Exciting ....\n");
     return mumudvb_close(ERROR_CONF<<8);
   }
   /*****************************************************/
@@ -883,8 +885,8 @@ int
   if (channels_diff == NULL)
   {
     write_streamed_channels=0;
-    log_message( MSG_WARN,
-                 "WARNING : Can't create %s: %s\n",
+    log_message( log_module,  MSG_WARN,
+                 "Can't create %s: %s\n",
                  filename_channels_diff, strerror (errno));
   }
   else
@@ -894,8 +896,8 @@ int
   if (channels_diff == NULL)
   {
     write_streamed_channels=0;
-    log_message( MSG_WARN,
-                 "WARNING : Can't create %s: %s\n",
+    log_message( log_module,  MSG_WARN,
+                 "Can't create %s: %s\n",
                  filename_channels_not_streamed, strerror (errno));
   }
   else
@@ -908,8 +910,8 @@ int
     cam_info = fopen (filename_cam_info, "w");
     if (cam_info == NULL)
     {
-      log_message( MSG_WARN,
-                   "WARNING : Can't create %s: %s\n",
+      log_message( log_module,  MSG_WARN,
+                   "Can't create %s: %s\n",
                    filename_cam_info, strerror (errno));
     }
     else
@@ -918,7 +920,7 @@ int
 #endif
 
 
-  log_message( MSG_INFO, "Streaming. Freq %d\n",
+  log_message( log_module,  MSG_INFO, "Streaming. Freq %d\n",
                tuneparams.freq);
 
 
@@ -949,12 +951,12 @@ int
 
   if (iRet < 0)
   {
-    log_message( MSG_INFO, "Tunning issue, card %d\n", tuneparams.card);
+    log_message( log_module,  MSG_INFO, "Tunning issue, card %d\n", tuneparams.card);
     // we close the file descriptors
     close_card_fd (fds);
     return mumudvb_close(ERROR_TUNE<<8);
   }
-  log_message( MSG_INFO, "Card %d tuned\n", tuneparams.card);
+  log_message( log_module,  MSG_INFO, "Card %d tuned\n", tuneparams.card);
   tuneparams.card_tuned = 1;
 
 #ifdef HAVE_LIBPTHREAD
@@ -994,12 +996,12 @@ int
   sigemptyset (&act.sa_mask);
   act.sa_flags = 0;
   if(sigaction (SIGPIPE, &act, NULL)<0)
-    log_message( MSG_ERROR,"ErrorSigaction\n");
+    log_message( log_module,  MSG_ERROR,"ErrorSigaction\n");
 
   alarm (ALARM_TIME);
 
   if(stats_infos.show_traffic)
-    log_message(MSG_INFO,"The traffic will be shown every %d seconds\n",stats_infos.show_traffic_interval);
+    log_message( log_module, MSG_INFO,"The traffic will be shown every %d seconds\n",stats_infos.show_traffic_interval);
 
 
   /*****************************************************/
@@ -1011,7 +1013,7 @@ int
     //We initialise the cam. If fail, we remove cam support
     if(cam_start(&cam_vars,tuneparams.card,filename_cam_info))
     {
-      log_message( MSG_ERROR,"ERROR : CAM : Cannot initalise cam\n");
+      log_message("CAM: ", MSG_ERROR,"Cannot initalise cam\n");
       cam_vars.cam_support=0;
     }
     else
@@ -1045,7 +1047,7 @@ int
     rewrite_vars.full_pat=malloc(sizeof(mumudvb_ts_packet_t));
     if(rewrite_vars.full_pat==NULL)
     {
-      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       return mumudvb_close(ERROR_MEMORY<<8);
     }
     memset (rewrite_vars.full_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1068,7 +1070,7 @@ int
     rewrite_vars.full_sdt=malloc(sizeof(mumudvb_ts_packet_t));
     if(rewrite_vars.full_sdt==NULL)
     {
-      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       return mumudvb_close(ERROR_MEMORY<<8);
     }
     memset (rewrite_vars.full_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1102,7 +1104,7 @@ int
       chan_and_pids.channels[curr_channel].pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
       if(chan_and_pids.channels[curr_channel].pmt_packet==NULL)
       {
-        log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+        log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
         return mumudvb_close(ERROR_MEMORY<<8);
       }
       memset (chan_and_pids.channels[curr_channel].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1177,7 +1179,7 @@ int
   fds.pfds=realloc(fds.pfds,(fds.pfdsnum+1)*sizeof(struct pollfd));
   if (fds.pfds==NULL)
   {
-    log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     return mumudvb_close(ERROR_MEMORY<<8);
   }
 
@@ -1187,7 +1189,7 @@ int
   unicast_vars.fd_info=realloc(unicast_vars.fd_info,(fds.pfdsnum)*sizeof(unicast_fd_info_t));
   if (unicast_vars.fd_info==NULL)
   {
-    log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     return mumudvb_close(ERROR_MEMORY<<8);
   }
 
@@ -1222,13 +1224,13 @@ int
   //We open the socket for the http unicast if needed and we update the poll structure
   if(unicast_vars.unicast)
   {
-    log_message(MSG_INFO,"Unicast : We open the Master http socket for address %s:%d\n",unicast_vars.ipOut, unicast_vars.portOut);
+    log_message("Unicast: ", MSG_INFO,"We open the Master http socket for address %s:%d\n",unicast_vars.ipOut, unicast_vars.portOut);
     unicast_create_listening_socket(UNICAST_MASTER, -1, unicast_vars.ipOut, unicast_vars.portOut, &unicast_vars.sIn, &unicast_vars.socketIn, &fds, &unicast_vars);
     /** open the unicast listening connections fo the channels */
     for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
       if(chan_and_pids.channels[curr_channel].unicast_port)
     {
-      log_message(MSG_INFO,"Unicast : We open the channel %d http socket address %s:%d\n",curr_channel, unicast_vars.ipOut, chan_and_pids.channels[curr_channel].unicast_port);
+      log_message("Unicast: ", MSG_INFO,"We open the channel %d http socket address %s:%d\n",curr_channel, unicast_vars.ipOut, chan_and_pids.channels[curr_channel].unicast_port);
       unicast_create_listening_socket(UNICAST_LISTEN_CHANNEL, curr_channel, unicast_vars.ipOut,chan_and_pids.channels[curr_channel].unicast_port , &chan_and_pids.channels[curr_channel].sIn, &chan_and_pids.channels[curr_channel].socketIn, &fds, &unicast_vars);
     }
   }
@@ -1247,10 +1249,10 @@ int
   /*****************************************************/
 
   if(autoconf_vars.autoconfiguration!=AUTOCONF_MODE_FULL)
-    log_streamed_channels(chan_and_pids.number_of_channels, chan_and_pids.channels, multicast_vars.multicast, unicast_vars.unicast, unicast_vars.portOut, unicast_vars.ipOut);
+    log_streamed_channels(log_module,chan_and_pids.number_of_channels, chan_and_pids.channels, multicast_vars.multicast, unicast_vars.unicast, unicast_vars.portOut, unicast_vars.ipOut);
 
   if(autoconf_vars.autoconfiguration)
-    log_message(MSG_INFO,"Autoconfiguration Start\n");
+    log_message("Autoconf: ",MSG_INFO,"Autoconfiguration Start\n");
 
 
 #ifdef HAVE_LIBPTHREAD
@@ -1421,7 +1423,7 @@ int
 	     //we check the new packet and if it's fully updated we set the skip to 0
 	     if(sdt_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars)==1)
 	     {
-	       log_message(MSG_DETAIL,"The SDT version changed, we force the update of all the channels.\n");
+	       log_message( log_module, MSG_DETAIL,"The SDT version changed, we force the update of all the channels.\n");
 	       for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
 	        chan_and_pids.channels[curr_channel].sdt_rewrite_skip=0;
 	     }
@@ -1597,14 +1599,14 @@ int
   /******************************************************/
 
   gettimeofday (&tv, (struct timezone *) NULL);
-  log_message( MSG_INFO,
+  log_message( log_module,  MSG_INFO,
                "\nEnd of streaming. We streamed during %dd %d:%02d:%02d\n",(tv.tv_sec - real_start_time )/86400,((tv.tv_sec - real_start_time) % 86400 )/3600,((tv.tv_sec - real_start_time) % 3600)/60,(tv.tv_sec - real_start_time) %60 );
 
   if(card_buffer.partial_packet_number)
-    log_message( MSG_INFO,
+    log_message( log_module,  MSG_INFO,
                  "We received %d partial packets :-( \n",card_buffer.partial_packet_number );
   if(card_buffer.partial_packet_number)
-    log_message( MSG_INFO,
+    log_message( log_module,  MSG_INFO,
                  "We have got %d overflow errors\n",card_buffer.overflow_number );
   return mumudvb_close(Interrupted);
 
@@ -1622,10 +1624,10 @@ int mumudvb_close(int Interrupted)
   if (Interrupted)
   {
     if(Interrupted< (1<<8)) //we check if it's a signal or a mumudvb error
-      log_message( MSG_INFO, "\nCaught signal %d - closing cleanly.\n",
+      log_message( log_module,  MSG_INFO, "Caught signal %d - closing cleanly.\n",
                    Interrupted);
     else
-      log_message( MSG_INFO, "\nclosing cleanly. Error %d\n",Interrupted>>8);
+      log_message( log_module,  MSG_INFO, "Closing cleanly. Error %d\n",Interrupted>>8);
   }
 
 #ifdef HAVE_LIBPTHREAD
@@ -1679,7 +1681,7 @@ int mumudvb_close(int Interrupted)
       // delete cam_info file
     if (remove (filename_cam_info))
     {
-      log_message( MSG_WARN,
+      log_message( log_module,  MSG_WARN,
                    "%s: %s\n",
                    filename_cam_info, strerror (errno));
     }
@@ -1703,7 +1705,7 @@ int mumudvb_close(int Interrupted)
 
   if (strlen(filename_channels_diff) && (write_streamed_channels)&&remove (filename_channels_diff)) 
   {
-    log_message( MSG_WARN,
+    log_message( log_module,  MSG_WARN,
                  "%s: %s\n",
                  filename_channels_diff, strerror (errno));
     exit(ERROR_DEL_FILE);
@@ -1711,7 +1713,7 @@ int mumudvb_close(int Interrupted)
 
   if (strlen(filename_channels_not_streamed) && (write_streamed_channels)&&remove (filename_channels_not_streamed))
   {
-    log_message( MSG_WARN,
+    log_message( log_module,  MSG_WARN,
                  "%s: %s\n",
                  filename_channels_not_streamed, strerror (errno));
     exit(ERROR_DEL_FILE);
@@ -1722,7 +1724,7 @@ int mumudvb_close(int Interrupted)
   {
     if (strlen(filename_pid) && remove (filename_pid))
     {
-      log_message( MSG_INFO, "%s: %s\n",
+      log_message( log_module,  MSG_INFO, "%s: %s\n",
                    filename_pid, strerror (errno));
       exit(ERROR_DEL_FILE);
     }
@@ -1778,7 +1780,7 @@ static void SignalHandler (int signum)
 
     if (!tuneparams.card_tuned)
     {
-      log_message( MSG_INFO,
+      log_message( log_module,  MSG_INFO,
                    "Card not tuned after %ds - exiting\n",
                    tuneparams.tuning_timeout);
       exit(ERROR_TUNE);
@@ -1805,7 +1807,7 @@ static void SignalHandler (int signum)
     {
       if ((chan_and_pids.channels[curr_channel].streamed_channel/ALARM_TIME >= 80) && (!chan_and_pids.channels[curr_channel].streamed_channel_old))
       {
-        log_message( MSG_INFO,
+        log_message( log_module,  MSG_INFO,
                      "Channel \"%s\" back.Card %d\n",
                      chan_and_pids.channels[curr_channel].name, tuneparams.card);
         chan_and_pids.channels[curr_channel].streamed_channel_old = 1;	// update
@@ -1814,7 +1816,7 @@ static void SignalHandler (int signum)
       }
       else if ((chan_and_pids.channels[curr_channel].streamed_channel_old) && (chan_and_pids.channels[curr_channel].streamed_channel/ALARM_TIME < 30))
       {
-        log_message( MSG_INFO,
+        log_message( log_module,  MSG_INFO,
                      "Channel \"%s\" down.Card %d\n",
                      chan_and_pids.channels[curr_channel].name, tuneparams.card);
         chan_and_pids.channels[curr_channel].streamed_channel_old = 0;	// update
@@ -1843,7 +1845,7 @@ static void SignalHandler (int signum)
     /*show the bandwith measurement*/
     if(stats_infos.show_traffic)
     {
-      show_traffic(now, stats_infos.show_traffic_interval, &chan_and_pids);
+      show_traffic(log_module,now, stats_infos.show_traffic_interval, &chan_and_pids);
     }
 
 
@@ -1855,7 +1857,7 @@ static void SignalHandler (int signum)
       if((now-stats_infos.show_buffer_stats_time)>=stats_infos.show_buffer_stats_interval)
       {
         stats_infos.show_buffer_stats_time=now;
-        log_message( MSG_DETAIL, "DETAIL : Average packets in the buffer %d\n", stats_infos.stats_num_packets_received/stats_infos.stats_num_reads);
+        log_message( log_module,  MSG_DETAIL, "Average packets in the buffer %d\n", stats_infos.stats_num_packets_received/stats_infos.stats_num_reads);
         stats_infos.stats_num_packets_received=0;
         stats_infos.stats_num_reads=0;
 	num_big_buffer_show++;
@@ -1877,7 +1879,7 @@ static void SignalHandler (int signum)
       /* Test if we have only unscrambled packets (<2%) - scrambled_channel_old=FULLY_UNSCRAMBLED : fully unscrambled*/
       if ((chan_and_pids.channels[curr_channel].ratio_scrambled < 2) && (chan_and_pids.channels[curr_channel].scrambled_channel_old != FULLY_UNSCRAMBLED))
       {
-        log_message( MSG_INFO,
+        log_message( log_module,  MSG_INFO,
                      "Channel \"%s\" is now fully unscrambled (%d%% of scrambled packets). Card %d\n",
                      chan_and_pids.channels[curr_channel].name, chan_and_pids.channels[curr_channel].ratio_scrambled, tuneparams.card);
         chan_and_pids.channels[curr_channel].scrambled_channel_old = FULLY_UNSCRAMBLED;// update
@@ -1885,7 +1887,7 @@ static void SignalHandler (int signum)
       /* Test if we have partiallay unscrambled packets (5%<=ratio<=75%) - scrambled_channel_old=PARTIALLY_UNSCRAMBLED : partially unscrambled*/
       if ((chan_and_pids.channels[curr_channel].ratio_scrambled >= 5) && (chan_and_pids.channels[curr_channel].ratio_scrambled <= 75) && (chan_and_pids.channels[curr_channel].scrambled_channel_old != PARTIALLY_UNSCRAMBLED))
       {
-        log_message( MSG_INFO,
+        log_message( log_module,  MSG_INFO,
                      "Channel \"%s\" is now partially unscrambled (%d%% of scrambled packets). Card %d\n",
                      chan_and_pids.channels[curr_channel].name, chan_and_pids.channels[curr_channel].ratio_scrambled, tuneparams.card);
         chan_and_pids.channels[curr_channel].scrambled_channel_old = PARTIALLY_UNSCRAMBLED;// update
@@ -1893,7 +1895,7 @@ static void SignalHandler (int signum)
       /* Test if we have nearly only scrambled packets (>80%) - scrambled_channel_old=HIGHLY_SCRAMBLED : highly scrambled*/
       if ((chan_and_pids.channels[curr_channel].ratio_scrambled > 80) && chan_and_pids.channels[curr_channel].scrambled_channel_old != HIGHLY_SCRAMBLED)
       {
-        log_message( MSG_INFO,
+        log_message( log_module,  MSG_INFO,
                      "Channel \"%s\" is now higly scrambled (%d%% of scrambled packets). Card %d\n",
                      chan_and_pids.channels[curr_channel].name, chan_and_pids.channels[curr_channel].ratio_scrambled, tuneparams.card);
         chan_and_pids.channels[curr_channel].scrambled_channel_old = HIGHLY_SCRAMBLED;// update
@@ -1918,7 +1920,7 @@ static void SignalHandler (int signum)
     /*If we don't stream data for a too long time, we exit*/
     if((timeout_no_diff)&& (time_no_diff&&((now-time_no_diff)>timeout_no_diff)))
     {
-      log_message( MSG_INFO,
+      log_message( log_module,  MSG_INFO,
                    "No data from card %d in %ds, exiting.\n",
                    tuneparams.card, timeout_no_diff);
       Interrupted=ERROR_NO_DIFF<<8; //the <<8 is to make difference beetween signals and errors
@@ -1945,9 +1947,9 @@ static void SignalHandler (int signum)
   {
     stats_infos.show_traffic = stats_infos.show_traffic ? 0 : 1;
     if(stats_infos.show_traffic)
-      log_message(MSG_INFO,"The traffic will be shown every %d seconds\n",stats_infos.show_traffic_interval);
+      log_message( log_module, MSG_INFO,"The traffic will be shown every %d seconds\n",stats_infos.show_traffic_interval);
     else
-      log_message(MSG_INFO,"The traffic will not be shown anymore\n");
+      log_message( log_module, MSG_INFO,"The traffic will not be shown anymore\n");
   }
   else if (signum != SIGPIPE)
   {

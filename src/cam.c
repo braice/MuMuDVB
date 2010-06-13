@@ -61,7 +61,7 @@
 #include "log.h"
 
 extern int Interrupted;
-
+static char *log_module="CAM: ";
 
 /*****************************************************************************
  * Code for dealing with cam using libdvben50221
@@ -123,7 +123,7 @@ int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *curren
     cam_vars->cam_support = atoi (substring);
     if(cam_vars->cam_support)
     {
-      log_message( MSG_WARN,
+      log_message( log_module,  MSG_WARN,
                    "You have enabled the support for conditionnal acces modules (scrambled channels). Please report any bug/comment\n");
     }
   }
@@ -157,14 +157,14 @@ int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *curren
   {
     if ( ip_ok == 0)
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "cam_pmt_pid : You have to start a channel first (using ip= or channel_next)\n");
       return -1;
     }
     substring = strtok (NULL, delimiteurs);
     current_channel->pmt_pid = atoi (substring);
     if (current_channel->pmt_pid < 10 || current_channel->pmt_pid > 8191){
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "Config issue in pids, given pid : %d\n",
                     current_channel->pmt_pid);
       return -1;
@@ -190,7 +190,7 @@ struct en50221_stdcam_llci {
 /** @brief Reset the CAM */
 void cam_reset_cam(cam_parameters_t *cam_params)
 {
-  log_message( MSG_FLOOD,"CAM Reset");
+  log_message( log_module,  MSG_FLOOD,"CAM Reset");
   struct en50221_stdcam *stdcam=cam_params->stdcam;
   struct en50221_stdcam_llci *llci = (struct en50221_stdcam_llci *) stdcam;
   ioctl(llci->cafd, CA_RESET, (1 << llci->slotnum));
@@ -256,24 +256,24 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
   static_nom_fich_cam_info=nom_fich_cam_info; /** @todo Remove this file for a more general method */
 
   // CAM Log
-  log_message( MSG_FLOOD,"CAM Initialization");
-  log_message( MSG_FLOOD,"CONF cam_reask_interval=%d",cam_params->cam_reask_interval);
-  log_message( MSG_FLOOD,"CONF cam_reset_interval=%d",cam_params->reset_interval);
-  log_message( MSG_FLOOD,"CONF cam_number=%d",cam_params->cam_number);
-  log_message( MSG_FLOOD,"CONF cam_delay_pmt_send=%d",cam_params->cam_delay_pmt_send);
-  log_message( MSG_FLOOD,"CONF cam_interval_pmt_send=%d",cam_params->cam_interval_pmt_send);
+  log_message( log_module,  MSG_FLOOD,"CAM Initialization");
+  log_message( log_module,  MSG_FLOOD,"CONF cam_reask_interval=%d",cam_params->cam_reask_interval);
+  log_message( log_module,  MSG_FLOOD,"CONF cam_reset_interval=%d",cam_params->reset_interval);
+  log_message( log_module,  MSG_FLOOD,"CONF cam_number=%d",cam_params->cam_number);
+  log_message( log_module,  MSG_FLOOD,"CONF cam_delay_pmt_send=%d",cam_params->cam_delay_pmt_send);
+  log_message( log_module,  MSG_FLOOD,"CONF cam_interval_pmt_send=%d",cam_params->cam_interval_pmt_send);
 
   // create transport layer - 1 Slot and 16 sessions maximum
   cam_params->tl = en50221_tl_create(1, 16);
   if (cam_params->tl == NULL) {
-    log_message( MSG_ERROR,"ERROR : CAM : Failed to create transport layer\n");
+    log_message( log_module,  MSG_ERROR,"Failed to create transport layer\n");
     return 1;
   }
 
   // create session layer
   cam_params->sl = en50221_sl_create(cam_params->tl, 16);
   if (cam_params->sl == NULL) {
-    log_message( MSG_ERROR, "ERROR : CAM : Failed to create session layer\n");
+    log_message( log_module,  MSG_ERROR, "Failed to create session layer\n");
     en50221_tl_destroy(cam_params->tl);
     return 1;
   }
@@ -281,7 +281,7 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
   // create the stdcam instance
   cam_params->stdcam = en50221_stdcam_create(adapter_id, cam_params->cam_number, cam_params->tl, cam_params->sl);
   if (cam_params->stdcam == NULL) {
-    log_message( MSG_ERROR, "ERROR : CAM : Failed to create the stdcam instance (no cam present ?)\n");
+    log_message( log_module,  MSG_ERROR, "Failed to create the stdcam instance (no cam present ?)\n");
     en50221_sl_destroy(cam_params->sl);
     en50221_tl_destroy(cam_params->tl);
     return 1;
@@ -292,7 +292,7 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
   if (cam_params->stdcam->ai_resource) {
     en50221_app_ai_register_callback(cam_params->stdcam->ai_resource, mumudvb_cam_ai_callback, cam_params->stdcam);
   } else {
-    log_message( MSG_WARN,  "CAM : WARNING : No Application Information resource\n");
+    log_message( log_module,  MSG_WARN,  "No Application Information resource\n");
   }
 
   // hook up the CA callbacks
@@ -300,7 +300,7 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
     en50221_app_ca_register_info_callback(cam_params->stdcam->ca_resource, mumudvb_cam_ca_info_callback, cam_params);
     en50221_app_ca_register_pmt_reply_callback(cam_params->stdcam->ca_resource, mumudvb_cam_app_ca_pmt_reply_callback, cam_params);
   } else {
-    log_message( MSG_WARN,  "CAM : WARNING : No CA resource\n");
+    log_message( log_module,  MSG_WARN,  "No CA resource\n");
   }
 
 
@@ -313,7 +313,7 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
     en50221_app_mmi_register_menu_callback(cam_params->stdcam->mmi_resource, mumudvb_cam_mmi_menu_callback, cam_params);
     en50221_app_mmi_register_list_callback(cam_params->stdcam->mmi_resource, mumudvb_cam_mmi_menu_callback, cam_params);
   } else {
-    log_message( MSG_WARN,  "CAM Menus are not supported by this interface hardware\n");
+    log_message( log_module,  MSG_WARN,  "CAM Menus are not supported by this interface hardware\n");
   }
 
 
@@ -324,10 +324,10 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
   switch(cam_params->cam_type)
   {
     case DVBCA_INTERFACE_LINK:
-      log_message( MSG_DETAIL,  "CAM CAM type : low level interface\n");
+      log_message( log_module,  MSG_DETAIL,  "CAM type : low level interface\n");
       break;
     case DVBCA_INTERFACE_HLCI:
-      log_message( MSG_DETAIL,  "CAM CAM type : HIGH level interface\n");
+      log_message( log_module,  MSG_DETAIL,  "CAM type : HIGH level interface\n");
       break;
   }
 
@@ -340,7 +340,7 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
 void cam_stop(cam_parameters_t *cam_params)
 {
 
-  log_message( MSG_FLOOD,  "CAM Stopping");
+  log_message( log_module,  MSG_FLOOD,  "CAM Stopping");
   if (cam_params->stdcam == NULL)
     return;
 
@@ -381,7 +381,7 @@ static void *camthread_func(void* arg)
   now = 0;
   last_channel_check=0;
 
-  log_message( MSG_FLOOD,"CAM Thread started");
+  log_message( log_module,  MSG_FLOOD,"CAM Thread started");
 
   // Variables for detecting changes of status and error
   int status_old=0;
@@ -417,7 +417,7 @@ static void *camthread_func(void* arg)
             ((chan_and_pids.channels[curr_channel].cam_asking_time-tv.tv_sec)>cam_params->cam_reask_interval))
           {
             chan_and_pids.channels[curr_channel].need_cam_ask=CAM_NEED_UPDATE; //No race condition because need_cam_ask is not changed when it is at the value CAM_ASKED
-            log_message( MSG_DETAIL,
+            log_message( log_module,  MSG_DETAIL,
                           "Channel \"%s\" highly scrambled for more than %ds. We ask the CAM to update.\n",
                           chan_and_pids.channels[curr_channel].name,cam_params->cam_reask_interval);
             pthread_mutex_lock(&chan_and_pids.channels[curr_channel].pmt_packet->packetmutex);
@@ -439,11 +439,11 @@ static void *camthread_func(void* arg)
     if (status_new!=status_old)
     {
       if(status_new>3)
-        log_message( MSG_WARN, "CAM: The CAM changed to an unknown status : %d, please contact\n",status_new);
+        log_message( log_module,  MSG_WARN, "The CAM changed to an unknown status : %d, please contact\n",status_new);
       else if (status_old >3)
-        log_message( MSG_DEBUG, "CAM: Status change from UNKNOWN (%d) to %s.\n",status_old,cam_status[status_new]);
+        log_message( log_module,  MSG_DEBUG, "Status change from UNKNOWN (%d) to %s.\n",status_old,cam_status[status_new]);
       else
-        log_message( MSG_DEBUG, "CAM: Status change from %s to %s.\n",cam_status[status_old],cam_status[status_new]);
+        log_message( log_module,  MSG_DEBUG, "Status change from %s to %s.\n",cam_status[status_old],cam_status[status_new]);
       status_old=status_new;
     }
 
@@ -456,7 +456,7 @@ static void *camthread_func(void* arg)
     // Check if error code has changed - List of error codes: (en50221_errno.h)
     if (error_new!=error_old)
     {
-      log_message( MSG_DEBUG, "CAM: Error for Transport Layer change from %s : %s to %s : %s.\n",
+      log_message( log_module,  MSG_DEBUG, "Error for Transport Layer change from %s : %s to %s : %s.\n",
                    liben50221_error_to_str(error_old),liben50221_error_to_str_descr(error_old),
                    liben50221_error_to_str(error_new),liben50221_error_to_str_descr(error_new));
     }
@@ -469,8 +469,8 @@ static void *camthread_func(void* arg)
       {
         if(cam_params->need_reset==0 && cam_params->reset_counts<cam_params->max_reset_number)
         {
-          log_message( MSG_INFO,
-                       "CAM: No CAM initialization in %ds, WE FORCE A RESET. try %d on %d.\n",
+          log_message( log_module,  MSG_INFO,
+                       "No CAM initialization in %ds, WE FORCE A RESET. try %d on %d.\n",
                        cam_params->timeout_no_cam_init,
                        cam_params->reset_counts+1,
                        cam_params->max_reset_number);
@@ -479,16 +479,16 @@ static void *camthread_func(void* arg)
         }
         else if (cam_params->reset_counts>=cam_params->max_reset_number)
         {
-          log_message( MSG_INFO,
-                       "CAM: No CAM initialization  in %ds,  the %d resets didn't worked. Exiting.\n",
+          log_message( log_module,  MSG_INFO,
+                       "No CAM initialization  in %ds,  the %d resets didn't worked. Exiting.\n",
                        cam_params->timeout_no_cam_init,cam_params->max_reset_number);
           Interrupted= ERROR_NO_CAM_INIT<<8; //the <<8 is to make difference beetween signals and errors
         }
       }
       else
       {
-        log_message( MSG_INFO,
-                     "CAM: No CAM initialization on in %ds and HLCI CAM, exiting.\n",
+        log_message( log_module,  MSG_INFO,
+                     "No CAM initialization on in %ds and HLCI CAM, exiting.\n",
                      cam_params->timeout_no_cam_init);
         Interrupted= ERROR_NO_CAM_INIT<<8; //the <<8 is to make difference beetween signals and errors
       }
@@ -498,39 +498,39 @@ static void *camthread_func(void* arg)
     {
       cam_reset_cam(cam_params);
       i=0;
-      log_message( MSG_DEBUG,  "CAM We wait for the cam to be INITIALISING\n");
+      log_message( log_module,  MSG_DEBUG,  "We wait for the cam to be INITIALISING\n");
       do
       {
         camstate=cam_debug_dvbca_get_cam_state(cam_params);
         switch(camstate) 
         {
           case DVBCA_CAMSTATE_MISSING:
-            log_message( MSG_DEBUG,  "CAM cam state : DVBCA_CAMSTATE_MISSING\n");
+            log_message( log_module,  MSG_DEBUG,  "cam state : DVBCA_CAMSTATE_MISSING\n");
             break;
           case DVBCA_CAMSTATE_READY:
-            log_message( MSG_DEBUG,  "CAM cam state : DVBCA_CAMSTATE_READY\n");
+            log_message( log_module,  MSG_DEBUG,  "cam state : DVBCA_CAMSTATE_READY\n");
             break;
           case DVBCA_CAMSTATE_INITIALISING:
-            log_message( MSG_DEBUG,  "CAM cam state : DVBCA_CAMSTATE_INITIALISING\n");
+            log_message( log_module,  MSG_DEBUG,  "cam state : DVBCA_CAMSTATE_INITIALISING\n");
             break;
           case -1:
-            log_message( MSG_DEBUG,  "CAM cam state : Eroor during the query\n");
+            log_message( log_module,  MSG_DEBUG,  "cam state : Eroor during the query\n");
             break;
         }
         usleep(10000);
         i++;
       } while(camstate!=DVBCA_CAMSTATE_INITIALISING && i < MAX_WAIT_AFTER_RESET);
       if(i==MAX_WAIT_AFTER_RESET)
-        log_message( MSG_INFO, "CAM The CAM isn't in a good state after reset, it will probably don't work :(\n");
+        log_message( log_module,  MSG_INFO, "The CAM isn't in a good state after reset, it will probably don't work :(\n");
       else
-        log_message( MSG_FLOOD, "CAM state correct after reset");
+        log_message( log_module,  MSG_FLOOD, "state correct after reset");
       cam_params->need_reset=0;
       cam_params->reset_counts++;
     }
 
   }
 
-  log_message( MSG_FLOOD,"CAM Thread stopped");
+  log_message( log_module,  MSG_FLOOD,"CAM Thread stopped");
 
   return 0;
 }
@@ -552,27 +552,27 @@ int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_p
   // parse section
   struct section *section = section_codec(cam_pmt_ptr->packet,cam_pmt_ptr->len);
   if (section == NULL) {
-    log_message( MSG_WARN,"CAM : section_codec parsing error\n");
+    log_message( log_module,  MSG_WARN,"section_codec parsing error\n");
     return -1;
   }
 
   // parse section_ext
   struct section_ext *section_ext = section_ext_decode(section, 0);
   if (section_ext == NULL) {
-    log_message( MSG_WARN,"CAM : section_ext parsing error\n");
+    log_message( log_module,  MSG_WARN,"section_ext parsing error\n");
     return -1;
   }
 
   // parse PMT
   struct mpeg_pmt_section *pmt = mpeg_pmt_section_codec(section_ext);
   if (pmt == NULL) {
-    log_message( MSG_WARN,"CAM : mpeg_pmt_section_codec parsing error\n");
+    log_message( log_module,  MSG_WARN,"mpeg_pmt_section_codec parsing error\n");
     return -1;
   }
 
   if(pmt->head.table_id!=0x02)
     {
-      log_message( MSG_WARN,"CAM : == Packet PID %d is not a PMT PID\n", cam_pmt_ptr->pid);
+      log_message( log_module,  MSG_WARN,"Packet PID %d is not a PMT PID\n", cam_pmt_ptr->pid);
       return -1;
     }
 
@@ -581,7 +581,7 @@ int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_p
     return -1;
 
   if (cam_params->ca_resource_connected) {
-    log_message( MSG_INFO, "CAM : Received new PMT - sending to CAM...\n");
+    log_message( log_module,  MSG_INFO, "Received new PMT - sending to CAM...\n");
 
     // translate it into a CA PMT 
     // Concerning the list managment the simplest (since we don't want to remove channels is to do a CA_LIST_MANAGEMENT_ADD 
@@ -603,13 +603,13 @@ int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_p
 
 	Much thanks to Aston www.aston-france.com for the explanation
       */
-      log_message( MSG_WARN, "Failed to format PMT\n");
+      log_message( log_module,  MSG_WARN, "Failed to format PMT\n");
       return -1;
     }
 
     // set it
     if (en50221_app_ca_pmt(cam_params->stdcam->ca_resource, cam_params->stdcam->ca_session_number, capmt, size)) {
-      log_message( MSG_WARN, "Failed to send PMT\n");
+      log_message( log_module,  MSG_WARN, "Failed to send PMT\n");
       return -1;
     }
 
@@ -632,18 +632,18 @@ static int mumudvb_cam_ai_callback(void *arg, uint8_t slot_id, uint16_t session_
   (void) session_number;
 
   // Write information to log
-  log_message( MSG_FLOOD, "CAM Application_Info_Callback");
-  log_message( MSG_INFO, "CAM Application type: %02x\n", application_type);
-  log_message( MSG_INFO, "CAM Application manufacturer: %04x\n", application_manufacturer);
-  log_message( MSG_INFO, "CAM Manufacturer code: %04x\n", manufacturer_code);
-  log_message( MSG_INFO, "CAM Menu string: %.*s\n", menu_string_length, menu_string);
+  log_message( log_module,  MSG_FLOOD, "CAM Application_Info_Callback");
+  log_message( log_module,  MSG_INFO, "CAM Application type: %02x\n", application_type);
+  log_message( log_module,  MSG_INFO, "CAM Application manufacturer: %04x\n", application_manufacturer);
+  log_message( log_module,  MSG_INFO, "CAM Manufacturer code: %04x\n", manufacturer_code);
+  log_message( log_module,  MSG_INFO, "CAM Menu string: %.*s\n", menu_string_length, menu_string);
 
   // Try to append the information to the cam_info log file
   FILE *file_cam_info;
   file_cam_info = fopen (static_nom_fich_cam_info, "a");
   if (file_cam_info == NULL)
     {
-      log_message( MSG_WARN,
+      log_message( log_module,  MSG_WARN,
 		   "%s: %s\n",
 		   static_nom_fich_cam_info, strerror (errno));
     }
@@ -668,11 +668,11 @@ static int mumudvb_cam_ca_info_callback(void *arg, uint8_t slot_id, uint16_t ses
   struct timeval tv;
 
   // Write information to log
-  log_message( MSG_FLOOD,"CAM CA_Info_Callback: %d CA systems supported",ca_id_count);
-  log_message( MSG_DETAIL, "CAM supports the following ca system ids:\n");
+  log_message( log_module,  MSG_FLOOD,"CA_Info_Callback: %d CA systems supported",ca_id_count);
+  log_message( log_module,  MSG_DETAIL, "CAM supports the following ca system ids:\n");
   uint32_t i;
   for(i=0; i< ca_id_count; i++) {
-    log_message( MSG_DETAIL,"Ca system id 0x%04x : %s\n",ca_ids[i], ca_sys_id_to_str(ca_ids[i])); //we display it with the description
+    log_message( log_module,  MSG_DETAIL,"Ca system id 0x%04x : %s\n",ca_ids[i], ca_sys_id_to_str(ca_ids[i])); //we display it with the description
   }
 
 
@@ -681,7 +681,7 @@ static int mumudvb_cam_ca_info_callback(void *arg, uint8_t slot_id, uint16_t ses
   file_cam_info = fopen (static_nom_fich_cam_info, "a");
   if (file_cam_info == NULL)
   {
-    log_message( MSG_WARN,
+    log_message( log_module,  MSG_WARN,
                   "%s: %s\n",
                   static_nom_fich_cam_info, strerror (errno));
   }
@@ -711,53 +711,53 @@ static int mumudvb_cam_app_ca_pmt_reply_callback(void *arg,
   (void) arg;
   (void) slot_id;
   (void) session_number;
-  log_message( MSG_INFO, "CAM PMT reply\n");
-  log_message( MSG_INFO, "  Program number %d\n",reply->program_number);
+  log_message( log_module,  MSG_INFO, "CAM PMT reply\n");
+  log_message( log_module,  MSG_INFO, "  Program number %d\n",reply->program_number);
 
   switch(reply->CA_enable)
     {
     case CA_ENABLE_DESCRAMBLING_POSSIBLE:
-      log_message( MSG_INFO,"   Descrambling possible\n");
+      log_message( log_module,  MSG_INFO,"   Descrambling possible\n");
       break;
     case CA_ENABLE_DESCRAMBLING_POSSIBLE_PURCHASE:
-      log_message( MSG_INFO,"   Descrambling possible under conditions (purchase dialogue)\n");
+      log_message( log_module,  MSG_INFO,"   Descrambling possible under conditions (purchase dialogue)\n");
       break;
     case CA_ENABLE_DESCRAMBLING_POSSIBLE_TECHNICAL:
-      log_message( MSG_INFO,"   Descrambling possible under conditions (technical dialogue)\n");
+      log_message( log_module,  MSG_INFO,"   Descrambling possible under conditions (technical dialogue)\n");
       break;
     case CA_ENABLE_DESCRAMBLING_NOT_POSSIBLE_NO_ENTITLEMENT:
-      log_message( MSG_INFO,"   Descrambling not possible (because no entitlement)\n");
+      log_message( log_module,  MSG_INFO,"   Descrambling not possible (because no entitlement)\n");
       break;
     case CA_ENABLE_DESCRAMBLING_NOT_POSSIBLE_TECHNICAL:
-      log_message( MSG_INFO,"   Descrambling not possible (for technical reasons)\n");
+      log_message( log_module,  MSG_INFO,"   Descrambling not possible (for technical reasons)\n");
       break;
     default:
-      log_message( MSG_INFO,"   RFU\n");
+      log_message( log_module,  MSG_INFO,"   RFU\n");
     }
 
 
   en50221_app_pmt_reply_streams_for_each(reply, pos, reply_size)
     {
-      log_message( MSG_INFO, "   ES pid %d\n",pos->es_pid);
+      log_message( log_module,  MSG_INFO, "   ES pid %d\n",pos->es_pid);
       switch(pos->CA_enable)
 	{
 	case CA_ENABLE_DESCRAMBLING_POSSIBLE:
-	  log_message( MSG_INFO,"     Descrambling possible\n");
+	  log_message( log_module,  MSG_INFO,"     Descrambling possible\n");
 	  break;
 	case CA_ENABLE_DESCRAMBLING_POSSIBLE_PURCHASE:
-	  log_message( MSG_INFO,"     Descrambling possible under conditions (purchase dialogue)\n");
+	  log_message( log_module,  MSG_INFO,"     Descrambling possible under conditions (purchase dialogue)\n");
 	  break;
 	case CA_ENABLE_DESCRAMBLING_POSSIBLE_TECHNICAL:
-	  log_message( MSG_INFO,"     Descrambling possible under conditions (technical dialogue)\n");
+	  log_message( log_module,  MSG_INFO,"     Descrambling possible under conditions (technical dialogue)\n");
 	  break;
 	case CA_ENABLE_DESCRAMBLING_NOT_POSSIBLE_NO_ENTITLEMENT:
-	  log_message( MSG_INFO,"     Descrambling not possible (because no entitlement)\n");
+	  log_message( log_module,  MSG_INFO,"     Descrambling not possible (because no entitlement)\n");
 	  break;
 	case CA_ENABLE_DESCRAMBLING_NOT_POSSIBLE_TECHNICAL:
-	  log_message( MSG_INFO,"     Descrambling not possible (for technical reasons)\n");
+	  log_message( log_module,  MSG_INFO,"     Descrambling not possible (for technical reasons)\n");
 	  break;
 	default:
-	  log_message( MSG_INFO,"     RFU\n");
+	  log_message( log_module,  MSG_INFO,"     RFU\n");
 	}
     }
 
@@ -783,22 +783,22 @@ static int mumudvb_cam_mmi_menu_callback(void *arg, uint8_t slot_id, uint16_t se
   (void) item_raw_length;
   (void) items_raw;
 
-  log_message( MSG_INFO, "--- CAM MENU ----------------\n");
+  log_message( log_module,  MSG_INFO, "--- CAM MENU ----------------\n");
 
   if (title->text_length) {
-    log_message( MSG_INFO, "%.*s\n", title->text_length, title->text);
+    log_message( log_module,  MSG_INFO, "%.*s\n", title->text_length, title->text);
   }
   if (sub_title->text_length) {
-    log_message( MSG_INFO, "%.*s\n", sub_title->text_length, sub_title->text);
+    log_message( log_module,  MSG_INFO, "%.*s\n", sub_title->text_length, sub_title->text);
   }
 
   uint32_t i;
   for(i=0; i< item_count; i++) {
-    log_message( MSG_INFO, "%.*s\n", items[i].text_length, items[i].text);
+    log_message( log_module,  MSG_INFO, "%.*s\n", items[i].text_length, items[i].text);
   }
 
   if (bottom->text_length) {
-    log_message( MSG_INFO, "%.*s\n", bottom->text_length, bottom->text);
+    log_message( log_module,  MSG_INFO, "%.*s\n", bottom->text_length, bottom->text);
   }
   fflush(stdout);
 
@@ -825,7 +825,7 @@ static int mumudvb_cam_mmi_close_callback(void *arg, uint8_t slot_id, uint16_t s
   (void) cmd_id;
   (void) delay;
 
-  log_message( MSG_INFO, "--- CAM MENU ----CLOSED-------\n");
+  log_message( log_module,  MSG_INFO, "--- CAM MENU ----CLOSED-------\n");
 
   // note: not entirely correct as its supposed to delay if asked
   cam_params->mmi_state = MMI_STATE_CLOSED;
@@ -871,8 +871,8 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
   (void) slot_id;
   (void) session_number;
 
-  log_message( MSG_INFO, "ENQ");
-  log_message( MSG_INFO, "%.*s: ", text_size, text);
+  log_message( log_module,  MSG_INFO, "ENQ");
+  log_message( log_module,  MSG_INFO, "%.*s: ", text_size, text);
 
   cam_params->mmi_enq_blind = blind_answer;
   cam_params->mmi_enq_length = expected_answer_length;
@@ -906,9 +906,9 @@ int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autoconf
         if(iRet==1)
         {
           if(actual_channel->need_cam_ask==CAM_NEED_UPDATE)
-            log_message( MSG_INFO,"CAM : CA PMT (UPDATED) sent for channel %d : \"%s\"\n", curr_channel, actual_channel->name );
+            log_message( log_module,  MSG_INFO,"CA PMT (UPDATED) sent for channel %d : \"%s\"\n", curr_channel, actual_channel->name );
           else
-            log_message( MSG_INFO,"CAM : CA PMT (ADDED) sent for channel %d : \"%s\"\n", curr_channel, actual_channel->name );
+            log_message( log_module,  MSG_INFO,"CA PMT (ADDED) sent for channel %d : \"%s\"\n", curr_channel, actual_channel->name );
           actual_channel->need_cam_ask=CAM_ASKED; //once we have asked the CAM for this PID, we don't have to ask anymore
 
           //For the feature of reasking we initalise the time
@@ -917,7 +917,7 @@ int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autoconf
         }
         else if(iRet==-1)
         {
-          log_message( MSG_DETAIL,"CAM : Problem sending CA PMT for channel %d : \"%s\"\n", curr_channel, actual_channel->name );
+          log_message( log_module,  MSG_DETAIL,"Problem sending CA PMT for channel %d : \"%s\"\n", curr_channel, actual_channel->name );
           actual_channel->pmt_packet->empty=1;//if there was a problem, we reset the packet
         }
       }

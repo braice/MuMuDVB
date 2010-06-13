@@ -35,6 +35,8 @@
 #include <stdlib.h>
 #include "log.h"
 
+static char *log_module="SAP: ";
+
 int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumudvb_sap_message_t *sap_message, multicast_parameters_t multicast_vars);
 
 
@@ -56,7 +58,7 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
       sap_vars->sap = OPTION_OFF;
     if(sap_vars->sap == OPTION_ON)
     {
-      log_message( MSG_INFO,
+      log_message( log_module,  MSG_INFO,
                    "Sap announces will be sent\n");
     }
   }
@@ -78,7 +80,7 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
       strcpy(sap_vars->sap_organisation,strtok(substring,"\n"));	
     else
     {
-      log_message( MSG_WARN,"Sap Organisation name too long\n");
+      log_message( log_module,  MSG_WARN,"Sap Organisation name too long\n");
       strncpy(sap_vars->sap_organisation,strtok(substring,"\n"),255 - 1);
     }
   }
@@ -90,7 +92,7 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
       strcpy(sap_vars->sap_uri,strtok(substring,"\n"));	
     else
     {
-      log_message( MSG_WARN,"Sap URI too long\n");
+      log_message( log_module,  MSG_WARN,"Sap URI too long\n");
       strncpy(sap_vars->sap_uri,strtok(substring,"\n"),255 - 1);
     }
   }
@@ -99,7 +101,7 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
     substring = strtok (NULL, delimiteurs);
     if(strlen(substring)>19)
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "The sap sending ip is too long\n");
       return -1;
     }
@@ -109,7 +111,7 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
   {
     if ( ip_ok == 0)
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "sap_group : this is a channel option, You have to start a channel first (using ip= or channel_next)\n");
       return -1;
     }
@@ -117,7 +119,7 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
     substring = strtok (NULL, "=");
     if(strlen(substring)>(SAP_GROUP_LENGTH-1))
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "The sap group is too long\n");
       return -1;
     }
@@ -128,7 +130,7 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
     substring = strtok (NULL, "=");
     if(strlen(substring)>(SAP_GROUP_LENGTH-1))
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "The sap default group is too long\n");
       return -1;
     }
@@ -153,7 +155,7 @@ int init_sap(sap_parameters_t *sap_vars, multicast_parameters_t multicast_vars)
       sap_vars->sap_messages=malloc(sizeof(mumudvb_sap_message_t)*MAX_CHANNELS);
       if(sap_vars->sap_messages==NULL)
 	{
-          log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+          log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 	  return -1;
 	}
       memset (sap_vars->sap_messages, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
@@ -224,12 +226,12 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
     {
       ip=ip_struct.s_addr;
       /* Bytes 4-7 (or 4-19) byte: Originating source */
-      log_message(MSG_DEBUG,"DEBUG : sap sending ip address : 0x%x\n", ip);
+      log_message( log_module, MSG_DEBUG,"sap sending ip address : 0x%x\n", ip);
       memcpy (sap_message->buf + 4, &ip, 4);
     }
   else
     {
-      log_message(MSG_WARN,"WARNING : Invalid SAP sending Ip address, using 0.0.0.0 as Ip address\n");
+      log_message( log_module, MSG_WARN,"Invalid SAP sending Ip address, using 0.0.0.0 as Ip address\n");
       sap_message->buf[4]=0;
       sap_message->buf[5]=0;
       sap_message->buf[6]=0;
@@ -289,7 +291,7 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
           channel->name);
   if( (sap_message->len+payload_len+strlen(temp_string))>1024)
   {
-    log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel->name);
+    log_message( log_module, MSG_WARN,"SAP message too long for channel %s\n",channel->name);
     return 1;
   }
   memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
@@ -316,7 +318,7 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
             sap_vars->sap_uri);
     if( (sap_message->len+payload_len+strlen(temp_string))>1024)
     {
-      log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel->name);
+      log_message( log_module, MSG_WARN,"SAP message too long for channel %s\n",channel->name);
       return 1;
     }
     memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
@@ -333,7 +335,7 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
           channel->ipOut, multicast_vars.ttl);
   if( (sap_message->len+payload_len+strlen(temp_string))>1024)
   {
-    log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel->name);
+    log_message( log_module, MSG_WARN,"SAP message too long for channel %s\n",channel->name);
     return 1;
   }
   memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
@@ -359,7 +361,7 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
   sprintf(temp_string,"t=0 0\r\na=tool:mumudvb-%s\r\na=type:broadcast\r\n", VERSION);
   if( (sap_message->len+payload_len+strlen(temp_string))>1024)
     {
-      log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel->name);
+      log_message( log_module, MSG_WARN,"SAP message too long for channel %s\n",channel->name);
       return 1;
     }
   memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
@@ -383,7 +385,7 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
     sprintf(temp_string,"m=video %d RTP/AVP 33\r\na=rtpmap:33 MP2T/90000\r\n",  channel->portOut);
   if( (sap_message->len+payload_len+strlen(temp_string))>1024)
     {
-      log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel->name);
+      log_message( log_module, MSG_WARN,"SAP message too long for channel %s\n",channel->name);
       return 1;
     }
   memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
@@ -401,15 +403,15 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
       sprintf(temp_string,"a=x-plgroup:%s\r\n", channel->sap_group);
       if( (sap_message->len+payload_len+strlen(temp_string))>1024)
 	{
-	  log_message(MSG_WARN,"Warning : SAP message too long for channel %s\n",channel->name);
+	  log_message( log_module, MSG_WARN,"SAP message too long for channel %s\n",channel->name);
 	  return 1;
 	}
       memcpy(sap_message->buf + sap_message->len + payload_len, temp_string, strlen(temp_string));
       payload_len+=strlen(temp_string);
     }
-  log_message(MSG_DEBUG,"DEBUG : SAP payload\n");
-  log_message(MSG_DEBUG, (char *) &sap_message->buf[sap_message->len]);
-  log_message(MSG_DEBUG,"DEBUG : end of SAP payload\n\n");
+  log_message( log_module, MSG_DEBUG,"SAP payload\n");
+  log_message( log_module, MSG_DEBUG, (char *) &sap_message->buf[sap_message->len]);
+  log_message( log_module, MSG_DEBUG,"end of SAP payload\n\n");
 
   sap_message->len+=payload_len;
 

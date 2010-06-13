@@ -47,6 +47,7 @@
 #endif
 
 extern int Interrupted;
+static char *log_module="Autoconf: ";
 
 void parse_sdt_descriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_service_t *services);
 void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *services);
@@ -104,7 +105,7 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
   //0x46 service_description_section - other_transport_stream 
   if((header->table_id==0x42)||(header->table_id==0x46))
   {
-    log_message(MSG_DEBUG, "Autoconf : -- SDT : Service Description Table --\n");
+    log_message( log_module, MSG_DEBUG, "-- SDT : Service Description Table --\n");
     //Loop over different services in the SDT
     delta=SDT_LEN;
     while((len-delta)>=(4+SDT_DESCR_LEN))
@@ -114,27 +115,27 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
       new_service=autoconf_find_service_for_add(services,HILO(descr_header->service_id));
       if(new_service)
       {
-        log_message(MSG_DEBUG, "Autoconf : We discovered a new service, service_id : 0x%x  ", HILO(descr_header->service_id));
+        log_message( log_module, MSG_DEBUG, "We discovered a new service, service_id : 0x%x  ", HILO(descr_header->service_id));
         //For information only
         switch(descr_header->running_status)
         {
           case 0:
-            log_message(MSG_DEBUG, "running_status : undefined\t");  break;
+            log_message( log_module, MSG_DEBUG, "running_status : undefined\t");  break;
           case 1:
-            log_message(MSG_DEBUG, "running_status : not running\t");  break;
+            log_message( log_module, MSG_DEBUG, "running_status : not running\t");  break;
           case 2:
-            log_message(MSG_DEBUG, "running_status : starts in a few seconds\t");  break;
+            log_message( log_module, MSG_DEBUG, "running_status : starts in a few seconds\t");  break;
           case 3:
-            log_message(MSG_DEBUG, "running_status : pausing\t");  break;
-          case 4:  log_message(MSG_FLOOD, "running_status : running\t");  break; //too usual to be printed as debug
+            log_message( log_module, MSG_DEBUG, "running_status : pausing\t");  break;
+          case 4:  log_message( log_module, MSG_FLOOD, "running_status : running\t");  break; //too usual to be printed as debug
           case 5:
-            log_message(MSG_DEBUG, "running_status : service off-air\t");  break;
+            log_message( log_module, MSG_DEBUG, "running_status : service off-air\t");  break;
         }
         //we store the data
         new_service->id=HILO(descr_header->service_id);
         new_service->running_status=descr_header->running_status;
         new_service->free_ca_mode=descr_header->free_ca_mode;
-        log_message(MSG_DEBUG, "free_ca_mode : 0x%x\n", descr_header->free_ca_mode);
+        log_message( log_module, MSG_DEBUG, "free_ca_mode : 0x%x\n", descr_header->free_ca_mode);
         //We read the descriptor
         parse_sdt_descriptor(buf+delta+SDT_DESCR_LEN,HILO(descr_header->descriptors_loop_length),new_service);
       }
@@ -161,7 +162,7 @@ void parse_sdt_descriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_s
 
     if (!descriptor_len)
     {
-      log_message(MSG_DEBUG, " Autoconf : --- SDT descriptor --- descriptor_tag == 0x%02x, len is 0\n", descriptor_tag);
+      log_message( log_module, MSG_DEBUG, "--- SDT descriptor --- descriptor_tag == 0x%02x, len is 0\n", descriptor_tag);
       break;
     }
 
@@ -172,7 +173,7 @@ void parse_sdt_descriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_s
       autoconf_show_CA_identifier_descriptor(buf);
     else /** @todo : Add descriptor 0x50 Component descriptor (multilingual 0x5E)*/
        /** @todo : Add descriptor 0x5D  multilingual_service_name_descriptor*/
-      log_message(MSG_FLOOD, "Autoconf SDT descriptor_tag : 0x%2x\n", descriptor_tag);
+      log_message( log_module, MSG_FLOOD, "SDT descriptor_tag : 0x%2x\n", descriptor_tag);
 
     buf += descriptor_len;
     descriptors_loop_len -= descriptor_len;
@@ -194,7 +195,7 @@ int convert_en399468_string(char *string, int max_len)
   tempdest=tempbuf=malloc(sizeof(char)*2*strlen(string));
   if(tempdest==NULL)
   {
-    log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     Interrupted=ERROR_MEMORY<<8;
     return -1;
   }
@@ -224,7 +225,7 @@ int convert_en399468_string(char *string, int max_len)
       else if(*src==0x11)//ISO/IEC 10646 : Basic Multilingual Plane
 	encoding_control_char=15;
       else if(*src==0x12)//KSX1001-2004 : Korean Character Set
-	log_message(MSG_WARN, "\t\t Encoding KSX1001-2004 (korean character set) not implemented yet by iconv, we'll use the default encoding for service name\n");
+	log_message( log_module, MSG_WARN, "\t\t Encoding KSX1001-2004 (korean character set) not implemented yet by iconv, we'll use the default encoding for service name\n");
       else if(*src==0x13)//GB-2312-1980 : Simplified Chinese Character
 	encoding_control_char=16;
       else if(*src==0x14)//Big5 subset of ISO/IEC 10646 : Traditional Chinese
@@ -232,7 +233,7 @@ int convert_en399468_string(char *string, int max_len)
       else if(*src==0x15)//UTF-8 encoding of ISO/IEC 10646 : Basic Multilingual Plane
 	encoding_control_char=18;
       else
-	log_message(MSG_WARN, "\t\t Encoding not implemented yet (0x%02x), we'll use the default encoding for service name\n",*src);
+	log_message( log_module, MSG_WARN, "\t\t Encoding not implemented yet (0x%02x), we'll use the default encoding for service name\n",*src);
     }
     else if (*src >= 0x80 && *src <= 0x9f)
     {
@@ -245,7 +246,7 @@ int convert_en399468_string(char *string, int max_len)
 	len++;
       }
       else
-	log_message(MSG_DEBUG, "\tUnimplemented name control_character : %x ", *src);
+	log_message( log_module, MSG_DEBUG, "\tUnimplemented name control_character : %x ", *src);
     }
   }
 
@@ -266,10 +267,10 @@ int convert_en399468_string(char *string, int max_len)
   free(tempbuf);
   iconv_close( cd );
 #else
-  log_message(MSG_DETAIL, "Autoconf : Iconv not present, no name encoding conversion \n");
+  log_message( log_module, MSG_DETAIL, "Iconv not present, no name encoding conversion \n");
 #endif
 
-  log_message(MSG_FLOOD, "Autoconf : Converted name : \"%s\" (name encoding : %s)\n", string,encodings_en300468[encoding_control_char]);
+  log_message( log_module, MSG_FLOOD, "Converted name : \"%s\" (name encoding : %s)\n", string,encodings_en300468[encoding_control_char]);
   return encoding_control_char;
 
 }
@@ -304,7 +305,7 @@ void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *service)
   service->type=*buf;
 
   //We show the service type
-  display_service_type(service->type, MSG_DEBUG);
+  display_service_type(service->type, MSG_DEBUG,log_module);
 
 
   buf ++; //we skip the service_type
@@ -324,7 +325,7 @@ void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *service)
   if(encoding_control_char==-1)
     return;
 
-  log_message(MSG_DEBUG, "Autoconf : service_name : \"%s\" (name encoding : %s)\n", service->name,encodings_en300468[encoding_control_char]);
+  log_message( log_module, MSG_DEBUG, "service_name : \"%s\" (name encoding : %s)\n", service->name,encodings_en300468[encoding_control_char]);
 
 }
 
@@ -338,13 +339,14 @@ void autoconf_show_CA_identifier_descriptor(unsigned char *buf)
 
   int length,i,ca_id;
 
-  log_message(MSG_DETAIL, "Autoconf : --- SDT descriptor --- CA identifier descriptor\nAutoconf : CA_system_ids : ");
+  log_message( log_module, MSG_DETAIL, "--- SDT descriptor --- CA identifier descriptor\n");
+  log_message( log_module, MSG_DETAIL, "CA_system_ids : \n");
 
   length=buf[1];
   for(i=0;i<length;i+=2)
   {
     ca_id=(buf[i]<<8)+buf[i+1];
-    log_message( MSG_DETAIL,"Autoconf : Ca system id 0x%04x : %s\n",ca_id, ca_sys_id_to_str(ca_id));
+    log_message( log_module,  MSG_DETAIL,"Ca system id 0x%04x : %s\n",ca_id, ca_sys_id_to_str(ca_id));
   }
 }
 

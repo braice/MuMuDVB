@@ -38,6 +38,7 @@
 
 #include <stdint.h>
 extern uint32_t       crc32_table[256];
+static char *log_module="TS: ";
 
 /**@brief This function will join the 188 bytes packet until the PMT/PAT/SDT is full
  * Once it's full we check the CRC32 and say if it's ok or not
@@ -75,7 +76,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
   //Sometimes there is some more data in the header, the adaptation field say it
   if (header->adaptation_field_control & 0x2)
     {
-      log_message( MSG_DEBUG, "Read TS : Adaptation field \n");
+      log_message( log_module,  MSG_DEBUG, "Read TS : Adaptation field \n");
       delta += buf[delta] ;        // add adapt.field.len
     }
   else if (header->adaptation_field_control & 0x1)
@@ -84,7 +85,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 	{
 	  // -- PES/PS
 	  //tspid->id   = buf[j+3];
-	  log_message( MSG_DEBUG, " parse TS : #PES/PS ----- We ignore \n");
+	  log_message( log_module,  MSG_DEBUG, "#PES/PS ----- We ignore \n");
 	  ok=0;
 	}
       else
@@ -93,7 +94,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 
   if (header->adaptation_field_control == 3)
     {
-      log_message( MSG_DEBUG, " parse TS : adaptation_field_control 3\n");
+      log_message( log_module,  MSG_DEBUG, "adaptation_field_control 3\n");
       ok=0;
     }
 
@@ -123,7 +124,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
     {
       if(ts_packet->empty)
 	{
-	  //log_message( MSG_DEBUG," TS parse : Kind of Continuity ERROR packet empty and payload start\n");
+	  //log_message( log_module,  MSG_DEBUG," TS parse : Kind of Continuity ERROR packet empty and payload start\n");
           #ifdef HAVE_LIBPTHREAD
           pthread_mutex_unlock(&ts_packet->packetmutex);
           #endif
@@ -132,13 +133,13 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
       // -- pid change in stream? (without packet start). This is not supported
       if (ts_packet->pid != pid)
 	{
-	  log_message( MSG_DEBUG," TS parse. ERROR : PID change\n");
+	  log_message( log_module,  MSG_DEBUG,"error : PID change\n");
 	  ts_packet->empty=1;
 	}
       // -- discontinuity error in packet ?
       if  (ts_packet->continuity_counter == header->continuity_counter) 
 	{
-	  log_message( MSG_DETAIL," TS parse : Duplicate packet : ts_packet->continuity_counter %d\n");
+	  log_message( log_module,  MSG_DETAIL," Duplicate packet : ts_packet->continuity_counter %d\n");
           #ifdef HAVE_LIBPTHREAD
           pthread_mutex_unlock(&ts_packet->packetmutex);
           #endif
@@ -146,7 +147,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 	}
       if  ((ts_packet->continuity_counter+1)%16 != header->continuity_counter) 
 	{
-	  log_message( MSG_DETAIL," TS parse : Continuity ERROR : ts_packet->continuity_counter %d header->continuity_counter %d\n",ts_packet->continuity_counter,header->continuity_counter);
+	  log_message( log_module,  MSG_DETAIL,"Continuity ERROR : ts_packet->continuity_counter %d header->continuity_counter %d\n",ts_packet->continuity_counter,header->continuity_counter);
 	  ts_packet->empty=1;
           #ifdef HAVE_LIBPTHREAD
           pthread_mutex_unlock(&ts_packet->packetmutex);
@@ -159,7 +160,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 	ts_packet->len=AddPacketContinue(ts_packet->packet,buf+delta,188-delta,ts_packet->len); //we add the packet to the buffer
       else
 	{
-	  log_message( MSG_INFO," TS parse ERROR : Packet to big\n");
+	  log_message( log_module,  MSG_INFO,"Packet to big\n");
 	  ts_packet->empty=1;
           #ifdef HAVE_LIBPTHREAD
           pthread_mutex_unlock(&ts_packet->packetmutex);
@@ -230,7 +231,7 @@ int ts_check_CRC( mumudvb_ts_packet_t *pmt)
   if(crc32!=0)
     {
       //Bad CRC32
-      log_message( MSG_DETAIL,"\tBAD CRC32 PID : %d\n", pmt->pid);
+      log_message( log_module,  MSG_DETAIL,"\tBAD CRC32 PID : %d\n", pmt->pid);
       return 0; //We don't send this PMT
     }
 
@@ -257,22 +258,22 @@ int check_pmt_service_id(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 
   if(header->table_id!=0x02)
   {
-    log_message( MSG_INFO,"TS : Packet PID %d for channel \"%s\" is not a PMT PID.\n", pmt->pid, channel->name);
+    log_message( log_module,  MSG_INFO,"Packet PID %d for channel \"%s\" is not a PMT PID.\n", pmt->pid, channel->name);
     return 0;
   }
 
 	//We check if this PMT belongs to the current channel. (Only works with autoconfiguration full for the moment because it stores the service_id)
   if(channel->service_id && (channel->service_id != HILO(header->program_number)) )
   {
-    log_message( MSG_DETAIL,"TS : The PMT %d not belongs to channel \"%s\"\n", pmt->pid, channel->name);
-    log_message( MSG_DETAIL,"TS : Debug channel->service_id %d pmt service_id %d\n", channel->service_id, HILO(header->program_number));
+    log_message( log_module,  MSG_DETAIL,"The PMT %d not belongs to channel \"%s\"\n", pmt->pid, channel->name);
+    log_message( log_module,  MSG_DETAIL,"Debug channel->service_id %d pmt service_id %d\n", channel->service_id, HILO(header->program_number));
     return 0;
   }
   else if(channel->service_id)
-    log_message( MSG_DETAIL,"TS : GOOD service_id for PMT %d and channel \"%s\"\n", pmt->pid, channel->name);
+    log_message( log_module,  MSG_DETAIL,"GOOD service_id for PMT %d and channel \"%s\"\n", pmt->pid, channel->name);
 
   if(!channel->service_id)
-    log_message( MSG_DEBUG,"TS : no service_id information for channel \"%s\"\n", channel->name);
+    log_message( log_module,  MSG_DEBUG,"no service_id information for channel \"%s\"\n", channel->name);
 
   return 1;
 

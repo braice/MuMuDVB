@@ -34,7 +34,7 @@
 #include "mumudvb.h"
 #include "log.h"
 #include <string.h>
-
+static char *log_module="Multicast: ";
 
  /** @brief Read a line of the configuration file to check if there is a cam parameter
  *
@@ -49,7 +49,7 @@ int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb
   {
     if ( channel_start )
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "You have to set common_port before the channels\n");
       return -1;
     }
@@ -77,7 +77,7 @@ int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb
     substring = strtok (NULL, delimiteurs);
     if(strlen(substring)>19)
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "The Ip address %s is too long.\n", substring);
       return -1;
     }
@@ -88,7 +88,7 @@ int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb
   {
     if ( channel_start == 0)
     {
-      log_message( MSG_ERROR,
+      log_message( log_module,  MSG_ERROR,
                    "port : You have to start a channel first (using ip= or channel_next)\n");
       return -1;
     }
@@ -100,7 +100,7 @@ int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb
     substring = strtok (NULL, delimiteurs);
     multicast_vars->rtp_header = atoi (substring);
     if (multicast_vars->rtp_header==1)
-      log_message( MSG_INFO, "You decided to send the RTP header (multicast only).\n");
+      log_message( log_module,  MSG_INFO, "You decided to send the RTP header (multicast only).\n");
   }
   else
     return 0; //Nothing concerning multicast, we return 0 to explore the other possibilities

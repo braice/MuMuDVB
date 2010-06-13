@@ -44,6 +44,8 @@
 
 #define TRANSCODE_QUEUE_SIZE (5 * 1024 * 1024)
 
+static char *log_module="Transcode : ";
+
 void* transcode_thread_routine(void *p)
 {
     transcode_thread_data_t *transcode_thread_data = p;
@@ -51,7 +53,7 @@ void* transcode_thread_routine(void *p)
     while (!transcode_thread_data->terminate_thread_flag) {
         
         if (0 >= transcode_thread_data->data_queue.data_size) {
-            log_message(MSG_DEBUG, "[Transcode] No data for transcoding.\n");
+            log_message( log_module, MSG_DEBUG, "No data for transcoding.\n");
 
             /* Sleep 100 times for 0.1 sec with checking transcode_thread_data->terminate_thread_flag */
             int i;
@@ -67,7 +69,7 @@ void* transcode_thread_routine(void *p)
         void *transcode_handle = initialize_transcode(transcode_thread_data);
         
         if (NULL == transcode_handle) {
-            log_message(MSG_ERROR, "[Transcode] Failed to initialize transcoding.\n");
+            log_message( log_module, MSG_ERROR, "Failed to initialize transcoding.\n");
             
             /* Sleep 100 times for 0.1 sec with checking transcode_thread_data->terminate_thread_flag */
             int i;
@@ -78,14 +80,14 @@ void* transcode_thread_routine(void *p)
             continue;
         }
 
-        log_message(MSG_INFO, "[Transcode] Transcoding sarted.\n");
+        log_message( log_module, MSG_INFO, "Transcoding sarted.\n");
         transcode_thread_data->is_initialized = 1;
         
         /* Transcode */
         transcode(transcode_handle, transcode_thread_data);
 
         transcode_thread_data->is_initialized = 0;        
-        log_message(MSG_INFO, "[Transcode] Transcoding finished.\n");
+        log_message( log_module, MSG_INFO, "Transcoding finished.\n");
  
         /* Free transcode data - requires threadsafety */
         free_transcode(transcode_handle, transcode_thread_data);
@@ -120,7 +122,7 @@ void* transcode_start_thread(int socket, struct sockaddr_in *socket_addr,
 
     if (pthread_mutex_init(&transcode_thread_data->queue_mutex, NULL) != 0) {
         /* Mutext initialization failed */
-        log_message(MSG_ERROR, "[Transcode] pthread_mutex_init failed.\n");
+        log_message( log_module, MSG_ERROR, "pthread_mutex_init failed.\n");
         free(transcode_thread_data);
         return NULL;
     }
@@ -128,7 +130,7 @@ void* transcode_start_thread(int socket, struct sockaddr_in *socket_addr,
     if (pthread_create(&transcode_thread_data->thread, NULL,
             transcode_thread_routine, transcode_thread_data) != 0) {
         /* Thread initialization failed */
-        log_message(MSG_ERROR, "[Transcode] pthread_create failed.\n");
+        log_message( log_module, MSG_ERROR, "pthread_create failed.\n");
         pthread_mutex_destroy(&transcode_thread_data->queue_mutex);
         free(transcode_thread_data);
         return NULL;
@@ -184,11 +186,11 @@ int transcode_enqueue_data(void *transcode_handle, void *data, int data_size)
     int result = data_queue_enqueue(&transcode_thread_data->data_queue, data, data_size);
 
     if (-1 == result) {
-        log_message(MSG_ERROR, "[Transcode] Failed to enqueue data.\n");
+        log_message( log_module, MSG_ERROR, "Failed to enqueue data.\n");
     }
     else if (0 == result) {
         if (transcode_thread_data->is_initialized) {
-            log_message(MSG_INFO, "[Transcode] Data queue is full.\n");
+            log_message( log_module, MSG_INFO, "Data queue is full.\n");
         }
     }
 
@@ -200,7 +202,7 @@ int transcode_enqueue_data(void *transcode_handle, void *data, int data_size)
 #define SET_OPTION_INT(config_option_name, struct_option_name)\
 else if (!strcmp(*substring, config_option_name)) {\
     if (0 == ip_ok) {\
-        log_message( MSG_ERROR,\
+        log_message( log_module,  MSG_ERROR,\
             config_option_name" : You have to start a channel first (using ip= or channel_next)\n");\
         exit(ERROR_CONF);\
     }\
@@ -213,7 +215,7 @@ else if (!strcmp(*substring, config_option_name)) {\
 #define SET_OPTION_FLT(config_option_name, struct_option_name)\
 else if (!strcmp(*substring, config_option_name)) {\
     if (0 == ip_ok) {\
-        log_message( MSG_ERROR,\
+        log_message( log_module,  MSG_ERROR,\
             config_option_name" : You have to start a channel first (using ip= or channel_next)\n");\
         exit(ERROR_CONF);\
     }\
@@ -226,7 +228,7 @@ else if (!strcmp(*substring, config_option_name)) {\
 #define SET_OPTION_STR(config_option_name, struct_option_name, max_length)\
 else if (!strcmp(*substring, config_option_name)) {\
     if (0 == ip_ok) {\
-        log_message( MSG_ERROR,\
+        log_message( log_module,  MSG_ERROR,\
             config_option_name" : You have to start a channel first (using ip= or channel_next)\n");\
         exit(ERROR_CONF);\
     }\
@@ -274,7 +276,7 @@ int transcode_read_option(mumudvb_channel_t *channel, int ip_ok, char *delimiteu
 {
     if (!strcmp(*substring, "transcode_streaming_type")) {
         if (0 == ip_ok) {
-            log_message( MSG_ERROR,
+            log_message( log_module,  MSG_ERROR,
                 "transcode_streaming_type : You have to start a channel first (using ip= or channel_next)\n");
             exit(ERROR_CONF);
         }
@@ -317,7 +319,7 @@ int transcode_read_option(mumudvb_channel_t *channel, int ip_ok, char *delimiteu
     }
     else if (!strcmp(*substring, "transcode_x264_profile")) {
         if (0 == ip_ok) {
-            log_message( MSG_ERROR,
+            log_message( log_module,  MSG_ERROR,
                 "transcode_x264_profile : You have to start a channel first (using ip= or channel_next)\n");
             exit(ERROR_CONF);
         }
@@ -394,7 +396,7 @@ int transcode_read_option(mumudvb_channel_t *channel, int ip_ok, char *delimiteu
     }
     else if (!strcmp(*substring, "transcode_aac_profile")) {
         if (0 == ip_ok) {
-            log_message( MSG_ERROR,
+            log_message( log_module,  MSG_ERROR,
                 "transcode_aac_profile : You have to start a channel first (using ip= or channel_next)\n");
             exit(ERROR_CONF);
         }

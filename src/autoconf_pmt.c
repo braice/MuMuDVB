@@ -34,7 +34,7 @@
 
 
 extern int Interrupted;
-
+static char *log_module="Autoconf: ";
 
 #include <errno.h>
 #include <string.h>
@@ -91,7 +91,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
 
   if(header->table_id!=0x02)
   {
-    log_message( MSG_INFO,"Autoconf : Packet PID %d for channel \"%s\" is not a PMT PID. We remove the pmt pid for this channel\n", pmt->pid, channel->name);
+    log_message( log_module,  MSG_INFO,"Packet PID %d for channel \"%s\" is not a PMT PID. We remove the pmt pid for this channel\n", pmt->pid, channel->name);
     channel->pmt_pid=0; /** @todo : put a threshold, */
     return 1;
   }
@@ -99,17 +99,17 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
   //We check if this PMT belongs to the current channel. (Only works with autoconfiguration full for the moment because it stores the service_id)
   if(channel->service_id && (channel->service_id != HILO(header->program_number)) )
   {
-    log_message( MSG_DETAIL,"Autoconf : The PMT %d does not belongs to channel \"%s\"\n", pmt->pid, channel->name);
+    log_message( log_module,  MSG_DETAIL,"The PMT %d does not belongs to channel \"%s\"\n", pmt->pid, channel->name);
     return 1;
   }
 
-  log_message( MSG_DEBUG,"Autoconf : PMT (PID %d) read for autoconfiguration of channel \"%s\"\n", pmt->pid, channel->name);
+  log_message( log_module,  MSG_DEBUG,"PMT (PID %d) read for autoconfiguration of channel \"%s\"\n", pmt->pid, channel->name);
 
   channel_update=channel->num_pids>1?1:0;
   if(channel_update)
   {
     // Update
-    log_message( MSG_INFO,"Autoconf : Channel %s update\n",channel->name);
+    log_message( log_module,  MSG_INFO,"Channel %s update\n",channel->name);
     temp_pids[0]=pmt->pid;
     temp_num_pids++;
 #ifdef ENABLE_CAM_SUPPORT
@@ -144,40 +144,40 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
     {
       case 0x01:
         pid_type=PID_VIDEO_MPEG1;
-        log_message( MSG_DEBUG,"Autoconf :   Video MPEG1 \tpid %d\n",pid);
+        log_message( log_module,  MSG_DEBUG,"  Video MPEG1 \tpid %d\n",pid);
         break;
       case 0x02:
         pid_type=PID_VIDEO_MPEG2;
-        log_message( MSG_DEBUG,"Autoconf :   Video MPEG2 \tpid %d\n",pid);
+        log_message( log_module,  MSG_DEBUG,"  Video MPEG2 \tpid %d\n",pid);
         break;
       case 0x10: /* ISO/IEC 14496-2 Visual - MPEG4 video */
         pid_type=PID_VIDEO_MPEG4_ASP;
-        log_message( MSG_DEBUG,"Autoconf :   Video MPEG4-ASP \tpid %d\n",pid);
+        log_message( log_module,  MSG_DEBUG,"  Video MPEG4-ASP \tpid %d\n",pid);
         break;
       case 0x1b: /* AVC video stream as defined in ITU-T Rec. H.264 | ISO/IEC 14496-10 Video */
         pid_type=PID_VIDEO_MPEG4_AVC;
-        log_message( MSG_DEBUG,"Autoconf :   Video MPEG4-AVC \tpid %d\n",pid);
+        log_message( log_module,  MSG_DEBUG,"  Video MPEG4-AVC \tpid %d\n",pid);
         break;
 
       case 0x03:
         pid_type=PID_AUDIO_MPEG1;
-        log_message( MSG_DEBUG,"Autoconf :   Audio MPEG1 \tpid %d\n",pid);
+        log_message( log_module,  MSG_DEBUG,"  Audio MPEG1 \tpid %d\n",pid);
         break;
       case 0x04:
         pid_type=PID_AUDIO_MPEG2;
-        log_message( MSG_DEBUG,"Autoconf :   Audio MPEG2 \tpid %d\n",pid);
+        log_message( log_module,  MSG_DEBUG,"  Audio MPEG2 \tpid %d\n",pid);
         break;
       case 0x11: /* ISO/IEC 14496-3 Audio with the LATM transport syntax as defined in ISO/IEC 14496-3 */
         pid_type=PID_AUDIO_AAC_LATM;
-        log_message( MSG_DEBUG,"Autoconf :   Audio AAC-LATM \tpid %d\n",pid);
+        log_message( log_module,  MSG_DEBUG,"  Audio AAC-LATM \tpid %d\n",pid);
         break;
       case 0x0f: /* ISO/IEC 13818-7 Audio with ADTS transport syntax - usually AAC */
         pid_type=PID_AUDIO_AAC_ADTS;
-        log_message( MSG_DEBUG,"Autoconf :   Audio AAC-ADTS \tpid %d\n",pid);
+        log_message( log_module,  MSG_DEBUG,"  Audio AAC-ADTS \tpid %d\n",pid);
         break;
       case 0x81: /* Audio per ATSC A/53B [2] Annex B */
         pid_type=PID_AUDIO_ATSC;
-        log_message( MSG_DEBUG,"Autoconf :   Audio ATSC A/53B \tpid %d\n",pid);
+        log_message( log_module,  MSG_DEBUG,"  Audio ATSC A/53B \tpid %d\n",pid);
         break;
 
 
@@ -186,16 +186,16 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
         if(descr_section_len) //If we have an accociated descriptor, we'll search inforation in it
         {
           if(pmt_find_descriptor(0x45,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
-            log_message( MSG_DEBUG,"Autoconf :   VBI Data \tpid %d\n",pid);
+            log_message( log_module,  MSG_DEBUG,"  VBI Data \tpid %d\n",pid);
             pid_type=PID_EXTRA_VBIDATA;
           }else if(pmt_find_descriptor(0x46,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
-            log_message( MSG_DEBUG,"Autoconf :   VBI Teletext \tpid %d\n",pid);
+            log_message( log_module,  MSG_DEBUG,"  VBI Teletext \tpid %d\n",pid);
             pid_type=PID_EXTRA_VBITELETEXT;
           }else if(pmt_find_descriptor(0x56,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
-            log_message( MSG_DEBUG,"Autoconf :   Teletext \tpid %d\n",pid);
+            log_message( log_module,  MSG_DEBUG,"  Teletext \tpid %d\n",pid);
             pid_type=PID_EXTRA_TELETEXT;
           }else if(pmt_find_descriptor(0x59,pmt->packet+i+PMT_INFO_LEN,descr_section_len, &pos)){
-            log_message( MSG_DEBUG,"Autoconf :   Subtitling \tpid %d\n",pid);
+            log_message( log_module,  MSG_DEBUG,"  Subtitling \tpid %d\n",pid);
             pid_type=PID_EXTRA_SUBTITLE;
             char * lng=(char *)(pmt->packet+i+PMT_INFO_LEN+pos+2);
             language[0]=lng[0];
@@ -203,48 +203,48 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
             language[2]=lng[2];
             language[3]=0;
           }else if(pmt_find_descriptor(0x6a,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
-            log_message( MSG_DEBUG,"Autoconf :   AC3 (audio) \tpid %d\n",pid);
+            log_message( log_module,  MSG_DEBUG,"  AC3 (audio) \tpid %d\n",pid);
             pid_type=PID_AUDIO_AC3;
           }else if(pmt_find_descriptor(0x7a,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
-            log_message( MSG_DEBUG,"Autoconf :   Enhanced AC3 (audio) \tpid %d\n",pid);
+            log_message( log_module,  MSG_DEBUG,"  Enhanced AC3 (audio) \tpid %d\n",pid);
             pid_type=PID_AUDIO_EAC3;
           }else if(pmt_find_descriptor(0x7b,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
-            log_message( MSG_DEBUG,"Autoconf :   DTS (audio) \tpid %d\n",pid);
+            log_message( log_module,  MSG_DEBUG,"  DTS (audio) \tpid %d\n",pid);
             pid_type=PID_AUDIO_DTS;
           }else if(pmt_find_descriptor(0x7c,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
-            log_message( MSG_DEBUG,"Autoconf :   AAC (audio) \tpid %d\n",pid);
+            log_message( log_module,  MSG_DEBUG,"  AAC (audio) \tpid %d\n",pid);
             pid_type=PID_AUDIO_AAC;
           }else
           {
-            log_message( MSG_DEBUG,"Autoconf : Unknown descriptor see EN 300 468 v1.9.1 table 12, pid %d descriptor tags : ", pid);
+            log_message( log_module,  MSG_DEBUG,"Unknown descriptor see EN 300 468 v1.9.1 table 12, pid %d descriptor tags : ", pid);
             pmt_print_descriptor_tags(pmt->packet+i+PMT_INFO_LEN,descr_section_len);
-            log_message( MSG_DEBUG,"\n");
+            log_message( log_module,  MSG_DEBUG,"\n");
             continue;
           }
         }
         else
         {
-          log_message( MSG_DEBUG,"Autoconf : PMT read : stream type 0x06 without descriptor\n");
+          log_message( log_module,  MSG_DEBUG,"PMT read : stream type 0x06 without descriptor\n");
           continue;
         }
         break;
 
       //Now, the list of what we drop
       case 0x05:
-        log_message( MSG_DEBUG, "Autoconf : Dropped pid %d, type : 0x05, ITU-T Rec. H.222.0 | ISO/IEC 13818-1 private_sections \n",pid);
+        log_message( log_module,  MSG_DEBUG, "Dropped pid %d, type : 0x05, ITU-T Rec. H.222.0 | ISO/IEC 13818-1 private_sections \n",pid);
         continue;
       //Digital Storage Medium Command and Control (DSM-CC) cf H.222.0 | ISO/IEC 13818-1 annex B
       case 0x0a:
-        log_message( MSG_DEBUG, "Autoconf : Dropped pid %d, type : 0x0A ISO/IEC 13818-6 type A (DSM-CC)\n",pid);
+        log_message( log_module,  MSG_DEBUG, "Dropped pid %d, type : 0x0A ISO/IEC 13818-6 type A (DSM-CC)\n",pid);
         continue;
       case 0x0b:
-        log_message( MSG_DEBUG, "Autoconf : Dropped pid %d, type : 0x0B ISO/IEC 13818-6 type B (DSM-CC)\n",pid);
+        log_message( log_module,  MSG_DEBUG, "Dropped pid %d, type : 0x0B ISO/IEC 13818-6 type B (DSM-CC)\n",pid);
         continue;
       case 0x0c:
-        log_message( MSG_DEBUG, "Autoconf : Dropped pid %d, type : 0x0C ISO/IEC 13818-6 type C (DSM-CC)\n",pid);
+        log_message( log_module,  MSG_DEBUG, "Dropped pid %d, type : 0x0C ISO/IEC 13818-6 type C (DSM-CC)\n",pid);
         continue;
       default:
-        log_message( MSG_INFO, "Autoconf : !!!!Unknown stream type : 0x%02x, PID : %d cf ITU-T Rec. H.222.0 | ISO/IEC 13818\n",descr_header->stream_type,pid);
+        log_message( log_module,  MSG_INFO, "!!!!Unknown stream type : 0x%02x, PID : %d cf ITU-T Rec. H.222.0 | ISO/IEC 13818\n",descr_header->stream_type,pid);
         continue;
     }
 
@@ -259,7 +259,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
       language[2]=lng[2];
       language[3]=0;
     }
-    log_message( MSG_DEBUG,"Autoconf :   PID Language Code = %s\n",language);
+    log_message( log_module,  MSG_DEBUG,"  PID Language Code = %s\n",language);
 
     //For cam debugging purposes, we look if we can find a ca descriptor to display ca system ids
     if(descr_section_len)
@@ -277,7 +277,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
         if(!channel->ca_sys_id[casysid])
         {
           channel->ca_sys_id[casysid]=HILO(ca_descriptor->CA_type);
-	  log_message( MSG_DETAIL,"Autoconf : Ca system id 0x%04x : %s\n", HILO(ca_descriptor->CA_type), ca_sys_id_to_str(HILO(ca_descriptor->CA_type)));//we display it with the description
+	  log_message( log_module,  MSG_DETAIL,"Ca system id 0x%04x : %s\n", HILO(ca_descriptor->CA_type), ca_sys_id_to_str(HILO(ca_descriptor->CA_type)));//we display it with the description
         }
         pos+=ca_descriptor->descriptor_length+2;
       }
@@ -327,7 +327,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
       snprintf(channel->pids_language[channel->num_pids],4,"%s","---");
       channel->num_pids++;
     }
-    log_message( MSG_DEBUG, "Autoconf : Added PCR pid %d\n",pcr_pid);
+    log_message( log_module,  MSG_DEBUG, "Added PCR pid %d\n",pcr_pid);
   }
 
   /**************************
@@ -342,7 +342,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
   //If it's a channel update we will have to update the filters
   if(channel_update)
   {
-    log_message( MSG_DEBUG,"Autoconf : Channel update new number of pids %d old %d we check for changes\n", temp_num_pids, channel->num_pids);
+    log_message( log_module,  MSG_DEBUG,"Channel update new number of pids %d old %d we check for changes\n", temp_num_pids, channel->num_pids);
 
     //We search for added pids
     for(i=0;i<temp_num_pids;i++)
@@ -355,7 +355,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
       }
       if(!found)
       {
-        log_message( MSG_DETAIL, "Autoconf : Update : pid %d added \n",temp_pids[i]);
+        log_message( log_module,  MSG_DETAIL, "Update : pid %d added \n",temp_pids[i]);
 	//If the pid is not on the list we add it for the filters
         if(asked_pid[temp_pids[i]]==PID_NOT_ASKED)
           asked_pid[temp_pids[i]]=PID_ASKED;
@@ -366,11 +366,11 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
         snprintf(channel->pids_language[channel->num_pids],4,"%s",temp_pids_language[i]);
         channel->num_pids++;
 
-        log_message(MSG_DETAIL,"Autoconf : Add the new filters\n");
+        log_message( log_module, MSG_DETAIL,"Add the new filters\n");
 	// we open the file descriptors
         if (create_card_fd (card_base_path, tuner, asked_pid, fds) < 0)
         {
-          log_message(MSG_ERROR,"Autoconf : ERROR : CANNOT open the new descriptors. Some channels will probably not work\n");
+          log_message( log_module, MSG_ERROR,"CANNOT open the new descriptors. Some channels will probably not work\n");
 	  //return; //FIXME : what do we do here ?
         }
 	//open the new filters
@@ -389,7 +389,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
       }
       if(!found)
       {
-        log_message( MSG_DETAIL, "Autoconf : Update : pid %d supressed \n",channel->pids[i]);
+        log_message( log_module,  MSG_DETAIL, "Update : pid %d supressed \n",channel->pids[i]);
 
 	//We check the number of channels on wich this pid is registered, if 0 it's strange we warn
         if((channel->pids[i]>MAX_MANDATORY_PID_NUMBER )&& (number_chan_asked_pid[channel->pids[i]]))
@@ -399,14 +399,14 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
 	  //If no channel need this pid anymore, we remove the filter (closing the file descriptor remove the filter associated)
           if(number_chan_asked_pid[channel->pids[i]]==0)
           {
-            log_message( MSG_DEBUG, "Autoconf : Update : pid %d does not belong to any channel anymore, we close the filter \n",channel->pids[i]);
+            log_message( log_module,  MSG_DEBUG, "Update : pid %d does not belong to any channel anymore, we close the filter \n",channel->pids[i]);
             close(fds->fd_demuxer[channel->pids[i]]);
             fds->fd_demuxer[channel->pids[i]]=0;
             asked_pid[channel->pids[i]]=PID_NOT_ASKED;
           }
         }
         else
-          log_message( MSG_WARN, "Autoconf : Update : We tried to suppress pid %d in a strange way, please contact if you can reproduce\n",channel->pids[i]);
+          log_message( log_module,  MSG_WARN, "Update : We tried to suppress pid %d in a strange way, please contact if you can reproduce\n",channel->pids[i]);
         //We remove the pid from this channel by swapping with the last one and decreasing the pid number
         channel->pids[i]=channel->pids[channel->num_pids-1];
         channel->num_pids--;
@@ -414,18 +414,18 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
 
       }
     }
-    log_message( MSG_DETAIL, "        pids : ");/**@todo Generate a strind and call log_message after, in syslog it generates one line per pid : use the toolbox unicast*/
+    log_message( log_module,  MSG_DETAIL, "        pids : \n");/**@todo Generate a strind and call log_message after, in syslog it generates one line per pid : use the toolbox unicast*/
     int curr_pid;
     for (curr_pid = 0; curr_pid < channel->num_pids; curr_pid++)
-	log_message( MSG_DETAIL, "%d (%s) ", channel->pids[curr_pid], pid_type_to_str(channel->pids_type[curr_pid]));
-    log_message( MSG_DETAIL, "\n");
+	log_message( log_module,  MSG_DETAIL, "              %d (%s) \n", channel->pids[curr_pid], pid_type_to_str(channel->pids_type[curr_pid]));
+
   }
   /** @todo : update generated conf file*/
   /**************************
   * Channel update END
   **************************/
 
-  log_message( MSG_DEBUG,"Autoconf : Number of pids after autoconf %d\n", channel->num_pids);
+  log_message( log_module,  MSG_DEBUG,"Number of pids after autoconf %d\n", channel->num_pids);
   return 0; 
 }
 
@@ -475,7 +475,7 @@ void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len)
     unsigned char descriptor_tag = buf[0];
     unsigned char descriptor_len = buf[1] + 2;
 
-    log_message( MSG_DEBUG,"0x%02x - ", descriptor_tag);
+    log_message( log_module,  MSG_DEBUG,"0x%02x - \n", descriptor_tag);
     buf += descriptor_len;
     descriptors_loop_len -= descriptor_len;
   }
@@ -514,7 +514,7 @@ int pmt_need_update(mumudvb_channel_t *channel, unsigned char *buf,int ts_header
     if(!ts_header || header->payload_unit_start_indicator) //It's a packet without header or the beginning of a new packet 
       if(pmt->version_number!=channel->pmt_version)
       {
-        log_message(MSG_DEBUG,"Autoconfiguration : PMT version changed, channel %s . stored version : %d, new: %d.\n",channel->name,channel->pmt_version,pmt->version_number);
+        log_message( log_module, MSG_DEBUG,"PMT version changed, channel %s . stored version : %d, new: %d.\n",channel->name,channel->pmt_version,pmt->version_number);
         return 1;
       }
   return 0;
@@ -527,7 +527,7 @@ void update_pmt_version(mumudvb_channel_t *channel)
 {
   pmt_t       *pmt=(pmt_t*)(channel->pmt_packet->packet);
   if(channel->pmt_version!=pmt->version_number)
-    log_message(MSG_INFO,"Autoconfiguration : New PMT version for channel %s. Old : %d, new: %d\n",channel->name,channel->pmt_version,pmt->version_number);
+    log_message( log_module, MSG_INFO,"New PMT version for channel %s. Old : %d, new: %d\n",channel->name,channel->pmt_version,pmt->version_number);
 
   channel->pmt_version=pmt->version_number;
 }
@@ -554,7 +554,7 @@ void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t
     {
       if(pmt_need_update(actual_channel,actual_channel->pmt_packet->packet,0))
       {
-        log_message(MSG_DETAIL,"Autoconfiguration : PMT packet updated, we have now to check if there is new things\n");
+        log_message( log_module, MSG_DETAIL,"PMT packet updated, we have now to check if there is new things\n");
         /*We've got the FULL PMT packet*/
         if(autoconf_read_pmt(actual_channel->pmt_packet, actual_channel, card_base_path, tuner, chan_and_pids->asked_pid, chan_and_pids->number_chan_asked_pid, fds)==0)
         {
@@ -568,7 +568,7 @@ void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t
       }
       else
       {
-        log_message(MSG_DEBUG,"Autoconfiguration : False alert, nothing to do\n");
+        log_message( log_module, MSG_DEBUG,"False alert, nothing to do\n");
         actual_channel->pmt_needs_update=0;
       }
     }

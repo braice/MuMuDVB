@@ -44,6 +44,8 @@
 #include <unistd.h>
 
 extern int Interrupted;
+static char *log_module="DVB: ";
+
 /**
  * @brief Open the frontend associated with card
  * Return 1 in case of succes, -1 otherwise
@@ -62,7 +64,7 @@ open_fe (int *fd_frontend, char *base_path, int tuner)
     return -1;
   if ((*fd_frontend = open (frontend_name, O_RDWR | O_NONBLOCK)) < 0)
     {
-      log_message( MSG_ERROR, "FRONTEND DEVICE: %s : %s\n", frontend_name, strerror(errno));
+      log_message( log_module,  MSG_ERROR, "FRONTEND DEVICE: %s : %s\n", frontend_name, strerror(errno));
       free(frontend_name);
       return -1;
     }
@@ -82,7 +84,7 @@ set_ts_filt (int fd, uint16_t pid)
 {
   struct dmx_pes_filter_params pesFilterParams;
 
-  log_message( MSG_DEBUG, "Setting filter for PID %d\n", pid);
+  log_message( log_module,  MSG_DEBUG, "Setting filter for PID %d\n", pid);
   pesFilterParams.pid = pid;
   pesFilterParams.input = DMX_IN_FRONTEND;
   pesFilterParams.output = DMX_OUT_TS_TAP;
@@ -91,8 +93,8 @@ set_ts_filt (int fd, uint16_t pid)
 
   if (ioctl (fd, DMX_SET_PES_FILTER, &pesFilterParams) < 0)
     {
-      log_message( MSG_ERROR, "FILTER %i: ", pid);
-      log_message( MSG_ERROR, "DMX SET PES FILTER : %s\n", strerror(errno));
+      log_message( log_module,  MSG_ERROR, "FILTER %i: ", pid);
+      log_message( log_module,  MSG_ERROR, "DMX SET PES FILTER : %s\n", strerror(errno));
     }
 }
 
@@ -118,7 +120,7 @@ void *show_power_func(void* arg)
       if (ioctl (strengthparams->fds->fd_frontend, FE_READ_BER, &ber) >= 0)
         if (ioctl (strengthparams->fds->fd_frontend, FE_READ_SIGNAL_STRENGTH, &strength) >= 0)
           if (ioctl (strengthparams->fds->fd_frontend, FE_READ_SNR, &snr) >= 0)
-            log_message( MSG_INFO, "Bit error rate: %10d Signal strength: %10d SNR: %10d\n", ber,strength,snr);
+            log_message( log_module,  MSG_INFO, "Bit error rate: %10d Signal strength: %10d SNR: %10d\n", ber,strength,snr);
     }
     for(i=0;i<wait_time && !strengthparams->tuneparams->strengththreadshutdown;i++)
       usleep(100000);
@@ -154,8 +156,8 @@ create_card_fd(char *base_path, int tuner, uint8_t *asked_pid, fds_t *fds)
     if ((asked_pid[curr_pid] != 0)&& (fds->fd_demuxer[curr_pid]==0) )
       if((fds->fd_demuxer[curr_pid] = open (demuxdev_name, O_RDWR)) < 0)
 	{
-	  log_message( MSG_ERROR, "FD PID %i: ", curr_pid);
-	  log_message( MSG_ERROR, "DEMUX DEVICE: %s : %s\n", demuxdev_name, strerror(errno));
+	  log_message( log_module,  MSG_ERROR, "FD PID %i: ", curr_pid);
+	  log_message( log_module,  MSG_ERROR, "DEMUX DEVICE: %s : %s\n", demuxdev_name, strerror(errno));
 	  free(demuxdev_name);
 	  return -1;
 	}
@@ -167,7 +169,7 @@ create_card_fd(char *base_path, int tuner, uint8_t *asked_pid, fds_t *fds)
   if (fds->fd_dvr==0)  //this function can be called more than one time, we check if we opened it before
     if ((fds->fd_dvr = open (dvrdev_name, O_RDONLY | O_NONBLOCK)) < 0)
       {
-	log_message( MSG_ERROR, "DVR DEVICE: %s : %s\n", dvrdev_name, strerror(errno));
+	log_message( log_module,  MSG_ERROR, "DVR DEVICE: %s : %s\n", dvrdev_name, strerror(errno));
 	free(dvrdev_name);
 	return -1;
       }
@@ -245,7 +247,7 @@ void *read_card_thread_func(void* arg)
   pfds[1].events = POLLIN | POLLPRI;
   fds.pfds=pfds;
   fds.pfdsnum=1;
-  log_message( MSG_DEBUG, "Reading thread start\n");
+  log_message( log_module,  MSG_DEBUG, "Reading thread start\n");
 
   usleep(100000); //some waiting to be sure the main program is waiting //it is probably useless
   threadparams->unicast_data=0;
@@ -259,7 +261,7 @@ void *read_card_thread_func(void* arg)
     if(poll_ret)
     {
       Interrupted=poll_ret;
-      log_message( MSG_WARN, "Thread polling issue\n");
+      log_message( log_module,  MSG_WARN, "Thread polling issue\n");
       return NULL;
     }
     if((!(threadparams->fds->pfds[0].revents&POLLIN)) && (!(threadparams->fds->pfds[0].revents&POLLPRI))) //Unicast information
@@ -267,7 +269,7 @@ void *read_card_thread_func(void* arg)
 	threadparams->unicast_data=1;
 	if(threadparams->main_waiting)
         {
-        //log_message( MSG_DEBUG, "Thread signalling -------\n");
+        //log_message( log_module,  MSG_DEBUG, "Thread signalling -------\n");
         pthread_cond_signal(&threadparams->threadcond);
         }
 	//no DVB packet, we continue
@@ -279,11 +281,11 @@ void *read_card_thread_func(void* arg)
       if(!throwing_packets)
       {
 	throwing_packets=1; /** @todo count them*/
-	log_message( MSG_INFO, "Thread trowing dvb packets\n");
+	log_message( log_module,  MSG_INFO, "Thread trowing dvb packets\n");
       }
       if(threadparams->main_waiting)
       {
-        //log_message( MSG_DEBUG, "Thread signalling -------\n");
+        //log_message( log_module,  MSG_DEBUG, "Thread signalling -------\n");
         pthread_cond_signal(&threadparams->threadcond);
       }
       continue;
@@ -296,7 +298,7 @@ void *read_card_thread_func(void* arg)
 
     if(threadparams->main_waiting)
     {
-      //log_message( MSG_DEBUG, "Thread signalling -------\n");
+      //log_message( log_module,  MSG_DEBUG, "Thread signalling -------\n");
       pthread_cond_signal(&threadparams->threadcond);
     }
     pthread_mutex_unlock(&threadparams->carddatamutex);
@@ -320,7 +322,7 @@ int card_read(int fd_dvr, unsigned char *dest_buffer, card_buffer_t *card_buffer
   {
     if((bytes_read>0 )&& (bytes_read % TS_PACKET_SIZE))
     {
-      log_message( MSG_WARN, "Warning : partial packet received len %d\n", bytes_read);
+      log_message( log_module,  MSG_WARN, "Warning : partial packet received len %d\n", bytes_read);
       card_buffer->partial_packet_number++;
       bytes_read-=bytes_read % TS_PACKET_SIZE;
       if(bytes_read<=0)
@@ -330,7 +332,7 @@ int card_read(int fd_dvr, unsigned char *dest_buffer, card_buffer_t *card_buffer
   if(bytes_read<0)
   {
     if(errno!=EAGAIN)
-      log_message( MSG_WARN,"Error : DVR Read error : %s \n",strerror(errno));
+      log_message( log_module,  MSG_WARN,"Error : DVR Read error : %s \n",strerror(errno));
     if(errno==EOVERFLOW)
     {
       card_buffer->overflow_number++;
@@ -377,39 +379,39 @@ void show_card_capabilities( int card, int tuner )
   //get frontend info
   struct dvb_frontend_info fe_info;
   if ( (i_ret = ioctl(frontend_fd,FE_GET_INFO, &fe_info) < 0)){
-    log_message( MSG_ERROR, "FE_GET_INFO: %s \n", strerror(errno));
+    log_message( log_module,  MSG_ERROR, "FE_GET_INFO: %s \n", strerror(errno));
     return;
   }
-  log_message( MSG_INFO, "=========== Card %d - Tuner %d ===========\n", card, tuner);
-  log_message( MSG_INFO, " Frontend : %s\n", fe_info.name);
+  log_message( log_module,  MSG_INFO, "=========== Card %d - Tuner %d ===========\n", card, tuner);
+  log_message( log_module,  MSG_INFO, " Frontend : %s\n", fe_info.name);
   display_sr=0;
   switch(fe_info.type)
   {
     case FE_OFDM:
-      log_message( MSG_INFO, " Terrestrial (DVB-T) card\n");
+      log_message( log_module,  MSG_INFO, " Terrestrial (DVB-T) card\n");
       break;
     case FE_QPSK:
-      log_message( MSG_INFO, " Satellite (DVB-S) card\n");
+      log_message( log_module,  MSG_INFO, " Satellite (DVB-S) card\n");
       display_sr=1;
       break;
     case FE_QAM:
-      log_message( MSG_INFO, " Cable (DVB-C) card\n");
+      log_message( log_module,  MSG_INFO, " Cable (DVB-C) card\n");
       display_sr=1;
       break;
     case FE_ATSC:
-      log_message( MSG_INFO, " ATSC card\n");
+      log_message( log_module,  MSG_INFO, " ATSC card\n");
       break;
   }
   if(fe_info.type==FE_QPSK)
     frequency_factor=1000;
   else
     frequency_factor=1;
-  log_message( MSG_INFO, " Frequency: %d kHz to %d kHz\n",(int) fe_info.frequency_min/1000*frequency_factor,(int) fe_info.frequency_max/1000*frequency_factor);
+  log_message( log_module,  MSG_INFO, " Frequency: %d kHz to %d kHz\n",(int) fe_info.frequency_min/1000*frequency_factor,(int) fe_info.frequency_max/1000*frequency_factor);
   if(display_sr)
-    log_message( MSG_INFO, " Symbol rate: %d k symbols/s to %d k symbols/s \n", (int)fe_info.symbol_rate_min/1000, (int)fe_info.symbol_rate_max/1000);
+    log_message( log_module,  MSG_INFO, " Symbol rate: %d k symbols/s to %d k symbols/s \n", (int)fe_info.symbol_rate_min/1000, (int)fe_info.symbol_rate_max/1000);
 
-  log_message( MSG_DETAIL, "\n== Card capabilities ==\n");
-  log_message( MSG_DEBUG, "caps 0x%x\n",fe_info.caps);
+  log_message( log_module,  MSG_DETAIL, "\n== Card capabilities ==\n");
+  log_message( log_module,  MSG_DEBUG, "caps 0x%x\n",fe_info.caps);
   frontend_cap_t caps[]={
     {0x1,"FE_CAN_INVERSION_AUTO"},
     {0x2,"FE_CAN_FEC_1_2"},
@@ -445,10 +447,10 @@ void show_card_capabilities( int card, int tuner )
   //todo : do a loop on a structure which contains the capabilities
   for(i=0;i<numcaps;i++)
     if(fe_info.caps & caps[i].flag)
-      log_message( MSG_DETAIL, "%s\n", caps[i].descr);
+      log_message( log_module,  MSG_DETAIL, "%s\n", caps[i].descr);
   close (frontend_fd);
 
-  log_message( MSG_INFO, "\n\n");
+  log_message( log_module,  MSG_INFO, "\n\n");
 
 }
 
@@ -458,14 +460,14 @@ void show_card_capabilities( int card, int tuner )
 void list_dvb_cards ()
 {
   DIR *dvb_dir;
-  log_message(MSG_INFO,"==================================\n");
-  log_message(MSG_INFO,"        DVB CARDS LISTING\n");
-  log_message(MSG_INFO,"==================================\n\n");
+  log_message( log_module, MSG_INFO,"==================================\n");
+  log_message( log_module, MSG_INFO,"        DVB CARDS LISTING\n");
+  log_message( log_module, MSG_INFO,"==================================\n\n");
 
   dvb_dir = opendir ("/dev/dvb/");
   if (dvb_dir == NULL)
   {
-    log_message( MSG_ERROR, "Cannot open /dev/dvb : %s\n", strerror (errno));
+    log_message( log_module,  MSG_ERROR, "Cannot open /dev/dvb : %s\n", strerror (errno));
     return;
   }
 
@@ -481,12 +483,12 @@ void list_dvb_cards ()
     if(strncmp(d_adapter->d_name,"adapter",7))
       continue;
     card_number= atoi(d_adapter->d_name+7);
-    log_message( MSG_DEBUG, "found adapter %d\n", card_number);
+    log_message( log_module,  MSG_DEBUG, "found adapter %d\n", card_number);
     cards[num_cards]=card_number;
     num_cards++;
     if(num_cards==256)
     {
-      log_message(MSG_ERROR, "Wow You have a system with more than 256 DVB cards, Please Contact me :D\n");
+      log_message( log_module, MSG_ERROR, "Wow You have a system with more than 256 DVB cards, Please Contact me :D\n");
       return;
     }
   }
@@ -513,7 +515,7 @@ void list_dvb_cards ()
     adapter_dir = opendir (card_dev_path);
     if (adapter_dir == NULL)
     {
-      log_message( MSG_ERROR, "Cannot open %s : %s\n", adapter_dir, strerror (errno));
+      log_message( log_module,  MSG_ERROR, "Cannot open %s : %s\n", adapter_dir, strerror (errno));
       return;
     }
     while ((d_tuner=readdir(adapter_dir))!=NULL)
@@ -523,7 +525,7 @@ void list_dvb_cards ()
       if(strncmp(d_tuner->d_name,FRONTEND_DEV_NAME,strlen(FRONTEND_DEV_NAME)))
         continue;
       tuner_number= atoi(d_tuner->d_name+strlen(FRONTEND_DEV_NAME));
-      log_message( MSG_DEBUG, "\tfound Frontend %d\n", tuner_number);
+      log_message( log_module,  MSG_DEBUG, "\tfound Frontend %d\n", tuner_number);
       /** show the current tuner */
       show_card_capabilities( card_number , tuner_number);
     }

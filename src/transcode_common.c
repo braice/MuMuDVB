@@ -28,6 +28,8 @@
 
 #include <stdlib.h>
 
+static char *log_module="Transcode : ";
+
 #define FREE_TRANSOCDE_OPTION(option_name)\
 if (transcode_options->option_name) {\
     free(transcode_options->option_name);\
