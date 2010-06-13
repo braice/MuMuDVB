@@ -49,6 +49,7 @@
 extern int no_daemon;
 extern int verbosity;
 extern int log_initialised;
+extern int Interrupted;
 
 /**
  * @brief Print a log message on the console or via syslog 
@@ -71,6 +72,17 @@ void log_message( char* log_module, int type,
     len_log_module=strlen(log_module);
 
   tempchar=malloc((strlen(psz_format)+1+LOG_HEAD_LEN+len_log_module)*sizeof(char));
+  if(tempchar==NULL)
+  {
+    if (no_daemon || !log_initialised)
+      fprintf( stderr,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    else
+      syslog (MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    va_end( args );
+    Interrupted=ERROR_MEMORY<<8;
+    return;
+  }
+
   memset (tempchar, ' ', LOG_HEAD_LEN+len_log_module);
   strcpy(tempchar+LOG_HEAD_LEN+len_log_module,psz_format);
 

@@ -163,7 +163,6 @@ int string_comput(char *string)
 {
   int number1,len;
   char *pluspos=NULL;
-  char *multpos=NULL;
   char *tempchar;
   pluspos=strchr(string,'+');
   if(pluspos==NULL)

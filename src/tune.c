@@ -689,7 +689,6 @@ int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_str
            log_message( log_module,  MSG_INFO, "Event:  Frequency: %d (or %d)\n",(unsigned int)((event.parameters.frequency)+lo_frequency),(unsigned int) abs((event.parameters.frequency)-lo_frequency));
            log_message( log_module,  MSG_INFO, "        SymbolRate: %d\n",event.parameters.u.qpsk.symbol_rate);
            log_message( log_module,  MSG_INFO, "        FEC_inner:  %d\n",event.parameters.u.qpsk.fec_inner);
-           log_message( log_module,  MSG_INFO, "\n");
            break;
          case FE_QAM:
            log_message( log_module,  MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);

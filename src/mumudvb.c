@@ -1600,7 +1600,7 @@ int
 
   gettimeofday (&tv, (struct timezone *) NULL);
   log_message( log_module,  MSG_INFO,
-               "\nEnd of streaming. We streamed during %dd %d:%02d:%02d\n",(tv.tv_sec - real_start_time )/86400,((tv.tv_sec - real_start_time) % 86400 )/3600,((tv.tv_sec - real_start_time) % 3600)/60,(tv.tv_sec - real_start_time) %60 );
+               "End of streaming. We streamed during %dd %d:%02d:%02d\n",(tv.tv_sec - real_start_time )/86400,((tv.tv_sec - real_start_time) % 86400 )/3600,((tv.tv_sec - real_start_time) % 3600)/60,(tv.tv_sec - real_start_time) %60 );
 
   if(card_buffer.partial_packet_number)
     log_message( log_module,  MSG_INFO,
