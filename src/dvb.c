@@ -135,7 +135,7 @@ void *show_power_func(void* arg)
         if((!(festatus & FE_HAS_LOCK) ) && (festatus_old != festatus))
         {
           if(!lock_lost)
-            log_message( log_module,  MSG_INFO, "Card is not locked. Detailled status\n");
+            log_message( log_module,  MSG_WARN, "The card has lost the lock (antenna unplugged ?). Detailled status\n");
           else
             log_message( log_module,  MSG_INFO, "Card is still not locked but status changed. Detailled status\n");
           print_status(festatus);
