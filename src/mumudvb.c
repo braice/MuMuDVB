@@ -384,6 +384,7 @@ int
     {"config", required_argument, NULL, 'c'},
     {"signal", no_argument, NULL, 's'},
     {"traffic", no_argument, NULL, 't'},
+    {"server_id", required_argument, NULL, 'i'},
     {"debug", no_argument, NULL, 'd'},
     {"help", no_argument, NULL, 'h'},
     {"list-cards", no_argument, NULL, 'l'},
@@ -425,6 +426,9 @@ int
         break;
       case 's':
         tuneparams.display_strenght = 1;
+        break;
+      case 'i':
+        server_id = atoi(optarg);
         break;
       case 't':
         stats_infos.show_traffic = 1;

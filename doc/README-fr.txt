@@ -34,9 +34,10 @@ Auteurs et contacts
 
 .Contributeurs
 - mailto:manu@REMOVEMEcrans.ens-cachan.fr[Manuel Sabban] (getopt)
-- mailto:glondu@REMOVEMEcrans.ens-cachan.fr[Stéphane Glondu] (makefile cleaning, man page, debian package)
+- mailto:glondu@REMOVEMEcrans.ens-cachan.fr[Stéphane Glondu] (man page, debian package)
 - Special thanks to Dave Chapman (dvbstream author)
-- Pierre Gronlier, Sébastien Raillard
+- Pierre Gronlier, Sébastien Raillard, Ludovic Boué, Romolo Manfredini
+- Utelisys Communications B.V. pour le transcodage
 
 
 .Liste de discussion
@@ -62,6 +63,7 @@ Fonctionalités principales
 - Support pour DVB-S2 (satellite), DVB-S (satellite), DVB-C (cable), DVB-T (terrestre) et ATSC (terrestre ou cable en amérique du nord)
 - Support pour l'unicast HTTP. voir la section <<unicast,unicast HTTP>>
 - Support pour les en-têtes RTP (seulement pour la diffusion en multicast)
+- Transcodage, référez vous à la section <<transcoding,Transcodage>>
 
 Liste détaillée des fonctionalités
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -201,6 +203,9 @@ Les différentes options sont :
 
 --card
 	La carte DVB a utiliser ( le fichier de configuration est prioritaire en cas de conflit )
+
+--server_id
+	Le server id ( pour l'autoconfiguration, le fichier de configuration est prioritaire en cas de conflit )
 
 -h, --help
 	Montre l'aide ( en Anglais )

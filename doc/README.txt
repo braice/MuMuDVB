@@ -36,9 +36,9 @@ Authors and contacts
 
 .Contributions
 - mailto:manu@REMOVEMEcrans.ens-cachan.fr[Manuel Sabban] (getopt)
-- mailto:glondu@REMOVEMEcrans.ens-cachan.fr[Stéphane Glondu] (makefile cleaning, man page, debian package)
+- mailto:glondu@REMOVEMEcrans.ens-cachan.fr[Stéphane Glondu] (man page, debian package)
 - Special thanks to Dave Chapman (dvbstream author)
-- Pierre Gronlier, Sébastien Raillard, Ludovic Boué
+- Pierre Gronlier, Sébastien Raillard, Ludovic Boué, Romolo Manfredini
 - Utelisys Communications B.V. for the transcoding code
 
 .Mailing list:
@@ -202,6 +202,9 @@ Possible options are:
 
 --card
 	The DVB card to use (overrided by the configuration file)
+
+--server_id
+	The server id (for autoconfiguration, overrided by the configuration file)
 
 -h, --help
 	Show help
@@ -661,7 +664,7 @@ The message "Thread trowing dvb packets" informs you that the thread buffer is f
 Transcoding
 -----------
 
-MuMuDVB supports transcoding to various formats to save bandwith. The transcoding is made using ffmpeg librairies. This feature is pretty new, so feel free to contact if you have comments/suggestions
+MuMuDVB supports transcoding to various formats to save bandwidth. The transcoding is made using ffmpeg librairies. This feature is pretty new, so feel free to contact if you have comments/suggestions
 
 [NOTE]
 Transcoding doesn't work for the moment with full autoconfiguration/unicast

@@ -804,6 +804,7 @@ void usage (char *name)
           "-t, --traffic : Display channels traffic\n"
           "-l, --list-cards : List the DVB cards and exit\n"
           "--card       : The DVB card to use (overrided by the configuration file)\n"
+          "--server_id  : The server id (for autoconfiguration, overrided by the configuration file)\n"
           "-d, --debug  : Don't deamonize\n"
           "-v           : More verbose\n"
           "-q           : Less verbose\n"
