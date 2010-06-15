@@ -586,7 +586,7 @@ int
     else if (!strcmp (substring, "channel_next"))
     {
       curr_channel++;
-      log_message( log_module, MSG_WARN,"channel next\n");
+      log_message( log_module, MSG_INFO,"channel next\n");
     }
     else if (!strcmp (substring, "timeout_no_diff"))
     {

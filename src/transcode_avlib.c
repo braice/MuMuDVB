@@ -1711,7 +1711,7 @@ void* initialize_transcode(transcode_thread_data_t *transcode_thread_data)
     static int avlib_initialized = 0;
 
     if (!avlib_initialized) {
-        log_message( log_module, MSG_ERROR, "Initializing avlibs.\n");
+        log_message( log_module, MSG_INFO, "Initializing avlibs.\n");
         avlib_initialized = 1;
         avcodec_register_all();
         av_register_all();
@@ -1741,7 +1741,7 @@ void free_transcode(void *transcode_avlib_handle, transcode_thread_data_t *trans
         if (0 != av_write_trailer(out_context)) {
             log_message( log_module, MSG_ERROR, "Couldn't write trailer.\n");
         }
-        
+
         free_format_context(out_context, 0,
             NULL == transcode_thread_data->options->streaming_type ?
             STREAMING_TYPE_MPEGTS : *transcode_thread_data->options->streaming_type);
