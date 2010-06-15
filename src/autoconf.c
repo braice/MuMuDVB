@@ -953,34 +953,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
 	  //Now we have the PMT, we parse it
           if(autoconf_read_pmt(chan_and_pids->channels[curr_channel].pmt_packet, &chan_and_pids->channels[curr_channel], tuneparams->card_dev_path, tuneparams->tuner, chan_and_pids->asked_pid, chan_and_pids->number_chan_asked_pid, fds)==0)
           {
-            /******** display the pids **********/
-            int string_size=0;
-            int temp_size;
-            char *string=NULL;
-            int pos=0;
-            //First we evaluate the size of the total string, second we write the string
-            for(int i=0;i<2;i++)
-            {
-              temp_size=snprintf(string, i*string_size, "Final PIDs for channel %d \"%s\" : ",curr_channel, chan_and_pids->channels[curr_channel].name);
-              if(i==0) string_size+=temp_size; else pos +=temp_size;
-              for (int curr_pid = 0; curr_pid < chan_and_pids->channels[curr_channel].num_pids; curr_pid++)
-              {
-                temp_size=snprintf(string+pos, i*string_size-pos, " %d ",chan_and_pids->channels[curr_channel].pids[curr_pid]);
-                if(i==0) string_size+=temp_size; else pos+=temp_size;
-              }
-              if(i==0) {
-                string=calloc((string_size+1),sizeof(char));
-                if(string==NULL)
-                {
-                  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-                  Interrupted=ERROR_MEMORY<<8;
-                  return Interrupted;
-                }
-              }
-            }
-            log_message( log_module, MSG_DETAIL,"%s\n",string);
-            free(string);
-            /********  end of display the pids **********/
+            log_pids(log_module,&chan_and_pids->channels[curr_channel],curr_channel);
 
             chan_and_pids->channels[curr_channel].autoconfigurated=1;
 

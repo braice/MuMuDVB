@@ -82,5 +82,6 @@ char *simple_service_type_to_str(int type);
 void show_traffic(char *log_module, long now, int show_traffic_interval, mumudvb_chan_and_pids_t *chan_and_pids);
 char *liben50221_error_to_str(int error);
 char *liben50221_error_to_str_descr(int error);
+void log_pids(char *log_module, mumudvb_channel_t *channel, int curr_channel);
 
 #endif

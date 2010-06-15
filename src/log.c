@@ -206,6 +206,45 @@ void log_streamed_channels(char *log_module,int number_of_channels, mumudvb_chan
 }
 
 /**
+ * @brief Display the PIDs of a channel
+ *
+ */
+void log_pids(char *log_module, mumudvb_channel_t *channel, int curr_channel)
+{
+  /******** display the pids **********/
+  int string_size=0;
+  int temp_size;
+  char *string=NULL;
+  int pos=0;
+  //First we evaluate the size of the total string, second we write the string
+  for(int i=0;i<2;i++)
+  {
+    temp_size=snprintf(string, i*string_size, "PIDs for channel %d \"%s\" : ",curr_channel, channel->name);
+    if(i==0) string_size+=temp_size; else pos +=temp_size;
+    for (int curr_pid = 0; curr_pid < channel->num_pids; curr_pid++)
+    {
+      temp_size=snprintf(string+pos, i*string_size-pos, " %d ",channel->pids[curr_pid]);
+      if(i==0) string_size+=temp_size; else pos+=temp_size;
+    }
+    if(i==0) {
+      string=calloc((string_size+1),sizeof(char));
+      if(string==NULL)
+      {
+        log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+        Interrupted=ERROR_MEMORY<<8;
+        return;
+      }
+    }
+  }
+  log_message( log_module, MSG_DETAIL,"%s\n",string);
+  free(string);
+  /********  end of display the pids **********/
+}
+
+
+
+
+/**
  * @brief Generate a file containing the list of the streamed channels
  * and a file containing a list of not streamed channels
  *
