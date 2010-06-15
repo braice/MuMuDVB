@@ -206,10 +206,10 @@ else if (!strcmp(*substring, config_option_name)) {\
             config_option_name" : You have to start a channel first (using ip= or channel_next)\n");\
         exit(ERROR_CONF);\
     }\
-    if (NULL == channel->struct_option_name) {\
-        channel->struct_option_name = malloc(sizeof(int));\
+    if (NULL == struct_option_name) {\
+        struct_option_name = malloc(sizeof(int));\
     }\
-    *(channel->struct_option_name) = atoi(strtok(NULL, delimiteurs));\
+    *(struct_option_name) = atoi(strtok(NULL, delimiteurs));\
 }
 
 #define SET_OPTION_FLT(config_option_name, struct_option_name)\
@@ -219,10 +219,10 @@ else if (!strcmp(*substring, config_option_name)) {\
             config_option_name" : You have to start a channel first (using ip= or channel_next)\n");\
         exit(ERROR_CONF);\
     }\
-    if (NULL == channel->struct_option_name) {\
-        channel->struct_option_name = malloc(sizeof(float));\
+    if (NULL == struct_option_name) {\
+        struct_option_name = malloc(sizeof(float));\
     }\
-    *(channel->struct_option_name) = atof(strtok(NULL, delimiteurs));\
+    *(struct_option_name) = atof(strtok(NULL, delimiteurs));\
 }
 
 #define SET_OPTION_STR(config_option_name, struct_option_name, max_length)\
@@ -235,12 +235,12 @@ else if (!strcmp(*substring, config_option_name)) {\
     *substring = strtok(NULL, delimiteurs);\
     int length = strlen(*substring);\
     if (length <= max_length) {\
-        if (NULL != channel->struct_option_name) {\
-            free(channel->struct_option_name);\
+        if (NULL != struct_option_name) {\
+            free(struct_option_name);\
         }\
-        channel->struct_option_name = malloc(length + 1);\
-        strcpy(channel->struct_option_name, *substring);\
-        trim(channel->struct_option_name);\
+        struct_option_name = malloc(length + 1);\
+        strcpy(struct_option_name, *substring);\
+        trim(struct_option_name);\
     }\
 }
 
@@ -272,7 +272,7 @@ void trim(char *s)
     }
 }
 
-int transcode_read_option(mumudvb_channel_t *channel, int ip_ok, char *delimiteurs, char **substring)
+int transcode_read_option(struct transcode_options_t *transcode_options, int ip_ok, char *delimiteurs, char **substring)
 {
     if (!strcmp(*substring, "transcode_streaming_type")) {
         if (0 == ip_ok) {
@@ -284,7 +284,6 @@ int transcode_read_option(mumudvb_channel_t *channel, int ip_ok, char *delimiteu
         *substring = strtok(NULL, delimiteurs);
 
         if (strlen(*substring) <= TRANSCODE_STREAMING_TYPE_MAX) {
-            transcode_options_t *transcode_options = &channel->transcode_options;
 
             int streaming_type;
             int streaming_type_set = 0;
@@ -327,7 +326,6 @@ int transcode_read_option(mumudvb_channel_t *channel, int ip_ok, char *delimiteu
         *substring = strtok(NULL, delimiteurs);
 
         if (strlen(*substring) <= TRANSCODE_PROFILE_MAX) {
-            transcode_options_t *transcode_options = &channel->transcode_options;
             int profile_set = 0;
 
             char *profile_string = malloc(strlen(*substring) + 1);
@@ -404,7 +402,6 @@ int transcode_read_option(mumudvb_channel_t *channel, int ip_ok, char *delimiteu
         *substring = strtok(NULL, delimiteurs);
 
         if (strlen(*substring) <= TRANSCODE_AAC_PROFILE_MAX) {
-            transcode_options_t *transcode_options = &channel->transcode_options;
 
             int aac_profile_set = 0;
             int aac_profile;
@@ -442,48 +439,47 @@ int transcode_read_option(mumudvb_channel_t *channel, int ip_ok, char *delimiteu
         }
     }
 
-    SET_OPTION_INT("transcode_enable", transcode_options.enable)
-    SET_OPTION_INT("transcode_video_bitrate", transcode_options.video_bitrate)
-    SET_OPTION_INT("transcode_audio_bitrate", transcode_options.audio_bitrate)
-    SET_OPTION_INT("transcode_gop", transcode_options.gop)
-    SET_OPTION_INT("transcode_b_frames", transcode_options.b_frames)
-    SET_OPTION_INT("transcode_mbd", transcode_options.mbd)
-    SET_OPTION_INT("transcode_cmp", transcode_options.cmp)
-    SET_OPTION_INT("transcode_subcmp", transcode_options.subcmp)
-    SET_OPTION_STR("transcode_video_codec", transcode_options.video_codec, TRANSCODE_CODEC_MAX)
-    SET_OPTION_STR("transcode_audio_codec", transcode_options.audio_codec, TRANSCODE_CODEC_MAX)
-    SET_OPTION_FLT("transcode_crf", transcode_options.crf)
-    SET_OPTION_INT("transcode_refs", transcode_options.refs)
-    SET_OPTION_INT("transcode_b_strategy", transcode_options.b_strategy)
-    SET_OPTION_INT("transcode_coder_type", transcode_options.coder_type)
-    SET_OPTION_INT("transcode_me_method", transcode_options.me_method)
-    SET_OPTION_INT("transcode_me_range", transcode_options.me_range)
-    SET_OPTION_INT("transcode_subq", transcode_options.subq)
-    SET_OPTION_INT("transcode_trellis", transcode_options.trellis)
-    SET_OPTION_INT("transcode_sc_threshold", transcode_options.sc_threshold)
-    SET_OPTION_STR("transcode_rc_eq", transcode_options.rc_eq, TRANSCODE_RC_EQ_MAX)
-    SET_OPTION_FLT("transcode_qcomp", transcode_options.qcomp)
-    SET_OPTION_INT("transcode_qmin", transcode_options.qmin)
-    SET_OPTION_INT("transcode_qmax", transcode_options.qmax)
-    SET_OPTION_INT("transcode_qdiff", transcode_options.qdiff)
-    SET_OPTION_INT("transcode_loop_filter", transcode_options.loop_filter)
-    SET_OPTION_INT("transcode_mixed_refs", transcode_options.mixed_refs)
-    SET_OPTION_INT("transcode_enable_8x8dct", transcode_options.enable_8x8dct)
-    SET_OPTION_INT("transcode_x264_partitions", transcode_options.x264_partitions)
-    SET_OPTION_INT("transcode_level", transcode_options.level)
-    SET_OPTION_STR("transcode_sdp_filename", transcode_options.sdp_filename, TRANSCODE_SDP_FILENAME_MAX)
-    SET_OPTION_FLT("transcode_video_scale", transcode_options.video_scale)
-    SET_OPTION_INT("transcode_aac_latm", transcode_options.aac_latm)
-    SET_OPTION_STR("transcode_ffm_url", transcode_options.ffm_url, TRANSCODE_FFM_URL_MAX)
-    SET_OPTION_INT("transcode_audio_channels", transcode_options.audio_channels)
-    SET_OPTION_INT("transcode_audio_sample_rate", transcode_options.audio_sample_rate)
-    SET_OPTION_INT("transcode_video_frames_per_second", transcode_options.video_frames_per_second)
-    SET_OPTION_INT("transcode_rtp_port", transcode_options.rtp_port)
-    SET_OPTION_INT("transcode_keyint_min", transcode_options.keyint_min)
+    SET_OPTION_INT("transcode_enable", transcode_options->enable)
+    SET_OPTION_INT("transcode_video_bitrate", transcode_options->video_bitrate)
+    SET_OPTION_INT("transcode_audio_bitrate", transcode_options->audio_bitrate)
+    SET_OPTION_INT("transcode_gop", transcode_options->gop)
+    SET_OPTION_INT("transcode_b_frames", transcode_options->b_frames)
+    SET_OPTION_INT("transcode_mbd", transcode_options->mbd)
+    SET_OPTION_INT("transcode_cmp", transcode_options->cmp)
+    SET_OPTION_INT("transcode_subcmp", transcode_options->subcmp)
+    SET_OPTION_STR("transcode_video_codec", transcode_options->video_codec, TRANSCODE_CODEC_MAX)
+    SET_OPTION_STR("transcode_audio_codec", transcode_options->audio_codec, TRANSCODE_CODEC_MAX)
+    SET_OPTION_FLT("transcode_crf", transcode_options->crf)
+    SET_OPTION_INT("transcode_refs", transcode_options->refs)
+    SET_OPTION_INT("transcode_b_strategy", transcode_options->b_strategy)
+    SET_OPTION_INT("transcode_coder_type", transcode_options->coder_type)
+    SET_OPTION_INT("transcode_me_method", transcode_options->me_method)
+    SET_OPTION_INT("transcode_me_range", transcode_options->me_range)
+    SET_OPTION_INT("transcode_subq", transcode_options->subq)
+    SET_OPTION_INT("transcode_trellis", transcode_options->trellis)
+    SET_OPTION_INT("transcode_sc_threshold", transcode_options->sc_threshold)
+    SET_OPTION_STR("transcode_rc_eq", transcode_options->rc_eq, TRANSCODE_RC_EQ_MAX)
+    SET_OPTION_FLT("transcode_qcomp", transcode_options->qcomp)
+    SET_OPTION_INT("transcode_qmin", transcode_options->qmin)
+    SET_OPTION_INT("transcode_qmax", transcode_options->qmax)
+    SET_OPTION_INT("transcode_qdiff", transcode_options->qdiff)
+    SET_OPTION_INT("transcode_loop_filter", transcode_options->loop_filter)
+    SET_OPTION_INT("transcode_mixed_refs", transcode_options->mixed_refs)
+    SET_OPTION_INT("transcode_enable_8x8dct", transcode_options->enable_8x8dct)
+    SET_OPTION_INT("transcode_x264_partitions", transcode_options->x264_partitions)
+    SET_OPTION_INT("transcode_level", transcode_options->level)
+    SET_OPTION_STR("transcode_sdp_filename", transcode_options->sdp_filename, TRANSCODE_SDP_FILENAME_MAX)
+    SET_OPTION_FLT("transcode_video_scale", transcode_options->video_scale)
+    SET_OPTION_INT("transcode_aac_latm", transcode_options->aac_latm)
+    SET_OPTION_STR("transcode_ffm_url", transcode_options->ffm_url, TRANSCODE_FFM_URL_MAX)
+    SET_OPTION_INT("transcode_audio_channels", transcode_options->audio_channels)
+    SET_OPTION_INT("transcode_audio_sample_rate", transcode_options->audio_sample_rate)
+    SET_OPTION_INT("transcode_video_frames_per_second", transcode_options->video_frames_per_second)
+    SET_OPTION_INT("transcode_rtp_port", transcode_options->rtp_port)
+    SET_OPTION_INT("transcode_keyint_min", transcode_options->keyint_min)
 
     else {
         return 0;
     }
-    
     return 1;
 }

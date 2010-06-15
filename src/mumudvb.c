@@ -578,7 +578,7 @@ int
         exit(ERROR_CONF);
     }
 #ifdef ENABLE_TRANSCODING
-    else if (transcode_read_option(&chan_and_pids.channels[curr_channel], channel_start, delimiteurs, &substring))
+    else if ((curr_channel>=0)&&(transcode_read_option(&chan_and_pids.channels[curr_channel].transcode_options, channel_start, delimiteurs, &substring)))
     {
       continue;
     }

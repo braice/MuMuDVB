@@ -36,6 +36,6 @@ void* transcode_start_thread(int socket, struct sockaddr_in *socket_addr,
 void transcode_request_thread_end(void *transcode_handle);
 void transcode_wait_thread_end(void *transcode_handle);
 int transcode_enqueue_data(void *transcode_handle, void *data, int data_size);
-int transcode_read_option(mumudvb_channel_t *channel, int ip_ok, char *delimiteurs, char **substring);
+int transcode_read_option(struct transcode_options_t *transcode_options, int ip_ok, char *delimiteurs, char **substring);
 
 #endif

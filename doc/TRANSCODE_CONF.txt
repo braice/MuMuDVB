@@ -188,7 +188,7 @@ Enables target bitrate mode for audio.
 transcode_x264_profile
 ~~~~~~~~~~~~~~~~~~~~~~
 
-*Type:* <int>
+*Type:* <string>
 
 *Description:* set H.264 encoding profile
 
@@ -196,11 +196,42 @@ transcode_x264_profile
 *Possible Values:* 
 
 * baseline - Baseline Profile
+
+This is equivalent to :
+-----------------------------------
+transcode_coder_type=0
+transcode_enable_8x8dct=0
+transcode_loop_filter=1
+transcode_sc_threshold=1
+transcode_x264_partitions=1
+transcode_video_codec=libx264
+-----------------------------------
+
 * main - Main Profile
+This is equivalent to :
+-----------------------------------
+transcode_coder_type=1
+transcode_enable_8x8dct=0
+transcode_loop_filter=1
+transcode_sc_threshold=1
+transcode_x264_partitions=1
+transcode_video_codec=libx264
+-----------------------------------
+
 * high - High Profile
 
+This is equivalent to :
+-----------------------------------
+transcode_coder_type=1
+transcode_enable_8x8dct=1
+transcode_loop_filter=1
+transcode_sc_threshold=1
+transcode_x264_partitions=1
+transcode_video_codec=libx264
+-----------------------------------
+
 [NOTE]
-Specify different video encoding options after declaration of transcode_x264_profile may change profile to higher one. For example option "enable_8x8dct=1" will enable 8x8 transform that is supported only by High Profile.
+Specify different video encoding options after declaration of transcode_x264_profile may change profile to higher one. For example option "transcode_enable_8x8dct=1" will enable 8x8 transform that is supported only by High Profile.
 
 
 
@@ -275,8 +306,8 @@ H.264 allows p8x8 blocks to select different references for each p8x8 block. Thi
 
 
 
-enable_8x8dct
-~~~~~~~~~~~~~
+transcode_enable_8x8dct
+~~~~~~~~~~~~~~~~~~~~~~~
 
 *Type:* <int>
 
