@@ -173,9 +173,35 @@ void log_streamed_channels(char *log_module,int number_of_channels, mumudvb_chan
 	if(channels[curr_channel].unicast_port)
 	  log_message( log_module,  MSG_INFO, "\tUnicast : Channel accessible directly via %s:%d\n",unicastipOut, channels[curr_channel].unicast_port);
       }
-      log_message( log_module,  MSG_DETAIL, "        pids : \n");/**@todo Generate a strind and call log_message after, in syslog it generates one line per pid*/
-      for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
-	log_message( log_module,  MSG_DETAIL, "%d (%s) \n", channels[curr_channel].pids[curr_pid], pid_type_to_str(channels[curr_channel].pids_type[curr_pid]));
+      int string_size=0;
+      int temp_size;
+      char *string=NULL;
+      int pos=0;
+      char lang[5];
+      //First we evaluate the size of the total string, second we write the string
+      for(int i=0;i<2;i++)
+      {
+        temp_size=snprintf(string, i*string_size, "        pids : ");
+        if(i==0) string_size+=temp_size; else pos +=temp_size;
+        for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+        {
+          strncpy(lang+1,channels[curr_channel].pids_language[curr_pid],4);
+          if(lang[1]=='-') lang[0]='\0'; else lang[0]=' ';
+          temp_size=snprintf(string+pos, i*string_size-pos, "%d (%s%s), ", channels[curr_channel].pids[curr_pid], pid_type_to_str(channels[curr_channel].pids_type[curr_pid]), lang);
+          if(i==0) string_size+=temp_size; else pos+=temp_size;
+        }
+        if(i==0) {
+          string=calloc((string_size+1),sizeof(char));
+          if(string==NULL)
+          {
+            log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+            Interrupted=ERROR_MEMORY<<8;
+            return;
+          }
+        }
+      }
+    log_message( log_module, MSG_DETAIL,"%s\n",string);
+    free(string);
     }
 }
 
