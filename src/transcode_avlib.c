@@ -4,6 +4,8 @@
  * 
  * Code written by Utelisys Communications B.V.
  * Copyright (C) 2009 Utelisys Communications B.V.
+ * Copyright (c) 2000-2003 Fabrice Bellard
+ * Copyright (c) 2009-2010 Brice Dubost
  *
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -89,14 +91,8 @@ if (NULL != options->config_option) {\
 /************ Compatibility for "old" libavcodec ********************/
 //see http://lists.mplayerhq.hu/pipermail/ffmpeg-cvslog/2009-February/019812.html
 #undef OLD_LIBAVCODEC
-#if LIBAVCODEC_VERSION_MAJOR < 52
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(15<<8)+0)
 #define OLD_LIBAVCODEC 1
-#endif
-
-#if LIBAVCODEC_VERSION_MAJOR == 52
-#if LIBAVCODEC_VERSION_MAJOR < 15
-#define OLD_LIBAVCODEC 1
-#endif
 #endif
 #if OLD_LIBAVCODEC
 #warning You are using an "old" version of libavcodec, the audio resampling might not work
@@ -119,6 +115,7 @@ ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
 
 /************ End of Compatibility for "old" libavcodec *****************/
 
+void show_codecs(void);
 
 /* FIXME: don't know another way to include this ffmpeg function */
 void url_split(char *proto, int proto_size,
@@ -1715,6 +1712,7 @@ void* initialize_transcode(transcode_thread_data_t *transcode_thread_data)
         avlib_initialized = 1;
         avcodec_register_all();
         av_register_all();
+        show_codecs(); //show the available codecs
     }
 
     pthread_mutex_unlock(&avlib_mutex);
@@ -2314,4 +2312,73 @@ FREE_PACKET_AND_CONTINUE:
      av_free(frame);
  
      return;
+}
+
+
+/** @brief Show the available codecs
+ * This code is from the ffmpeg source code, snapshotted 16 june 2010
+ * slightly modified by Brice Dubost
+ *
+ * Copyright (c) 2000-2003 Fabrice Bellard
+*/
+void show_codecs(void)
+{
+    AVCodec *p=NULL, *p2;
+    const char *last_name;
+    log_message (log_module, MSG_DETAIL,
+        "Codecs available:\n"
+        " D.. = Decoding supported\n"
+        " .E. = Encoding supported\n"
+        " ..V = Video codec\n"
+        " ..A = Audio codec\n"
+        " ..S = Subtitle codec\n");
+    last_name= "000";
+    for(;;){
+        int decode=0;
+        int encode=0;
+        const char *type_str;
+
+        p2=NULL;
+        while((p= av_codec_next(p))) {
+            if((p2==NULL || strcmp(p->name, p2->name)<0) &&
+                strcmp(p->name, last_name)>0){
+                p2= p;
+                decode= encode= 0;
+            }
+            if(p2 && strcmp(p->name, p2->name)==0){
+                if(p->decode) decode=1;
+                if(p->encode) encode=1;
+            }
+        }
+        if(p2==NULL)
+            break;
+        last_name= p2->name;
+
+        switch(p2->type) {
+        case CODEC_TYPE_VIDEO:
+            type_str = "V";
+            break;
+        case CODEC_TYPE_AUDIO:
+            type_str = "A";
+            break;
+        case CODEC_TYPE_SUBTITLE:
+            type_str = "S";
+            break;
+        default:
+            type_str = "?";
+            break;
+        }
+        log_message (log_module, MSG_DETAIL,
+            " %s%s%s %-15s %s\n",
+            decode ? "D":" ",
+            encode ? "E":" ",
+            type_str,
+            p2->name,
+//see http://git.ffmpeg.org/?p=ffmpeg;a=commitdiff;h=639cd7fb3af2e40b67e054c2218e6366d17fc0c2
+#if LIBAVCODEC_VERSION_INT < ((51<<16)+(55<<8)+0)
+            "");
+#else
+            p2->long_name ? p2->long_name : "");
+#endif
+    }
 }
