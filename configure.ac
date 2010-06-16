@@ -63,6 +63,8 @@ AC_ARG_ENABLE(transcoding,
 
 if test "${enable_transcoding}" = "yes"
 then
+  AC_CHECK_LIB([avformat], [url_split],[AC_DEFINE(HAVE_URL_SPLIT, 1, Define if the function url_split exists)], [])
+  AC_CHECK_LIB([avformat], [ff_url_split],[AC_DEFINE(HAVE_FF_URL_SPLIT, 1, Define if the function ff_url_split exists)], [])
   AC_CHECK_LIB([pthread], [pthread_create],[], [enable_transcoding="no"])
   AC_CHECK_HEADERS([libavcodec/avcodec.h ffmpeg/avcodec.h])
   AC_CHECK_HEADERS([libavformat/avformat.h ffmpeg/avformat.h])

@@ -90,11 +90,7 @@ if (NULL != options->config_option) {\
 
 /************ Compatibility for "old" libavcodec ********************/
 //see http://lists.mplayerhq.hu/pipermail/ffmpeg-cvslog/2009-February/019812.html
-#undef OLD_LIBAVCODEC
 #if LIBAVCODEC_VERSION_INT < ((52<<16)+(15<<8)+0)
-#define OLD_LIBAVCODEC 1
-#endif
-#if OLD_LIBAVCODEC
 #warning You are using an "old" version of libavcodec, the audio resampling might not work
 ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
                                         int output_rate, int input_rate,
@@ -117,6 +113,8 @@ ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
 
 void show_codecs(void);
 
+//see http://git.ffmpeg.org/?p=ffmpeg;a=commitdiff;h=a9cef968e49190daf68ad824f71994bd6579bb34
+#ifdef HAVE_URL_SPLIT
 /* FIXME: don't know another way to include this ffmpeg function */
 void url_split(char *proto, int proto_size,
            char *authorization, int authorization_size,
@@ -124,6 +122,21 @@ void url_split(char *proto, int proto_size,
            int *port_ptr,
            char *path, int path_size,
            const char *url);
+#define URL_SPLIT_MUMU url_split
+#endif
+#ifdef HAVE_FF_URL_SPLIT
+/* FIXME: don't know another way to include this ffmpeg function */
+void ff_url_split(char *proto, int proto_size,
+           char *authorization, int authorization_size,
+           char *hostname, int hostname_size,
+           int *port_ptr,
+           char *path, int path_size,
+           const char *url);
+#define URL_SPLIT_MUMU ff_url_split
+#endif
+#ifndef URL_SPLIT_MUMU
+#error "url_split not present, please report"
+#endif
 
 typedef struct output_stream_transcode_data_t
 {
@@ -355,7 +368,7 @@ int create_sdp(AVFormatContext *ac[], int n_files, char *buff, int size)
                 /* Get port */
 
                 int port;
-                url_split(NULL, 0, NULL, 0, NULL, 0, &port, NULL, 0, ac[i]->filename);
+                URL_SPLIT_MUMU(NULL, 0, NULL, 0, NULL, 0, &port, NULL, 0, ac[i]->filename);
 
                 /* Generate SDP lines for MP4A-LATM */
 
