@@ -279,26 +279,11 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
           log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
           Interrupted=ERROR_MEMORY<<8;
           return -1;
-	  
 	}
       memset (autoconf_vars->autoconf_temp_psip, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 #ifdef HAVE_LIBPTHREAD
       pthread_mutex_init(&autoconf_vars->autoconf_temp_psip->packetmutex,NULL);
 #endif
-      if(autoconf_vars->autoconf_lcn)
-      {
-	autoconf_vars->autoconf_temp_nit=malloc(sizeof(mumudvb_ts_packet_t));
-        if(autoconf_vars->autoconf_temp_nit==NULL)
-	{
-          log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-          Interrupted=ERROR_MEMORY<<8;
-          return -1;
-        }
-        memset (autoconf_vars->autoconf_temp_nit, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-#ifdef HAVE_LIBPTHREAD
-        pthread_mutex_init(&autoconf_vars->autoconf_temp_nit->packetmutex,NULL);
-#endif
-      }
       autoconf_vars->services=malloc(sizeof(mumudvb_service_t));
       if(autoconf_vars->services==NULL)
 	{
@@ -327,6 +312,23 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
           channels[curr_channel].pids_type[0]=PID_PMT;
           snprintf(channels[curr_channel].pids_language[0],4,"%s","---");
 	}
+    }
+    if (autoconf_vars->autoconfiguration)
+    {
+      if(autoconf_vars->autoconf_lcn)
+      {
+        autoconf_vars->autoconf_temp_nit=malloc(sizeof(mumudvb_ts_packet_t));
+        if(autoconf_vars->autoconf_temp_nit==NULL)
+        {
+          log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+          Interrupted=ERROR_MEMORY<<8;
+          return -1;
+        }
+        memset (autoconf_vars->autoconf_temp_nit, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+#ifdef HAVE_LIBPTHREAD
+        pthread_mutex_init(&autoconf_vars->autoconf_temp_nit->packetmutex,NULL);
+#endif
+      }
     }
   return 0;
 
@@ -1011,6 +1013,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
             }
           }
 	  free(autoconf_vars->autoconf_temp_nit);
+	  autoconf_vars->autoconf_temp_nit=NULL;
           autoconf_definite_end(tuneparams->card, tuneparams->tuner, chan_and_pids, multicast_vars->multicast, unicast_vars);
 	}
       }
@@ -1047,7 +1050,10 @@ int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_a
       {
         autoconf_definite_end(tuneparams->card, tuneparams->tuner, chan_and_pids, multicast_vars->multicast, unicast_vars);
         if(autoconf_vars->autoconf_temp_nit)
+        {
 	  free(autoconf_vars->autoconf_temp_nit);
+          autoconf_vars->autoconf_temp_nit=NULL;
+        }
       }
     }
     else if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL)
@@ -1063,7 +1069,10 @@ int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_a
       log_message( log_module, MSG_WARN,"Warning : No NIT found before timeout\n");
       autoconf_definite_end(tuneparams->card, tuneparams->tuner, chan_and_pids, multicast_vars->multicast, unicast_vars);
       if(autoconf_vars->autoconf_temp_nit)
+      {
         free(autoconf_vars->autoconf_temp_nit);
+        autoconf_vars->autoconf_temp_nit=NULL;
+      }
       autoconf_vars->autoconfiguration=0;
     }
   }
