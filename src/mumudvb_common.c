@@ -38,6 +38,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 
 
@@ -206,4 +207,38 @@ int string_mult(char *string)
   if(strchr(multpos+1,'*')!=NULL)
     return number1*string_mult(multpos+1);
   return number1*atoi(multpos+1);
+}
+
+/** @brief Special sprintf wich append the text to an existing string and allocate the memory for it
+*/
+int mumu_string_append(mumu_string_t *string, const char *psz_format, ...)
+{
+  int size;
+  va_list args;
+
+  va_start( args, psz_format );
+
+  size=vsnprintf(NULL, 0, psz_format, args);
+  string->string=realloc(string->string,(string->length+size+1)*sizeof(char));
+  if(string->string==NULL)
+  {
+    log_message(NULL,MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    return ERROR_MEMORY<<8;
+  }
+  vsnprintf(string->string+string->length, size+1, psz_format, args);
+  string->length=string->length+size;
+  va_end( args );
+  return 0;
+}
+
+/** @brief Free a MuMuDVB string
+*/
+void mumu_free_string(mumu_string_t *string)
+{
+  if(string->string)
+  {
+    free(string->string);
+    string->string=NULL;
+    string->length=0;
+  }
 }

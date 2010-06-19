@@ -163,46 +163,29 @@ void log_streamed_channels(char *log_module,int number_of_channels, mumudvb_chan
   log_message( log_module,  MSG_INFO, "Diffusion %d channel%s\n", number_of_channels,
 	       (number_of_channels <= 1 ? "" : "s"));
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+  {
+    log_message( log_module,  MSG_INFO, "Channel number : %3d, name : \"%s\"  service id %d \n", curr_channel, channels[curr_channel].name, channels[curr_channel].service_id);
+    if(multicast)
+      log_message( log_module,  MSG_INFO, "\tMulticast ip : %s:%d\n", channels[curr_channel].ipOut, channels[curr_channel].portOut);
+    if(unicast)
     {
-	  log_message( log_module,  MSG_INFO, "Channel number : %3d, name : \"%s\"  service id %d \n", curr_channel, channels[curr_channel].name, channels[curr_channel].service_id);
-      if(multicast)
-	log_message( log_module,  MSG_INFO, "\tMulticast ip : %s:%d\n", channels[curr_channel].ipOut, channels[curr_channel].portOut);
-      if(unicast)
-      {
-	log_message( log_module,  MSG_INFO, "\tUnicast : Channel accessible via the master connection, %s:%d\n",unicastipOut, unicast_master_port);
-	if(channels[curr_channel].unicast_port)
-	  log_message( log_module,  MSG_INFO, "\tUnicast : Channel accessible directly via %s:%d\n",unicastipOut, channels[curr_channel].unicast_port);
-      }
-      int string_size=0;
-      int temp_size;
-      char *string=NULL;
-      int pos=0;
-      char lang[5];
-      //First we evaluate the size of the total string, second we write the string
-      for(int i=0;i<2;i++)
-      {
-        temp_size=snprintf(string, i*string_size, "        pids : ");
-        if(i==0) string_size+=temp_size; else pos +=temp_size;
-        for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
-        {
-          strncpy(lang+1,channels[curr_channel].pids_language[curr_pid],4);
-          if(lang[1]=='-') lang[0]='\0'; else lang[0]=' ';
-          temp_size=snprintf(string+pos, i*string_size-pos, "%d (%s%s), ", channels[curr_channel].pids[curr_pid], pid_type_to_str(channels[curr_channel].pids_type[curr_pid]), lang);
-          if(i==0) string_size+=temp_size; else pos+=temp_size;
-        }
-        if(i==0) {
-          string=calloc((string_size+1),sizeof(char));
-          if(string==NULL)
-          {
-            log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-            Interrupted=ERROR_MEMORY<<8;
-            return;
-          }
-        }
-      }
-    log_message( log_module, MSG_DETAIL,"%s\n",string);
-    free(string);
+      log_message( log_module,  MSG_INFO, "\tUnicast : Channel accessible via the master connection, %s:%d\n",unicastipOut, unicast_master_port);
+      if(channels[curr_channel].unicast_port)
+        log_message( log_module,  MSG_INFO, "\tUnicast : Channel accessible directly via %s:%d\n",unicastipOut, channels[curr_channel].unicast_port);
     }
+    mumu_string_t string=EMPTY_STRING;
+    char lang[5];
+    if((Interrupted=mumu_string_append(&string, "        pids : ")))return;
+    for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+    {
+      strncpy(lang+1,channels[curr_channel].pids_language[curr_pid],4);
+      lang[0]=(lang[1]=='-') ? '\0': ' ';
+      if((Interrupted=mumu_string_append(&string, "%d (%s%s), ", channels[curr_channel].pids[curr_pid], pid_type_to_str(channels[curr_channel].pids_type[curr_pid]), lang)))
+        return;
+    }
+    log_message( log_module, MSG_DETAIL,"%s\n",string.string);
+    mumu_free_string(&string);
+  }
 }
 
 /**
@@ -212,32 +195,15 @@ void log_streamed_channels(char *log_module,int number_of_channels, mumudvb_chan
 void log_pids(char *log_module, mumudvb_channel_t *channel, int curr_channel)
 {
   /******** display the pids **********/
-  int string_size=0;
-  int temp_size;
-  char *string=NULL;
-  int pos=0;
-  //First we evaluate the size of the total string, second we write the string
-  for(int i=0;i<2;i++)
+
+  mumu_string_t string=EMPTY_STRING;
+  if((Interrupted=mumu_string_append(&string, "PIDs for channel %d \"%s\" : ",curr_channel, channel->name)))return;
+  for (int curr_pid = 0; curr_pid < channel->num_pids; curr_pid++)
   {
-    temp_size=snprintf(string, i*string_size, "PIDs for channel %d \"%s\" : ",curr_channel, channel->name);
-    if(i==0) string_size+=temp_size; else pos +=temp_size;
-    for (int curr_pid = 0; curr_pid < channel->num_pids; curr_pid++)
-    {
-      temp_size=snprintf(string+pos, i*string_size-pos, " %d ",channel->pids[curr_pid]);
-      if(i==0) string_size+=temp_size; else pos+=temp_size;
-    }
-    if(i==0) {
-      string=calloc((string_size+1),sizeof(char));
-      if(string==NULL)
-      {
-        log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-        Interrupted=ERROR_MEMORY<<8;
-        return;
-      }
-    }
+    if((Interrupted=mumu_string_append(&string, " %d",channel->pids[curr_pid])))return;
   }
-  log_message( log_module, MSG_DETAIL,"%s\n",string);
-  free(string);
+  log_message( log_module, MSG_DETAIL,"%s\n",string.string);
+  mumu_free_string(&string);
   /********  end of display the pids **********/
 }
 

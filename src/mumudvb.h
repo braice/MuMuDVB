@@ -339,6 +339,16 @@ typedef struct mumudvb_chan_and_pids_t{
   uint8_t number_chan_asked_pid[8193];
 }mumudvb_chan_and_pids_t;
 
+/** struct containing a string */
+typedef struct mumu_string_t{
+  char *string;
+  int length; //string length (not including \0)
+}mumu_string_t;
+
+#define EMPTY_STRING {NULL,0}
+
+int mumu_string_append(mumu_string_t *string, const char *psz_format, ...);
+void mumu_free_string(mumu_string_t *string);
 
 int mumudvb_close(int Interrupted);
 int mumudvb_poll(fds_t *fds);
