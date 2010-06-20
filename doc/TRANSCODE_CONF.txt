@@ -4,12 +4,25 @@ MuMuDVB - README for the configuration of the transcoding
 General information
 -------------------
 
-Transcoding configuration is per channel. All the transcoding configuration has to ome just after the channel it concerns.
+Placement of the options
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+All the transcoding configuration concerning a channel has to come just after the channel it concerns.
+If you define some transcoding option before any channel, this configuration will be common to all channels.
+
+
+Listing the available codecs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To see the installed codecs on your system run MuMuDVB in verbose mode (one -v on the command line) with transcoding enabled and configured (ie transcode_enable=1). The available codecs will be displayed on the log output after the initialisation of avlibs.
 Otherwise you can use the `ffmpeg -codecs` command (see `man ffmpeg` for more information on this command).
 If your ffmpeg is not sufficiently recent, you can use `ffmpeg -formats` which will give you a clue.
 
+
+Transcode and autoconfiguration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Transcoding works with partial autoconfiguration, but not full autoconfiguration for the moment. The support of templates will be added soon.
 
 Examples
 --------

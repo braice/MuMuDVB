@@ -311,10 +311,14 @@ unicast_parameters_t unicast_vars={
   .queue_max_size=UNICAST_DEFAULT_QUEUE_MAX,
 };
 
+#ifdef ENABLE_TRANSCODING
+/** The transcode options defined for all the channels */
+transcode_options_t global_transcode_opt;
+#endif
+
 //logging
 int log_initialised=0; /**say if we opened the syslog resource*/
 int verbosity = MSG_INFO+1; /** the verbosity level for log messages */
-
 
 // prototypes
 static void SignalHandler (int signum);//below
@@ -367,6 +371,8 @@ int
 
   /**Do we avoid sending scrambled packets ?*/
   int dont_send_scrambled=0;
+
+
 
 
   // Initialise PID map
@@ -500,6 +506,7 @@ int
   }
 
   curr_channel=-1;
+  int curr_channel_old=-1;
   // we scan config file
   // see doc/README_CONF* for further information
   int line_len;
@@ -578,7 +585,7 @@ int
         exit(ERROR_CONF);
     }
 #ifdef ENABLE_TRANSCODING
-    else if ((curr_channel>=0)&&(transcode_read_option(&chan_and_pids.channels[curr_channel].transcode_options, channel_start, delimiteurs, &substring)))
+    else if ((transcode_read_option((curr_channel>=0)?&chan_and_pids.channels[curr_channel].transcode_options : &global_transcode_opt, delimiteurs, &substring)))
     {
       continue;
     }
@@ -739,6 +746,15 @@ int
       exit(ERROR_TOO_CHANNELS);
     }
 
+    //A new channel have been defined
+    if(curr_channel_old != curr_channel)
+    {
+      curr_channel_old = curr_channel;
+      #ifdef ENABLE_TRANSCODING
+      //We copy the common transcode options to the new channel
+      transcode_copy_options(&global_transcode_opt,&chan_and_pids.channels[curr_channel].transcode_options);
+      #endif
+    }
   }
   fclose (conf_file);
 

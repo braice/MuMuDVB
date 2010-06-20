@@ -201,11 +201,6 @@ int transcode_enqueue_data(void *transcode_handle, void *data, int data_size)
 
 #define SET_OPTION_INT(config_option_name, struct_option_name)\
 else if (!strcmp(*substring, config_option_name)) {\
-    if (0 == ip_ok) {\
-        log_message( log_module,  MSG_ERROR,\
-            config_option_name" : You have to start a channel first (using ip= or channel_next)\n");\
-        exit(ERROR_CONF);\
-    }\
     if (NULL == struct_option_name) {\
         struct_option_name = malloc(sizeof(int));\
     }\
@@ -214,11 +209,6 @@ else if (!strcmp(*substring, config_option_name)) {\
 
 #define SET_OPTION_FLT(config_option_name, struct_option_name)\
 else if (!strcmp(*substring, config_option_name)) {\
-    if (0 == ip_ok) {\
-        log_message( log_module,  MSG_ERROR,\
-            config_option_name" : You have to start a channel first (using ip= or channel_next)\n");\
-        exit(ERROR_CONF);\
-    }\
     if (NULL == struct_option_name) {\
         struct_option_name = malloc(sizeof(float));\
     }\
@@ -227,11 +217,6 @@ else if (!strcmp(*substring, config_option_name)) {\
 
 #define SET_OPTION_STR(config_option_name, struct_option_name, max_length)\
 else if (!strcmp(*substring, config_option_name)) {\
-    if (0 == ip_ok) {\
-        log_message( log_module,  MSG_ERROR,\
-            config_option_name" : You have to start a channel first (using ip= or channel_next)\n");\
-        exit(ERROR_CONF);\
-    }\
     *substring = strtok(NULL, delimiteurs);\
     int length = strlen(*substring);\
     if (length <= max_length) {\
@@ -272,14 +257,9 @@ void trim(char *s)
     }
 }
 
-int transcode_read_option(struct transcode_options_t *transcode_options, int ip_ok, char *delimiteurs, char **substring)
+int transcode_read_option(struct transcode_options_t *transcode_options, char *delimiteurs, char **substring)
 {
     if (!strcmp(*substring, "transcode_streaming_type")) {
-        if (0 == ip_ok) {
-            log_message( log_module,  MSG_ERROR,
-                "transcode_streaming_type : You have to start a channel first (using ip= or channel_next)\n");
-            exit(ERROR_CONF);
-        }
 
         *substring = strtok(NULL, delimiteurs);
 
@@ -317,11 +297,6 @@ int transcode_read_option(struct transcode_options_t *transcode_options, int ip_
         }
     }
     else if (!strcmp(*substring, "transcode_x264_profile")) {
-        if (0 == ip_ok) {
-            log_message( log_module,  MSG_ERROR,
-                "transcode_x264_profile : You have to start a channel first (using ip= or channel_next)\n");
-            exit(ERROR_CONF);
-        }
 
         *substring = strtok(NULL, delimiteurs);
 
@@ -393,11 +368,6 @@ int transcode_read_option(struct transcode_options_t *transcode_options, int ip_
         }
     }
     else if (!strcmp(*substring, "transcode_aac_profile")) {
-        if (0 == ip_ok) {
-            log_message( log_module,  MSG_ERROR,
-                "transcode_aac_profile : You have to start a channel first (using ip= or channel_next)\n");
-            exit(ERROR_CONF);
-        }
 
         *substring = strtok(NULL, delimiteurs);
 
@@ -488,27 +458,33 @@ int transcode_read_option(struct transcode_options_t *transcode_options, int ip_
 /********** Functions to copy transcode options *********************/
 
 #define COPY_OPTION_INT(option_name, struct_source, struct_dest)\
-  if (NULL == struct_dest->option_name) {\
-    struct_dest->option_name = malloc(sizeof(int));\
-  }\
-  *(struct_dest->option_name) = *(struct_source->option_name);\
+  if(NULL != struct_source->option_name){\
+    if (NULL == struct_dest->option_name) {\
+      struct_dest->option_name = malloc(sizeof(int));\
+    }\
+    *(struct_dest->option_name) = *(struct_source->option_name);\
+  }
 
 
 #define COPY_OPTION_FLT(option_name, struct_source, struct_dest)\
-  if (NULL == struct_dest->option_name) {\
-    struct_dest->option_name = malloc(sizeof(float));\
-  }\
-  *(struct_dest->option_name) = *(struct_source->option_name);\
+  if(NULL != struct_source->option_name){\
+    if (NULL == struct_dest->option_name) {\
+      struct_dest->option_name = malloc(sizeof(float));\
+    }\
+    *(struct_dest->option_name) = *(struct_source->option_name);\
+  }
 
 
 
 #define COPY_OPTION_STR(option_name, struct_source, struct_dest)\
-  length = strlen(struct_source->option_name);\
-  if (NULL != struct_dest->option_name) {\
-    free(struct_dest->option_name);\
-  }\
-  struct_dest->option_name = malloc(length + 1);\
-  strcpy(struct_dest->option_name, struct_source->option_name);\
+  if(NULL != struct_source->option_name){\
+    length = strlen(struct_source->option_name);\
+    if (NULL != struct_dest->option_name) {\
+      free(struct_dest->option_name);\
+    }\
+    struct_dest->option_name = malloc(length + 1);\
+    strcpy(struct_dest->option_name, struct_source->option_name);\
+  }
 
 
 
@@ -559,8 +535,6 @@ void transcode_copy_options(struct transcode_options_t *src, struct transcode_op
   COPY_OPTION_INT(video_frames_per_second,src,dst)
   COPY_OPTION_INT(rtp_port,src,dst)
   COPY_OPTION_INT(keyint_min,src,dst)
-  strcpy(dst->ip,src->ip);
-
 }
 
 
