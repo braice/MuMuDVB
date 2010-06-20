@@ -93,11 +93,7 @@ Detailled feature list
 - Can sort the EIT PID to send only the ones corresponding to the current channel
 - Data reading can be done using a thread, see <<threaded_read, thread reading>> section.
 - Playlist generation, see <<playlist, playlist>>
-
-Others small programs are availaible from http://gitweb.braice.net/gitweb?p=mumudvb_tools;a=summary[MuMuDVB Tools Repository] :
-
-- relay: this program takes a stream and sends it again on a different ip. It can be used to unicast a stream over a network that doesn't support multicast, and multicast it again at the other end
-- recup_sap: tiny sap client, get sap announces during 60 seconds and put them on a file (unsorted)
+- Templates support
 
 
 Installation
@@ -291,10 +287,14 @@ There is different keywords available:
 |Keyword |Description 
 |%name | The name given by the provider 
 |%number | The MuMuDVB channel number 
+|%card | The DVB card number
+|%tuner | The tuner number
+|%server| The server number specified by server_id or the command line 
 |%lcn | The logical channel number (channel number given by the provider). You have to put `autoconf_lcn=1` in your configuration file and your provider have to stream LCN. The LCN will be displayed with three digits including 0. Ex "002". If the LCN is not detected, %lcn will be replaced by an empty string.
 |%2lcn | Same as above but with a two digits format
 |==================================================================================================================
 
+Please refer to README_CONF to see which options accept which templates
 
 Other keywords can be easily added if necessary.
 

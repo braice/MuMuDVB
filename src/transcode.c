@@ -539,20 +539,23 @@ void transcode_copy_options(struct transcode_options_t *src, struct transcode_op
 
 
 
-void transcode_options_apply_templates(struct transcode_options_t *opt, int card, int server, int channel_number)
+void transcode_options_apply_templates(struct transcode_options_t *opt, int card, int tuner, int server, int channel_number)
 {
   char c_number[10];
   char c_card[10];
+  char c_tuner[10];
   char c_server[10];
   int len;
   sprintf(c_number,"%d",channel_number+1);
   sprintf(c_card,"%d",card);
+  sprintf(c_tuner,"%d",tuner);
   sprintf(c_server,"%d",server);
   if(opt->sdp_filename)
   {
     len=strlen(opt->sdp_filename)+1;
     opt->sdp_filename=mumu_string_replace(opt->sdp_filename,&len,1,"%number",c_number);
     opt->sdp_filename=mumu_string_replace(opt->sdp_filename,&len,1,"%card",c_card);
+    opt->sdp_filename=mumu_string_replace(opt->sdp_filename,&len,1,"%tuner",c_tuner);
     opt->sdp_filename=mumu_string_replace(opt->sdp_filename,&len,1,"%server",c_server);
     log_message(log_module,MSG_DETAIL,"Channel %d, sdp_filename %s\n",channel_number,opt->sdp_filename);
   }
@@ -561,6 +564,7 @@ void transcode_options_apply_templates(struct transcode_options_t *opt, int card
     len=strlen(opt->ffm_url)+1;
     opt->ffm_url=mumu_string_replace(opt->ffm_url,&len,1,"%number",c_number);
     opt->ffm_url=mumu_string_replace(opt->ffm_url,&len,1,"%card",c_card);
+    opt->ffm_url=mumu_string_replace(opt->ffm_url,&len,1,"%tuner",c_tuner);
     opt->ffm_url=mumu_string_replace(opt->ffm_url,&len,1,"%server",c_server);
     log_message(log_module,MSG_DETAIL,"Channel %d, ffm_url %s\n",channel_number,opt->ffm_url);
   }
@@ -569,6 +573,7 @@ void transcode_options_apply_templates(struct transcode_options_t *opt, int card
     len=strlen(opt->s_rtp_port)+1;
     opt->s_rtp_port=mumu_string_replace(opt->s_rtp_port,&len,1,"%number",c_number);
     opt->s_rtp_port=mumu_string_replace(opt->s_rtp_port,&len,1,"%card",c_card);
+    opt->s_rtp_port=mumu_string_replace(opt->s_rtp_port,&len,1,"%tuner",c_tuner);
     opt->s_rtp_port=mumu_string_replace(opt->s_rtp_port,&len,1,"%server",c_server);
     opt->rtp_port=malloc(sizeof(int));
     *opt->rtp_port=string_comput(opt->s_rtp_port);

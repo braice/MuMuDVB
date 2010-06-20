@@ -65,6 +65,7 @@ Fonctionalités principales
 - Support pour les en-têtes RTP (seulement pour la diffusion en multicast)
 - Transcodage, référez vous à la section <<transcoding,Transcodage>>
 
+
 Liste détaillée des fonctionalités
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -93,11 +94,8 @@ Liste détaillée des fonctionalités
 - Peut trier le PID EIT pour envoyer seulement ceux correspondant a la chaine courante
 - La lecture des données peux se faire via un thread, voir la section <<threaded_read, lecture par thread>>
 - Génération de listes de lecture, voir <<playlist, playlist>>
+- Possibilité d'utiliser des mots-clefs
 
-D'autres petits programmes sont disponibles depuis le http://gitweb.braice.net/gitweb?p=mumudvb_tools;a=summary[dépot MuMuDVB Tools] :
-
-- relay: ce programme s'inscrit a un flux multicast et le renvoie sur une autre adresse. Il peux être utilisé pour traverser des réseaux ne supportant pas le multicast.
-- recup_sap: très petit et basique client sap. Récupère les annonces pendant 60 secondes et les place dans un fichier.
 
 
 Installation
@@ -291,9 +289,14 @@ Il y a différents mot-clef disponibles
 |Mot clef |Description 
 |%name | Le nom donné par le diffuseur
 |%number | Le numéro de chaîne de MuMuDVB 
+|%card | Le numéro de carte DVB
+|%tuner | Le numéro de tuner
+|%server| Le numéro de serveur, spécifié en ligne de commande ou via l'option server_id
 |%lcn | Le "logical channel number" ( numéro de chaîne attribué par le diffuseur ). Vous devez mettre `autoconf_lcn=1` dans votre fichier de configuration et votre diffuseur doit diffuser le LCN. Le LCN sera "affiché" avec trois chiffre incluant des 0. Ex "002". Si le LCN n'est pas détecté, %lcn sera remplacé par une chaîne de caractères vide
 |%2lcn | Idem que précédemment mais avec un format à deux chiffres.
 |==================================================================================================================
+
+Reférez vous au README_CONF pour savoir quelles options acceptent quels mot clefs
 
 D'autres mot clefs peuvent être facilement ajoutés si nécessaire.
 

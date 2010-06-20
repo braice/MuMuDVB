@@ -38,6 +38,6 @@ void transcode_wait_thread_end(void *transcode_handle);
 int transcode_enqueue_data(void *transcode_handle, void *data, int data_size);
 int transcode_read_option(struct transcode_options_t *transcode_options, char *delimiteurs, char **substring);
 void transcode_copy_options(struct transcode_options_t *src, struct transcode_options_t *dst);
-void transcode_options_apply_templates(struct transcode_options_t *opt, int card, int server, int channel_number);
+void transcode_options_apply_templates(struct transcode_options_t *opt, int card, int tuner, int server, int channel_number);
 
 #endif

@@ -217,12 +217,12 @@ Paramètres pour l'autoconfiguration
 |Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
 |autoconfiguration |autoconfiguration 1, partial: Trouve les PIDs audio et video, 2, full: autoconfiguration complète | 0 | 0, 1, 2, partial ou full | Se référer au README pour plus de détails
 |autoconf_ip_header |Pour l'autoconfiguration complète, la première partie de l'ip des chaînes diffusées | | | Option obsolète, utilisez `autoconf_ip` à la place
-|autoconf_ip |Pour l'autoconfiguration complète, le modèle pour l'ip de la chaîne diffusée | 239.100.%card.%number  | |  Vous pouvez utiliser les mot clefs `%card`, `%number` et `%server`
+|autoconf_ip |Pour l'autoconfiguration complète, le modèle pour l'ip de la chaîne diffusée | 239.100.%card.%number  | |  Vous pouvez utiliser les mot clefs `%card`, `%tuner`, `%number` et `%server`
 |autoconf_radios | Lors de l'autoconfiguration complète, est ce que les radios seront diffusées ?| 0 | 0 ou 1 | 
 |autoconf_scrambled |Lors de l'autoconfiguration complète, est ce que les chaînes brouillées seront diffusées ? | 0 | 0 or 1 | Automatique lorsque cam_support=1. Parfois, une chaîne en clair peut être marquée comme étant cryptée. Cette option est aussi nécessaire lorsqu'une softcam est utilisée.
 |autoconf_pid_update |Est ce que MuMuDVB se reconfigure lorsque le PMT est mis à jour ? | 1 | 0 or 1 | 
 |autoconf_unicast_start_port |Le port unicast pour la première chaine découverte |  |  | Voir README-fr pour plus de détails.
-|autoconf_unicast_port |Le port unicast pour chaque chaine. Ex "2000+%number" (autoconfiguration complète) |  |  | Vous pouvez utiliser des expressions contenant `+` `*` `%card` et `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
+|autoconf_unicast_port |Le port unicast pour chaque chaine. Ex "2000+%number" (autoconfiguration complète) |  |  | Vous pouvez utiliser des expressions contenant `+` `*` `%card`, `%tuner` et `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
 |autoconf_sid_list |Pour ne pas autoconfigurer toutes les chaînes du transpondeur en autoconfiguration complète, spécifiez avec cette option la liste des service id (numeros de programme) des chaînes que vous voulez configurer | vide |  | 
 |autoconf_name_template |Le modèle pour le nom des chaînes en autoconfiguration complète, ex `%number-%name` | vide |  | Voir README-fr pour plus de détails.
 |autoconf_lcn | Si vous voulez obtenir le logical channel number vous devez specifier cette option à 1. Cette option est utile pour les templates %lcn et %2lcn | 0 | 0 ou 1 | Voir le README pour plus de details
@@ -251,7 +251,7 @@ Paramètres concernant l'unicast HTTP
 |Nom |Description | Valeur par défaut | Commentaires
 |unicast | Utilisez cette option pour activer l'unicast HTTP | 0  |   se référer au README pour plus de détails
 |ip_http | L'ip d'écoute du serveur unicast. Si vous voulez écouter sur toutes les interfaces mettez 0.0.0.0 | 0.0.0.0  |    se référer au README pour plus de détails.
-|port_http | Le port d'écoute pour l'unicast HTTP | 4242 |  Vous pouvez utiliser des expressions mathématiques contenant des entiers, * et +. Vous pouvex utiliser le mot clef %card. Ex `port_http=2000+%card*100`
+|port_http | Le port d'écoute pour l'unicast HTTP | 4242 |  Vous pouvez utiliser des expressions mathématiques contenant des entiers, * et +. Vous pouvez utiliser les mots clefs `%card`, `%tuner` et `%server`. Ex `port_http=2000+%card*100`
 |unicast_consecutive_errors_timeout | Le délai pour déconnecter un client qui ne réponds pas | 5 |  Un client sera déconnecté si aucune donnée n'a été envoyée avec succès durant cet intervalle. Une valeur 0 désactive cette fonctionnalité (déconseillé).
 |unicast_max_clients | Limite sur le nombre de clients simultanés | 0 |  0 : pas de limite.
 |unicast_queue_size | La taille maximum du tampon utilisé lorsque l'écriture pour un client échoue. | 512k octets|  en octets.

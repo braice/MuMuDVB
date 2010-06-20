@@ -805,6 +805,8 @@ int
     char number[10];
     sprintf(number,"%d",tuneparams.card);
     unicast_vars.portOut_str=mumu_string_replace(unicast_vars.portOut_str,&len,1,"%card",number);
+    sprintf(number,"%d",tuneparams.tuner);
+    unicast_vars.portOut_str=mumu_string_replace(unicast_vars.portOut_str,&len,1,"%tuner",number);
     sprintf(number,"%d",server_id);
     unicast_vars.portOut_str=mumu_string_replace(unicast_vars.portOut_str,&len,1,"%server",number);
     unicast_vars.portOut=string_comput(unicast_vars.portOut_str);
@@ -862,7 +864,7 @@ int
 #ifdef ENABLE_TRANSCODING
   for (curr_channel = 0; curr_channel < MAX_CHANNELS; curr_channel++)
   {
-    transcode_options_apply_templates(&chan_and_pids.channels[curr_channel].transcode_options,tuneparams.card,server_id,curr_channel);
+    transcode_options_apply_templates(&chan_and_pids.channels[curr_channel].transcode_options,tuneparams.card,tuneparams.tuner,server_id,curr_channel);
   }
 #endif
 

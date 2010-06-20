@@ -608,7 +608,7 @@ void autoconf_sort_services(mumudvb_service_t *services)
  * @param unicast_vars The unicast parameters
  * @param fds The file descriptors (for filters and unicast)
  */
-int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card, unicast_parameters_t *unicast_vars, int multicast_out)
+int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card, int tuner, unicast_parameters_t *unicast_vars, int multicast_out)
 {
 
   mumudvb_service_t *actual_service;
@@ -693,6 +693,8 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
             mumu_string_replace(tempstring,&len,0,"%number",number);
             sprintf(number,"%d",card);
             mumu_string_replace(tempstring,&len,0,"%card",number);
+            sprintf(number,"%d",tuner);
+            mumu_string_replace(tempstring,&len,0,"%tuner",number);
             sprintf(number,"%d",server_id);
             mumu_string_replace(tempstring,&len,0,"%server",number);
             channels[channel_number].portOut=string_comput(tempstring);
@@ -706,6 +708,8 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
           mumu_string_replace(ip,&len,0,"%number",number);
           sprintf(number,"%d",card);
           mumu_string_replace(ip,&len,0,"%card",number);
+          sprintf(number,"%d",tuner);
+          mumu_string_replace(ip,&len,0,"%tuner",number);
           sprintf(number,"%d",server_id);
           mumu_string_replace(ip,&len,0,"%server",number);
           strcpy(channels[channel_number].ipOut,ip);
@@ -745,6 +749,8 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
           mumu_string_replace(tempstring,&len,0,"%number",number);
           sprintf(number,"%d",card);
           mumu_string_replace(tempstring,&len,0,"%card",number);
+          sprintf(number,"%d",tuner);
+          mumu_string_replace(tempstring,&len,0,"%tuner",number);
           sprintf(number,"%d",server_id);
           mumu_string_replace(tempstring,&len,0,"%server",number);
           channels[channel_number].unicast_port=string_comput(tempstring);
@@ -753,7 +759,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 #ifdef ENABLE_TRANSCODING
         //We copy the common transcode options to the new channel
         transcode_copy_options(&global_transcode_opt,&channels[channel_number].transcode_options);
-        transcode_options_apply_templates(&channels[channel_number].transcode_options,card,server_id,channel_number);
+        transcode_options_apply_templates(&channels[channel_number].transcode_options,card,tuner,server_id,channel_number);
 #endif
         channel_number++;
       }
@@ -792,7 +798,7 @@ int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parame
   int curr_channel,curr_pid;
   //We sort the services
   autoconf_sort_services(autoconf_vars->services);
-  chan_and_pids->number_of_channels=autoconf_services_to_channels(*autoconf_vars, chan_and_pids->channels, multicast_vars->common_port, tuneparams->card, unicast_vars, multicast_vars->multicast); //Convert the list of services into channels
+  chan_and_pids->number_of_channels=autoconf_services_to_channels(*autoconf_vars, chan_and_pids->channels, multicast_vars->common_port, tuneparams->card, tuneparams->tuner, unicast_vars, multicast_vars->multicast); //Convert the list of services into channels
   //we got the pmt pids for the channels, we open the filters
   for (curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
   {
