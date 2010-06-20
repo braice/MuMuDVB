@@ -663,7 +663,7 @@ Transcoding
 MuMuDVB peux transcoder le flux dans différents formats pour économiser de la bande passante. Le transcodage est effectué en utilisant les librairies du projet ffmpeg. Cette fonctionnalité est assez nouvelle, n'hesitez pas à envoyer vos remarques/suggestions.
 
 [NOTE]
-Le transcodage ne fonctionne pas pour le moment avec l'autoconfiguratin complète/l'unicast.
+Le transcodage ne fonctionne pas pour le moment avec l'unicast.
 
 
 Compiler MuMuDVB avec le support pour le transcodage
@@ -703,6 +703,19 @@ transcode_qmin=10
 transcode_qmax=51
 ------------------------------
 
+
+Codec not found
+^^^^^^^^^^^^^^^
+
+Si le module de transodage ne trouve pas le codec que vous voulez, vous devez probablement installer des codecs supplementaires (libavcodec-extra-52 pour debian).
+
+Lancez MuMuDVB en mode verbeux vous donnera la liste des codecs disponible.
+
+
+Le flux non transcodé est envoyé
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Pour eviter aux flux original d'être envoyé, vous pouvez utiliser l'option transcode_send_transcoded_only.
 
 
 Détails techniques (en vrac)
@@ -864,6 +877,12 @@ Voici une courte description des codes d'erreur
     ERROR_GENERIC,
     ERROR_NO_CAM_INIT,
 ------------------------------
+
+
+Utilisation avec des clients "particuliers"
+-------------------------------------------
+
+Cette section n'est pas traduite, referez vous a la version anglaise.
 
 
 

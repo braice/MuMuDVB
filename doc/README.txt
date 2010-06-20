@@ -667,7 +667,7 @@ Transcoding
 MuMuDVB supports transcoding to various formats to save bandwidth. The transcoding is made using ffmpeg librairies. This feature is pretty new, so feel free to contact if you have comments/suggestions
 
 [NOTE]
-Transcoding doesn't work for the moment with full autoconfiguration/unicast
+Transcoding doesn't work for the moment with unicast
 
 
 Compiling MuMuDVB with transcoding support
@@ -705,6 +705,18 @@ transcode_qdiff=4
 transcode_qmin=10
 transcode_qmax=51
 ------------------------------
+
+Codec not found
+^^^^^^^^^^^^^^^
+
+If the transcoding is complaining about a codec not found, you will have to install extra codecs (libavcodec-extra-52 on debian)
+
+By running MuMuDVB in verbose mode you will get the list of available codecs.
+
+The untranscoded stream is still sent
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For avoiding the original stream to be also sent, use the transcode_send_transcoded_only option
 
 Technical details (not sorted)
 ------------------------------
@@ -862,5 +874,136 @@ Here's a short description of the error codes
     ERROR_GENERIC,
     ERROR_NO_CAM_INIT,
 ------------------------------
+
+
+Using MuMuDVB with "particular" clients
+---------------------------------------
+
+People were able to use MuMuDVB with various clients, I will report here the tutorials I received for some of them
+
+XBMC (for XBOX originally)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Description: * XBMC (XBMP really) started as a program for modified XBOX consoles. In the following years, XBMC has grown into a multi-platform, multi-architecture media center that runs on most standard hardware. The hardware and legal limitations of the XBOX were always a concern and the Team has instead focused on running on the hardware that most people already have.
+
+*Website: * http://xbmc.org/
+
+*Tutorial: *
+Here`s what You have to do, open Your favorite text editor and write an ip address with the protocol You are using of the particular program and port save it as something.strm. You have to create .strm files for every program You are streaming. Once you have done that fire up WinSCP and connect to the ip address of Your XBMC box if You are using the live version username and password is xbmc xbmc if You have installed the live version then You have provided the username and password during install process. Now copy theoes .strm files to the XBMC box in lets say home folder. Now in XBMC go to the video menu then click add source then click browse and navigate to the home folder and click ok then u have to give the name of that source use what ever You like and click ok and thats it. Go to the video menu You will see that You have a folder named as You named the source open it and You will see all of Yours .strm files click on it and it will start to play the stream from mumudvb. Works weather You are using multicast or unicast.
+
+Thanks to Ivan Cabraja for the tutorials
+
+MythTV
+~~~~~~
+
+*Description: * MythTV is a Free Open Source software digital video recorder (DVR) project distributed under the terms of the GNU GPL.
+
+*Website: * http://www.mythtv.org/
+
+*Tutorial: * Configuring Mythtv and mumudvb
+
+Mumudvb Configuration:
+^^^^^^^^^^^^^^^^^^^^^^
+
+You need to turn pat rewriting on  (i.e. rewrite_pat=1).
+
+You can use either multicast or udp streaming to mythtv (udp streaming
+is achieved by using a non-multicast ip address in the  configuration
+file  i.e. ip=192.168.1.100). Http unicast streaming is not supported in
+mythtv, but RTSP should be when this is implemented in mumudvb.
+
+The channel name needs to be in the following format "channel number" -
+"channel name" (e.g. name=1 - TV One )
+
+Mythtv configuration:
+^^^^^^^^^^^^^^^^^^^^^
+
+* Single-transponder *
+
+In mythtv-setup you need to add a new "network recorder" capture card.
+Enter the address of the playlist mumudvb provides in the  "M3U URL"
+field. This will be something like
+http://192.168.2.2:4242/playlist_multicast.m3u
+ 
+You then create a video source as normal, and associate this with the
+"Network recorder" capture card via the "input connections" option. 
+
+You then need to carry out a channel scan (while you are associating the
+video source or via the channel editor).
+
+The channel scan appears to hang on 0%, but just select finish after a
+couple of seconds. This should have loaded the channels defined in the
+M3U file into mythtv. 
+
+Relying on the EIT information embedded in the stream does not appear to
+work, so you need to load this information from an external xmltv
+source. You do this by going into the channel editor and adding the
+correct xmltv ID for each channel. Once you have done this you exit out
+of mythtv-setup and run something like: mythfilldatabase --file 1
+freeview.xml  (where in this case the the xmltv file is called
+freeview.xml).
+
+To allow recording and viewing of multiple channels from the one
+transponder, you need to add additional (identically configured)
+"network recorder" capture cards. For example if you want to be able to
+record two channels and watch a third at the same time you need to have
+set up a total of three network recorder cards.
+
+* Multiple-Transponders *
+
+if you are streaming channels from several transponders (by using
+several instances of mumudvb) you have two options:
+
+1) The obvious thing to do is to define a different network recorder for
+each transponder (with the appropriate playlist defined), each
+transponder has to be associated with a different video source (assuming
+each transponder contains different channels). However, this does not
+seem to work well, with regular crashes when changing channels, and it
+also requires that you first switch between video sources to be able to
+change between channels on different transponders [this may be due to my
+lack of skill at configuring mythtv]
+
+2) An easier way is to generate a custom m3u file, that contains the
+channels of all the transponders. This also allows you to define the
+xmltvid of each channel as well - removing the need to do this manually
+in the channel editor. In this case when you set up the network
+recorders, you can enter a file path for the location of the m3u file,
+as opposed to accessing it via a web-server (e.g.
+file///home/nick/channels.m3u ). Once again you simply make multiple
+copies of the (identical) network recorder capture card if you want to
+record/watch multiple channels.
+
+An example of a m3u file is as follows (in this case the first four
+channels defined are from one mumudvb instance, and the last two from
+another - of course care has to be taken in configuring the various
+mumudvb instances to make sure none of the channels are assigned the
+same port etc):
+
+
+--------------------------------------------------
+#EXTM3U
+#EXTINF:0,1 - TV1
+#EXTMYTHTV:xmltvid=tv1.freeviewnz.tv
+udp://192.168.2.101:1233
+#EXTINF:0,2 - TV2
+#EXTMYTHTV:xmltvid=tv2.freeviewnz.tv
+udp://192.168.2.101:1235
+#EXTINF:0,6 - TVNZ 6
+#EXTMYTHTV:xmltvid=tvnz6.freeviewnz.tv
+udp://192.168.2.101:1236
+#EXTINF:0,7 - TVNZ 7
+#EXTMYTHTV:xmltvid=tvnz7.freeviewnz.tv
+udp://192.168.2.101:1237
+#EXTINF:0,3 - TV3
+#EXTMYTHTV:xmltvid=tv3.freeviewnz.tv
+udp://192.168.2.101:1238
+#EXTINF:0,4 - c4
+#EXTMYTHTV:xmltvid=c4.freeviewnz.tv
+udp://192.168.2.101:1239
+--------------------------------------------------
+
+
+Thanks to Nick Graham for the tutorial
+
 
 

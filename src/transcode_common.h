@@ -87,6 +87,7 @@ typedef struct transcode_options_t
     char *s_rtp_port;
     int *rtp_port;  //used after templating
     int *keyint_min;
+    int *send_transcoded_only;
     char ip[20]; //for rtp streaming
 } transcode_options_t;
 

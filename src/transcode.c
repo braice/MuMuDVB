@@ -447,7 +447,7 @@ int transcode_read_option(struct transcode_options_t *transcode_options, char *d
     SET_OPTION_INT("transcode_video_frames_per_second", transcode_options->video_frames_per_second)
     SET_OPTION_STR("transcode_rtp_port", transcode_options->s_rtp_port,TRANSCODE_RTP_PORT_MAX)
     SET_OPTION_INT("transcode_keyint_min", transcode_options->keyint_min)
-
+    SET_OPTION_INT("transcode_send_transcoded_only", transcode_options->send_transcoded_only)
     else {
         return 0;
     }
@@ -535,6 +535,7 @@ void transcode_copy_options(struct transcode_options_t *src, struct transcode_op
   COPY_OPTION_INT(video_frames_per_second,src,dst)
   COPY_OPTION_STR(s_rtp_port,src,dst)
   COPY_OPTION_INT(keyint_min,src,dst)
+  COPY_OPTION_INT(send_transcoded_only,src,dst)
 }
 
 

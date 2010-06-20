@@ -76,4 +76,5 @@ void free_transcode_options(transcode_options_t *transcode_options)
     FREE_TRANSOCDE_OPTION(s_rtp_port)
     FREE_TRANSOCDE_OPTION(rtp_port)
     FREE_TRANSOCDE_OPTION(keyint_min)
+    FREE_TRANSOCDE_OPTION(send_transcoded_only)
 }

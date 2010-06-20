@@ -56,6 +56,14 @@ transcode_enable
 
 *Possible Values:* 0 - disable (default); 1 - enable.
 
+transcode_send_transcoded_only
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Type:* <int>
+
+*Description:* Send only the transcoded stream
+
+*Possible Values:* 0 - send both (default); 1 - send only the transcoded stream.
 
 transcode_video_codec
 ~~~~~~~~~~~~~~~~~~~~~

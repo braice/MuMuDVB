@@ -1594,8 +1594,10 @@ int
 
 	    if (NULL == chan_and_pids.channels[curr_channel].transcode_options.enable ||
 		    1 != *chan_and_pids.channels[curr_channel].transcode_options.enable ||
-		    (NULL != chan_and_pids.channels[curr_channel].transcode_options.streaming_type &&
-		    STREAMING_TYPE_MPEGTS != *chan_and_pids.channels[curr_channel].transcode_options.streaming_type))
+		    ((NULL != chan_and_pids.channels[curr_channel].transcode_options.streaming_type &&
+		    STREAMING_TYPE_MPEGTS != *chan_and_pids.channels[curr_channel].transcode_options.streaming_type)&&
+		    (NULL == chan_and_pids.channels[curr_channel].transcode_options.send_transcoded_only ||
+		     1 != *chan_and_pids.channels[curr_channel].transcode_options.send_transcoded_only)))
 #endif
             /********** MULTICAST *************/
              //if the multicast TTL is set to 0 we don't send the multicast packets
