@@ -592,7 +592,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
             iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
             return -2; //to delete the client
           }
-          pos+=strlen("/bytsid/");
+          pos+=strlen("/bysid/");
           substring = strtok (client->buffer+pos, " ");
           if(substring == NULL)
             err404=1;
