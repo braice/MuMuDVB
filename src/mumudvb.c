@@ -1699,6 +1699,7 @@ int mumudvb_close(int Interrupted)
         transcode_wait_thread_end(chan_and_pids.channels[curr_channel].transcode_handle);
         free_transcode_options(&chan_and_pids.channels[curr_channel].transcode_options);
     }
+    free_transcode_options(&global_transcode_opt);
 #endif
   // we close the file descriptors
   close_card_fd (fds);
