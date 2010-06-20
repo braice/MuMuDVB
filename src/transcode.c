@@ -445,7 +445,7 @@ int transcode_read_option(struct transcode_options_t *transcode_options, char *d
     SET_OPTION_INT("transcode_audio_channels", transcode_options->audio_channels)
     SET_OPTION_INT("transcode_audio_sample_rate", transcode_options->audio_sample_rate)
     SET_OPTION_INT("transcode_video_frames_per_second", transcode_options->video_frames_per_second)
-    SET_OPTION_INT("transcode_rtp_port", transcode_options->rtp_port)
+    SET_OPTION_STR("transcode_rtp_port", transcode_options->s_rtp_port,TRANSCODE_RTP_PORT_MAX)
     SET_OPTION_INT("transcode_keyint_min", transcode_options->keyint_min)
 
     else {
@@ -533,14 +533,49 @@ void transcode_copy_options(struct transcode_options_t *src, struct transcode_op
   COPY_OPTION_INT(audio_channels,src,dst)
   COPY_OPTION_INT(audio_sample_rate,src,dst)
   COPY_OPTION_INT(video_frames_per_second,src,dst)
-  COPY_OPTION_INT(rtp_port,src,dst)
+  COPY_OPTION_STR(s_rtp_port,src,dst)
   COPY_OPTION_INT(keyint_min,src,dst)
 }
 
 
 
+void transcode_options_apply_templates(struct transcode_options_t *opt, int card, int server, int channel_number)
+{
+  char c_number[10];
+  char c_card[10];
+  char c_server[10];
+  int len;
+  sprintf(c_number,"%d",channel_number+1);
+  sprintf(c_card,"%d",card);
+  sprintf(c_server,"%d",server);
+  if(opt->sdp_filename)
+  {
+    len=strlen(opt->sdp_filename)+1;
+    opt->sdp_filename=mumu_string_replace(opt->sdp_filename,&len,1,"%number",c_number);
+    opt->sdp_filename=mumu_string_replace(opt->sdp_filename,&len,1,"%card",c_card);
+    opt->sdp_filename=mumu_string_replace(opt->sdp_filename,&len,1,"%server",c_server);
+    log_message(log_module,MSG_DETAIL,"Channel %d, sdp_filename %s\n",channel_number,opt->sdp_filename);
+  }
+  if(opt->ffm_url)
+  {
+    len=strlen(opt->ffm_url)+1;
+    opt->ffm_url=mumu_string_replace(opt->ffm_url,&len,1,"%number",c_number);
+    opt->ffm_url=mumu_string_replace(opt->ffm_url,&len,1,"%card",c_card);
+    opt->ffm_url=mumu_string_replace(opt->ffm_url,&len,1,"%server",c_server);
+    log_message(log_module,MSG_DETAIL,"Channel %d, ffm_url %s\n",channel_number,opt->ffm_url);
+  }
+  if(opt->s_rtp_port)
+  {
+    len=strlen(opt->s_rtp_port)+1;
+    opt->s_rtp_port=mumu_string_replace(opt->s_rtp_port,&len,1,"%number",c_number);
+    opt->s_rtp_port=mumu_string_replace(opt->s_rtp_port,&len,1,"%card",c_card);
+    opt->s_rtp_port=mumu_string_replace(opt->s_rtp_port,&len,1,"%server",c_server);
+    opt->rtp_port=malloc(sizeof(int));
+    *opt->rtp_port=string_comput(opt->s_rtp_port);
+    log_message(log_module,MSG_DETAIL,"Channel %d, computed RTP port %d\n",channel_number,*opt->rtp_port);
+  }
 
-
+}
 
 
 

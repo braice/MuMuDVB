@@ -90,7 +90,7 @@ int mumudvb_poll(fds_t *fds)
 
 /** @brief replace a tring by another
 * @param source
-* @param length the length of the source buffer
+* @param length the length of the source buffer (including '\0')
 * @param can_realloc Is the source string allocated by a malloc or fixed. The realloc is done only when the dest is bigger
 * @param toreplace the pattern to replace
 * @param replacement the replacement string for the pattern

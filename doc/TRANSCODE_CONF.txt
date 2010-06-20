@@ -22,7 +22,19 @@ If your ffmpeg is not sufficiently recent, you can use `ffmpeg -formats` which w
 Transcode and autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Transcoding works with partial autoconfiguration, but not full autoconfiguration for the moment. The support of templates will be added soon.
+Transcoding should work with autoconfiguration, please report any problem.
+
+Templates
+~~~~~~~~~
+
+You can use templates for the following options : 
+* transcode_sdp_filename
+* transcode_ffm_url
+* transcode_rtp_port
+
+In the case of *transcode_rtp_port* you can use mathematical expressions like "transcode_rtp_port=1000+%server*100+%number*2"
+
+The allowed templates are: `%server`, `%card` and `%number`;
 
 Examples
 --------
@@ -86,6 +98,7 @@ transcode_ffm_url
 
 *Description:* URL of FFM feed (required for FFM streaming)
 
+*Allowed templates:* `%number`, `%card` and `%server`
 
 transcode_rtp_port
 ~~~~~~~~~~~~~~~~~~
@@ -94,10 +107,10 @@ transcode_rtp_port
 
 *Description:* base port for RTP streaming
 
-Each RTP stream (audio or video) must go on an even port. Mumudvb will took for
+Each RTP stream (audio or video) must go on an even port. MuMuDVB will took for
 each media stream next even port starting from value specified in this option.
 
-
+*Allowed templates:* `%number`, `%card` and `%server`. You can use operations `*` and `+` like "transcode_rtp_port=1000+%server*100+%number*2"
 
 transcode_sdp_filename
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -106,7 +119,7 @@ transcode_sdp_filename
 
 *Description:* path to generated SDP file (for RTP streaming)
 
-
+*Allowed templates:* `%number`, `%card` and `%server`
 
 transcode_video_scale
 ~~~~~~~~~~~~~~~~~~~~~

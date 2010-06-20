@@ -852,8 +852,19 @@ int
              tuneparams.card, tuneparams.tuner);
     gen_config_file_header(conf_filename, filename_gen_conf);
   }
-  else 
+  else
     autoconf_vars.autoconf_pid_update=0;
+  /*****************************************************/
+  //End of Autoconfiguration init
+  /*****************************************************/
+
+  //Transcoding, we apply the templates
+#ifdef ENABLE_TRANSCODING
+  for (curr_channel = 0; curr_channel < MAX_CHANNELS; curr_channel++)
+  {
+    transcode_options_apply_templates(&chan_and_pids.channels[curr_channel].transcode_options,tuneparams.card,server_id,curr_channel);
+  }
+#endif
 
   //We desactivate things depending on multicast if multicast is suppressed
   if(!multicast_vars.ttl)
@@ -890,9 +901,7 @@ int
     log_message( log_module,  MSG_ERROR, "NO Multicast AND NO unicast. No data can be send :(, Exciting ....\n");
     return mumudvb_close(ERROR_CONF<<8);
   }
-  /*****************************************************/
-  //End of Autoconfiguration init
-  /*****************************************************/
+
 
 
   // we clear them by paranoia

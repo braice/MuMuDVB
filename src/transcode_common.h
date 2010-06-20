@@ -34,6 +34,7 @@
 #define TRANSCODE_SDP_FILENAME_MAX 1024
 #define TRANSCODE_AAC_PROFILE_MAX 32
 #define TRANSCODE_FFM_URL_MAX 1024
+#define TRANSCODE_RTP_PORT_MAX 1024
 
 #define STREAMING_TYPE_MPEGTS 1
 #define STREAMING_TYPE_RTP 2
@@ -83,7 +84,8 @@ typedef struct transcode_options_t
     int *audio_channels;
     int *audio_sample_rate;
     int *video_frames_per_second;
-    int *rtp_port;
+    char *s_rtp_port;
+    int *rtp_port;  //used after templating
     int *keyint_min;
     char ip[20]; //for rtp streaming
 } transcode_options_t;

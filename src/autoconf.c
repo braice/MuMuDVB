@@ -79,10 +79,16 @@
 #include "autoconf.h"
 #include "rtp.h"
 #include "log.h"
+#ifdef ENABLE_TRANSCODING
+#include "transcode.h"
+#endif
 
 extern int Interrupted;
 extern int server_id;
 static char *log_module="Autoconf: ";
+#ifdef ENABLE_TRANSCODING
+extern transcode_options_t global_transcode_opt;
+#endif
 
 
 mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int service_id);
@@ -618,7 +624,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
     if(parameters.autoconf_scrambled && actual_service->free_ca_mode)
         log_message( log_module, MSG_DETAIL,"Service scrambled. Name \"%s\"\n", actual_service->name);
 
-    //If there is a service_id list we look if we find it
+    //If there is a service_id list we look if we find it (option autoconf_sid_list)
     if(parameters.num_service_id)
     {
       int actual_service_id;
@@ -636,12 +642,12 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
       found_in_service_id_list=1;
 
     if(!parameters.autoconf_scrambled && actual_service->free_ca_mode)
-      log_message( log_module, MSG_DETAIL,"Service scrambled and no cam support. Name \"%s\"\n", actual_service->name);
+      log_message( log_module, MSG_DETAIL,"Service scrambled, no CAM support and no autoconf_scrambled, we skip. Name \"%s\"\n", actual_service->name);
     else if(!actual_service->pmt_pid)
       log_message( log_module, MSG_DETAIL,"Service without a PMT pid, we skip. Name \"%s\"\n", actual_service->name);
     else if(!found_in_service_id_list)
       log_message( log_module, MSG_DETAIL,"Service NOT in the service_id list, we skip. Name \"%s\", id %d\n", actual_service->name, actual_service->id);
-    else
+    else //service is ok, we make it a channel
     {
       //Cf EN 300 468 v1.9.1 Table 81
       if((actual_service->type==0x01||
@@ -671,6 +677,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
           mumu_string_replace(channels[channel_number].name,&len,0,"%name",actual_service->name);
           sprintf(number,"%d",channel_number+1);
           mumu_string_replace(channels[channel_number].name,&len,0,"%number",number);
+          //put LCN here
         }
         else
           strcpy(channels[channel_number].name,actual_service->name);
@@ -723,13 +730,10 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
             Interrupted=ERROR_MEMORY<<8;
             return -1;
           }
-          else
-          {
-            memset (channels[channel_number].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+          memset (channels[channel_number].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 #ifdef HAVE_LIBPTHREAD
-            pthread_mutex_init(&channels[channel_number].pmt_packet->packetmutex,NULL);
+          pthread_mutex_init(&channels[channel_number].pmt_packet->packetmutex,NULL);
 #endif
-          }
         }
         //We update the unicast port, the connection will be created in autoconf_finish_full
         if(unicast_port_per_channel && unicast_vars->unicast)
@@ -746,7 +750,11 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
           channels[channel_number].unicast_port=string_comput(tempstring);
           log_message( log_module, MSG_DEBUG,"Channel (direct) unicast port  %d\n",channels[channel_number].unicast_port);
         }
-
+#ifdef ENABLE_TRANSCODING
+        //We copy the common transcode options to the new channel
+        transcode_copy_options(&global_transcode_opt,&channels[channel_number].transcode_options);
+        transcode_options_apply_templates(&channels[channel_number].transcode_options,card,server_id,channel_number);
+#endif
         channel_number++;
       }
       else if(actual_service->type==0x02||actual_service->type==0x0a) //service_type digital radio sound service
@@ -771,7 +779,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
  * This function is called when FULL autoconfiguration is finished
  * It fill the asked pid array
  * It open the file descriptors for the new filters, and set the filters
- * It open the new sockets 
+ * It open the new sockets
  * It free autoconfiguration memory wich will be not used anymore
  *
  * @param card the card number
