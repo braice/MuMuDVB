@@ -884,23 +884,23 @@ People were able to use MuMuDVB with various clients, I will report here the tut
 XBMC (for XBOX originally)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-*Description: * XBMC (XBMP really) started as a program for modified XBOX consoles. In the following years, XBMC has grown into a multi-platform, multi-architecture media center that runs on most standard hardware. The hardware and legal limitations of the XBOX were always a concern and the Team has instead focused on running on the hardware that most people already have.
+*Description:* XBMC (XBMP really) started as a program for modified XBOX consoles. In the following years, XBMC has grown into a multi-platform, multi-architecture media center that runs on most standard hardware. The hardware and legal limitations of the XBOX were always a concern and the Team has instead focused on running on the hardware that most people already have.
 
-*Website: * http://xbmc.org/
+*Website:* http://xbmc.org/
 
-*Tutorial: *
+*Tutorial:*
 Here`s what You have to do, open Your favorite text editor and write an ip address with the protocol You are using of the particular program and port save it as something.strm. You have to create .strm files for every program You are streaming. Once you have done that fire up WinSCP and connect to the ip address of Your XBMC box if You are using the live version username and password is xbmc xbmc if You have installed the live version then You have provided the username and password during install process. Now copy theoes .strm files to the XBMC box in lets say home folder. Now in XBMC go to the video menu then click add source then click browse and navigate to the home folder and click ok then u have to give the name of that source use what ever You like and click ok and thats it. Go to the video menu You will see that You have a folder named as You named the source open it and You will see all of Yours .strm files click on it and it will start to play the stream from mumudvb. Works weather You are using multicast or unicast.
 
-Thanks to Ivan Cabraja for the tutorials
+Thanks to Ivan Cabraja for the tutorial
 
 MythTV
 ~~~~~~
 
-*Description: * MythTV is a Free Open Source software digital video recorder (DVR) project distributed under the terms of the GNU GPL.
+*Description:* MythTV is a Free Open Source software digital video recorder (DVR) project distributed under the terms of the GNU GPL.
 
-*Website: * http://www.mythtv.org/
+*Website:* http://www.mythtv.org/
 
-*Tutorial: * Configuring Mythtv and mumudvb
+*Tutorial:* Configuring Mythtv and mumudvb
 
 Mumudvb Configuration:
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -918,7 +918,7 @@ The channel name needs to be in the following format "channel number" -
 Mythtv configuration:
 ^^^^^^^^^^^^^^^^^^^^^
 
-* Single-transponder *
+*Single-transponder*
 
 In mythtv-setup you need to add a new "network recorder" capture card.
 Enter the address of the playlist mumudvb provides in the  "M3U URL"
@@ -949,7 +949,7 @@ transponder, you need to add additional (identically configured)
 record two channels and watch a third at the same time you need to have
 set up a total of three network recorder cards.
 
-* Multiple-Transponders *
+*Multiple-Transponders*
 
 if you are streaming channels from several transponders (by using
 several instances of mumudvb) you have two options:

@@ -198,7 +198,7 @@ Multicast parameters
 
 CAM support parameters
 ~~~~~~~~~~~~~~~~~~~~~~
-[width="80%",cols="2,8,1,2,3",options="header"]
+[width="80%",cols="2,5,2,2,5",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |cam_support |Specify if we wants the support for scrambled channels | 0 | 0 or 1 |

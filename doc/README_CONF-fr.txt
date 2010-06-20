@@ -201,7 +201,7 @@ Paramètres concernant le multicast
 Paramètres concernant le support des cartes CAM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[width="80%",cols="2,8,1,2,3",options="header"]
+[width="80%",cols="2,5,2,2,5",options="header"]
 |==================================================================================================================
 |Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
 |cam_support |Indique si l'on veux le support pour les chaînes brouillées | 0 | 0 ou 1 |
