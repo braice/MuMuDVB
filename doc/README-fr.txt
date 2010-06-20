@@ -879,6 +879,26 @@ Voici une courte description des codes d'erreur
 ------------------------------
 
 
+J'obtiens le message "DVR Read Error: Value too large for defined data type"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Ce message indique qu'un débordement de tampon a eu lieu dans le tampon du pilote de la carte DVB. C'est à dire que MuMuDVB n'a pas été capable de récupérer les paquets assez vite. Ce problème peut avoir des causes
+variées. Tout ce qui ralenti (beaucoup) MuMuDVB peut être la source de ce problème. Pour l'éviter vous pouvez essayer <<threaded_read, la lecture par thread>>.
+
+Des problèmes réseau peuvent provoquer ce message :
+
+I experienced the "DVR Read Error..." message very often on my  Streaming Server (ia64 Madison 1.3Ghz) (with errors in the video).
+I could solve the problem by exchanging the network switch. The old  switch was limiting multicast traffic to 10Mb/s per port. This limit  is not documented.
+
+I have tested the limit the programm dd and mnc (Multicast netcat,  http://code.google.com/p/mnc/)
+
+dd if=/dev/zero bs=188 count=1000000 | ./mnc-bin 239.10.0.3
+
+I looked with "iftop" at the current network statistics and with my  old switch i saw the limit at 10Mb/s with another switch I was able to  transmit 92Mb/s ~ 100% of the avaiable bandwith.
+
+Merci à Jan-Philipp Hülshoff
+
+
 Utilisation avec des clients "particuliers"
 -------------------------------------------
 

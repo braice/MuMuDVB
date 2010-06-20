@@ -875,6 +875,26 @@ Here's a short description of the error codes
     ERROR_NO_CAM_INIT,
 ------------------------------
 
+I get the message "DVR Read Error: Value too large for defined data type" what does it mean ?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This message means that an overflow append in the ard drivers buffer. I.e MuMuDVB was not able to get the packets suffiiently fast. This issue can have various causes, anything which an slow down (a lot) MuMuDVB an create this message.
+To avoid it you can try threaded_read see <<threaded_read, thread reading>> section.
+
+An explanation can be networking issues :
+
+I experienced the "DVR Read Error..." message very often on my  Streaming Server (ia64 Madison 1.3Ghz) (with errors in the video).
+I could solve the problem by exchanging the network switch. The old  switch was limiting multicast traffic to 10Mb/s per port. This limit  is not documented.
+
+I have tested the limit the programm dd and mnc (Multicast netcat,  http://code.google.com/p/mnc/)
+
+dd if=/dev/zero bs=188 count=1000000 | ./mnc-bin 239.10.0.3
+
+I looked with "iftop" at the current network statistics and with my  old switch i saw the limit at 10Mb/s with another switch I was able to  transmit 92Mb/s ~ 100% of the avaiable bandwith.
+
+Thanks to Jan-Philipp Hülshoff for the report
+
+
 
 Using MuMuDVB with "particular" clients
 ---------------------------------------
