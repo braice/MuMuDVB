@@ -28,9 +28,10 @@ Templates
 ~~~~~~~~~
 
 You can use templates for the following options : 
-* transcode_sdp_filename
-* transcode_ffm_url
-* transcode_rtp_port
+
+- transcode_sdp_filename
+- transcode_ffm_url
+- transcode_rtp_port
 
 In the case of *transcode_rtp_port* you can use mathematical expressions like "transcode_rtp_port=1000+%server*100+%number*2"
 
