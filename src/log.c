@@ -414,7 +414,7 @@ typedef struct ca_sys_id_t
   char descr[128];
 }ca_sys_id_t;
 
-//updated 2009 12 02
+//updated 2010 06 12
   ca_sys_id_t casysids[]={
   {0x01,0, "IPDC SPP (TS 102 474) Annex A "},
   {0x02,0, "IPDC SPP (TS 102 474) Annex B"},
@@ -513,6 +513,11 @@ typedef struct ca_sys_id_t
   {0x4B03 ,0 , "DuoCrypt"},
   {0x4B04 ,0 , "Great Wall CAS"},
   {0x4B05 ,0x4B06 , "DIGICAP"},
+  {0x4B07 ,0 , "Wuhan Reikost Technology Co., Ltd."},
+  {0x4B08 ,0 , "Philips"},
+  {0x4B09 ,0 , "Ambernetas"},
+  {0x4B0A ,0x4B0B , "Beijing Sumavision Technologies CO. LTD."},
+  {0x4B0C ,0x4B0F , "Sichuan changhong electric co.,ltd."},
   {0x5347 ,0 , "GkWare e.K."},
   {0x5601 ,0 , "Verimatrix, Inc. #1"},
   {0x5602 ,0 , "Verimatrix, Inc. #2"},
@@ -520,6 +525,7 @@ typedef struct ca_sys_id_t
   {0x5604 ,0 , "Verimatrix, Inc. #4"},
   {0x5605 ,0x5606 , "Sichuan Juizhou Electronic Co. Ltd"},
   {0x5607 ,0x5608 , "Viewscenes"},
+  {0x7BE0 ,0x7BE1 , "OOO"},
   {0xAA00 ,0 , "Best CAS Ltd"},
   };
   int num_casysids=105;
