@@ -483,3 +483,91 @@ int transcode_read_option(struct transcode_options_t *transcode_options, int ip_
     }
     return 1;
 }
+
+
+/********** Functions to copy transcode options *********************/
+
+#define COPY_OPTION_INT(option_name, struct_source, struct_dest)\
+  if (NULL == struct_dest->option_name) {\
+    struct_dest->option_name = malloc(sizeof(int));\
+  }\
+  *(struct_dest->option_name) = *(struct_source->option_name);\
+
+
+#define COPY_OPTION_FLT(option_name, struct_source, struct_dest)\
+  if (NULL == struct_dest->option_name) {\
+    struct_dest->option_name = malloc(sizeof(float));\
+  }\
+  *(struct_dest->option_name) = *(struct_source->option_name);\
+
+
+
+#define COPY_OPTION_STR(option_name, struct_source, struct_dest)\
+  length = strlen(struct_source->option_name);\
+  if (NULL != struct_dest->option_name) {\
+    free(struct_dest->option_name);\
+  }\
+  struct_dest->option_name = malloc(length + 1);\
+  strcpy(struct_dest->option_name, struct_source->option_name);\
+
+
+
+/******* End of functions to copy transcode options *****************/
+
+
+
+void transcode_copy_options(struct transcode_options_t *src, struct transcode_options_t *dst)
+{
+  int length=0;
+  COPY_OPTION_INT(enable,src,dst)
+  COPY_OPTION_INT(video_bitrate,src,dst)
+  COPY_OPTION_INT(audio_bitrate,src,dst)
+  COPY_OPTION_INT(gop,src,dst)
+  COPY_OPTION_INT(b_frames,src,dst)
+  COPY_OPTION_INT(mbd,src,dst)
+  COPY_OPTION_INT(cmp,src,dst)
+  COPY_OPTION_INT(subcmp,src,dst)
+  COPY_OPTION_STR(video_codec,src,dst)
+  COPY_OPTION_STR(audio_codec,src,dst)
+  COPY_OPTION_FLT(crf,src,dst)
+  COPY_OPTION_INT(refs,src,dst)
+  COPY_OPTION_INT(b_strategy,src,dst)
+  COPY_OPTION_INT(coder_type,src,dst)
+  COPY_OPTION_INT(me_method,src,dst)
+  COPY_OPTION_INT(me_range,src,dst)
+  COPY_OPTION_INT(subq,src,dst)
+  COPY_OPTION_INT(trellis,src,dst)
+  COPY_OPTION_INT(sc_threshold,src,dst)
+  COPY_OPTION_STR(rc_eq,src,dst)
+  COPY_OPTION_FLT(qcomp,src,dst)
+  COPY_OPTION_INT(qmin,src,dst)
+  COPY_OPTION_INT(qmax,src,dst)
+  COPY_OPTION_INT(qdiff,src,dst)
+  COPY_OPTION_INT(loop_filter,src,dst)
+  COPY_OPTION_INT(mixed_refs,src,dst)
+  COPY_OPTION_INT(enable_8x8dct,src,dst)
+  COPY_OPTION_INT(x264_partitions,src,dst)
+  COPY_OPTION_INT(level,src,dst)
+  COPY_OPTION_INT(streaming_type,src,dst)
+  COPY_OPTION_STR(sdp_filename,src,dst)
+  COPY_OPTION_INT(aac_profile,src,dst)
+  COPY_OPTION_INT(aac_latm,src,dst)
+  COPY_OPTION_FLT(video_scale,src,dst)
+  COPY_OPTION_STR(ffm_url,src,dst)
+  COPY_OPTION_INT(audio_channels,src,dst)
+  COPY_OPTION_INT(audio_sample_rate,src,dst)
+  COPY_OPTION_INT(video_frames_per_second,src,dst)
+  COPY_OPTION_INT(rtp_port,src,dst)
+  COPY_OPTION_INT(keyint_min,src,dst)
+  strcpy(dst->ip,src->ip);
+
+}
+
+
+
+
+
+
+
+
+

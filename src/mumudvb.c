@@ -1553,7 +1553,6 @@ int
 		if (NULL == chan_and_pids.channels[curr_channel].transcode_handle) {
 
 		    strcpy(chan_and_pids.channels[curr_channel].transcode_options.ip, chan_and_pids.channels[curr_channel].ipOut);
-		    chan_and_pids.channels[curr_channel].transcode_options.port = chan_and_pids.channels[curr_channel].portOut;
 
 		    chan_and_pids.channels[curr_channel].transcode_handle = transcode_start_thread(chan_and_pids.channels[curr_channel].socketOut,
 			&chan_and_pids.channels[curr_channel].sOut, &chan_and_pids.channels[curr_channel].transcode_options);

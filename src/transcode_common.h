@@ -85,8 +85,7 @@ typedef struct transcode_options_t
     int *video_frames_per_second;
     int *rtp_port;
     int *keyint_min;
-    char ip[20];
-    int port;
+    char ip[20]; //for rtp streaming
 } transcode_options_t;
 
 typedef struct transcode_thread_data_t
