@@ -107,6 +107,8 @@ typedef struct transcode_thread_data_t
     
     /* Transcode data queue */
     struct data_queue_t data_queue;
+    /* Is the queue full */
+    int data_queue_full;
 
     /* Transcode parameters */
     struct transcode_options_t *options;

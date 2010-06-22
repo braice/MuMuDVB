@@ -82,13 +82,13 @@ void* transcode_thread_routine(void *p)
 
         log_message( log_module, MSG_INFO, "Transcoding sarted.\n");
         transcode_thread_data->is_initialized = 1;
-        
+
         /* Transcode */
         transcode(transcode_handle, transcode_thread_data);
 
-        transcode_thread_data->is_initialized = 0;        
+        transcode_thread_data->is_initialized = 0;
         log_message( log_module, MSG_INFO, "Transcoding finished.\n");
- 
+
         /* Free transcode data - requires threadsafety */
         free_transcode(transcode_handle, transcode_thread_data);
     }
@@ -172,7 +172,7 @@ void transcode_wait_thread_end(void *transcode_handle)
 }
 
 int transcode_enqueue_data(void *transcode_handle, void *data, int data_size)
-{    
+{
     if (NULL == transcode_handle) {
         return -1;
     }
@@ -190,10 +190,17 @@ int transcode_enqueue_data(void *transcode_handle, void *data, int data_size)
     }
     else if (0 == result) {
         if (transcode_thread_data->is_initialized) {
+          if(!transcode_thread_data->data_queue_full) {
+            transcode_thread_data->data_queue_full=1;
             log_message( log_module, MSG_INFO, "Data queue is full.\n");
+          }
         }
     }
-
+    else if(transcode_thread_data->data_queue_full)
+    {
+      log_message( log_module, MSG_DETAIL, "Data queue is NOT full anymore.\n");
+      transcode_thread_data->data_queue_full=0;
+    }
     pthread_mutex_unlock(&transcode_thread_data->queue_mutex);
 
     return result;

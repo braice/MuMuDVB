@@ -524,17 +524,17 @@ ByteIOContext* create_output_byte_context(int socket, struct sockaddr_in *socket
         av_free(output_buffer);
         return NULL;
     }
-    
+
     context_data->socket = socket;
     context_data->socket_addr = socket_addr;
-    
+
     /* Creating ByteIOContext using input_buffer */
 
     ByteIOContext *output_io = av_alloc_put_byte(output_buffer, output_buffer_size, 1, context_data,
         NULL,
         write_output_packet,
         NULL);
-    
+
     if (NULL == output_io) {
         log_message( log_module, MSG_ERROR, "Couldn't create output IO context.\n");
         free(context_data);
@@ -667,6 +667,8 @@ AVFormatContext *create_output_format_context(int socket, struct sockaddr_in *so
         log_message( log_module, MSG_ERROR, "Couldn't define output format.\n");
         return NULL;
     }
+    else
+      log_message( log_module, MSG_ERROR, "Output format: %s\n",fmt->long_name);
 
     /* Create output context */
 
@@ -1116,7 +1118,7 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
 
     if (NULL == transcode_thread_data->options->streaming_type ||
             STREAMING_TYPE_MPEGTS == *transcode_thread_data->options->streaming_type) {
-        
+
         /* Need single output format context for all streams */
 
         out_context = create_output_format_context(transcode_thread_data->socket,
@@ -1126,7 +1128,7 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
 
         if (NULL == out_context) {
             log_message( log_module, MSG_ERROR, "Failed to create output context.\n");
-            
+
             free_format_context(in_context, 1, 0);
             free(transcode_data->input_streams_transcode_data);
             free(transcode_data);
@@ -1172,7 +1174,6 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
             CODEC_TYPE_SUBTITLE == in_stream->codec->codec_type*/) {
 
             /* Initialize decoder for input stream */
-                
             AVCodec *codec = avcodec_find_decoder(in_stream->codec->codec_id);
 
             if (NULL == codec) {
@@ -1192,13 +1193,13 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
                 Skip it. */
             if (0 == in_stream->codec->sample_rate &&
                 CODEC_TYPE_AUDIO == in_stream->codec->codec_type) {
-                
+
                 initialize_transcode_common_free(in_stream->codec, 1, NULL, NULL,
                     NULL, NULL, NULL, NULL);
-                
+
                 /* Fix memory leak in av_read_paket when reading this stream */
                 in_stream->need_parsing = AVSTREAM_PARSE_NONE;
-                
+
                 continue;
             }
 
@@ -1208,7 +1209,7 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
                 /* Creating separate output format context for each stream */
 
                 out_context = NULL;
-                
+
                 /* URL for RTP sreaming */
                 char url[30];
                 sprintf(url, "rtp://%s:%d", transcode_thread_data->options->ip, rtp_port);
@@ -1258,7 +1259,6 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
             pthread_mutex_unlock(&avlib_mutex);
 
             /* Add stream info to transcoding data */
-                
             /* Calculating start time for all streams */
             if (in_stream->start_time < smallest_start_time || 0 == smallest_start_time) {
                 smallest_start_time = in_stream->start_time;
@@ -1314,7 +1314,6 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
                 /* Write output context header */
 
                 if (0 != av_write_header(out_context)) {
-                    
                     log_message( log_module, MSG_ERROR, "Writing header failed.\n");
 
                     initialize_transcode_common_free(in_stream->codec, 0,
@@ -1339,7 +1338,7 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
 
             transcode_data->input_streams_transcode_data[i].output_streams_transcode_data =
                 malloc(sizeof(output_stream_transcode_data_t));
-         
+
             if (NULL == transcode_data->input_streams_transcode_data[i].output_streams_transcode_data) {
                 log_message( log_module, MSG_ERROR, "Failed to allocate memory for output_streams_transcode_data.\n");
 
@@ -1357,7 +1356,7 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
             output_stream_transcode_data.out_stream = out_stream;
 
             transcode_data->input_streams_transcode_data[i].output_streams_transcode_data[0] = output_stream_transcode_data;
-            transcode_data->input_streams_transcode_data[i].output_streams_count = 1;     
+            transcode_data->input_streams_transcode_data[i].output_streams_count = 1;
 
             output_streams_counter++;
         }
@@ -1386,7 +1385,6 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
 
                 free(buff);
             }
-            
             fclose(sdp_file);
         }
     }
