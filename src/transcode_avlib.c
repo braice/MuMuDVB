@@ -2190,12 +2190,12 @@ void transcode(void *transcode_avlib_handle, transcode_thread_data_t *transcode_
                 }
             }
         }
-        else if (CODEC_TYPE_AUDIO == in_stream->codec->codec_type) {            
+        else if (CODEC_TYPE_AUDIO == in_stream->codec->codec_type) {
 
             /* Decode audio */
  
             int result_bytes = TRANSCODE_BUF_SIZE;
-            
+
             /* Decoding audio to input buffer */
             bytes_decoded = avcodec_decode_audio2(in_stream->codec, inbuf,
                 &result_bytes, packet.data, packet.size);

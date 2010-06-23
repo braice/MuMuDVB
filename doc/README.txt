@@ -63,7 +63,7 @@ Features overview
 - Possibility to partially rewrite the stream for better compatibility with set-top boxes and some clients. See <<pat_rewrite,PAT Rewrite>> and <<sdt_rewrite,SDT Rewrite>> sections.
 - Support for HTTP unicast see <<unicast,http unicast>> section
 - Support for RTP headers (only for multicast)
-- Ability to transcode the stream (only for multicast, in beta test) see the <<transcoding,Transcoding>> section
+- Ability to transcode the stream (only for multicast for the moment) see the <<transcoding,Transcoding>> section
 
 Detailled feature list
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -669,54 +669,7 @@ MuMuDVB supports transcoding to various formats to save bandwidth. The transcodi
 [NOTE]
 Transcoding doesn't work for the moment with unicast
 
-
-Compiling MuMuDVB with transcoding support
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-In order to compile MuMuDVB with transcoding you will need the following librairies: libavcodec, libavformat and libswscale
-
-Then you have to add the --enable-transcoding flag to your configure. Ex: `./configure --enable-transcoding`
-
-Check at the end of the configure that the transcoding is effectively enabled. If not there is probably a library missing.
-
-
-Using transcoding
-~~~~~~~~~~~~~~~~~
-Please read the documentation file concerning the transcoding options and the examples
-
-Future developments for transcoding
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Making it work with unicast, in particular RTSP
-
-Common problems
-~~~~~~~~~~~~~~~
-
-Broken ffmpeg default settings detected
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If you get a message saying "Broken ffmpeg default settings detected"
-
-Adding the following options to your transcoding configuration will make it work
-
-------------------------------
-transcode_me_range=16
-transcode_qdiff=4
-transcode_qmin=10
-transcode_qmax=51
-------------------------------
-
-Codec not found
-^^^^^^^^^^^^^^^
-
-If the transcoding is complaining about a codec not found, you will have to install extra codecs (libavcodec-extra-52 on debian)
-
-By running MuMuDVB in verbose mode you will get the list of available codecs.
-
-The untranscoded stream is still sent
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-For avoiding the original stream to be also sent, use the transcode_send_transcoded_only option
+To have more details on transcoding, see the dedicated documentation file
 
 Technical details (not sorted)
 ------------------------------

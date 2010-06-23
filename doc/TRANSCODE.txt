@@ -4,18 +4,91 @@ MuMuDVB - README for the configuration of the transcoding
 General information
 -------------------
 
+
+Compiling MuMuDVB with transcoding support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In order to compile MuMuDVB with transcoding you will need the following librairies: libavcodec, libavformat and libswscale
+
+Then you have to add the --enable-transcoding flag to your configure. Ex: `./configure --enable-transcoding`
+
+Check at the end of the configure that the transcoding is effectively enabled. If not there is probably a library missing.
+
+
+Using transcoding
+~~~~~~~~~~~~~~~~~
+
+For transconding the stream you have to make a choice for three different parameters : 
+
+- The video Codec (and it's encoding parameters)
+- The audio Codec (and it's encoding parameters)
+- The container (how the audio and video data are mixed together)
+
+
+Future developments for transcoding
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Making it work with unicast, in particular RTSP
+
+Common problems
+~~~~~~~~~~~~~~~
+
+
+Data queue is full.
+^^^^^^^^^^^^^^^^^^^
+
+If you get the message `Data queue is full`, this usually means that your system is too slow to transcode what you asked. Ie the video data arrives faster that your ability to transcode it.
+
+
+Codec not found
+^^^^^^^^^^^^^^^
+
+If you get a message like `Couldn't find video encoder.` or `Couldn't find audio encoder.` this means that you don't have the codec you asked for installed on your system. You can check if you made a typo in the
+codec name by <<list_codecs,listing the availaible codecs>>.
+
+If the codec is really missing there is several solutions: 
+
+- Install extra codecs (libavcodec-extra-* on debian/ubuntu)
+- On debian, due to licence restrictions, you could try to install ffmpeg from the debian-multimedia repositories
+- Compile ffmpeg yourself
+
+
+Broken ffmpeg default settings detected
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you get a message saying "Broken ffmpeg default settings detected"
+
+Adding the following options to your transcoding configuration will make it work
+
+------------------------------
+transcode_me_range=16
+transcode_qdiff=4
+transcode_qmin=10
+transcode_qmax=51
+------------------------------
+
+
+
+The untranscoded stream is still sent
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For avoiding the original stream to be also sent, use the transcode_send_transcoded_only option
+
+
 Placement of the options
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 All the transcoding configuration concerning a channel has to come just after the channel it concerns.
 If you define some transcoding option before any channel, this configuration will be common to all channels.
 
-
+[[list_codecs]]
 Listing the available codecs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To see the installed codecs on your system run MuMuDVB in verbose mode (one -v on the command line) with transcoding enabled and configured (ie transcode_enable=1). The available codecs will be displayed on the log output after the initialisation of avlibs.
+
 Otherwise you can use the `ffmpeg -codecs` command (see `man ffmpeg` for more information on this command).
+
 If your ffmpeg is not sufficiently recent, you can use `ffmpeg -formats` which will give you a clue.
 
 

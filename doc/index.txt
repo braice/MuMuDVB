@@ -12,5 +12,5 @@ link:README_CONF.html[README concerning the configuration file]
 
 link:README_CONF-fr.html[README concernant le fichier de configuration, version française]
 
-link:TRANSCODE_CONF.html[Information concerning the transcoding options, english]
+link:TRANSCODE.html[Information concerning the transcoding, english]
 
