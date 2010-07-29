@@ -217,14 +217,15 @@ int mumu_string_append(mumu_string_t *string, const char *psz_format, ...)
   va_list args;
 
   va_start( args, psz_format );
-
   size=vsnprintf(NULL, 0, psz_format, args);
+  va_end( args );
   string->string=realloc(string->string,(string->length+size+1)*sizeof(char));
   if(string->string==NULL)
   {
     log_message(NULL,MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     return ERROR_MEMORY<<8;
   }
+  va_start( args, psz_format );
   vsnprintf(string->string+string->length, size+1, psz_format, args);
   string->length=string->length+size;
   va_end( args );
