@@ -108,7 +108,7 @@ Installation
 À partir d'un snapshot
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Si vous avez téléchargé un snapshot, vous devez regénérer les fichiers d'auto(conf make etc ...). Pour faire cela, vous avec besoin des autotools, automake et libtool et taper, dans le répertoire de MuMuDVB : 
+Si vous avez téléchargé un snapshot, vous devez regénérer les fichiers d'auto(conf make etc ...). Pour faire cela, vous avec besoin des autotools, automake, gettext et libtool et taper, dans le répertoire de MuMuDVB : 
 
 ----------------
 autoreconf -i -f
