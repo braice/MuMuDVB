@@ -122,7 +122,7 @@ char *mumu_string_replace(char *source, int *length, int can_realloc, char *tore
       tempstring=realloc(tempstring,sizeof(char)*(lengthtempstring+lengthreplacment-lengthpattern+1));
       pospattern=strstr(tempstring,toreplace);
     }
-    memmove(pospattern+lengthreplacment,pospattern+lengthpattern,lengthtempstring-((int)(pospattern-tempstring))-lengthpattern-1);
+    memmove(pospattern+lengthreplacment,pospattern+lengthpattern,lengthtempstring-((int)(pospattern-tempstring))-lengthpattern);
     memcpy(pospattern,replacement,lengthreplacment);
     lengthtempstring+=lengthreplacment-lengthpattern;
     pospattern=strstr(tempstring,toreplace);
