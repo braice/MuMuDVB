@@ -757,9 +757,7 @@ int
     }
   }
   fclose (conf_file);
-  //If we specified a card number on the command line, it overrides the config file
-  if(cmdlinecard!=-1)
-    tuneparams.card=cmdlinecard;
+
 
   //Autoconfiguration full is the simple mode for autoconfiguration, we set other option by default
   if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)
@@ -796,8 +794,11 @@ int
 		 card_buffer.max_thread_buffer_size=card_buffer.dvr_buffer_size;
   }
 
+  //If we specified a card number on the command line, it overrides the config file
+  if(cmdlinecard!=-1)
+    tuneparams.card=cmdlinecard;
   //if no specific path for the DVB device, we use the default one
-  if(!strlen(tuneparams.card_dev_path))
+  if((!strlen(tuneparams.card_dev_path))||(cmdlinecard!=-1))
     sprintf(tuneparams.card_dev_path,DVB_DEV_PATH,tuneparams.card);
 
 
