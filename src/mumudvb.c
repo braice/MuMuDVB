@@ -328,8 +328,8 @@ int read_multicast_configuration(multicast_parameters_t *, mumudvb_channel_t *, 
 int
     main (int argc, char **argv)
 {
-  int k,iRet;
-
+  int k,iRet,cmdlinecard;
+  cmdlinecard=-1;
 
   //MPEG2-TS reception and sort
   int pid;			/** pid of the current mpeg2 packet */
@@ -428,7 +428,7 @@ int
         strncpy (conf_filename, optarg, strlen (optarg) + 1);
         break;
       case 'a':
-        tuneparams.card=atoi(optarg);
+        cmdlinecard=atoi(optarg);
         break;
       case 's':
         tuneparams.display_strenght = 1;
@@ -757,6 +757,9 @@ int
     }
   }
   fclose (conf_file);
+  //If we specified a card number on the command line, it overrides the config file
+  if(cmdlinecard!=-1)
+    tuneparams.card=cmdlinecard;
 
   //Autoconfiguration full is the simple mode for autoconfiguration, we set other option by default
   if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)
@@ -792,6 +795,7 @@ int
 		 "Warning : You set a thread buffer size lower than your dvr buffer size, it's not possible to use such values. I increase your dvr_thread_buffer_size ...\n");
 		 card_buffer.max_thread_buffer_size=card_buffer.dvr_buffer_size;
   }
+
   //if no specific path for the DVB device, we use the default one
   if(!strlen(tuneparams.card_dev_path))
     sprintf(tuneparams.card_dev_path,DVB_DEV_PATH,tuneparams.card);
