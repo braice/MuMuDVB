@@ -237,7 +237,10 @@ Full autoconfiguration
 
 This is the easiest way to use MuMuDVB.
 
-Use this when you want to stream a full transponder.
+Use this when you want to stream a full transponder or a subset of a transponder (using autoconf_sid_list).
+
+[NOTE]
+You don't have to specify any channel using this mode
 
 In this mode, MuMuDVB will find for you the different channels, their name and their PIDs (PMT, PCR, Audio, Video, Subtitle, Teletext and AC3).
 
@@ -304,7 +307,10 @@ Other keywords can be easily added if necessary.
 Simple autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Use this when you want to control the name of the channels, and wich channel you want to stream.
+[NOTE]
+This autoconfiguration mode will soon disapear. If you absolutely need it except for setting the channel names and their IP adresses, please contact.
+
+Use this when you want to control the name of the channels, and their IPs better than using the templates.
 
 
 - You have to add 'autoconfiguration=partial' in the head of your config file.

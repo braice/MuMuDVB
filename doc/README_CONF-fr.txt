@@ -69,7 +69,8 @@ Paramètres concernant l'accord de la carte
 ------------------------------------------
 
 [NOTE]
-Pour la réception terrestre et câblée, vous pouvez utiliser w_scan pour savoir quelles chaînes vous pouvez recevoir. Pour plus de détails référez vous a la section <<w_scan, w_scan>>. Sinon vous pouvez regarder le contenu des "initial tuning files" fourni avec dvb-apps de linuxtv.
+Vous pouvez utiliser w_scan pour savoir quelles chaînes vous pouvez recevoir. Pour plus de détails référez vous a la section <<w_scan, w_scan>>.
+Sinon vous pouvez regarder le contenu des "initial tuning files" fourni avec dvb-apps de linuxtv.
 Le site  http://www.kingofsat.net[King Of Sat] référence les chaînes satellite pouvant être reçues en Europe
 
 
@@ -293,7 +294,7 @@ Vous utilisez l'autoconfiguration
 
 Si vous utilisez l'autoconfiguration complète, vous n'avez à spécifier aucune chaîne et vous n'avez besoin de spécifier aucun PID, cette section ne vous concerne donc pas.
 
-Si vous utilisez l'autoconfiguration partielle, vous aurez besoin seulement du PID PMT pour chaque chaîne, lisez la suite pour savoir comment l'obtenir.
+Si vous utilisez l'autoconfiguration partielle, vous aurez besoin du PID PMT pour chaque chaîne, lisez la suite pour savoir comment l'obtenir.
 
 Vous n'utilisez pas l'autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -307,7 +308,7 @@ Pour chaque chaîne, il est conseillé de spécifier au minimum :
 - Le PID PMT
 - Le PID PCR (si différent du PID audio/video)
 
-Si vous n'avez pas accès aux PIDs via un site web comme http://www.kingofsat.net[King Of Sat], la manière la plus facile pour les obtenir est d'utiliser les dvb-apps de linuxtv.
+Si vous n'avez pas accès aux PIDs via un site web comme http://www.kingofsat.net[King Of Sat], la manière la plus facile pour les obtenir est d'utiliser les dvb-apps de linuxtv ou w_scan.
 
 Si vous ne savez pas sur quelle fréquence accorder votre carte ou les chaînes que vous pouvez recevoir, vous pouvez utiliser <<w_scan,w_scan>> ou <<scan_inital_tuning,scan>> (des dvb-apps) si vous avez un fichier d'accord initial (généralement fourni avec la documentation de scan).
 
@@ -315,53 +316,39 @@ Si vous ne savez pas sur quelle fréquence accorder votre carte ou les chaînes 
 Utiliser w_scan pour obtenir un fichier d'accord initial
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 [NOTE]
-w_scan fonctionne uniquement pour la réception terrestre ou câblée.
+w_scan fonctionne uniquement pour la réception terrestre, câblée, ATSC et satellite.
 
-Vous pouvez obtenir w_scan à partir du http://edafe.org/vdr/w_scan/[site web de w_scan].
+Vous pouvez obtenir w_scan à partir du site web de w_scan : http://wirbel.htpc-forum.de/w_scan/index2.html[Allemand] or http://wirbel.htpc-forum.de/w_scan/index_en.html[Traduction Anglaise]
 
-Une fois que vous l'avez compilé (facultatif pour les x86), vous pouvez le lancer en utilisant  
----------------------------------------
-./w_scan -x >> inital_tuning_file.txt
----------------------------------------
+w_scan a un inconvénient comparé au programme scan de dvb-apps : w_scan prends ( habituellement ) plus de temps. Mais w_scan a plusieurs avantages : pas besoin de fichier de fréquence initial, autodétection de la carte et
+ recherche de chaîne plus "profonde".
+
+Un fois que vous l'avez compilé (facultatif pour x86), lancez le avec les options nécessaires (country est obligatoire pour la réception terrestre et cable. Pour le DVB-S/S2 vous devez spécifier le satellite)
 
 [NOTE]
-Si vous n'utilisez pas une carte DVB-T vous aurez a définir l'option 
--------------------------------
--f type	frontend type
- What programs do you want to search for?
-  a = atsc (vsb/qam)
-  c = cable
-  t = terrestrian [default]
--------------------------------
+Options principales de w_scan
+--------------------------------------------------------------
+	-f type	frontend type
+		What programs do you want to search for?
+		a = atsc (vsb/qam)
+		c = cable 
+		s = sat 
+		t = terrestrian [default]
+	-c	choose your country here:
+			DE, GB, US, AU, ..
+			? for list
+	-s	choose your satellite here:
+			S19E2, S13E0, S15W0, ..
+			? for list
+--------------------------------------------------------------
 
-Votre fichier `initial_tuning_file.txt` devrai contenir des lignes similaires à 
+Pour plus d'informations consultez l'aide de w_scan.
 
---------------------------------------------
-T 482000000 8MHz AUTO AUTO AUTO AUTO AUTO AUTO
-T 498000000 8MHz AUTO AUTO AUTO AUTO AUTO AUTO
-T 514000000 8MHz 2/3 2/3 QAM64 8k 1/4 NONE
---------------------------------------------
+Vous obtiendrez une liste des chaînes disponibles. Le format de cette liste est décrit http://www.vdr-wiki.de/wiki/index.php/Vdr%285%29#CHANNELS[ici]
 
-Si vous voulez utiliser l'autoconfiguration complète, ce fichier contient toutes les informations nécessaires. Par exemple, la seconde colonne est la fréquence ( en Hz ).
 
-Le format est le suivant : 
+Si vous voulez utiliser l'autoconfiguration complète, cette liste contient toutes les informations nécessaires. Par exemple, la seconde colonne est la fréquence.
 
-.Terrestre
-----------------------------------------------------------------------------------------
-T freq bandwidth fec_hi fec_lo modulation transmission-mode guard-interval hierarchy
-----------------------------------------------------------------------------------------
-
-.Câble
---------------------------------------------
-C freq symbol_rate fec modulation
---------------------------------------------
-
-.ATSC
---------------------------------------------
-A freq modulation
---------------------------------------------
-
-Si vous ne voulez pas utiliser l'autoconfiguration complète, vous pouvez utiliser `scan` avec ce fichier, voir la section  <<scan_inital_tuning, utiliser scan avec un fichier d'accord initial>>.
 
 [[scan_inital_tuning]]
 Utiliser scan avec un fichier d'accord initial
@@ -370,9 +357,12 @@ Utiliser scan avec un fichier d'accord initial
 [NOTE]
 En réception satellite, ceci vous permet de trouver toutes les fréquences (si le diffuseur suit la norme). En effet chaque transpondeur annonce les autres.
 
+Si vous ne savez pas ou trouver les fichiers d'accord initiaux, les versions récentes donnent une liste des fichiers installés par défaut lorsque scan est convoqué sans arguments.
+
+
 Dans la suite vous aurez besoin de l'utilitaire `scan` des dvb-apps.
 
-Si vous avez un fichier d'accord initial de `w_scan`, de la documentation de scan ou tout autre source, tapez : 
+Tapez : 
 
 --------------------------------------------------------
 scan -o pids cheminversvotrefichierdaccordinitial

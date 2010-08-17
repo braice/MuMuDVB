@@ -65,7 +65,7 @@ Parameters concerning the tuning of the card
 --------------------------------------------
 
 [NOTE]
-For terrestrial and cable, you can use w_scan to see the channels you can receive see <<w_scan, w_scan section>>.
+You can use w_scan to see the channels you can receive see <<w_scan, w_scan section>>.
 Otherwise you can have a look at the initial tuning files given with linuxtv's dvb-apps.
 For european satellite users, you can have a look at http://www.kingofsat.net[King Of Sat]
 
@@ -288,7 +288,7 @@ You use autoconfiguration
 
 If you use full autoconfiguration, you don't need to specify any channel and don't need any PID, this section does not concern you.
 
-If you use partial autoconfiguration, you'll need only the PMT PID for each channel.
+If you use partial autoconfiguration, you'll need the PMT PID for each channel.
 
 You do not use autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -301,7 +301,7 @@ For each channel it is advised to specify at least :
 - The PMT PID
 - The PCR PID (if different from video/audio)
 
-If you don't have access to the PIDs via a website like http://www.kingofsat.net[King Of Sat], the easiest way is to use linuxtv's dvb-apps.
+If you don't have access to the PIDs via a website like http://www.kingofsat.net[King Of Sat], the easiest way is to use linuxtv's dvb-apps or w_scan.
 
 
 You don't know on wich frequency to tune and the channels you can receive. In this case, you can use <<w_scan,w_scan>> or using <<scan_inital_tuning,scan>> from dvb-apps if you have an initial tuning config file.
@@ -310,52 +310,37 @@ You don't know on wich frequency to tune and the channels you can receive. In th
 Using w_scan to get an initial tuning file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 [NOTE]
-w_scan works only for terrestrial or cable.
+w_scan works for DVB-T, DVB-C, DVB-S/S2 and ATSC.
 
-You can find wscan in the http://edafe.org/vdr/w_scan/[w_scan website].
+You can find wscan in the http://wirbel.htpc-forum.de/w_scan/index2.html[w_scan website - German] or http://wirbel.htpc-forum.de/w_scan/index_en.html[w_scan website - English translation].
 
-Once you compiled it (optionnal for x86), you can lauch it using 
----------------------------------------
-./w_scan -x >> inital_tuning_file.txt
----------------------------------------
+w_scan have one disavantage over dvb-apps scan: it takes (usually) more time. But it have several advantages: no need for initial tuning file, card autodection and deeper channel search. 
+
+Once you compiled it (optionnal for x86), launch it with the options needed (country is mandatory for terrestrial and cable. for DVB-S/S2 you need to specify your satellite)
 
 [NOTE]
-If you are not scanning DVB-T you will have to set the option
--------------------------------
--f type	frontend type
- What programs do you want to search for?
-  a = atsc (vsb/qam)
-  c = cable
-  t = terrestrian [default]
--------------------------------
+Here's the main options for w_scan
+--------------------------------------------------------------
+	-f type	frontend type
+		What programs do you want to search for?
+		a = atsc (vsb/qam)
+		c = cable 
+		s = sat 
+		t = terrestrian [default]
+	-c	choose your country here:
+			DE, GB, US, AU, ..
+			? for list
+	-s	choose your satellite here:
+			S19E2, S13E0, S15W0, ..
+			? for list
+--------------------------------------------------------------
 
-Your `initial_tuning_file.txt` file should contain lines like 
+For more information, see w_scan's help
 
---------------------------------------------
-T 482000000 8MHz AUTO AUTO AUTO AUTO AUTO AUTO
-T 498000000 8MHz AUTO AUTO AUTO AUTO AUTO AUTO
-T 514000000 8MHz 2/3 2/3 QAM64 8k 1/4 NONE
---------------------------------------------
 
-If you want to use full autoconfiguration, this file contains all the parameters you need. For example the second row is the frequency.
+Your will get lines channels with the file format described http://www.vdr-wiki.de/wiki/index.php/Vdr%285%29#CHANNELS[here]  
 
-The format is : 
-.Terrestrial
-----------------------------------------------------------------------------------------
-T freq bandwidth fec_hi fec_lo modulation transmission-mode guard-interval hierarchy
-----------------------------------------------------------------------------------------
-
-.Cable
---------------------------------------------
-C freq symbol_rate fec modulation
---------------------------------------------
-
-.ATSC
---------------------------------------------
-A freq modulation
---------------------------------------------
-
-If you don't plan to use full autoconfiguration you can use `scan` with this file, see <<scan_inital_tuning, using scan with an inital tuning file>>
+If you want to use full autoconfiguration, this contains all the parameters you need. For example the second row is the frequency.
 
 [[scan_inital_tuning]]
 Using scan with an initial tuning file
@@ -364,13 +349,16 @@ Using scan with an initial tuning file
 [NOTE]
 With satellite this allow you to find all the frequencies (if the broadcaster follow the norm). Because, every transponder announces the others.
 
+If you don't know where to find the inital tuning file, recent versions of scan give the default locations by calling scan without arguments.
+
 You need `scan` from linuxtv's dvb-apps
 
-If you have an initial tuning file from `w_scan`, the scan documentation or other type : 
+Type
 
 --------------------------------------------------------
 scan -o pids pathtoyourinitialtuningfile
 --------------------------------------------------------
+
 
 You'll first get blocks like 
 

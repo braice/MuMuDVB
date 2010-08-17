@@ -16,6 +16,8 @@ I'll take an example for DVB-S (satellite) and DVB-T (terrestrial). DVB-C and AT
 I suppose you have one DVB card wich is already working, if you have more than
 one card refer to the full documentation.
 
+If you don't know your transponder frequencies, have a look to the README_CONF
+
 DVB-S
 -----
 

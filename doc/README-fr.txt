@@ -240,7 +240,10 @@ Autoconfiguration "complète"
 
 C'est la manière la plus simple pour utiliser MuMuDVB.
 
-Utilisez ce mode lorsque vous voulez diffuser un transpondeur entier.
+Utilisez ce mode lorsque vous voulez diffuser un transpondeur entier ou une partie d'un transpondeur (en utilisant autoconf_sid_list).
+
+[NOTE]
+Vous ne devez pas spécifier de chaînes en utilisant ce mode.
 
 Dans ce mode, MuMuDVB trouvera pour vous les différentes chaînes, leurs noms et leurs PIDs (PMT, PCR, Audio, Vidéo, Sous-titres, Télétexte et AC3).
 
@@ -306,7 +309,10 @@ D'autres mot clefs peuvent être facilement ajoutés si nécessaire.
 Autoconfiguration "simple"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Utilisez ce mode lorsque vous voulez contrôler le nom des chaînes et quelle chaînes vous voulez diffuser.
+[NOTE]
+Ce mode d'autoconfiguration disparaîtra bientôt. Si vous en avez absolument besoin pour autre chose que spécifier le nom ou l'IP merci de me contacter.
+
+Utilisez ce mode lorsque vous voulez contrôler le nom des chaînes, leurs IP d'une manière plus approfondie qu'avec les templates.
 
 - Vous devez ajouter 'autoconfiguration=partial' dans le début de votre fichier de configuration.
 - Pour chaque chaîne, vous devez préciser : 
