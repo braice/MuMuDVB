@@ -121,15 +121,21 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 			actual_channel->nb_bytes,
 			written_len);
 	  }
-	    if(!data_from_queue)
+	  if(!data_from_queue)
+	  {
+	    //We store the non sent data in the queue
+	    if((actual_client->queue.data_bytes_in_queue+buffer_len-written_len)< unicast_vars->queue_max_size)
 	    {
-	      //We store the non sent data in the queue
-	      if((actual_client->queue.data_bytes_in_queue+buffer_len-written_len)< unicast_vars->queue_max_size)
-	      {
-		unicast_queue_add_data(&actual_client->queue, buffer+written_len, buffer_len-written_len);
-		log_message( log_module, MSG_DEBUG,"Unicast: We start queuing packets ... \n");
-	      }
+	      unicast_queue_add_data(&actual_client->queue, buffer+written_len, buffer_len-written_len);
+	      log_message( log_module, MSG_DEBUG,"Unicast: We start queuing packets ... \n");
 	    }
+	  }
+	  else if(written_len > 0)
+	  {
+	    unicast_queue_remove_data(&actual_client->queue);
+	    unicast_queue_add_data(&actual_client->queue, buffer+written_len, buffer_len-written_len);
+	    log_message( log_module, MSG_DEBUG,"Unicast: We requeue the non sent data ... \n");
+	  }
 
 	  if(!actual_client->consecutive_errors)
 	  {
