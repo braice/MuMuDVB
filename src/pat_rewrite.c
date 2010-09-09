@@ -60,8 +60,6 @@ int pat_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf)
     if(pat->version_number!=rewrite_vars->pat_version)
       {
 	log_message( log_module, MSG_DEBUG,"Need update. stored version : %d, new: %d\n",rewrite_vars->pat_version,pat->version_number);
-	if(rewrite_vars->pat_version!=-1)
-	  log_message( log_module, MSG_WARN,"The PAT version changed, so the channels changed probably. If you are using autoconfiguration it's safer to relaunch MuMuDVB or if the pids are set manually, check them.\n");
 	return 1;
       }
   return 0;
@@ -73,7 +71,11 @@ void update_pat_version(rewrite_parameters_t *rewrite_vars)
 {
   pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->packet);
   if(rewrite_vars->pat_version!=pat->version_number)
+  {
     log_message( log_module, MSG_DEBUG,"New pat version. Old : %d, new: %d\n",rewrite_vars->pat_version,pat->version_number);
+    if(rewrite_vars->pat_version!=-1)
+      log_message( log_module, MSG_WARN,"The PAT version changed, so the channels changed probably. If you are using autoconfiguration it's safer to relaunch MuMuDVB or if the pids are set manually, check them.\n");
+  }
   
   rewrite_vars->pat_version=pat->version_number;
 }
