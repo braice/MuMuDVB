@@ -45,6 +45,8 @@
 #include <sys/ioctl.h>
 #include <time.h>
 #include <stdlib.h>
+#include <netinet/tcp.h>
+
 
 #include "unicast_http.h"
 #include "unicast_queue.h"
@@ -90,6 +92,17 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
     close(Socket);
     return NULL;
   }
+
+
+  // Disable the Nagle (TCP No Delay) algorithm
+  int iRet;
+  int on = 1;
+  iRet=setsockopt(Socket, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on));
+  if (iRet < 0)
+  {
+    log_message( log_module,  MSG_WARN,"setsockopt TCP_NODELAY failed : %s\n", strerror(errno));
+  }
+
 
   //We fill the client data
   client->SocketAddr=SocketAddr;
