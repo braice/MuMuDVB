@@ -170,7 +170,9 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 
     }
   //We check if the TS is full
-  if (ts_packet->len > ((HILO(((pmt_t *)ts_packet->packet)->section_length))+3)) //+3 is for the header
+  pmt_t *pmt;
+  pmt=((pmt_t *)ts_packet->packet);
+  if (ts_packet->len > ((HILO(pmt->section_length))+3)) //+3 is for the header
   {
     //Yes, it's full, I check the CRC32 to say it's valid
     parsed=ts_check_CRC(ts_packet); //TEST CRC32
