@@ -664,7 +664,7 @@ int
     else if ((!strcmp (substring, "service_id")) || (!strcmp (substring, "ts_id")))
     {
       if(!strcmp (substring, "ts_id"))
-        log_message( log_module,  MSG_WARN, "Warning : the option ts_id is deprecated, use service_in instead.\n");
+        log_message( log_module,  MSG_WARN, "Warning : the option ts_id is deprecated, use service_id instead.\n");
       if ( channel_start == 0)
       {
         log_message( log_module,  MSG_ERROR,
