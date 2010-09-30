@@ -101,9 +101,10 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
 #endif
   else if (!strcmp (substring, "freq"))
   {
+    double temp_freq;
     substring = strtok (NULL, delimiteurs);
-    tuneparams->freq = atol (substring);
-    tuneparams->freq *= 1000UL;
+    temp_freq = atof (substring);
+    tuneparams->freq = (int)( 1000UL * temp_freq);
   }
   else if (!strcmp (substring, "pol"))
   {
@@ -527,25 +528,44 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
 {
   int err;
   if((err = ioctl(fd, FE_SET_TONE, SEC_TONE_OFF)))
+  {
+    log_message( log_module,  MSG_WARN, "problem Setting the Tone OFF");
     return -1;
+  }
   if((err = ioctl(fd, FE_SET_VOLTAGE, v)))
+  {
+    log_message( log_module,  MSG_WARN, "problem Setting the Voltage");
     return -1;
+  }
   msleep(15);
   //1.x compatible equipment
   while (*cmd) {
+    (*cmd)->cmd.msg_len=4;
+    log_message( log_module,  MSG_DETAIL ,"Sending Diseqc message %02x %02x %02x %02x %02x len %d\n",
+                 (*cmd)->cmd.msg[0],(*cmd)->cmd.msg[1],(*cmd)->cmd.msg[2],(*cmd)->cmd.msg[3],(*cmd)->cmd.msg[4],(*cmd)->cmd.msg[5],
+                 (*cmd)->cmd.msg_len);
     if((err = ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &(*cmd)->cmd)))
+    {
+      log_message( log_module,  MSG_WARN, "problem sending the DiseqC message");
       return -1;
+    }
     msleep((*cmd)->wait);
     cmd++;
   }
 
   msleep(15);
   if ((err = ioctl(fd, FE_DISEQC_SEND_BURST, b)))
+  {
+    log_message( log_module,  MSG_WARN, "problem sending the Tone Burst");
     return err;
+  }
   msleep(15);
 
   if(ioctl(fd, FE_SET_TONE, t) < 0)
+  {
+    log_message( log_module,  MSG_WARN, "problem Setting the Tone back");
     return -1;
+  }
 
   return 0;
 }
@@ -617,12 +637,18 @@ static int do_diseqc(int fd, unsigned char sat_no, char switch_type, int pol_v_r
     cmd[0]->cmd.msg[4] = 0x00;
     cmd[0]->cmd.msg[5] = 0x00;
     cmd[0]->cmd.msg_len=4;
-
+    log_message( log_module,  MSG_DETAIL ,"Test Diseqc message %02x %02x %02x %02x %02x len %d\n",
+                 cmd[0]->cmd.msg[0],cmd[0]->cmd.msg[1],cmd[0]->cmd.msg[2],cmd[0]->cmd.msg[3],cmd[0]->cmd.msg[4],cmd[0]->cmd.msg[5],
+                 cmd[0]->cmd.msg_len);
     ret = diseqc_send_msg(fd,
                            lnb_voltage,
                            cmd,
                            hi_lo ? SEC_TONE_ON : SEC_TONE_OFF,
                            (sat_no) % 2 ? SEC_MINI_B : SEC_MINI_A);
+    if(ret)
+    {
+      log_message( log_module,  MSG_WARN, "problem sending the DiseqC message or setting tone/voltage");
+    }
     free(cmd[0]);
     return ret;
   }
