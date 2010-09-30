@@ -310,6 +310,7 @@ unicast_parameters_t unicast_vars={
   .max_clients=-1,
   .queue_max_size=UNICAST_DEFAULT_QUEUE_MAX,
   .socket_sendbuf_size=0,
+  .drop_on_eagain=0,
 };
 
 #ifdef ENABLE_TRANSCODING

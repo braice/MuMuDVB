@@ -195,6 +195,13 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
     substring = strtok (NULL, delimiteurs);
     unicast_vars->socket_sendbuf_size = atoi (substring);
   }
+  else if (!strcmp (substring, "drop_on_eagain"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    unicast_vars->drop_on_eagain = atoi (substring);
+    if(unicast_vars->drop_on_eagain)
+      log_message( log_module,  MSG_INFO, "The unicast data WILL be dropped on eagain errors\n");
+  }
   else
     return 0; //Nothing concerning tuning, we return 0 to explore the other possibilities
 

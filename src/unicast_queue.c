@@ -121,21 +121,37 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 			actual_channel->nb_bytes,
 			written_len);
 	  }
-	  if(!data_from_queue)
-	  {
-	    //We store the non sent data in the queue
-	    if((actual_client->queue.data_bytes_in_queue+buffer_len-written_len)< unicast_vars->queue_max_size)
-	    {
-	      unicast_queue_add_data(&actual_client->queue, buffer+written_len, buffer_len-written_len);
-	      log_message( log_module, MSG_DEBUG,"Unicast: We start queuing packets ... \n");
-	    }
-	  }
-	  else if(written_len > 0)
-	  {
-	    unicast_queue_remove_data(&actual_client->queue);
-	    unicast_queue_add_data(&actual_client->queue, buffer+written_len, buffer_len-written_len);
-	    log_message( log_module, MSG_DEBUG,"Unicast: We requeue the non sent data ... \n");
-	  }
+	  if(!(unicast_vars->drop_on_eagain &&(errno==EAGAIN)))//Debug feature : we can grop data if eagain error
+          {
+            //No drop on eagain or no eagain
+            if(!data_from_queue)
+            {
+              //We store the non sent data in the queue
+              if((actual_client->queue.data_bytes_in_queue+buffer_len-written_len)< unicast_vars->queue_max_size)
+              {
+                unicast_queue_add_data(&actual_client->queue, buffer+written_len, buffer_len-written_len);
+                log_message( log_module, MSG_DEBUG,"Unicast: We start queuing packets ... \n");
+              }
+            }
+            else if(written_len > 0)
+            {
+              unicast_queue_remove_data(&actual_client->queue);
+              unicast_queue_add_data(&actual_client->queue, buffer+written_len, buffer_len-written_len);
+              log_message( log_module, MSG_DEBUG,"Unicast: We requeue the non sent data ... \n");
+            }
+          }else{
+            //this is an EAGAIN error and we want to drop the data
+            if(!data_from_queue)
+            {
+            //Not from the queue we dont do anything
+              log_message( log_module, MSG_DEBUG,"Unicast: We drop not from queue ... \n");
+            }
+            else
+            {
+            unicast_queue_remove_data(&actual_client->queue);
+            log_message( log_module, MSG_DEBUG,"Unicast: We remove the data from the queue ... \n");
+            }
+          }
 
 	  if(!actual_client->consecutive_errors)
 	  {
