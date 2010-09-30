@@ -190,6 +190,11 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
     substring = strtok (NULL, delimiteurs);
     current_channel->unicast_port = atoi (substring);
   }
+  else if (!strcmp (substring, "socket_sendbuf_size"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    unicast_vars->socket_sendbuf_size = atoi (substring);
+  }
   else
     return 0; //Nothing concerning tuning, we return 0 to explore the other possibilities
 

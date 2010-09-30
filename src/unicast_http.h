@@ -171,6 +171,8 @@ typedef struct unicast_parameters_t{
   unicast_fd_info_t *fd_info;
   /** The maximim size of the queue */
   int queue_max_size;
+  /** The socket SO_SNDBUF size*/
+  int socket_sendbuf_size;
 }unicast_parameters_t;
 
 int unicast_create_listening_socket(int socket_type, int socket_channel, char *ipOut, int port, struct sockaddr_in *sIn, int *socketIn, fds_t *fds, unicast_parameters_t *unicast_vars);

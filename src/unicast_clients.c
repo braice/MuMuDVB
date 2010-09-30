@@ -54,6 +54,8 @@
 #include "errors.h"
 #include "log.h"
 
+
+
 static char *log_module="Unicast : ";
 
 /** @brief Add a client to the chained list of clients
@@ -103,6 +105,34 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
     log_message( log_module,  MSG_WARN,"setsockopt TCP_NODELAY failed : %s\n", strerror(errno));
   }
 
+  int buffer_size;
+  socklen_t size;
+  size=sizeof(buffer_size);
+  iRet=getsockopt( Socket, SOL_SOCKET, SO_SNDBUF, &buffer_size, &size);
+  if (iRet < 0)
+  {
+    log_message( log_module,  MSG_WARN,"get SO_SNDBUF failed : %s\n", strerror(errno));
+  }
+  else
+    log_message( log_module,  MSG_DETAIL,"Actual SO_SNDBUF size : %d\n", buffer_size);
+  if(unicast_vars->socket_sendbuf_size)
+  {
+    buffer_size = unicast_vars->socket_sendbuf_size;
+    iRet=setsockopt(Socket, SOL_SOCKET, SO_SNDBUF, &buffer_size, sizeof(buffer_size));
+    if (iRet < 0)
+    {
+      log_message( log_module,  MSG_WARN,"setsockopt SO_SNDBUF failed : %s\n", strerror(errno));
+    }
+    else
+    {
+      size=sizeof(buffer_size);
+      iRet=getsockopt( Socket, SOL_SOCKET, SO_SNDBUF, &buffer_size, &size);
+      if (iRet < 0)
+        log_message( log_module,  MSG_WARN,"2nd get SO_SNDBUF failed : %s\n", strerror(errno));
+      else
+        log_message( log_module,  MSG_DETAIL,"New SO_SNDBUF size : %d\n", buffer_size);
+    }
+  }
 
   //We fill the client data
   client->SocketAddr=SocketAddr;

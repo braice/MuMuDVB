@@ -309,6 +309,7 @@ unicast_parameters_t unicast_vars={
   .consecutive_errors_timeout=UNICAST_CONSECUTIVE_ERROR_TIMEOUT,
   .max_clients=-1,
   .queue_max_size=UNICAST_DEFAULT_QUEUE_MAX,
+  .socket_sendbuf_size=0,
 };
 
 #ifdef ENABLE_TRANSCODING
