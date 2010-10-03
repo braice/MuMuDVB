@@ -340,6 +340,19 @@ typedef struct mumudvb_chan_and_pids_t{
   uint8_t number_chan_asked_pid[8193];
 }mumudvb_chan_and_pids_t;
 
+
+typedef struct monitor_parameters_t{
+  int threadshutdown;
+  int wait_time;
+  struct autoconf_parameters_t *autoconf_vars;
+  struct sap_parameters_t *sap_vars;
+  mumudvb_chan_and_pids_t *chan_and_pids;
+  multicast_parameters_t *multicast_vars;
+}monitor_parameters_t;
+
+
+
+
 /** struct containing a string */
 typedef struct mumu_string_t{
   char *string;
@@ -351,7 +364,7 @@ typedef struct mumu_string_t{
 int mumu_string_append(mumu_string_t *string, const char *psz_format, ...);
 void mumu_free_string(mumu_string_t *string);
 
-int mumudvb_close(int Interrupted);
+
 int mumudvb_poll(fds_t *fds);
 char *mumu_string_replace(char *source, int *length, int can_realloc, char *toreplace, char *replacement);
 int string_comput(char *string);

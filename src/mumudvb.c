@@ -155,6 +155,7 @@ int  write_streamed_channels=1;
 
 pthread_t signalpowerthread;
 pthread_t cardthread;
+pthread_t monitorthread;
 card_thread_parameters_t cardthreadparams;
 
 
@@ -322,7 +323,8 @@ int verbosity = MSG_INFO+1; /** the verbosity level for log messages */
 // prototypes
 static void SignalHandler (int signum);//below
 int read_multicast_configuration(multicast_parameters_t *, mumudvb_channel_t *, int, int *, char *); //in multicast.c
-
+void *monitor_func(void* arg);
+int mumudvb_close(monitor_parameters_t *monitor_thread_params, int Interrupted);
 
 int
     main (int argc, char **argv)
@@ -899,7 +901,7 @@ int
   if(!multicast_vars.multicast && !unicast_vars.unicast)
   {
     log_message( log_module,  MSG_ERROR, "NO Multicast AND NO unicast. No data can be send :(, Exciting ....\n");
-    return mumudvb_close(ERROR_CONF<<8);
+    return mumudvb_close(NULL, ERROR_CONF<<8);
   }
 
 
@@ -984,7 +986,7 @@ int
     log_message( log_module,  MSG_INFO, "Tunning issue, card %d\n", tuneparams.card);
     // we close the file descriptors
     close_card_fd (fds);
-    return mumudvb_close(ERROR_TUNE<<8);
+    return mumudvb_close(NULL, ERROR_TUNE<<8);
   }
   log_message( log_module,  MSG_INFO, "Card %d tuned\n", tuneparams.card);
   tuneparams.card_tuned = 1;
@@ -1033,6 +1035,21 @@ int
     log_message( log_module, MSG_INFO,"The traffic will be shown every %d seconds\n",stats_infos.show_traffic_interval);
 
 
+
+  /******************************************************/
+  // Monitor Thread
+  /******************************************************/
+  monitor_parameters_t monitor_thread_params ={
+     .threadshutdown=0,
+     .wait_time=10,
+     .autoconf_vars=&autoconf_vars,
+     .sap_vars=&sap_vars,
+     .chan_and_pids=&chan_and_pids,
+     .multicast_vars=&multicast_vars,
+  };
+
+  pthread_create(&(monitorthread), NULL, monitor_func, &monitor_thread_params);
+
   /*****************************************************/
   //cam_support
   /*****************************************************/
@@ -1060,7 +1077,7 @@ int
   /*****************************************************/
   iRet=autoconf_init(&autoconf_vars, chan_and_pids.channels,chan_and_pids.number_of_channels);
   if(iRet)
-    return mumudvb_close(ERROR_GENERIC);
+    return mumudvb_close(&monitor_thread_params, ERROR_GENERIC);
 
   /*****************************************************/
   //Pat rewriting
@@ -1077,7 +1094,7 @@ int
     if(rewrite_vars.full_pat==NULL)
     {
       log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      return mumudvb_close(ERROR_MEMORY<<8);
+      return mumudvb_close(&monitor_thread_params, ERROR_MEMORY<<8);
     }
     memset (rewrite_vars.full_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
     pthread_mutex_init(&rewrite_vars.full_pat->packetmutex,NULL);
@@ -1098,7 +1115,7 @@ int
     if(rewrite_vars.full_sdt==NULL)
     {
       log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      return mumudvb_close(ERROR_MEMORY<<8);
+      return mumudvb_close(&monitor_thread_params, ERROR_MEMORY<<8);
     }
     memset (rewrite_vars.full_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
     pthread_mutex_init(&rewrite_vars.full_sdt->packetmutex,NULL);
@@ -1130,7 +1147,7 @@ int
       if(chan_and_pids.channels[curr_channel].pmt_packet==NULL)
       {
         log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-        return mumudvb_close(ERROR_MEMORY<<8);
+        return mumudvb_close(&monitor_thread_params, ERROR_MEMORY<<8);
       }
       memset (chan_and_pids.channels[curr_channel].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
       pthread_mutex_init(&chan_and_pids.channels[curr_channel].pmt_packet->packetmutex,NULL);
@@ -1193,7 +1210,7 @@ int
 
   // we open the file descriptors
   if (create_card_fd (tuneparams.card_dev_path, tuneparams.tuner, chan_and_pids.asked_pid, &fds) < 0)
-    return mumudvb_close(ERROR_GENERIC<<8);
+    return mumudvb_close(&monitor_thread_params, ERROR_GENERIC<<8);
 
   set_filters(chan_and_pids.asked_pid, &fds);
   fds.pfds=NULL;
@@ -1203,7 +1220,7 @@ int
   if (fds.pfds==NULL)
   {
     log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    return mumudvb_close(ERROR_MEMORY<<8);
+    return mumudvb_close(&monitor_thread_params, ERROR_MEMORY<<8);
   }
 
   //We fill the file descriptor information structure. the first one is irrelevant
@@ -1213,7 +1230,7 @@ int
   if (unicast_vars.fd_info==NULL)
   {
     log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    return mumudvb_close(ERROR_MEMORY<<8);
+    return mumudvb_close(&monitor_thread_params, ERROR_MEMORY<<8);
   }
 
   //File descriptor for polling the DVB card
@@ -1265,7 +1282,7 @@ int
 
   iRet=init_sap(&sap_vars, multicast_vars);
   if(iRet)
-    return mumudvb_close(ERROR_GENERIC);
+    return mumudvb_close(&monitor_thread_params, ERROR_GENERIC);
 
   /*****************************************************/
   // Information about streamed channels
@@ -1622,7 +1639,7 @@ int
   if(card_buffer.partial_packet_number)
     log_message( log_module,  MSG_INFO,
                  "We have got %d overflow errors\n",card_buffer.overflow_number );
-  return mumudvb_close(Interrupted);
+  return mumudvb_close(&monitor_thread_params, Interrupted);
 
 }
 
@@ -1630,7 +1647,7 @@ int
  *
  *
  */
-int mumudvb_close(int Interrupted)
+int mumudvb_close(monitor_parameters_t *monitor_thread_params,int Interrupted)
 {
 
   int curr_channel;
@@ -1646,14 +1663,23 @@ int mumudvb_close(int Interrupted)
 
   if(signalpowerthread)
   {
+    log_message(log_module,MSG_FLOOD,"Signal/power Thread closing\n");
     tuneparams.strengththreadshutdown=1;
     pthread_join(signalpowerthread, NULL);
   }
   if(cardthreadparams.thread_running)
   {
+    log_message(log_module,MSG_FLOOD,"Card reading Thread closing\n");
     cardthreadparams.threadshutdown=1;
     pthread_mutex_destroy(&cardthreadparams.carddatamutex);
     pthread_cond_destroy(&cardthreadparams.threadcond);
+  }
+  //We shutdown the monitoring thread
+  if(monitorthread)
+  {
+    log_message(log_module,MSG_FLOOD,"Monitor Thread closing\n");
+    monitor_thread_params->threadshutdown=1;
+    pthread_join(monitorthread, NULL);
   }
 
   for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
@@ -1810,11 +1836,6 @@ static void SignalHandler (int signum)
       return;
     }
 
-    /*we are not doing autoconfiguration we can do something else*/
-    /*sap announces*/
-    sap_poll(&sap_vars,chan_and_pids.number_of_channels,chan_and_pids.channels,multicast_vars, now);
-
-
     /* Check if the chanel stream state has changed*/
     for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
     {
@@ -1970,4 +1991,42 @@ static void SignalHandler (int signum)
   }
   signal (signum, SignalHandler);
 }
+
+
+
+
+
+void *monitor_func(void* arg)
+{
+  monitor_parameters_t  *params;
+  params= (monitor_parameters_t  *) arg;
+  int i;
+  struct timeval tv;
+
+  while(!params->threadshutdown)
+  {
+    gettimeofday (&tv, (struct timezone *) NULL);
+    now = tv.tv_sec - real_start_time;
+
+    if(!params->autoconf_vars->autoconfiguration)
+    {
+      /*we are not doing autoconfiguration we can do something else*/
+      /*sap announces*/
+      sap_poll(params->sap_vars,params->chan_and_pids->number_of_channels,params->chan_and_pids->channels,*params->multicast_vars, now);
+    }
+    for(i=0;i<params->wait_time && !params->threadshutdown;i++)
+      usleep(100000);
+  }
+  return 0;
+
+}
+
+
+
+
+
+
+
+
+
 
