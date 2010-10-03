@@ -34,9 +34,7 @@
 #include <stdint.h>
 
 #include "config.h"
-#ifdef HAVE_LIBPTHREAD
-#include <pthread.h>
-#endif
+
 
 //0x1ffb=8187 It's the pid for the information tables in ATSC
 #define PSIP_PID 8187

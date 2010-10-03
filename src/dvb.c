@@ -38,9 +38,6 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include "log.h"
-#ifdef HAVE_LIBPTHREAD
-#include <pthread.h>
-#endif
 #include <unistd.h>
 
 extern int Interrupted;
@@ -98,8 +95,6 @@ set_ts_filt (int fd, uint16_t pid)
     }
 }
 
-#ifdef HAVE_LIBPTHREAD
-
 /**
  * @brief Show the reception power.
  * This information is not alway reliable
@@ -154,7 +149,7 @@ void *show_power_func(void* arg)
   }
   return 0;
 }
-#endif
+
 
 /**
  * @brief Open file descriptors for the card. open dvr and one demuxer fd per asked pid. This function can be called 
@@ -251,7 +246,6 @@ close_card_fd(fds_t fds)
 }
 
 
-#ifdef HAVE_LIBPTHREAD
 /**
  * @brief Function for the tread reading data from the card
  * @param arg the structure with the thread parameters
@@ -333,7 +327,7 @@ void *read_card_thread_func(void* arg)
   }
   return NULL;
 }
-#endif
+
 
 
 

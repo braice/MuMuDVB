@@ -49,7 +49,6 @@
  */
 
 #include <libdvben50221/en50221_stdcam.h>
-#include <pthread.h>
 
 struct ca_info {
   int initialized; //are the cai complete ?

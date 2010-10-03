@@ -142,7 +142,7 @@ $ ./configure --help
 --------------------
 
 [NOTE]
-Le support pour les modules CAM dépends des librairies libdvben50221, libucsi ( des dvb-apps de linuxtv ) et libpthread. Le script configure détectera la présence de ces librairies et désactivera le support pour les modules CAM si l'une d'elle est absente.
+Le support pour les modules CAM dépends des librairies libdvben50221, libucsi ( des dvb-apps de linuxtv ). Le script configure détectera la présence de ces librairies et désactivera le support pour les modules CAM si l'une d'elle est absente.
 
 [NOTE]
 Le décodage des noms de chaîne longs pour l'autocoonfiguration en ATSC dépends de la librairie libucsi ( des dvb-apps de linuxtv ). Le script configure détectera la présence de cette librairies et désactivera le support pour les noms longs si elle est absente. L'autoconfiguration complète fonctionnera toujours avec l'ATSC mais les noms de chaîne seront des noms courts ( 7 caractères maximum ).

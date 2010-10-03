@@ -51,6 +51,8 @@ extern int verbosity;
 extern int log_initialised;
 extern int Interrupted;
 
+
+
 /**
  * @brief Print a log message on the console or via syslog 
  * depending if mumudvb is daemonized or not
@@ -813,11 +815,6 @@ void print_info ()
 #endif
 #if DVB_API_VERSION >= 5
                "Built with support for DVB API Version 5 (DVB-S2).\n"
-#endif
-#ifdef HAVE_LIBPTHREAD
-               "Built with pthread support (used for periodic signal strength display, cam support, transcoding, and threaded read).\n"
-#else
-               "Built without pthread support (NO periodic signal strength display, NO cam support, NO transcoding and NO threaded read).\n"
 #endif
                "---------\n"
                "Originally based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"

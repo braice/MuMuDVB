@@ -61,7 +61,6 @@ enum
   PID_FILTERED,
 };
 
-#ifdef HAVE_LIBPTHREAD
 
 /** The parameters for the thread for showing the strength */
 typedef struct strength_parameters_t{
@@ -90,8 +89,6 @@ typedef struct card_thread_parameters_t{
 
 void *read_card_thread_func(void* arg);
 
-
-#endif
 
 
 int open_fe (int *fd_frontend, char *base_path, int tuner);

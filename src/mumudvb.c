@@ -103,11 +103,8 @@
 #include <string.h>
 #include <syslog.h>
 #include <getopt.h>
-#include <errno.h>		// in order to use program_invocation_short_name (gnu extension)
+#include <errno.h>
 #include <linux/dvb/version.h>
-#ifdef HAVE_LIBPTHREAD
-#include <pthread.h>
-#endif
 
 #include "mumudvb.h"
 #include "tune.h"
@@ -155,11 +152,11 @@ char filename_pid[256];
 char filename_gen_conf[256];
 int  write_streamed_channels=1;
 
-#ifdef HAVE_LIBPTHREAD
+
 pthread_t signalpowerthread;
 pthread_t cardthread;
 card_thread_parameters_t cardthreadparams;
-#endif
+
 
 
 stats_infos_t stats_infos={
@@ -648,14 +645,8 @@ int
       card_buffer.threaded_read = atoi (substring);
       if(card_buffer.threaded_read)
       {
-#ifdef HAVE_LIBPTHREAD
         log_message( log_module,  MSG_WARN,
                      "Warning : You want to use a thread for reading the card, this feature is experimental, please report bugs/problems or results\n");
-#else
-        log_message( log_module,  MSG_WARN,
-                     "Warning : You want to use a thread for reading the card, this feature is experimental, please report bugs/problems or results\n");
-	card_buffer.threaded_read=0;
-#endif
       }
     }
     else if (!strcmp (substring, "dvr_thread_buffer_size"))
@@ -998,7 +989,6 @@ int
   log_message( log_module,  MSG_INFO, "Card %d tuned\n", tuneparams.card);
   tuneparams.card_tuned = 1;
 
-#ifdef HAVE_LIBPTHREAD
   //Thread for showing the strength
   strength_parameters_t strengthparams;
   strengthparams.fds = &fds;
@@ -1017,7 +1007,7 @@ int
   else
     cardthreadparams.thread_running=0;
 
-#endif
+
 
   /******************************************************/
   //card tuned
@@ -1090,9 +1080,7 @@ int
       return mumudvb_close(ERROR_MEMORY<<8);
     }
     memset (rewrite_vars.full_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-#ifdef HAVE_LIBPTHREAD
     pthread_mutex_init(&rewrite_vars.full_pat->packetmutex,NULL);
-#endif
   }
 
   /*****************************************************/
@@ -1113,9 +1101,7 @@ int
       return mumudvb_close(ERROR_MEMORY<<8);
     }
     memset (rewrite_vars.full_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-#ifdef HAVE_LIBPTHREAD
     pthread_mutex_init(&rewrite_vars.full_sdt->packetmutex,NULL);
-#endif
   }
 
   /*****************************************************/
@@ -1147,9 +1133,7 @@ int
         return mumudvb_close(ERROR_MEMORY<<8);
       }
       memset (chan_and_pids.channels[curr_channel].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-#ifdef HAVE_LIBPTHREAD
       pthread_mutex_init(&chan_and_pids.channels[curr_channel].pmt_packet->packetmutex,NULL);
-#endif
     }
 
   }
@@ -1294,7 +1278,6 @@ int
     log_message("Autoconf: ",MSG_INFO,"Autoconfiguration Start\n");
 
 
-#ifdef HAVE_LIBPTHREAD
   //Thread for reading from the DVB card RUNNING
   if(card_buffer.threaded_read)
   {
@@ -1309,10 +1292,6 @@ int
     cardthreadparams.main_waiting=0;
   }else
   {
-#else
-  if (1)
-  {
-#endif
     //We alloc the buffer
     card_buffer.reading_buffer=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*card_buffer.dvr_buffer_size);
   }
@@ -1324,7 +1303,6 @@ int
   unsigned char *actual_ts_packet;
   while (!Interrupted)
   {
-#ifdef HAVE_LIBPTHREAD
     if(card_buffer.threaded_read)
     {
       if(!card_buffer.bytes_in_write_buffer && !cardthreadparams.unicast_data)
@@ -1374,10 +1352,6 @@ int
     }
     else
     {
-#else
-    if(1)
-    {
-#endif
       /* Poll the open file descriptors : we wait for data*/
       poll_ret=mumudvb_poll(&fds);
       if(poll_ret)
@@ -1670,7 +1644,6 @@ int mumudvb_close(int Interrupted)
       log_message( log_module,  MSG_INFO, "Closing cleanly. Error %d\n",Interrupted>>8);
   }
 
-#ifdef HAVE_LIBPTHREAD
   if(signalpowerthread)
   {
     tuneparams.strengththreadshutdown=1;
@@ -1682,7 +1655,6 @@ int mumudvb_close(int Interrupted)
     pthread_mutex_destroy(&cardthreadparams.carddatamutex);
     pthread_cond_destroy(&cardthreadparams.threadcond);
   }
-#endif
 
   for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
   {

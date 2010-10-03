@@ -41,8 +41,8 @@
 #define STREAMING_TYPE_FFM 3
 
 #include "transcode_queues.h"
-
 #include <pthread.h>
+
 
 typedef struct transcode_options_t
 {

@@ -139,7 +139,7 @@ $ ./configure --help
 --------------------
 
 [NOTE]
-The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps) and libpthread. The configure script will detect automatically the presence of these libraries and desactivate the CAM support if one of them is not present.
+The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of these libraries and desactivate the CAM support if one of them is not present.
 
 [NOTE]
 The decoding of long channel names for autoconfiguration in ATSC depends on libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of this library and desactivate the long channel name support if it is not present. The full autoconfiguration will still work with ATSC but the channel names will be the short channels names (7 characters maximum)
@@ -837,7 +837,7 @@ Here's a short description of the error codes
 I get the message "DVR Read Error: Value too large for defined data type" what does it mean ?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This message means that an overflow append in the ard drivers buffer. I.e MuMuDVB was not able to get the packets suffiiently fast. This issue can have various causes, anything which an slow down (a lot) MuMuDVB an create this message.
+This message means that an overflow append in the ard drivers buffer. I.e MuMuDVB was not able to get the packets sufficiently fast. This issue can have various causes, anything which an slow down (a lot) MuMuDVB an create this message.
 To avoid it you can try threaded_read see <<threaded_read, thread reading>> section.
 
 An explanation can be networking issues :

@@ -90,7 +90,7 @@ Dans la liste suivante, seul le paramètre `freq` est obligatoire
 |card_dev_path | Le chemin vers le répertoire contenant les "devices" DVB. Utilisez cette option si vous utilisez des chemins personalisés comme /dev/dvb/card_astra | /dev/dvb/adapter%d | 
 |tuning_timeout | Temps d'attente pour l'accord de la carte | 300 | 0 = attente infinie
 |timeout_no_diff | Si aucune chaîne n'est diffusée, MuMuDVB se "suicidera" au bout de ce délai ( en secondes ) | 600 |  0 = attente infinie
-|check_status | Est ce que MuMuDVB verifie le status de la carte en permanence et affiche un message si le signal est perdu | 1 |  0 = pas de verification. Necessite pthreads
+|check_status | Est ce que MuMuDVB verifie le status de la carte en permanence et affiche un message si le signal est perdu | 1 |  0 = pas de verification.
 |==================================================================================================================
 
 

@@ -30,7 +30,7 @@ AM_ICONV
 AC_CHECK_LIB([dvbapi], [dvbdemux_set_section_filter])
 AC_CHECK_LIB([ucsi], [atsc_text_segment_decode],[atsc_long_names="yes"], [atsc_long_names="no"])
 #AC_CHECK_LIB([dvben50221], [en50221_stdcam_create],,,[ucsi,pthread])
-AC_CHECK_LIB([pthread], [pthread_create], [pthread="yes"], [pthread="no"])
+AC_CHECK_LIB([pthread], [pthread_create])
 
 
 dnl
@@ -41,14 +41,13 @@ AC_ARG_ENABLE(cam_support,
 
 if test "${enable_cam_support}" = "yes"
 then
-  AC_CHECK_LIB([pthread], [pthread_create],[], [enable_cam_support="no"])
   AC_CHECK_LIB([ucsi], [atsc_text_segment_decode],[], [enable_cam_support="no"])
   AC_CHECK_LIB([dvben50221], [en50221_tl_create],[], [enable_cam_support="no"])
   if test "${enable_cam_support}" != "no"
   then
     AC_DEFINE(ENABLE_CAM_SUPPORT, 1, Define if you want the CAM support)
   else
-    AC_MSG_WARN([libpthread, libucsi and libdvben50221 are needed for CAM support])
+    AC_MSG_WARN([libucsi and libdvben50221 are needed for CAM support])
   fi
 else
   enable_cam_support="no"
@@ -65,7 +64,6 @@ if test "${enable_transcoding}" = "yes"
 then
   AC_CHECK_LIB([avformat], [url_split],[AC_DEFINE(HAVE_URL_SPLIT, 1, Define if the function url_split exists)], [])
   AC_CHECK_LIB([avformat], [ff_url_split],[AC_DEFINE(HAVE_FF_URL_SPLIT, 1, Define if the function ff_url_split exists)], [])
-  AC_CHECK_LIB([pthread], [pthread_create],[], [enable_transcoding="no"])
   AC_CHECK_HEADERS([libavcodec/avcodec.h ffmpeg/avcodec.h])
   AC_CHECK_HEADERS([libavformat/avformat.h ffmpeg/avformat.h])
   AC_CHECK_HEADERS([libswscale/swscale.h ffmpeg/swscale.h])
@@ -76,7 +74,7 @@ then
   then
     AC_DEFINE(ENABLE_TRANSCODING, 1, Define if you want the transcoding support)
   else
-    AC_MSG_WARN([libpthread, libavcodev, libavformat and libswscale are needed for transcoding support])
+    AC_MSG_WARN([libavcodev, libavformat and libswscale are needed for transcoding support])
   fi
 else
   enable_transcoding="no"
@@ -161,12 +159,6 @@ if test "${atsc_long_names}" = "yes" ; then
         echo "Build with ATSC long names support:                 yes"
 else
         echo "Build with ATSC long names support:                  no"
-fi
-
-if test "${pthread}" = "yes" ; then
-        echo "Builded with threads support:                       yes"
-else
-        echo "Builded with threads support:                       no"
 fi
 
 echo ""

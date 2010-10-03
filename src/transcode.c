@@ -32,7 +32,7 @@
 #include "errors.h"
 #include "log.h"
 
-#include <pthread.h>
+
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>

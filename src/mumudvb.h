@@ -35,6 +35,7 @@
 #include "network.h"  //for the sockaddr
 #include "ts.h"
 #include "config.h"
+#include <pthread.h>
 
 #ifdef ENABLE_TRANSCODING
 #include "transcode_common.h"
