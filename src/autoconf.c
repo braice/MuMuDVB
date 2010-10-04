@@ -652,8 +652,10 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
         display_service_type(actual_service->type, MSG_DETAIL, log_module);
 
         channels[channel_number].channel_type=actual_service->type;
-        channels[channel_number].streamed_channel = 0;
-        channels[channel_number].streamed_channel_old = 1;
+        channels[channel_number].num_packet = 0;
+        channels[channel_number].num_scrambled_packets = 0;
+        channels[channel_number].scrambled_channel = 0;
+        channels[channel_number].streamed_channel = 1;
         channels[channel_number].nb_bytes=0;
         channels[channel_number].pids[0]=actual_service->pmt_pid;
         channels[channel_number].pids_type[0]=PID_PMT;

@@ -271,7 +271,7 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
   char temp_string[256];
 
   //we check if it's an alive channel
-  if(!channel->streamed_channel_old)
+  if(!channel->streamed_channel)
     return 1;
   //Now we write the sdp part, in two times to avoid heavy code
   /** @section payload

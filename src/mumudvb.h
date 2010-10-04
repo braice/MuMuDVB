@@ -206,19 +206,18 @@ struct unicast_client_t;
 typedef struct mumudvb_channel_t{
   /** The logical channel number*/
   int logical_channel_number;
+  /**Tell the total packet number (without pmt) for the scrambling ratio and up/down detection*/
+  int num_packet;
+  /**Tell the scrambled packet number (without pmt) for the scrambling ratio*/
+  int num_scrambled_packets;
   /**tell if this channel is actually streamed*/
   int streamed_channel;
-  /**Tell the total packet number (without pmt) for the scrambling ratio*/
-  int num_packet;
-  /**tell if this channel is actually streamed (precedent test, to see if it's changed)*/
-  int streamed_channel_old;
   /**Ratio of scrambled packet versus all packets*/
   int ratio_scrambled;
 
+
   /**Tell if at least one of the PID related to the chanel is scrambled*/
   int scrambled_channel;
-  /** Old state to manage state change display*/
-  int scrambled_channel_old;
   /**the channel name*/
   char name[MAX_NAME_LEN];
 
@@ -331,6 +330,8 @@ typedef struct multicast_parameters_t{
 typedef struct mumudvb_chan_and_pids_t{
   /** The number of channels ... */
   int number_of_channels;
+  /** Do we send scrambled packets ? */
+  int dont_send_scrambled;
   /** The channels array */
   mumudvb_channel_t channels[MAX_CHANNELS];  /**@todo use realloc*/
 //Asked pids //used for filtering
@@ -348,6 +349,8 @@ typedef struct monitor_parameters_t{
   struct sap_parameters_t *sap_vars;
   mumudvb_chan_and_pids_t *chan_and_pids;
   multicast_parameters_t *multicast_vars;
+  struct tuning_parameters_t *tuneparams;
+  struct stats_infos_t *stats_infos;
 }monitor_parameters_t;
 
 

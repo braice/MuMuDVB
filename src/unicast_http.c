@@ -939,7 +939,7 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
   unicast_reply_write(reply, HTTP_CHANNELS_REPLY_START);
 
   for (int curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-    if (channels[curr_channel].streamed_channel_old)
+    if (channels[curr_channel].streamed_channel)
     {
       if(host)
         unicast_reply_write(reply, "Channel number %d : %s<br>Unicast link : <a href=\"http://%s/bynumber/%d\">http://%s/bynumber/%d</a><br>Multicast ip : %s:%d<br><br>\r\n",
@@ -992,7 +992,7 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
 
   //"#EXTINF:0,title\r\nURL"
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-    if (channels[curr_channel].streamed_channel_old)
+    if (channels[curr_channel].streamed_channel)
     {
       if(!perport)
       {
@@ -1055,7 +1055,7 @@ unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t *cha
 
   //"#EXTINF:0,title\r\nURL"
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-    if (channels[curr_channel].streamed_channel_old)
+    if (channels[curr_channel].streamed_channel)
     {
       unicast_reply_write(reply, "#EXTINF:0,%s\r\n%s://%s%s:%d\r\n",
                           channels[curr_channel].name,
@@ -1115,7 +1115,7 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
                         channels[curr_channel].portOut,
                         clients,
                         channels[curr_channel].ratio_scrambled,
-                        channels[curr_channel].streamed_channel_old);
+                        channels[curr_channel].streamed_channel);
 
     unicast_reply_write(reply, "\"unicast_port\":%d, \"service_id\":%d, \"service_type\":\"%s\", \"pids_num\":%d, \n",
                         channels[curr_channel].unicast_port,

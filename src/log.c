@@ -250,12 +250,12 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
 
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     //We store the old to be sure that we store only channels over the minimum packets limit
-    if (channels[curr_channel].streamed_channel_old)
+    if (channels[curr_channel].streamed_channel)
       {
 	fprintf (file_streamed_channels, "%s:%d:%s", channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
-	if (channels[curr_channel].scrambled_channel_old == FULLY_UNSCRAMBLED)
+	if (channels[curr_channel].scrambled_channel == FULLY_UNSCRAMBLED)
 	  fprintf (file_streamed_channels, ":FullyUnscrambled\n");
-	else if (channels[curr_channel].scrambled_channel_old == PARTIALLY_UNSCRAMBLED)
+ 	else if (channels[curr_channel].scrambled_channel == PARTIALLY_UNSCRAMBLED)
 	  fprintf (file_streamed_channels, ":PartiallyUnscrambled\n");
 	else //HIGHLY_SCRAMBLED
 	  fprintf (file_streamed_channels, ":HighlyScrambled\n");
@@ -847,7 +847,7 @@ void usage (char *name)
   print_info ();
 }
 
-void show_traffic( char *log_module, long now, int show_traffic_interval, mumudvb_chan_and_pids_t *chan_and_pids)
+void show_traffic( char *log_module, double now, int show_traffic_interval, mumudvb_chan_and_pids_t *chan_and_pids)
 {
   static long show_traffic_time=0;
 

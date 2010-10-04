@@ -46,20 +46,16 @@ typedef struct stats_infos_t{
   /** */
   int show_buffer_stats;
   /** */
-  long show_buffer_stats_time;
+  double show_buffer_stats_time;
   /** How often we how the statistics about the DVR buffer*/
   int show_buffer_stats_interval;
   //statistics for the traffic
   /** do we periodically show the traffic ?*/
   int show_traffic;
-  /** */
+  /** last time we show the traffic */
   long show_traffic_time;
-  /** */
-  int show_traffic_time_usec;
-  /** */
-  long compute_traffic_time;
-  /** */
-  int compute_traffic_time_usec;
+  /** last time we computed the traffic */
+  double compute_traffic_time;
   /** The interval for the traffic display */
   int show_traffic_interval;
   /** The interval for the traffic calculation */
@@ -79,7 +75,7 @@ void display_service_type(int type, int loglevel,char *log_module);
 char *pid_type_to_str(int type);
 char *service_type_to_str(int type);
 char *simple_service_type_to_str(int type);
-void show_traffic(char *log_module, long now, int show_traffic_interval, mumudvb_chan_and_pids_t *chan_and_pids);
+void show_traffic(char *log_module, double now, int show_traffic_interval, mumudvb_chan_and_pids_t *chan_and_pids);
 char *liben50221_error_to_str(int error);
 char *liben50221_error_to_str_descr(int error);
 void log_pids(char *log_module, mumudvb_channel_t *channel, int curr_channel);
