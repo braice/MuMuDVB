@@ -115,27 +115,27 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
       new_service=autoconf_find_service_for_add(services,HILO(descr_header->service_id));
       if(new_service)
       {
-        log_message( log_module, MSG_DEBUG, "We discovered a new service, service_id : 0x%x  ", HILO(descr_header->service_id));
+        log_message( log_module, MSG_DEBUG, "We discovered a new service, service_id : 0x%x\n", HILO(descr_header->service_id));
         //For information only
         switch(descr_header->running_status)
         {
           case 0:
-            log_message( log_module, MSG_DEBUG, "running_status : undefined\t");  break;
+            log_message( log_module, MSG_DEBUG, "\trunning_status : undefined\n");  break;
           case 1:
-            log_message( log_module, MSG_DEBUG, "running_status : not running\t");  break;
+            log_message( log_module, MSG_DEBUG, "\trunning_status : not running\n");  break;
           case 2:
-            log_message( log_module, MSG_DEBUG, "running_status : starts in a few seconds\t");  break;
+            log_message( log_module, MSG_DEBUG, "\trunning_status : starts in a few seconds\n");  break;
           case 3:
-            log_message( log_module, MSG_DEBUG, "running_status : pausing\t");  break;
-          case 4:  log_message( log_module, MSG_FLOOD, "running_status : running\t");  break; //too usual to be printed as debug
+            log_message( log_module, MSG_DEBUG, "\trunning_status : pausing\n");  break;
+          case 4:  log_message( log_module, MSG_FLOOD, "\trunning_status : running\n");  break; //too usual to be printed as debug
           case 5:
-            log_message( log_module, MSG_DEBUG, "running_status : service off-air\t");  break;
+            log_message( log_module, MSG_DEBUG, "\trunning_status : service off-air\n");  break;
         }
         //we store the data
         new_service->id=HILO(descr_header->service_id);
         new_service->running_status=descr_header->running_status;
         new_service->free_ca_mode=descr_header->free_ca_mode;
-        log_message( log_module, MSG_DEBUG, "free_ca_mode : 0x%x\n", descr_header->free_ca_mode);
+        log_message( log_module, MSG_DEBUG, "\tfree_ca_mode : 0x%x\n", descr_header->free_ca_mode);
         //We read the descriptor
         parse_sdt_descriptor(buf+delta+SDT_DESCR_LEN,HILO(descr_header->descriptors_loop_length),new_service);
       }
@@ -246,7 +246,7 @@ int convert_en399468_string(char *string, int max_len)
 	len++;
       }
       else
-	log_message( log_module, MSG_DEBUG, "\tUnimplemented name control_character : %x ", *src);
+	log_message( log_module, MSG_DEBUG, "\tUnimplemented name control_character : %x \n", *src);
     }
   }
 
