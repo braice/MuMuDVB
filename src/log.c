@@ -52,6 +52,7 @@ extern int Interrupted;
 log_params_t log_params={
   .verbosity = MSG_INFO+1,
   .log_type=LOGGING_UNDEFINED,
+  .rotating_log_file=0,
 };
 
 static char *log_module="Logs: ";
@@ -115,7 +116,15 @@ int read_logging_configuration(stats_infos_t *stats_infos, char *substring)
     else
       log_message(log_module,MSG_WARN,"Invalid value for log_type\n");
   }
-
+  else if (!strcmp (substring, "log_file"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    log_params.log_file = fopen (substring, "w");
+    if (log_params.log_file)
+      log_params.log_type = LOGGING_FILE;
+    else
+      log_message(log_module,MSG_WARN,"Cannot open log file %s: %s\n", substring, strerror (errno));
+  }
   return 0;
 }
 
@@ -142,10 +151,12 @@ void log_message( char* log_module, int type,
   tempchar=malloc((strlen(psz_format)+1+LOG_HEAD_LEN+len_log_module)*sizeof(char));
   if(tempchar==NULL)
   {
-    if ( (log_params.log_type == LOGGING_CONSOLE) || (log_params.log_type == LOGGING_UNDEFINED))
-      fprintf( stderr,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    else
+    if (log_params.log_type == LOGGING_FILE)
+      fprintf( log_params.log_file,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    else if (log_params.log_type == LOGGING_SYSLOG)
       syslog (MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    else
+      fprintf( stderr,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     va_end( args );
     Interrupted=ERROR_MEMORY<<8;
     return;
@@ -184,9 +195,9 @@ void log_message( char* log_module, int type,
 
   if(type<log_params.verbosity)
     {
-      if ( (log_params.log_type == LOGGING_CONSOLE) || (log_params.log_type == LOGGING_UNDEFINED))
-	vfprintf(stderr, tempchar, args );
-      else
+      if ( log_params.log_type == LOGGING_FILE)
+	vfprintf(log_params.log_file, tempchar, args );
+      else if(log_params.log_type == LOGGING_SYSLOG)
 	{
 	  //what is the priority ?
 	  switch(type)
@@ -212,6 +223,8 @@ void log_message( char* log_module, int type,
 	    }
 	  vsyslog (priority, tempchar, args );
 	}
+	else
+          vfprintf(stderr, tempchar, args );
     }
   free(tempchar);
   va_end( args );

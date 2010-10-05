@@ -73,7 +73,8 @@ typedef enum
   {
     LOGGING_UNDEFINED,
     LOGGING_CONSOLE,
-    LOGGING_SYSLOG
+    LOGGING_SYSLOG,
+    LOGGING_FILE
   }log_type_t;
 
 typedef struct log_params_t{
@@ -81,6 +82,10 @@ typedef struct log_params_t{
   int verbosity;
   /**say if we log to the console, syslog*/
   log_type_t log_type;
+  /**Say if the logging file could be rotated*/
+  int rotating_log_file;
+  /** The logging file */
+  FILE *log_file;
 }log_params_t;
 
 
