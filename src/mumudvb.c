@@ -328,6 +328,9 @@ int
   .compute_traffic_time = 0,
   .show_traffic_interval = 10,
   .compute_traffic_interval = 10,
+  .up_threshold = 80,
+  .down_threshold = 30,
+  .debug_updown = 0,
   };
 
 
@@ -616,6 +619,21 @@ int
         stats_infos.compute_traffic_interval=ALARM_TIME;
         log_message( log_module, MSG_WARN,"Sorry the minimum interval for computing the traffic is %ds\n",ALARM_TIME);
       }
+    }
+    else if (!strcmp (substring, "up_threshold"))
+    {
+      substring = strtok (NULL, delimiteurs);
+      stats_infos.up_threshold= atoi (substring);
+    }
+    else if (!strcmp (substring, "down_threshold"))
+    {
+      substring = strtok (NULL, delimiteurs);
+      stats_infos.down_threshold= atoi (substring);
+    }
+    else if (!strcmp (substring, "debug_updown"))
+    {
+      substring = strtok (NULL, delimiteurs);
+      stats_infos.debug_updown= atoi (substring);
     }
     else if (!strcmp (substring, "dont_send_scrambled"))
     {
@@ -2012,13 +2030,13 @@ void *monitor_func(void* arg)
         else
           num_scrambled=0;
         packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
-        if( !current->streamed_channel)
+        if( params->stats_infos->debug_updown)
         {
           log_message( log_module,  MSG_FLOOD,
                       "Channel \"%s\" streamed_channel %f packets/s\n",
                       current->name,packets_per_sec);
         }
-        if ((packets_per_sec >= 80) && (!current->streamed_channel))
+        if ((packets_per_sec >= params->stats_infos->up_threshold) && (!current->streamed_channel))
         {
           log_message( log_module,  MSG_INFO,
                       "Channel \"%s\" back.Card %d\n",
@@ -2027,7 +2045,7 @@ void *monitor_func(void* arg)
           if(params->sap_vars->sap == OPTION_ON)
             sap_update(&params->chan_and_pids->channels[curr_channel], params->sap_vars, curr_channel, *params->multicast_vars); //Channel status changed, we update the sap announces
         }
-        else if ((current->streamed_channel) && (packets_per_sec < 30))
+        else if ((current->streamed_channel) && (packets_per_sec < params->stats_infos->down_threshold))
         {
           log_message( log_module,  MSG_INFO,
                       "Channel \"%s\" down.Card %d\n",

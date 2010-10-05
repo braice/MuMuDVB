@@ -59,7 +59,13 @@ typedef struct stats_infos_t{
   /** The interval for the traffic display */
   int show_traffic_interval;
   /** The interval for the traffic calculation */
-  int compute_traffic_interval; 
+  int compute_traffic_interval;
+  /** The number of packets per second (PMT excluded) for going to the UP state */
+  int up_threshold;
+  /** The number of packets per second (PMT excluded) for going to the DOWN state */
+  int down_threshold;
+  /** Do we display the number of packets per second to debug up/down detection ? */
+  int debug_updown;
 }stats_infos_t;
 
 
