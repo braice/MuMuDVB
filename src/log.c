@@ -61,7 +61,7 @@ static char *log_module="Logs: ";
  * @param log_params the logging parameters
  * @param substring The currrent line
  */
-int read_logging_configuration(stats_infos_t *stats_infos, log_params_t *log_params_t, char *substring)
+int read_logging_configuration(stats_infos_t *stats_infos, log_params_t *log_params, char *substring)
 {
 
   char delimiteurs[] = CONFIG_FILE_SEPARATOR;
