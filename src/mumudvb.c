@@ -290,8 +290,7 @@ transcode_options_t global_transcode_opt;
 #endif
 
 //logging
-int log_initialised=0; /**say if we opened the syslog resource*/
-int verbosity = MSG_INFO+1; /** the verbosity level for log messages */
+extern log_params_t log_params;
 
 // prototypes
 static void SignalHandler (int signum);//below
@@ -443,10 +442,10 @@ int
         no_daemon = 1;
         break;
       case 'v':
-        verbosity++;
+        log_params.verbosity++;
         break;
       case 'q':
-        verbosity--;
+        log_params.verbosity--;
         break;
       case 'h':
         usage (program_invocation_short_name);
@@ -482,10 +481,15 @@ int
     exit(666); //FIXME : use an error
   }
 
-  //we open the descriptor for syslog
+  //If the user didn't defined a prefered logging way, and we daemonise, we set to syslog
   if (!no_daemon)
-    openlog ("MUMUDVB", LOG_PID, 0);
-  log_initialised=1;
+  {
+    if(log_params.log_type==LOGGING_UNDEFINED)
+    {
+      openlog ("MUMUDVB", LOG_PID, 0);
+      log_params.log_type=LOGGING_SYSLOG;
+    }
+  }
 
   //Display general information
   print_info ();
@@ -590,7 +594,7 @@ int
       continue;
     }
 #endif
-    else if((iRet=read_logging_configuration(&stats_infos,NULL, substring))) //Read the line concerning the logging parameters
+    else if((iRet=read_logging_configuration(&stats_infos, substring))) //Read the line concerning the logging parameters
     {
       if(iRet==-1)
         exit(ERROR_CONF);

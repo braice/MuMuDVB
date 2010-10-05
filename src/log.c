@@ -47,10 +47,12 @@
 
 #define LOG_HEAD_LEN 6
 extern int no_daemon;
-extern int verbosity;
-extern int log_initialised;
 extern int Interrupted;
 
+log_params_t log_params={
+  .verbosity = MSG_INFO+1,
+  .log_type=LOGGING_UNDEFINED,
+};
 
 static char *log_module="Logs: ";
 
@@ -61,7 +63,7 @@ static char *log_module="Logs: ";
  * @param log_params the logging parameters
  * @param substring The currrent line
  */
-int read_logging_configuration(stats_infos_t *stats_infos, log_params_t *log_params, char *substring)
+int read_logging_configuration(stats_infos_t *stats_infos, char *substring)
 {
 
   char delimiteurs[] = CONFIG_FILE_SEPARATOR;
@@ -100,8 +102,19 @@ int read_logging_configuration(stats_infos_t *stats_infos, log_params_t *log_par
     substring = strtok (NULL, delimiteurs);
     stats_infos->debug_updown= atoi (substring);
   }
-
-
+  else if (!strcmp (substring, "log_type"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    if (!strcmp (substring, "console"))
+      log_params.log_type = LOGGING_CONSOLE;
+    else if (!strcmp (substring, "syslog"))
+    {
+      openlog ("MUMUDVB", LOG_PID, 0);
+      log_params.log_type = LOGGING_SYSLOG;
+    }
+    else
+      log_message(log_module,MSG_WARN,"Invalid value for log_type\n");
+  }
 
   return 0;
 }
@@ -129,7 +142,7 @@ void log_message( char* log_module, int type,
   tempchar=malloc((strlen(psz_format)+1+LOG_HEAD_LEN+len_log_module)*sizeof(char));
   if(tempchar==NULL)
   {
-    if (no_daemon || !log_initialised)
+    if ( (log_params.log_type == LOGGING_CONSOLE) || (log_params.log_type == LOGGING_UNDEFINED))
       fprintf( stderr,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     else
       syslog (MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
@@ -169,9 +182,9 @@ void log_message( char* log_module, int type,
 
 
 
-  if(type<verbosity)
+  if(type<log_params.verbosity)
     {
-      if (no_daemon || !log_initialised)
+      if ( (log_params.log_type == LOGGING_CONSOLE) || (log_params.log_type == LOGGING_UNDEFINED))
 	vfprintf(stderr, tempchar, args );
       else
 	{

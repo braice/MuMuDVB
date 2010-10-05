@@ -69,7 +69,18 @@ typedef struct stats_infos_t{
 }stats_infos_t;
 
 
+typedef enum
+  {
+    LOGGING_UNDEFINED,
+    LOGGING_CONSOLE,
+    LOGGING_SYSLOG
+  }log_type_t;
+
 typedef struct log_params_t{
+  /** the verbosity level for log messages */
+  int verbosity;
+  /**say if we log to the console, syslog*/
+  log_type_t log_type;
 }log_params_t;
 
 
@@ -90,6 +101,6 @@ void show_traffic(char *log_module, double now, int show_traffic_interval, mumud
 char *liben50221_error_to_str(int error);
 char *liben50221_error_to_str_descr(int error);
 void log_pids(char *log_module, mumudvb_channel_t *channel, int curr_channel);
-int read_logging_configuration(stats_infos_t *stats_infos, log_params_t *log_params_t, char *substring);
+int read_logging_configuration(stats_infos_t *stats_infos, char *substring);
 
 #endif
