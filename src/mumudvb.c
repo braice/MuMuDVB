@@ -604,20 +604,20 @@ int
     {
       substring = strtok (NULL, delimiteurs);
       stats_infos.show_traffic_interval= atoi (substring);
-      if(stats_infos.show_traffic_interval<ALARM_TIME)
+      if(stats_infos.show_traffic_interval<1)
       {
-        stats_infos.show_traffic_interval=ALARM_TIME;
-        log_message( log_module, MSG_WARN,"Sorry the minimum interval for showing the traffic is %ds\n",ALARM_TIME);
+        stats_infos.show_traffic_interval=1;
+        log_message( log_module, MSG_WARN,"Sorry the minimum interval for showing the traffic is 1s\n");
       }
     }
     else if (!strcmp (substring, "compute_traffic_interval"))
     {
       substring = strtok (NULL, delimiteurs);
       stats_infos.compute_traffic_interval= atoi (substring);
-      if(stats_infos.compute_traffic_interval<ALARM_TIME)
+      if(stats_infos.compute_traffic_interval<1)
       {
-        stats_infos.compute_traffic_interval=ALARM_TIME;
-        log_message( log_module, MSG_WARN,"Sorry the minimum interval for computing the traffic is %ds\n",ALARM_TIME);
+        stats_infos.compute_traffic_interval=1;
+        log_message( log_module, MSG_WARN,"Sorry the minimum interval for computing the traffic is 1s\n");
       }
     }
     else if (!strcmp (substring, "up_threshold"))
