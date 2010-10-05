@@ -69,6 +69,11 @@ typedef struct stats_infos_t{
 }stats_infos_t;
 
 
+typedef struct log_params_t{
+}log_params_t;
+
+
+
 void print_info ();
 void usage (char *name);
 void log_message( char* log_module, int , const char *, ... );
@@ -85,5 +90,6 @@ void show_traffic(char *log_module, double now, int show_traffic_interval, mumud
 char *liben50221_error_to_str(int error);
 char *liben50221_error_to_str_descr(int error);
 void log_pids(char *log_module, mumudvb_channel_t *channel, int curr_channel);
+int read_logging_configuration(stats_infos_t *stats_infos, log_params_t *log_params_t, char *substring);
 
 #endif

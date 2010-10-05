@@ -590,6 +590,11 @@ int
       continue;
     }
 #endif
+    else if((iRet=read_logging_configuration(&stats_infos,NULL, substring))) //Read the line concerning the logging parameters
+    {
+      if(iRet==-1)
+        exit(ERROR_CONF);
+    }
     else if (!strcmp (substring, "channel_next"))
     {
       curr_channel++;
@@ -599,41 +604,6 @@ int
     {
       substring = strtok (NULL, delimiteurs);
       timeout_no_diff= atoi (substring);
-    }
-    else if (!strcmp (substring, "show_traffic_interval"))
-    {
-      substring = strtok (NULL, delimiteurs);
-      stats_infos.show_traffic_interval= atoi (substring);
-      if(stats_infos.show_traffic_interval<1)
-      {
-        stats_infos.show_traffic_interval=1;
-        log_message( log_module, MSG_WARN,"Sorry the minimum interval for showing the traffic is 1s\n");
-      }
-    }
-    else if (!strcmp (substring, "compute_traffic_interval"))
-    {
-      substring = strtok (NULL, delimiteurs);
-      stats_infos.compute_traffic_interval= atoi (substring);
-      if(stats_infos.compute_traffic_interval<1)
-      {
-        stats_infos.compute_traffic_interval=1;
-        log_message( log_module, MSG_WARN,"Sorry the minimum interval for computing the traffic is 1s\n");
-      }
-    }
-    else if (!strcmp (substring, "up_threshold"))
-    {
-      substring = strtok (NULL, delimiteurs);
-      stats_infos.up_threshold= atoi (substring);
-    }
-    else if (!strcmp (substring, "down_threshold"))
-    {
-      substring = strtok (NULL, delimiteurs);
-      stats_infos.down_threshold= atoi (substring);
-    }
-    else if (!strcmp (substring, "debug_updown"))
-    {
-      substring = strtok (NULL, delimiteurs);
-      stats_infos.debug_updown= atoi (substring);
     }
     else if (!strcmp (substring, "dont_send_scrambled"))
     {

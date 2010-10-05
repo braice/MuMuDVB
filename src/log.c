@@ -52,6 +52,59 @@ extern int log_initialised;
 extern int Interrupted;
 
 
+static char *log_module="Logs: ";
+
+
+/** @brief Read a line of the configuration file to check if there is a logging parameter
+ *
+ * @param stats_infos the stats infos parameters
+ * @param log_params the logging parameters
+ * @param substring The currrent line
+ */
+int read_logging_configuration(stats_infos_t *stats_infos, log_params_t *log_params_t, char *substring)
+{
+
+  char delimiteurs[] = CONFIG_FILE_SEPARATOR;
+  if (!strcmp (substring, "show_traffic_interval"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    stats_infos->show_traffic_interval= atoi (substring);
+    if(stats_infos->show_traffic_interval<1)
+    {
+      stats_infos->show_traffic_interval=1;
+      log_message( log_module, MSG_WARN,"Sorry the minimum interval for showing the traffic is 1s\n");
+    }
+  }
+  else if (!strcmp (substring, "compute_traffic_interval"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    stats_infos->compute_traffic_interval= atoi (substring);
+    if(stats_infos->compute_traffic_interval<1)
+    {
+      stats_infos->compute_traffic_interval=1;
+      log_message( log_module, MSG_WARN,"Sorry the minimum interval for computing the traffic is 1s\n");
+    }
+  }
+  else if (!strcmp (substring, "up_threshold"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    stats_infos->up_threshold= atoi (substring);
+  }
+  else if (!strcmp (substring, "down_threshold"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    stats_infos->down_threshold= atoi (substring);
+  }
+  else if (!strcmp (substring, "debug_updown"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    stats_infos->debug_updown= atoi (substring);
+  }
+
+
+
+  return 0;
+}
 
 /**
  * @brief Print a log message on the console or via syslog 
