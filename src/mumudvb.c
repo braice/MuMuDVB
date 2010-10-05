@@ -594,7 +594,7 @@ int
       continue;
     }
 #endif
-    else if((iRet=read_logging_configuration(&stats_infos, substring))) //Read the line concerning the logging parameters
+    else if((iRet=read_logging_configuration(&stats_infos, substring, &tuneparams, server_id))) //Read the line concerning the logging parameters
     {
       if(iRet==-1)
         exit(ERROR_CONF);
