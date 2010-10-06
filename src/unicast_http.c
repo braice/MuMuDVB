@@ -861,7 +861,8 @@ int unicast_reply_write(struct unicast_reply *reply, const char* msg, ...)
   //Since vsnprintf put the mess we reinitiate the args
   va_end(args);
   va_start(args, msg);
-  while (*length - *used < estimated_len) {
+  // Must add 1 byte more for the terminating zero (not counted)
+  while (*length - *used < estimated_len + 1) {
     temp_buffer = realloc(*buffer, *length + REPLY_SIZE_STEP);
     if(temp_buffer == NULL)
     {
