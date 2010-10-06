@@ -40,6 +40,7 @@
 #include "mumudvb.h"
 #include "errors.h"
 #include "log.h"
+#include "tune.h"
 
 #ifdef ENABLE_CAM_SUPPORT
 #include <libdvben50221/en50221_errno.h>
@@ -120,7 +121,7 @@ int read_logging_configuration(stats_infos_t *stats_infos, char *substring, tuni
   {
     substring = strtok (NULL, delimiteurs);
     int len;
-    len=strlen(unicast_vars.portOut_str)+1;
+    len=strlen(substring)+1;
     char number[10];
     sprintf(number,"%d",tuneparams->card);
     mumu_string_replace(substring,&len,0,"%card",number);

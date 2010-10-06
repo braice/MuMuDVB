@@ -1757,7 +1757,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params,int Interrupted)
   }
 
   if(log_params.log_file)
-    close(log_params.log_file);
+    fclose(log_params.log_file);
 
   /*free the file descriptors*/
   if(fds.pfds)
