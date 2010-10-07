@@ -75,6 +75,8 @@ typedef struct stats_infos_t{
 #define LOGGING_SYSLOG          2
 #define LOGGING_FILE            4
 
+#define DEFAULT_LOG_HEADER "%priority:  %module "
+
 typedef struct log_params_t{
   /** the verbosity level for log messages */
   int verbosity;
@@ -86,6 +88,8 @@ typedef struct log_params_t{
   int rotating_log_file;
   /** The logging file */
   FILE *log_file;
+  /** The header with templates for the log messages*/
+  char *log_header;
 }log_params_t;
 
 

@@ -36,6 +36,10 @@
 #include <syslog.h>
 #include <errno.h>
 #include <linux/dvb/version.h>
+#include <time.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 
 #include "mumudvb.h"
 #include "errors.h"
@@ -55,6 +59,7 @@ log_params_t log_params={
   .log_type=LOGGING_UNDEFINED,
   .rotating_log_file=0,
   .syslog_initialised=0,
+  .log_header=NULL,
 };
 
 static char *log_module="Logs: ";
@@ -137,13 +142,53 @@ int read_logging_configuration(stats_infos_t *stats_infos, char *substring, tuni
     else
       log_message(log_module,MSG_WARN,"Cannot open log file %s: %s\n", substring, strerror (errno));
   }
+  else if (!strcmp (substring, "log_header"))
+  {
+    substring = strtok (NULL,"=" );
+    if(log_params.log_header!=NULL)
+      free(log_params.log_header);
+    log_params.log_header=malloc((strlen(substring)+1)*sizeof(char));
+    if(log_params.log_header==NULL)
+    {
+      log_message(log_module,MSG_WARN,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      return -1;
+    }
+    sprintf(log_params.log_header,"%s",substring);
+  }
   return 0;
 }
 
 /**
- * @brief Print a log message on the console or via syslog 
- * depending if mumudvb is daemonized or not
+ * @brief Return a string description of the log priorities
+*/
+char *priorities(int type)
+{
+  switch(type)
+  {
+    case MSG_ERROR:
+      return "ERRO";
+    case MSG_WARN:
+      return "WARN";
+    case MSG_INFO:
+      return "Info";
+    case MSG_DETAIL:
+      return "Deb0";
+    case MSG_DEBUG:
+      return "Deb1";
+    case MSG_FLOOD:
+      return "Deb2";
+    default:
+      return "";
+  }
+}
+
+
+
+
+/**
+ * @brief Print a log message
  *
+ * @param log_module : the name of the part of MuMuDVB which send the message
  * @param type : message type MSG_*
  * @param psz_format : the message in the printf format
 */
@@ -151,16 +196,70 @@ void log_message( char* log_module, int type,
                     const char *psz_format, ... )
 {
   va_list args;
-  int priority;
+  int priority=0;
   char *tempchar;
-  int len_log_module=0;
+  int message_size;
+  mumu_string_t log_string;
+  log_string.string=NULL;
+  log_string.length=0;
 
-  va_start( args, psz_format );
+  /*****************************************/
+  //if the log header is not initialised
+  // we do it
+  /*****************************************/
 
+  if(log_params.log_header==NULL)
+  {
+    log_params.log_header=malloc((strlen(DEFAULT_LOG_HEADER)+1)*sizeof(char));
+    if(log_params.log_header==NULL)
+    {
+      if (log_params.log_type == LOGGING_FILE)
+        fprintf( log_params.log_file,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      else if (log_params.log_type == LOGGING_SYSLOG)
+        syslog (MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      else
+        fprintf( stderr,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      va_end( args );
+      Interrupted=ERROR_MEMORY<<8;
+      return;
+    }
+    sprintf(log_params.log_header,"%s",DEFAULT_LOG_HEADER);
+
+  }
+  /*****************************************/
+  //We apply the templates to the header
+  /*****************************************/
+  mumu_string_append(&log_string, "%s",log_params.log_header);
+  log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%priority",priorities(type));
   if(log_module!=NULL)
-    len_log_module=strlen(log_module);
+    log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%module",log_module);
+  else
+    log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%module","");
 
-  tempchar=malloc((strlen(psz_format)+1+LOG_HEAD_LEN+len_log_module)*sizeof(char));
+  char timestring[40];
+  time_t actual_time;
+  actual_time=time(NULL);
+  sprintf(timestring,"%jd", (intmax_t)actual_time);
+  log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%timeepoch",timestring);
+  asctime_r(localtime(&actual_time),timestring);
+  timestring[strlen(timestring)-1]='\0'; //In order to remove the final '\n' but by asctime
+  log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%date",timestring);
+
+  char pidstring[10];
+  sprintf (pidstring, "%d", getpid ());
+  log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%pid",pidstring);
+
+
+  /*****************************************/
+  //We append the log message
+  /*****************************************/
+  //The length returned by mumu_string_replace is the allocated length not the string length
+  //If we want mumu_string_append to work we need to update the length to the string length
+  log_string.length=strlen(log_string.string);
+  va_start( args, psz_format );
+  message_size=vsnprintf(NULL, 0, psz_format, args);
+  va_end( args );
+  tempchar=malloc((message_size+1)*sizeof(char));
   if(tempchar==NULL)
   {
     if (log_params.log_type == LOGGING_FILE)
@@ -174,41 +273,19 @@ void log_message( char* log_module, int type,
     return;
   }
 
-  memset (tempchar, ' ', LOG_HEAD_LEN+len_log_module);
-  strcpy(tempchar+LOG_HEAD_LEN+len_log_module,psz_format);
+  va_start( args, psz_format );
+  vsprintf(tempchar, psz_format, args );
+  va_end( args );
+  mumu_string_append(&log_string,"%s",tempchar);
+  free(tempchar);
 
-  if(len_log_module)
-    memcpy(tempchar+LOG_HEAD_LEN,log_module,len_log_module);
-
-  //The bunch of space at the end of the strings in strncpy is to be shure not to copy the \0 I didn't found a cleaner way
-  switch(type)
-  {
-    case MSG_ERROR:
-      memcpy(tempchar,"ERRO:    ",LOG_HEAD_LEN);
-      break;
-    case MSG_WARN:
-      strncpy(tempchar,"WARN:    ",LOG_HEAD_LEN);
-      break;
-    case MSG_INFO:
-      strncpy(tempchar,"Info:    ",LOG_HEAD_LEN);
-      break;
-    case MSG_DETAIL:
-      strncpy(tempchar,"Deb0:    ",LOG_HEAD_LEN);
-      break;
-    case MSG_DEBUG:
-      strncpy(tempchar,"Deb1:    ",LOG_HEAD_LEN);
-      break;
-    case MSG_FLOOD:
-      strncpy(tempchar,"Deb2:    ",LOG_HEAD_LEN);
-      break;
-  }
-
-
-
+  /*****************************************/
+  //We "display" the log message
+  /*****************************************/
   if(type<log_params.verbosity)
     {
       if ( log_params.log_type & LOGGING_FILE)
-	vfprintf(log_params.log_file, tempchar, args );
+	fprintf(log_params.log_file,"%s",log_string.string);
       if((log_params.log_type & LOGGING_SYSLOG) && (log_params.syslog_initialised))
 	{
 	  //what is the priority ?
@@ -233,15 +310,15 @@ void log_message( char* log_module, int type,
             default:
               priority=LOG_USER;
 	    }
-	  vsyslog (priority, tempchar, args );
+	  syslog (priority,"%s",log_string.string);
 	}
 	if((log_params.log_type == LOGGING_UNDEFINED) ||
           (log_params.log_type & LOGGING_CONSOLE) ||
           ((log_params.log_type & LOGGING_SYSLOG) && (log_params.syslog_initialised==0)))
-          vfprintf(stderr, tempchar, args );
+          fprintf(stderr,"%s",log_string.string);
     }
-  free(tempchar);
-  va_end( args );
+
+
 }
 
 /**
