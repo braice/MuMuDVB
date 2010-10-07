@@ -276,7 +276,11 @@ void log_message( char* log_module, int type,
   va_start( args, psz_format );
   vsprintf(tempchar, psz_format, args );
   va_end( args );
-  mumu_string_append(&log_string,"%s",tempchar);
+  //If there is no \n at the end of the message we add it
+  char terminator='\0';
+  if(tempchar[strlen(tempchar)-1] != '\n')
+    terminator='\n';
+  mumu_string_append(&log_string,"%s%c",tempchar,terminator);
   free(tempchar);
 
   /*****************************************/
