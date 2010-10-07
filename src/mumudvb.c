@@ -1768,6 +1768,8 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params,int Interrupted)
     free(unicast_vars.fd_info);
   unicast_vars.fd_info=NULL;
 
+  if(log_params.log_header!=NULL)
+      free(log_params.log_header);
 //   plop if(temp_buffer_from_dvr)
 //       free(temp_buffer_from_dvr);
 
