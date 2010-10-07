@@ -190,7 +190,7 @@ struct en50221_stdcam_llci {
 /** @brief Reset the CAM */
 void cam_reset_cam(cam_parameters_t *cam_params)
 {
-  log_message( log_module,  MSG_FLOOD,"CAM Reset");
+  log_message( log_module,  MSG_FLOOD,"CAM Reset\n");
   struct en50221_stdcam *stdcam=cam_params->stdcam;
   struct en50221_stdcam_llci *llci = (struct en50221_stdcam_llci *) stdcam;
   ioctl(llci->cafd, CA_RESET, (1 << llci->slotnum));
@@ -633,7 +633,7 @@ static int mumudvb_cam_ai_callback(void *arg, uint8_t slot_id, uint16_t session_
   (void) session_number;
 
   // Write information to log
-  log_message( log_module,  MSG_FLOOD, "CAM Application_Info_Callback");
+  log_message( log_module,  MSG_FLOOD, "CAM Application_Info_Callback\n");
   log_message( log_module,  MSG_INFO, "CAM Application type: %02x\n", application_type);
   log_message( log_module,  MSG_INFO, "CAM Application manufacturer: %04x\n", application_manufacturer);
   log_message( log_module,  MSG_INFO, "CAM Manufacturer code: %04x\n", manufacturer_code);
@@ -872,8 +872,8 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
   (void) slot_id;
   (void) session_number;
 
-  log_message( log_module,  MSG_INFO, "ENQ");
-  log_message( log_module,  MSG_INFO, "%.*s: ", text_size, text);
+  log_message( log_module,  MSG_INFO, "ENQ\n");
+  log_message( log_module,  MSG_INFO, "%.*s: \n", text_size, text);
 
   cam_params->mmi_enq_blind = blind_answer;
   cam_params->mmi_enq_length = expected_answer_length;
