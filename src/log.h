@@ -69,19 +69,19 @@ typedef struct stats_infos_t{
 }stats_infos_t;
 
 
-typedef enum
-  {
-    LOGGING_UNDEFINED,
-    LOGGING_CONSOLE,
-    LOGGING_SYSLOG,
-    LOGGING_FILE
-  }log_type_t;
+
+#define LOGGING_UNDEFINED       0
+#define LOGGING_CONSOLE         1
+#define LOGGING_SYSLOG          2
+#define LOGGING_FILE            4
 
 typedef struct log_params_t{
   /** the verbosity level for log messages */
   int verbosity;
   /**say if we log to the console, syslog*/
-  log_type_t log_type;
+  int log_type;
+  /** Says if syslog is initialised */
+  int syslog_initialised;
   /**Say if the logging file could be rotated*/
   int rotating_log_file;
   /** The logging file */

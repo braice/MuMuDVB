@@ -488,6 +488,7 @@ int
     {
       openlog ("MUMUDVB", LOG_PID, 0);
       log_params.log_type=LOGGING_SYSLOG;
+      log_params.syslog_initialised=1;
     }
   }
 

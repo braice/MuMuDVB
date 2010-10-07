@@ -54,6 +54,7 @@ log_params_t log_params={
   .verbosity = MSG_INFO+1,
   .log_type=LOGGING_UNDEFINED,
   .rotating_log_file=0,
+  .syslog_initialised=0,
 };
 
 static char *log_module="Logs: ";
@@ -108,11 +109,12 @@ int read_logging_configuration(stats_infos_t *stats_infos, char *substring, tuni
   {
     substring = strtok (NULL, delimiteurs);
     if (!strcmp (substring, "console"))
-      log_params.log_type = LOGGING_CONSOLE;
+      log_params.log_type |= LOGGING_CONSOLE;
     else if (!strcmp (substring, "syslog"))
     {
       openlog ("MUMUDVB", LOG_PID, 0);
-      log_params.log_type = LOGGING_SYSLOG;
+      log_params.log_type |= LOGGING_SYSLOG;
+      log_params.syslog_initialised=1;
     }
     else
       log_message(log_module,MSG_WARN,"Invalid value for log_type\n");
@@ -131,7 +133,7 @@ int read_logging_configuration(stats_infos_t *stats_infos, char *substring, tuni
     mumu_string_replace(substring,&len,0,"%server",number);
     log_params.log_file = fopen (substring, "a");
     if (log_params.log_file)
-      log_params.log_type = LOGGING_FILE;
+      log_params.log_type |= LOGGING_FILE;
     else
       log_message(log_module,MSG_WARN,"Cannot open log file %s: %s\n", substring, strerror (errno));
   }
@@ -205,9 +207,9 @@ void log_message( char* log_module, int type,
 
   if(type<log_params.verbosity)
     {
-      if ( log_params.log_type == LOGGING_FILE)
+      if ( log_params.log_type & LOGGING_FILE)
 	vfprintf(log_params.log_file, tempchar, args );
-      else if(log_params.log_type == LOGGING_SYSLOG)
+      if((log_params.log_type & LOGGING_SYSLOG) && (log_params.syslog_initialised))
 	{
 	  //what is the priority ?
 	  switch(type)
@@ -233,7 +235,9 @@ void log_message( char* log_module, int type,
 	    }
 	  vsyslog (priority, tempchar, args );
 	}
-	else
+	if((log_params.log_type == LOGGING_UNDEFINED) ||
+          (log_params.log_type & LOGGING_CONSOLE) ||
+          ((log_params.log_type & LOGGING_SYSLOG) && (log_params.syslog_initialised==0)))
           vfprintf(stderr, tempchar, args );
     }
   free(tempchar);
