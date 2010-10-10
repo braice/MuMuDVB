@@ -60,6 +60,8 @@ log_params_t log_params={
   .rotating_log_file=0,
   .syslog_initialised=0,
   .log_header=NULL,
+  .log_file=NULL,
+  .log_flush_interval = -1,
 };
 
 static char *log_module="Logs: ";
@@ -161,6 +163,11 @@ int read_logging_configuration(stats_infos_t *stats_infos, char *substring, tuni
       return -1;
     }
     sprintf(log_params.log_header,"%s",substring);
+  }
+  else if (!strcmp (substring, "log_flush_interval"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    log_params.log_flush_interval = atof (substring);
   }
   else
     return 0;

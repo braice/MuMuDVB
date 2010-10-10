@@ -1762,7 +1762,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params,int Interrupted)
   if(log_params.log_file)
   {
     fclose(log_params.log_file);
-    free(log_params.log_file_path)
+    free(log_params.log_file_path);
   }
 
   /*free the file descriptors*/
@@ -1865,6 +1865,7 @@ void *monitor_func(void* arg)
   struct timeval tv;
   double monitor_now;
   double last_updown_check=0;
+  double last_flush_time = 0;
   double time_no_diff=0;
   int num_big_buffer_show=0;
 
@@ -1953,7 +1954,23 @@ void *monitor_func(void* arg)
       }
     }
 
-
+    /*******************************************/
+    /* Periodically flush the logs if asked  */
+    /*******************************************/
+    if((log_params.log_file) && (log_params.log_flush_interval !=-1))
+    {
+      if(!last_flush_time)
+      {
+        last_flush_time=monitor_now;
+        fflush(log_params.log_file);
+      }
+      if((monitor_now-last_flush_time)>=log_params.log_flush_interval)
+      {
+        log_message( log_module,  MSG_FLOOD, "Flushing logs\n");
+        fflush(log_params.log_file);
+        last_flush_time=monitor_now;
+      }
+    }
 
     /*******************************************/
     /* Check if the chanel scrambling state    */

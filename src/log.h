@@ -92,6 +92,8 @@ typedef struct log_params_t{
   char *log_file_path;
   /** The header with templates for the log messages*/
   char *log_header;
+  /**  Flushing interval */
+  float log_flush_interval;
 }log_params_t;
 
 
