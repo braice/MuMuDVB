@@ -136,6 +136,13 @@ int read_logging_configuration(stats_infos_t *stats_infos, char *substring, tuni
     mumu_string_replace(substring,&len,0,"%tuner",number);
     sprintf(number,"%d",server_id);
     mumu_string_replace(substring,&len,0,"%server",number);
+    log_params.log_file_path=malloc((strlen(substring)+1)*sizeof(char));
+    strncpy(log_params.log_file_path,substring,strlen(substring)+1);
+    if(log_params.log_file_path==NULL)
+    {
+      log_message(log_module,MSG_WARN,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      return -1;
+    }
     log_params.log_file = fopen (substring, "a");
     if (log_params.log_file)
       log_params.log_type |= LOGGING_FILE;
@@ -155,7 +162,9 @@ int read_logging_configuration(stats_infos_t *stats_infos, char *substring, tuni
     }
     sprintf(log_params.log_header,"%s",substring);
   }
-  return 0;
+  else
+    return 0;
+  return 1;
 }
 
 /**
@@ -183,6 +192,20 @@ char *priorities(int type)
 }
 
 
+/**
+ * @brief Sync_log for logrotate
+ * This function is called when a sighup is received. This function flushes the log and reopen the logfile
+ *
+ *
+*/
+void sync_logs()
+{
+  if (log_params.log_type |= LOGGING_FILE)
+  {
+    fflush(log_params.log_file);
+    log_params.log_file=freopen(log_params.log_file_path,"a",log_params.log_file);
+  }
+}
 
 
 /**

@@ -948,12 +948,14 @@ int
   /******************************************************/
   // Card tuning
   /******************************************************/
-    if (signal (SIGALRM, SignalHandler) == SIG_IGN)
-      signal (SIGALRM, SIG_IGN);
-    if (signal (SIGUSR1, SignalHandler) == SIG_IGN)
-      signal (SIGUSR1, SIG_IGN);
-    if (signal (SIGUSR2, SignalHandler) == SIG_IGN)
-      signal (SIGUSR2, SIG_IGN);
+  if (signal (SIGALRM, SignalHandler) == SIG_IGN)
+    signal (SIGALRM, SIG_IGN);
+  if (signal (SIGUSR1, SignalHandler) == SIG_IGN)
+    signal (SIGUSR1, SIG_IGN);
+  if (signal (SIGUSR2, SignalHandler) == SIG_IGN)
+    signal (SIGUSR2, SIG_IGN);
+  if (signal (SIGHUP, SignalHandler) == SIG_IGN)
+    signal (SIGHUP, SIG_IGN);
   // alarm for tuning timeout
   if(tuneparams.tuning_timeout)
   {
@@ -1792,7 +1794,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params,int Interrupted)
  *
  *  It check for the end of autoconfiguration
  * 
- * This function also catches SIGPIPE, SIGUSR1 and SIGUSR2
+ * This function also catches SIGPIPE, SIGUSR1, SIGUSR2 and SIGHUP
  * 
  ******************************************************/
 static void SignalHandler (int signum)
@@ -1837,6 +1839,10 @@ static void SignalHandler (int signum)
   {
     received_signal=SIGUSR2;
   }
+  else if (signum == SIGHUP)
+  {
+    received_signal=signum;
+  }
   else if (signum != SIGPIPE)
   {
     Interrupted = signum;
@@ -1868,12 +1874,12 @@ void *monitor_func(void* arg)
     /*******************************************/
     /* We deal with the received signals       */
     /*******************************************/
-    if (received_signal == SIGUSR1)
+    if (received_signal == SIGUSR1) //Display signal strength
     {
       params->tuneparams->display_strenght = params->tuneparams->display_strenght ? 0 : 1;
       received_signal = 0;
     }
-    else if (received_signal == SIGUSR2)
+    else if (received_signal == SIGUSR2) //Display traffic
     {
       params->stats_infos->show_traffic = params->stats_infos->show_traffic ? 0 : 1;
       if(params->stats_infos->show_traffic)
@@ -1882,7 +1888,12 @@ void *monitor_func(void* arg)
         log_message( log_module, MSG_INFO,"The traffic will not be shown anymore\n");
       received_signal = 0;
     }
-
+    else if (received_signal == SIGHUP) //Sync logs
+    {
+      log_message( log_module, MSG_DEBUG,"Syncing logs\n");
+      sync_logs();
+      received_signal = 0;
+    }
 
 
     if(!params->autoconf_vars->autoconfiguration)

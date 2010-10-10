@@ -88,6 +88,8 @@ typedef struct log_params_t{
   int rotating_log_file;
   /** The logging file */
   FILE *log_file;
+  /** The logging file path */
+  char *log_file_path;
   /** The header with templates for the log messages*/
   char *log_header;
 }log_params_t;
@@ -111,5 +113,7 @@ char *liben50221_error_to_str(int error);
 char *liben50221_error_to_str_descr(int error);
 void log_pids(char *log_module, mumudvb_channel_t *channel, int curr_channel);
 int read_logging_configuration(stats_infos_t *stats_infos, char *substring, struct tuning_parameters_t *tuneparams, int server_id);
+void sync_logs();
+
 
 #endif
