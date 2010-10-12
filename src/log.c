@@ -73,7 +73,7 @@ static char *log_module="Logs: ";
  * @param log_params the logging parameters
  * @param substring The currrent line
  */
-int read_logging_configuration(stats_infos_t *stats_infos, char *substring, tuning_parameters_t *tuneparams, int server_id)
+int read_logging_configuration(stats_infos_t *stats_infos, char *substring)
 {
 
   char delimiteurs[] = CONFIG_FILE_SEPARATOR;
@@ -129,15 +129,6 @@ int read_logging_configuration(stats_infos_t *stats_infos, char *substring, tuni
   else if (!strcmp (substring, "log_file"))
   {
     substring = strtok (NULL, delimiteurs);
-    int len;
-    len=strlen(substring)+1;
-    char number[10];
-    sprintf(number,"%d",tuneparams->card);
-    mumu_string_replace(substring,&len,0,"%card",number);
-    sprintf(number,"%d",tuneparams->tuner);
-    mumu_string_replace(substring,&len,0,"%tuner",number);
-    sprintf(number,"%d",server_id);
-    mumu_string_replace(substring,&len,0,"%server",number);
     log_params.log_file_path=malloc((strlen(substring)+1)*sizeof(char));
     strncpy(log_params.log_file_path,substring,strlen(substring)+1);
     if(log_params.log_file_path==NULL)
@@ -145,11 +136,6 @@ int read_logging_configuration(stats_infos_t *stats_infos, char *substring, tuni
       log_message(log_module,MSG_WARN,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       return -1;
     }
-    log_params.log_file = fopen (substring, "a");
-    if (log_params.log_file)
-      log_params.log_type |= LOGGING_FILE;
-    else
-      log_message(log_module,MSG_WARN,"Cannot open log file %s: %s\n", substring, strerror (errno));
   }
   else if (!strcmp (substring, "log_header"))
   {

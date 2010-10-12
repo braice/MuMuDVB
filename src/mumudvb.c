@@ -595,7 +595,7 @@ int
       continue;
     }
 #endif
-    else if((iRet=read_logging_configuration(&stats_infos, substring, &tuneparams, server_id))) //Read the line concerning the logging parameters
+    else if((iRet=read_logging_configuration(&stats_infos, substring))) //Read the line concerning the logging parameters
     {
       if(iRet==-1)
         exit(ERROR_CONF);
@@ -800,6 +800,24 @@ int
     unicast_vars.portOut_str=mumu_string_replace(unicast_vars.portOut_str,&len,1,"%server",number);
     unicast_vars.portOut=string_comput(unicast_vars.portOut_str);
     log_message( "Unicast: ", MSG_DEBUG, "computed unicast master port : %d\n",unicast_vars.portOut);
+  }
+
+  if(log_params.log_file_path!=NULL)
+  {
+    int len;
+    len=strlen(log_params.log_file_path)+1;
+    char number[10];
+    sprintf(number,"%d",tuneparams.card);
+    log_params.log_file_path=mumu_string_replace(log_params.log_file_path,&len,1,"%card",number);
+    sprintf(number,"%d",tuneparams.tuner);
+    log_params.log_file_path=mumu_string_replace(log_params.log_file_path,&len,1,"%tuner",number);
+    sprintf(number,"%d",server_id);
+    log_params.log_file_path=mumu_string_replace(log_params.log_file_path,&len,1,"%server",number);
+    log_params.log_file = fopen (log_params.log_file_path, "a");
+    if (log_params.log_file)
+      log_params.log_type |= LOGGING_FILE;
+    else
+      log_message(log_module,MSG_WARN,"Cannot open log file %s: %s\n", substring, strerror (errno));
   }
   /******************************************************/
   //end of config file reading
