@@ -81,17 +81,26 @@ int autoconf_read_psip(autoconf_parameters_t *parameters)
   psip_t       *psip=(psip_t*)(buf);
 
   //We look only for the following tables OxC8 : TVCT (Terrestrial Virtual Channel Table), 0XC9 : CVCT (Cable Virtual Channel Table)
-  if (psip->table_id != 0xc8 && psip->table_id != 0xc9)  
+  if (psip->table_id != 0xc8 && psip->table_id != 0xc9)
       return 1;
-  
+
   log_message( log_module, MSG_DEBUG,"---- ATSC : PSIP TVCT ot CVCT----\n");
+
+  /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+  sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+  and shall be the next table to become valid.*/
+  if(psip->current_next_indicator == 0)
+  {
+    log_message( log_module, MSG_FLOOD,"PSIP not yet valid, we get a new one (current_next_indicator == 0)\n");
+    return 1;
+  }
 
   if(parameters->transport_stream_id<0)
     {
       log_message( log_module, MSG_DEBUG,"We don't have a transport id from the PAT, we skip this PSIP\n");
       return 1;
     }
-    
+
   log_message( log_module, MSG_DEBUG,"PSIP transport_stream_id : 0x%x PAT TSID 0x%x\n",
 	      HILO(psip->transport_stream_id),
 	      parameters->transport_stream_id);
@@ -102,7 +111,7 @@ int autoconf_read_psip(autoconf_parameters_t *parameters)
       return 1;
     }
 
-  
+
   number_of_channels_in_section=buf[PSIP_HEADER_LEN]; //This field is the byte just after the PSIP header
   delta=PSIP_HEADER_LEN+1;
   log_message( log_module, MSG_DEBUG,"VCT : number_of_channels_in_section %d\n",
