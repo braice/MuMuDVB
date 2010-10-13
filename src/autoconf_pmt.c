@@ -103,6 +103,16 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
     return 1;
   }
 
+  /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+  sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+  and shall be the next table to become valid.*/
+  if(header->current_next_indicator == 0)
+  {
+    log_message( log_module, MSG_DEBUG,"The current_next_indicator is set to 0, this PMT is not valid for the current stream\n");
+    return 1;
+  }
+
+
   log_message( log_module,  MSG_DEBUG,"PMT (PID %d) read for autoconfiguration of channel \"%s\"\n", pmt->pid, channel->name);
 
   channel_update=channel->num_pids>1?1:0;
@@ -508,6 +518,14 @@ int pmt_need_update(mumudvb_channel_t *channel, unsigned char *buf,int ts_header
   {
     pmt=(pmt_t*)(buf);
     header=NULL;
+  }
+
+  /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+  sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+  and shall be the next table to become valid.*/
+  if(pmt->current_next_indicator == 0)
+  {
+    return 0;
   }
 
   if(pmt->table_id==0x02)

@@ -251,7 +251,18 @@ int check_pmt_service_id(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
     return 0;
   }
 
-	//We check if this PMT belongs to the current channel. (Only works with autoconfiguration full for the moment because it stores the service_id)
+
+  /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+  sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+  and shall be the next table to become valid.*/
+  if(header->current_next_indicator == 0)
+  {
+    log_message( log_module, MSG_DEBUG,"The current_next_indicator is set to 0, this PMT is not valid for the current stream\n");
+    return 0;
+  }
+
+
+  //We check if this PMT belongs to the current channel. (Only works with autoconfiguration full for the moment because it stores the service_id)
   if(channel->service_id && (channel->service_id != HILO(header->program_number)) )
   {
     log_message( log_module,  MSG_DETAIL,"The PMT %d not belongs to channel \"%s\"\n", pmt->pid, channel->name);
