@@ -456,7 +456,7 @@ static void *camthread_func(void* arg)
     // Check if error code has changed - List of error codes: (en50221_errno.h)
     if (error_new!=error_old)
     {
-      log_message( log_module,  MSG_DEBUG, "Error for Transport Layer change from %s : %s to %s : %s.\n",
+      log_message( log_module,  MSG_WARN, "Transport Layer Error change from %s (%s) to %s (%s)\n",
                    liben50221_error_to_str(error_old),liben50221_error_to_str_descr(error_old),
                    liben50221_error_to_str(error_new),liben50221_error_to_str_descr(error_new));
       error_old=error_new;
