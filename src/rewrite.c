@@ -100,8 +100,7 @@ void set_continuity_counter(unsigned char *buf,int continuity_counter)
   ts_header->continuity_counter=continuity_counter;
 }
 
-/** @brief This function is called when a new PAT packet for a channel is there and we asked for rewrite
- * This function copy the rewritten PAT to the buffer. And checks if the PAT was changed so the rewritten version have to be updated
+/** @brief This function tells if we have to send the EIT packet
  */
 int eit_sort_new_packet(unsigned char *ts_packet, mumudvb_channel_t *channel)
 {
