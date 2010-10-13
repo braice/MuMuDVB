@@ -99,8 +99,13 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 	  ts_packet->empty=0;
 	  ts_packet->continuity_counter=header->continuity_counter;
 	  ts_packet->pid=pid;
-	  ts_packet->len=AddPacketStart(ts_packet->packet,buf+delta+1,188-delta-1); //we add the packet to the buffer
-          /*buf+delta+*1* because of pointer_field
+          int pointer_field=*(buf+delta);
+          if(pointer_field!=0)
+          {
+            log_message(log_module, MSG_FLOOD, "Pointer field 0x%02x\n",pointer_field);
+          }
+          ts_packet->len=AddPacketStart(ts_packet->packet,buf+delta+1+pointer_field,188-delta-1-pointer_field); //we add the packet to the buffer
+          /*buf+delta+*1+pointer_field* because of pointer_field
           This is an 8-bit field whose value shall be the number of bytes, immediately following the pointer_field
           until the first byte of the first section that is present in the payload of the Transport Stream packet (so a value of 0x00 in
           the pointer_field indicates that the section starts immediately after the pointer_field). When at least one section begins in
@@ -108,8 +113,6 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
           byte of the payload of that Transport Stream packet shall contain the pointer. When no section begins in a given
           Transport Stream packet, then the payload_unit_start_indicator shall be set to 0 and no pointer shall be sent in the
           payload of that packet.
-
-          I assume this is always 0
           */
 	  ts_packet->packet_ok=0;
 	}
