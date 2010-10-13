@@ -100,6 +100,15 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
 
   header=(sdt_t *)buf; //we map the packet over the header structure
 
+  /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+  sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+  and shall be the next table to become valid.*/
+  if(header->current_next_indicator == 0)
+  {
+    log_message( log_module, MSG_FLOOD,"SDT not yet valid, we get a new one (current_next_indicator == 0)\n");
+    return 0;
+  }
+
   //We look only for the following tables
   //0x42 service_description_section - actual_transport_stream
   //0x46 service_description_section - other_transport_stream 

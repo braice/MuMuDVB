@@ -60,6 +60,13 @@ int sdt_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf)
   if(header->payload_unit_start_indicator) //It's the beginning of a new packet
     if((sdt->version_number!=rewrite_vars->sdt_version) && (sdt->table_id==0x42))
       {
+        /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+        sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+        and shall be the next table to become valid.*/
+        if(sdt->current_next_indicator == 0)
+        {
+          return 0;
+        }
 	log_message( log_module, MSG_DEBUG,"Need update. stored version : %d, new: %d\n",rewrite_vars->sdt_version,sdt->version_number);
 	if(rewrite_vars->sdt_version!=-1)
 	  log_message( log_module, MSG_INFO,"The SDT version changed, so the channels names changed probably.\n");
@@ -242,7 +249,15 @@ int sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
     if(get_ts_packet(ts_packet,rewrite_vars->full_sdt))
     {
       sdt=(sdt_t*)(rewrite_vars->full_sdt->packet);
-      if(sdt->table_id!=0x42)
+      /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+      sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+      and shall be the next table to become valid.*/
+      if(sdt->current_next_indicator == 0)
+      {
+        log_message( log_module, MSG_FLOOD,"SDT not yet valid, we get a new one (current_next_indicator == 0)\n");
+        rewrite_vars->full_sdt->empty=1; //The packet is not valid for us, we mark it empty
+      }
+      else if(sdt->table_id!=0x42)
       {
         rewrite_vars->sdt_needs_update=1;
         rewrite_vars->full_sdt->empty=1;
