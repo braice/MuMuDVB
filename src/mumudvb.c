@@ -1578,8 +1578,8 @@ int
 	    ||(multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
           {
             //For bandwith measurement (traffic)
-            chan_and_pids.channels[curr_channel].sent_data+=chan_and_pids.channels[curr_channel].nb_bytes;
-
+            chan_and_pids.channels[curr_channel].sent_data+=chan_and_pids.channels[curr_channel].nb_bytes+20+8; // IP=20 bytes header and UDP=8 bytes header
+            if (multicast_vars.rtp_header) chan_and_pids.channels[curr_channel].sent_data+=RTP_HEADER_LEN;
 
             /********* TRANSCODE **********/
 #ifdef ENABLE_TRANSCODING
@@ -1943,7 +1943,7 @@ void *monitor_func(void* arg)
       params->stats_infos->compute_traffic_time=monitor_now;
       for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++)
       {
-        params->chan_and_pids->channels[curr_channel].traffic=((float)params->chan_and_pids->channels[curr_channel].sent_data)/time_interval*1/1024;
+        params->chan_and_pids->channels[curr_channel].traffic=((float)params->chan_and_pids->channels[curr_channel].sent_data)/time_interval*1/1000;
         params->chan_and_pids->channels[curr_channel].sent_data=0;
       }
     }
