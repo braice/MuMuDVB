@@ -56,6 +56,14 @@ int pat_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf)
   pat_t       *pat=(pat_t*)(buf+TS_HEADER_LEN);
   ts_header_t *header=(ts_header_t *)buf;
 
+  /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+  sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+  and shall be the next table to become valid.*/
+  if(pat->current_next_indicator == 0)
+  {
+    return 0;
+  }
+
   if(header->payload_unit_start_indicator) //It's the beginning of a new packet
     if(pat->version_number!=rewrite_vars->pat_version)
       {
@@ -76,7 +84,7 @@ void update_pat_version(rewrite_parameters_t *rewrite_vars)
     if(rewrite_vars->pat_version!=-1)
       log_message( log_module, MSG_WARN,"The PAT version changed, so the channels changed probably. If you are using autoconfiguration it's safer to relaunch MuMuDVB or if the pids are set manually, check them.\n");
   }
-  
+
   rewrite_vars->pat_version=pat->version_number;
 }
 
@@ -227,11 +235,23 @@ void pat_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_
   {
     if(get_ts_packet(ts_packet,rewrite_vars->full_pat))
     {
-      log_message( log_module, MSG_DEBUG,"Full pat updated\n");
-      /*We've got the FULL PAT packet*/
-      update_pat_version(rewrite_vars);
-      rewrite_vars->pat_needs_update=0;
-      rewrite_vars->full_pat_ok=1;
+      pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->packet+TS_HEADER_LEN);
+      /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+      sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+      and shall be the next table to become valid.*/
+      if(pat->current_next_indicator == 0)
+      {
+        log_message( log_module, MSG_FLOOD,"PAT not yet valid, we get a new one (current_next_indicator == 0)\n");
+        rewrite_vars->full_pat->empty=1; //The packet is not valid for us, we mark it empty
+      }
+      else
+      {
+        log_message( log_module, MSG_DEBUG,"Full PAT updated\n");
+        /*We've got the FULL PAT packet*/
+        update_pat_version(rewrite_vars);
+        rewrite_vars->pat_needs_update=0;
+        rewrite_vars->full_pat_ok=1;
+      }
     }
   }
   //To avoid the duplicates, we have to update the continuity counter
@@ -261,7 +281,7 @@ int pat_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_
       }
       else
       {
-        log_message( log_module, MSG_DEBUG,"ERROR with the pat for the channel %d : \"%s\"\n", curr_channel, channel->name);
+        log_message( log_module, MSG_DEBUG,"ERROR with the PAT for the channel %d : \"%s\"\n", curr_channel, channel->name);
         return 0;
       }
     }

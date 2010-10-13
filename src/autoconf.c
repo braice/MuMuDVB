@@ -365,11 +365,21 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
   //PAT reading
   section_length=HILO(pat->section_length);
 
-  log_message( log_module, MSG_DEBUG,  "pat info : transport stream id 0x%04x section_length %d version %i last_section_number %x \n"
+  log_message( log_module, MSG_DEBUG,  "pat info : transport stream id 0x%04x section_length %d version %i last_section_number %x current_next_indicator %d\n"
 	      ,HILO(pat->transport_stream_id)
 	      ,HILO(pat->section_length)
 	      ,pat->version_number
-	      ,pat->last_section_number); 
+	      ,pat->last_section_number
+	      ,pat->current_next_indicator);
+
+  /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+  sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+  and shall be the next table to become valid.*/
+  if(pat->current_next_indicator == 0)
+  {
+    log_message( log_module, MSG_DEBUG,"The current_next_indicator is set to 0, this PAT is not valid for the current stream\n");
+    return 0;
+  }
 
   //We store the transport stream ID
   autoconf_vars->transport_stream_id=HILO(pat->transport_stream_id);
