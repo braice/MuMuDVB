@@ -73,6 +73,15 @@ int autoconf_read_nit(autoconf_parameters_t *parameters, mumudvb_channel_t *chan
     return 1;
   }
 
+  /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+  sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+  and shall be the next table to become valid.*/
+  if(header->current_next_indicator == 0)
+  {
+    log_message( log_module, MSG_FLOOD,"NIT not yet valid, we get a new one (current_next_indicator == 0)\n");
+    return 1;
+  }
+
 
   log_message( log_module, MSG_DEBUG, "-- NIT : Network Information Table --\n");
 
