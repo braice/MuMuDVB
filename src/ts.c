@@ -181,6 +181,79 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 }
 
 
+/** @brief This function will return a pointer to the beginning of the payload for a ts_packet with payload_unit_start_indicator set to 1
+ * It returns NULL in case of error
+ *
+ * @param buf : the received buffer from the card
+ */
+unsigned char *get_ts_begin(unsigned char *buf)
+{
+
+  ts_header_t *header;
+  int ok=0;
+  int parsed=0;
+  int delta;
+
+  //mapping of the buffer onto the TS header
+  header=(ts_header_t *)buf;
+
+  //delta used to remove TS HEADER
+  delta = TS_HEADER_LEN-1;
+
+  //Sometimes there is some more data in the header, the adaptation field say it
+  if (header->adaptation_field_control & 0x2)
+    {
+      log_message( log_module,  MSG_DEBUG, "Read TS : Adaptation field \n");
+      delta += buf[delta] ;        // add adapt.field.len
+    }
+  else if (header->adaptation_field_control & 0x1)
+    {
+      if (buf[delta]==0x00 && buf[delta+1]==0x00 && buf[delta+2]==0x01)
+        {
+          // -- PES/PS
+          //tspid->id   = buf[j+3];
+          log_message( log_module,  MSG_DEBUG, "#PES/PS ----- We ignore \n");
+          ok=0;
+        }
+      else
+          ok=1;
+    }
+
+  if (header->adaptation_field_control == 3)
+    {
+      log_message( log_module,  MSG_DEBUG, "adaptation_field_control 3\n");
+      ok=0;
+    }
+
+  if(header->payload_unit_start_indicator) //It's the beginning of a new packet
+  {
+    if(ok)
+    {
+      int pointer_field=*(buf+delta);
+      if(pointer_field!=0)
+      {
+        log_message(log_module, MSG_FLOOD, "Pointer field 0x%02x\n",pointer_field);
+      }
+      if((188-delta-1-pointer_field)<0)
+      {
+        log_message(log_module, MSG_DETAIL, "Pointer field too big 0x%02x, packet dropped\n",pointer_field);
+        return NULL;
+      }
+      return buf+delta+1+pointer_field; //we give the address of the beginning of the payload
+      /*buf+delta+*1+pointer_field* because of pointer_field
+      This is an 8-bit field whose value shall be the number of bytes, immediately following the pointer_field
+      until the first byte of the first section that is present in the payload of the Transport Stream packet (so a value of 0x00 in
+      the pointer_field indicates that the section starts immediately after the pointer_field). When at least one section begins in
+      a given Transport Stream packet, then the payload_unit_start_indicator (refer to 2.4.3.2) shall be set to 1 and the first
+      byte of the payload of that Transport Stream packet shall contain the pointer. When no section begins in a given
+      Transport Stream packet, then the payload_unit_start_indicator shall be set to 0 and no pointer shall be sent in the
+      payload of that packet.
+      */
+    }
+  }
+  return NULL;
+}
+
 
 
 /**@todo document*/

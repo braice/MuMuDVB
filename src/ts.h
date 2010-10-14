@@ -604,6 +604,7 @@ typedef struct {
 
 int ts_check_CRC( mumudvb_ts_packet_t *pmt);
 int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *pmt);
+unsigned char *get_ts_begin(unsigned char *buf);
 int AddPacketStart (unsigned char *packet, unsigned char *buf, unsigned int len);
 int AddPacketContinue  (unsigned char *packet, unsigned char *buf, unsigned int len, unsigned int act_len);
 
