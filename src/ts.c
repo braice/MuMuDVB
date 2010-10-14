@@ -36,7 +36,7 @@
 extern uint32_t       crc32_table[256];
 static char *log_module="TS: ";
 
-/**@brief This function will join the 188 bytes packet until the PMT/PAT/SDT is full
+/** @brief This function will join the 188 bytes packet until the PMT/PAT/SDT is full
  * Once it's full we check the CRC32 and say if it's ok or not
  * 
  * There is two important mpeg2-ts fields to do that
@@ -103,6 +103,13 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
           if(pointer_field!=0)
           {
             log_message(log_module, MSG_FLOOD, "Pointer field 0x%02x\n",pointer_field);
+          }
+          if((188-delta-1-pointer_field)<0)
+          {
+            log_message(log_module, MSG_DETAIL, "Pointer field too big 0x%02x, packet dropped\n",pointer_field);
+            ts_packet->empty=1;
+            pthread_mutex_unlock(&ts_packet->packetmutex);
+            return 0;
           }
           ts_packet->len=AddPacketStart(ts_packet->packet,buf+delta+1+pointer_field,188-delta-1-pointer_field); //we add the packet to the buffer
           /*buf+delta+*1+pointer_field* because of pointer_field
@@ -172,6 +179,8 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
   pthread_mutex_unlock(&ts_packet->packetmutex);
   return parsed;
 }
+
+
 
 
 /**@todo document*/
