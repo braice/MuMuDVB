@@ -504,21 +504,14 @@ void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len)
  * @param buf : the received buffer
  * @param ts_header says if the packet contains a transport stream header
  */
-int pmt_need_update(mumudvb_channel_t *channel, unsigned char *buf,int ts_header)
+int pmt_need_update(mumudvb_channel_t *channel, unsigned char *packet)
 {
   pmt_t       *pmt;
-  ts_header_t *header;
 
-  if(ts_header)
-  {
-    pmt=(pmt_t*)(buf+TS_HEADER_LEN);
-    header=(ts_header_t *)buf;
-  }
-  else
-  {
-    pmt=(pmt_t*)(buf);
-    header=NULL;
-  }
+  pmt=(pmt_t*)(packet);
+
+  if(pmt == NULL)
+    return 0;
 
   /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
   sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
@@ -529,12 +522,11 @@ int pmt_need_update(mumudvb_channel_t *channel, unsigned char *buf,int ts_header
   }
 
   if(pmt->table_id==0x02)
-    if(!ts_header || header->payload_unit_start_indicator) //It's a packet without header or the beginning of a new packet 
-      if(pmt->version_number!=channel->pmt_version)
-      {
-        log_message( log_module, MSG_DEBUG,"PMT version changed, channel %s . stored version : %d, new: %d.\n",channel->name,channel->pmt_version,pmt->version_number);
-        return 1;
-      }
+    if(pmt->version_number!=channel->pmt_version)
+    {
+      log_message( log_module, MSG_DEBUG,"PMT version changed, channel %s . stored version : %d, new: %d.\n",channel->name,channel->pmt_version,pmt->version_number);
+      return 1;
+    }
   return 0;
 
 }
@@ -560,7 +552,7 @@ void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t
   if(!actual_channel->pmt_needs_update)
   {
     //Checking without crc32, it there is a change we get the full packet for crc32 checking
-    actual_channel->pmt_needs_update=pmt_need_update(actual_channel,ts_packet,1);
+    actual_channel->pmt_needs_update=pmt_need_update(actual_channel,get_ts_begin(ts_packet));
 
     if(actual_channel->pmt_needs_update && actual_channel->pmt_packet) //It needs update we mark the packet as empty
       actual_channel->pmt_packet->empty=1;
@@ -570,7 +562,7 @@ void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t
   {
     if(get_ts_packet(ts_packet,actual_channel->pmt_packet))
     {
-      if(pmt_need_update(actual_channel,actual_channel->pmt_packet->packet,0))
+      if(pmt_need_update(actual_channel,actual_channel->pmt_packet->packet))
       {
         log_message( log_module, MSG_DETAIL,"PMT packet updated, we have now to check if there is new things\n");
         /*We've got the FULL PMT packet*/

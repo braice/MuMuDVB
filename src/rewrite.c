@@ -106,8 +106,8 @@ int eit_sort_new_packet(unsigned char *ts_packet, mumudvb_channel_t *channel)
 {
   int send_packet=1;
   ts_header_t *ts_header=(ts_header_t *)ts_packet;
-  eit_t       *eit_header=(eit_t*)(ts_packet+TS_HEADER_LEN);
-  if(ts_header->payload_unit_start_indicator) //New packet ?
+  eit_t       *eit_header=(eit_t*)(get_ts_begin(ts_packet));
+  if(ts_header->payload_unit_start_indicator && eit_header) //New packet ?
   {
     if((channel->service_id) &&
         (channel->service_id!= (HILO(eit_header->service_id))))

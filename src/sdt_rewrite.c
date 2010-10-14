@@ -54,10 +54,8 @@ static char *log_module="SDT rewrite: ";
  */
 int sdt_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf)
 {
-  sdt_t       *sdt=(sdt_t*)(buf+TS_HEADER_LEN);
-  ts_header_t *header=(ts_header_t *)buf;
-
-  if(header->payload_unit_start_indicator) //It's the beginning of a new packet
+  sdt_t       *sdt=(sdt_t*)(get_ts_begin(buf));
+  if(sdt) //It's the beginning of a new packet
     if((sdt->version_number!=rewrite_vars->sdt_version) && (sdt->table_id==0x42))
       {
         /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table

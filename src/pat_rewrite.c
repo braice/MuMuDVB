@@ -53,23 +53,24 @@ static char *log_module="PAT Rewrite: ";
  */
 int pat_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf)
 {
-  pat_t       *pat=(pat_t*)(buf+TS_HEADER_LEN);
-  ts_header_t *header=(ts_header_t *)buf;
+  pat_t       *pat=(pat_t*)(get_ts_begin(buf));
 
-  /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
-  sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
-  and shall be the next table to become valid.*/
-  if(pat->current_next_indicator == 0)
+
+  if(pat) //It's the beginning of a new packet
   {
-    return 0;
-  }
-
-  if(header->payload_unit_start_indicator) //It's the beginning of a new packet
+    /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+    sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+    and shall be the next table to become valid.*/
+    if(pat->current_next_indicator == 0)
+    {
+      return 0;
+    }
     if(pat->version_number!=rewrite_vars->pat_version)
-      {
-	log_message( log_module, MSG_DEBUG,"Need update. stored version : %d, new: %d\n",rewrite_vars->pat_version,pat->version_number);
-	return 1;
-      }
+    {
+      log_message( log_module, MSG_DEBUG,"Need update. stored version : %d, new: %d\n",rewrite_vars->pat_version,pat->version_number);
+      return 1;
+    }
+  }
   return 0;
 
 }
