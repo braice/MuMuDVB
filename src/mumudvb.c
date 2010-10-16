@@ -1890,7 +1890,7 @@ void *monitor_func(void* arg)
   while(!params->threadshutdown)
   {
     gettimeofday (&tv, (struct timezone *) NULL);
-    monitor_now = tv.tv_sec - real_start_time + tv.tv_usec/1000000;
+    monitor_now = tv.tv_sec + tv.tv_usec/1000000;
 
 
     /*******************************************/
