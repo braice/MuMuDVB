@@ -134,7 +134,7 @@ static char *log_module="Main: ";
    - see http://www.cadsoft.de/people/kls/vdr/index.htm */
 
 // global variables used by SignalHandler
-long ;
+long now;
 
 long real_start_time;
 
@@ -1882,15 +1882,19 @@ void *monitor_func(void* arg)
   int i,curr_channel;
   struct timeval tv;
   double monitor_now;
+  double monitor_start;
   double last_updown_check=0;
   double last_flush_time = 0;
   double time_no_diff=0;
   int num_big_buffer_show=0;
 
+  gettimeofday (&tv, (struct timezone *) NULL);
+  monitor_start = tv.tv_sec + tv.tv_usec/1000000;
+
   while(!params->threadshutdown)
   {
     gettimeofday (&tv, (struct timezone *) NULL);
-    monitor_now = tv.tv_sec + tv.tv_usec/1000000;
+    monitor_now =  tv.tv_sec + tv.tv_usec/1000000 -monitor_start;
 
 
     /*******************************************/
@@ -2142,6 +2146,8 @@ void *monitor_func(void* arg)
     for(i=0;i<params->wait_time && !params->threadshutdown;i++)
       usleep(100000);
   }
+
+  log_message(log_module,MSG_DEBUG, "Monitor thread stopping, it lasted %f seconds\n", monitor_now);
   return 0;
 
 }
