@@ -1047,7 +1047,7 @@ int
   alarm (ALARM_TIME);
 
   if(stats_infos.show_traffic)
-    log_message( log_module, MSG_INFO,"The traffic will be shown every %d seconds\n",stats_infos.show_traffic_interval);
+    log_message( log_module, MSG_INFO,"The traffic will be shown every %d second%c\n",stats_infos.show_traffic_interval, stats_infos.show_traffic_interval > 1? 's':' ');
 
 
 
