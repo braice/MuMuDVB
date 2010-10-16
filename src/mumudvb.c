@@ -1038,6 +1038,12 @@ int
   if(sigaction (SIGPIPE, &act, NULL)<0)
     log_message( log_module,  MSG_ERROR,"ErrorSigaction\n");
 
+
+  //We record the starting time
+  gettimeofday (&tv, (struct timezone *) NULL);
+  real_start_time = tv.tv_sec;
+  now = 0;
+
   alarm (ALARM_TIME);
 
   if(stats_infos.show_traffic)
@@ -1252,10 +1258,7 @@ int
   fds.pfds[1].events = POLLIN | POLLPRI;
   fds.pfds[1].revents = 0;
 
-  //We record the starting time
-  gettimeofday (&tv, (struct timezone *) NULL);
-  real_start_time = tv.tv_sec;
-  now = 0;
+
 
   /*****************************************************/
   // Init network, we open the sockets
