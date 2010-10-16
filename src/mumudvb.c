@@ -134,7 +134,7 @@ static char *log_module="Main: ";
    - see http://www.cadsoft.de/people/kls/vdr/index.htm */
 
 // global variables used by SignalHandler
-long now;
+long ;
 
 long real_start_time;
 
@@ -2118,7 +2118,7 @@ void *monitor_func(void* arg)
     /* If we don't stream data for             */
     /* a too long time, we exit                */
     /*******************************************/
-    if((timeout_no_diff)&& (time_no_diff&&((now-time_no_diff)>timeout_no_diff)))
+    if((timeout_no_diff)&& (time_no_diff&&((monitor_now-time_no_diff)>timeout_no_diff)))
     {
       log_message( log_module,  MSG_ERROR,
                   "No data from card %d in %fs, exiting.\n",
