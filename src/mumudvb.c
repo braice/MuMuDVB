@@ -1820,16 +1820,13 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params,int Interrupted)
  ******************************************************/
 static void SignalHandler (int signum)
 {
-  /** @todo : refactor */
-  struct timeval tv;
   int iRet;
 
   if (signum == SIGALRM && !Interrupted)
   {
-
+    struct timeval tv;
     gettimeofday (&tv, (struct timezone *) NULL);
     now = tv.tv_sec - real_start_time;
-
     if (!tuneparams.card_tuned)
     {
       log_message( log_module,  MSG_INFO,
@@ -1895,7 +1892,7 @@ void *monitor_func(void* arg)
   {
     gettimeofday (&tv, (struct timezone *) NULL);
     monitor_now =  tv.tv_sec + tv.tv_usec/1000000 -monitor_start;
-
+    now = tv.tv_sec - real_start_time;
 
     /*******************************************/
     /* We deal with the received signals       */
