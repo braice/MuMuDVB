@@ -236,7 +236,7 @@ void pat_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_
   {
     if(get_ts_packet(ts_packet,rewrite_vars->full_pat))
     {
-      pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->packet+TS_HEADER_LEN);
+      pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->packet);
       /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
       sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
       and shall be the next table to become valid.*/
