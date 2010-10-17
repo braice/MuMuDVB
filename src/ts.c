@@ -191,7 +191,6 @@ unsigned char *get_ts_begin(unsigned char *buf)
 
   ts_header_t *header;
   int ok=0;
-  int parsed=0;
   int delta;
 
   //mapping of the buffer onto the TS header
