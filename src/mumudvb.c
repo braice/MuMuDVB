@@ -334,10 +334,10 @@ int
   };
   #endif
 
-  char filename_channels_not_streamed[256];
-  char filename_channels_diff[256];
-  char filename_pid[256];
-  char filename_gen_conf[256];
+  char filename_channels_not_streamed[DEFAULT_PATH_LEN];
+  char filename_channels_diff[DEFAULT_PATH_LEN];
+  char filename_pid[DEFAULT_PATH_LEN]=PIDFILE_PATH;
+  char filename_gen_conf[DEFAULT_PATH_LEN];
 
   int server_id = 0; /** The server id for the template %server */
 
@@ -717,6 +717,16 @@ int
       substring = strtok (NULL, delimiteurs);
       server_id = atoi (substring);
     }
+    else if (!strcmp (substring, "filename_pid"))
+    {
+      substring = strtok (NULL, delimiteurs);
+      if(strlen(substring)>=DEFAULT_PATH_LEN)
+      {
+        log_message(log_module,MSG_WARN,"filename_pid too long \n");
+      }
+      else
+        strcpy(filename_pid,substring);
+    }
     else
     {
       if(strlen (current_line) > 1)
@@ -832,7 +842,15 @@ int
   // We write our pid in a file if we deamonize
   if (!no_daemon)
   {
-    sprintf (filename_pid, "/var/run/mumudvb/mumudvb_adapter%d_tuner%d.pid", tuneparams.card, tuneparams.tuner);
+    int len;
+    len=DEFAULT_PATH_LEN;
+    char number[10];
+    sprintf(number,"%d",tuneparams.card);
+    mumu_string_replace(filename_pid,&len,0,"%card",number);
+    sprintf(number,"%d",tuneparams.tuner);
+    mumu_string_replace(filename_pid,&len,0,"%tuner",number);
+    sprintf(number,"%d",server_id);
+    mumu_string_replace(filename_pid,&len,0,"%server",number);;
     pidfile = fopen (filename_pid, "w");
     if (pidfile == NULL)
     {
@@ -1794,7 +1812,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
 
   if (!no_daemon)
   {
-    if (strlen(filename_pid) && remove (filename_pid))
+    if (remove (filename_pid))
     {
       log_message( log_module,  MSG_INFO, "%s: %s\n",
                    filename_pid, strerror (errno));
