@@ -353,6 +353,7 @@ typedef struct monitor_parameters_t{
   struct tuning_parameters_t *tuneparams;
   struct stats_infos_t *stats_infos;
   int server_id;
+  char *filename_channels_not_streamed;
 }monitor_parameters_t;
 
 
