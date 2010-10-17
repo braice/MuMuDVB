@@ -405,8 +405,6 @@ int
     {0, 0, 0, 0}
   };
   int c, option_index = 0;
-  int list_cards=0;
-
 
   if (argc == 1)
   {
@@ -460,7 +458,9 @@ int
         exit(ERROR_ARGS);
         break;
       case 'l':
-	list_cards=1;
+        print_info ();
+        list_dvb_cards ();
+        exit(0);
         break;
     }
   }
@@ -470,12 +470,6 @@ int
     exit(ERROR_ARGS);
   }
 
-  if(list_cards)
-    {
-      print_info ();
-      list_dvb_cards ();
-      exit(0);
-    }
   /******************************************************/
   //end of command line options parsing
   /******************************************************/
