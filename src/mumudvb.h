@@ -349,8 +349,10 @@ typedef struct monitor_parameters_t{
   struct sap_parameters_t *sap_vars;
   mumudvb_chan_and_pids_t *chan_and_pids;
   multicast_parameters_t *multicast_vars;
+  struct unicast_parameters_t *unicast_vars;
   struct tuning_parameters_t *tuneparams;
   struct stats_infos_t *stats_infos;
+  int server_id;
 }monitor_parameters_t;
 
 

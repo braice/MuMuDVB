@@ -142,7 +142,7 @@ int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
 // file descriptors
 fds_t fds; /** File descriptors associated with the card */
 int no_daemon = 0;
-int server_id = 0; /** The server id for the template %server */
+
 
 int Interrupted = 0;
 char filename_channels_diff[256];
@@ -332,6 +332,7 @@ int
   .debug_updown = 0,
   };
 
+  int server_id = 0; /** The server id for the template %server */
 
   int k,iRet,cmdlinecard;
   cmdlinecard=-1;
@@ -1061,8 +1062,10 @@ int
     .sap_vars=&sap_vars,
     .chan_and_pids=&chan_and_pids,
     .multicast_vars=&multicast_vars,
+    .unicast_vars=&unicast_vars,
     .tuneparams=&tuneparams,
     .stats_infos=&stats_infos,
+    .server_id=server_id,
   };
 
   pthread_create(&(monitorthread), NULL, monitor_func, &monitor_thread_params);
@@ -1823,8 +1826,6 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params,int Interrupted)
  ******************************************************/
 static void SignalHandler (int signum)
 {
-  int iRet;
-
   if (signum == SIGALRM && !Interrupted)
   {
     struct timeval tv;
@@ -1837,19 +1838,6 @@ static void SignalHandler (int signum)
                    tuneparams.tuning_timeout);
       exit(ERROR_TUNE);
     }
-
-    /*autoconfiguration*/
-    /*We check if we reached the autoconfiguration timeout*/
-    if(autoconf_vars.autoconfiguration)
-    {
-      iRet = autoconf_poll(now, &autoconf_vars, &chan_and_pids, &tuneparams, &multicast_vars, &fds, &unicast_vars, server_id);
-      if(iRet)
-        Interrupted = iRet;
-      alarm (ALARM_TIME);
-      return;
-    }
-
-
     alarm (ALARM_TIME);
   }
   else if (signum == SIGUSR1)
@@ -1921,6 +1909,15 @@ void *monitor_func(void* arg)
       received_signal = 0;
     }
 
+    /*autoconfiguration*/
+    /*We check if we reached the autoconfiguration timeout*/
+    if(params->autoconf_vars->autoconfiguration)
+    {
+      int iRet;
+      iRet = autoconf_poll(now, params->autoconf_vars, params->chan_and_pids, params->tuneparams, params->multicast_vars, &fds, params->unicast_vars, params->server_id);
+      if(iRet)
+        Interrupted = iRet;
+    }
 
     if(!params->autoconf_vars->autoconfiguration)
     {
