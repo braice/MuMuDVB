@@ -117,8 +117,8 @@ Possible values for this variable
 int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *channels,int number_of_channels);
 void autoconf_freeing(autoconf_parameters_t *);
 int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, char *substring);
-int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, fds_t *fds, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars,  unicast_parameters_t *unicast_vars);
-int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars, fds_t *fds, unicast_parameters_t *unicast_vars);
+int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, fds_t *fds, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars,  unicast_parameters_t *unicast_vars, int server_id);
+int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars, fds_t *fds, unicast_parameters_t *unicast_vars, int server_id);
 void autoconf_pmt_follow( unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t *actual_channel, char *card_base_path, int tuner, mumudvb_chan_and_pids_t *chan_and_pids );
 
 #endif

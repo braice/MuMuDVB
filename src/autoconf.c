@@ -80,7 +80,6 @@
 #endif
 
 extern int Interrupted;
-extern int server_id;
 static char *log_module="Autoconf: ";
 #ifdef ENABLE_TRANSCODING
 extern transcode_options_t global_transcode_opt;
@@ -608,7 +607,7 @@ void autoconf_sort_services(mumudvb_service_t *services)
  * @param unicast_vars The unicast parameters
  * @param fds The file descriptors (for filters and unicast)
  */
-int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card, int tuner, unicast_parameters_t *unicast_vars, int multicast_out)
+int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card, int tuner, unicast_parameters_t *unicast_vars, int multicast_out, int server_id)
 {
 
   mumudvb_service_t *actual_service;
@@ -793,12 +792,12 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
  * @param channels the array of channels
  * @param fds the file descriptors
 */
-int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parameters_t *autoconf_vars, multicast_parameters_t *multicast_vars, tuning_parameters_t *tuneparams, fds_t *fds, unicast_parameters_t *unicast_vars)
+int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parameters_t *autoconf_vars, multicast_parameters_t *multicast_vars, tuning_parameters_t *tuneparams, fds_t *fds, unicast_parameters_t *unicast_vars, int server_id)
 {
   int curr_channel,curr_pid;
   //We sort the services
   autoconf_sort_services(autoconf_vars->services);
-  chan_and_pids->number_of_channels=autoconf_services_to_channels(*autoconf_vars, chan_and_pids->channels, multicast_vars->common_port, tuneparams->card, tuneparams->tuner, unicast_vars, multicast_vars->multicast); //Convert the list of services into channels
+  chan_and_pids->number_of_channels=autoconf_services_to_channels(*autoconf_vars, chan_and_pids->channels, multicast_vars->common_port, tuneparams->card, tuneparams->tuner, unicast_vars, multicast_vars->multicast, server_id); //Convert the list of services into channels
   //we got the pmt pids for the channels, we open the filters
   for (curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
   {
@@ -921,7 +920,7 @@ void autoconf_definite_end(int card, int tuner, mumudvb_chan_and_pids_t *chan_an
  * Autoconfiguration new packet and poll functions
  ********************************************************************/
 /** @brief This function is called when a new packet is there and the autoconf is not finished*/
-int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, fds_t *fds, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars,  unicast_parameters_t *unicast_vars)
+int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, fds_t *fds, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars,  unicast_parameters_t *unicast_vars, int server_id)
 {
   int iRet=0;
   if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL) //Full autoconfiguration, we search the channels and their names
@@ -934,7 +933,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
         {
           log_message( log_module, MSG_DEBUG,"It seems that we have finished to get the services list\n");
           //we finish full autoconfiguration
-          iRet = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams, fds, unicast_vars);
+          iRet = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams, fds, unicast_vars, server_id);
         }
         else
           autoconf_vars->autoconf_temp_pat->empty=1;//we clear it
@@ -1041,7 +1040,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
  * This function check if we reached the timeout
  * if it's finished, we open the new descriptors and add the new filters
  */
-int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars, fds_t *fds, unicast_parameters_t *unicast_vars)
+int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars, fds_t *fds, unicast_parameters_t *unicast_vars, int server_id)
 {
   int iRet=0;
   if(!autoconf_vars->time_start_autoconfiguration)
@@ -1076,7 +1075,7 @@ int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_a
       //This happend when we are not able to get all the services of the PAT,
       //We continue with the partial list of services
       autoconf_vars->time_start_autoconfiguration=now;
-      iRet = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams, fds, unicast_vars);
+      iRet = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams, fds, unicast_vars, server_id);
     }
     else if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_NIT)
     {

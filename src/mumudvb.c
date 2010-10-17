@@ -1438,7 +1438,7 @@ int
       /******************************************************/
       if(!ScramblingControl &&  autoconf_vars.autoconfiguration)
       {
-        iRet = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tuneparams, &multicast_vars, &unicast_vars);
+        iRet = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tuneparams, &multicast_vars, &unicast_vars, server_id);
         if(iRet)
           Interrupted = iRet;
       }
@@ -1842,7 +1842,7 @@ static void SignalHandler (int signum)
     /*We check if we reached the autoconfiguration timeout*/
     if(autoconf_vars.autoconfiguration)
     {
-      iRet = autoconf_poll(now, &autoconf_vars, &chan_and_pids, &tuneparams, &multicast_vars, &fds, &unicast_vars);
+      iRet = autoconf_poll(now, &autoconf_vars, &chan_and_pids, &tuneparams, &multicast_vars, &fds, &unicast_vars, server_id);
       if(iRet)
         Interrupted = iRet;
       alarm (ALARM_TIME);
