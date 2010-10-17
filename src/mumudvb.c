@@ -1735,9 +1735,9 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
 #ifdef ENABLE_CAM_SUPPORT
   if(cam_vars.cam_support)
   {
-      // stop CAM operation
+    // stop CAM operation
     cam_stop(&cam_vars);
-      // delete cam_info file
+    // delete cam_info file
     if (remove (filename_cam_info))
     {
       log_message( log_module,  MSG_WARN,
@@ -1818,17 +1818,10 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
  * Signal Handler Function
  *
  * This function is called periodically 
- *  It checks for the different timeouts : 
- *   Tuning, autoconfiguration ..
+ *  It checks for the tuning timeouts
  *
- *  It updates the status of the channels
- *
- *  It shows the signal strenght
- *
- *  It check for the end of autoconfiguration
- * 
  * This function also catches SIGPIPE, SIGUSR1, SIGUSR2 and SIGHUP
- * 
+ *
  ******************************************************/
 static void SignalHandler (int signum)
 {
