@@ -1690,7 +1690,8 @@ int
     log_message( log_module,  MSG_INFO,
                  "We have got %d overflow errors\n",card_buffer.overflow_number );
 mumudvb_close_goto:
-  return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, filename_channels_not_streamed, filename_channels_diff, filename_pid, Interrupted);
+  //If the thread is not started, we don't send the unexisting address of monitor_thread_params
+  return mumudvb_close(monitorthread == 0 ? NULL:&monitor_thread_params , &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, filename_channels_not_streamed, filename_channels_diff, filename_pid, Interrupted);
 
 }
 
@@ -1702,6 +1703,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
 {
 
   int curr_channel;
+
 
   if (Interrupted)
   {
