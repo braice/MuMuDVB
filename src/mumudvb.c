@@ -1751,7 +1751,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
   autoconf_freeing(&autoconf_vars);
 
   //sap variables freeing
-  if(monitor_thread_params->sap_vars->sap_messages)
+  if(monitor_thread_params && monitor_thread_params->sap_vars->sap_messages)
     free(monitor_thread_params->sap_vars->sap_messages);
 
   //Pat rewrite freeing
