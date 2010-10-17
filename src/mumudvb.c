@@ -135,8 +135,8 @@ static char *log_module="Main: ";
 
 // global variables used by SignalHandler
 long now;
-
 long real_start_time;
+int *card_tuned;
 
 int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
 // file descriptors
@@ -174,40 +174,7 @@ multicast_parameters_t multicast_vars={
   .rtp_header = 0,
 };
 
-//tuning parameters
-tuning_parameters_t tuneparams={
-  .card = 0,
-  .tuner = 0,
-  .card_dev_path="",
-  .card_tuned = 0,
-  .tuning_timeout = ALARM_TIME_TIMEOUT,
-  .freq = 0,
-  .srate = 0,
-  .pol = 0,
-  .lnb_voltage_off=0,
-  .lnb_type=LNB_UNIVERSAL,
-  .lnb_lof_standard=DEFAULT_LOF_STANDARD,
-  .lnb_slof=DEFAULT_SLOF,
-  .lnb_lof_low=DEFAULT_LOF1_UNIVERSAL,
-  .lnb_lof_high=DEFAULT_LOF2_UNIVERSAL,
-  .sat_number = 0,
-  .switch_type = 'C',
-  .modulation_set = 0,
-  .display_strenght = 0,
-  .check_status = 1,
-  .strengththreadshutdown = 0,
-  .HP_CodeRate = HP_CODERATE_DEFAULT,//cf tune.h
-  .LP_CodeRate = LP_CODERATE_DEFAULT,
-  .TransmissionMode = TRANSMISSION_MODE_DEFAULT,
-  .guardInterval = GUARD_INTERVAL_DEFAULT,
-  .bandwidth = BANDWIDTH_DEFAULT,
-  .hier = HIERARCHY_DEFAULT,
-  .fe_type=FE_QPSK, //sat by default
-#if DVB_API_VERSION >= 5
-  .delivery_system=SYS_UNDEFINED,
-  .rolloff=ROLLOFF_35,
-#endif
-};
+
 
 
 //autoconfiguration
@@ -284,7 +251,7 @@ extern log_params_t log_params;
 static void SignalHandler (int signum);//below
 int read_multicast_configuration(multicast_parameters_t *, mumudvb_channel_t *, int, int *, char *); //in multicast.c
 void *monitor_func(void* arg);
-int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int Interrupted);
+int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, int Interrupted);
 
 int
     main (int argc, char **argv)
@@ -332,6 +299,44 @@ int
     .socket_sendbuf_size=0,
     .drop_on_eagain=0,
   };
+
+
+  //tuning parameters
+  tuning_parameters_t tuneparams={
+    .card = 0,
+    .tuner = 0,
+    .card_dev_path="",
+    .card_tuned = 0,
+    .tuning_timeout = ALARM_TIME_TIMEOUT,
+    .freq = 0,
+    .srate = 0,
+    .pol = 0,
+    .lnb_voltage_off=0,
+    .lnb_type=LNB_UNIVERSAL,
+    .lnb_lof_standard=DEFAULT_LOF_STANDARD,
+    .lnb_slof=DEFAULT_SLOF,
+    .lnb_lof_low=DEFAULT_LOF1_UNIVERSAL,
+    .lnb_lof_high=DEFAULT_LOF2_UNIVERSAL,
+    .sat_number = 0,
+    .switch_type = 'C',
+    .modulation_set = 0,
+    .display_strenght = 0,
+    .check_status = 1,
+    .strengththreadshutdown = 0,
+    .HP_CodeRate = HP_CODERATE_DEFAULT,//cf tune.h
+    .LP_CodeRate = LP_CODERATE_DEFAULT,
+    .TransmissionMode = TRANSMISSION_MODE_DEFAULT,
+    .guardInterval = GUARD_INTERVAL_DEFAULT,
+    .bandwidth = BANDWIDTH_DEFAULT,
+    .hier = HIERARCHY_DEFAULT,
+    .fe_type=FE_QPSK, //sat by default
+  #if DVB_API_VERSION >= 5
+    .delivery_system=SYS_UNDEFINED,
+    .rolloff=ROLLOFF_35,
+  #endif
+  };
+  card_tuned=&tuneparams.card_tuned;
+
 
   int server_id = 0; /** The server id for the template %server */
 
@@ -910,7 +915,7 @@ int
   if(!multicast_vars.multicast && !unicast_vars.unicast)
   {
     log_message( log_module,  MSG_ERROR, "NO Multicast AND NO unicast. No data can be send :(, Exciting ....\n");
-    return mumudvb_close(NULL, &unicast_vars, ERROR_CONF<<8);
+    return mumudvb_close(NULL, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_CONF<<8);
   }
 
 
@@ -997,7 +1002,7 @@ int
     log_message( log_module,  MSG_INFO, "Tunning issue, card %d\n", tuneparams.card);
     // we close the file descriptors
     close_card_fd (fds);
-    return mumudvb_close(NULL, &unicast_vars, ERROR_TUNE<<8);
+    return mumudvb_close(NULL, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_TUNE<<8);
   }
   log_message( log_module,  MSG_INFO, "Card %d tuned\n", tuneparams.card);
   tuneparams.card_tuned = 1;
@@ -1098,7 +1103,7 @@ int
   /*****************************************************/
   iRet=autoconf_init(&autoconf_vars, chan_and_pids.channels,chan_and_pids.number_of_channels);
   if(iRet)
-    return mumudvb_close(&monitor_thread_params, &unicast_vars, ERROR_GENERIC);
+    return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_GENERIC);
 
   /*****************************************************/
   //Pat rewriting
@@ -1115,7 +1120,7 @@ int
     if(rewrite_vars.full_pat==NULL)
     {
       log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      return mumudvb_close(&monitor_thread_params, &unicast_vars, ERROR_MEMORY<<8);
+      return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_MEMORY<<8);
     }
     memset (rewrite_vars.full_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
     pthread_mutex_init(&rewrite_vars.full_pat->packetmutex,NULL);
@@ -1136,7 +1141,7 @@ int
     if(rewrite_vars.full_sdt==NULL)
     {
       log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      return mumudvb_close(&monitor_thread_params, &unicast_vars, ERROR_MEMORY<<8);
+      return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_MEMORY<<8);
     }
     memset (rewrite_vars.full_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
     pthread_mutex_init(&rewrite_vars.full_sdt->packetmutex,NULL);
@@ -1167,7 +1172,7 @@ int
       if(chan_and_pids.channels[curr_channel].pmt_packet==NULL)
       {
         log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-        return mumudvb_close(&monitor_thread_params, &unicast_vars, ERROR_MEMORY<<8);
+        return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_MEMORY<<8);
       }
       memset (chan_and_pids.channels[curr_channel].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
       pthread_mutex_init(&chan_and_pids.channels[curr_channel].pmt_packet->packetmutex,NULL);
@@ -1230,7 +1235,7 @@ int
 
   // we open the file descriptors
   if (create_card_fd (tuneparams.card_dev_path, tuneparams.tuner, chan_and_pids.asked_pid, &fds) < 0)
-    return mumudvb_close(&monitor_thread_params, &unicast_vars, ERROR_GENERIC<<8);
+    return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_GENERIC<<8);
 
   set_filters(chan_and_pids.asked_pid, &fds);
   fds.pfds=NULL;
@@ -1240,7 +1245,7 @@ int
   if (fds.pfds==NULL)
   {
     log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    return mumudvb_close(&monitor_thread_params, &unicast_vars, ERROR_MEMORY<<8);
+    return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_MEMORY<<8);
   }
 
   //We fill the file descriptor information structure. the first one is irrelevant
@@ -1250,7 +1255,7 @@ int
   if (unicast_vars.fd_info==NULL)
   {
     log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    return mumudvb_close(&monitor_thread_params, &unicast_vars, ERROR_MEMORY<<8);
+    return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_MEMORY<<8);
   }
 
   //File descriptor for polling the DVB card
@@ -1299,7 +1304,7 @@ int
 
   iRet=init_sap(&sap_vars, multicast_vars);
   if(iRet)
-    return mumudvb_close(&monitor_thread_params, &unicast_vars, ERROR_GENERIC);
+    return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_GENERIC);
 
   /*****************************************************/
   // Information about streamed channels
@@ -1654,7 +1659,7 @@ int
   if(card_buffer.partial_packet_number)
     log_message( log_module,  MSG_INFO,
                  "We have got %d overflow errors\n",card_buffer.overflow_number );
-  return mumudvb_close(&monitor_thread_params, &unicast_vars, Interrupted);
+  return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, Interrupted);
 
 }
 
@@ -1662,7 +1667,7 @@ int
  *
  *
  */
-int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int Interrupted)
+int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, int Interrupted)
 {
 
   int curr_channel;
@@ -1679,7 +1684,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
   if(signalpowerthread)
   {
     log_message(log_module,MSG_FLOOD,"Signal/power Thread closing\n");
-    tuneparams.strengththreadshutdown=1;
+    *strengththreadshutdown=1;
     pthread_join(signalpowerthread, NULL);
   }
   if(cardthreadparams.thread_running)
@@ -1832,11 +1837,10 @@ static void SignalHandler (int signum)
     struct timeval tv;
     gettimeofday (&tv, (struct timezone *) NULL);
     now = tv.tv_sec - real_start_time;
-    if (!tuneparams.card_tuned)
+    if (card_tuned && !*card_tuned)
     {
       log_message( log_module,  MSG_INFO,
-                   "Card not tuned after %ds - exiting\n",
-                   tuneparams.tuning_timeout);
+                   "Card not tuned after timeout - exiting\n");
       exit(ERROR_TUNE);
     }
     alarm (ALARM_TIME);
