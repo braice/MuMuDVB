@@ -143,13 +143,7 @@ int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
 // file descriptors
 fds_t fds; /** File descriptors associated with the card */
 int no_daemon = 0;
-
-
 int Interrupted = 0;
-char filename_channels_diff[256];
-
-char filename_pid[256];
-char filename_gen_conf[256];
 int  write_streamed_channels=1;
 
 
@@ -230,7 +224,7 @@ extern log_params_t log_params;
 static void SignalHandler (int signum);//below
 int read_multicast_configuration(multicast_parameters_t *, mumudvb_channel_t *, int, int *, char *); //in multicast.c
 void *monitor_func(void* arg);
-int mumudvb_close(monitor_parameters_t* monitor_thread_params, unicast_parameters_t* unicast_vars, int* strengththreadshutdown, cam_parameters_t* cam_vars, char* filename_channels_not_streamed, int Interrupted);
+int mumudvb_close(monitor_parameters_t* monitor_thread_params, unicast_parameters_t* unicast_vars, int* strengththreadshutdown, cam_parameters_t* cam_vars, char* filename_channels_not_streamed,char *filename_channels_diff, char *filename_pid, int Interrupted);
 
 int
     main (int argc, char **argv)
@@ -341,6 +335,9 @@ int
   #endif
 
   char filename_channels_not_streamed[256];
+  char filename_channels_diff[256];
+  char filename_pid[256];
+  char filename_gen_conf[256];
 
   int server_id = 0; /** The server id for the template %server */
 
@@ -1681,7 +1678,7 @@ int
     log_message( log_module,  MSG_INFO,
                  "We have got %d overflow errors\n",card_buffer.overflow_number );
 mumudvb_close_goto:
-  return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, filename_channels_not_streamed, Interrupted);
+  return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, filename_channels_not_streamed, filename_channels_diff, filename_pid, Interrupted);
 
 }
 
@@ -1689,7 +1686,7 @@ mumudvb_close_goto:
  *
  *
  */
-int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, cam_parameters_t *cam_vars, char *filename_channels_not_streamed, int Interrupted)
+int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, cam_parameters_t *cam_vars, char *filename_channels_not_streamed, char *filename_channels_diff, char *filename_pid, int Interrupted)
 {
 
   int curr_channel;
@@ -2156,7 +2153,7 @@ void *monitor_func(void* arg)
     /* the streamed channels                   */
     /*******************************************/
     if (write_streamed_channels)
-      gen_file_streamed_channels(filename_channels_diff, params->filename_channels_not_streamed, params->chan_and_pids->number_of_channels, params->chan_and_pids->channels);
+      gen_file_streamed_channels(params->filename_channels_diff, params->filename_channels_not_streamed, params->chan_and_pids->number_of_channels, params->chan_and_pids->channels);
 
 
     }
