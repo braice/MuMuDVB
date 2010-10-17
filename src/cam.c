@@ -99,8 +99,6 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
 					uint8_t blind_answer, uint8_t expected_answer_length,
 					uint8_t *text, uint32_t text_size);
 
-static char *static_nom_fich_cam_info;/** @todo Remove this file for a more general method */
-
 static char *cam_status[] ={
       "EN50221_STDCAM_CAM_NONE",
       "EN50221_STDCAM_CAM_INRESET",
@@ -250,10 +248,8 @@ int cam_debug_dvbca_get_interface_type(cam_parameters_t *cam_params)
 
 /** @brief start the cam
  * This function will create the communication layers and set the callbacks*/
-int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_info)
+int cam_start(cam_parameters_t *cam_params, int adapter_id)
 {
-  // Copy the filename pointer into a static local pointer to be accessible from other threads
-  static_nom_fich_cam_info=nom_fich_cam_info; /** @todo Remove this file for a more general method */
 
   // CAM Log
   log_message( log_module,  MSG_FLOOD,"CAM Initialization\n");
@@ -290,7 +286,7 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id, char *nom_fich_cam_i
 
   // hook up the AI callbacks
   if (cam_params->stdcam->ai_resource) {
-    en50221_app_ai_register_callback(cam_params->stdcam->ai_resource, mumudvb_cam_ai_callback, cam_params->stdcam);
+    en50221_app_ai_register_callback(cam_params->stdcam->ai_resource, mumudvb_cam_ai_callback, cam_params);
   } else {
     log_message( log_module,  MSG_WARN,  "No Application Information resource\n");
   }
@@ -628,7 +624,8 @@ static int mumudvb_cam_ai_callback(void *arg, uint8_t slot_id, uint16_t session_
 			   uint16_t manufacturer_code, uint8_t menu_string_length,
 			   uint8_t *menu_string)
 {
-  (void) arg;
+  cam_parameters_t *cam_params;
+  cam_params= (cam_parameters_t *) arg;
   (void) slot_id;
   (void) session_number;
 
@@ -641,12 +638,12 @@ static int mumudvb_cam_ai_callback(void *arg, uint8_t slot_id, uint16_t session_
 
   // Try to append the information to the cam_info log file
   FILE *file_cam_info;
-  file_cam_info = fopen (static_nom_fich_cam_info, "a");
+  file_cam_info = fopen (cam_params->filename_cam_info, "a");
   if (file_cam_info == NULL)
     {
       log_message( log_module,  MSG_WARN,
 		   "%s: %s\n",
-		   static_nom_fich_cam_info, strerror (errno));
+		   cam_params->filename_cam_info, strerror (errno));
     }
   else
     {
@@ -679,12 +676,12 @@ static int mumudvb_cam_ca_info_callback(void *arg, uint8_t slot_id, uint16_t ses
 
   // Try to append the information to the cam_info log file
   FILE *file_cam_info;
-  file_cam_info = fopen (static_nom_fich_cam_info, "a");
+  file_cam_info = fopen (cam_params->filename_cam_info, "a");
   if (file_cam_info == NULL)
   {
     log_message( log_module,  MSG_WARN,
                   "%s: %s\n",
-                  static_nom_fich_cam_info, strerror (errno));
+                  cam_params->filename_cam_info, strerror (errno));
   }
   else
   {

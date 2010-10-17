@@ -137,6 +137,7 @@ static char *log_module="Main: ";
 long now;
 long real_start_time;
 int *card_tuned;
+int received_signal = 0;
 
 int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
 // file descriptors
@@ -147,11 +148,10 @@ int no_daemon = 0;
 int Interrupted = 0;
 char filename_channels_diff[256];
 char filename_channels_not_streamed[256];
-char filename_cam_info[256];
 char filename_pid[256];
 char filename_gen_conf[256];
 int  write_streamed_channels=1;
-int received_signal = 0;
+
 
 pthread_t signalpowerthread;
 pthread_t cardthread;
@@ -197,28 +197,7 @@ autoconf_parameters_t autoconf_vars={
   .name_template="\0",
 };
 
-#ifdef ENABLE_CAM_SUPPORT
-//CAM (Conditionnal Access Modules : for scrambled channels)
-cam_parameters_t cam_vars={
-  .cam_support = 0,
-  .cam_number=0,
-  .cam_reask_interval=0,
-  .need_reset=0,
-  .reset_counts=0,
-  .reset_interval=CAM_DEFAULT_RESET_INTERVAL,
-  .timeout_no_cam_init=CAM_DEFAULT_RESET_INTERVAL,
-  .max_reset_number=CAM_DEFAULT_MAX_RESET_NUM,
-  .tl=NULL,
-  .sl=NULL,
-  .stdcam=NULL,
-  .ca_resource_connected=0,
-  .mmi_state = MMI_STATE_CLOSED,
-  .ca_info_ok_time=0,
-  .cam_delay_pmt_send=0,
-  .cam_interval_pmt_send=3,
-  .cam_pmt_send_time=0,
-};
-#endif
+
 
 //Parameters for rewriting
 rewrite_parameters_t rewrite_vars={
@@ -251,7 +230,7 @@ extern log_params_t log_params;
 static void SignalHandler (int signum);//below
 int read_multicast_configuration(multicast_parameters_t *, mumudvb_channel_t *, int, int *, char *); //in multicast.c
 void *monitor_func(void* arg);
-int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, int Interrupted);
+int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, cam_parameters_t *cam_vars, int Interrupted);
 
 int
     main (int argc, char **argv)
@@ -336,6 +315,31 @@ int
   #endif
   };
   card_tuned=&tuneparams.card_tuned;
+
+
+  #ifdef ENABLE_CAM_SUPPORT
+  //CAM (Conditionnal Access Modules : for scrambled channels)
+  cam_parameters_t cam_vars={
+    .cam_support = 0,
+    .cam_number=0,
+    .cam_reask_interval=0,
+    .need_reset=0,
+    .reset_counts=0,
+    .reset_interval=CAM_DEFAULT_RESET_INTERVAL,
+    .timeout_no_cam_init=CAM_DEFAULT_RESET_INTERVAL,
+    .max_reset_number=CAM_DEFAULT_MAX_RESET_NUM,
+    .tl=NULL,
+    .sl=NULL,
+    .stdcam=NULL,
+    .ca_resource_connected=0,
+    .mmi_state = MMI_STATE_CLOSED,
+    .ca_info_ok_time=0,
+    .cam_delay_pmt_send=0,
+    .cam_interval_pmt_send=3,
+    .cam_pmt_send_time=0,
+  };
+  #endif
+
 
 
   int server_id = 0; /** The server id for the template %server */
@@ -915,7 +919,7 @@ int
   if(!multicast_vars.multicast && !unicast_vars.unicast)
   {
     log_message( log_module,  MSG_ERROR, "NO Multicast AND NO unicast. No data can be send :(, Exciting ....\n");
-    return mumudvb_close(NULL, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_CONF<<8);
+    return mumudvb_close(NULL, &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, ERROR_CONF<<8);
   }
 
 
@@ -925,7 +929,7 @@ int
            tuneparams.card, tuneparams.tuner);
   sprintf (filename_channels_not_streamed, NOT_STREAMED_LIST_PATH,
            tuneparams.card, tuneparams.tuner);
-  sprintf (filename_cam_info, CAM_INFO_LIST_PATH,
+  sprintf (cam_vars.filename_cam_info, CAM_INFO_LIST_PATH,
            tuneparams.card, tuneparams.tuner);
   channels_diff = fopen (filename_channels_diff, "w");
   if (channels_diff == NULL)
@@ -953,12 +957,12 @@ int
 #ifdef ENABLE_CAM_SUPPORT
   if(cam_vars.cam_support)
   {
-    cam_info = fopen (filename_cam_info, "w");
+    cam_info = fopen (cam_vars.filename_cam_info, "w");
     if (cam_info == NULL)
     {
       log_message( log_module,  MSG_WARN,
                    "Can't create %s: %s\n",
-                   filename_cam_info, strerror (errno));
+                   cam_vars.filename_cam_info, strerror (errno));
     }
     else
       fclose (cam_info);
@@ -1002,7 +1006,7 @@ int
     log_message( log_module,  MSG_INFO, "Tunning issue, card %d\n", tuneparams.card);
     // we close the file descriptors
     close_card_fd (fds);
-    return mumudvb_close(NULL, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_TUNE<<8);
+    return mumudvb_close(NULL, &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, ERROR_TUNE<<8);
   }
   log_message( log_module,  MSG_INFO, "Card %d tuned\n", tuneparams.card);
   tuneparams.card_tuned = 1;
@@ -1083,7 +1087,7 @@ int
 #ifdef ENABLE_CAM_SUPPORT
   if(cam_vars.cam_support){
     //We initialise the cam. If fail, we remove cam support
-    if(cam_start(&cam_vars,tuneparams.card,filename_cam_info))
+    if(cam_start(&cam_vars,tuneparams.card))
     {
       log_message("CAM: ", MSG_ERROR,"Cannot initalise cam\n");
       cam_vars.cam_support=0;
@@ -1103,7 +1107,7 @@ int
   /*****************************************************/
   iRet=autoconf_init(&autoconf_vars, chan_and_pids.channels,chan_and_pids.number_of_channels);
   if(iRet)
-    return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_GENERIC);
+    return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, ERROR_GENERIC);
 
   /*****************************************************/
   //Pat rewriting
@@ -1120,7 +1124,7 @@ int
     if(rewrite_vars.full_pat==NULL)
     {
       log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_MEMORY<<8);
+      return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, ERROR_MEMORY<<8);
     }
     memset (rewrite_vars.full_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
     pthread_mutex_init(&rewrite_vars.full_pat->packetmutex,NULL);
@@ -1141,7 +1145,7 @@ int
     if(rewrite_vars.full_sdt==NULL)
     {
       log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_MEMORY<<8);
+      return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, ERROR_MEMORY<<8);
     }
     memset (rewrite_vars.full_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
     pthread_mutex_init(&rewrite_vars.full_sdt->packetmutex,NULL);
@@ -1172,7 +1176,7 @@ int
       if(chan_and_pids.channels[curr_channel].pmt_packet==NULL)
       {
         log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-        return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_MEMORY<<8);
+        return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, ERROR_MEMORY<<8);
       }
       memset (chan_and_pids.channels[curr_channel].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
       pthread_mutex_init(&chan_and_pids.channels[curr_channel].pmt_packet->packetmutex,NULL);
@@ -1235,7 +1239,7 @@ int
 
   // we open the file descriptors
   if (create_card_fd (tuneparams.card_dev_path, tuneparams.tuner, chan_and_pids.asked_pid, &fds) < 0)
-    return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_GENERIC<<8);
+    return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, ERROR_GENERIC<<8);
 
   set_filters(chan_and_pids.asked_pid, &fds);
   fds.pfds=NULL;
@@ -1245,7 +1249,7 @@ int
   if (fds.pfds==NULL)
   {
     log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_MEMORY<<8);
+    return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, ERROR_MEMORY<<8);
   }
 
   //We fill the file descriptor information structure. the first one is irrelevant
@@ -1255,7 +1259,7 @@ int
   if (unicast_vars.fd_info==NULL)
   {
     log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_MEMORY<<8);
+    return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, ERROR_MEMORY<<8);
   }
 
   //File descriptor for polling the DVB card
@@ -1304,7 +1308,7 @@ int
 
   iRet=init_sap(&sap_vars, multicast_vars);
   if(iRet)
-    return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, ERROR_GENERIC);
+    return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, ERROR_GENERIC);
 
   /*****************************************************/
   // Information about streamed channels
@@ -1659,7 +1663,7 @@ int
   if(card_buffer.partial_packet_number)
     log_message( log_module,  MSG_INFO,
                  "We have got %d overflow errors\n",card_buffer.overflow_number );
-  return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, Interrupted);
+  return mumudvb_close(&monitor_thread_params, &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, Interrupted);
 
 }
 
@@ -1667,7 +1671,7 @@ int
  *
  *
  */
-int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, int Interrupted)
+int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, cam_parameters_t *cam_vars, int Interrupted)
 {
 
   int curr_channel;
@@ -1733,16 +1737,16 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
   unicast_freeing(unicast_vars, chan_and_pids.channels);
 
 #ifdef ENABLE_CAM_SUPPORT
-  if(cam_vars.cam_support)
+  if(cam_vars->cam_support)
   {
     // stop CAM operation
-    cam_stop(&cam_vars);
+    cam_stop(cam_vars);
     // delete cam_info file
-    if (remove (filename_cam_info))
+    if (remove (cam_vars->filename_cam_info))
     {
       log_message( log_module,  MSG_WARN,
                    "%s: %s\n",
-                   filename_cam_info, strerror (errno));
+                   cam_vars->filename_cam_info, strerror (errno));
     }
   }
 #endif
