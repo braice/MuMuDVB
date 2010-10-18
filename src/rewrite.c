@@ -36,6 +36,7 @@
 #include "log.h"
 #include <stdint.h>
 
+static char *log_module="Rewrite: ";
 
 /** @brief Read a line of the configuration file to check if there is a rewrite parameter
  *
@@ -51,7 +52,7 @@ int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substri
     if(atoi (substring))
     {
       rewrite_vars->rewrite_pat = OPTION_ON;
-      log_message( NULL, MSG_INFO,
+      log_message( log_module, MSG_INFO,
                    "You have enabled the PAT Rewriting\n");
     }
     else
@@ -63,7 +64,7 @@ int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substri
     if(atoi (substring))
     {
       rewrite_vars->rewrite_sdt = OPTION_ON;
-      log_message( NULL, MSG_INFO,
+      log_message( log_module, MSG_INFO,
                    "You have enabled the SDT Rewriting\n");
     }
     else
@@ -76,7 +77,7 @@ int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substri
     if(atoi (substring))
     {
       rewrite_vars->eit_sort = OPTION_ON;
-      log_message( NULL, MSG_INFO,
+      log_message( log_module, MSG_INFO,
                    "You have enabled the sort of the EIT PID\n");
     }
     else

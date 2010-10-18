@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-
+static char *log_module="Common: ";
 
 /** @brief : poll the file descriptors fds with a limit in the number of errors
  *
@@ -68,7 +68,7 @@ int mumudvb_poll(fds_t *fds)
       poll_eintr++;
       if(poll_eintr==10)
       {
-        log_message( NULL, MSG_DEBUG, "Poll : 10 successive EINTR\n");
+        log_message( log_module, MSG_DEBUG, "Poll : 10 successive EINTR\n");
         poll_eintr=0;
       }
     }
@@ -77,13 +77,13 @@ int mumudvb_poll(fds_t *fds)
 
   if(poll_try==MAX_POLL_TRIES)
   {
-    log_message( NULL, MSG_ERROR, "Poll : We reach the maximum number of polling tries\n\tLast error when polling: %s\n", strerror (errno));
+    log_message( log_module, MSG_ERROR, "Poll : We reach the maximum number of polling tries\n\tLast error when polling: %s\n", strerror (errno));
     Interrupted=errno<<8; //the <<8 is to make difference beetween signals and errors;
     return Interrupted;
   }
   else if(poll_try)
   {
-    log_message( NULL, MSG_WARN, "Poll : Warning : error when polling: %s\n", strerror (last_poll_error));
+    log_message( log_module, MSG_WARN, "Poll : Warning : error when polling: %s\n", strerror (last_poll_error));
   }
   return 0;
 }
@@ -135,7 +135,7 @@ char *mumu_string_replace(char *source, int *length, int can_realloc, char *tore
       reallocresult=realloc(source,sizeof(char)*(lengthtempstring));
       if(reallocresult==NULL)
       {
-        log_message(NULL, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+        log_message(log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
         return NULL;
       }
       source=reallocresult;
@@ -222,7 +222,7 @@ int mumu_string_append(mumu_string_t *string, const char *psz_format, ...)
   string->string=realloc(string->string,(string->length+size+1)*sizeof(char));
   if(string->string==NULL)
   {
-    log_message(NULL,MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    log_message(log_module,MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     return ERROR_MEMORY<<8;
   }
   va_start( args, psz_format );

@@ -423,8 +423,8 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
   file_streamed_channels = fopen (file_streamed_channels_filename, "w");
   if (file_streamed_channels == NULL)
     {
-      log_message( NULL, MSG_WARN,
-		   "%s: %s\n",
+      log_message( log_module, MSG_WARN,
+		   "Error file_streamed_channels %s: %s\n",
 		   file_streamed_channels_filename, strerror (errno));
       return;
     }
@@ -432,8 +432,8 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
   file_not_streamed_channels = fopen (file_not_streamed_channels_filename, "w");
   if (file_not_streamed_channels == NULL)
     {
-      log_message( NULL,  MSG_WARN,
-		   "%s: %s\n",
+      log_message( log_module,  MSG_WARN,
+		   "Error file_not_streamed_channels %s: %s\n",
 		   file_not_streamed_channels_filename, strerror (errno));
       return;
     }
@@ -481,7 +481,7 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
   orig_conf_file = fopen (orig_conf_filename, "r");
   if (orig_conf_file == NULL)
     {
-      log_message( NULL,  MSG_WARN, "Strange error %s: %s\n",
+      log_message( log_module,  MSG_WARN, "Strange error %s: %s\n",
 		   orig_conf_filename, strerror (errno));
       return;
     }
@@ -490,8 +490,8 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
   config_file = fopen (saving_filename, "w");
   if (config_file == NULL)
     {
-      log_message( NULL,  MSG_WARN,
-		   "%s: %s\n",
+      log_message( log_module,  MSG_WARN,
+		   "saving_filename %s: %s\n",
 		   saving_filename, strerror (errno));
       return;
     }
@@ -563,8 +563,8 @@ void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *
   config_file = fopen (saving_filename, "a");
   if (config_file == NULL)
     {
-      log_message( NULL,  MSG_WARN,
-		   "%s: %s\n",
+      log_message( log_module,  MSG_WARN,
+		   "Error config_file %s: %s\n",
 		   saving_filename, strerror (errno));
       return;
     }
