@@ -1151,7 +1151,7 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
 int
 unicast_send_signal_power_js (int Socket, fds_t *fds)
 {
-  int strength, ber, snr;
+  unsigned int strength, ber, snr;
   struct unicast_reply* reply = unicast_reply_init();
   if (NULL == reply)
   {
