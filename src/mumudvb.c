@@ -334,6 +334,8 @@ int
     .cam_interval_pmt_send=3,
     .cam_pmt_send_time=0,
 	.cam_menu_string="Not retrieved",
+	.cam_menulist_lines=0,
+	.cam_mmi_autoresponse=1,
   };
   #endif
 

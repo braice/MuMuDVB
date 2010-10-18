@@ -92,6 +92,10 @@ int
 unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *channels, int Socket);
 int
 unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int Socket, fds_t *fds, tuning_parameters_t *tuneparams, autoconf_parameters_t *autoconf_vars, void *cam_vars);
+int
+unicast_send_cam_menu (int Socket, void *cam_vars);
+int
+unicast_send_cam_action (int Socket, char *Key, void *cam_vars);
 
 int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int num_of_channels, fds_t *fds, tuning_parameters_t *tuneparams, autoconf_parameters_t *autoconf_vars, void *cam_vars);
 
@@ -722,6 +726,19 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
         {
           log_message( log_module, MSG_DETAIL,"HTTP request for XML State\n");
           unicast_send_xml_state(number_of_channels, channels, client->Socket, fds, tuneparams, autoconf_vars, cam_vars);
+          return -2; //We close the connection afterwards
+        }
+        else if(strstr(client->buffer +pos ,"/cam/menu.xml ")==(client->buffer +pos))
+        {
+          log_message( log_module, MSG_DETAIL,"HTTP request for CAM menu display \n");
+          unicast_send_cam_menu(client->Socket, cam_vars);
+          return -2; //We close the connection afterwards
+        }
+        else if(strstr(client->buffer +pos ,"/cam/action.xml?key=")==(client->buffer +pos))
+        {
+          log_message( log_module, MSG_DETAIL,"HTTP request for CAM menu action\n");
+          pos+=strlen("/cam/action.xml?key=");
+          unicast_send_cam_action(client->Socket,client->buffer+pos, cam_vars);
           return -2; //We close the connection afterwards
         }
 
@@ -1396,6 +1413,204 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
   return 0;
 }
 
+/** @brief Return the last MMI menu sent by CAM
+*
+* @param Socket the socket on wich the information have to be sent
+*/
+int
+unicast_send_cam_menu (int Socket, void *cam_vars)
+{
+  struct unicast_reply* reply = unicast_reply_init();
+  if (NULL == reply)
+  {
+    log_message( log_module, MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
+    return -1;
+  }
+  
+  // UTF-8 Byte Order Mark (BOM)
+  unicast_reply_write(reply, "\xef\xbb\xbf");
+  
+  // Date time formatting
+  time_t rawtime;
+  time (&rawtime);
+  char sdatetime[25];
+  snprintf(sdatetime,25,"%s",ctime(&rawtime));
+
+  // XML header
+  unicast_reply_write(reply, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n");
+
+  // Starting XML content
+  unicast_reply_write(reply, "<menu>\n");
+
+  #ifdef ENABLE_CAM_SUPPORT
+  // Sending the last menu if existing
+  if (((cam_parameters_t*)cam_vars)->ca_resource_connected!=0)
+  {
+    if (((cam_parameters_t*)cam_vars)->cam_menulist_lines>0)
+    {
+      int i;
+      for (i=0; i<((cam_parameters_t*)cam_vars)->cam_menulist_lines; i++)
+        unicast_reply_write(reply, "%s",((cam_parameters_t*)cam_vars)->cam_menulist[i]);
+    }
+    else
+    {
+      unicast_reply_write(reply, "\t<datetime><![CDATA[%s]]></datetime>\n",sdatetime);
+      unicast_reply_write(reply, "\t<cammenustring><![CDATA[%s]]></cammenustring>\n",((cam_parameters_t*)cam_vars)->cam_menu_string);
+      unicast_reply_write(reply, "\t<object><![CDATA[NONE]]></object>\n");
+      unicast_reply_write(reply, "\t<title><![CDATA[No menu to display]]></title>\n");
+    }
+  }
+  else
+  {
+    unicast_reply_write(reply, "\t<datetime><![CDATA[%s]]></datetime>\n",sdatetime);
+    unicast_reply_write(reply, "\t<object><![CDATA[NONE]]></object>\n");
+    unicast_reply_write(reply, "\t<title><![CDATA[CAM not initialized!]]></title>\n");
+  }
+  #else
+  time_t rawtime;
+  time (&rawtime);
+  unicast_reply_write(reply, "\t<datetime><![CDATA[%s]]></datetime>\n",sdatetime);
+  unicast_reply_write(reply, "\t<object><![CDATA[NONE]]></object>\n");
+  unicast_reply_write(reply, "\t<title><![CDATA[Compiled without CAM support]]></title>\n");
+  #endif
+
+  // Ending XML content
+  unicast_reply_write(reply, "</menu>\n");
+
+  // Cleaning all non acceptable characters for pseudo UTF-8 (in fact, US-ASCII) - Skipping BOM and last zero character
+  unsigned char c;
+  int j;
+  for (j=3; j<reply->used_body; j++)
+  {
+    c=reply->buffer_body[j];
+    if ((c<32 || c>127) && c!=9 && c!=10 && c!=13)
+      reply->buffer_body[j]=32;
+  }
+  unicast_reply_send(reply, Socket, 200, "application/xml; charset=UTF-8");
+  
+  // End of HTTP reply
+  if (0 != unicast_reply_free(reply)) {
+    log_message( log_module, MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+    return -1;
+  }
+  return 0;
+}
+  
+/** @brief Send an action to the CAM MMI menu
+*
+* @param Socket the socket on wich the information have to be sent
+*/
+int
+unicast_send_cam_action (int Socket, char *Key, void *cam_vars)
+{
+  struct unicast_reply* reply = unicast_reply_init();
+  if (NULL == reply)
+  {
+    log_message( log_module, MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
+    return -1;
+  }
+  
+  // UTF-8 Byte Order Mark (BOM)
+  unicast_reply_write(reply, "\xef\xbb\xbf");
+  
+  // Date time formatting
+  time_t rawtime;
+  time (&rawtime);
+  char sdatetime[25];
+  snprintf(sdatetime,25,"%s",ctime(&rawtime));
+
+  // XML header
+  unicast_reply_write(reply, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n");
+
+  // Starting XML content
+  unicast_reply_write(reply, "<action>\n");
+  unicast_reply_write(reply, "\t<datetime><![CDATA[%.24s]]></datetime>\n",ctime(&rawtime));
+  unicast_reply_write(reply, "\t<key><![CDATA[%c]]></key>\n",*Key);
+
+  #ifdef ENABLE_CAM_SUPPORT
+  // Check if valid action to be done [0-9] and 'M' and 'C' and 'O'
+  int iKey=(int)*Key;
+  if ((iKey>=48 && iKey<=57) || iKey==77 || iKey==67 || iKey==79)
+  {
+    // Check if CAM is initialized
+    if (((cam_parameters_t*)cam_vars)->ca_resource_connected!=0)
+    {
+      // Disable auto response from now (as a manual action is asked)
+      ((cam_parameters_t*)cam_vars)->cam_mmi_autoresponse=0;
+      // Numbers for MENU/LIST answer
+      if (((cam_parameters_t*)cam_vars)->mmi_state==MMI_STATE_MENU && iKey>=48 && iKey<=57)
+	  {
+        log_message( log_module,  MSG_INFO, "Send CAM MENU key number %d\n",iKey-48);
+        en50221_app_mmi_menu_answ(((cam_parameters_t*)cam_vars)->stdcam->mmi_resource, ((cam_parameters_t*)cam_vars)->stdcam->mmi_session_number, iKey-48);
+		((cam_parameters_t*)cam_vars)->mmi_state=MMI_STATE_OPEN;
+	  }
+      // 'M' = ask the menu - Always possible
+      if (iKey==77)
+	  {
+	    log_message( log_module,  MSG_INFO, "Ask CAM to enter MENU\n");
+        en50221_app_ai_entermenu(((cam_parameters_t*)cam_vars)->stdcam->ai_resource, ((cam_parameters_t*)cam_vars)->stdcam->ai_session_number);
+		((cam_parameters_t*)cam_vars)->mmi_state=MMI_STATE_OPEN;
+	  }
+      // Numbers for ENQUIRY answer
+      if (((cam_parameters_t*)cam_vars)->mmi_state==MMI_STATE_ENQ && iKey>=48 && iKey<=57)
+	  {
+	    // We store the new key
+		((cam_parameters_t*)cam_vars)->mmi_enq_answer[((cam_parameters_t*)cam_vars)->mmi_enq_entered]=iKey;
+		((cam_parameters_t*)cam_vars)->mmi_enq_entered++;
+        log_message( log_module,  MSG_INFO, "Received CAM ENQUIRY key number %d (%d of %d expected)\n", iKey-48, ((cam_parameters_t*)cam_vars)->mmi_enq_entered, ((cam_parameters_t*)cam_vars)->mmi_enq_length);
+		// Test if the expected length is received
+		if (((cam_parameters_t*)cam_vars)->mmi_enq_entered == ((cam_parameters_t*)cam_vars)->mmi_enq_length)
+		{
+		  // We send the anwser
+		  log_message( log_module,  MSG_INFO, "Sending ENQUIRY answer to CAM (answer has the expected length of %d)\n",((cam_parameters_t*)cam_vars)->mmi_enq_entered);
+          en50221_app_mmi_answ(((cam_parameters_t*)cam_vars)->stdcam->mmi_resource, ((cam_parameters_t*)cam_vars)->stdcam->mmi_session_number, MMI_ANSW_ID_ANSWER, (uint8_t*)((cam_parameters_t*)cam_vars)->mmi_enq_answer, ((cam_parameters_t*)cam_vars)->mmi_enq_entered);
+		  ((cam_parameters_t*)cam_vars)->mmi_state=MMI_STATE_OPEN;
+		}
+	  }
+      // 'C' = send CANCEL as an ENQUIRY answer
+      if (((cam_parameters_t*)cam_vars)->mmi_state==MMI_STATE_ENQ && iKey==67)
+	  {
+	    log_message( log_module,  MSG_INFO, "Send CAM ENQUIRY key CANCEL\n");
+        en50221_app_mmi_answ(((cam_parameters_t*)cam_vars)->stdcam->mmi_resource, ((cam_parameters_t*)cam_vars)->stdcam->mmi_session_number, MMI_ANSW_ID_CANCEL, NULL, 0);
+		((cam_parameters_t*)cam_vars)->mmi_state=MMI_STATE_OPEN;
+	  }
+      // OK
+      unicast_reply_write(reply, "\t<result><![CDATA[OK]]></result>\n");
+    }
+    else
+    {
+      unicast_reply_write(reply, "\t<result><![CDATA[ERROR: CAM not initialized!]]></result>\n");
+    }
+  }
+  else
+  {
+    unicast_reply_write(reply, "\t<result><![CDATA[ERROR: Unknown key!]]></result>\n");
+  }
+  #else
+  unicast_reply_write(reply, "\t<result><![CDATA[Compiled without CAM support]]></result>\n");
+  #endif
+  
+  // Ending XML content
+  unicast_reply_write(reply, "</action>\n");
+
+  // Cleaning all non acceptable characters for pseudo UTF-8 (in fact, US-ASCII) - Skipping BOM and last zero character
+  unsigned char c;
+  int j;
+  for (j=3; j<reply->used_body; j++)
+  {
+    c=reply->buffer_body[j];
+    if ((c<32 || c>127) && c!=9 && c!=10 && c!=13)
+      reply->buffer_body[j]=32;
+  }
+  unicast_reply_send(reply, Socket, 200, "application/xml; charset=UTF-8");
+  
+  // End of HTTP reply
+  if (0 != unicast_reply_free(reply)) {
+    log_message( log_module, MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+    return -1;
+  }
+  return 0;
+}
 
 
 
