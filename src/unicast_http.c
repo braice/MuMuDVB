@@ -289,7 +289,7 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
       {
         //Event on the master connection or listenin channel
         //New connection, we accept the connection
-        log_message( log_module, MSG_DEBUG,"New client\n");
+        log_message( log_module, MSG_FLOOD,"New client\n");
         int tempSocket;
         unicast_client_t *tempClient;
         //we accept the incoming connection
@@ -328,7 +328,7 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
           unicast_vars->fd_info[fds->pfdsnum-1].client=tempClient;
 
 
-          log_message( log_module, MSG_DEBUG,"Number of clients : %d\n", unicast_vars->client_number);
+          log_message( log_module, MSG_FLOOD,"Number of clients : %d\n", unicast_vars->client_number);
 
           if(unicast_vars->fd_info[actual_fd].type==UNICAST_LISTEN_CHANNEL)
           {
@@ -390,7 +390,7 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
   struct sockaddr_in tempSocketAddr;
   l = sizeof(struct sockaddr);
   getsockname(tempSocket, (struct sockaddr *) &tempSocketAddr, &l);
-  log_message( log_module, MSG_DETAIL,"New connection from %s:%d to %s:%d \n",inet_ntoa(tempSocketAddrIn.sin_addr), tempSocketAddrIn.sin_port,inet_ntoa(tempSocketAddr.sin_addr), tempSocketAddr.sin_port);
+  log_message( log_module, MSG_FLOOD,"New connection from %s:%d to %s:%d \n",inet_ntoa(tempSocketAddrIn.sin_addr), tempSocketAddrIn.sin_port,inet_ntoa(tempSocketAddr.sin_addr), tempSocketAddr.sin_port);
 
   //Now we set this socket to be non blocking because we poll it
   int flags;
@@ -454,7 +454,7 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
     return;
   }
 
-  log_message( log_module, MSG_DEBUG,"We close the connection\n");
+  log_message( log_module, MSG_FLOOD,"We close the connection\n");
   //We delete the client
   unicast_del_client(unicast_vars, unicast_vars->fd_info[actual_fd].client, channels);
   //We move the last fd to the actual/deleted one, and decrease the number of fds by one
@@ -480,7 +480,7 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
     log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     Interrupted=ERROR_MEMORY<<8;
   }
-  log_message( log_module, MSG_DEBUG,"Number of clients : %d\n", unicast_vars->client_number);
+  log_message( log_module, MSG_FLOOD,"Number of clients : %d\n", unicast_vars->client_number);
 
 }
 
@@ -521,7 +521,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
   if(received_len>0)
   {
     if(client->bufferpos==0)
-      log_message( log_module, MSG_DEBUG,"beginning of buffer %c%c%c%c%c\n",client->buffer[0],client->buffer[1],client->buffer[2],client->buffer[3],client->buffer[4]);
+      log_message( log_module, MSG_FLOOD,"beginning of buffer %c%c%c%c%c\n",client->buffer[0],client->buffer[1],client->buffer[2],client->buffer[3],client->buffer[4]);
     client->bufferpos+=received_len;
     log_message( log_module, MSG_FLOOD,"We received %d, buffer len %d new buffer pos %d\n",received_len,client->buffersize, client->bufferpos);
   }
@@ -548,7 +548,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
       err404=0;
       struct unicast_reply* reply=NULL;
 
-      log_message( log_module, MSG_DEBUG,"End of HTTP request, we parse it\n");
+      log_message( log_module, MSG_FLOOD,"End of HTTP request, we parse it\n");
 
       if(strstr(client->buffer,"GET ")==client->buffer)
       {

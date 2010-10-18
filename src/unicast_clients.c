@@ -70,17 +70,17 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 
   unicast_client_t *client;
   unicast_client_t *prev_client;
-  log_message( log_module, MSG_DEBUG,"We create a client associated with the socket %d\n",Socket);
+  log_message( log_module, MSG_FLOOD,"We create a client associated with the socket %d\n",Socket);
   //We allocate a new client
   if(unicast_vars->clients==NULL)
   {
-    log_message( log_module, MSG_DEBUG,"first client\n");
+    log_message( log_module, MSG_FLOOD,"first client\n");
     client=unicast_vars->clients=malloc(sizeof(unicast_client_t));
     prev_client=NULL;
   }
   else
   {
-    log_message( log_module, MSG_DEBUG,"there is already clients\n");
+    log_message( log_module, MSG_FLOOD,"there is already clients\n");
     client=unicast_vars->clients;
     while(client->next!=NULL)
       client=client->next;
@@ -114,7 +114,7 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
     log_message( log_module,  MSG_WARN,"get SO_SNDBUF failed : %s\n", strerror(errno));
   }
   else
-    log_message( log_module,  MSG_DETAIL,"Actual SO_SNDBUF size : %d\n", buffer_size);
+    log_message( log_module,  MSG_FLOOD,"Actual SO_SNDBUF size : %d\n", buffer_size);
   if(unicast_vars->socket_sendbuf_size)
   {
     buffer_size = unicast_vars->socket_sendbuf_size;
@@ -173,7 +173,7 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *cli
 {
   unicast_client_t *prev_client,*next_client;
 
-  log_message( log_module, MSG_DETAIL,"We delete the client %s:%d, socket %d\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port, client->Socket);
+  log_message( log_module, MSG_FLOOD,"We delete the client %s:%d, socket %d\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port, client->Socket);
 
   if (client->Socket >= 0)
   {
@@ -184,7 +184,7 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *cli
   next_client=client->next;
   if(prev_client==NULL)
   {
-    log_message( log_module, MSG_DEBUG,"We delete the first client\n");
+    log_message( log_module, MSG_FLOOD,"We delete the first client\n");
     unicast_vars->clients=client->next;
   }
   else
