@@ -157,6 +157,7 @@ mumudvb_chan_and_pids_t chan_and_pids={
   .number_of_channels=0,
   .dont_send_scrambled=0,
   .filter_transport_error=0,
+  .psi_tables_filtering=PSI_TABLES_FILTERING_NONE,
 };
 
 
@@ -622,6 +623,20 @@ int
     {
       substring = strtok (NULL, delimiteurs);
       chan_and_pids.filter_transport_error = atoi (substring);
+    }
+    else if (!strcmp (substring, "psi_tables_filtering"))
+    {
+      substring = strtok (NULL, delimiteurs);
+      if (!strcmp (substring, "pat"))
+        chan_and_pids.psi_tables_filtering = PSI_TABLES_FILTERING_PAT_ONLY;
+      else if (!strcmp (substring, "pat_cat"))
+        chan_and_pids.psi_tables_filtering = PSI_TABLES_FILTERING_PAT_CAT_ONLY;
+      else if (!strcmp (substring, "none"))
+        chan_and_pids.psi_tables_filtering = PSI_TABLES_FILTERING_NONE;
+      if (chan_and_pids.psi_tables_filtering == PSI_TABLES_FILTERING_PAT_ONLY)
+        log_message( log_module,  MSG_INFO, "You have enabled PSI tables filtering, only PAT will be send\n");
+      if (chan_and_pids.psi_tables_filtering == PSI_TABLES_FILTERING_PAT_CAT_ONLY)
+        log_message( log_module,  MSG_INFO, "You have enabled PSI tables filtering, only PAT and CAT will be send\n");
     }
     else if (!strcmp (substring, "dvr_buffer_size"))
     {
@@ -1613,6 +1628,17 @@ int
           send_packet=eit_sort_new_packet(actual_ts_packet, &chan_and_pids.channels[curr_channel]);
         }
 
+        /******************************************************/
+        // Test if PSI tables filtering is activated
+        /******************************************************/
+        if (send_packet==1 && chan_and_pids.psi_tables_filtering>0 && pid<32)
+        {
+           // Keep only PAT and CAT
+           if (chan_and_pids.psi_tables_filtering==1 && pid>1) send_packet=0;
+           // Keep only PAT
+           if (chan_and_pids.psi_tables_filtering==2 && pid>0) send_packet=0;
+        }
+		
         /******************************************************/
 	//Ok we must send this packet,
 	// we add it to the channel buffer

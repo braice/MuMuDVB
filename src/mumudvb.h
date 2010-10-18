@@ -327,6 +327,13 @@ typedef struct multicast_parameters_t{
   int rtp_header;
 }multicast_parameters_t;
 
+/** No PSI tables filtering */
+#define PSI_TABLES_FILTERING_NONE 0
+/** Keep only PAT and CAT */
+#define PSI_TABLES_FILTERING_PAT_CAT_ONLY 1
+/** Keep only PAT */
+#define PSI_TABLES_FILTERING_PAT_ONLY 2
+
 /** structure containing the channels and the asked pids information*/
 typedef struct mumudvb_chan_and_pids_t{
   /** The number of channels ... */
@@ -335,6 +342,8 @@ typedef struct mumudvb_chan_and_pids_t{
   int dont_send_scrambled;
   /** Do we send packets with error bit set by decoder ? */
   int filter_transport_error;
+  /** Do we do filtering to keep only PSI tables (without DVB tables) ? **/
+  int psi_tables_filtering;
   /** The channels array */
   mumudvb_channel_t channels[MAX_CHANNELS];  /**@todo use realloc*/
 //Asked pids //used for filtering
