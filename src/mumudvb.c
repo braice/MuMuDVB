@@ -855,7 +855,10 @@ int
   /******************************************************/
   //end of config file reading
   /******************************************************/
-
+  
+  // Show in log that we are starting
+  log_message( log_module,  MSG_INFO,"========== End of configuration, MuMuDVB version %s is starting ==========",VERSION);
+  
   /*****************************************************/
   //daemon part two, we write our PID as we know the card number
   /*****************************************************/
@@ -1863,11 +1866,6 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
     }
   }
 
-  if(log_params.log_file)
-  {
-    fclose(log_params.log_file);
-    free(log_params.log_file_path);
-  }
 
   /*free the file descriptors*/
   if(fds.pfds)
@@ -1877,15 +1875,31 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
     free(unicast_vars->fd_info);
   unicast_vars->fd_info=NULL;
 
-  if(log_params.log_header!=NULL)
-      free(log_params.log_header);
 //   plop if(temp_buffer_from_dvr)
 //       free(temp_buffer_from_dvr);
 
+  // Format ExitCode (normal exit)
+  int ExitCode;
   if(Interrupted<(1<<8))
-    return (0);
-  else
-    return(Interrupted>>8);
+    ExitCode=0;
+  else 
+    ExitCode=Interrupted>>8;
+
+  // Show in log that we are stopping
+  log_message( log_module,  MSG_INFO,"========== MuMuDVB version %s is stopping with ExitCode %d ==========",VERSION,ExitCode);
+  
+  // Freeing log ressources
+  if(log_params.log_file)
+  {
+    fclose(log_params.log_file);
+    free(log_params.log_file_path);
+  }
+  if(log_params.log_header!=NULL)
+      free(log_params.log_header);
+  
+  // End
+  return(ExitCode);
+
 }
 
 /******************************************************
