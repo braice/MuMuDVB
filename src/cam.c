@@ -188,7 +188,7 @@ struct en50221_stdcam_llci {
 /** @brief Reset the CAM */
 void cam_reset_cam(cam_parameters_t *cam_params)
 {
-  log_message( log_module,  MSG_FLOOD,"CAM Reset\n");
+  log_message( log_module,  MSG_DEBUG,"CAM Reset\n");
   struct en50221_stdcam *stdcam=cam_params->stdcam;
   struct en50221_stdcam_llci *llci = (struct en50221_stdcam_llci *) stdcam;
   ioctl(llci->cafd, CA_RESET, (1 << llci->slotnum));
@@ -252,12 +252,12 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id)
 {
 
   // CAM Log
-  log_message( log_module,  MSG_FLOOD,"CAM Initialization\n");
-  log_message( log_module,  MSG_FLOOD,"CONF cam_reask_interval=%d\n",cam_params->cam_reask_interval);
-  log_message( log_module,  MSG_FLOOD,"CONF cam_reset_interval=%d\n",cam_params->reset_interval);
-  log_message( log_module,  MSG_FLOOD,"CONF cam_number=%d\n",cam_params->cam_number);
-  log_message( log_module,  MSG_FLOOD,"CONF cam_delay_pmt_send=%d\n",cam_params->cam_delay_pmt_send);
-  log_message( log_module,  MSG_FLOOD,"CONF cam_interval_pmt_send=%d\n",cam_params->cam_interval_pmt_send);
+  log_message( log_module,  MSG_DEBUG,"CAM Initialization\n");
+  log_message( log_module,  MSG_DEBUG,"CONF cam_reask_interval=%d\n",cam_params->cam_reask_interval);
+  log_message( log_module,  MSG_DEBUG,"CONF cam_reset_interval=%d\n",cam_params->reset_interval);
+  log_message( log_module,  MSG_DEBUG,"CONF cam_number=%d\n",cam_params->cam_number);
+  log_message( log_module,  MSG_DEBUG,"CONF cam_delay_pmt_send=%d\n",cam_params->cam_delay_pmt_send);
+  log_message( log_module,  MSG_DEBUG,"CONF cam_interval_pmt_send=%d\n",cam_params->cam_interval_pmt_send);
 
   // create transport layer - 1 Slot and 16 sessions maximum
   cam_params->tl = en50221_tl_create(1, 16);
@@ -336,7 +336,7 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id)
 void cam_stop(cam_parameters_t *cam_params)
 {
 
-  log_message( log_module,  MSG_FLOOD,  "CAM Stopping\n");
+  log_message( log_module,  MSG_DEBUG,  "CAM Stopping\n");
   if (cam_params->stdcam == NULL)
     return;
 
@@ -377,7 +377,7 @@ static void *camthread_func(void* arg)
   now = 0;
   last_channel_check=0;
 
-  log_message( log_module,  MSG_FLOOD,"CAM Thread started\n");
+  log_message( log_module,  MSG_DEBUG,"CAM Thread started\n");
 
   // Variables for detecting changes of status and error
   int status_old=0;
@@ -520,14 +520,14 @@ static void *camthread_func(void* arg)
       if(i==MAX_WAIT_AFTER_RESET)
         log_message( log_module,  MSG_INFO, "The CAM isn't in a good state after reset, it will probably don't work :(\n");
       else
-        log_message( log_module,  MSG_FLOOD, "state correct after reset\n");
+        log_message( log_module,  MSG_DEBUG, "state correct after reset\n");
       cam_params->need_reset=0;
       cam_params->reset_counts++;
     }
 
   }
 
-  log_message( log_module,  MSG_FLOOD,"CAM Thread stopped\n");
+  log_message( log_module,  MSG_DEBUG,"CAM Thread stopped\n");
 
   return 0;
 }
@@ -630,7 +630,7 @@ static int mumudvb_cam_ai_callback(void *arg, uint8_t slot_id, uint16_t session_
   (void) session_number;
 
   // Write information to log
-  log_message( log_module,  MSG_FLOOD, "CAM Application_Info_Callback\n");
+  log_message( log_module,  MSG_DEBUG, "CAM Application_Info_Callback\n");
   log_message( log_module,  MSG_INFO, "CAM Application type: %02x\n", application_type);
   log_message( log_module,  MSG_INFO, "CAM Application manufacturer: %04x\n", application_manufacturer);
   log_message( log_module,  MSG_INFO, "CAM Manufacturer code: %04x\n", manufacturer_code);
@@ -666,7 +666,7 @@ static int mumudvb_cam_ca_info_callback(void *arg, uint8_t slot_id, uint16_t ses
   struct timeval tv;
 
   // Write information to log
-  log_message( log_module,  MSG_FLOOD,"CA_Info_Callback: %d CA systems supported\n",ca_id_count);
+  log_message( log_module,  MSG_DEBUG,"CA_Info_Callback: %d CA systems supported\n",ca_id_count);
   log_message( log_module,  MSG_DETAIL, "CAM supports the following ca system ids:\n");
   uint32_t i;
   for(i=0; i< ca_id_count; i++) {

@@ -79,7 +79,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 	{
 	  // -- PES/PS
 	  //tspid->id   = buf[j+3];
-	  log_message( log_module,  MSG_DEBUG, "#PES/PS ----- We ignore \n");
+	  log_message( log_module,  MSG_FLOOD, "#PES/PS ----- We ignore \n");
 	  ok=0;
 	}
       else
@@ -216,7 +216,7 @@ unsigned char *get_ts_begin(unsigned char *buf)
         {
           // -- PES/PS
           //tspid->id   = buf[j+3];
-          log_message( log_module,  MSG_DEBUG, "#PES/PS ----- We ignore \n");
+          log_message( log_module,  MSG_FLOOD, "#PES/PS ----- We ignore \n");
           ok=0;
         }
       else

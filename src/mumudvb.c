@@ -1716,13 +1716,13 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
 
   if(signalpowerthread)
   {
-    log_message(log_module,MSG_FLOOD,"Signal/power Thread closing\n");
+    log_message(log_module,MSG_DEBUG,"Signal/power Thread closing\n");
     *strengththreadshutdown=1;
     pthread_join(signalpowerthread, NULL);
   }
   if(cardthreadparams.thread_running)
   {
-    log_message(log_module,MSG_FLOOD,"Card reading Thread closing\n");
+    log_message(log_module,MSG_DEBUG,"Card reading Thread closing\n");
     cardthreadparams.threadshutdown=1;
     pthread_mutex_destroy(&cardthreadparams.carddatamutex);
     pthread_cond_destroy(&cardthreadparams.threadcond);
@@ -1730,7 +1730,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
   //We shutdown the monitoring thread
   if(monitorthread)
   {
-    log_message(log_module,MSG_FLOOD,"Monitor Thread closing\n");
+    log_message(log_module,MSG_DEBUG,"Monitor Thread closing\n");
     monitor_thread_params->threadshutdown=1;
     pthread_join(monitorthread, NULL);
   }
