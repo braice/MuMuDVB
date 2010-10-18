@@ -133,6 +133,8 @@ typedef struct tuning_parameters_t{
   int strengththreadshutdown;
   /**The frontend type*/
   fe_type_t fe_type;
+  /** The frontend name */
+  char fe_name[256];
 #if DVB_API_VERSION >= 5
   /** DVB API version 5*/
   /**Delivery system : DVB-S DVB-T etc ...*/

@@ -99,6 +99,7 @@ typedef struct cam_parameters_t{
   int cam_interval_pmt_send;
   long cam_pmt_send_time;
   char filename_cam_info[256];
+  char cam_menu_string[256];
 }cam_parameters_t;
 
 /*****************************************************************************

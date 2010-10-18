@@ -333,6 +333,7 @@ int
     .cam_delay_pmt_send=0,
     .cam_interval_pmt_send=3,
     .cam_pmt_send_time=0,
+	.cam_menu_string="Not retrieved",
   };
   #endif
 
@@ -1431,7 +1432,11 @@ int
       pthread_mutex_unlock(&cardthreadparams.carddatamutex);
       if(cardthreadparams.unicast_data)
       {
-	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels);
+#ifdef ENABLE_CAM_SUPPORT
+	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &tuneparams, &autoconf_vars, &cam_vars);
+#else
+	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &tuneparams, &autoconf_vars, NULL);
+#endif
 	if(iRet)
 	{
 	  Interrupted=iRet;
@@ -1457,7 +1462,11 @@ int
       /**************************************************************/ 
       if((!(fds.pfds[0].revents&POLLIN)) && (!(fds.pfds[0].revents&POLLPRI))) //Priority to the DVB packets so if there is dvb packets and something else, we look first to dvb packets
       {
-	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels);
+#ifdef ENABLE_CAM_SUPPORT
+	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &tuneparams, &autoconf_vars, &cam_vars);
+#else
+	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &tuneparams, &autoconf_vars, NULL );
+#endif
 	if(iRet)
 	  Interrupted=iRet;
 	//no DVB packet, we continue

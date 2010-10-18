@@ -636,6 +636,9 @@ static int mumudvb_cam_ai_callback(void *arg, uint8_t slot_id, uint16_t session_
   log_message( log_module,  MSG_INFO, "CAM Manufacturer code: %04x\n", manufacturer_code);
   log_message( log_module,  MSG_INFO, "CAM Menu string: %.*s\n", menu_string_length, menu_string);
 
+  // Store the CAM menu string for easy identification
+  snprintf(cam_params->cam_menu_string, 256, "%.*s", menu_string_length, menu_string);
+  
   // Try to append the information to the cam_info log file
   FILE *file_cam_info;
   file_cam_info = fopen (cam_params->filename_cam_info, "a");

@@ -783,6 +783,9 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
 
   log_message( log_module,  MSG_INFO, "Using DVB card \"%s\"\n",fe_info.name);
 
+  // Save the frontend name for easy identification
+  snprintf(tuneparams->fe_name, 256, "%s", fe_info.name);
+  
   tuneparams->fe_type=fe_info.type;
   feparams.inversion=INVERSION_AUTO;
 
