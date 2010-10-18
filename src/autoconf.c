@@ -136,12 +136,14 @@ int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, c
       autoconf_vars->autoconfiguration = AUTOCONF_MODE_FULL;
     else if (!strcmp (substring, "partial"))
       autoconf_vars->autoconfiguration = AUTOCONF_MODE_PIDS;
+    else if (!strcmp (substring, "none"))
+      autoconf_vars->autoconfiguration = AUTOCONF_MODE_NONE;
 
-    if(!((autoconf_vars->autoconfiguration==AUTOCONF_MODE_PIDS)||(autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL)))
+    if(!((autoconf_vars->autoconfiguration==AUTOCONF_MODE_PIDS)||(autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL)||(autoconf_vars->autoconfiguration==AUTOCONF_MODE_NONE)))
     {
       log_message( log_module,  MSG_WARN,
                    "Bad value for autoconfiguration, autoconfiguration will not be run\n");
-      autoconf_vars->autoconfiguration=0;
+      autoconf_vars->autoconfiguration=AUTOCONF_MODE_NONE;
     }
   }
   else if (!strcmp (substring, "autoconf_radios"))

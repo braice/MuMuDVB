@@ -34,6 +34,8 @@
 #include "ts.h"
 #include "tune.h"
 
+/**No autoconfiguration, only send specified PIDs */
+#define AUTOCONF_MODE_NONE 0
 /**find the audio and video pids from the PMT*/
 #define AUTOCONF_MODE_PIDS 1
 /**find the pmt pids and the channels from the pat, and go to AUTOCONF_MODE_PIDS*/
