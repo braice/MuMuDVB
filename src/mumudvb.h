@@ -333,6 +333,8 @@ typedef struct mumudvb_chan_and_pids_t{
   int number_of_channels;
   /** Do we send scrambled packets ? */
   int dont_send_scrambled;
+  /** Do we send packets with error bit set by decoder ? */
+  int filter_transport_error;
   /** The channels array */
   mumudvb_channel_t channels[MAX_CHANNELS];  /**@todo use realloc*/
 //Asked pids //used for filtering

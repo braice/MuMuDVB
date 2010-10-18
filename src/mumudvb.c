@@ -156,6 +156,7 @@ card_thread_parameters_t cardthreadparams;
 mumudvb_chan_and_pids_t chan_and_pids={
   .number_of_channels=0,
   .dont_send_scrambled=0,
+  .filter_transport_error=0,
 };
 
 
@@ -616,6 +617,11 @@ int
     {
       substring = strtok (NULL, delimiteurs);
       chan_and_pids.dont_send_scrambled = atoi (substring);
+    }
+    else if (!strcmp (substring, "filter_transport_error"))
+    {
+      substring = strtok (NULL, delimiteurs);
+      chan_and_pids.filter_transport_error = atoi (substring);
     }
     else if (!strcmp (substring, "dvr_buffer_size"))
     {
@@ -1458,7 +1464,16 @@ int
 	card_buffer.read_buff_pos+=TS_PACKET_SIZE)//we loop on the subpackets
     {
       actual_ts_packet=card_buffer.reading_buffer+card_buffer.read_buff_pos;
+	  
+      // Test if the error bit is set in the TS packet received
+      if ((actual_ts_packet[1] & 0x80) == 0x80)
+      {
+            log_message( log_module, MSG_FLOOD,"Error bit set in TS packet!\n");
+            // Test if we discard the packets with error bit set
+            if (chan_and_pids.filter_transport_error>0) continue;
+      }
 
+	  // Get the PID of the received TS packet
       pid = ((actual_ts_packet[1] & 0x1f) << 8) | (actual_ts_packet[2]);
 
       //Software filtering in case the card doesn't have hardware filtering
