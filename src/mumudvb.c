@@ -1088,6 +1088,7 @@ int
     .stats_infos=&stats_infos,
     .server_id=server_id,
     .filename_channels_not_streamed=filename_channels_not_streamed,
+    .filename_channels_diff=filename_channels_diff,
   };
 
   pthread_create(&(monitorthread), NULL, monitor_func, &monitor_thread_params);
