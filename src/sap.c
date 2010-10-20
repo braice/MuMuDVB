@@ -430,6 +430,9 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
 void sap_poll(sap_parameters_t *sap_vars,int number_of_channels,mumudvb_channel_t  *channels, multicast_parameters_t multicast_vars, long now)
 {
   int curr_channel;
+  //we check if SAP is initialised
+  if(sap_vars->sap_messages==NULL)
+    return;
   if(sap_vars->sap == OPTION_ON)
   {
     if(!sap_vars->sap_last_time_sent)
