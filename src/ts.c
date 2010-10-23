@@ -202,10 +202,10 @@ unsigned char *get_ts_begin(unsigned char *buf)
   //Sometimes there is some more data in the header, the adaptation field say it
   if (header->adaptation_field_control & 0x2)
     {
-      log_message( log_module,  MSG_DEBUG, "Read TS : Adaptation field \n");
+      log_message( log_module,  MSG_DEBUG, "Read TS : Adaptation field, len %d \n",buf[delta]);
       delta += buf[delta] ;        // add adapt.field.len
     }
-  else if (header->adaptation_field_control & 0x1)
+  if (header->adaptation_field_control & 0x1) //There is a payload
     {
       if (buf[delta]==0x00 && buf[delta+1]==0x00 && buf[delta+2]==0x01)
         {
@@ -221,6 +221,12 @@ unsigned char *get_ts_begin(unsigned char *buf)
   if (header->adaptation_field_control == 3)
     {
       log_message( log_module,  MSG_DEBUG, "adaptation_field_control 3\n");
+      ok=0;
+    }
+
+  if ((header->adaptation_field_control == 2)||(header->adaptation_field_control == 0))
+    {
+      log_message( log_module,  MSG_DEBUG, "adaptation_field_control %d ie no payload\n", header->adaptation_field_control);
       ok=0;
     }
 
