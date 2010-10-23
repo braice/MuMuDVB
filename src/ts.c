@@ -226,7 +226,6 @@ unsigned char *get_ts_begin(unsigned char *buf)
   if (header->adaptation_field_control == 3)
     {
       log_message( log_module,  MSG_DEBUG, "adaptation_field_control 3\n");
-      ok=0;
     }
 
   if ((header->adaptation_field_control == 2)||(header->adaptation_field_control == 0))
