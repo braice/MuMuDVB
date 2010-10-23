@@ -203,6 +203,11 @@ unsigned char *get_ts_begin(unsigned char *buf)
   if (header->adaptation_field_control & 0x2)
     {
       log_message( log_module,  MSG_DEBUG, "Read TS : Adaptation field, len %d \n",buf[delta]);
+      if((188-delta-buf[delta])<0)
+      {
+        log_message(log_module, MSG_DETAIL, "Adaptation field too big 0x%02x, packet dropped\n",buf[delta]);
+        return NULL;
+      }
       delta += buf[delta] ;        // add adapt.field.len
     }
   if (header->adaptation_field_control & 0x1) //There is a payload
