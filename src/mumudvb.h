@@ -355,7 +355,7 @@ typedef struct monitor_parameters_t{
   struct stats_infos_t *stats_infos;
   int server_id;
   char *filename_channels_not_streamed;
-  char *filename_channels_diff;
+  char *filename_channels_streamed;
 }monitor_parameters_t;
 
 

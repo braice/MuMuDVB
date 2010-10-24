@@ -224,7 +224,7 @@ extern log_params_t log_params;
 static void SignalHandler (int signum);//below
 int read_multicast_configuration(multicast_parameters_t *, mumudvb_channel_t *, int, int *, char *); //in multicast.c
 void *monitor_func(void* arg);
-int mumudvb_close(monitor_parameters_t* monitor_thread_params, unicast_parameters_t* unicast_vars, int* strengththreadshutdown, cam_parameters_t* cam_vars, char* filename_channels_not_streamed,char *filename_channels_diff, char *filename_pid, int Interrupted);
+int mumudvb_close(monitor_parameters_t* monitor_thread_params, unicast_parameters_t* unicast_vars, int* strengththreadshutdown, cam_parameters_t* cam_vars, char* filename_channels_not_streamed,char *filename_channels_streamed, char *filename_pid, int Interrupted);
 
 int
     main (int argc, char **argv)
@@ -335,7 +335,7 @@ int
   #endif
 
   char filename_channels_not_streamed[DEFAULT_PATH_LEN];
-  char filename_channels_diff[DEFAULT_PATH_LEN];
+  char filename_channels_streamed[DEFAULT_PATH_LEN];
   char filename_pid[DEFAULT_PATH_LEN]=PIDFILE_PATH;
   char filename_gen_conf[DEFAULT_PATH_LEN];
 
@@ -935,19 +935,19 @@ int
 
 
   // we clear them by paranoia
-  sprintf (filename_channels_diff, STREAMED_LIST_PATH,
+  sprintf (filename_channels_streamed, STREAMED_LIST_PATH,
            tuneparams.card, tuneparams.tuner);
   sprintf (filename_channels_not_streamed, NOT_STREAMED_LIST_PATH,
            tuneparams.card, tuneparams.tuner);
   sprintf (cam_vars.filename_cam_info, CAM_INFO_LIST_PATH,
            tuneparams.card, tuneparams.tuner);
-  channels_diff = fopen (filename_channels_diff, "w");
+  channels_diff = fopen (filename_channels_streamed, "w");
   if (channels_diff == NULL)
   {
     write_streamed_channels=0;
     log_message( log_module,  MSG_WARN,
                  "Can't create %s: %s\n",
-                 filename_channels_diff, strerror (errno));
+                 filename_channels_streamed, strerror (errno));
   }
   else
     fclose (channels_diff);
@@ -1087,7 +1087,7 @@ int
     .stats_infos=&stats_infos,
     .server_id=server_id,
     .filename_channels_not_streamed=filename_channels_not_streamed,
-    .filename_channels_diff=filename_channels_diff,
+    .filename_channels_streamed=filename_channels_streamed,
   };
 
   pthread_create(&(monitorthread), NULL, monitor_func, &monitor_thread_params);
@@ -1691,7 +1691,7 @@ int
                  "We have got %d overflow errors\n",card_buffer.overflow_number );
 mumudvb_close_goto:
   //If the thread is not started, we don't send the unexisting address of monitor_thread_params
-  return mumudvb_close(monitorthread == 0 ? NULL:&monitor_thread_params , &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, filename_channels_not_streamed, filename_channels_diff, filename_pid, Interrupted);
+  return mumudvb_close(monitorthread == 0 ? NULL:&monitor_thread_params , &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, filename_channels_not_streamed, filename_channels_streamed, filename_pid, Interrupted);
 
 }
 
@@ -1699,7 +1699,7 @@ mumudvb_close_goto:
  *
  *
  */
-int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, cam_parameters_t *cam_vars, char *filename_channels_not_streamed, char *filename_channels_diff, char *filename_pid, int Interrupted)
+int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, cam_parameters_t *cam_vars, char *filename_channels_not_streamed, char *filename_channels_streamed, char *filename_pid, int Interrupted)
 {
 
   int curr_channel;
@@ -1795,11 +1795,11 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
   if(rewrite_vars.full_sdt)
     free(rewrite_vars.full_sdt);
 
-  if (strlen(filename_channels_diff) && (write_streamed_channels)&&remove (filename_channels_diff)) 
+  if (strlen(filename_channels_streamed) && (write_streamed_channels)&&remove (filename_channels_streamed))
   {
     log_message( log_module,  MSG_WARN,
                  "%s: %s\n",
-                 filename_channels_diff, strerror (errno));
+                 filename_channels_streamed, strerror (errno));
     exit(ERROR_DEL_FILE);
   }
 
@@ -2163,7 +2163,7 @@ void *monitor_func(void* arg)
     /* the streamed channels                   */
     /*******************************************/
     if (write_streamed_channels)
-      gen_file_streamed_channels(params->filename_channels_diff, params->filename_channels_not_streamed, params->chan_and_pids->number_of_channels, params->chan_and_pids->channels);
+      gen_file_streamed_channels(params->filename_channels_streamed, params->filename_channels_not_streamed, params->chan_and_pids->number_of_channels, params->chan_and_pids->channels);
 
 
     }
