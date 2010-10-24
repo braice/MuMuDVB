@@ -67,8 +67,6 @@
 /**Default Maximum Number of TS packets in the thread buffer*/
 #define DEFAULT_THREAD_BUFFER_SIZE 5000
 
-/** How often (in seconds) to update the "now" variable*/
-#define ALARM_TIME 2
 #define ALARM_TIME_TIMEOUT 60
 #define ALARM_TIME_TIMEOUT_NO_DIFF 600
 

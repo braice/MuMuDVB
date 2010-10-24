@@ -1066,7 +1066,6 @@ int
   real_start_time = tv.tv_sec;
   now = 0;
 
-  alarm (ALARM_TIME);
 
   if(stats_infos.show_traffic)
     log_message( log_module, MSG_INFO,"The traffic will be shown every %d second%c\n",stats_infos.show_traffic_interval, stats_infos.show_traffic_interval > 1? 's':' ');
@@ -1861,16 +1860,12 @@ static void SignalHandler (int signum)
 {
   if (signum == SIGALRM && !Interrupted)
   {
-    struct timeval tv;
-    gettimeofday (&tv, (struct timezone *) NULL);
-    now = tv.tv_sec - real_start_time;
     if (card_tuned && !*card_tuned)
     {
       log_message( log_module,  MSG_INFO,
                    "Card not tuned after timeout - exiting\n");
       exit(ERROR_TUNE);
     }
-    alarm (ALARM_TIME);
   }
   else if (signum == SIGUSR1)
   {
