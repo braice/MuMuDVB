@@ -1046,7 +1046,7 @@ int
     Interrupted=ERROR_TUNE<<8;
     goto mumudvb_close_goto;
   }
-  log_message( log_module,  MSG_INFO, "Card %d tuned\n", tuneparams.card);
+  log_message( log_module,  MSG_INFO, "Card %d, tuner %d tuned\n", tuneparams.card, tuneparams.tuner);
   tuneparams.card_tuned = 1;
 
   //Thread for showing the strength

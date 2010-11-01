@@ -781,7 +781,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
 
   /** @todo here check the capabilities of the card*/
 
-  log_message( log_module,  MSG_INFO, "Using DVB card \"%s\"\n",fe_info.name);
+  log_message( log_module,  MSG_INFO, "Using DVB card \"%s\" tuner %d\n",fe_info.name, tuneparams->tuner);
 
   // Save the frontend name for easy identification
   snprintf(tuneparams->fe_name, 256, "%s", fe_info.name);
