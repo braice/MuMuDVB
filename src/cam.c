@@ -1056,8 +1056,8 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
   cam_params->mmi_enq_blind = blind_answer;
   // The expected length of the answer (number of characters)
   cam_params->mmi_enq_length = expected_answer_length;
-  // Limit the answer to 10 characters (enough for PIN code)
-  if (cam_params->mmi_enq_length>10) cam_params->mmi_enq_length=10;
+  // Limit the answer to MAX_ENQUIRY_ANSWER_LENGTH characters (enough for PIN code and changing maturity, for the most common usages)
+  if (cam_params->mmi_enq_length>MAX_ENQUIRY_ANSWER_LENGTH) cam_params->mmi_enq_length=MAX_ENQUIRY_ANSWER_LENGTH;
   // The actual number of typed characters
   cam_params->mmi_enq_entered = 0;
   
