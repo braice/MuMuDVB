@@ -172,6 +172,8 @@ Various parameters
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |dont_send_scrambled | If set to 1 don't send the packets detected as scrambled. this will also remove indirectly the sap announces for the scrambled channels |0 | |
+|filter_transport_error | If set to 1 don't send the packets tagged with errors by the demodulator. |0 | |
+|psi_tables_filtering | If set to 'pat', TS packets with PID from 0x01 to 0x1F are discarded. If set to 'pat_cat', TS packets with PID from 0x02 to 0x1F are discarded. | 'none' | Option to keep only mandatory PSI PID | 
 |show_traffic_interval | the interval in second between two displays of the traffic | 10 | >2 | 
 |compute_traffic_interval | the interval in second between two computations of the traffic | 10 | >2 | 
 |rtp_header | Send the stream with the rtp headers (execpt for HTTP unicast) | 0 | 0 or 1 | 

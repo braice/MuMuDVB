@@ -64,6 +64,7 @@ Features overview
 - Support for HTTP unicast see <<unicast,http unicast>> section
 - Support for RTP headers (only for multicast)
 - Ability to transcode the stream (only for multicast for the moment) see the <<transcoding,Transcoding>> section
+- CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.txt and CAM_menu_interface.png for screenshot)
 
 Detailled feature list
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -94,7 +95,7 @@ Detailled feature list
 - Data reading can be done using a thread, see <<threaded_read, thread reading>> section.
 - Playlist generation, see <<playlist, playlist>>
 - Templates support
-
+- Simple webservice exposing detailed streaming status (see WEBSERVICES.txt)
 
 Installation
 ------------
