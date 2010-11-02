@@ -173,8 +173,8 @@ typedef struct unicast_parameters_t{
   int queue_max_size;
   /** The socket SO_SNDBUF size*/
   int socket_sendbuf_size;
-  /** Debug : do we drop packets when we get eagain errors ? */
-  int drop_on_eagain;
+  /** Debug : do we flush the queue when we get eagain errors ? */
+  int flush_on_eagain;
 }unicast_parameters_t;
 
 int unicast_create_listening_socket(int socket_type, int socket_channel, char *ipOut, int port, struct sockaddr_in *sIn, int *socketIn, fds_t *fds, unicast_parameters_t *unicast_vars);
