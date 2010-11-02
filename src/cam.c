@@ -426,7 +426,7 @@ static void *camthread_func(void* arg)
           // Check if reasking (ie sending a CAM PMT UPDATE) is needed. IE channel hyghly scrambled and asked a while ago
           if((chan_and_pids.channels[curr_channel].scrambled_channel == HIGHLY_SCRAMBLED)&&
             (chan_and_pids.channels[curr_channel].need_cam_ask==CAM_ASKED)&&
-            ((chan_and_pids.channels[curr_channel].cam_asking_time-tv.tv_sec)>cam_params->cam_reask_interval))
+            ((tv.tv_sec-chan_and_pids.channels[curr_channel].cam_asking_time)>cam_params->cam_reask_interval))
           {
             chan_and_pids.channels[curr_channel].need_cam_ask=CAM_NEED_UPDATE; //No race condition because need_cam_ask is not changed when it is at the value CAM_ASKED
             log_message( log_module,  MSG_DETAIL,
