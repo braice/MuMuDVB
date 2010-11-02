@@ -1971,6 +1971,7 @@ void *monitor_func(void* arg)
 
   gettimeofday (&tv, (struct timezone *) NULL);
   monitor_start = tv.tv_sec + tv.tv_usec/1000000;
+  monitor_now = monitor_start;
 
   while(!params->threadshutdown)
   {
