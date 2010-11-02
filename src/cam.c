@@ -786,7 +786,7 @@ static int mumudvb_cam_app_ca_pmt_reply_callback(void *arg,
  * MMI
  *******************************/
 
-// List object - Object type 1
+// List object - DISPLAY_TYPE_LIST
 static int mumudvb_cam_mmi_list_callback(void *arg, uint8_t slot_id, uint16_t session_number,
                                    struct en50221_app_mmi_text *title,
                                    struct en50221_app_mmi_text *sub_title,
@@ -799,10 +799,10 @@ static int mumudvb_cam_mmi_list_callback(void *arg, uint8_t slot_id, uint16_t se
                                    sub_title,
                                    bottom,
                                    item_count, items,
-                                   item_raw_length, items_raw, 1));
+                                   item_raw_length, items_raw, DISPLAY_TYPE_LIST));
 }
 
-// Menu object - Object type 2
+// Menu object - DISPLAY_TYPE_MENU
 static int mumudvb_cam_mmi_menu_callback(void *arg, uint8_t slot_id, uint16_t session_number,
                                    struct en50221_app_mmi_text *title,
                                    struct en50221_app_mmi_text *sub_title,
@@ -815,7 +815,7 @@ static int mumudvb_cam_mmi_menu_callback(void *arg, uint8_t slot_id, uint16_t se
                                    sub_title,
                                    bottom,
                                    item_count, items,
-                                   item_raw_length, items_raw, 2));
+                                   item_raw_length, items_raw, DISPLAY_TYPE_MENU));
 }
 
 // Menu or List objects
@@ -855,17 +855,17 @@ static int mumudvb_cam_mmi_menu_list_callback(void *arg, uint8_t slot_id, uint16
   // Add line to CAM menu storage - CAM Object type : LIST or MENU
   if (cam_params->cam_menulist_lines<MAX_STORED_MENU_LINES)
   {
-    if (object_type==1)
+    if (object_type==DISPLAY_TYPE_LIST)
       snprintf(cam_params->cam_menulist[cam_params->cam_menulist_lines],256,"\t<object><![CDATA[LIST]]></object>\n");
-	if (object_type==2)
+	if (object_type==DISPLAY_TYPE_MENU)
       snprintf(cam_params->cam_menulist[cam_params->cam_menulist_lines],256,"\t<object><![CDATA[MENU]]></object>\n");
 	cam_params->cam_menulist_lines++;
   }
   
   // Showing beginning of CAM menu
-  if (object_type==1)
+  if (object_type==DISPLAY_TYPE_LIST)
     log_message( log_module,  MSG_INFO, "------------------ NEW CAM LIST ------------------\n");
-  if (object_type==2)
+  if (object_type==DISPLAY_TYPE_MENU)
     log_message( log_module,  MSG_INFO, "------------------ NEW CAM MENU ------------------\n");
 
   // Title

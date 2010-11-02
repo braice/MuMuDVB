@@ -65,6 +65,8 @@ int convert_desc(struct ca_info *cai, uint8_t *out, uint8_t *buf, int dslen, uin
 int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt, uint8_t list, uint8_t cmd,int quiet);
 
 #define MAX_STORED_MENU_LINES 30
+#define DISPLAY_TYPE_LIST 1
+#define DISPLAY_TYPE_MENU 2
 
 /** @brief the parameters for the cam
  * This structure contain the parameters needed for the CAM
