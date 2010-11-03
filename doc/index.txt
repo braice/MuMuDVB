@@ -14,3 +14,5 @@ link:README_CONF-fr.html[README concernant le fichier de configuration, version 
 
 link:TRANSCODE.html[Information concerning the transcoding, english]
 
+link:WEBSERVICES.html[Information concerning the WEB services, english]
+
