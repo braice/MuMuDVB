@@ -177,7 +177,7 @@ Various parameters
 |show_traffic_interval | the interval in second between two displays of the traffic | 10 | >2 | 
 |compute_traffic_interval | the interval in second between two computations of the traffic | 10 | >2 | 
 |rtp_header | Send the stream with the rtp headers (execpt for HTTP unicast) | 0 | 0 or 1 | 
-|dvr_buffer_size | The size of the "DVR buffer" in packets | 1 | >=1 | see README 
+|dvr_buffer_size | The size of the "DVR buffer" in packets | 20 | >=1 | see README 
 |dvr_thread | Are the packets retrieved from the card in a thread | 0 | 0 or 1 | Experimental, see README 
 |dvr_thread_buffer_size | The size of the "DVR thread buffer" in packets | 5000 | >=1 | see README 
 |rewrite_pat | Do we rewrite the PAT PID | 0 | 0 or 1 | See README 

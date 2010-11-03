@@ -62,7 +62,7 @@
 #define TS_PACKET_SIZE 188
 
 /**Default Maximum Number of TS packets in the TS buffer*/
-#define DEFAULT_TS_BUFFER_SIZE 1
+#define DEFAULT_TS_BUFFER_SIZE 20
 
 /**Default Maximum Number of TS packets in the thread buffer*/
 #define DEFAULT_THREAD_BUFFER_SIZE 5000

@@ -178,7 +178,7 @@ Paramètres divers
 |show_traffic_interval | Le temps en secondes entre deux affichages du trafic | 10 | >2 | 
 |compute_traffic_interval | Le temps en secondes entre deux calculs du trafic | 10 | >2 | 
 |rtp_header | Envoie les en-têtes RTP avec le flux (excepté pour l'unicast HTTP) | 0 | 0 ou 1 | 
-|dvr_buffer_size | La taille du  "tampon DVR" en paquets de 188 octets | 1 | >=1 | Se référer au README 
+|dvr_buffer_size | La taille du  "tampon DVR" en paquets de 188 octets | 20 | >=1 | Se référer au README 
 |dvr_thread | Est ce que les packets sont reçus par un thread ? | 0 | 0 ou 1 | Fonctionnalité "expérimentale", se référer au README 
 |dvr_thread_buffer_size | La taille du tampon pour le thread en packets de 188 octets | 5000 | >=1 | se référer au README 
 |rewrite_pat | Est ce que MuMuDVB doit réécrire le PID PAT | 0 | 0 ou 1 | cf README 
