@@ -2,6 +2,10 @@
 AM_CFLAGS = -Wall -Wextra
 AM_LDFLAGS =
 
+
+check_PROGRAMS = mumudvb_test
+mumudvb_test_SOURCES = mumudvb_test.c mumudvb.h ts.c ts.h log.c log.h crc32.c mumudvb_common.c
+
 bin_PROGRAMS = mumudvb
 mumudvb_SOURCES = autoconf.c crc32.c dvb.h log.c log.h multicast.c mumudvb.h network.h rewrite.h \
 		  rtp.h sap.h ts.h tune.h unicast_http.h autoconf.h dvb.c errors.h \
