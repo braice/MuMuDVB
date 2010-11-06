@@ -50,7 +50,6 @@ mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,
 int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_len, int *pos);
 void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len);
 void autoconf_free_services(mumudvb_service_t *services);
-int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services);
 int autoconf_read_psip(autoconf_parameters_t *parameters);
 
 
