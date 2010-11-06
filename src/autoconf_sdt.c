@@ -114,7 +114,7 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
   //0x46 service_description_section - other_transport_stream 
   if((header->table_id==0x42)||(header->table_id==0x46))
   {
-    log_message( log_module, MSG_DEBUG, "-- SDT : Service Description Table --\n");
+    log_message( log_module, MSG_DEBUG, "-- SDT : Service Description Table (id 0x%02x)--\n",header->table_id);
     //Loop over different services in the SDT
     delta=SDT_LEN;
     while((len-delta)>=(4+SDT_DESCR_LEN))
@@ -151,6 +151,8 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
     delta+=HILO(descr_header->descriptors_loop_length)+SDT_DESCR_LEN;
     }
   }
+  else
+    log_message( log_module, MSG_FLOOD, "-- SDT : bad table id 0x%02x--\n",header->table_id);
   return 0;
 }
 
