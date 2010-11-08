@@ -449,9 +449,6 @@ mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int
   mumudvb_service_t *actual_service;
 
   actual_service=services;
-  //If the service list is empty, we return the first one
-  if(actual_service->id == 0 && service_id != 0)
-    return actual_service;
 
   if(actual_service->id==service_id)
     found=1;
