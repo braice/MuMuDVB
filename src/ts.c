@@ -128,14 +128,14 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
     {
       if(ts_packet->empty)
 	{
-	  //log_message( log_module,  MSG_DEBUG," TS parse : Kind of Continuity ERROR packet empty and payload start\n");
+	  log_message( log_module,  MSG_FLOOD," TS parse : Kind of Continuity ERROR packet empty and payload start\n");
           pthread_mutex_unlock(&ts_packet->packetmutex);
           return 0;
 	}
       // -- pid change in stream? (without packet start). This is not supported
       if (ts_packet->pid != pid)
 	{
-	  log_message( log_module,  MSG_DEBUG,"error : PID change\n");
+	  log_message( log_module,  MSG_DEBUG,"parsing : PID change\n");
 	  ts_packet->empty=1;
 	}
       // -- discontinuity error in packet ?
@@ -147,7 +147,8 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 	}
       if  ((ts_packet->continuity_counter+1)%16 != header->continuity_counter) 
 	{
-	  log_message( log_module,  MSG_DETAIL,"Continuity ERROR : ts_packet->continuity_counter %d header->continuity_counter %d\n",ts_packet->continuity_counter,header->continuity_counter);
+	  log_message( log_module,  MSG_DETAIL,"Continuity ERROR : ts_packet->continuity_counter %d header->continuity_counter %d\n",
+		       ts_packet->continuity_counter,header->continuity_counter);
 	  ts_packet->empty=1;
           pthread_mutex_unlock(&ts_packet->packetmutex);
 	  return 0;
