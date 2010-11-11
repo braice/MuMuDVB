@@ -168,22 +168,43 @@ Other global parameters
 
 Various parameters
 ~~~~~~~~~~~~~~~~~~
+
+[width="80%",cols="2,8,1,2,3",options="header"]
+|==================================================================================================================
+|Parameter name |Description | Default value | Possible values | Comments
+|show_traffic_interval | the interval in second between two displays of the traffic | 10 |  | 
+|compute_traffic_interval | the interval in second between two computations of the traffic | 10 |  | 
+|dvr_buffer_size | The size of the "DVR buffer" in packets | 20 | >=1 | see README 
+|dvr_thread | Are the packets retrieved from the card in a thread | 0 | 0 or 1 | Experimental, see README 
+|dvr_thread_buffer_size | The size of the "DVR thread buffer" in packets | 5000 | >=1 | see README 
+|server_id | The server number for the `%server` template | 0 | | Useful only if you use the %server template
+|filename_pid | Specify where MuMuDVB will write it's PID (Processus IDentifier) | /var/run/mumudvb/mumudvb_adapter%card_tuner%tuner.pid | | the templates %card %tuner and %server are allowed
+|==================================================================================================================
+
+Packets sending parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 [width="80%",cols="2,8,1,2,3",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |dont_send_scrambled | If set to 1 don't send the packets detected as scrambled. this will also remove indirectly the sap announces for the scrambled channels |0 | |
 |filter_transport_error | If set to 1 don't send the packets tagged with errors by the demodulator. |0 | |
 |psi_tables_filtering | If set to 'pat', TS packets with PID from 0x01 to 0x1F are discarded. If set to 'pat_cat', TS packets with PID from 0x02 to 0x1F are discarded. | 'none' | Option to keep only mandatory PSI PID | 
-|show_traffic_interval | the interval in second between two displays of the traffic | 10 | >2 | 
-|compute_traffic_interval | the interval in second between two computations of the traffic | 10 | >2 | 
-|rtp_header | Send the stream with the rtp headers (execpt for HTTP unicast) | 0 | 0 or 1 | 
-|dvr_buffer_size | The size of the "DVR buffer" in packets | 20 | >=1 | see README 
-|dvr_thread | Are the packets retrieved from the card in a thread | 0 | 0 or 1 | Experimental, see README 
-|dvr_thread_buffer_size | The size of the "DVR thread buffer" in packets | 5000 | >=1 | see README 
 |rewrite_pat | Do we rewrite the PAT PID | 0 | 0 or 1 | See README 
 |rewrite_sdt | Do we rewrite the SDT PID | 0 | 0 or 1 | See README 
 |sort_eit | Do we sort the EIT PID | 0 | 0 or 1 | See README 
-|server_id | The server number for the `%server` template | 0 | | Useful only if you use the %server template
+|rtp_header | Send the stream with the rtp headers (execpt for HTTP unicast) | 0 | 0 or 1 | 
+|==================================================================================================================
+
+Logs parameters
+~~~~~~~~~~~~~~~
+
+[width="80%",cols="2,8,1,2,3",options="header"]
+|==================================================================================================================
+|Parameter name |Description | Default value | Possible values | Comments
+|log_header | specify the logging header | %priority:  %module  | | The implemented templates are %priority %module %timeepoch %date %pid
+|log_flush_interval | LogFile flushing interval (in seconds) | -1 : no periodic flushing  | |  
+|log_type | Where the log information will go | If neither this option and logfile are specified syslog if deamon, console otherwise  | syslog, console | The first time you specify a logging way, it replaces the default one. Then, each time you sepcify a logging channel, it is added to the previous
+|log_file | The file in wich the logs will be written to | no file log  |  | The following templates are allowed %card %tuner %server 
 |==================================================================================================================
 
 Multicast parameters

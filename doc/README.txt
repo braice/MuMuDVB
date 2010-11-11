@@ -217,6 +217,7 @@ Signal: (see kill(1))
 ------------------------------------------------------------------
     SIGUSR1: switch the signal strenght printing
     SIGUSR2: switch the traffic printing
+    SIGHUP: flush the log files
 ------------------------------------------------------------------
 
 [[autoconfiguration]]
@@ -509,7 +510,7 @@ You can use http://mmonit.com/monit/[Monit] to monitor MuMuDVB an restart it whe
 You have to install the init scripts (automatic if you used the Debian package) and add the following lines to your `/etc/monit/services` file:
 
 ----------------------------------------------------------------------
-check process mumudvb with pidfile /var/run/mumudvb/mumudvb_carte0.pid
+check process mumudvb with pidfile /var/run/mumudvb/mumudvb_adapter0_tuner0.pid
     start program = "/etc/init.d/mumudvb start"
     stop program = "/etc/init.d/mumudvb stop"
 ----------------------------------------------------------------------
@@ -689,9 +690,21 @@ Technical details (not sorted)
 
  * MuMuDVB is able to support as many cards as the operating system does. Old versions of udev+glibc were not able to support more than 4 cards but this problem is solved using relatively recent versions (udev > 104 and libc6 > 2.7)
 
- * When daemonized, MuMuDVB writes its process identifier in `/var/run/mumudvb/mumudvb_carte%d.pid`, where %d is replaced by the card number
+ * When daemonized, MuMuDVB writes its process identifier in `/var/run/mumudvb/mumudvb_adapter%d_tuner%d.pid`, where %d is replaced by the card number and the tuner number
 
  * MuMuDVB supports satellite in the Ku band, with universal or standard LNBs. The support of satellites in the S or C band is implemented via the use of the lo_frequency option. See `doc/README_CONF.txt` (link:README_CONF.html[HTML version]).
+
+MuMuDVB Logs
+------------
+
+MuMuDVB can send it's logs to the console, to a file or via syslog. It can also be several of these channels. The formatting of the logs can also be adjusted.
+
+By default, the logs are sent to the console if not daemonized and via syslog otherwise.
+
+If the logs are sent to a file, you can ask MuMuDVB to flush the file using the SIGHUP signal.
+
+For more detail about these features see `doc/README_CONF.txt` (link:README_CONF.html[HTML version]). 
+
 
 Known issues
 ------------

@@ -174,17 +174,42 @@ Paramètres divers
 [width="80%",cols="2,8,1,2,3",options="header"]
 |==================================================================================================================
 |Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
-|dont_send_scrambled | Si positionné à 1, MuMuDVB n'enverra pas les paquets brouillés. Cela retirera (indirectement) les annonces SAP pour les chaînes brouillées |0 | |
-|show_traffic_interval | Le temps en secondes entre deux affichages du trafic | 10 | >2 | 
-|compute_traffic_interval | Le temps en secondes entre deux calculs du trafic | 10 | >2 | 
-|rtp_header | Envoie les en-têtes RTP avec le flux (excepté pour l'unicast HTTP) | 0 | 0 ou 1 | 
+|show_traffic_interval | Le temps en secondes entre deux affichages du trafic | 10 |  | 
+|compute_traffic_interval | Le temps en secondes entre deux calculs du trafic | 10 |  | 
 |dvr_buffer_size | La taille du  "tampon DVR" en paquets de 188 octets | 20 | >=1 | Se référer au README 
 |dvr_thread | Est ce que les packets sont reçus par un thread ? | 0 | 0 ou 1 | Fonctionnalité "expérimentale", se référer au README 
 |dvr_thread_buffer_size | La taille du tampon pour le thread en packets de 188 octets | 5000 | >=1 | se référer au README 
+|filename_pid | Permet d'indiquer le chemin dans lequel MuMuDVB va ecrire son PID (Processus IDentifier) | /var/run/mumudvb/mumudvb_adapter%card_tuner%tuner.pid | | Les templates %card %tuner et %server sont utilisables
+|==================================================================================================================
+
+Paramètres concernant l'envoi des paquets
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[width="80%",cols="2,8,1,2,3",options="header"]
+|==================================================================================================================
+|Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
+|dont_send_scrambled | Si positionné à 1, MuMuDVB n'enverra pas les paquets brouillés. Cela retirera (indirectement) les annonces SAP pour les chaînes brouillées |0 | |
+|filter_transport_error | Si positionné à 1, MuMuDVB n'enverra pas les paquets vus comme erronés par le démodulateur (drapeau transport error). |0 | |
+|psi_tables_filtering | 'none' les paquets avec des PIDs de 0x00 à 0x1F sont envoyés, 'pat' : les PIDs de 0x01 à 0x1F ne sont pas envoyés. 'pat_cat' : les PIDs de 0x02 à 0x1F ne sont pas envoyés. | 'none' | Option pour garder seulement les PID PSI obligatoires | 
 |rewrite_pat | Est ce que MuMuDVB doit réécrire le PID PAT | 0 | 0 ou 1 | cf README 
 |rewrite_sdt | Est ce que MuMuDVB doit réécrire le PID SDT | 0 | 0 ou 1 | cf README 
 |sort_eit | Est ce que MuMuDVB doit trier les PID EIT | 0 | 0 ou 1 | cf README 
+|rtp_header | Envoie les en-têtes RTP avec le flux (excepté pour l'unicast HTTP) | 0 | 0 ou 1 | 
 |==================================================================================================================
+
+Paramètres concernant les logs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[width="80%",cols="2,8,1,2,3",options="header"]
+|==================================================================================================================
+|Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
+|log_header | Specifie l'en tête des logs | %priority:  %module  | | Vous pouvez utiliser les templates  %priority %module %timeepoch %date %pid
+|log_flush_interval | L'intervalle (en secondes) pour forcer l'écriture des fichies de logs | -1 : pas de forcage periodique  | |  
+|log_type | Où les logs vont aller | Si cette option et log_file ne sont pas specifies, syslog si MuMuDVB tourne en démon, console sinon | syslog, console | La premiere fois que vous spécifiez une méthode pour les logs, elle remplace la meéthode par défaut. Ensuite, chaque méthode est ajoutée a la précédente.
+|log_file | Le fichier ou les logs seront écris | pas de fichier de log  |  |Les templates suivants peuvent être utilisés : %card %tuner %server 
+|==================================================================================================================
+
+
 
 Paramètres concernant le multicast
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

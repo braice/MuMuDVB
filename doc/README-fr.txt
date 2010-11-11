@@ -64,6 +64,7 @@ Fonctionalités principales
 - Support pour l'unicast HTTP. voir la section <<unicast,unicast HTTP>>
 - Support pour les en-têtes RTP (seulement pour la diffusion en multicast)
 - Transcodage, référez vous à la section <<transcoding,Transcodage>>
+- Acces au Menu cam pendant la diffustion (Utilisant une interface web/AJAX - voir link:WEBSERVICES.html[WEBSERVICES.txt])
 
 
 Liste détaillée des fonctionalités
@@ -219,6 +220,7 @@ Signal: ( voir kill(1) )
 ------------------------------------------------------------------
     SIGUSR1: bascule l'affichage de la force du signal
     SIGUSR2: bascule l'affichage du traffic
+    SIGHUP: force l'écriture des fichiers de log
 ------------------------------------------------------------------
 
 [[autoconfiguration]]
@@ -229,7 +231,7 @@ MuMuDVB est capable de trouver les différentes chaînes dans le transpondeur et
 
 Sans l'autoconfiguration, vous devez spécifier les paramètres du transpondeur et, pour chaque chaîne, l'ip de multicast, le nom et les PIDs ( PMT, audio, vidéo, télétexte etc... ).
 
-À la fin de l'autoconfiguration MuMuDVB génère un fichier de configuration avec les paramètres obtenus. Le fichier généré est : `/var/run/mumudvb/mumudvb_generated_conf_card%d_tuner%d`
+À la fin de l'autoconfiguration MuMuDVB génère un fichier de configuration avec les paramètres obtenus. Le fichier généré est, par défaut : `/var/run/mumudvb/mumudvb_generated_conf_card%d_tuner%d`
 
 Si les PIDs sont changés, MuMuDVB mettra automatiquement à jour les chaînes sauf si vous mettez `autoconf_pid_update=0` dans votre fichier de configuration.
 
@@ -506,7 +508,7 @@ Vous pouvez utiliser http://mmonit.com/monit/[Monit] pour surveiller MuMuDVB et 
 Vous devez installer les scripts de démarrage ( fait automatiquement si vous utilisez le paquet Debian ) et ajouter les lignes suivantes à votre fichier `/etc/monit/services` :
 
 ----------------------------------------------------------------------
-check process mumudvb with pidfile /var/run/mumudvb/mumudvb_carte0.pid
+check process mumudvb with pidfile /var/run/mumudvb/mumudvb_adapter0_tuner0.pid
     start program = "/etc/init.d/mumudvb start"
     stop program = "/etc/init.d/mumudvb stop"
 ----------------------------------------------------------------------
@@ -735,9 +737,23 @@ Détails techniques (en vrac)
 
  * MuMuDVB peut supporter autant de cartes que le système d'exploitation. Les anciennes version de udev+glibc ne supportaient pas plus de 4 cartes mais ce problème est résolu en utilisant des versions relativement récentes ( udev > 104 et libc6 > 2.7 )
 
- * Lorsque MuMuDVB tourne en démon, il écrit son identifiant de processus dans le fichier `/var/run/mumudvb/mumudvb_carte%d.pid`, où %d est remplacé par le numéro de carte.
+ * Lorsque MuMuDVB tourne en démon, il écrit son identifiant de processus dans le fichier `/var/run/mumudvb/mumudvb_adapter%d_tuner%d.pid`, où %d est remplacé par le numéro de carte et de tuner.
 
  * MuMuDVB supporte la réception satellite en bande Ku avec des LNB universel ou standard. Le support pour la réception satellite en bande S ou C est implémenté via l'utilisation de l'option `lo_frequency`. Référez vous au fichier `doc/README_CONF-fr` ( link:README_CONF-fr.html[Version HTML] ) pour plus de détails.
+
+
+
+MuMuDVB Logs
+------------
+
+MuMuDVB peux envoyer ses logs sur la console, dans un fichier ou via syslog. Il peux aussi les envoyer dans plusieurs de ces canaux. Le formattage des messages peut aussi etre ajusté.
+
+Par défaut, les logs sont envoyé sur la console si MuMuDVB ne tourne pas en démon et via syslog sinon.
+
+Si les logs sont envoyés dans un fichier, vous pouvez forcer l'écriture (flush) en envoyant le signal SIGHUP au processus MuMuDVB.
+
+Pour plus d'informations référez vous au fichier `doc/README_CONF-fr` ( link:README_CONF-fr.html[Version HTML] ).
+
 
 Problèmes connus
 ----------------
