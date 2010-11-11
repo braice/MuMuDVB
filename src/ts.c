@@ -56,7 +56,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 {
   pthread_mutex_lock(&ts_packet->packetmutex);
   ts_header_t *header;
-  int ok=0;
+  int ok=1;
   int parsed=0;
   int delta,pid;
 
@@ -72,6 +72,12 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
     {
       log_message( log_module,  MSG_DEBUG, "Read TS : Adaptation field \n");
       delta += buf[delta] ;        // add adapt.field.len
+      //we check if the adapt.field.len is valid
+      if(delta>=188)
+      {
+        log_message( log_module,  MSG_DEBUG, "Invalid adapt.field.len \n");
+        ok=0;
+      }
     }
   else if (header->adaptation_field_control & 0x1)
     {
@@ -82,8 +88,6 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 	  log_message( log_module,  MSG_FLOOD, "#PES/PS ----- We ignore \n");
 	  ok=0;
 	}
-      else
-	  ok=1;
     }
 
   if (header->adaptation_field_control == 3)
@@ -92,10 +96,8 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
       ok=0;
     }
 
-  if(header->payload_unit_start_indicator) //It's the beginning of a new packet
+  if(ok && header->payload_unit_start_indicator) //It's the beginning of a new packet
     {
-      if(ok)
-	{
 	  ts_packet->empty=0;
 	  ts_packet->continuity_counter=header->continuity_counter;
 	  ts_packet->pid=pid;
@@ -122,9 +124,8 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
           payload of that packet.
           */
 	  ts_packet->packet_ok=0;
-	}
     }
-  else if(header->payload_unit_start_indicator==0) //Not the first, we check if the already registered packet corresponds
+  else if(ok && header->payload_unit_start_indicator==0) //Not the first, we check if the already registered packet corresponds
     {
       if(ts_packet->empty)
 	{
