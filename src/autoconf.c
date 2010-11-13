@@ -766,7 +766,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
       }
       else if(actual_service->type==0x02||actual_service->type==0x0a) //service_type digital radio sound service
         log_message( log_module, MSG_DETAIL,"Service type digital radio sound service, no autoconfigure. (if you want add autoconf_radios=1 to your configuration file) Name \"%s\"\n",actual_service->name);
-      else
+      else if(actual_service->type!=0) //0 is an empty service
       {
         //We show the service type
         log_message( log_module, MSG_DETAIL,"No autoconfigure due to service type : %s. Name \"%s\"\n",service_type_to_str(actual_service->type),actual_service->name);
