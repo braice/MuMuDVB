@@ -200,7 +200,7 @@ Paramètres concernant l'envoi des paquets
 Paramètres concernant les logs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[width="80%",cols="2,8,1,2,3",options="header"]
+[width="80%",cols="2,4,4,2,4",options="header"]
 |==================================================================================================================
 |Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
 |log_header | Specifie l'en tête des logs | %priority:  %module  | | Vous pouvez utiliser les templates  %priority %module %timeepoch %date %pid

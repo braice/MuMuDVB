@@ -198,7 +198,7 @@ Packets sending parameters
 Logs parameters
 ~~~~~~~~~~~~~~~
 
-[width="80%",cols="2,8,1,2,3",options="header"]
+[width="80%",cols="2,4,4,2,4",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |log_header | specify the logging header | %priority:  %module  | | The implemented templates are %priority %module %timeepoch %date %pid
