@@ -1,6 +1,7 @@
 
-#define FILE_TEST_READ_SDT_TS1 "tests/TestDump17.ts"
+#define FILES_TEST_READ_SDT_TS "tests/TestDump17.ts","tests/4cde96e275c9c-astra-mumudvb.ts"
 #define NUM_READ_SDT 200
+#define NUM_FILES_TEST_READ_SDT 2
 #define FILES_TEST_READ_RAND "tests/random_1.ts","tests/random_2.ts"
 #define NUM_FILES_TEST_READ_RAND 2
 #define TEST_STRING_COMPUT "2+2*3+100"
@@ -19,6 +20,7 @@
 //Prototypes
 void autoconf_free_services(mumudvb_service_t *services);
 int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services);
+void autoconf_sort_services(mumudvb_service_t *services);
 
 
 //Functions implemented here
@@ -61,79 +63,93 @@ int main(void)
   log_message( log_module, MSG_INFO,"Testing string compute %s\n",TEST_STRING_COMPUT );
   log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
   getchar();
-  log_message( log_module, MSG_INFO,"%d\n\n" ,string_comput(TEST_STRING_COMPUT));
+  int resultat;
+  resultat=string_comput(TEST_STRING_COMPUT);
+  if(resultat==108)
+    log_message( log_module, MSG_INFO,"%d  --  PASS\n\n" ,resultat);
+  else
+    log_message( log_module, MSG_INFO,"%d  --  FAIL\n\n" ,resultat);
 
   /************************************* Testing the SDT parser *************************************/
-  log_message( log_module, MSG_INFO,"===================================================================\n");
-  log_message( log_module, MSG_INFO,"Testing TS read for SDT - test1\n" );
-  log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-  getchar();
-  FILE *testfile;
-  testfile=fopen (FILE_TEST_READ_SDT_TS1, "r");
-  if(testfile!=NULL)
-    {
-      //We read all the packets contained in the file
-      unsigned char ts_packet_raw[188];
-      int num_sdt_read=0;
-      mumudvb_ts_packet_t ts_packet_mumu;
-      ts_packet_mumu.empty=1;
-      mumudvb_service_t services;
-      memset(&services, 0, sizeof(mumudvb_service_t));
-      //Just to make pthread happy
-      pthread_mutex_init(&ts_packet_mumu.packetmutex,NULL);
-      int iRet,pid;
-      log_message( log_module, MSG_INFO,"File opened, reading packets\n" );
-      while(fread(ts_packet_raw,188,1, testfile) && num_sdt_read<NUM_READ_SDT)
-	{
-	  log_message( log_module, MSG_DEBUG,"New elementary (188bytes TS packet)\n" );
-	  // Get the PID of the received TS packet
-	  if(ts_packet_raw[0] != 0x47)
-	    {
-	      log_message( log_module, MSG_INFO," !!!!!!!!!!!!! Sync error, we search for a new sync byte !!!!!!!!!!!!!!\n");
-	      unsigned char sync;
-	      //We search the next sync byte
-	      while(fread(&sync,1,1, testfile) && sync!=0x47);
-	      ts_packet_raw[0]=sync;
-	      //We found a "sync byte" we get the rest of the packet
-	      if(!fread(ts_packet_raw-1,188-1,1, testfile))
-		continue;
-	      else
-		log_message( log_module, MSG_INFO," sync byte found :) \n");
-	    }
-	  pid = ((ts_packet_raw[1] & 0x1f) << 8) | (ts_packet_raw[2]);
-	  if(pid != 17) continue;
-	  iRet=get_ts_packet(ts_packet_raw, &ts_packet_mumu);
-	  if(iRet==1)//packet is parsed
-	    {
-	      log_message( log_module, MSG_INFO,"New packet -- parsing\n" );
-	      num_sdt_read++;
-	      autoconf_read_sdt(ts_packet_mumu.packet,ts_packet_mumu.len,&services);
-	      ts_packet_mumu.empty=1;
-	    }
-	}
-      log_message( log_module, MSG_INFO,"Final services list .... \n");
-      autoconf_print_services(&services);
-      //We free starting at the next since the first is not malloc'ed
-      autoconf_free_services(services.next);
-      fclose(testfile);
+  char *files_sdt[NUM_FILES_TEST_READ_SDT]={FILES_TEST_READ_SDT_TS};
+  for(int i_file=0;i_file<NUM_FILES_TEST_READ_SDT;i_file++)
+  {
+    log_message( log_module, MSG_INFO,"===================================================================\n");
+    log_message( log_module, MSG_INFO,"Testing TS read for SDT - test %d on %d file %s\n", i_file+1, NUM_FILES_TEST_READ_SDT , files_sdt[i_file] );
+    log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
+    getchar();
+    FILE *testfile;
+    testfile=fopen (files_sdt[i_file], "r");
+    if(testfile!=NULL)
+      {
+        //We read all the packets contained in the file
+        unsigned char ts_packet_raw[188];
+        int num_sdt_read=0;
+        mumudvb_ts_packet_t ts_packet_mumu;
+        ts_packet_mumu.empty=1;
+        mumudvb_service_t services;
+        memset(&services, 0, sizeof(mumudvb_service_t));
+        //Just to make pthread happy
+        pthread_mutex_init(&ts_packet_mumu.packetmutex,NULL);
+        int iRet,pid;
+        log_message( log_module, MSG_INFO,"File opened, reading packets\n" );
+        while(fread(ts_packet_raw,188,1, testfile) && num_sdt_read<NUM_READ_SDT)
+          {
+            log_message( log_module, MSG_DEBUG,"New elementary (188bytes TS packet)\n" );
+            // Get the PID of the received TS packet
+            if(ts_packet_raw[0] != 0x47)
+              {
+                log_message( log_module, MSG_INFO," !!!!!!!!!!!!! Sync error, we search for a new sync byte !!!!!!!!!!!!!!\n");
+                unsigned char sync;
+                //We search the next sync byte
+                while(fread(&sync,1,1, testfile) && sync!=0x47);
+                ts_packet_raw[0]=sync;
+                //We found a "sync byte" we get the rest of the packet
+                if(!fread(ts_packet_raw-1,188-1,1, testfile))
+                  continue;
+                else
+                  log_message( log_module, MSG_INFO," sync byte found :) \n");
+              }
+            pid = ((ts_packet_raw[1] & 0x1f) << 8) | (ts_packet_raw[2]);
+            if(pid != 17) continue;
+            iRet=get_ts_packet(ts_packet_raw, &ts_packet_mumu);
+            if(iRet==1)//packet is parsed
+              {
+                log_message( log_module, MSG_INFO,"New packet -- parsing\n" );
+                num_sdt_read++;
+                autoconf_read_sdt(ts_packet_mumu.packet,ts_packet_mumu.len,&services);
+                ts_packet_mumu.empty=1;
+              }
+          }
+        log_message( log_module, MSG_INFO,"Final services list .... \n");
+        autoconf_print_services(&services);
+        log_message( log_module, MSG_INFO,"===================================================================\n");
+        log_message( log_module, MSG_INFO,"Testing service sorting on this list\n" );
+        log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
+        getchar();
+        autoconf_sort_services(&services);
+        autoconf_print_services(&services);
+        //We free starting at the next since the first is not malloc'ed
+        autoconf_free_services(services.next);
+        fclose(testfile);
 
-    }
-  else
-    log_message( log_module, MSG_INFO,"Test file %s cannot be open : %s\n", FILE_TEST_READ_SDT_TS1,strerror(errno) );
+      }
+    else
+      log_message( log_module, MSG_INFO,"Test file %s cannot be open : %s\n", files_sdt[i_file],strerror(errno) );
 
-
+  }
 
 
   /************************************* Testing the resistance to strange data *********************/
   log_message( log_module, MSG_INFO,"===================================================================\n");
-  char *files[NUM_FILES_TEST_READ_RAND]={FILES_TEST_READ_RAND};
+  char *files_rand[NUM_FILES_TEST_READ_RAND]={FILES_TEST_READ_RAND};
   for(int i_file=0;i_file<NUM_FILES_TEST_READ_RAND;i_file++)
     {
-      log_message( log_module, MSG_INFO,"Testing Resistance to bad packets file %d on %d : %s\n", i_file+1, NUM_FILES_TEST_READ_RAND, files[i_file] );
+      log_message( log_module, MSG_INFO,"Testing Resistance to bad packets file %d on %d : %s\n", i_file+1, NUM_FILES_TEST_READ_RAND, files_rand[i_file] );
       log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
       getchar();
-  
-      testfile=fopen (files[i_file] , "r");
+      FILE *testfile;
+      testfile=fopen (files_rand[i_file] , "r");
       if(testfile!=NULL)
 	{
 	  //We read all the packets contained in the file
@@ -160,7 +176,7 @@ int main(void)
 	  fclose(testfile);
 	}
       else
-	log_message( log_module, MSG_INFO,"Test file %s cannot be open : %s\n", files[i_file], strerror(errno) );
+	log_message( log_module, MSG_INFO,"Test file %s cannot be open : %s\n", files_rand[i_file], strerror(errno) );
     }
   /**************************************************************************************************/
   //log_message( log_module, MSG_INFO,"===================================================================\n");
