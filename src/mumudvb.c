@@ -333,9 +333,9 @@ int
     .cam_delay_pmt_send=0,
     .cam_interval_pmt_send=3,
     .cam_pmt_send_time=0,
-	.cam_menu_string="Not retrieved",
-	.cam_menulist_lines=0,
-	.cam_mmi_autoresponse=1,
+    .cam_menu_string="Not retrieved",
+    .cam_menulist_lines=0,
+    .cam_mmi_autoresponse=1,
   };
   #endif
 
@@ -698,7 +698,7 @@ int
       while ((substring = strtok (NULL, delimiteurs)) != NULL)
       {
         chan_and_pids.channels[curr_channel].pids[curr_pid] = atoi (substring);
-	 // we see if the given pid is good
+        // we see if the given pid is good
         if (chan_and_pids.channels[curr_channel].pids[curr_pid] < 10 || chan_and_pids.channels[curr_channel].pids[curr_pid] >= 8193)
         {
           log_message( log_module,  MSG_ERROR,
@@ -858,10 +858,10 @@ int
   /******************************************************/
   //end of config file reading
   /******************************************************/
-  
+
   // Show in log that we are starting
   log_message( log_module,  MSG_INFO,"========== End of configuration, MuMuDVB version %s is starting ==========",VERSION);
-  
+
   /*****************************************************/
   //daemon part two, we write our PID as we know the card number
   /*****************************************************/
@@ -1034,7 +1034,7 @@ int
 
   if (open_fe (&fds.fd_frontend, tuneparams.card_dev_path, tuneparams.tuner))
   {
-    iRet = 
+    iRet =
         tune_it (fds.fd_frontend, &tuneparams);
   }
 
@@ -1419,14 +1419,12 @@ int
 	  card_buffer.reading_buffer=card_buffer.buffer2;
 	  card_buffer.writing_buffer=card_buffer.buffer1;
 	  card_buffer.actual_read_buffer=2;
-	  
 	}
 	else
 	{
 	  card_buffer.reading_buffer=card_buffer.buffer1;
 	  card_buffer.writing_buffer=card_buffer.buffer2;
 	  card_buffer.actual_read_buffer=1;
-	  
 	}
 	card_buffer.bytes_read=card_buffer.bytes_in_write_buffer;
 	card_buffer.bytes_in_write_buffer=0;
@@ -1493,7 +1491,6 @@ int
 	card_buffer.read_buff_pos+=TS_PACKET_SIZE)//we loop on the subpackets
     {
       actual_ts_packet=card_buffer.reading_buffer+card_buffer.read_buff_pos;
-	  
       // Test if the error bit is set in the TS packet received
       if ((actual_ts_packet[1] & 0x80) == 0x80)
       {
@@ -1510,11 +1507,10 @@ int
         continue;
 
       ScramblingControl = (actual_ts_packet[3] & 0xc0) >> 6;
-/* 0 = Not scrambled
-   1 = Reserved for future use
-   2 = Scrambled with even key
-   3 = Scrambled with odd key*/
-	  
+      /* 0 = Not scrambled
+         1 = Reserved for future use
+         2 = Scrambled with even key
+         3 = Scrambled with odd key*/
 
       /******************************************************/
       //   AUTOCONFIGURATION PART
@@ -1527,13 +1523,13 @@ int
       }
       if(autoconf_vars.autoconfiguration)
         continue;
- 
+
       /******************************************************/
       //   AUTOCONFIGURATION PART FINISHED
       /******************************************************/
 
       /******************************************************/
-      //Pat rewrite 
+      //Pat rewrite
       /******************************************************/
       if( (pid == 0) && //This is a PAT PID
            rewrite_vars.rewrite_pat == OPTION_ON ) //AND we asked for rewrite
@@ -1541,7 +1537,7 @@ int
         pat_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars);
       }
       /******************************************************/
-      //SDT rewrite 
+      //SDT rewrite
       /******************************************************/
       if( (pid == 17) && //This is a SDT PID
            rewrite_vars.rewrite_sdt == OPTION_ON ) //AND we asked for rewrite
@@ -1652,7 +1648,7 @@ int
            // Keep only PAT
            if (chan_and_pids.psi_tables_filtering==2 && pid>0) send_packet=0;
         }
-		
+
         /******************************************************/
 	//Ok we must send this packet,
 	// we add it to the channel buffer
