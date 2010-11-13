@@ -567,7 +567,7 @@ void autoconf_sort_services(mumudvb_service_t *services)
   log_message( log_module, MSG_FLOOD,"Service sorting BEFORE\n");
   for(actual_service=services;actual_service != NULL; actual_service=next_service)
   {
-    log_message( log_module, MSG_FLOOD,"Service sorting, services : %s id %d \n",actual_service->name,actual_service->id);
+    log_message( log_module, MSG_FLOOD,"Service sorting, id %d\t service : %s \n", actual_service->id, actual_service->name);
     next_service= actual_service->next;
   }
   for(actual_service=services;actual_service != NULL; actual_service=next_service)
@@ -593,7 +593,7 @@ void autoconf_sort_services(mumudvb_service_t *services)
   log_message( log_module, MSG_FLOOD,"Service sorting AFTER\n");
   for(actual_service=services;actual_service != NULL; actual_service=next_service)
   {
-    log_message( log_module, MSG_FLOOD,"Service sorting, services : %s id %d \n",actual_service->name,actual_service->id);
+    log_message( log_module, MSG_FLOOD,"Service sorting, id %d\t service : %s \n", actual_service->id, actual_service->name);
     next_service= actual_service->next;
   }
 }
