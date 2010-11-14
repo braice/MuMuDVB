@@ -1,11 +1,46 @@
+/*
+ * MuMuDVB - Stream a DVB transport stream.
+ * Testing suite
+ *
+ * (C) 2010 Brice DUBOST <mumudvb@braice.net>
+ *
+ * The latest version can be found at http://mumudvb.braice.net
+ *
+ * Copyright notice:
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
 
-#define FILES_TEST_READ_SDT_TS "tests/TestDump17.ts","tests/4cde96e275c9c-astra-mumudvb.ts"
+
+/* The test files can be found here :
+http://mumudvb.braice.net/mumudvb/test/
+*/
+
+// To compile this code, run "make check"
+
+
+
+#define FILES_TEST_READ_SDT_TS "tests/TestDump17.ts","tests/test_autoconf_numericableparis_PAT_SDT.ts","tests/astra_TP_11856.00V_PAT_SDT.ts"
 #define NUM_READ_SDT 200
-#define NUM_FILES_TEST_READ_SDT 2
+#define NUM_FILES_TEST_READ_SDT 3
 #define FILES_TEST_READ_RAND "tests/random_1.ts","tests/random_2.ts"
 #define NUM_FILES_TEST_READ_RAND 2
 #define TEST_STRING_COMPUT "2+2*3+100"
 
+#define FILES_TEST_AUTOCONF "tests/astra_TP_11856.00V_pids_0_18.ts","tests/test_autoconf_numericableparis.ts","tests/astra_TP_11856.00V_pids_0_18__2.ts"
+#define NUM_FILES_TEST_AUTOCONF 3
 
 #include <stdio.h>
 #include <string.h>
@@ -95,7 +130,6 @@ int main(void)
         log_message( log_module, MSG_INFO,"File opened, reading packets\n" );
         while(fread(ts_packet_raw,188,1, testfile) && num_sdt_read<NUM_READ_SDT)
           {
-            log_message( log_module, MSG_DEBUG,"New elementary (188bytes TS packet)\n" );
             // Get the PID of the received TS packet
             if(ts_packet_raw[0] != 0x47)
               {
@@ -110,9 +144,18 @@ int main(void)
                 else
                   log_message( log_module, MSG_INFO," sync byte found :) \n");
               }
-            pid = ((ts_packet_raw[1] & 0x1f) << 8) | (ts_packet_raw[2]);
+            pid = HILO(((ts_header_t *)ts_packet_raw)->pid);
+            log_message( log_module, MSG_DEBUG,"New elementary (188bytes TS packet) pid %d continuity_counter %d",
+                         pid,
+                         ((ts_header_t *)ts_packet_raw)->continuity_counter );
             if(pid != 17) continue;
             iRet=get_ts_packet(ts_packet_raw, &ts_packet_mumu);
+            //If it's the beginning of a new packet we display some information
+            if(((ts_header_t *)ts_packet_raw)->payload_unit_start_indicator)
+              log_message(log_module, MSG_FLOOD, "First two bytes of the packet 0x%02x %02x",
+                          ts_packet_mumu.packet[0],
+                          ts_packet_mumu.packet[1]);
+
             if(iRet==1)//packet is parsed
               {
                 log_message( log_module, MSG_INFO,"New packet -- parsing\n" );
@@ -160,7 +203,6 @@ int main(void)
 	  //Just to make pthread happy
 	  pthread_mutex_init(&ts_packet_mumu.packetmutex,NULL);
 	  int iRet;
-	  fpos_t pos;
 	  log_message( log_module, MSG_INFO,"File opened, reading packets\n" );
 	  while(fread(ts_packet_raw,188,1, testfile))
 	    {
@@ -178,6 +220,90 @@ int main(void)
       else
 	log_message( log_module, MSG_INFO,"Test file %s cannot be open : %s\n", files_rand[i_file], strerror(errno) );
     }
+  /************************ Testing autoconfiguration with a dump **********************************/
+  char *files_autoconf[NUM_FILES_TEST_AUTOCONF]={FILES_TEST_AUTOCONF};
+  for(int i_file=0;i_file<NUM_FILES_TEST_AUTOCONF;i_file++)
+  {
+
+    log_message( log_module, MSG_INFO,"===================================================================\n");
+    log_message( log_module, MSG_INFO,"Testing autoconfiguration file %d on %d %s\n",i_file+1, NUM_FILES_TEST_AUTOCONF, files_autoconf[i_file]);
+    log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
+    getchar();
+
+    FILE *testfile;
+    testfile=fopen (files_autoconf[i_file] , "r");
+    if(testfile!=NULL)
+    {
+      int iret;
+      mumudvb_chan_and_pids_t chan_and_pids;
+      memset(&chan_and_pids,0,sizeof(mumudvb_chan_and_pids_t));
+      chan_and_pids.number_of_channels=0;
+
+      //autoconfiguration
+      autoconf_parameters_t autoconf_vars;
+      memset(&autoconf_vars,0,sizeof(autoconf_parameters_t));
+      autoconf_vars.autoconfiguration=AUTOCONF_MODE_FULL;
+      autoconf_vars.autoconf_radios=1;
+      autoconf_vars.autoconf_scrambled=1;
+      strcpy (autoconf_vars.autoconf_ip,"239.100.%card.%number");
+      autoconf_vars.transport_stream_id=-1;
+
+
+      unicast_parameters_t unicast_vars;
+      memset(&unicast_vars,0,sizeof(unicast_parameters_t));
+      unicast_vars.unicast=0;
+
+      //multicast parameters
+      multicast_parameters_t multicast_vars;
+      memset(&multicast_vars,0,sizeof(multicast_parameters_t));
+      multicast_vars.multicast=0;
+
+      fds_t fds;
+      memset(&fds,0,sizeof(fds_t));
+      tuning_parameters_t tuneparams;
+      memset(&tuneparams,0,sizeof(tuning_parameters_t));
+
+      iret=autoconf_init(&autoconf_vars, chan_and_pids.channels,chan_and_pids.number_of_channels);
+      if(iret)
+      {
+        log_message( log_module, MSG_INFO,"error with autoconfiguration init\n");
+      }
+
+      unsigned char actual_ts_packet[188];
+      int pid;
+      while(fread(actual_ts_packet,188,1, testfile))
+      {
+        // get the pid of the received ts packet
+        pid = ((actual_ts_packet[1] & 0x1f) << 8) | (actual_ts_packet[2]);
+        log_message( log_module, MSG_DEBUG,"New elementary (188bytes TS packet) pid %d continuity_counter %d",
+                         pid,
+                         ((ts_header_t *)actual_ts_packet)->continuity_counter );
+
+        iret = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tuneparams, &multicast_vars, &unicast_vars, 0);
+
+      }
+      fclose(testfile);
+
+      log_message( log_module, MSG_INFO,"============ DONE we display the services ========\n");
+      if(autoconf_vars.services)
+      {
+        autoconf_sort_services(autoconf_vars.services);
+        autoconf_print_services(autoconf_vars.services);
+      }
+      log_message( log_module, MSG_INFO,"============ DONE we display the channels ========\n");
+      if(chan_and_pids.number_of_channels)
+      {
+        log_message( log_module, MSG_INFO,"chan_and_pids.number_of_channels %d",chan_and_pids.number_of_channels);
+      }
+      autoconf_freeing(&autoconf_vars);
+    }
+    else
+      log_message( log_module, MSG_INFO,"Test file %s cannot be open : %s\n", files_rand[i_file], strerror(errno) );
+
+  }
+
+  /**************************************************************************************************/
+
   /**************************************************************************************************/
   //log_message( log_module, MSG_INFO,"===================================================================\n");
   //log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
@@ -197,16 +323,19 @@ void autoconf_print_services(mumudvb_service_t *services)
 {
 
   mumudvb_service_t *act_service;
-  act_service=services;
+  if(services)
+    act_service=services->next;
+  else act_service=NULL;
   while(act_service!=NULL)
     {
       log_message( log_module, MSG_INFO,"Services listing\n");
       log_message( log_module, MSG_INFO,"Service : id %d running_status %d free_ca_mode %d\n",
 		   act_service->id, act_service->running_status, act_service->free_ca_mode);
-      log_message( log_module, MSG_INFO,"running_status %s\n",
+      log_message( log_module, MSG_INFO,"name %s\n",
 		   act_service->name);
+      log_message( log_module, MSG_INFO,"pmt_pid %d\n",
+                   act_service->pmt_pid);
       display_service_type(act_service->type, MSG_DEBUG,log_module);
-      
       act_service=act_service->next;
     }
 }
