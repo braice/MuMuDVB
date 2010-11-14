@@ -413,8 +413,9 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
       }
       else
       {
-        log_message( log_module, MSG_DEBUG,"service missing  pmt pid : %d\t id 0x%x\t\n",
+        log_message( log_module, MSG_DEBUG,"service missing  pmt pid : %d\t id 0x%x %d\n",
                         HILO(prog->network_pid),
+                        HILO(prog->program_number),
                         HILO(prog->program_number));
         channels_missing++;
       }
