@@ -214,6 +214,10 @@ Les différentes options sont :
 
 -q
 	Plus silencieux ( ajouter pour rendre encore plus silencieux )
+
+--dumpfile
+	Option de debug : Sauvegarde le flux reçu dans le fichier spécifié
+
 --------------------------------------------------------------------------------------
 
 Signal: ( voir kill(1) )

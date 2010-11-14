@@ -211,6 +211,9 @@ Possible options are:
 
 -q
 	More quiet (add for less)
+
+--dumpfile
+	Debug option : Dump the stream into the file specified
 ------------------------------------------------------------------
 
 Signal: (see kill(1))

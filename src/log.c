@@ -1032,6 +1032,7 @@ void usage (char *name)
           "-d, --debug  : Don't deamonize\n"
           "-v           : More verbose\n"
           "-q           : Less verbose\n"
+          "--dumpfile   : Debug option : Dump the stream into the file specified\n"
           "-h, --help   : Help\n"
           "\n", name);
   print_info ();

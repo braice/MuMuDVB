@@ -372,6 +372,8 @@ int
   FILE *cam_info;
 #endif
   FILE *pidfile;
+  char *dump_filename = NULL;
+  FILE *dump_file;
 
   // configuration file parsing
   int curr_channel = 0;
@@ -407,6 +409,7 @@ int
     {"help", no_argument, NULL, 'h'},
     {"list-cards", no_argument, NULL, 'l'},
     {"card", required_argument, NULL, 'a'},
+    {"dumpfile", required_argument, NULL, 'z'},
     {0, 0, 0, 0}
   };
   int c, option_index = 0;
@@ -466,6 +469,16 @@ int
         print_info ();
         list_dvb_cards ();
         exit(0);
+        break;
+      case 'z':
+        dump_filename = (char *) malloc (strlen (optarg) + 1);
+        if (!dump_filename)
+        {
+          log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+          exit(ERROR_MEMORY);
+        }
+        strncpy (dump_filename, optarg, strlen (optarg) + 1);
+        log_message( log_module, MSG_WARN,"You've decided to dump the received stream into %s. Be warned, it can grow quite fast", dump_filename);
         break;
     }
   }
@@ -1391,6 +1404,23 @@ int
     //We alloc the buffer
     card_buffer.reading_buffer=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*card_buffer.dvr_buffer_size);
   }
+
+
+  /******************************************************/
+  //We open the dump file if any
+  /******************************************************/
+  dump_file = NULL;
+  if(dump_filename)
+  {
+    dump_file = fopen (dump_filename, "w");
+    if (dump_file == NULL)
+    {
+      log_message( log_module,  MSG_ERROR, "%s: %s\n",
+                  dump_filename, strerror (errno));
+      free(dump_filename);
+    }
+  }
+
   /******************************************************/
   //Main loop where we get the packets and send them
   /******************************************************/
@@ -1491,6 +1521,11 @@ int
 	card_buffer.read_buff_pos+=TS_PACKET_SIZE)//we loop on the subpackets
     {
       actual_ts_packet=card_buffer.reading_buffer+card_buffer.read_buff_pos;
+
+      //If the user asked to dump the streams it's here tath it should be done
+      if(dump_file)
+        fwrite(actual_ts_packet,188,sizeof(unsigned char),dump_file);
+
       // Test if the error bit is set in the TS packet received
       if ((actual_ts_packet[1] & 0x80) == 0x80)
       {
@@ -1499,7 +1534,7 @@ int
             if (chan_and_pids.filter_transport_error>0) continue;
       }
 
-	  // Get the PID of the received TS packet
+      // Get the PID of the received TS packet
       pid = ((actual_ts_packet[1] & 0x1f) << 8) | (actual_ts_packet[2]);
 
       //Software filtering in case the card doesn't have hardware filtering
@@ -1729,7 +1764,8 @@ int
   /******************************************************/
   //End of main loop
   /******************************************************/
-
+  if(dump_file)
+    fclose(dump_file);
   gettimeofday (&tv, (struct timezone *) NULL);
   log_message( log_module,  MSG_INFO,
                "End of streaming. We streamed during %dd %d:%02d:%02d\n",(tv.tv_sec - real_start_time )/86400,((tv.tv_sec - real_start_time) % 86400 )/3600,((tv.tv_sec - real_start_time) % 3600)/60,(tv.tv_sec - real_start_time) %60 );
