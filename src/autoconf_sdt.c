@@ -109,10 +109,9 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
     return 0;
   }
 
-  //We look only for the following tables
+  //We look only for the following table
   //0x42 service_description_section - actual_transport_stream
-  //0x46 service_description_section - other_transport_stream 
-  if((header->table_id==0x42)||(header->table_id==0x46))
+  if(header->table_id==0x42)
   {
     log_message( log_module, MSG_DEBUG, "-- SDT : Service Description Table (id 0x%02x)--\n",header->table_id);
     //Loop over different services in the SDT
