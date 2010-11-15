@@ -121,6 +121,7 @@ int main(void)
         unsigned char ts_packet_raw[188];
         int num_sdt_read=0;
         mumudvb_ts_packet_t ts_packet_mumu;
+        memset(&ts_packet_mumu, 0, sizeof(mumudvb_ts_packet_t));
         ts_packet_mumu.empty=1;
         mumudvb_service_t services;
         memset(&services, 0, sizeof(mumudvb_service_t));
