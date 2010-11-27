@@ -190,7 +190,7 @@ void parse_sdt_descriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_s
       autoconf_show_CA_identifier_descriptor(buf);
     else /** @todo : Add descriptor 0x50 Component descriptor (multilingual 0x5E)*/
        /** @todo : Add descriptor 0x5D  multilingual_service_name_descriptor*/
-      log_message( log_module, MSG_FLOOD, "SDT descriptor_tag : 0x%2x\n", descriptor_tag);
+      log_message( log_module, MSG_FLOOD, "SDT descriptor_tag : 0x%2x, descriptor_len %d\n", descriptor_tag, descriptor_len);
 
     buf += descriptor_len;
     descriptors_loop_len -= descriptor_len;
@@ -319,10 +319,11 @@ void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *service)
 
 
   buf += 2;
-  service->type=*buf;
+  if(service)
+    service->type=*buf;
 
   //We show the service type
-  display_service_type(service->type, MSG_DEBUG,log_module);
+  display_service_type(*buf, MSG_DEBUG,log_module);
 
 
   buf ++; //we skip the service_type
@@ -335,15 +336,21 @@ void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *service)
   len = *buf;
   buf++;  //we jump the channel_name_len
 
+  char *name;
+  char tempbuf[MAX_NAME_LEN];
+  if(service)
+    name=service->name;
+  else
+    name=tempbuf;
+
   //We store the channel name with the raw encoding
-  memcpy (service->name, buf, len);
-  service->name[len] = '\0';
-  encoding_control_char=convert_en399468_string(service->name,MAX_NAME_LEN);
+  memcpy (name, buf, len);
+  name[len] = '\0';
+  encoding_control_char=convert_en399468_string(name,MAX_NAME_LEN);
   if(encoding_control_char==-1)
     return;
 
-  log_message( log_module, MSG_DEBUG, "service_name : \"%s\" (name encoding : %s)\n", service->name,encodings_en300468[encoding_control_char]);
-
+  log_message( log_module, MSG_DEBUG, "service_name : \"%s\" (name encoding : %s)\n", name,encodings_en300468[encoding_control_char]);
 }
 
 
