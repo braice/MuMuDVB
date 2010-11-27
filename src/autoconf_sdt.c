@@ -114,6 +114,13 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
   if(header->table_id==0x42)
   {
     log_message( log_module, MSG_DEBUG, "-- SDT : Service Description Table (id 0x%02x)--\n",header->table_id);
+
+    log_message( log_module, MSG_FLOOD, "-- SDT: TSID %d Original network id %d version %d section number %d last section number %d  --\n",
+                  HILO(header->transport_stream_id),
+                  HILO(header->original_network_id),
+                  header->version_number,
+                  header->section_number,
+                  header->last_section_number);
     //Loop over different services in the SDT
     delta=SDT_LEN;
     while((len-delta)>=(4+SDT_DESCR_LEN))
