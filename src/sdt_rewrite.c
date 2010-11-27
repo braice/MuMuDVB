@@ -43,6 +43,19 @@ extern uint32_t       crc32_table[256];
 
 static char *log_module="SDT rewrite: ";
 
+int sdt_rewrite_all_sections_seen(rewrite_parameters_t *rewrite_vars)
+{
+  int all_seen,i;
+  all_seen=1;
+  for(i=0;i<=rewrite_vars->sdt_last_section_number;i++)
+    if(rewrite_vars->sdt_section_numbers_seen[i]==0)
+      all_seen=0;
+
+  return all_seen;
+}
+
+
+
 /** @brief, tell if the sdt have a newer version than the one recorded actually
  * In the SDT pid there is a field to say if the SDT was updated
  * This function check if it has changed (in order to rewrite the sdt only once)
@@ -113,6 +126,15 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
   int new_section_length;
   int descriptor_length;
 
+
+  if(!channel->service_id)
+  {
+    log_message( log_module, MSG_WARN,"Cannot rewrite a program without the service_id set. We desactivate SDT rewrititng for this channel %d : \"%s\"\n", curr_channel, channel->name);
+    channel->sdt_rewrite_skip=1;
+    return 0;
+  }
+
+
   section_length=HILO(sdt->section_length);
 
   //lets start the copy
@@ -120,7 +142,8 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
   //the continuity counter is updated elswhere
   if(ts_header->payload_unit_start_indicator)
   {
-    log_message( log_module, MSG_DEBUG,"pointer field 0x%x \n", buf[TS_HEADER_LEN-1]);
+    if(buf[TS_HEADER_LEN-1])
+      log_message( log_module, MSG_DEBUG,"pointer field 0x%x \n", buf[TS_HEADER_LEN-1]);
   }
   ts_header->payload_unit_start_indicator=1;
   buf[TS_HEADER_LEN-1]=0;//we erase the pointer field
@@ -150,8 +173,7 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
     descriptor_length=HILO(sdt_descr->descriptors_loop_length);
       //We check the transport stream id if present and the size of the packet
       // + 4 for the CRC32
-    if((buf_dest_pos+SDT_DESCR_LEN+descriptor_length+4<TS_PACKET_SIZE) &&
-          (channel->service_id == HILO(sdt_descr->service_id) ))
+    if(channel->service_id == HILO(sdt_descr->service_id))
       {
         if(buf_dest_pos+SDT_DESCR_LEN+descriptor_length+4+1>TS_PACKET_SIZE) //The +4 is for CRC32 +1 is because indexing starts at 0
           {
@@ -219,10 +241,22 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
   }
   else
   {
-    log_message( log_module, MSG_WARN,"The SDT rewrite failed (no program found, have you set service_id ?) we desactivate for this channel %d : \"%s\"\n", curr_channel, channel->name);
-    channel->sdt_rewrite_skip=1;
+    //We check if we saw all the section numbers
+    if(sdt_rewrite_all_sections_seen(rewrite_vars))
+    {
+      log_message( log_module, MSG_WARN,"The SDT rewrite failed (no program found, wrong service_id ?) we desactivate for this channel %d : \"%s\"\n", curr_channel, channel->name);
+      channel->sdt_rewrite_skip=1;
+    }
+    else
+    {
+      log_message( log_module, MSG_DETAIL,"The program was not found in this SDT, we search for others. Channel %d : \"%s\"\n", curr_channel, channel->name);
+      rewrite_vars->sdt_need_others = 1;
+      return 0; //We indicate that there was a problem
+    }
   }
 
+  /*We update the version*/
+  channel->generated_sdt_version=rewrite_vars->sdt_version;
   //Everything is Ok ....*/
   return 1;
 }
@@ -238,11 +272,15 @@ int sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
   if(!rewrite_vars->sdt_needs_update)
   {
     rewrite_vars->sdt_needs_update=sdt_need_update(rewrite_vars,ts_packet);
-    if(rewrite_vars->sdt_needs_update) //It needs update we mark the packet as empty
+    if(rewrite_vars->sdt_needs_update) //It needs update we mark the packet as empty and we clear the sections seen
+    {
+      //We clear the section numbers seen
+      memset(&rewrite_vars->sdt_section_numbers_seen,0,sizeof(rewrite_vars->sdt_section_numbers_seen));
       rewrite_vars->full_sdt->empty=1;
+    }
   }
   /*We need to update the full packet, we download it*/
-  if(rewrite_vars->sdt_needs_update)
+  if(rewrite_vars->sdt_needs_update || rewrite_vars->sdt_need_others)
   {
     if(get_ts_packet(ts_packet,rewrite_vars->full_sdt))
     {
@@ -259,17 +297,28 @@ int sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
       {
         rewrite_vars->sdt_needs_update=1;
         rewrite_vars->full_sdt->empty=1;
-        log_message( log_module, MSG_DETAIL,"We didn't got the good SDT (wrong table id) we search for a new one\n");
+        log_message( log_module, MSG_DEBUG,"We didn't got the good SDT (wrong table id) we search for a new one\n");
         return 0;
       }
       else
       {
-	log_message( log_module, MSG_DETAIL,"Full SDT updated\n");
+        rewrite_vars->sdt_last_section_number = ((sdt_t *)rewrite_vars->full_sdt->packet)->last_section_number;
+	log_message( log_module, MSG_DETAIL,"Full SDT updated. section number %d, last_section_number %d\n",
+                      ((sdt_t *)rewrite_vars->full_sdt->packet)->section_number,
+                      rewrite_vars->sdt_last_section_number);
+        //We store that we saw this section number
+        rewrite_vars->sdt_section_numbers_seen[((sdt_t *)rewrite_vars->full_sdt->packet)->section_number]=1;
 	/*We've got the FULL SDT packet*/
 	update_sdt_version(rewrite_vars);
-	rewrite_vars->sdt_needs_update=0;
+        rewrite_vars->sdt_needs_update = 0;
 	rewrite_vars->full_sdt_ok=1;
-	return 1;
+        if(rewrite_vars->sdt_need_others == 0)
+          return 1; //We force the update of all channels, see mumudvb.c
+        else
+        {
+          rewrite_vars->sdt_need_others = 0;
+          return 0;
+        }
        }
     }
   }
@@ -294,12 +343,7 @@ int sdt_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_
       log_message( log_module, MSG_DEBUG,"We need to rewrite the SDT for the channel %d : \"%s\"\n", curr_channel, channel->name);
       /*They mismatch*/
       /*We generate the rewritten packet*/
-      if(sdt_channel_rewrite(rewrite_vars, channel, ts_packet, curr_channel))
-      {
-        /*We update the version*/
-        channel->generated_sdt_version=rewrite_vars->sdt_version;
-      }
-      else
+      if(!sdt_channel_rewrite(rewrite_vars, channel, ts_packet, curr_channel))
       {
         log_message( log_module, MSG_DEBUG,"ERROR with the SDT for the channel %d : \"%s\"\n", curr_channel, channel->name);
         return 0;
