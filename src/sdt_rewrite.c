@@ -97,12 +97,34 @@ void update_sdt_version(rewrite_parameters_t *rewrite_vars)
   rewrite_vars->sdt_version=sdt->version_number;
 }
 
+/** @brief Tells if we copy this descriptor for the rewriting*/
+int sdt_rewrite_copy_descriptor(int descriptor_tag)
+{
+  /*
+   * 0x47  bouquet_name_descriptor
+   * 0x48  service_descriptor
+   * 0x50  component_descriptor
+   * 0x51  mosaic_descriptor
+   * 0x53  CA_identifier_descriptor
+   * 0x5D  multilingual_service_name_descriptor
+   * 0x6E  announcement_support_descriptor
+   */
+  int allowed_descriptors[]={0x47, 0x48, 0x50, 0x51, 0x53, 0x5D, 0x6E};
+  int num_allowed=sizeof(allowed_descriptors)/sizeof(int);
+  for(int i=0;i<num_allowed;i++)
+    if(descriptor_tag == allowed_descriptors[i])
+      return 1;
+
+  return 0;
+}
+
 
 /** @brief Main function for sdt rewriting 
  * The goal of this function is to make a new sdt with only the announement for the streamed channel
- * by default it contains all the channels of the transponder. For each channel descriptor this function will search
- * the pmt pid of the channel in the given pid list. if found it keeps it otherwise it drops.
- * At the end, a new CRC32 is computed. The buffer is overwritten, so the caller have to save it before.
+ * by default it contains all the channels of the transponder.
+ * The SDT is read, if there is descriptors concerning the channel, they are copied to the 
+ * rewritten SDT. Not all the descriptors are copied see, the sdt_rewrite_copy_descriptor function
+ * 
  *
  * @param rewrite_vars the parameters for sdt rewriting
  * @param channels The array of channels
@@ -124,7 +146,7 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
 
   int section_length=0;
   int new_section_length;
-  int descriptor_length;
+  int descriptors_length;
 
 
   if(!channel->service_id)
@@ -170,12 +192,38 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
   while((buffer_pos+SDT_DESCR_LEN)<(section_length) && !found)
   {
     sdt_descr=(sdt_descr_t *)((char*)rewrite_vars->full_sdt->packet+buffer_pos);
-    descriptor_length=HILO(sdt_descr->descriptors_loop_length);
+    descriptors_length=HILO(sdt_descr->descriptors_loop_length);
       //We check the transport stream id if present and the size of the packet
       // + 4 for the CRC32
     if(channel->service_id == HILO(sdt_descr->service_id))
       {
-        if(buf_dest_pos+SDT_DESCR_LEN+descriptor_length+4+1>TS_PACKET_SIZE) //The +4 is for CRC32 +1 is because indexing starts at 0
+        //Not much size checking here, the packet passed the CRC32, so it should be OK
+        log_message( log_module, MSG_DEBUG,"Program found, we search for interesting descriptors\n");
+        //We loop on the descriptors
+        int loop_length;
+        loop_length=0;
+        unsigned char t_buffer[4096];
+        int pos=0;
+        //we copy the header
+        memcpy(t_buffer,rewrite_vars->full_sdt->packet+buffer_pos,SDT_DESCR_LEN);
+        while(pos<descriptors_length)
+        {
+          unsigned char descriptor_tag;
+          descriptor_tag = rewrite_vars->full_sdt->packet[buffer_pos+SDT_DESCR_LEN+pos];
+          unsigned char descriptor_len;
+          descriptor_len = rewrite_vars->full_sdt->packet[buffer_pos+SDT_DESCR_LEN+pos]+2;
+          if(sdt_rewrite_copy_descriptor(descriptor_tag))
+          {
+            //We keep the descriptor we copy it
+            log_message( log_module, MSG_FLOOD,"We copy this descriptor : descriptor_tag 0x%02x descriptor_len %d loop length %d pos %d\n",descriptor_tag,descriptor_len, loop_length, pos);
+            memcpy(t_buffer+SDT_DESCR_LEN+loop_length,rewrite_vars->full_sdt->packet+buffer_pos+SDT_DESCR_LEN+pos,descriptor_len);
+            loop_length += descriptor_len;
+          }
+          else
+            log_message( log_module, MSG_FLOOD," descriptor_tag 0x%02x descriptor_len %d\n",descriptor_tag,descriptor_len);
+          pos+=descriptor_len;
+        }
+        if(buf_dest_pos+SDT_DESCR_LEN+loop_length+4+1>TS_PACKET_SIZE) //The +4 is for CRC32 +1 is because indexing starts at 0
           {
             log_message( log_module, MSG_WARN,"The generated SDT is too big for channel %d : \"%s\"\n", curr_channel, channel->name);
           }
@@ -183,8 +231,17 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
           {
             log_message( log_module, MSG_DETAIL,"NEW program for channel %d : \"%s\". service_id : %d\n", curr_channel, channel->name,channel->service_id);
             //we found a announce for a program in our stream, we keep it
-            memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_sdt->packet+buffer_pos,SDT_DESCR_LEN+descriptor_length);
-            buf_dest_pos+=SDT_DESCR_LEN+descriptor_length;
+            //We fill the descriptor loop length
+            ((sdt_descr_t *)t_buffer)->descriptors_loop_length_lo = loop_length & 0x00FF;
+            ((sdt_descr_t *)t_buffer)->descriptors_loop_length_hi = (loop_length & 0xFF00)>>8;
+            if(HILO(((sdt_descr_t *)t_buffer)->descriptors_loop_length) != loop_length)
+            {
+              log_message( log_module, MSG_WARN,"BUG file %s line %d\n",__FILE__,__LINE__);
+              return 0;
+            }
+            //We copy the data
+            memcpy(buf_dest+buf_dest_pos,t_buffer,SDT_DESCR_LEN+loop_length);
+            buf_dest_pos+=SDT_DESCR_LEN+loop_length;
             found=1;
           }
       }
@@ -194,7 +251,7 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
                     channel->name,
                     channel->service_id,
                     HILO(sdt_descr->service_id));
-      buffer_pos+=SDT_DESCR_LEN+descriptor_length;
+      buffer_pos+=SDT_DESCR_LEN+descriptors_length;
   }
  
   //we compute the new section length
