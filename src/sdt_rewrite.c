@@ -203,6 +203,8 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
         int loop_length;
         loop_length=0;
         unsigned char t_buffer[4096];
+        sdt_descr_t *t_buffer_ptr;
+        t_buffer_ptr = ((sdt_descr_t *)t_buffer);
         int pos=0;
         //we copy the header
         memcpy(t_buffer,rewrite_vars->full_sdt->packet+buffer_pos,SDT_DESCR_LEN);
@@ -232,9 +234,9 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
             log_message( log_module, MSG_DETAIL,"NEW program for channel %d : \"%s\". service_id : %d\n", curr_channel, channel->name,channel->service_id);
             //we found a announce for a program in our stream, we keep it
             //We fill the descriptor loop length
-            ((sdt_descr_t *)t_buffer)->descriptors_loop_length_lo = loop_length & 0x00FF;
-            ((sdt_descr_t *)t_buffer)->descriptors_loop_length_hi = (loop_length & 0xFF00)>>8;
-            if(HILO(((sdt_descr_t *)t_buffer)->descriptors_loop_length) != loop_length)
+            t_buffer_ptr->descriptors_loop_length_lo = (loop_length & 0x00FF);
+            t_buffer_ptr->descriptors_loop_length_hi = (loop_length & 0xFF00)>>8;
+            if(HILO(t_buffer_ptr->descriptors_loop_length) != loop_length)
             {
               log_message( log_module, MSG_WARN,"BUG file %s line %d\n",__FILE__,__LINE__);
               return 0;
@@ -359,12 +361,12 @@ int sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
       }
       else
       {
-        rewrite_vars->sdt_last_section_number = ((sdt_t *)rewrite_vars->full_sdt->packet)->last_section_number;
+        rewrite_vars->sdt_last_section_number = sdt->last_section_number;
 	log_message( log_module, MSG_DETAIL,"Full SDT updated. section number %d, last_section_number %d\n",
-                      ((sdt_t *)rewrite_vars->full_sdt->packet)->section_number,
+                      sdt->section_number,
                       rewrite_vars->sdt_last_section_number);
         //We store that we saw this section number
-        rewrite_vars->sdt_section_numbers_seen[((sdt_t *)rewrite_vars->full_sdt->packet)->section_number]=1;
+        rewrite_vars->sdt_section_numbers_seen[sdt->section_number]=1;
 	/*We've got the FULL SDT packet*/
 	update_sdt_version(rewrite_vars);
         rewrite_vars->sdt_needs_update = 0;

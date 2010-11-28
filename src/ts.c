@@ -98,11 +98,13 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 
   if(ok && header->payload_unit_start_indicator) //It's the beginning of a new packet
     {
+      pmt_t *packet_header;
+      packet_header=((pmt_t *)ts_packet->packet);
       log_message(log_module, MSG_FLOOD, "payload_unit_start_indicator ie It's the beginning of a new packet\n");
       if(ts_packet->len && !ts_packet->packet_ok)
       {
           log_message( log_module,  MSG_DETAIL,"Unfinished packet received. Old packet len %d section_length %d ",
-               ts_packet->len,HILO(((pmt_t *)ts_packet->packet)->section_length));
+               ts_packet->len,HILO(packet_header->section_length));
       }
 	  ts_packet->empty=0;
 	  ts_packet->continuity_counter=header->continuity_counter;
@@ -174,9 +176,11 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 
     }
   //We check if the TS is full
+  pmt_t *packet_header;
+  packet_header=((pmt_t *)ts_packet->packet);
   log_message( log_module,  MSG_FLOOD,"ts_packet->len %d HILO(pmt->section_length) %d ",
-               ts_packet->len,HILO(((pmt_t *)ts_packet->packet)->section_length));
-  if (ts_packet->len > ((HILO(((pmt_t *)ts_packet->packet)->section_length))+3)) //+3 is for the header
+               ts_packet->len,HILO(packet_header->section_length));
+  if (ts_packet->len > ((HILO(packet_header->section_length))+3)) //+3 is for the header
   {
     //Yes, it's full, I check the CRC32 to say it's valid
     parsed=ts_check_CRC(ts_packet); //TEST CRC32
