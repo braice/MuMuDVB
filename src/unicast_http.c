@@ -1252,8 +1252,13 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
 * @param fds the frontend device structure
 */
 int
-unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int Socket, fds_t *fds, tuning_parameters_t *tuneparams, autoconf_parameters_t *autoconf_vars, void *cam_vars)
+unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int Socket, fds_t *fds, tuning_parameters_t *tuneparams, autoconf_parameters_t *autoconf_vars, void *cam_vars_v)
 {
+  #ifndef ENABLE_CAM_SUPPORT
+  (void) cam_vars_v; //to make compiler happy
+  #else
+  cam_parameters_t *cam_vars=(cam_parameters_t *)cam_vars_v;
+  #endif
   // Prepare the HTTP reply
   struct unicast_reply* reply = unicast_reply_init();
   if (NULL == reply) {
@@ -1349,10 +1354,10 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 
   // CAM information
   #ifdef ENABLE_CAM_SUPPORT
-    unicast_reply_write(reply, "\t<cam_support>%d</cam_support>\n",((cam_parameters_t*)cam_vars)->cam_support);
-    unicast_reply_write(reply, "\t<cam_number>%d</cam_number>\n",((cam_parameters_t*)cam_vars)->cam_number);
-    unicast_reply_write(reply, "\t<cam_menustring><![CDATA[%s]]></cam_menustring>\n",((cam_parameters_t*)cam_vars)->cam_menu_string);
-    unicast_reply_write(reply, "\t<cam_initialized>%d</cam_initialized>\n",((cam_parameters_t*)cam_vars)->ca_resource_connected);
+    unicast_reply_write(reply, "\t<cam_support>%d</cam_support>\n",cam_vars->cam_support);
+    unicast_reply_write(reply, "\t<cam_number>%d</cam_number>\n",cam_vars->cam_number);
+    unicast_reply_write(reply, "\t<cam_menustring><![CDATA[%s]]></cam_menustring>\n",cam_vars->cam_menu_string);
+    unicast_reply_write(reply, "\t<cam_initialized>%d</cam_initialized>\n",cam_vars->ca_resource_connected);
   #else
     unicast_reply_write(reply, "\t<cam_support>%d</cam_support>\n",0);
     unicast_reply_write(reply, "\t<cam_number>%d</cam_number>\n",0);
@@ -1418,8 +1423,13 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 * @param Socket the socket on wich the information have to be sent
 */
 int
-unicast_send_cam_menu (int Socket, void *cam_vars)
+unicast_send_cam_menu (int Socket, void *cam_vars_v)
 {
+  #ifndef ENABLE_CAM_SUPPORT
+  (void) cam_vars_v; //to make compiler happy
+  #else
+  cam_parameters_t *cam_vars=(cam_parameters_t *)cam_vars_v;
+  #endif
   struct unicast_reply* reply = unicast_reply_init();
   if (NULL == reply)
   {
@@ -1444,18 +1454,18 @@ unicast_send_cam_menu (int Socket, void *cam_vars)
 
   #ifdef ENABLE_CAM_SUPPORT
   // Sending the last menu if existing
-  if (((cam_parameters_t*)cam_vars)->ca_resource_connected!=0)
+  if (cam_vars->ca_resource_connected!=0)
   {
-    if (((cam_parameters_t*)cam_vars)->cam_menulist_lines>0)
+    if (cam_vars->cam_menulist_lines>0)
     {
       int i;
-      for (i=0; i<((cam_parameters_t*)cam_vars)->cam_menulist_lines; i++)
-        unicast_reply_write(reply, "%s",((cam_parameters_t*)cam_vars)->cam_menulist[i]);
+      for (i=0; i<cam_vars->cam_menulist_lines; i++)
+        unicast_reply_write(reply, "%s",cam_vars->cam_menulist[i]);
     }
     else
     {
       unicast_reply_write(reply, "\t<datetime><![CDATA[%s]]></datetime>\n",sdatetime);
-      unicast_reply_write(reply, "\t<cammenustring><![CDATA[%s]]></cammenustring>\n",((cam_parameters_t*)cam_vars)->cam_menu_string);
+      unicast_reply_write(reply, "\t<cammenustring><![CDATA[%s]]></cammenustring>\n",cam_vars->cam_menu_string);
       unicast_reply_write(reply, "\t<object><![CDATA[NONE]]></object>\n");
       unicast_reply_write(reply, "\t<title><![CDATA[No menu to display]]></title>\n");
     }
@@ -1467,8 +1477,6 @@ unicast_send_cam_menu (int Socket, void *cam_vars)
     unicast_reply_write(reply, "\t<title><![CDATA[CAM not initialized!]]></title>\n");
   }
   #else
-  time_t rawtime;
-  time (&rawtime);
   unicast_reply_write(reply, "\t<datetime><![CDATA[%s]]></datetime>\n",sdatetime);
   unicast_reply_write(reply, "\t<object><![CDATA[NONE]]></object>\n");
   unicast_reply_write(reply, "\t<title><![CDATA[Compiled without CAM support]]></title>\n");
@@ -1501,8 +1509,13 @@ unicast_send_cam_menu (int Socket, void *cam_vars)
 * @param Socket the socket on wich the information have to be sent
 */
 int
-unicast_send_cam_action (int Socket, char *Key, void *cam_vars)
+unicast_send_cam_action (int Socket, char *Key, void *cam_vars_v)
 {
+  #ifndef ENABLE_CAM_SUPPORT
+  (void) cam_vars_v; //to make compiler happy
+  #else
+  cam_parameters_t *cam_vars=(cam_parameters_t *)cam_vars_v;
+  #endif
   struct unicast_reply* reply = unicast_reply_init();
   if (NULL == reply)
   {
@@ -1533,46 +1546,46 @@ unicast_send_cam_action (int Socket, char *Key, void *cam_vars)
   if ((iKey>=48 && iKey<=57) || iKey==77 || iKey==67 || iKey==79)
   {
     // Check if CAM is initialized
-    if (((cam_parameters_t*)cam_vars)->ca_resource_connected!=0)
+    if (cam_vars->ca_resource_connected!=0)
     {
       // Disable auto response from now (as a manual action is asked)
-      ((cam_parameters_t*)cam_vars)->cam_mmi_autoresponse=0;
+      cam_vars->cam_mmi_autoresponse=0;
       // Numbers for MENU/LIST answer
-      if (((cam_parameters_t*)cam_vars)->mmi_state==MMI_STATE_MENU && iKey>=48 && iKey<=57)
+      if (cam_vars->mmi_state==MMI_STATE_MENU && iKey>=48 && iKey<=57)
 	  {
         log_message( log_module,  MSG_INFO, "Send CAM MENU key number %d\n",iKey-48);
-        en50221_app_mmi_menu_answ(((cam_parameters_t*)cam_vars)->stdcam->mmi_resource, ((cam_parameters_t*)cam_vars)->stdcam->mmi_session_number, iKey-48);
-		((cam_parameters_t*)cam_vars)->mmi_state=MMI_STATE_OPEN;
+        en50221_app_mmi_menu_answ(cam_vars->stdcam->mmi_resource, cam_vars->stdcam->mmi_session_number, iKey-48);
+		cam_vars->mmi_state=MMI_STATE_OPEN;
 	  }
       // 'M' = ask the menu - Always possible
       if (iKey==77)
 	  {
 	    log_message( log_module,  MSG_INFO, "Ask CAM to enter MENU\n");
-        en50221_app_ai_entermenu(((cam_parameters_t*)cam_vars)->stdcam->ai_resource, ((cam_parameters_t*)cam_vars)->stdcam->ai_session_number);
-		((cam_parameters_t*)cam_vars)->mmi_state=MMI_STATE_OPEN;
+        en50221_app_ai_entermenu(cam_vars->stdcam->ai_resource, cam_vars->stdcam->ai_session_number);
+		cam_vars->mmi_state=MMI_STATE_OPEN;
 	  }
       // Numbers for ENQUIRY answer
-      if (((cam_parameters_t*)cam_vars)->mmi_state==MMI_STATE_ENQ && iKey>=48 && iKey<=57)
+      if (cam_vars->mmi_state==MMI_STATE_ENQ && iKey>=48 && iKey<=57)
 	  {
 	    // We store the new key
-		((cam_parameters_t*)cam_vars)->mmi_enq_answer[((cam_parameters_t*)cam_vars)->mmi_enq_entered]=iKey;
-		((cam_parameters_t*)cam_vars)->mmi_enq_entered++;
-        log_message( log_module,  MSG_INFO, "Received CAM ENQUIRY key number %d (%d of %d expected)\n", iKey-48, ((cam_parameters_t*)cam_vars)->mmi_enq_entered, ((cam_parameters_t*)cam_vars)->mmi_enq_length);
+		cam_vars->mmi_enq_answer[cam_vars->mmi_enq_entered]=iKey;
+		cam_vars->mmi_enq_entered++;
+        log_message( log_module,  MSG_INFO, "Received CAM ENQUIRY key number %d (%d of %d expected)\n", iKey-48, cam_vars->mmi_enq_entered, cam_vars->mmi_enq_length);
 		// Test if the expected length is received
-		if (((cam_parameters_t*)cam_vars)->mmi_enq_entered == ((cam_parameters_t*)cam_vars)->mmi_enq_length)
+		if (cam_vars->mmi_enq_entered == cam_vars->mmi_enq_length)
 		{
 		  // We send the anwser
-		  log_message( log_module,  MSG_INFO, "Sending ENQUIRY answer to CAM (answer has the expected length of %d)\n",((cam_parameters_t*)cam_vars)->mmi_enq_entered);
-          en50221_app_mmi_answ(((cam_parameters_t*)cam_vars)->stdcam->mmi_resource, ((cam_parameters_t*)cam_vars)->stdcam->mmi_session_number, MMI_ANSW_ID_ANSWER, (uint8_t*)((cam_parameters_t*)cam_vars)->mmi_enq_answer, ((cam_parameters_t*)cam_vars)->mmi_enq_entered);
-		  ((cam_parameters_t*)cam_vars)->mmi_state=MMI_STATE_OPEN;
+		  log_message( log_module,  MSG_INFO, "Sending ENQUIRY answer to CAM (answer has the expected length of %d)\n",cam_vars->mmi_enq_entered);
+          en50221_app_mmi_answ(cam_vars->stdcam->mmi_resource, cam_vars->stdcam->mmi_session_number, MMI_ANSW_ID_ANSWER, (uint8_t*)cam_vars->mmi_enq_answer, cam_vars->mmi_enq_entered);
+		  cam_vars->mmi_state=MMI_STATE_OPEN;
 		}
 	  }
       // 'C' = send CANCEL as an ENQUIRY answer
-      if (((cam_parameters_t*)cam_vars)->mmi_state==MMI_STATE_ENQ && iKey==67)
+      if (cam_vars->mmi_state==MMI_STATE_ENQ && iKey==67)
 	  {
 	    log_message( log_module,  MSG_INFO, "Send CAM ENQUIRY key CANCEL\n");
-        en50221_app_mmi_answ(((cam_parameters_t*)cam_vars)->stdcam->mmi_resource, ((cam_parameters_t*)cam_vars)->stdcam->mmi_session_number, MMI_ANSW_ID_CANCEL, NULL, 0);
-		((cam_parameters_t*)cam_vars)->mmi_state=MMI_STATE_OPEN;
+        en50221_app_mmi_answ(cam_vars->stdcam->mmi_resource, cam_vars->stdcam->mmi_session_number, MMI_ANSW_ID_CANCEL, NULL, 0);
+		cam_vars->mmi_state=MMI_STATE_OPEN;
 	  }
       // OK
       unicast_reply_write(reply, "\t<result><![CDATA[OK]]></result>\n");

@@ -226,7 +226,7 @@ extern log_params_t log_params;
 static void SignalHandler (int signum);//below
 int read_multicast_configuration(multicast_parameters_t *, mumudvb_channel_t *, int, int *, char *); //in multicast.c
 void *monitor_func(void* arg);
-int mumudvb_close(monitor_parameters_t* monitor_thread_params, unicast_parameters_t* unicast_vars, int* strengththreadshutdown, cam_parameters_t* cam_vars, char* filename_channels_not_streamed,char *filename_channels_streamed, char *filename_pid, int Interrupted);
+int mumudvb_close(monitor_parameters_t* monitor_thread_params, unicast_parameters_t* unicast_vars, int* strengththreadshutdown, void *cam_vars_v, char* filename_channels_not_streamed,char *filename_channels_streamed, char *filename_pid, int Interrupted);
 
 int
     main (int argc, char **argv)
@@ -337,6 +337,9 @@ int
     .cam_menulist_lines=0,
     .cam_mmi_autoresponse=1,
   };
+  cam_parameters_t *cam_vars_ptr=&cam_vars;
+  #else
+  void *cam_vars_ptr=NULL;
   #endif
 
   char filename_channels_not_streamed[DEFAULT_PATH_LEN];
@@ -588,7 +591,7 @@ int
         exit(ERROR_CONF);
     }
 #ifdef ENABLE_CAM_SUPPORT
-    else if((iRet=read_cam_configuration(&cam_vars, &chan_and_pids.channels[curr_channel], channel_start, substring))) //Read the line concerning the cam parameters
+    else if((iRet=read_cam_configuration(cam_vars_ptr, &chan_and_pids.channels[curr_channel], channel_start, substring))) //Read the line concerning the cam parameters
     {
       if(iRet==-1)
         exit(ERROR_CONF);
@@ -979,8 +982,10 @@ int
            tuneparams.card, tuneparams.tuner);
   sprintf (filename_channels_not_streamed, NOT_STREAMED_LIST_PATH,
            tuneparams.card, tuneparams.tuner);
+#ifdef ENABLE_CAM_SUPPORT
   sprintf (cam_vars.filename_cam_info, CAM_INFO_LIST_PATH,
            tuneparams.card, tuneparams.tuner);
+#endif
   channels_diff = fopen (filename_channels_streamed, "w");
   if (channels_diff == NULL)
   {
@@ -1139,7 +1144,7 @@ int
 #ifdef ENABLE_CAM_SUPPORT
   if(cam_vars.cam_support){
     //We initialise the cam. If fail, we remove cam support
-    if(cam_start(&cam_vars,tuneparams.card))
+    if(cam_start(cam_vars_ptr,tuneparams.card))
     {
       log_message("CAM: ", MSG_ERROR,"Cannot initalise cam\n");
       cam_vars.cam_support=0;
@@ -1462,11 +1467,7 @@ int
       pthread_mutex_unlock(&cardthreadparams.carddatamutex);
       if(cardthreadparams.unicast_data)
       {
-#ifdef ENABLE_CAM_SUPPORT
-	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &tuneparams, &autoconf_vars, &cam_vars);
-#else
-	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &tuneparams, &autoconf_vars, NULL);
-#endif
+	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &tuneparams, &autoconf_vars, cam_vars_ptr);
 	if(iRet)
 	{
 	  Interrupted=iRet;
@@ -1492,11 +1493,7 @@ int
       /**************************************************************/ 
       if((!(fds.pfds[0].revents&POLLIN)) && (!(fds.pfds[0].revents&POLLPRI))) //Priority to the DVB packets so if there is dvb packets and something else, we look first to dvb packets
       {
-#ifdef ENABLE_CAM_SUPPORT
-	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &tuneparams, &autoconf_vars, &cam_vars);
-#else
-	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &tuneparams, &autoconf_vars, NULL );
-#endif
+	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &tuneparams, &autoconf_vars, cam_vars_ptr);
 	if(iRet)
 	  Interrupted=iRet;
 	//no DVB packet, we continue
@@ -1628,7 +1625,7 @@ int
             cam_vars.ca_resource_connected &&
             ((now-cam_vars.cam_pmt_send_time)>=cam_vars.cam_interval_pmt_send ))
         {
-          if(cam_new_packet(pid, curr_channel, actual_ts_packet, &autoconf_vars, &cam_vars, &chan_and_pids.channels[curr_channel]))
+          if(cam_new_packet(pid, curr_channel, actual_ts_packet, &autoconf_vars, cam_vars_ptr, &chan_and_pids.channels[curr_channel]))
             cam_vars.cam_pmt_send_time=now; //A packet was sent to the CAM
         }
 #endif
@@ -1778,7 +1775,7 @@ int
                  "We have got %d overflow errors\n",card_buffer.overflow_number );
 mumudvb_close_goto:
   //If the thread is not started, we don't send the unexisting address of monitor_thread_params
-  return mumudvb_close(monitorthread == 0 ? NULL:&monitor_thread_params , &unicast_vars, &tuneparams.strengththreadshutdown, &cam_vars, filename_channels_not_streamed, filename_channels_streamed, filename_pid, Interrupted);
+  return mumudvb_close(monitorthread == 0 ? NULL:&monitor_thread_params , &unicast_vars, &tuneparams.strengththreadshutdown, cam_vars_ptr, filename_channels_not_streamed, filename_channels_streamed, filename_pid, Interrupted);
 
 }
 
@@ -1786,12 +1783,16 @@ mumudvb_close_goto:
  *
  *
  */
-int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, cam_parameters_t *cam_vars, char *filename_channels_not_streamed, char *filename_channels_streamed, char *filename_pid, int Interrupted)
+int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, void *cam_vars_v, char *filename_channels_not_streamed, char *filename_channels_streamed, char *filename_pid, int Interrupted)
 {
 
   int curr_channel;
 
-
+  #ifndef ENABLE_CAM_SUPPORT
+   (void) cam_vars_v; //to make compiler happy
+  #else
+  cam_parameters_t *cam_vars=(cam_parameters_t *)cam_vars_v;
+  #endif
   if (Interrupted)
   {
     if(Interrupted< (1<<8)) //we check if it's a signal or a mumudvb error
