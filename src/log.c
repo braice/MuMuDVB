@@ -337,7 +337,7 @@ void log_message( char* log_module, int type,
           ((log_params.log_type & LOGGING_SYSLOG) && (log_params.syslog_initialised==0)))
           fprintf(stderr,"%s",log_string.string);
     }
-
+  mumu_free_string(&log_string);
 
 }
 
