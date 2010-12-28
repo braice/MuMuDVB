@@ -113,6 +113,11 @@ char *mumu_string_replace(char *source, int *length, int can_realloc, char *tore
   lengthsource=strlen(source);
   lengthtempstring=lengthsource+1;
   tempstring=malloc(sizeof(char)*lengthtempstring);
+  if(tempstring==NULL)
+    {
+        log_message(log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+	return NULL;
+    }
   strcpy(tempstring,source);
   pospattern=strstr(tempstring,toreplace);
   while(pospattern!=NULL)
@@ -120,6 +125,11 @@ char *mumu_string_replace(char *source, int *length, int can_realloc, char *tore
     if(lengthreplacment>lengthpattern)
     {
       tempstring=realloc(tempstring,sizeof(char)*(lengthtempstring+lengthreplacment-lengthpattern+1));
+      if(tempstring==NULL)
+	{
+	  log_message(log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+	  return NULL;
+	}
       pospattern=strstr(tempstring,toreplace);
     }
     memmove(pospattern+lengthreplacment,pospattern+lengthpattern,lengthtempstring-((int)(pospattern-tempstring))-lengthpattern);
@@ -152,6 +162,7 @@ char *mumu_string_replace(char *source, int *length, int can_realloc, char *tore
     strncpy(source,tempstring,*length-1);
     source[*length-1]='\0';
   }
+  free(tempstring);
   return source;
 }
 
