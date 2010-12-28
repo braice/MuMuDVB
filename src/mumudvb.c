@@ -2249,7 +2249,7 @@ void *monitor_func(void* arg)
     if((timeout_no_diff)&& (time_no_diff&&((monitor_now-time_no_diff)>timeout_no_diff)))
     {
       log_message( log_module,  MSG_ERROR,
-                  "No data from card %d in %fs, exiting.\n",
+                  "No data from card %d in %ds, exiting.\n",
                   params->tuneparams->card, timeout_no_diff);
       Interrupted=ERROR_NO_DIFF<<8; //the <<8 is to make difference beetween signals and errors
     }
