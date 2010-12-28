@@ -1057,6 +1057,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     {
       log_message( log_module,  MSG_ERROR, "Unsupported delivery system. Try tuning using DVB API 3 (do not set delivery_system). And please contact so it can be implemented.\n");
       Interrupted=ERROR_TUNE<<8;
+      free(cmdseq);
       return -1;
     }
 
@@ -1064,14 +1065,17 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
     if ((ioctl(fd_frontend, FE_SET_PROPERTY, &cmdclear)) == -1) {
       log_message( log_module,  MSG_ERROR,"FE_SET_PROPERTY clear failed : %s\n", strerror(errno));
       Interrupted=ERROR_TUNE<<8;
+      free(cmdseq);
       return -1;
     }
 
     if ((ioctl(fd_frontend, FE_SET_PROPERTY, cmdseq)) == -1) {
       log_message( log_module,  MSG_ERROR,"FE_SET_PROPERTY failed : %s\n", strerror(errno));
       Interrupted=ERROR_TUNE<<8;
+      free(cmdseq);
       return -1;
     }
+    free(cmdseq);
 
   }
 #endif
