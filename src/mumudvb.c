@@ -237,10 +237,12 @@ int
 
   //sap announces
   sap_parameters_t sap_vars={
-    .sap_messages=NULL,
+    .sap_messages4=NULL,
+    .sap_messages6=NULL,
     .sap=OPTION_UNDEFINED, //No sap by default
     .sap_interval=SAP_DEFAULT_INTERVAL,
-    .sap_sending_ip="0.0.0.0",
+    .sap_sending_ip4="0.0.0.0",
+    .sap_sending_ip6="::",
     .sap_default_group="",
     .sap_organisation="MuMuDVB",
     .sap_uri="\0",
@@ -1904,8 +1906,10 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
   autoconf_freeing(&autoconf_vars);
 
   //sap variables freeing
-  if(monitor_thread_params && monitor_thread_params->sap_vars->sap_messages)
-    free(monitor_thread_params->sap_vars->sap_messages);
+  if(monitor_thread_params && monitor_thread_params->sap_vars->sap_messages4)
+    free(monitor_thread_params->sap_vars->sap_messages4);
+  if(monitor_thread_params && monitor_thread_params->sap_vars->sap_messages6)
+    free(monitor_thread_params->sap_vars->sap_messages6);
 
   //Pat rewrite freeing
   if(rewrite_vars.full_pat)

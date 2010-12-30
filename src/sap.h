@@ -35,7 +35,9 @@
 #include "mumudvb.h"
 
 /**refer to  RFC 2974 : sap IP address*/
-#define SAP_IP  "224.2.127.254"
+#define SAP_IP4  "224.2.127.254"
+/**refer to  RFC 2974 : sap IP address*/
+#define SAP_IP6  "FF02::2:7FFE"
 /**refer to  RFC 2974 : sap port*/
 #define SAP_PORT 9875
 /**refer to  RFC 2974 : sap time to live*/
@@ -44,8 +46,15 @@
 /**intervall between sap announces*/
 #define SAP_DEFAULT_INTERVAL 5
 
-#define SAP_HEADER 0x20 /**00100000 : version 1 and nothing else*/
-#define SAP_HEADER2 0x00 /**No auth header*/
+#define SAP_HEADER4_BYTE0 0x20 /**00100000 : version 1 and nothing else*/
+#define SAP_HEADER4_BYTE1 0x00 /**No auth header*/
+
+#define SAP_HEADER6_BYTE0 0x30 /**00110000 : version 1 and IPv6*/
+#define SAP_HEADER6_BYTE1 0x00 /**No auth header*/
+
+#define SAP_HEAD_LEN4 8
+#define SAP_HEAD_LEN6 20
+
 
 /**@brief sap_message*/
 typedef struct{
@@ -63,13 +72,17 @@ typedef struct{
 /**@brief General parameter for sap announces*/
 typedef struct sap_parameters_t{
   /**the sap messages array*/
-  mumudvb_sap_message_t *sap_messages; 
+  mumudvb_sap_message_t *sap_messages4; 
+  /**the sap messages array*/
+  mumudvb_sap_message_t *sap_messages6; 
   /**do we send sap announces ?*/
   option_status_t sap; 
   /**Interval between two sap announces in second*/
   int sap_interval;
   /** The ip address of the server that sends the sap announces*/
-  char sap_sending_ip[20];
+  char sap_sending_ip4[20];
+  /** The ip address of the server that sends the sap announces*/
+  char sap_sending_ip6[IPV6_CHAR_LEN];
   /**the x-plgroup default : ie the playlist group (mainly for vlc)*/
   char sap_default_group[SAP_GROUP_LENGTH];
   /**The URI The URI should be a pointer to additional information about the
@@ -78,9 +91,13 @@ typedef struct sap_parameters_t{
   /**The organisation wich made the announces*/
   char sap_organisation[256];
   /** The socket for sending the announces*/
-  int sap_socketOut;
+  int sap_socketOut4;
   /** The socket for sending the announces*/
-  struct sockaddr_in sap_sOut;
+  struct sockaddr_in sap_sOut4;
+  /** The socket for sending the announces*/
+  int sap_socketOut6;
+  /** The socket for sending the announces*/
+  struct sockaddr_in6 sap_sOut6;
   /** The serial number for the sap announces*/
   int sap_serial;
   /** The time when the last sap announces have been sent*/

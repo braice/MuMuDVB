@@ -78,8 +78,10 @@
 
 We cannot discover easily the MTU with unconnected UDP
       http://linuxgazette.net/149/melinte.html
+
+7*188 plus margin
 */
-#define MAX_UDP_SIZE 1464
+#define MAX_UDP_SIZE 1320
 
 /**the max mandatory pid number*/
 #define MAX_MANDATORY_PID_NUMBER   32
