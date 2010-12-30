@@ -286,7 +286,7 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
   s= ...
    */
   sprintf(temp_string,"v=0\r\no=%s %d %d IN IP4 %s\r\ns=%s\r\n", 
-          sap_vars->sap_organisation, sap_vars->sap_serial, sap_message->version, channel->ipOut,
+          sap_vars->sap_organisation, sap_vars->sap_serial, sap_message->version, channel->ip4Out,
           channel->name);
   if( (sap_message->len+payload_len+strlen(temp_string))>1024)
   {
@@ -331,7 +331,7 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
   the /2 is the TTL of the media
    */
   sprintf(temp_string,"c=IN IP4 %s/%d\r\n",
-          channel->ipOut, multicast_vars.ttl);
+          channel->ip4Out, multicast_vars.ttl);
   if( (sap_message->len+payload_len+strlen(temp_string))>1024)
   {
     log_message( log_module, MSG_WARN,"SAP message too long for channel %s\n",channel->name);

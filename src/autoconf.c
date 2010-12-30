@@ -72,6 +72,7 @@
 #include "ts.h"
 #include "mumudvb.h"
 #include "dvb.h"
+#include "network.h"
 #include "autoconf.h"
 #include "rtp.h"
 #include "log.h"
@@ -716,8 +717,8 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
           mumu_string_replace(ip,&len,0,"%tuner",number);
           sprintf(number,"%d",server_id);
           mumu_string_replace(ip,&len,0,"%server",number);
-          strcpy(channels[channel_number].ipOut,ip);
-          log_message( log_module, MSG_DEBUG,"Channel Ip : \"%s\" port : %d\n",channels[channel_number].ipOut,channels[channel_number].portOut);
+          strcpy(channels[channel_number].ip4Out,ip);
+          log_message( log_module, MSG_DEBUG,"Channel Ip : \"%s\" port : %d\n",channels[channel_number].ip4Out,channels[channel_number].portOut);
         }
 
         //This is a scrambled channel, we will have to ask the cam for descrambling it
@@ -844,17 +845,17 @@ int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parame
 
     //Open the multicast socket for the new channel
     if(multicast_vars->multicast && multicast_vars->auto_join) //See the README for the reason of this option
-      chan_and_pids->channels[curr_channel].socketOut = 
-          makeclientsocket (chan_and_pids->channels[curr_channel].ipOut,
+      chan_and_pids->channels[curr_channel].socketOut4 = 
+          makeclientsocket (chan_and_pids->channels[curr_channel].ip4Out,
                             chan_and_pids->channels[curr_channel].portOut,
                             multicast_vars->ttl,
-                            &chan_and_pids->channels[curr_channel].sOut);
+                            &chan_and_pids->channels[curr_channel].sOut4);
     else if(multicast_vars->multicast)
-      chan_and_pids->channels[curr_channel].socketOut = 
-          makesocket (chan_and_pids->channels[curr_channel].ipOut,
+      chan_and_pids->channels[curr_channel].socketOut4 = 
+          makesocket (chan_and_pids->channels[curr_channel].ip4Out,
                       chan_and_pids->channels[curr_channel].portOut,
                       multicast_vars->ttl,
-                      &chan_and_pids->channels[curr_channel].sOut);
+                      &chan_and_pids->channels[curr_channel].sOut4);
   }
 
   log_message( log_module, MSG_DEBUG,"Step TWO, we get the video and audio PIDs\n");
@@ -910,7 +911,7 @@ void autoconf_definite_end(int card, int tuner, mumudvb_chan_and_pids_t *chan_an
 {
   log_message( log_module, MSG_INFO,"Autoconfiguration done\n");
 
-  log_streamed_channels(log_module,chan_and_pids->number_of_channels, chan_and_pids->channels, multicast, unicast_vars->unicast, unicast_vars->portOut, unicast_vars->ipOut);
+  log_streamed_channels(log_module,chan_and_pids->number_of_channels, chan_and_pids->channels, multicast, 0, unicast_vars->unicast, unicast_vars->portOut, unicast_vars->ipOut);
 
   /**@todo : make an option to generate it or not ?*/
   char filename_gen_conf[256];

@@ -979,9 +979,9 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
                             channels[curr_channel].name,
                             host,curr_channel+1,
                             host,curr_channel+1,
-                            channels[curr_channel].ipOut,channels[curr_channel].portOut);
+                            channels[curr_channel].ip4Out,channels[curr_channel].portOut);
                             else
-                              unicast_reply_write(reply, "Channel number %d : \"%s\"<br>Multicast ip : %s:%d<br><br>\r\n",curr_channel+1,channels[curr_channel].name,channels[curr_channel].ipOut,channels[curr_channel].portOut);
+                              unicast_reply_write(reply, "Channel number %d : \"%s\"<br>Multicast ip : %s:%d<br><br>\r\n",curr_channel+1,channels[curr_channel].name,channels[curr_channel].ip4Out,channels[curr_channel].portOut);
     }
     unicast_reply_write(reply, HTTP_CHANNELS_REPLY_END);
 
@@ -1093,7 +1093,7 @@ unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t *cha
                           channels[curr_channel].name,
                           urlheader,
                           vlcchar,
-                          channels[curr_channel].ipOut,
+                          channels[curr_channel].ip4Out,
                           channels[curr_channel].portOut);
     }
 
@@ -1143,7 +1143,7 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
                         channels[curr_channel].logical_channel_number,
                         channels[curr_channel].name,
                         channels[curr_channel].sap_group,
-                        channels[curr_channel].ipOut,
+                        channels[curr_channel].ip4Out,
                         channels[curr_channel].portOut,
                         clients,
                         channels[curr_channel].ratio_scrambled,
@@ -1376,7 +1376,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 	if (channels[curr_channel].portOut==0)
 		unicast_reply_write(reply, "\t\t<ip_multicast><![CDATA[0.0.0.0]]></ip_multicast>\n");
 	else
-		unicast_reply_write(reply, "\t\t<ip_multicast><![CDATA[%s]]></ip_multicast>\n",channels[curr_channel].ipOut);
+		unicast_reply_write(reply, "\t\t<ip_multicast><![CDATA[%s]]></ip_multicast>\n",channels[curr_channel].ip4Out);
     unicast_reply_write(reply, "\t\t<port_multicast>%d</port_multicast>\n",channels[curr_channel].portOut);
     unicast_reply_write(reply, "\t\t<is_up>%d</is_up>\n",channels[curr_channel].streamed_channel);
     unicast_reply_write(reply, "\t\t<traffic>%.0f</traffic>\n",channels[curr_channel].traffic);

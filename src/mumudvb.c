@@ -164,6 +164,8 @@ mumudvb_chan_and_pids_t chan_and_pids={
 //multicast parameters
 multicast_parameters_t multicast_vars={
   .multicast=1,
+  .multicast_ipv6=0,
+  .multicast_ipv4=1,
   .ttl=DEFAULT_TTL,
   .common_port = 1234,
   .auto_join=0,
@@ -1347,12 +1349,23 @@ int
   if(multicast_vars.multicast)
     for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
     {
-      //See the README for the reason of this option
-      if(multicast_vars.auto_join)
-        chan_and_pids.channels[curr_channel].socketOut = makeclientsocket (chan_and_pids.channels[curr_channel].ipOut, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids.channels[curr_channel].sOut);
-      else
-        chan_and_pids.channels[curr_channel].socketOut = makesocket (chan_and_pids.channels[curr_channel].ipOut, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids.channels[curr_channel].sOut);
-  }
+      if(multicast_vars.multicast_ipv4)
+	{
+	  //See the README for the reason of this option
+	  if(multicast_vars.auto_join)
+	    chan_and_pids.channels[curr_channel].socketOut4 = makeclientsocket (chan_and_pids.channels[curr_channel].ip4Out, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids.channels[curr_channel].sOut4);
+	  else
+	    chan_and_pids.channels[curr_channel].socketOut4 = makesocket (chan_and_pids.channels[curr_channel].ip4Out, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids.channels[curr_channel].sOut4);
+	}
+      if(multicast_vars.multicast_ipv6)
+	{
+	  //See the README for the reason of this option
+	  if(multicast_vars.auto_join)
+	    chan_and_pids.channels[curr_channel].socketOut6 = makeclientsocket6 (chan_and_pids.channels[curr_channel].ip6Out, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids.channels[curr_channel].sOut6);
+	  else
+	    chan_and_pids.channels[curr_channel].socketOut6 = makesocket6 (chan_and_pids.channels[curr_channel].ip6Out, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids.channels[curr_channel].sOut6);
+	}
+    }
 
 
   //We open the socket for the http unicast if needed and we update the poll structure
@@ -1386,7 +1399,14 @@ int
   /*****************************************************/
 
   if(autoconf_vars.autoconfiguration!=AUTOCONF_MODE_FULL)
-    log_streamed_channels(log_module,chan_and_pids.number_of_channels, chan_and_pids.channels, multicast_vars.multicast, unicast_vars.unicast, unicast_vars.portOut, unicast_vars.ipOut);
+    log_streamed_channels(log_module,
+			  chan_and_pids.number_of_channels,
+			  chan_and_pids.channels,
+			  multicast_vars.multicast_ipv4,
+			  multicast_vars.multicast_ipv6,
+			  unicast_vars.unicast,
+			  unicast_vars.portOut,
+			  unicast_vars.ipOut);
 
   if(autoconf_vars.autoconfiguration)
     log_message("Autoconf: ",MSG_INFO,"Autoconfiguration Start\n");
@@ -1734,20 +1754,30 @@ int
              //if the multicast TTL is set to 0 we don't send the multicast packets
             if(multicast_vars.multicast)
 	    {
+	      unsigned char *data;
+	      int data_len;
 	      if(multicast_vars.rtp_header)
 	      {
 		/****** RTP *******/
 		rtp_update_sequence_number(&chan_and_pids.channels[curr_channel]);
-                sendudp (chan_and_pids.channels[curr_channel].socketOut,
-		         &chan_and_pids.channels[curr_channel].sOut,
-		         chan_and_pids.channels[curr_channel].buf_with_rtp_header,
-                         chan_and_pids.channels[curr_channel].nb_bytes+RTP_HEADER_LEN);
+		data=chan_and_pids.channels[curr_channel].buf_with_rtp_header;
+		data_len=chan_and_pids.channels[curr_channel].nb_bytes+RTP_HEADER_LEN;
 	      }
 	      else
-		sendudp (chan_and_pids.channels[curr_channel].socketOut,
-			 &chan_and_pids.channels[curr_channel].sOut,
-			 chan_and_pids.channels[curr_channel].buf,
-                         chan_and_pids.channels[curr_channel].nb_bytes);
+		{
+		  data=chan_and_pids.channels[curr_channel].buf;
+		  data_len=chan_and_pids.channels[curr_channel].nb_bytes;
+		}
+	      if(multicast_vars.multicast_ipv4)
+		sendudp (chan_and_pids.channels[curr_channel].socketOut4,
+			 &chan_and_pids.channels[curr_channel].sOut4,
+			 data,
+			 data_len);
+	      if(multicast_vars.multicast_ipv6)
+		sendudp6 (chan_and_pids.channels[curr_channel].socketOut6,
+			 &chan_and_pids.channels[curr_channel].sOut6,
+			 data,
+			 data_len);
 	    }
             /*********** UNICAST **************/
 	    unicast_data_send(&chan_and_pids.channels[curr_channel], chan_and_pids.channels, &fds, &unicast_vars);
@@ -1828,8 +1858,10 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
 #ifdef ENABLE_TRANSCODING
     transcode_request_thread_end(chan_and_pids.channels[curr_channel].transcode_handle);
 #endif
-    if(chan_and_pids.channels[curr_channel].socketOut>0)
-      close (chan_and_pids.channels[curr_channel].socketOut);
+    if(chan_and_pids.channels[curr_channel].socketOut4>0)
+      close (chan_and_pids.channels[curr_channel].socketOut4);
+    if(chan_and_pids.channels[curr_channel].socketOut6>0)
+      close (chan_and_pids.channels[curr_channel].socketOut6);
     if(chan_and_pids.channels[curr_channel].socketIn>0)
       close (chan_and_pids.channels[curr_channel].socketIn); 
       //Free the channel structures

@@ -66,6 +66,16 @@ int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb
     substring = strtok (NULL, delimiteurs);
     multicast_vars->multicast = atoi (substring);
   }
+  else if (!strcmp (substring, "multicast_ipv4"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    multicast_vars->multicast_ipv4 = atoi (substring);
+  }
+  else if (!strcmp (substring, "multicast_ipv6"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    multicast_vars->multicast_ipv6 = atoi (substring);
+  }
   else if (!strcmp (substring, "multicast_auto_join"))
   {
     substring = strtok (NULL, delimiteurs);
@@ -81,9 +91,20 @@ int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb
                    "The Ip address %s is too long.\n", substring);
       return -1;
     }
-    sscanf (substring, "%s\n", channels[*curr_channel].ipOut);
-
+    sscanf (substring, "%s\n", channels[*curr_channel].ip4Out);
   }
+  else if (!strcmp (substring, "ip6"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    if(strlen(substring)>(IPV6_CHAR_LEN-1))
+    {
+      log_message( log_module,  MSG_ERROR,
+                   "The Ip v6 address %s is too long.\n", substring);
+      return -1;
+    }
+    sscanf (substring, "%s\n", channels[*curr_channel].ip6Out);
+  }
+
   else if (!strcmp (substring, "port"))
   {
     if ( channel_start == 0)

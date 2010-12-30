@@ -41,6 +41,7 @@
 #include "transcode_common.h"
 #endif
 
+#define IPV6_CHAR_LEN 64
 
 /*Do we support ATSC ?*/
 #undef ATSC
@@ -267,13 +268,20 @@ typedef struct mumudvb_channel_t{
   int autoconfigurated;
 
   /**The multicast ip address*/
-  char ipOut[20];
+  char ip4Out[20];
   /**The multicast port*/
   int portOut;
   /**The multicast output socket*/
-  struct sockaddr_in sOut;
+  struct sockaddr_in sOut4;
   /**The multicast output socket*/
-  int socketOut;
+  int socketOut4;
+  /**The ipv6 multicast ip address*/
+  char ip6Out[IPV6_CHAR_LEN];
+  /**The multicast output socket*/
+  struct sockaddr_in6 sOut6;
+  /**The multicast output socket*/
+  int socketOut6;
+
 
   /**Unicast clients*/
   struct unicast_client_t *clients;
@@ -318,6 +326,10 @@ typedef struct mumudvb_channel_t{
 typedef struct multicast_parameters_t{
   /** Do we activate multicast ? */
   int multicast;
+  /** Do we activate multicast ? */
+  int multicast_ipv4;
+  /** Do we activate multicast ? */
+  int multicast_ipv6;
   /** Time to live of sent packets */
   int ttl;
   /** the default port*/
