@@ -363,7 +363,7 @@ void log_streamed_channels(char *log_module,int number_of_channels, mumudvb_chan
       }
     if(multicast_ipv6)
       {
-	log_message( log_module,  MSG_INFO, "\tMulticast6 ip : %s:%d\n", channels[curr_channel].ip6Out, channels[curr_channel].portOut);
+	log_message( log_module,  MSG_INFO, "\tMulticast6 ip : [%s]:%d\n", channels[curr_channel].ip6Out, channels[curr_channel].portOut);
       }
     if(unicast)
     {

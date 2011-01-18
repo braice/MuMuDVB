@@ -191,7 +191,7 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL,
       if (setsockopt
 	  (socket, IPPROTO_IP, MCAST_JOIN_GROUP, &blub, sizeof (blub)))
 	{
-	  log_message( log_module,  MSG_ERROR, "setsockopt IP_ADD_MEMBERSHIP failed (multicast kernel?) : %s\n", strerror(errno));
+	  log_message( log_module,  MSG_ERROR, "setsockopt IP_ADD_MEMBERSHIP ipv4 failed (multicast kernel?) : %s\n", strerror(errno));
           Interrupted=ERROR_NETWORK<<8;
 	}
     }
@@ -232,7 +232,7 @@ makeclientsocket6 (char *szAddr, unsigned short port, int TTL,
   if (setsockopt
       (socket, IPPROTO_IP, MCAST_JOIN_GROUP, &blub, sizeof (blub)))
     {
-      log_message( log_module,  MSG_ERROR, "setsockopt IP_ADD_MEMBERSHIP failed (multicast kernel?) : %s\n", strerror(errno));
+      log_message( log_module,  MSG_ERROR, "setsockopt MCAST_JOIN_GROUP (ipv6) failed (multicast kernel?) : %s\n", strerror(errno));
       Interrupted=ERROR_NETWORK<<8;
     }
   return socket;

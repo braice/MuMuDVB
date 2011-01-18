@@ -81,7 +81,8 @@ Possible values for this variable
   /**do we autoconfigure the radios ?*/
   int autoconf_radios;
   /** The template of autoconfigured multicast addresses*/
-  char autoconf_ip[80];
+  char autoconf_ip4[80];
+  char autoconf_ip6[80];
   /**When did we started autoconfiguration ?*/
   long time_start_autoconfiguration; 
   /**The transport stream id (used to read ATSC PSIP tables)*/
