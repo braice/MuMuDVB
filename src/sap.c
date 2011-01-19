@@ -167,6 +167,7 @@ int init_sap(sap_parameters_t *sap_vars, multicast_parameters_t multicast_vars)
     {
       if(multicast_vars.multicast_ipv4)
 	{
+	  log_message( log_module,  MSG_DETAIL,  "init sap v4\n");
 	  sap_vars->sap_messages4=malloc(sizeof(mumudvb_sap_message_t)*MAX_CHANNELS);
 	  if(sap_vars->sap_messages4==NULL)
 	    {
@@ -183,6 +184,7 @@ int init_sap(sap_parameters_t *sap_vars, multicast_parameters_t multicast_vars)
 	}
       if(multicast_vars.multicast_ipv6)
 	{
+	  log_message( log_module,  MSG_DETAIL,  "init sap v6\n");
 	  sap_vars->sap_messages6=malloc(sizeof(mumudvb_sap_message_t)*MAX_CHANNELS);
 	  if(sap_vars->sap_messages6==NULL)
 	    {
@@ -220,9 +222,9 @@ void sap_send(sap_parameters_t *sap_vars, int num_messages)
 
   for( curr_message=0; curr_message<num_messages;curr_message++)
     {
-      if(sap_messages4[curr_message].to_be_sent)
+      if(sap_messages4 && sap_messages4[curr_message].to_be_sent)
 	  sendudp (sap_vars->sap_socketOut4, &sap_vars->sap_sOut4, sap_messages4[curr_message].buf, sap_messages4[curr_message].len);
-      if(sap_messages6[curr_message].to_be_sent)
+      if(sap_messages6 && sap_messages6[curr_message].to_be_sent)
 	  sendudp6 (sap_vars->sap_socketOut6, &sap_vars->sap_sOut6, sap_messages6[curr_message].buf, sap_messages6[curr_message].len);
     }
   return;
@@ -346,9 +348,10 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
   payload6.string=NULL;
   payload6.length=0;
 
-
-  sap_message4->to_be_sent=0;
-  sap_message6->to_be_sent=0;
+  if(sap_message4)
+    sap_message4->to_be_sent=0;
+  if(sap_message6)
+    sap_message6->to_be_sent=0;
   //we check if it's an alive channel
   if(!channel->streamed_channel)
       return 1;
@@ -543,7 +546,7 @@ void sap_poll(sap_parameters_t *sap_vars,int number_of_channels,mumudvb_channel_
 {
   int curr_channel;
   //we check if SAP is initialised
-  if(sap_vars->sap_messages4==NULL)
+  if(sap_vars->sap_messages4==NULL && sap_vars->sap_messages6==NULL)
     return;
   if(sap_vars->sap == OPTION_ON)
   {
