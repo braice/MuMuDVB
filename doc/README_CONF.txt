@@ -213,7 +213,7 @@ Multicast parameters
 [width="80%",cols="2,8,1,2,3",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
-|multicast |Do we activate multicast | 1 | 0 or 1 |
+|multicast |Do we activate multicast, deprecated, use multicast_ipv4 instead | 1 | 0 or 1 |
 |multicast_ipv4 |Do we activate IPv4 multicast | 1 | 0 or 1 |
 |multicast_ipv6 |Do we activate IPv6 multicast | 0 | 0 or 1 |
 |common_port | Default port for the streaming | 1234 | | 
@@ -291,8 +291,8 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 [width="80%",cols="2,8,1,1,3",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
-|ip4 |multicast (can also be unicast, in raw UDP ) ipv4 where the chanel will be streamed | | | Optionnal if you set multicast=0 (if not used you must use channel_next)
-|ip6 |multicast (can also be unicast, in raw UDP ) ipv6 where the chanel will be streamed | | | Optionnal if you set multicast=0 (if not used you must use channel_next)
+|ip |multicast (can also be unicast, in raw UDP ) ipv4 where the chanel will be streamed | | | Optionnal if you set multicast=0 (if not used you must use channel_next)
+|ip6 |multicast (can also be unicast, in raw UDP ) ipv6 where the chanel will be streamed | | | Optionnal if you set multicast=0
 |port | The port | 1234 or common_port | | Ports below 1024 needs root rights.
 |unicast_port | The HTTP unicast port for this channel | | | Ports below 1024 needs root rights. You need to activate HTTP unicast with `ip_http`
 |sap_group |The playlist group for SAP announces | | string | optionnal
