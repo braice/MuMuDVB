@@ -214,6 +214,8 @@ Multicast parameters
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |multicast |Do we activate multicast | 1 | 0 or 1 |
+|multicast_ipv4 |Do we activate IPv4 multicast | 1 | 0 or 1 |
+|multicast_ipv6 |Do we activate IPv6 multicast | 0 | 0 or 1 |
 |common_port | Default port for the streaming | 1234 | | 
 |multicast_ttl |The multicast Time To Live | 2 | |
 |multicast_auto_join | Set to 1 if you want MuMuDVB to join automatically the multicast groups | 0 | 0 or 1 | See known problems in the README
@@ -235,8 +237,9 @@ Autoconfiguration parameters
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |autoconfiguration |autoconfiguration 1, partial: find audio and video PIDs, 2, full: full autoconfiguration | 0 | 0, 1, 2, partial or full | see the README for more details
-|autoconf_ip_header |For full autoconfiguration, the first part of the ip for streamed channel |  | |  obsolete, use `autoconf_ip` instead
-|autoconf_ip |For full autoconfiguration, the template for the ip for streamed channel | 239.100.%card.%number  | |  You can use the keywords `%card`, `%tuner`, `%server` and `%number`
+|autoconf_ip_header |For full autoconfiguration, the first part of the ip for streamed channel |  | |  obsolete, use `autoconf_ip4` instead
+|autoconf_ip4 |For full autoconfiguration, the template for the ipv4 for streamed channel | 239.100.%card.%number  | |  You can use the keywords `%card`, `%tuner`, `%server` and `%number`
+|autoconf_ip6 |For full autoconfiguration, the template for the ipv6 for streamed channel | FF02:4242::%server:%card:%number  | |  You can use the keywords `%card`, `%tuner`, `%server` and `%number`
 |autoconf_radios |Do we consider radios as valid channels during full autoconfiguration ? | 0 | 0 or 1 | 
 |autoconf_scrambled |Do we consider scrambled channels valid channels during full autoconfiguration ? | 0 | 0 or 1 | Automatic when cam_support=1. Sometimes a clear channel can be marked as scrambled. This option allows you to bypass the ckecking.
 |autoconf_pid_update |Do we follow the changes in the PIDs when the PMT is updated ? | 1 | 0 or 1 | 
@@ -288,7 +291,8 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 [width="80%",cols="2,8,1,1,3",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
-|ip |multicast (can also be unicast, in raw UDP ) ip where the chanel will be streamed | | | Optionnal if you set multicast=0 (if not used you must use channel_next)
+|ip4 |multicast (can also be unicast, in raw UDP ) ipv4 where the chanel will be streamed | | | Optionnal if you set multicast=0 (if not used you must use channel_next)
+|ip6 |multicast (can also be unicast, in raw UDP ) ipv6 where the chanel will be streamed | | | Optionnal if you set multicast=0 (if not used you must use channel_next)
 |port | The port | 1234 or common_port | | Ports below 1024 needs root rights.
 |unicast_port | The HTTP unicast port for this channel | | | Ports below 1024 needs root rights. You need to activate HTTP unicast with `ip_http`
 |sap_group |The playlist group for SAP announces | | string | optionnal
