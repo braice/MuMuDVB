@@ -170,6 +170,8 @@ multicast_parameters_t multicast_vars={
   .common_port = 1234,
   .auto_join=0,
   .rtp_header = 0,
+  .iface4="\0",
+  .iface6="\0",
 };
 
 
@@ -1356,17 +1358,17 @@ int
 	{
 	  //See the README for the reason of this option
 	  if(multicast_vars.auto_join)
-	    chan_and_pids.channels[curr_channel].socketOut4 = makeclientsocket (chan_and_pids.channels[curr_channel].ip4Out, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids.channels[curr_channel].sOut4);
+	    chan_and_pids.channels[curr_channel].socketOut4 = makeclientsocket (chan_and_pids.channels[curr_channel].ip4Out, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, multicast_vars.iface4, &chan_and_pids.channels[curr_channel].sOut4);
 	  else
-	    chan_and_pids.channels[curr_channel].socketOut4 = makesocket (chan_and_pids.channels[curr_channel].ip4Out, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids.channels[curr_channel].sOut4);
+	    chan_and_pids.channels[curr_channel].socketOut4 = makesocket (chan_and_pids.channels[curr_channel].ip4Out, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, multicast_vars.iface4, &chan_and_pids.channels[curr_channel].sOut4);
 	}
       if(multicast_vars.multicast_ipv6)
 	{
 	  //See the README for the reason of this option
 	  if(multicast_vars.auto_join)
-	    chan_and_pids.channels[curr_channel].socketOut6 = makeclientsocket6 (chan_and_pids.channels[curr_channel].ip6Out, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids.channels[curr_channel].sOut6);
+	    chan_and_pids.channels[curr_channel].socketOut6 = makeclientsocket6 (chan_and_pids.channels[curr_channel].ip6Out, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, multicast_vars.iface6, &chan_and_pids.channels[curr_channel].sOut6);
 	  else
-	    chan_and_pids.channels[curr_channel].socketOut6 = makesocket6 (chan_and_pids.channels[curr_channel].ip6Out, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, &chan_and_pids.channels[curr_channel].sOut6);
+	    chan_and_pids.channels[curr_channel].socketOut6 = makesocket6 (chan_and_pids.channels[curr_channel].ip6Out, chan_and_pids.channels[curr_channel].portOut, multicast_vars.ttl, multicast_vars.iface6, &chan_and_pids.channels[curr_channel].sOut6);
 	}
     }
 

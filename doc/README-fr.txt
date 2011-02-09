@@ -883,6 +883,9 @@ Pour spécifier l'interface, vous povez définir une route pour le traffic multi
 route add -net 224.0.0.0 netmask 240.0.0.0 dev eth2
 ---------------------------------------------------
 
+ou vous pouvez utiliser les options multicast_iface4 et multicast_iface6
+
+
 Que veulent dire les codes d'erreur de MuMuDVB ?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

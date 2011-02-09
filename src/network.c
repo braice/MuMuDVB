@@ -35,6 +35,7 @@
 #include <errno.h> 
 #include <fcntl.h>
 #include "log.h"
+#include <net/if.h>
 
 extern int Interrupted;
 static char *log_module="Network: ";
@@ -66,12 +67,11 @@ sendudp6 (int fd, struct sockaddr_in6 *sSockAddr, unsigned char *data, int len)
  * Create a socket for sending data, the socket is multicast, udp, with the options REUSE_ADDR et MULTICAST_LOOP set to 1
  */
 int
-makesocket (char *szAddr, unsigned short port, int TTL,
+makesocket (char *szAddr, unsigned short port, int TTL, char *iface,
 	    struct sockaddr_in *sSockAddr)
 {
   int iRet, iLoop = 1;
   struct sockaddr_in sin;
-  char cTtl = (char) TTL;
   int iReuse = 1;
   int iSocket = socket (AF_INET, SOCK_DGRAM, 0);
 
@@ -98,7 +98,7 @@ makesocket (char *szAddr, unsigned short port, int TTL,
     }
 
   iRet =
-    setsockopt (iSocket, IPPROTO_IP, IP_MULTICAST_TTL, &cTtl, sizeof (char));
+    setsockopt (iSocket, IPPROTO_IP, IP_MULTICAST_TTL, &TTL, sizeof (int));
   if (iRet < 0)
     {
       log_message( log_module,  MSG_ERROR,"setsockopt IP_MULTICAST_TTL failed.  multicast in kernel? error : %s \n",strerror(errno));
@@ -112,6 +112,19 @@ makesocket (char *szAddr, unsigned short port, int TTL,
       log_message( log_module,  MSG_ERROR,"setsockopt IP_MULTICAST_LOOP failed.  multicast in kernel? error : %s\n",strerror(errno));
       Interrupted=ERROR_NETWORK<<8;
     }
+  if(strlen(iface))
+    {
+      int iface_index;
+      iface_index = if_nametoindex(iface);
+      log_message( log_module,  MSG_FLOOD, "Setting Ipv4 multicast iface to %s, index %d",iface,iface_index);
+      iRet =
+	setsockopt (iSocket, IPPROTO_IP, IP_MULTICAST_IF, &iface_index, sizeof (int));
+      if (iRet < 0)
+	{
+	  log_message( log_module,  MSG_ERROR,"setsockopt IP_MULTICAST_IF failed.  multicast in kernel? error : %s \n",strerror(errno));
+	  Interrupted=ERROR_NETWORK<<8;
+	}
+    }
 
   return iSocket;
 }
@@ -121,13 +134,12 @@ makesocket (char *szAddr, unsigned short port, int TTL,
  * Create a socket for sending data, the socket is multicast, udp, with the options REUSE_ADDR et MULTICAST_LOOP set to 1
  */
 int
-makesocket6 (char *szAddr, unsigned short port, int TTL,
+makesocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
 	    struct sockaddr_in6 *sSockAddr)
 {
   int iRet;
   int iReuse=1;
   struct sockaddr_in6 sin;
-  char cTtl = (char) TTL;
 
   int iSocket = socket (AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 
@@ -152,13 +164,25 @@ makesocket6 (char *szAddr, unsigned short port, int TTL,
       log_message( log_module,  MSG_ERROR,"setsockopt SO_REUSEADDR failed : %s\n",strerror(errno));
       Interrupted=ERROR_NETWORK<<8;
     }
-
   iRet =
-    setsockopt (iSocket, IPPROTO_IP, IPV6_MULTICAST_HOPS, &cTtl, sizeof (char));
+    setsockopt (iSocket, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &TTL, sizeof (int));
   if (iRet < 0)
     {
       log_message( log_module,  MSG_ERROR,"setsockopt IPV6_MULTICAST_HOPS failed.  multicast in kernel? error : %s \n",strerror(errno));
       Interrupted=ERROR_NETWORK<<8;
+    }
+  if(strlen(iface))
+    {
+      int iface_index;
+      iface_index = if_nametoindex(iface);
+      log_message( log_module,  MSG_FLOOD, "Setting Ipv6 multicast iface to %s, index %d",iface,iface_index);
+      iRet =
+	setsockopt (iSocket, IPPROTO_IPV6, IPV6_MULTICAST_IF, &iface_index, sizeof (int));
+      if (iRet < 0)
+	{
+	  log_message( log_module,  MSG_ERROR,"setsockopt IPV6_MULTICAST_IF failed.  multicast in kernel? error : %s \n",strerror(errno));
+	  Interrupted=ERROR_NETWORK<<8;
+	}
     }
 
   return iSocket;
@@ -168,10 +192,10 @@ makesocket6 (char *szAddr, unsigned short port, int TTL,
  *@todo document
 */
 int
-makeclientsocket (char *szAddr, unsigned short port, int TTL,
+makeclientsocket (char *szAddr, unsigned short port, int TTL, char *iface,
 		  struct sockaddr_in *sSockAddr)
 {
-  int socket = makesocket (szAddr, port, TTL, sSockAddr);
+  int socket = makesocket (szAddr, port, TTL, iface, sSockAddr);
   struct ip_mreq blub;
   struct sockaddr_in sin;
   unsigned int tempaddr;
@@ -203,10 +227,10 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL,
  *@todo document
 */
 int
-makeclientsocket6 (char *szAddr, unsigned short port, int TTL,
+makeclientsocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
 		  struct sockaddr_in6 *sSockAddr)
 {
-  int socket = makesocket6 (szAddr, port, TTL, sSockAddr);
+  int socket = makesocket6 (szAddr, port, TTL, iface, sSockAddr);
   struct ipv6_mreq blub;
   struct sockaddr_in6 sin;
   int iRet;

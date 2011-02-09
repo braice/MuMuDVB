@@ -889,12 +889,14 @@ int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parame
 	    makeclientsocket (chan_and_pids->channels[curr_channel].ip4Out,
 			      chan_and_pids->channels[curr_channel].portOut,
 			      multicast_vars->ttl,
+			      multicast_vars->iface4,
 			      &chan_and_pids->channels[curr_channel].sOut4);
 	else if(multicast_vars->multicast)
 	  chan_and_pids->channels[curr_channel].socketOut4 = 
 	    makesocket (chan_and_pids->channels[curr_channel].ip4Out,
 			chan_and_pids->channels[curr_channel].portOut,
 			multicast_vars->ttl,
+			multicast_vars->iface4,
 			&chan_and_pids->channels[curr_channel].sOut4);
       }
     if(multicast_vars->multicast_ipv6)
@@ -904,12 +906,14 @@ int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parame
 	    makeclientsocket6 (chan_and_pids->channels[curr_channel].ip6Out,
 			      chan_and_pids->channels[curr_channel].portOut,
 			      multicast_vars->ttl,
+			       multicast_vars->iface6,
 			      &chan_and_pids->channels[curr_channel].sOut6);
 	else if(multicast_vars->multicast)
 	  chan_and_pids->channels[curr_channel].socketOut6 = 
 	    makesocket6 (chan_and_pids->channels[curr_channel].ip6Out,
 			chan_and_pids->channels[curr_channel].portOut,
 			multicast_vars->ttl,
+			multicast_vars->iface6,
 			&chan_and_pids->channels[curr_channel].sOut6);
       }
   }

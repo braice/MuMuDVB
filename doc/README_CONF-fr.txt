@@ -219,6 +219,8 @@ Paramètres concernant le multicast
 |multicast | Est ce que le multicast est activé ? Obsolète, utilisez multicast_ipv4 à la place | 1 | 0 ou 1 | 
 |multicast_ipv4 | Est ce que le multicast IPv4 est activé ? | 1 | 0 ou 1 | 
 |multicast_ipv6 | Est ce que le multicast IPv6 est activé ? | 0 | 0 ou 1 | 
+|multicast_iface4 |L'interface résau pour envoyer les paquets multicast IPv4 | vide (laisse le système choisir) |  |
+|multicast_iface6 |L'interface résau pour envoyer les paquets multicast IPv6 | vide (laisse le système choisir) |  |
 |common_port | Le port par défaut pour la diffusion multicast | 1234 | | 
 |multicast_ttl | Le TTL multicast | 2 | |
 |multicast_auto_join | Si positionné à 1 MuMuDVB joindra automatiquement tous les groupes multicast créés | 0 | 0 or 1 | cf problèmes connus dans le README

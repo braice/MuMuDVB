@@ -178,9 +178,9 @@ int init_sap(sap_parameters_t *sap_vars, multicast_parameters_t multicast_vars)
 	  //For sap announces, we open the socket
 	  //See the README about multicast_auto_join
 	  if(multicast_vars.auto_join)
-	    sap_vars->sap_socketOut4 =  makeclientsocket (SAP_IP4, SAP_PORT, sap_vars->sap_ttl, &sap_vars->sap_sOut4);
+	    sap_vars->sap_socketOut4 =  makeclientsocket (SAP_IP4, SAP_PORT, sap_vars->sap_ttl, multicast_vars.iface4, &sap_vars->sap_sOut4);
 	  else
-	    sap_vars->sap_socketOut4 =  makesocket (SAP_IP4, SAP_PORT, sap_vars->sap_ttl, &sap_vars->sap_sOut4);
+	    sap_vars->sap_socketOut4 =  makesocket (SAP_IP4, SAP_PORT, sap_vars->sap_ttl, multicast_vars.iface4, &sap_vars->sap_sOut4);
 	}
       if(multicast_vars.multicast_ipv6)
 	{
@@ -195,9 +195,9 @@ int init_sap(sap_parameters_t *sap_vars, multicast_parameters_t multicast_vars)
 	  //For sap announces, we open the socket
 	  //See the README about multicast_auto_join
 	  if(multicast_vars.auto_join)
-	    sap_vars->sap_socketOut6 =  makeclientsocket6 (SAP_IP6, SAP_PORT, sap_vars->sap_ttl, &sap_vars->sap_sOut6);
+	    sap_vars->sap_socketOut6 =  makeclientsocket6 (SAP_IP6, SAP_PORT, sap_vars->sap_ttl, multicast_vars.iface6, &sap_vars->sap_sOut6);
 	  else
-	    sap_vars->sap_socketOut6 =  makesocket6 (SAP_IP6, SAP_PORT, sap_vars->sap_ttl, &sap_vars->sap_sOut6);
+	    sap_vars->sap_socketOut6 =  makesocket6 (SAP_IP6, SAP_PORT, sap_vars->sap_ttl, multicast_vars.iface6, &sap_vars->sap_sOut6);
 	}
       sap_vars->sap_serial= 1 + (int) (424242.0 * (rand() / (RAND_MAX + 1.0)));
       sap_vars->sap_last_time_sent = 0;

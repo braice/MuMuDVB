@@ -830,6 +830,8 @@ In order to specify the interface, you can specify a route for the multicast tra
 route add -net 224.0.0.0 netmask 240.0.0.0 dev eth2
 ---------------------------------------------------
 
+or use multicast_iface4 and multicast_iface6 options
+
 What does the MuMuDVB error code means ?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
