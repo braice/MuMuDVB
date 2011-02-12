@@ -37,7 +37,7 @@
 /**refer to  RFC 2974 : sap IP address*/
 #define SAP_IP4  "224.2.127.254"
 /**refer to  RFC 2974 : sap IP address*/
-#define SAP_IP6  "FF02::2:7FFE"
+#define SAP_IP6  "FF05::2:7FFE"
 /**refer to  RFC 2974 : sap port*/
 #define SAP_PORT 9875
 /**refer to  RFC 2974 : sap time to live*/

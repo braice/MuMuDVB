@@ -730,6 +730,21 @@ Le flux non transcodé est envoyé
 Pour eviter aux flux original d'être envoyé, vous pouvez utiliser l'option transcode_send_transcoded_only.
 
 
+
+[[ipv6]]
+IPv6
+----
+
+MuMuDVB supporte le multicast IPv6. Il n'est pas activé par défaut. Vous devez l'activer avec l'option multicast_ipv6.
+
+Pour "apprécier" le multicast IPv6 vous devez utiliser des switch supportant le protocole http://en.wikipedia.org/wiki/Multicast_Listener_Discovery[Multicast Listener Discovery].
+
+IPv6 utilise intensivement le concept de [http://en.wikipedia.org/wiki/Multicast_address]scope. Par défaut, MuMuDVB utilise le scope "site-local" (càd des addresses multicast commencant par FF05) les annonces SAP sont aussi envoyées avec ce scope. Si vous avez besoin de plus de flexibilité de ce coté merci de contacter.
+
+Pour plus de détails consultez http://mumudvb.braice.net/mumudrupal/node/52[la page sur l'IPv6] sur le site de MuMuDVB.
+
+
+
 Détails techniques (en vrac)
 ----------------------------
 
