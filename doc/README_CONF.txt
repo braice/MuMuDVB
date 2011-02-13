@@ -241,7 +241,7 @@ Autoconfiguration parameters
 |autoconfiguration |autoconfiguration 1, partial: find audio and video PIDs, 2, full: full autoconfiguration | 0 | 0, 1, 2, partial or full | see the README for more details
 |autoconf_ip_header |For full autoconfiguration, the first part of the ip for streamed channel |  | |  obsolete, use `autoconf_ip4` instead
 |autoconf_ip4 |For full autoconfiguration, the template for the ipv4 for streamed channel | 239.100.%card.%number  | |  You can use the keywords `%card`, `%tuner`, `%server` and `%number`
-|autoconf_ip6 |For full autoconfiguration, the template for the ipv6 for streamed channel | FF02:4242::%server:%card:%number  | |  You can use the keywords `%card`, `%tuner`, `%server` and `%number`
+|autoconf_ip6 |For full autoconfiguration, the template for the ipv6 for streamed channel | FF15:4242::%server:%card:%number  | |  You can use the keywords `%card`, `%tuner`, `%server` and `%number`
 |autoconf_radios |Do we consider radios as valid channels during full autoconfiguration ? | 0 | 0 or 1 | 
 |autoconf_scrambled |Do we consider scrambled channels valid channels during full autoconfiguration ? | 0 | 0 or 1 | Automatic when cam_support=1. Sometimes a clear channel can be marked as scrambled. This option allows you to bypass the ckecking.
 |autoconf_pid_update |Do we follow the changes in the PIDs when the PMT is updated ? | 1 | 0 or 1 | 
