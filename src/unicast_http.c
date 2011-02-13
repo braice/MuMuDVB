@@ -974,11 +974,11 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
     if (channels[curr_channel].streamed_channel)
     {
       if(host)
-        unicast_reply_write(reply, "Channel number %d : %s<br>Unicast link : <a href=\"http://%s/bynumber/%d\">http://%s/bynumber/%d</a><br>Multicast ip : %s:%d<br><br>\r\n",
+        unicast_reply_write(reply, "Channel number %d : %s<br>Unicast link : <a href=\"http://%s/bysid/%d\">http://%s/bysid/%d</a><br>Multicast ip : %s:%d<br><br>\r\n",
                             curr_channel+1,
                             channels[curr_channel].name,
-                            host,curr_channel+1,
-                            host,curr_channel+1,
+                            host,channels[curr_channel].service_id,
+                            host,channels[curr_channel].service_id,
                             channels[curr_channel].ipOut,channels[curr_channel].portOut);
                             else
                               unicast_reply_write(reply, "Channel number %d : \"%s\"<br>Multicast ip : %s:%d<br><br>\r\n",curr_channel+1,channels[curr_channel].name,channels[curr_channel].ipOut,channels[curr_channel].portOut);
@@ -1001,7 +1001,7 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
 * @param number_of_channels the number of channels
 * @param channels the channels array
 * @param Socket the socket on wich the information have to be sent
-* @param perport says if the channel have to be given by the url /bynumber or by their port
+* @param perport says if the channel have to be given by the url /bysid or by their port
 */
 int
 unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int perport)
@@ -1028,11 +1028,11 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
     {
       if(!perport)
       {
-        unicast_reply_write(reply, "#EXTINF:0,%s\r\nhttp://%s:%d/bynumber/%d\r\n",
+        unicast_reply_write(reply, "#EXTINF:0,%s\r\nhttp://%s:%d/bysid/%d\r\n",
                           channels[curr_channel].name,
                           inet_ntoa(tempSocketAddr.sin_addr) ,
                           unicast_portOut ,
-                          curr_channel+1);
+                          channels[curr_channel].service_id);
       }
       else if(channels[curr_channel].unicast_port)
       {

@@ -438,7 +438,7 @@ vlc http://10.0.0.1:4242/playlist.m3u
 -------------------------------------
 
 [NOTE]
-In this playlist the channels will be announced with URLs type `/bynumber/` (see below), if you want a playlist for single channel sockets, use the URL `/playlist_port.m3u`.
+In this playlist the channels will be announced with URLs type `/bysid/` (see below), if you want a playlist for single channel sockets, use the URL `/playlist_port.m3u`.
 
 [NOTE]
 Playlists for multicast are also generated, they are accessible using the following names: "playlist_multicast.m3u" and "playlist_multicast_vlc.m3u"
