@@ -347,7 +347,7 @@ void log_message( char* log_module, int type,
  * @param number_of_channels the number of channels
  * @param channels : the channels array
  */
-void log_streamed_channels(char *log_module,int number_of_channels, mumudvb_channel_t *channels, int multicast, int unicast, int unicast_master_port, char *unicastipOut)
+void log_streamed_channels(char *log_module,int number_of_channels, mumudvb_channel_t *channels, int multicast_ipv4,int multicast_ipv6, int unicast, int unicast_master_port, char *unicastipOut)
 {
   int curr_channel;
   int curr_pid;
@@ -357,8 +357,14 @@ void log_streamed_channels(char *log_module,int number_of_channels, mumudvb_chan
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
   {
     log_message( log_module,  MSG_INFO, "Channel number : %3d, name : \"%s\"  service id %d \n", curr_channel, channels[curr_channel].name, channels[curr_channel].service_id);
-    if(multicast)
-      log_message( log_module,  MSG_INFO, "\tMulticast ip : %s:%d\n", channels[curr_channel].ipOut, channels[curr_channel].portOut);
+    if(multicast_ipv4)
+      {
+	log_message( log_module,  MSG_INFO, "\tMulticast4 ip : %s:%d\n", channels[curr_channel].ip4Out, channels[curr_channel].portOut);
+      }
+    if(multicast_ipv6)
+      {
+	log_message( log_module,  MSG_INFO, "\tMulticast6 ip : [%s]:%d\n", channels[curr_channel].ip6Out, channels[curr_channel].portOut);
+      }
     if(unicast)
     {
       log_message( log_module,  MSG_INFO, "\tUnicast : Channel accessible via the master connection, %s:%d\n",unicastipOut, unicast_master_port);
@@ -442,7 +448,7 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
     //We store the old to be sure that we store only channels over the minimum packets limit
     if (channels[curr_channel].streamed_channel)
       {
-	fprintf (file_streamed_channels, "%s:%d:%s", channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
+	fprintf (file_streamed_channels, "%s:%d:%s", channels[curr_channel].ip4Out, channels[curr_channel].portOut, channels[curr_channel].name);
 	if (channels[curr_channel].scrambled_channel == FULLY_UNSCRAMBLED)
 	  fprintf (file_streamed_channels, ":FullyUnscrambled\n");
  	else if (channels[curr_channel].scrambled_channel == PARTIALLY_UNSCRAMBLED)
@@ -451,7 +457,7 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
 	  fprintf (file_streamed_channels, ":HighlyScrambled\n");
       }
     else
-      fprintf (file_not_streamed_channels, "%s:%d:%s\n", channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
+      fprintf (file_not_streamed_channels, "%s:%d:%s\n", channels[curr_channel].ip4Out, channels[curr_channel].portOut, channels[curr_channel].name);
   fclose (file_streamed_channels);
   fclose (file_not_streamed_channels);
 
@@ -575,7 +581,7 @@ void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *
     {
       fprintf ( config_file, "#Channel number : %3d\nip=%s\nport=%d\nname=%s\n",
 		curr_channel,
-		channels[curr_channel].ipOut,
+		channels[curr_channel].ip4Out,
 		channels[curr_channel].portOut,
 		channels[curr_channel].name);
 

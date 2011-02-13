@@ -682,6 +682,20 @@ Transcoding doesn't work for the moment with unicast
 
 To have more details on transcoding, see the dedicated documentation file
 
+
+[[ipv6]]
+IPv6
+----
+
+MuMuDVB supports IPv6 multicasting. It is not enabled by default you have to activate it using the multicast_ipv6 option
+
+To "enjoy" multicasting you need a switch which supports the http://en.wikipedia.org/wiki/Multicast_Listener_Discovery[Multicast Listener Discovery] protocol.
+
+IPv6 use extensively the concept of http://en.wikipedia.org/wiki/Multicast_address[scoping]. By default MuMuDVB uses the scope "site-local" (ie multicast addresses starting with FF05) the SAP announcements are also sent with this scope. If you need to have more flexibility on this side, please contact.
+
+For more details, please consult the http://mumudvb.braice.net/mumudrupal/node/52[IPv6 page] on MuMuDVB's website
+
+
 Technical details (not sorted)
 ------------------------------
 
@@ -829,6 +843,8 @@ In order to specify the interface, you can specify a route for the multicast tra
 ---------------------------------------------------
 route add -net 224.0.0.0 netmask 240.0.0.0 dev eth2
 ---------------------------------------------------
+
+or use multicast_iface4 and multicast_iface6 options
 
 What does the MuMuDVB error code means ?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

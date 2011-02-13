@@ -216,7 +216,11 @@ Paramètres concernant le multicast
 [width="80%",cols="2,8,1,2,3",options="header"]
 |==================================================================================================================
 |Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
-|multicast | Est ce que le multicast est activé ? | 1 | 0 ou 1 | 
+|multicast | Est ce que le multicast est activé ? Obsolète, utilisez multicast_ipv4 à la place | 1 | 0 ou 1 | 
+|multicast_ipv4 | Est ce que le multicast IPv4 est activé ? | 1 | 0 ou 1 | 
+|multicast_ipv6 | Est ce que le multicast IPv6 est activé ? | 0 | 0 ou 1 | 
+|multicast_iface4 |L'interface résau pour envoyer les paquets multicast IPv4 | vide (laisse le système choisir) |  |
+|multicast_iface6 |L'interface résau pour envoyer les paquets multicast IPv6 | vide (laisse le système choisir) |  |
 |common_port | Le port par défaut pour la diffusion multicast | 1234 | | 
 |multicast_ttl | Le TTL multicast | 2 | |
 |multicast_auto_join | Si positionné à 1 MuMuDVB joindra automatiquement tous les groupes multicast créés | 0 | 0 or 1 | cf problèmes connus dans le README
@@ -242,8 +246,9 @@ Paramètres pour l'autoconfiguration
 |==================================================================================================================
 |Nom |Description | Valeur par défaut | Valeurs possibles | Commentaires
 |autoconfiguration |autoconfiguration 1, partial: Trouve les PIDs audio et video, 2, full: autoconfiguration complète | 0 | 0, 1, 2, partial ou full | Se référer au README pour plus de détails
-|autoconf_ip_header |Pour l'autoconfiguration complète, la première partie de l'ip des chaînes diffusées | | | Option obsolète, utilisez `autoconf_ip` à la place
-|autoconf_ip |Pour l'autoconfiguration complète, le modèle pour l'ip de la chaîne diffusée | 239.100.%card.%number  | |  Vous pouvez utiliser les mot clefs `%card`, `%tuner`, `%number` et `%server`
+|autoconf_ip_header |Pour l'autoconfiguration complète, la première partie de l'ip des chaînes diffusées | | | Option obsolète, utilisez `autoconf_ip4` à la place
+|autoconf_ip4 |Pour l'autoconfiguration complète, le modèle pour l'ipv4 de la chaîne diffusée | 239.100.%card.%number  | |  Vous pouvez utiliser les mot clefs `%card`, `%tuner`, `%number` et `%server`
+|autoconf_ip6 |Pour l'autoconfiguration complète, le modèle pour l'ipv6 de la chaîne diffusée | FF15:4242::%server:%card:%number  | |  Vous pouvez utiliser les mot clefs `%card`, `%tuner`, `%number` et `%server`
 |autoconf_radios | Lors de l'autoconfiguration complète, est ce que les radios seront diffusées ?| 0 | 0 ou 1 | 
 |autoconf_scrambled |Lors de l'autoconfiguration complète, est ce que les chaînes brouillées seront diffusées ? | 0 | 0 or 1 | Automatique lorsque cam_support=1. Parfois, une chaîne en clair peut être marquée comme étant cryptée. Cette option est aussi nécessaire lorsqu'une softcam est utilisée.
 |autoconf_pid_update |Est ce que MuMuDVB se reconfigure lorsque le PMT est mis à jour ? | 1 | 0 or 1 | 
@@ -296,7 +301,8 @@ Concernant les PIDs, référez vous à la section <<getpids,obtenir les PIDs>>.
 [width="80%",cols="2,8,1,4",options="header"]
 |==================================================================================================================
 |Nom |Description | Valeur par défaut |  Commentaires
-|ip |Adresse ip multicast sur laquelle la chaîne sera diffusée | |  Optionnel si multicast=0 (si non utilisé, channel_next doit être utilisé à la place)
+|ip |Adresse ipv4 multicast sur laquelle la chaîne sera diffusée | |  Optionnel si multicast=0 (si non utilisé, channel_next doit être utilisé à la place)
+|ip6 |Adresse ipv6 multicast sur laquelle la chaîne sera diffusée | |  Optionnel si multicast=0
 |port | Le port | 1234 ou common_port |  Les ports inférieurs à 1024 nécessitent les droits root.
 |unicast_port | Le port pour l'unicast HTTP ( associé à cette chaîne ) | | Les ports inférieurs à 1024 nécessitent les droits root. Vous devez activer l'unicast HTTP avec l'option `ip_http`
 |sap_group | Le groupe de liste de lecture pour les annonces SAP | |  optionnel

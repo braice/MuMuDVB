@@ -34,6 +34,7 @@
 #include "mumudvb.h"
 #include "log.h"
 #include <string.h>
+#include <net/if.h>
 static char *log_module="Multicast: ";
 
  /** @brief Read a line of the configuration file to check if there is a cam parameter
@@ -66,6 +67,16 @@ int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb
     substring = strtok (NULL, delimiteurs);
     multicast_vars->multicast = atoi (substring);
   }
+  else if (!strcmp (substring, "multicast_ipv4"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    multicast_vars->multicast_ipv4 = atoi (substring);
+  }
+  else if (!strcmp (substring, "multicast_ipv6"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    multicast_vars->multicast_ipv6 = atoi (substring);
+  }
   else if (!strcmp (substring, "multicast_auto_join"))
   {
     substring = strtok (NULL, delimiteurs);
@@ -81,9 +92,20 @@ int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb
                    "The Ip address %s is too long.\n", substring);
       return -1;
     }
-    sscanf (substring, "%s\n", channels[*curr_channel].ipOut);
-
+    sscanf (substring, "%s\n", channels[*curr_channel].ip4Out);
   }
+  else if (!strcmp (substring, "ip6"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    if(strlen(substring)>(IPV6_CHAR_LEN-1))
+    {
+      log_message( log_module,  MSG_ERROR,
+                   "The Ip v6 address %s is too long.\n", substring);
+      return -1;
+    }
+    sscanf (substring, "%s\n", channels[*curr_channel].ip6Out);
+  }
+
   else if (!strcmp (substring, "port"))
   {
     if ( channel_start == 0)
@@ -101,6 +123,28 @@ int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb
     multicast_vars->rtp_header = atoi (substring);
     if (multicast_vars->rtp_header==1)
       log_message( log_module,  MSG_INFO, "You decided to send the RTP header (multicast only).\n");
+  }
+  else if (!strcmp (substring, "multicast_iface4"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    if(strlen(substring)>(IF_NAMESIZE))
+    {
+      log_message( log_module,  MSG_ERROR,
+                   "The interface name ipv4 address %s is too long.\n", substring);
+      return -1;
+    }
+    sscanf (substring, "%s\n", multicast_vars->iface4);
+  }
+  else if (!strcmp (substring, "multicast_iface6"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    if(strlen(substring)>(IF_NAMESIZE))
+    {
+      log_message( log_module,  MSG_ERROR,
+                   "The interface name ipv6 address %s is too long.\n", substring);
+      return -1;
+    }
+    sscanf (substring, "%s\n", multicast_vars->iface6);
   }
   else
     return 0; //Nothing concerning multicast, we return 0 to explore the other possibilities
