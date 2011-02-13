@@ -35,7 +35,7 @@ Auteurs et contacts
 .Contributeurs
 - mailto:manu@REMOVEMEcrans.ens-cachan.fr[Manuel Sabban] (getopt)
 - mailto:glondu@REMOVEMEcrans.ens-cachan.fr[Stéphane Glondu] (man page, debian package)
-- Special thanks to Dave Chapman (dvbstream author)
+- Special thanks to Dave Chapman (dvbstream author and contributor)
 - Pierre Gronlier, Sébastien Raillard, Ludovic Boué, Romolo Manfredini
 - Utelisys Communications B.V. pour le transcodage
 
