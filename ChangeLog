@@ -1,3 +1,25 @@
+-- MuMuDVB 1.6.1b --
+ * Implements dual stack for IPv6 Mulicast
+ * Support for RTSP Unicast
+ * Tunning: Support for multiple tuners
+ * Error : Add option filter_transport_error to send packets with error bit set by decoder
+ * Dump : Possibility to dump the raw stream for debugging purposes + update of the man page
+ * Testing suite : test program for various MuMuDVB functions to compile this program, run "make check"
+ * Logging: We can send it's logs to the console, to a file or via syslog. It can also be several of these channels. The formatting of the logs can also be adjusted.
+ * CAM Menu : CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.txt
+Templates support
+ * Webservices : Simple XML webservice exposing detailed streaming status (see WEBSERVICES.txt)
+ * PID : Add option filename_pid Possibility to define the path for the pid file : 
+ * DiSEqC : improvments : support of uncommited switches. Set of the tone burst
+ * Autoconfiguration:  New option autoconf_multicast_port, allows to define the multicast port with templates
+ * Possibility to tune the up/down detection thresholds
+
+Bugs corrected :
+ * SDT rewrite improve : we copy only the interesting services to the rewritten SDT
+ * Filter : New option psi_tables_filtering to keep only mandatory PSI PID. Useful for some STB.
+
+New features / improvements : 
+
 -- MuMuDVB 1.6 --
 
 New features / improvements : 

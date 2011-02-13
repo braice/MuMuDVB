@@ -1,21 +1,26 @@
 Webservices
 ===========
+Sebastien RAILLARD
 
 To activate the webservices, just enable the unicast mode with something like that:
+----------------
 unicast=1         : Activate the internal webserver
 ip_http=127.0.0.1 : IP address for accepting the HTTP requests
 port_http=8005    : Listening port
+----------------
 
 The webservices responses are not SOAP compliant, but formatted in simple XML documents (UTF-8).
 The output can be easily parsed in PHP for example.
 
-* Status monitoring :
+Status monitoring :
 ---------------------
 
 There is no input parameters.
 URL : http://ip_http:port_http/monitor/state.xml
+
 Example of response with comments:
 
+----------------
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <mumudvb card="5" frontend="0">                                          => adapter and frontend devices
 	<global_version><![CDATA[1.6.1b_20101101]]></global_version>         => MuMuDVB version
@@ -63,33 +68,40 @@ Example of response with comments:
 		</pids>                                                          => End of PID loop
 	</channel>                                                           => End of channels loop
 </mumudvb>                                                               => End of response
+----------------
 
-* Access to the CAM menu:
+Access to the CAM menu:
 -------------------------
 
 These two webservices allow for accessing the CAM menu during streaming.
 This is usefull for checking rights or download status for example.
 
-The file "cam_menu.php" is a simple demonstration on how to use these webservices in order to make a web interface with AJAX compatible with the most important browsers (Firefox, Chrome, Internet Explorer).
+
+The file `cam_menu.php` is a simple demonstration on how to use these webservices in order to make a web interface with AJAX compatible with the most important browsers (Firefox, Chrome, Internet Explorer).
+
 For using it, you just need a webserver (lighttpd, apache, etc.) with PHP activated.
-The web page accept one GET parameter: "port_server". This is the unicast port setup for accessing MuMuDVB webservices.
+The web page accept one GET parameter: `port_server`. This is the unicast port setup for accessing MuMuDVB webservices.
+
 The CAM menu is refresded every 2 seconds and buttons can be used to navigate in the menus.
 MENU, LIST and ENQUIRY MMI objects are supported.
 
-=> First webservice return the latest menu returned by the CAM.
+ * First webservice return the latest menu returned by the CAM.
 There is no input parameters.
 URL : http://ip_http:port_http/cam/menu.xml
 Below, some examples of response with comments.
 
 Case when the CAM isn't initialized:
+----------------
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <menu>
 	<datetime><![CDATA[Mon Nov  1 22:08:17 2010]]></datetime>  => Last update time/date
 	<object><![CDATA[NONE]]></object>                          => No object to show
 	<title><![CDATA[CAM not initialized!]]></title>            => Message about CAM not initialized
 </menu>
+----------------
 
 Case when the CAM is initialized but there is no menu to display:
+----------------
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <menu>
 	<datetime><![CDATA[Tue Nov  2 22:38:37 2010]]></datetime>       => Last update time/date
@@ -97,8 +109,9 @@ Case when the CAM is initialized but there is no menu to display:
 	<object><![CDATA[NONE]]></object>                               => No object to show
 	<title><![CDATA[No menu to display]]></title>                   => Message about no menu to display
 </menu>
-
+----------------
 Case when a object is send by the CAM to be displayed:
+----------------
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <menu>
 	<datetime><![CDATA[Tue Nov  2 22:39:58 2010]]></datetime>       => When the object was received
@@ -112,45 +125,50 @@ Case when a object is send by the CAM to be displayed:
 	<item num="3"><![CDATA[Information]]></item>
 	<bottom><![CDATA[Votre choix, svp]]></bottom>                   => Object bottom line
 </menu>
+----------------
 
-=> Second webservice allows for sending response to the CAM.
-There is one integer GET paramter: "key".
-Possible keys: "0" to "9" (numbers), "M" for asking the CAM menu, "C" for cancelling an "ENQUIRY" object.
+ *  Second webservice allows for sending response to the CAM.
+There is one integer GET paramter: `key`.
+Possible keys: `0` to `9` (numbers), `M` for asking the CAM menu, `C` for cancelling an `ENQUIRY` object.
 URL : http://ip_http:port_http/cam/action.xml?key=X
 There are 4 king of responses.
 
 OK:
+----------------
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <action>
 	<datetime><![CDATA[Mon Nov  1 22:13:30 2010]]></datetime>
 	<key><![CDATA[X]]></key>
 	<result><![CDATA[OK]]></result>
 </action>
+----------------
 
 Unknown key:
+----------------
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <action>
 	<datetime><![CDATA[Mon Nov  1 22:13:30 2010]]></datetime>
 	<key><![CDATA[X]]></key>
 	<result><![CDATA[ERROR: Unknown key!]]></result>
 </action>
+----------------
 
 CAM not initialized:
+----------------
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <action>
 	<datetime><![CDATA[Mon Nov  1 22:13:30 2010]]></datetime>
 	<key><![CDATA[X]]></key>
 	<result><![CDATA[ERROR: CAM not initialized!]]></result>
 </action>
+----------------
 
 MuMuDVB compiled without CAM support:
+----------------
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <action>
 	<datetime><![CDATA[Mon Nov  1 22:13:30 2010]]></datetime>
 	<key><![CDATA[X]]></key>
 	<result><![CDATA[Compiled without CAM support]]></result>
 </action>
-
-
-
-
+----------------
