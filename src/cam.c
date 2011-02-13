@@ -423,8 +423,8 @@ static void *camthread_func(void* arg)
         last_channel_check=now;
         for (int curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
         {
-          // Check if reasking (ie sending a CAM PMT UPDATE) is needed. IE channel hyghly scrambled and asked a while ago
-          if((chan_and_pids.channels[curr_channel].scrambled_channel == HIGHLY_SCRAMBLED)&&
+          // Check if reasking (ie sending a CAM PMT UPDATE) is needed. IE channel hyghly/partially scrambled or down and asked a while ago
+          if((chan_and_pids.channels[curr_channel].scrambled_channel == HIGHLY_SCRAMBLED || chan_and_pids.channels[curr_channel].scrambled_channel == PARTIALLY_UNSCRAMBLED || chan_and_pids.channels[curr_channel].streamed_channel == 0)&&
             (chan_and_pids.channels[curr_channel].need_cam_ask==CAM_ASKED)&&
             ((tv.tv_sec-chan_and_pids.channels[curr_channel].cam_asking_time)>cam_params->cam_reask_interval))
           {
@@ -472,6 +472,12 @@ static void *camthread_func(void* arg)
                    liben50221_error_to_str(error_old),liben50221_error_to_str_descr(error_old),
                    liben50221_error_to_str(error_new),liben50221_error_to_str_descr(error_new));
       error_old=error_new;
+	  if(cam_params->ca_resource_connected)
+	  {
+		// This is probably a CAM crash, as after initialization, a Transport Layer error isn't good...
+	    log_message( log_module,  MSG_ERROR,"Transport Layer error after CAM initialization: CAM may have crash, it's better to exit and restart...\n");
+        Interrupted= ERROR_CAM<<8; //the <<8 is to make difference beetween signals and errors
+	  }
     }
 
 
