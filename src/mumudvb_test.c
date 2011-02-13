@@ -247,7 +247,7 @@ int main(void)
       autoconf_vars.autoconfiguration=AUTOCONF_MODE_FULL;
       autoconf_vars.autoconf_radios=1;
       autoconf_vars.autoconf_scrambled=1;
-      strcpy (autoconf_vars.autoconf_ip,"239.100.%card.%number");
+      strcpy (autoconf_vars.autoconf_ip4,"239.100.%card.%number");
       autoconf_vars.transport_stream_id=-1;
 
 
@@ -298,7 +298,7 @@ int main(void)
       log_message( log_module, MSG_INFO,"============ DONE we display the channels ========\n");
       if(chan_and_pids.number_of_channels)
       {
-        log_streamed_channels(log_module,chan_and_pids.number_of_channels, chan_and_pids.channels, 1, 0, 0,"");
+        log_streamed_channels(log_module,chan_and_pids.number_of_channels, chan_and_pids.channels, 1, 0, 0, 0,"");
         //We can tests other things here like REWRITE etc ....
         log_message( log_module, MSG_INFO,"===================================================================\n");
         log_message( log_module, MSG_INFO,"Testing SDT rewrite on this file (%s)\n", files_autoconf[i_file]);

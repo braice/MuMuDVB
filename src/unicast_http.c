@@ -979,7 +979,7 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
                             channels[curr_channel].name,
                             host,channels[curr_channel].service_id,
                             host,channels[curr_channel].service_id,
-                            channels[curr_channel].ipOut,channels[curr_channel].portOut);
+                            channels[curr_channel].ip4Out,channels[curr_channel].portOut);
                             else
                               unicast_reply_write(reply, "Channel number %d : \"%s\"<br>Multicast ip : %s:%d<br><br>\r\n",curr_channel+1,channels[curr_channel].name,channels[curr_channel].ip4Out,channels[curr_channel].portOut);
     }
