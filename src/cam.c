@@ -283,7 +283,7 @@ int cam_start(cam_parameters_t *cam_params, int adapter_id)
   }
 
   // create session layer
-  cam_params->sl = en50221_sl_create(cam_params->tl, 16);
+  cam_params->sl = en50221_sl_create(cam_params->tl, SL_MAX_SESSIONS);
   if (cam_params->sl == NULL) {
     log_message( log_module,  MSG_ERROR, "Failed to create session layer\n");
     en50221_tl_destroy(cam_params->tl);
@@ -403,7 +403,7 @@ static void *camthread_func(void* arg)
 
   //Loop
   while(!cam_params->camthread_shutdown) {
-    usleep(500000); //some waiting
+    usleep(100*1000); //some waiting - 100ms (see specs)
 
     gettimeofday (&tv, (struct timezone *) NULL);
     now = tv.tv_sec - real_start_time;
@@ -547,6 +547,18 @@ static void *camthread_func(void* arg)
       cam_params->reset_counts++;
     }
 
+  }
+
+  // As we can't get the state of the session, 
+  // we try to close all of them with some polling to force communication
+  log_message( log_module,  MSG_DEBUG,"Closing the CAM sessions\n");
+  for (i=0;i<SL_MAX_SESSIONS;i++)
+  {
+    en50221_sl_destroy_session(cam_params->sl,i);
+    usleep(50*1000);
+    cam_params->stdcam->poll(cam_params->stdcam);
+    usleep(50*1000);
+    cam_params->stdcam->poll(cam_params->stdcam);
   }
 
   log_message( log_module,  MSG_DEBUG,"CAM Thread stopped\n");
@@ -957,7 +969,6 @@ static int mumudvb_cam_mmi_close_callback(void *arg, uint8_t slot_id, uint16_t s
   cam_parameters_t *cam_params;
   cam_params= (cam_parameters_t *) arg;
   (void) slot_id;
-  (void) session_number;
   (void) cmd_id;
   (void) delay;
 
@@ -967,8 +978,11 @@ static int mumudvb_cam_mmi_close_callback(void *arg, uint8_t slot_id, uint16_t s
   // Remove last stored menu content
   cam_params->cam_menulist_lines=0;
   
-  // Indicate that the menu was closed (for our own record - some CAM don't like to reopen a menu after that)
+  // Indicate that the menu was closed (for our own record)
   cam_params->mmi_state = MMI_STATE_CLOSED;
+  
+  // Close the session with the CAM or a new session MMI will not be allowed
+  en50221_sl_destroy_session(cam_params->sl,session_number);
 
   return 0;
 }

@@ -115,6 +115,8 @@ typedef struct cam_parameters_t{
  * Code for dealing with libdvben50221
  *****************************************************************************/
 
+#define SL_MAX_SESSIONS 16
+
 #define MMI_STATE_CLOSED 0
 #define MMI_STATE_OPEN 1
 #define MMI_STATE_ENQ 2
