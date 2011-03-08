@@ -1735,10 +1735,10 @@ int
 
 		if (NULL == chan_and_pids.channels[curr_channel].transcode_handle) {
 
-		    strcpy(chan_and_pids.channels[curr_channel].transcode_options.ip, chan_and_pids.channels[curr_channel].ipOut);
+		    strcpy(chan_and_pids.channels[curr_channel].transcode_options.ip, chan_and_pids.channels[curr_channel].ip4Out);
 
-		    chan_and_pids.channels[curr_channel].transcode_handle = transcode_start_thread(chan_and_pids.channels[curr_channel].socketOut,
-			&chan_and_pids.channels[curr_channel].sOut, &chan_and_pids.channels[curr_channel].transcode_options);
+		    chan_and_pids.channels[curr_channel].transcode_handle = transcode_start_thread(chan_and_pids.channels[curr_channel].socketOut4,
+			&chan_and_pids.channels[curr_channel].sOut4, &chan_and_pids.channels[curr_channel].transcode_options);
 		}
 
 		if (NULL != chan_and_pids.channels[curr_channel].transcode_handle) {
