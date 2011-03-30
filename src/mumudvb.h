@@ -233,6 +233,10 @@ typedef struct mumudvb_channel_t{
   int pids_type[MAX_PIDS_PAR_CHAINE];
   /**the channel pids language (ISO639 - 3 characters)*/
   char pids_language[MAX_PIDS_PAR_CHAINE][4];
+  /**count the number of scrambled packets for the PID*/
+  int pids_num_scrambled_packets[MAX_PIDS_PAR_CHAINE];
+  /**tell if the PID is scrambled (1) or not (0)*/
+  char pids_scrambled[MAX_PIDS_PAR_CHAINE];
   /**number of channel pids*/
   int num_pids;
 

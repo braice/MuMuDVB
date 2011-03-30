@@ -1636,6 +1636,9 @@ int
           if ((ScramblingControl>0) && (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
             chan_and_pids.channels[curr_channel].num_scrambled_packets++;
 
+          //check if the PID is scrambled for determining its state
+          if (ScramblingControl>0) chan_and_pids.channels[curr_channel].pids_num_scrambled_packets[curr_pid]++;
+
           //we don't count the PMT pid for up channels
           if (pid != chan_and_pids.channels[curr_channel].pmt_pid)
             chan_and_pids.channels[curr_channel].num_packet++;
@@ -2205,6 +2208,16 @@ void *monitor_func(void* arg)
                       "Channel \"%s\" is now higly scrambled (%d%% of scrambled packets). Card %d\n",
                       current->name, current->ratio_scrambled, params->tuneparams->card);
         current->scrambled_channel = HIGHLY_SCRAMBLED;// update
+      }
+      /* Check the PID scrambling state */
+	  int curr_pid;
+      for (curr_pid = 0; curr_pid < current->num_pids; curr_pid++)
+      {
+        if (current->pids_num_scrambled_packets[curr_pid]>0)
+            current->pids_scrambled[curr_pid]=1;
+        else
+            current->pids_scrambled[curr_pid]=0;
+        current->pids_num_scrambled_packets[curr_pid]=0;
       }
     }
 

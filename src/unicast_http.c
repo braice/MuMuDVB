@@ -1391,7 +1391,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
     unicast_reply_write(reply, "\t\t</ca_sys>\n");
     unicast_reply_write(reply, "\t\t<pids>\n");
     for(int i=0;i<channels[curr_channel].num_pids;i++)
-      unicast_reply_write(reply, "\t\t\t<pid number=\"%d\" language=\"%s\"><![CDATA[%s]]></pid>\n", channels[curr_channel].pids[i], channels[curr_channel].pids_language[i], pid_type_to_str(channels[curr_channel].pids_type[i]));
+      unicast_reply_write(reply, "\t\t\t<pid number=\"%d\" language=\"%s\" scrambled=\"%d\"><![CDATA[%s]]></pid>\n", channels[curr_channel].pids[i], channels[curr_channel].pids_language[i], channels[curr_channel].pids_scrambled[i], pid_type_to_str(channels[curr_channel].pids_type[i]));
     unicast_reply_write(reply, "\t\t</pids>\n");
     unicast_reply_write(reply, "\t</channel>\n");
   }
