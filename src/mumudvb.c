@@ -2106,7 +2106,10 @@ void *monitor_func(void* arg)
       params->stats_infos->compute_traffic_time=monitor_now;
       for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++)
       {
-        params->chan_and_pids->channels[curr_channel].traffic=((float)params->chan_and_pids->channels[curr_channel].sent_data)/time_interval*1/1000;
+        if (time_interval!=0)
+          params->chan_and_pids->channels[curr_channel].traffic=((float)params->chan_and_pids->channels[curr_channel].sent_data)/time_interval*1/1000;
+        else
+          params->chan_and_pids->channels[curr_channel].traffic=0;
         params->chan_and_pids->channels[curr_channel].sent_data=0;
       }
     }
@@ -2130,7 +2133,10 @@ void *monitor_func(void* arg)
       if((monitor_now-params->stats_infos->show_buffer_stats_time)>=params->stats_infos->show_buffer_stats_interval)
       {
         params->stats_infos->show_buffer_stats_time=monitor_now;
-        log_message( log_module,  MSG_DETAIL, "Average packets in the buffer %d\n", params->stats_infos->stats_num_packets_received/params->stats_infos->stats_num_reads);
+        if (params->stats_infos->stats_num_reads!=0)
+          log_message( log_module,  MSG_DETAIL, "Average packets in the buffer %d\n", params->stats_infos->stats_num_packets_received/params->stats_infos->stats_num_reads);
+        else
+          log_message( log_module,  MSG_DETAIL, "Average packets in the buffer cannot be calculated - No packets read!\n");
         params->stats_infos->stats_num_packets_received=0;
         params->stats_infos->stats_num_reads=0;
         num_big_buffer_show++;
@@ -2225,7 +2231,10 @@ void *monitor_func(void* arg)
           num_scrambled=current->num_scrambled_packets;
         else
           num_scrambled=0;
-        packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
+        if (monitor_now>last_updown_check)
+          packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
+        else
+          packets_per_sec=0;
         if( params->stats_infos->debug_updown)
         {
           log_message( log_module,  MSG_FLOOD,
