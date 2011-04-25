@@ -231,6 +231,9 @@ CAM support parameters
 |cam_support |Specify if we wants the support for scrambled channels | 0 | 0 or 1 |
 |cam_number |the number of the CAM we want to use | 0 | | In case you have multiple CAMs on one DVB card
 |cam_reset_interval |The time (in seconds) we wait for the CAM to be initialised before resetting it. | 30 | | If the reset is not successful, MuMuDVB will reset the CAM again after this interval. The maximum number of resets before exiting is 5
+|cam_delay_pmt_send |The time (in seconds) we wait between the initialization of the CAM and the sending of the first PMT This behavior is made for some "cray" CAMs like powercam v4 which doesn't accept the PMT just after the ca_info\
+_callback |  0 | | Normally this time doesn't have to be changed.
+|cam_interval_pmt_send |The time (in seconds) we wait between possible updates to the PMT sent to the CAM |  3 | | Normally this time doesn't have to be changed.
 |==================================================================================================================
 
 Autoconfiguration parameters

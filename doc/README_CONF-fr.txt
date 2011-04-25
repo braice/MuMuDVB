@@ -237,6 +237,9 @@ Paramètres concernant le support des cartes CAM
 |cam_support |Indique si l'on veux le support pour les chaînes brouillées | 0 | 0 ou 1 |
 |cam_number |Le numéro du module CAM que l'on veux utiliser| 0 | | Dans le cas ou vouz avez plusieurs modules CAM sur une carte DVB
 |cam_reset_interval |Le temps (en secondes) que MuMuDVB attends pour que la CAM soit initialisée. Après ce délai, MuMuDVB tentera de réinitialiser le module CAM. | 30 | | Si la réinitialisation échoue, MuMuDVB retentera de réinitialiser le module après cet intervelle de temps. Le nombre maximum de tentatives de réinitialisations avant de quitter est 5.
+|cam_delay_pmt_send |The time (in seconds) we wait between the initialization of the CAM and the sending of the first PMT This behavior is made for some "cray" CAMs like powercam v4 which doesn't accept the PMT just after the ca_info\
+_callback |  0 | | Normally this time doesn't have to be changed.
+|cam_interval_pmt_send |The time (in seconds) we wait between possible updates to the PMT sent to the CAM |  3 | | Normally this time doesn't have to be changed.
 |==================================================================================================================
 
 Paramètres pour l'autoconfiguration
