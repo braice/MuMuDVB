@@ -556,6 +556,9 @@ ID_CA_Supported=0100
 ID_CA_Supported=0500
 ----------------------------------------------------
 
+[NOTE]
+In case of issues with some king of CAMs the libdvben50221 could have to be patched:
+http://article.gmane.org/gmane.linux.drivers.video-input-infrastructure/29866[Link to the patch]
 
 How to ask MuMuDVB for descrambling?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

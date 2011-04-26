@@ -555,6 +555,10 @@ ID_CA_Supported=0100
 ID_CA_Supported=0500
 ----------------------------------------------------
 
+[NOTE]
+En cas de problème avec certaines CAM, il se peux que vous aillez à appliquer un correctif à la libdvben50221 :
+http://article.gmane.org/gmane.linux.drivers.video-input-infrastructure/29866[Lien vers le patch]
+
 
 Comment demander le débrouillage ?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
