@@ -584,6 +584,22 @@ In this case  you don't need to set the `cam_support` option. Just ajust the `ca
 
 If you use these solutions, see <<reduce_cpu,reduce MuMuDVB CPU usage>> section.
 
+Some information on how to configure SASC-NG
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following informations have been given by MuMuDVB users on the MuMuDVB-dev mailing list
+
+When the channels are not sucessfully descrambled (channel down in MuMuDVB) the following options are reported to improve the situation
+
+--------------------------------------------------
+--sid-nocache --buffer 8M --sid-filt=200 -D
+--------------------------------------------------
+
+You can try also the option --sid-allpid
+It seems to happend with transponders with a lot of channels (TV or RADIO channels).
+ 
+
+
 Scrambling status
 ~~~~~~~~~~~~~~~~~
 
