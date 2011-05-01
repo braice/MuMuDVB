@@ -1,7 +1,7 @@
 /*
 * MuMuDVB - Stream a DVB transport stream.
 *
-* (C) 2009-2010 Brice DUBOST
+* (C) 2009-2011 Brice DUBOST
 *
 * The latest version can be found at http://mumudvb.braice.net
 *
@@ -25,7 +25,7 @@
 /** @file
 * @brief File for HTTP unicast
 * @author Brice DUBOST
-* @date 2009-2010
+* @date 2009-2011
 */
 
 /***********************

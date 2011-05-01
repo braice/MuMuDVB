@@ -2,7 +2,7 @@
  * MuMuDVB - Stream a DVB transport stream.
  * File for Conditionnal Access Modules support
  * 
- * (C) 2004-2010 Brice DUBOST <mumudvb@braice.net>
+ * (C) 2004-2011 Brice DUBOST <mumudvb@braice.net>
  *
  * The latest version can be found at http://mumudvb.braice.net
  *
@@ -166,6 +166,11 @@ int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *curren
   {
      substring = strtok (NULL, delimiteurs);
      cam_vars->cam_interval_pmt_send = atoi (substring);
+  }
+  else if (!strcmp (substring, "cam_pmt_follow"))
+  {
+     substring = strtok (NULL, delimiteurs);
+     cam_vars->cam_pmt_follow = atoi (substring);
   }
   else if (!strcmp (substring, "cam_pmt_pid"))
   {
@@ -1139,6 +1144,55 @@ int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autoconf
     }
   }
   return 0;
+}
+
+
+//from autoconf_pmt.c
+void update_pmt_version(mumudvb_channel_t *channel);
+int pmt_need_update(mumudvb_channel_t *channel, unsigned char *packet);
+
+/** @brief This function is called when a new PMT packet is there and we asked to check if there is updates*/
+void cam_pmt_follow(unsigned char *ts_packet,  mumudvb_channel_t *actual_channel)
+{
+  /*Note : the pmt version is initialised during autoconfiguration*/
+  /*Check the version stored in the channel*/
+  if(!actual_channel->pmt_needs_update)
+  {
+    //Checking without crc32, it there is a change we get the full packet for crc32 checking
+    actual_channel->pmt_needs_update=pmt_need_update(actual_channel,get_ts_begin(ts_packet));
+
+    if(actual_channel->pmt_needs_update && actual_channel->pmt_packet) //It needs update we mark the packet as empty
+      actual_channel->pmt_packet->empty=1;
+  }
+  /*We need to update the full packet, we download it*/
+  if(actual_channel->pmt_needs_update)
+  {
+    if(get_ts_packet(ts_packet,actual_channel->pmt_packet))
+    {
+      if(pmt_need_update(actual_channel,actual_channel->pmt_packet->packet))
+      {
+        log_message( log_module, MSG_DETAIL,"PMT packet updated, we now ask the CAM to update it\n");
+        log_message( log_module, MSG_WARN,"The PMT version has changed but the PIDs are configured manually, use autoconfiguration if possible. If not, please tell me why so I can improve it\n");
+        /*We've got the FULL PMT packet*/
+        pmt_t *header;
+        header=(pmt_t *)(actual_channel->pmt_packet->packet);
+        if(header->current_next_indicator == 0)
+        {
+          log_message( log_module, MSG_DEBUG,"The current_next_indicator is set to 0, this PMT is not valid for the current stream\n");
+          actual_channel->pmt_packet->empty=1;
+        }else{
+          actual_channel->need_cam_ask=CAM_NEED_UPDATE; //We we resend this packet to the CAM
+          update_pmt_version(actual_channel);
+          actual_channel->pmt_needs_update=0;
+        }
+      }
+      else
+      {
+        log_message( log_module, MSG_DEBUG,"False alert, nothing to do\n");
+        actual_channel->pmt_needs_update=0;
+      }
+    }
+  }
 }
 
 

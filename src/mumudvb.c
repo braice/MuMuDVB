@@ -2,7 +2,7 @@
  * MuMuDVB - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * (C) 2004-2010 Brice DUBOST
+ * (C) 2004-2011 Brice DUBOST
  * 
  * Code for dealing with libdvben50221 inspired from zap_ca
  * Copyright (C) 2004, 2005 Manu Abraham <abraham.manu@gmail.com>
@@ -343,6 +343,7 @@ int
     .cam_menu_string="Not retrieved",
     .cam_menulist_lines=0,
     .cam_mmi_autoresponse=1,
+    .cam_pmt_follow=1,
   };
   cam_parameters_t *cam_vars_ptr=&cam_vars;
   #else
@@ -1669,7 +1670,18 @@ int
         {
           autoconf_pmt_follow( actual_ts_packet, &fds, &chan_and_pids.channels[curr_channel], tuneparams.card_dev_path, tuneparams.tuner, &chan_and_pids );
         }
-	  
+        /******************************************************/
+        //PMT follow for the cam for  non autoconfigurated channels
+        /******************************************************/
+        if((cam_vars.cam_pmt_follow) &&
+           (chan_and_pids.channels[curr_channel].need_cam_ask==CAM_ASKED) &&
+           (send_packet==1) && //no need to check paquets we don't send
+           (!chan_and_pids.channels[curr_channel].autoconfigurated) && //the check is for the non autoconfigurated channels
+           (chan_and_pids.channels[curr_channel].pmt_pid==pid) &&     //And we see the PMT
+            pid)
+        {
+          cam_pmt_follow( actual_ts_packet, &chan_and_pids.channels[curr_channel] );
+        }
         /******************************************************/
 	//Rewrite PAT
         /******************************************************/

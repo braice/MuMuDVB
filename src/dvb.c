@@ -1,7 +1,7 @@
 /* dvb.c
  * MuMuDVB - Stream a DVB transport stream.
  * 
- * (C) 2004-2010 Brice DUBOST
+ * (C) 2004-2011 Brice DUBOST
  * (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
  * The latest version can be found at http://mumudvb.braice.net

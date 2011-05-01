@@ -2,7 +2,7 @@
  * MuMuDVB - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * (C) 2004-2010 Brice DUBOST
+ * (C) 2004-2011 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 

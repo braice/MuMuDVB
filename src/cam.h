@@ -2,7 +2,7 @@
  * MuMuDVB - UDP-ize a DVB transport stream.
  * File for Conditionnal Access Modules support
  * 
- * (C) 2009 Brice DUBOST
+ * (C) 2009-2011 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -109,6 +109,7 @@ typedef struct cam_parameters_t{
   char cam_menulist [MAX_STORED_MENU_LINES][256];
   int cam_menulist_lines;
   int cam_mmi_autoresponse;
+  int cam_pmt_follow;
 }cam_parameters_t;
 
 /*****************************************************************************
@@ -145,4 +146,6 @@ int cam_start(cam_parameters_t *, int);
 void cam_stop(cam_parameters_t *);
 int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
 int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, cam_parameters_t *cam_vars, mumudvb_channel_t *actual_channel);
+
+void cam_pmt_follow(unsigned char *ts_packet,  mumudvb_channel_t *actual_channel);
 #endif
