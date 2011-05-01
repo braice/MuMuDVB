@@ -1325,6 +1325,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
   // Frontend status
   char SCVYL[6]="-----";
   fe_status_t festatus;
+  mumu_timing();
   if (ioctl (fds->fd_frontend, FE_READ_STATUS, &festatus) != -1)
   {
     if (festatus & FE_HAS_SIGNAL)  SCVYL[0]=83; // S
@@ -1335,7 +1336,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
   }
   SCVYL[5]=0;
   unicast_reply_write(reply, "\t<frontend_status><![CDATA[%s]]></frontend_status>\n",SCVYL);
-  
+
   // Frontend signal
   unsigned int strength, ber, snr;
   strength = ber = snr = 0;
@@ -1345,7 +1346,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
   unicast_reply_write(reply, "\t<frontend_ber>%d</frontend_ber>\n",ber);
   unicast_reply_write(reply, "\t<frontend_signal>%d</frontend_signal>\n",strength);
   unicast_reply_write(reply, "\t<frontend_snr>%d</frontend_snr>\n",snr);
-  
+  log_message( log_module,  MSG_FLOOD, "Timing : ioctls took %ld micro seconds\n",mumu_timing());
   // Autoconfiguration state
   if (autoconf_vars->autoconfiguration!=0)
     unicast_reply_write(reply, "\t<autoconf_end>%d</autoconf_end>\n",0);

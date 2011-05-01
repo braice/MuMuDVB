@@ -118,10 +118,14 @@ void *show_power_func(void* arg)
     if(strengthparams->tuneparams->display_strenght && strengthparams->tuneparams->card_tuned)
     {
       strength = ber = snr = 0;
+      mumu_timing();
       if (ioctl (strengthparams->fds->fd_frontend, FE_READ_BER, &ber) >= 0)
         if (ioctl (strengthparams->fds->fd_frontend, FE_READ_SIGNAL_STRENGTH, &strength) >= 0)
           if (ioctl (strengthparams->fds->fd_frontend, FE_READ_SNR, &snr) >= 0)
+          {
             log_message( log_module,  MSG_INFO, "Bit error rate: %10d Signal strength: %10d SNR: %10d\n", ber,strength,snr);
+            log_message( log_module,  MSG_FLOOD, "Timing : ioctls took %ld micro seconds\n",mumu_timing());
+          }
     }
     if((strengthparams->tuneparams->check_status ||strengthparams->tuneparams->display_strenght) && strengthparams->tuneparams->card_tuned)
     {

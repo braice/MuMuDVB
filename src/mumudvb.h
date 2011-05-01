@@ -411,4 +411,13 @@ void mumu_free_string(mumu_string_t *string);
 int mumudvb_poll(fds_t *fds);
 char *mumu_string_replace(char *source, int *length, int can_realloc, char *toreplace, char *replacement);
 int string_comput(char *string);
+
+
+long int mumu_timing();
+
 #endif
+
+
+
+
+

@@ -35,6 +35,7 @@
 #include "errors.h"
 
 #include <sys/poll.h>
+#include <sys/time.h>
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
@@ -254,3 +255,38 @@ void mumu_free_string(mumu_string_t *string)
     string->length=0;
   }
 }
+
+
+
+
+
+
+
+
+/** @brief return the time (in usec) elapsed between the two last calls of this function.
+ */
+long int mumu_timing()
+{
+  static int started=0;
+  static struct timeval oldtime;
+  struct timeval tv;
+  long delta;
+  gettimeofday(&tv,NULL);
+  if(started)
+    {
+      delta=(tv.tv_sec-oldtime.tv_sec)*1000000+(tv.tv_usec-oldtime.tv_usec);
+    }
+  else
+    {
+      delta=0;
+      started=1;
+    }
+  oldtime=tv;
+  return delta;
+}
+
+
+
+
+
+
