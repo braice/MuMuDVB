@@ -1188,7 +1188,7 @@ unicast_send_signal_power_js (int Socket, strength_parameters_t *strengthparams)
     return -1;
   }
 
-  unicast_reply_write(reply, "{\"ber\":%d, \"strength\":%d, \"snr\":%d}\n", strengthparams->ber,strengthparams->strength,strengthparams->snr);
+  unicast_reply_write(reply, "{\"ber\":%d, \"strength\":%d, \"snr\":%d, \"ub\":%d}\n", strengthparams->ber,strengthparams->strength,strengthparams->snr,strengthparams->ub);
 
   unicast_reply_send(reply, Socket, 200, "application/json");
 
@@ -1330,6 +1330,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
   unicast_reply_write(reply, "\t<frontend_ber>%d</frontend_ber>\n",strengthparams->ber);
   unicast_reply_write(reply, "\t<frontend_signal>%d</frontend_signal>\n",strengthparams->strength);
   unicast_reply_write(reply, "\t<frontend_snr>%d</frontend_snr>\n",strengthparams->snr);
+  unicast_reply_write(reply, "\t<frontend_snr>%d</frontend_ub>\n",strengthparams->ub);
 
   // Autoconfiguration state
   if (autoconf_vars->autoconfiguration!=0)
