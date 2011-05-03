@@ -66,6 +66,8 @@ enum
 typedef struct strength_parameters_t{
   tuning_parameters_t *tuneparams;
   fds_t *fds;
+  fe_status_t festatus;
+  int strength, ber, snr;
 }strength_parameters_t;
 
 /** The parameters for the thread for reading the data from the card */
