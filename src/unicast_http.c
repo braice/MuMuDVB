@@ -1331,6 +1331,9 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
   unicast_reply_write(reply, "\t<frontend_signal>%d</frontend_signal>\n",strengthparams->strength);
   unicast_reply_write(reply, "\t<frontend_snr>%d</frontend_snr>\n",strengthparams->snr);
   unicast_reply_write(reply, "\t<frontend_snr>%d</frontend_ub>\n",strengthparams->ub);
+  if(strengthparams->ts_discontinuities>0)
+    unicast_reply_write(reply, "\t<ts_discontinuities>%d</ts_discontinuities>\n",strengthparams->ts_discontinuities);
+
 
   // Autoconfiguration state
   if (autoconf_vars->autoconfiguration!=0)

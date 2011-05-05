@@ -68,6 +68,7 @@ typedef struct strength_parameters_t{
   fds_t *fds;
   fe_status_t festatus;
   int strength, ber, snr, ub;
+  int ts_discontinuities;
 }strength_parameters_t;
 
 /** The parameters for the thread for reading the data from the card */

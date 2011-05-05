@@ -179,6 +179,7 @@ Various parameters
 |dvr_thread_buffer_size | The size of the "DVR thread buffer" in packets | 5000 | >=1 | see README 
 |server_id | The server number for the `%server` template | 0 | | Useful only if you use the %server template
 |filename_pid | Specify where MuMuDVB will write it's PID (Processus IDentifier) | /var/run/mumudvb/mumudvb_adapter%card_tuner%tuner.pid | | the templates %card %tuner and %server are allowed
+|check_cc | Do MuMuDVB check the discontibuities in the stream ? | 0 | | Displayed via the XML status pages or the signal display
 |==================================================================================================================
 
 Packets sending parameters

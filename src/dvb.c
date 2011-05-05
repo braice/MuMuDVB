@@ -116,6 +116,7 @@ void *show_power_func(void* arg)
   strengthparams->ber = 0;
   strengthparams->snr = 0;
   strengthparams->ub = 0;
+  strengthparams->ts_discontinuities = 0; //could be initialised somewhere else but sounds fine here
   memset(&festatus_old,0,sizeof(fe_status_t));
   lock_lost=0;
   while(!strengthparams->tuneparams->strengththreadshutdown)
@@ -159,6 +160,9 @@ void *show_power_func(void* arg)
     if(strengthparams->tuneparams->display_strenght && strengthparams->tuneparams->card_tuned)
     {
       log_message( log_module,  MSG_INFO, "Bit error rate: %10d Signal strength: %10d SNR: %10d Uncorrected blocks: %10d\n", strengthparams->ber,strengthparams->strength,strengthparams->snr,strengthparams->ub);
+      if(strengthparams->ts_discontinuities>0) // if we don't count them the value never increases
+        log_message( log_module,  MSG_INFO, "ts_discontinuities %10d",strengthparams->ts_discontinuities);
+
       log_message( log_module,  MSG_FLOOD, "Timing : ioctls took %ld micro seconds\n",mumu_timing());
     }
     if((strengthparams->tuneparams->check_status ||strengthparams->tuneparams->display_strenght) && strengthparams->tuneparams->card_tuned)

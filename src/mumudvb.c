@@ -158,6 +158,7 @@ mumudvb_chan_and_pids_t chan_and_pids={
   .dont_send_scrambled=0,
   .filter_transport_error=0,
   .psi_tables_filtering=PSI_TABLES_FILTERING_NONE,
+  .check_cc=0,
 };
 
 
@@ -363,6 +364,7 @@ int
   //MPEG2-TS reception and sort
   int pid;			/** pid of the current mpeg2 packet */
   int ScramblingControl;
+  int continuity_counter;
 
   /** The buffer for the card */
   card_buffer_t card_buffer;
@@ -774,6 +776,11 @@ int
       }
       else
         strcpy(filename_pid,substring);
+    }
+   else if (!strcmp (substring, "check_cc"))
+    {
+      substring = strtok (NULL, delimiteurs);
+      chan_and_pids.check_cc = atoi (substring);
     }
     else
     {
@@ -1259,6 +1266,10 @@ int
   memset (chan_and_pids.asked_pid, 0, sizeof( uint8_t)*8193);//we clear it
   memset (chan_and_pids.number_chan_asked_pid, 0, sizeof( uint8_t)*8193);//we clear it
 
+  // We initialize the table for checking the TS discontinuities
+  for (curr_pid = 0; curr_pid < 8193; curr_pid++)
+    chan_and_pids.continuity_counter_pid[curr_pid]=-1;
+
   //We initialise mandatory pid table
   memset (mandatory_pid, 0, sizeof( uint8_t)*MAX_MANDATORY_PID_NUMBER);//we clear it
 
@@ -1559,6 +1570,15 @@ int
 
       // Get the PID of the received TS packet
       pid = ((actual_ts_packet[1] & 0x1f) << 8) | (actual_ts_packet[2]);
+
+      // Check the continuity
+      if(chan_and_pids.check_cc)
+      {
+        continuity_counter=actual_ts_packet[3] & 0x0f;
+        if (chan_and_pids.continuity_counter_pid[pid]!=-1 && chan_and_pids.continuity_counter_pid[pid]!=continuity_counter && ((chan_and_pids.continuity_counter_pid[pid]+1) & 0x0f)!=continuity_counter)
+          strengthparams.ts_discontinuities++;
+        chan_and_pids.continuity_counter_pid[pid]=continuity_counter;
+      }
 
       //Software filtering in case the card doesn't have hardware filtering
       if(chan_and_pids.asked_pid[8192]==PID_NOT_ASKED && chan_and_pids.asked_pid[pid]==PID_NOT_ASKED)

@@ -375,6 +375,9 @@ typedef struct mumudvb_chan_and_pids_t{
   uint8_t asked_pid[8193];
   /** the number of channels who want this pid (used by autoconfiguration update)*/
   uint8_t number_chan_asked_pid[8193];
+  /** The number of TS discontinuities per PID **/
+  int16_t continuity_counter_pid[8193]; //on 16 bits for storing the initial -1
+  uint8_t check_cc;
 }mumudvb_chan_and_pids_t;
 
 
