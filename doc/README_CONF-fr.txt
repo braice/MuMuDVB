@@ -179,6 +179,7 @@ Paramètres divers
 |dvr_buffer_size | La taille du  "tampon DVR" en paquets de 188 octets | 20 | >=1 | Se référer au README 
 |dvr_thread | Est ce que les packets sont reçus par un thread ? | 0 | 0 ou 1 | Fonctionnalité "expérimentale", se référer au README 
 |dvr_thread_buffer_size | La taille du tampon pour le thread en packets de 188 octets | 5000 | >=1 | se référer au README 
+|server_id | Le numero de serveur pour les templates `%server` | 0 | | 
 |filename_pid | Permet d'indiquer le chemin dans lequel MuMuDVB va ecrire son PID (Processus IDentifier) | /var/run/mumudvb/mumudvb_adapter%card_tuner%tuner.pid | | Les templates %card %tuner et %server sont utilisables
 |==================================================================================================================
 
