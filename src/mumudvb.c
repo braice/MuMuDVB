@@ -1693,6 +1693,7 @@ int
         /******************************************************/
         //PMT follow for the cam for  non autoconfigurated channels
         /******************************************************/
+#ifdef ENABLE_CAM_SUPPORT
         if((cam_vars.cam_pmt_follow) &&
            (chan_and_pids.channels[curr_channel].need_cam_ask==CAM_ASKED) &&
            (send_packet==1) && //no need to check paquets we don't send
@@ -1702,6 +1703,7 @@ int
         {
           cam_pmt_follow( actual_ts_packet, &chan_and_pids.channels[curr_channel] );
         }
+#endif
         /******************************************************/
 	//Rewrite PAT
         /******************************************************/
