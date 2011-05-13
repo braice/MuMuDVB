@@ -132,7 +132,7 @@ int main(void)
         int num_sdt_read=0;
         mumudvb_ts_packet_t ts_packet_mumu;
         memset(&ts_packet_mumu, 0, sizeof(mumudvb_ts_packet_t));
-        ts_packet_mumu.empty=1;
+
         mumudvb_service_t services;
         memset(&services, 0, sizeof(mumudvb_service_t));
         //Just to make pthread happy
@@ -141,7 +141,7 @@ int main(void)
         log_message( log_module, MSG_INFO,"File opened, reading packets\n" );
         while(fread(ts_packet_raw,188,1, testfile) && num_sdt_read<NUM_READ_SDT)
           {
-            // Get the PID of the received TS packet
+            /************ SYNC *************/
             if(ts_packet_raw[0] != 0x47)
               {
                 log_message( log_module, MSG_INFO," !!!!!!!!!!!!! Sync error, we search for a new sync byte !!!!!!!!!!!!!!\n");
@@ -155,6 +155,7 @@ int main(void)
                 else
                   log_message( log_module, MSG_INFO," sync byte found :) \n");
               }
+            // Get the PID of the received TS packet
             pid = HILO(((ts_header_t *)ts_packet_raw)->pid);
             log_message( log_module, MSG_DEBUG,"New elementary (188bytes TS packet) pid %d continuity_counter %d",
                          pid,
