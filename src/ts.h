@@ -663,11 +663,6 @@ typedef struct {
   /** If we have threads, the lock on the packet */
   pthread_mutex_t packetmutex;
 #endif
-
-  //This old data is kept for the moment just for the sake of compilation
-
-  /**say if the packet is empty*/
-  //int empty; //old
 }mumudvb_ts_packet_t;
 
 
