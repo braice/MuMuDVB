@@ -30,7 +30,7 @@ http://mumudvb.braice.net/mumudvb/test/
 
 // To compile this code, run "make check"
 
-
+#define PRESS_ENTER 0
 
 #define FILES_TEST_READ_SDT_TS "tests/BBC123_pids0_18.dump.ts", "tests/TestDump17.ts"//,"tests/test_autoconf_numericableparis_PAT_SDT.ts","tests/astra_TP_11856.00V_PAT_SDT.ts"
 #define NUM_READ_SDT 50
@@ -38,6 +38,7 @@ http://mumudvb.braice.net/mumudvb/test/
 #define FILES_TEST_READ_RAND "tests/random_1.ts","tests/random_2.ts"
 #define NUM_FILES_TEST_READ_RAND 0
 #define TEST_STRING_COMPUT "2+2*3+100"
+#define TEST_STRING_COMPUT_RES 108
 
 #define FILES_TEST_AUTOCONF "tests/astra_TP_11856.00V_pids_0_18.ts","tests/test_autoconf_numericableparis.ts","tests/astra_TP_11856.00V_pids_0_18__2.ts","tests/BBC123_pids0_18.dump.ts","tests/BBC123.dump.ts"
 #define NUM_FILES_TEST_AUTOCONF 0
@@ -72,10 +73,20 @@ multicast_parameters_t multicast_vars;
 extern log_params_t log_params;
 
 static char *log_module="======TEST======: ";
-
+void press_enter_func(int press_enter)
+{
+    if(press_enter)
+    {
+      log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
+      getchar();
+    }
+    else
+      log_message( log_module, MSG_INFO,"===================================================================\n");
+}
 
 int main(void)
 {
+  int press_enter = PRESS_ENTER;
 
   //We initalise the logging parameters
   log_params.verbosity = 999;
@@ -100,7 +111,7 @@ int main(void)
 
   int resultat;
   resultat=string_comput(TEST_STRING_COMPUT);
-  if(resultat==108)
+  if(resultat==TEST_STRING_COMPUT_RES)
     log_message( log_module, MSG_INFO,"%d  --  PASS\n\n" ,resultat);
   else
     log_message( log_module, MSG_INFO,"%d  --  FAIL\n\n" ,resultat);
@@ -111,8 +122,7 @@ int main(void)
   {
     log_message( log_module, MSG_INFO,"===================================================================\n");
     log_message( log_module, MSG_INFO,"Testing TS read for SDT - test %d on %d file %s\n", i_file+1, NUM_FILES_TEST_READ_SDT , files_sdt[i_file] );
-    log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-    getchar();
+    press_enter_func(press_enter);
     FILE *testfile;
     testfile=fopen (files_sdt[i_file], "r");
     if(testfile!=NULL)
@@ -169,8 +179,7 @@ int main(void)
         autoconf_print_services(&services);
         log_message( log_module, MSG_INFO,"===================================================================\n");
         log_message( log_module, MSG_INFO,"Testing service sorting on this list\n" );
-        log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-        getchar();
+        press_enter_func(press_enter);
         autoconf_sort_services(&services);
         autoconf_print_services(&services);
         //We free starting at the next since the first is not malloc'ed
@@ -190,8 +199,7 @@ int main(void)
   for(int i_file=0;i_file<NUM_FILES_TEST_READ_RAND;i_file++)
     {
       log_message( log_module, MSG_INFO,"Testing Resistance to bad packets file %d on %d : %s\n", i_file+1, NUM_FILES_TEST_READ_RAND, files_rand[i_file] );
-      log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-      getchar();
+      press_enter_func(press_enter);
       FILE *testfile;
       testfile=fopen (files_rand[i_file] , "r");
       if(testfile!=NULL)
@@ -228,8 +236,7 @@ int main(void)
 
     log_message( log_module, MSG_INFO,"===================================================================\n");
     log_message( log_module, MSG_INFO,"Testing autoconfiguration file %d on %d %s\n",i_file+1, NUM_FILES_TEST_AUTOCONF, files_autoconf[i_file]);
-    log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-    getchar();
+    press_enter_func(press_enter);
 
     FILE *testfile;
     testfile=fopen (files_autoconf[i_file] , "r");
@@ -301,8 +308,7 @@ int main(void)
         //We can tests other things here like REWRITE etc ....
         log_message( log_module, MSG_INFO,"===================================================================\n");
         log_message( log_module, MSG_INFO,"Testing SDT rewrite on this file (%s)\n", files_autoconf[i_file]);
-        log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-        getchar();
+        press_enter_func(press_enter);
         FILE *testfile;
         testfile=fopen (files_autoconf[i_file] , "r");
         if(testfile!=NULL)
@@ -374,10 +380,7 @@ int main(void)
 
   /**************************************************************************************************/
   //log_message( log_module, MSG_INFO,"===================================================================\n");
-  //log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-  //getchar();
-  /**************************************************************************************************/
-  /**************************************************************************************************/
+  //press_enter_func(press_enter);
   /**************************************************************************************************/
   /**************************************************************************************************/
 
