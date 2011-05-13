@@ -215,7 +215,7 @@ unsigned char *get_ts_begin(unsigned char *buf)
   if (header->adaptation_field_control & 0x2)
     {
       log_message( log_module,  MSG_DEBUG, "Read TS : Adaptation field, len %d \n",buf[delta]);
-      if((188-delta-buf[delta])<0)
+      if((TS_PACKET_SIZE-delta-buf[delta])<0)
       {
         log_message(log_module, MSG_DETAIL, "Adaptation field too big 0x%02x, packet dropped\n",buf[delta]);
         return NULL;
@@ -256,7 +256,7 @@ unsigned char *get_ts_begin(unsigned char *buf)
       {
         log_message(log_module, MSG_FLOOD, "Pointer field 0x%02x\n",pointer_field);
       }
-      if((188-delta-pointer_field)<0)
+      if((TS_PACKET_SIZE-delta-pointer_field)<0)
       {
         log_message(log_module, MSG_DETAIL, "Pointer field too big 0x%02x, packet dropped\n",pointer_field);
         return NULL;

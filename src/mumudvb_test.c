@@ -128,7 +128,7 @@ int main(void)
     if(testfile!=NULL)
       {
         //We read all the packets contained in the file
-        unsigned char ts_packet_raw[188];
+        unsigned char ts_packet_raw[TS_PACKET_SIZE];
         int num_sdt_read=0;
         mumudvb_ts_packet_t ts_packet_mumu;
         memset(&ts_packet_mumu, 0, sizeof(mumudvb_ts_packet_t));
@@ -139,7 +139,7 @@ int main(void)
         pthread_mutex_init(&ts_packet_mumu.packetmutex,NULL);
         int iRet,pid;
         log_message( log_module, MSG_INFO,"File opened, reading packets\n" );
-        while(fread(ts_packet_raw,188,1, testfile) && num_sdt_read<NUM_READ_SDT)
+        while(fread(ts_packet_raw,TS_PACKET_SIZE,1, testfile) && num_sdt_read<NUM_READ_SDT)
           {
             /************ SYNC *************/
             if(ts_packet_raw[0] != 0x47)
@@ -206,7 +206,7 @@ int main(void)
       if(testfile!=NULL)
 	{
 	  //We read all the packets contained in the file
-	  unsigned char ts_packet_raw[188];
+	  unsigned char ts_packet_raw[TS_PACKET_SIZE];
 	  int num_rand_read=0;
 	  mumudvb_ts_packet_t ts_packet_mumu;
 	  ts_packet_mumu.empty=1;
@@ -214,7 +214,7 @@ int main(void)
 	  pthread_mutex_init(&ts_packet_mumu.packetmutex,NULL);
 	  int iRet;
 	  log_message( log_module, MSG_INFO,"File opened, reading packets\n" );
-	  while(fread(ts_packet_raw,188,1, testfile))
+	  while(fread(ts_packet_raw,TS_PACKET_SIZE,1, testfile))
 	    {
 	      num_rand_read++;
 	      log_message( log_module, MSG_INFO,"Position %d packets\n", num_rand_read);
@@ -278,9 +278,9 @@ int main(void)
         log_message( log_module, MSG_INFO,"error with autoconfiguration init\n");
       }
 
-      unsigned char actual_ts_packet[188];
+      unsigned char actual_ts_packet[TS_PACKET_SIZE];
       int pid;
-      while(fread(actual_ts_packet,188,1, testfile))
+      while(fread(actual_ts_packet,TS_PACKET_SIZE,1, testfile))
       {
         // get the pid of the received ts packet
         pid = ((actual_ts_packet[1] & 0x1f) << 8) | (actual_ts_packet[2]);
@@ -340,7 +340,7 @@ int main(void)
           memset (rewrite_vars.full_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
           pthread_mutex_init(&rewrite_vars.full_sdt->packetmutex,NULL);
 
-          while(fread(actual_ts_packet,188,1, testfile))
+          while(fread(actual_ts_packet,TS_PACKET_SIZE,1, testfile))
           {
             // get the pid of the received ts packet
             pid = ((actual_ts_packet[1] & 0x1f) << 8) | (actual_ts_packet[2]);
