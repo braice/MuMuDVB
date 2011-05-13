@@ -32,15 +32,15 @@ http://mumudvb.braice.net/mumudvb/test/
 
 
 
-#define FILES_TEST_READ_SDT_TS "tests/TestDump17.ts","tests/test_autoconf_numericableparis_PAT_SDT.ts","tests/astra_TP_11856.00V_PAT_SDT.ts"
-#define NUM_READ_SDT 200
-#define NUM_FILES_TEST_READ_SDT 3
+#define FILES_TEST_READ_SDT_TS "tests/BBC123_pids0_18.dump.ts", "tests/TestDump17.ts"//,"tests/test_autoconf_numericableparis_PAT_SDT.ts","tests/astra_TP_11856.00V_PAT_SDT.ts"
+#define NUM_READ_SDT 50
+#define NUM_FILES_TEST_READ_SDT 2
 #define FILES_TEST_READ_RAND "tests/random_1.ts","tests/random_2.ts"
-#define NUM_FILES_TEST_READ_RAND 2
+#define NUM_FILES_TEST_READ_RAND 0
 #define TEST_STRING_COMPUT "2+2*3+100"
 
 #define FILES_TEST_AUTOCONF "tests/astra_TP_11856.00V_pids_0_18.ts","tests/test_autoconf_numericableparis.ts","tests/astra_TP_11856.00V_pids_0_18__2.ts","tests/BBC123_pids0_18.dump.ts","tests/BBC123.dump.ts"
-#define NUM_FILES_TEST_AUTOCONF 5
+#define NUM_FILES_TEST_AUTOCONF 0
 
 #include <stdio.h>
 #include <string.h>
@@ -84,21 +84,20 @@ int main(void)
 
   log_message( log_module, MSG_INFO,"===================================================================\n");
   log_message( log_module, MSG_INFO,"Testing program for MuMuDVB\n");
-  log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-  getchar();
+  log_message( log_module, MSG_INFO,"===================================================================\n");
 
   /****************************  Very basic test ****************************************************/
   log_message( log_module, MSG_INFO,"===================================================================\n");
   log_message( log_module, MSG_INFO,"Display Ca system id 1\n" );
-  log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-  getchar();
+  log_message( log_module, MSG_INFO,"===================================================================\n");
+
   log_message( log_module, MSG_INFO,"%s\n\n" ,ca_sys_id_to_str(1));
 
   /****************************  Testing string compute *********************************************/
   log_message( log_module, MSG_INFO,"===================================================================\n");
   log_message( log_module, MSG_INFO,"Testing string compute %s\n",TEST_STRING_COMPUT );
-  log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-  getchar();
+  log_message( log_module, MSG_INFO,"===================================================================\n");
+
   int resultat;
   resultat=string_comput(TEST_STRING_COMPUT);
   if(resultat==108)
