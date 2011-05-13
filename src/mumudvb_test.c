@@ -30,10 +30,10 @@ http://mumudvb.braice.net/mumudvb/test/
 
 // To compile this code, run "make check"
 
-#define PRESS_ENTER 0
+#define PRESS_ENTER 1
 
 #define FILES_TEST_READ_SDT_TS "tests/BBC123_pids0_18.dump.ts", "tests/TestDump17.ts"//,"tests/test_autoconf_numericableparis_PAT_SDT.ts","tests/astra_TP_11856.00V_PAT_SDT.ts"
-#define NUM_READ_SDT 50
+#define NUM_READ_SDT 100
 #define NUM_FILES_TEST_READ_SDT 2
 #define FILES_TEST_READ_RAND "tests/random_1.ts","tests/random_2.ts"
 #define NUM_FILES_TEST_READ_RAND 0
@@ -150,30 +150,30 @@ int main(void)
                 while(fread(&sync,1,1, testfile) && sync!=0x47);
                 ts_packet_raw[0]=sync;
                 //We found a "sync byte" we get the rest of the packet
-                if(!fread(ts_packet_raw-1,188-1,1, testfile))
+                if(!fread(ts_packet_raw-1,TS_PACKET_SIZE-1,1, testfile))
                   continue;
                 else
                   log_message( log_module, MSG_INFO," sync byte found :) \n");
               }
             // Get the PID of the received TS packet
             pid = HILO(((ts_header_t *)ts_packet_raw)->pid);
+            if(pid != 17) continue;
             log_message( log_module, MSG_DEBUG,"New elementary (188bytes TS packet) pid %d continuity_counter %d",
                          pid,
                          ((ts_header_t *)ts_packet_raw)->continuity_counter );
-            if(pid != 17) continue;
             iRet=get_ts_packet(ts_packet_raw, &ts_packet_mumu);
             //If it's the beginning of a new packet we display some information
             if(((ts_header_t *)ts_packet_raw)->payload_unit_start_indicator)
               log_message(log_module, MSG_FLOOD, "First two bytes of the packet 0x%02x %02x",
-                          ts_packet_mumu.packet[0],
-                          ts_packet_mumu.packet[1]);
+                          ts_packet_mumu.data_partial[0],
+                          ts_packet_mumu.data_partial[1]);
 
             if(iRet==1)//packet is parsed
               {
                 log_message( log_module, MSG_INFO,"New packet -- parsing\n" );
                 num_sdt_read++;
-                autoconf_read_sdt(ts_packet_mumu.packet,ts_packet_mumu.len,&services);
-                ts_packet_mumu.empty=1;
+                autoconf_read_sdt(ts_packet_mumu.data_full,ts_packet_mumu.len_full,&services);
+                ts_packet_mumu.status_full=EMPTY;
               }
           }
         log_message( log_module, MSG_INFO,"Final services list .... \n");
@@ -209,7 +209,7 @@ int main(void)
 	  unsigned char ts_packet_raw[TS_PACKET_SIZE];
 	  int num_rand_read=0;
 	  mumudvb_ts_packet_t ts_packet_mumu;
-	  ts_packet_mumu.empty=1;
+	  ts_packet_mumu.status_full=EMPTY;
 	  //Just to make pthread happy
 	  pthread_mutex_init(&ts_packet_mumu.packetmutex,NULL);
 	  int iRet;
@@ -222,7 +222,7 @@ int main(void)
 	      if(iRet==1)//packet is parsed
 		{
 		  log_message( log_module, MSG_INFO,"New VALID packet\n" );
-		  ts_packet_mumu.empty=1;
+		  ts_packet_mumu.status_full=EMPTY;
 		}
 	    }
 	  fclose(testfile);

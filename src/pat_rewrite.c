@@ -78,7 +78,7 @@ int pat_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf)
 /** @brief update the version using the dowloaded pat*/
 void update_pat_version(rewrite_parameters_t *rewrite_vars)
 {
-  pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->packet);
+  pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->data_full);
   if(rewrite_vars->pat_version!=pat->version_number)
   {
     log_message( log_module, MSG_DEBUG,"New pat version. Old : %d, new: %d\n",rewrite_vars->pat_version,pat->version_number);
@@ -104,7 +104,7 @@ void update_pat_version(rewrite_parameters_t *rewrite_vars)
 int pat_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel,  unsigned char *buf, int curr_channel)
 {
   ts_header_t *ts_header=(ts_header_t *)buf;
-  pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->packet);
+  pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->data_full);
   pat_prog_t  *prog;
   unsigned long crc32;
 
@@ -142,7 +142,7 @@ int pat_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
   //strict comparaison due to the calc of section len cf down
   while((delta+PAT_PROG_LEN)<(section_length))
   {
-    prog=(pat_prog_t*)((char*)rewrite_vars->full_pat->packet+delta);
+    prog=(pat_prog_t*)((char*)rewrite_vars->full_pat->data_full+delta);
     if(HILO(prog->program_number)!=0)
     {
       /*We check the transport stream id if present and the size of the packet*/
@@ -162,7 +162,7 @@ int pat_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
           {
             log_message( log_module, MSG_DETAIL,"NEW program for channel %d : \"%s\". PMT pid : %d\n", curr_channel, channel->name,channel->pids[i]);
             /*we found a announce for a PMT pid in our stream, we keep it*/
-            memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->packet+delta,PAT_PROG_LEN);
+            memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->data_full+delta,PAT_PROG_LEN);
             buf_dest_pos+=PAT_PROG_LEN;
           }
         }
@@ -229,21 +229,21 @@ void pat_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_
   {
     rewrite_vars->pat_needs_update=pat_need_update(rewrite_vars,ts_packet);
     if(rewrite_vars->pat_needs_update) //It needs update we mark the packet as empty
-      rewrite_vars->full_pat->empty=1;
+      rewrite_vars->full_pat->status_full=EMPTY;
   }
   /*We need to update the full packet, we download it*/
   if(rewrite_vars->pat_needs_update)
   {
     if(get_ts_packet(ts_packet,rewrite_vars->full_pat))
     {
-      pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->packet);
+      pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->data_full);
       /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
       sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
       and shall be the next table to become valid.*/
       if(pat->current_next_indicator == 0)
       {
         log_message( log_module, MSG_FLOOD,"PAT not yet valid, we get a new one (current_next_indicator == 0)\n");
-        rewrite_vars->full_pat->empty=1; //The packet is not valid for us, we mark it empty
+        rewrite_vars->full_pat->status_full=EMPTY; //The packet is not valid for us, we mark it empty
       }
       else
       {

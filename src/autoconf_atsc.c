@@ -77,7 +77,7 @@ int autoconf_read_psip(autoconf_parameters_t *parameters)
 
   //We get the packet
   psip_mumu=parameters->autoconf_temp_psip;
-  buf=psip_mumu->packet;
+  buf=psip_mumu->data_full;
   psip_t       *psip=(psip_t*)(buf);
 
   //We look only for the following tables OxC8 : TVCT (Terrestrial Virtual Channel Table), 0XC9 : CVCT (Cable Virtual Channel Table)

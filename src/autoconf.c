@@ -374,7 +374,7 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
   mumudvb_service_t *actual_service=NULL;
   pat_mumu=autoconf_vars->autoconf_temp_pat;
   services=autoconf_vars->services;
-  buf=pat_mumu->packet;
+  buf=pat_mumu->data_full;
   pat_t       *pat=(pat_t*)(buf);
   pat_prog_t  *prog;
   int delta=PAT_LEN;
@@ -1000,15 +1000,15 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
           iRet = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams, fds, unicast_vars, server_id);
         }
         else
-          autoconf_vars->autoconf_temp_pat->empty=1;//we clear it
+          autoconf_vars->autoconf_temp_pat->status_full=EMPTY;//we clear it
       }
     }
     else if(pid==17) //SDT : contains the names of the services
     {
       if(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_sdt))
       {
-        autoconf_read_sdt(autoconf_vars->autoconf_temp_sdt->packet,autoconf_vars->autoconf_temp_sdt->len,autoconf_vars->services);
-        autoconf_vars->autoconf_temp_sdt->empty=1;//we clear it
+        autoconf_read_sdt(autoconf_vars->autoconf_temp_sdt->data_full,autoconf_vars->autoconf_temp_sdt->len_full,autoconf_vars->services);
+        autoconf_vars->autoconf_temp_sdt->status_full=EMPTY;//we clear it
       }
     }
     else if(pid==PSIP_PID && tuneparams->fe_type==FE_ATSC) //PSIP : contains the names of the services
@@ -1016,7 +1016,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
       if(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_psip))
       {
         autoconf_read_psip(autoconf_vars);
-        autoconf_vars->autoconf_temp_psip->empty=1;//we clear it
+        autoconf_vars->autoconf_temp_psip->status_full=EMPTY;//we clear it
       }
     }
   }

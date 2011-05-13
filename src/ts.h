@@ -456,6 +456,49 @@ typedef struct {
    u_char logical_channel_number_lo              :8;
 }nit_lcn_t;
 
+
+/** length of the common tables header */
+#define TABLE_LEN 8
+#define BYTES_BFR_SEC_LEN 3 //the number of bytes before the section_length (so must be added to section_length to get full len)
+
+/** @brief Common Table headers (PAT, EIT, SDT, PMT, NIT):
+ * This header is the first 8 bytes common to all tables
+ * it's mainly used to get the section length
+ */
+typedef struct {
+   u_char table_id                               :8;
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char section_syntax_indicator               :1;
+   u_char                                        :3;
+   u_char section_length_hi                      :4;
+#else
+   u_char section_length_hi                      :4;
+   u_char                                        :3;
+   u_char section_syntax_indicator               :1;
+#endif
+   u_char section_length_lo                      :8;
+   u_char transport_stream_id_hi                 :8;
+   u_char transport_stream_id_lo                 :8;
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char                                        :2;
+   u_char version_number                         :5;
+   u_char current_next_indicator                 :1;
+#else
+   u_char current_next_indicator                 :1;
+   u_char version_number                         :5;
+   u_char                                        :2;
+#endif
+   u_char section_number                         :8;
+   u_char last_section_number                    :8;
+} tbl_h_t;
+
+
+
+
+
+
+
+
 /***************************************************
  *                ATSC PSIP tables                 *
  * See A/65C                                       *
@@ -583,32 +626,53 @@ typedef struct {
  *****************************/
 
 
-/**@brief structure for the build of a ts packet*/
+/** Enum to tell if the option is set*/
+typedef enum packet_status {
+  EMPTY,     //No data in the packet
+  STARTED,   //Some data are in the packet
+  FULL,      //All the expected data are in the packet
+  VALID      //All the expected data are in the packet and the CRC32 is valid
+} packet_status_t;
+
+/**@brief structure for the build of a ts packet
+  Since a packet can be finished and another one starts in the same
+  elementary TS packet, there is two packets in this structure
+
+ */
 typedef struct {
-  /**say if the packet is empty*/
-  int empty;
-  /**say if the packet is ok*/
-  int packet_ok;
+  /** the buffer for the packet full (empty or contains a valid full packet)*/
+  unsigned char data_full[MAX_TS_SIZE];
+  /** the length of the data contained in data_full */
+  int len_full;
+  /** The packet status*/
+  packet_status_t status_full;
+  /** the buffer for the partial packet (never valid, shouldn't be accessed by funtions other than get_ts_packet)*/
+  unsigned char data_partial[MAX_TS_SIZE];
+  /** the length of the data contained in data_partial */
+  int len_partial;
+  /** the expected length of the data contained in data_partial */
+  int expected_len_partial;
+  /** The packet status*/
+  packet_status_t status_partial;
   /**The PID of the packet*/
   int pid;
   /**the countinuity counter, incremented in each packet*/
-  int continuity_counter;
-  /** packet len*/
-  int len;
-  /**the buffer*/
-  unsigned char packet[4096];
+  int cc;
+
 #ifdef HAVE_LIBPTHREAD
   /** If we have threads, the lock on the packet */
   pthread_mutex_t packetmutex;
 #endif
+
+  //This old data is kept for the moment just for the sake of compilation
+
+  /**say if the packet is empty*/
+  //int empty; //old
 }mumudvb_ts_packet_t;
 
 
-int ts_check_CRC( mumudvb_ts_packet_t *pmt);
 int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *pmt);
 unsigned char *get_ts_begin(unsigned char *buf);
-int AddPacketStart (unsigned char *packet, unsigned char *buf, unsigned int len);
-int AddPacketContinue  (unsigned char *packet, unsigned char *buf, unsigned int len, unsigned int act_len);
 
 struct mumudvb_channel_t;
 int check_pmt_service_id(mumudvb_ts_packet_t *pmt, struct mumudvb_channel_t *channel);
