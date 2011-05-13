@@ -582,7 +582,7 @@ static void *camthread_func(void* arg)
  */
 int mumudvb_cam_new_pmt(cam_parameters_t *cam_params, mumudvb_ts_packet_t *cam_pmt_ptr, int need_cam_ask)
 {
-  uint8_t capmt[4096];
+  uint8_t capmt[MAX_TS_SIZE];
   int size,list_managment;
 
   // parse section

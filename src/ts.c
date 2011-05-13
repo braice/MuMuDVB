@@ -1,7 +1,7 @@
 /* 
  * MuMuDVB - Stream a DVB transport stream.
  * 
- * (C) 2004-2010 Brice DUBOST <mumudvb@braice.net>
+ * (C) 2004-2011 Brice DUBOST <mumudvb@braice.net>
  *
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -164,7 +164,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
 	}
       ts_packet->packet_ok=0;
       ts_packet->continuity_counter=header->continuity_counter;
-      if(ts_packet->len+(188-delta)<4096)
+      if(ts_packet->len+(188-delta)<MAX_TS_SIZE)
 	ts_packet->len=AddPacketContinue(ts_packet->packet,buf+delta,188-delta,ts_packet->len); //we add the packet to the buffer
       else
 	{
@@ -278,12 +278,12 @@ unsigned char *get_ts_begin(unsigned char *buf)
 
 
 /**@todo document*/
-//Les fonctions qui permettent de coller les paquets les uns aux autres
+//Just some helper functions to put packets one after the other
 // -- add TS data
 // -- return: 0 = fail
 int AddPacketStart (unsigned char *packet, unsigned char *buf, unsigned int len)
 {
-  memset(packet,0,4096);
+  memset(packet,0,MAX_TS_SIZE);
   memcpy(packet,buf,len);
   return len;
 }

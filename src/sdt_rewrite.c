@@ -1,7 +1,7 @@
 /* 
  * MuMuDVB - Stream a DVB transport stream.
  * 
- * (C) 2004-2010 Brice DUBOST
+ * (C) 2004-2011 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -202,7 +202,7 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
         //We loop on the descriptors
         int loop_length;
         loop_length=0;
-        unsigned char t_buffer[4096];
+        unsigned char t_buffer[MAX_TS_SIZE];
         sdt_descr_t *t_buffer_ptr;
         t_buffer_ptr = ((sdt_descr_t *)t_buffer);
         int pos=0;

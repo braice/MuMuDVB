@@ -1,7 +1,7 @@
 /* 
  * MuMuDVB - Stream a DVB transport stream.
  * 
- * (C) 2004-2010 Brice DUBOST
+ * (C) 2004-2011 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -35,6 +35,8 @@
 
 #include "config.h"
 
+//The maximum size for a TS packet
+#define MAX_TS_SIZE 4096
 
 //0x1ffb=8187 It's the pid for the information tables in ATSC
 #define PSIP_PID 8187
