@@ -251,16 +251,17 @@ unsigned char *get_ts_begin(unsigned char *buf)
     if(ok)
     {
       int pointer_field=*(buf+delta);
+      delta++;
       if(pointer_field!=0)
       {
         log_message(log_module, MSG_FLOOD, "Pointer field 0x%02x\n",pointer_field);
       }
-      if((188-delta-1-pointer_field)<0)
+      if((188-delta-pointer_field)<0)
       {
         log_message(log_module, MSG_DETAIL, "Pointer field too big 0x%02x, packet dropped\n",pointer_field);
         return NULL;
       }
-      return buf+delta+1+pointer_field; //we give the address of the beginning of the payload
+      return buf+delta+pointer_field; //we give the address of the beginning of the payload
       /*buf+delta+*1+pointer_field* because of pointer_field
       This is an 8-bit field whose value shall be the number of bytes, immediately following the pointer_field
       until the first byte of the first section that is present in the payload of the Transport Stream packet (so a value of 0x00 in
