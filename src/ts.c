@@ -182,11 +182,10 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
       else
       {
         //packet started and pointer field, we append the data
-        tbl_h_t *tbl_struct=(tbl_h_t *)ts_packet->data_partial;
         log_message(log_module, MSG_FLOOD, "Pointer field and packet started, act packet len: %d, new len %d, expected len %d\n",
                     ts_packet->len_partial,
                     ts_packet->len_partial+pointer_field,
-                    HILO(tbl_struct->section_length)+BYTES_BFR_SEC_LEN);
+                    ts_packet->expected_len_partial);
         //we copy the data
         memcpy(ts_packet->data_partial+ts_packet->len_partial,buf+offset,pointer_field);
         //update the len
@@ -216,10 +215,12 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
     }
     //We've read the pointer field data, we skip it
     offset+=pointer_field;
+    //========= This is the start of a new packet ===============
     //We copy the data to the partial packet
     ts_packet->status_partial=STARTED;
     ts_packet->cc=header->continuity_counter;
     ts_packet->pid=buf_pid;
+    //we can copy more data than needed, insert here a function which copy the data check if full etc...
     ts_packet->len_partial=TS_PACKET_SIZE-offset;
     memcpy(ts_packet->data_partial,buf+offset,ts_packet->len_partial);
     tbl_h_t *tbl_struct=(tbl_h_t *)ts_packet->data_partial;
@@ -326,7 +327,6 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
       else
       {
         copy_len=MAX_TS_SIZE-ts_packet->len_partial;
-        log_message( log_module, MSG_DETAIL,"The packet seems too big, we copy only some bits : %d instead of %d\n",copy_len,TS_PACKET_SIZE-offset);
       }
       memcpy(ts_packet->data_partial+ts_packet->len_partial,buf+offset,copy_len);//we add the packet to the buffer
       ts_packet->len_partial+=copy_len;
@@ -424,7 +424,6 @@ int ts_partial_full( mumudvb_ts_packet_t *packet)
   //the real length
   if(packet->len_partial>=packet->expected_len_partial)
   {
-    packet->status_partial=FULL;
     //we set the good length
     packet->len_partial=packet->expected_len_partial;
     return 1;
