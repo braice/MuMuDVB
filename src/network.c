@@ -213,7 +213,7 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL, char *iface,
       blub.imr_multiaddr.s_addr = inet_addr (szAddr);
       blub.imr_interface.s_addr = 0;
       if (setsockopt
-	  (socket, IPPROTO_IP, MCAST_JOIN_GROUP, &blub, sizeof (blub)))
+	  (socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &blub, sizeof (blub)))
 	{
 	  log_message( log_module,  MSG_ERROR, "setsockopt IP_ADD_MEMBERSHIP ipv4 failed (multicast kernel?) : %s\n", strerror(errno));
           Interrupted=ERROR_NETWORK<<8;
@@ -254,9 +254,9 @@ makeclientsocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
   inet_pton (AF_INET6, szAddr,&blub.ipv6mr_multiaddr); 
   blub.ipv6mr_interface = 0;
   if (setsockopt
-      (socket, IPPROTO_IP, MCAST_JOIN_GROUP, &blub, sizeof (blub)))
+      (socket, IPPROTO_IPV6, IPV6_JOIN_GROUP, &blub, sizeof (blub)))
     {
-      log_message( log_module,  MSG_ERROR, "setsockopt MCAST_JOIN_GROUP (ipv6) failed (multicast kernel?) : %s\n", strerror(errno));
+      log_message( log_module,  MSG_ERROR, "setsockopt IPV6_JOIN_GROUP (ipv6) failed (multicast kernel?) : %s\n", strerror(errno));
       Interrupted=ERROR_NETWORK<<8;
     }
   return socket;
