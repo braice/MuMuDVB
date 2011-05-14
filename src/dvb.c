@@ -106,10 +106,10 @@ void *show_power_func(void* arg)
   strengthparams= (strength_parameters_t  *) arg;
   fe_status_t festatus_old;
   int lock_lost;
-  int meas_ber_ok=0;
-  int meas_strength_ok=0;
-  int meas_snr_ok=0;
-  int meas_ub_ok=0;
+  int meas_ber_ok=1;
+  int meas_strength_ok=1;
+  int meas_snr_ok=1;
+  int meas_ub_ok=1;
   int wait_time=20;//in units of 100ms
   int i;
   strengthparams->strength = 0;
@@ -126,32 +126,44 @@ void *show_power_func(void* arg)
       if(strengthparams->tuneparams->display_strenght )
         mumu_timing();
 
-      if ((ioctl (strengthparams->fds->fd_frontend, FE_READ_BER, &strengthparams->ber) < 0) && meas_ber_ok)
+      if (ioctl (strengthparams->fds->fd_frontend, FE_READ_BER, &strengthparams->ber) < 0)
       {
-        meas_ber_ok=0;
-        log_message( log_module,  MSG_INFO, "An issue happened during the IOCTLS to take BER measurements error : %s",strerror(errno));
+        if(meas_ber_ok)
+        {
+          meas_ber_ok=0;
+          log_message( log_module,  MSG_WARN, "An issue happened during the IOCTLS to take BER measurements error: %s",strerror(errno));
+        }
       }
       else
         meas_ber_ok=1;
 
-      if ((ioctl (strengthparams->fds->fd_frontend, FE_READ_SIGNAL_STRENGTH, &strengthparams->strength) < 0) && meas_strength_ok)
+      if (ioctl (strengthparams->fds->fd_frontend, FE_READ_SIGNAL_STRENGTH, &strengthparams->strength) < 0)
       {
-        meas_strength_ok=0;
-        log_message( log_module,  MSG_INFO, "An issue happened during the IOCTLS to take strength measurements error : %s",strerror(errno));
+        if(meas_strength_ok)
+        {
+          meas_strength_ok=0;
+          log_message( log_module,  MSG_WARN, "An issue happened during the IOCTLS to take strength measurements error: %s",strerror(errno));
+        }
       }
       else
         meas_strength_ok=1;
-      if ((ioctl (strengthparams->fds->fd_frontend, FE_READ_SNR, &strengthparams->snr) < 0) && meas_snr_ok)
+      if (ioctl (strengthparams->fds->fd_frontend, FE_READ_SNR, &strengthparams->snr) < 0)
       {
-        meas_snr_ok=0;
-        log_message( log_module,  MSG_INFO, "An issue happened during the IOCTLS to take SNR measurements error : %s",strerror(errno));
+        if(meas_snr_ok)
+        {
+          meas_snr_ok=0;
+          log_message( log_module,  MSG_WARN, "An issue happened during the IOCTLS to take SNR measurements error: %s",strerror(errno));
+        }
       }
       else
         meas_snr_ok=1;
-      if ((ioctl (strengthparams->fds->fd_frontend, FE_READ_UNCORRECTED_BLOCKS, &strengthparams->ub) < 0) && meas_ub_ok)
+      if (ioctl (strengthparams->fds->fd_frontend, FE_READ_UNCORRECTED_BLOCKS, &strengthparams->ub) < 0 )
       {
-        meas_ub_ok=0;
-        log_message( log_module,  MSG_INFO, "An issue happened during the IOCTLS to take uncorrected blocks measurements error : %s",strerror(errno));
+        if(meas_ub_ok)
+        {
+          meas_ub_ok=0;
+          log_message( log_module,  MSG_WARN, "An issue happened during the IOCTLS to take uncorrected blocks measurements error: %s",strerror(errno));
+        }
       }
       else
         meas_ub_ok=1;
@@ -163,7 +175,7 @@ void *show_power_func(void* arg)
       if(strengthparams->ts_discontinuities>0) // if we don't count them the value never increases
         log_message( log_module,  MSG_INFO, "ts_discontinuities %10d",strengthparams->ts_discontinuities);
 
-      log_message( log_module,  MSG_FLOOD, "Timing : ioctls took %ld micro seconds\n",mumu_timing());
+      log_message( log_module,  MSG_FLOOD, "Timing: ioctls took %ld micro seconds\n",mumu_timing());
     }
     if((strengthparams->tuneparams->check_status ||strengthparams->tuneparams->display_strenght) && strengthparams->tuneparams->card_tuned)
     {
