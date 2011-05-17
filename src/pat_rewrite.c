@@ -228,8 +228,6 @@ void pat_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_
   if(!rewrite_vars->pat_needs_update)
   {
     rewrite_vars->pat_needs_update=pat_need_update(rewrite_vars,ts_packet);
-    if(rewrite_vars->pat_needs_update) //It needs update we mark the packet as empty
-      rewrite_vars->full_pat->status_full=EMPTY;
   }
   /*We need to update the full packet, we download it*/
   if(rewrite_vars->pat_needs_update)
@@ -243,7 +241,6 @@ void pat_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_
       if(pat->current_next_indicator == 0)
       {
         log_message( log_module, MSG_FLOOD,"PAT not yet valid, we get a new one (current_next_indicator == 0)\n");
-        rewrite_vars->full_pat->status_full=EMPTY; //The packet is not valid for us, we mark it empty
       }
       else
       {

@@ -182,7 +182,6 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
   if(sdt->table_id!=0x42)
   {
     rewrite_vars->sdt_needs_update=1;
-    rewrite_vars->full_sdt->status_full=EMPTY;
     log_message( log_module, MSG_DETAIL,"We didn't got the good SDT (wrong table id) we search for a new one\n");
     return 0;
   }
@@ -335,7 +334,6 @@ int sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
     {
       //We clear the section numbers seen
       memset(&rewrite_vars->sdt_section_numbers_seen,0,sizeof(rewrite_vars->sdt_section_numbers_seen));
-      rewrite_vars->full_sdt->status_full=EMPTY;
     }
   }
   /*We need to update the full packet, we download it*/
@@ -350,12 +348,10 @@ int sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
       if(sdt->current_next_indicator == 0)
       {
         log_message( log_module, MSG_FLOOD,"SDT not yet valid, we get a new one (current_next_indicator == 0)\n");
-        rewrite_vars->full_sdt->status_full=EMPTY; //The packet is not valid for us, we mark it empty
       }
       else if(sdt->table_id!=0x42)
       {
         rewrite_vars->sdt_needs_update=1;
-        rewrite_vars->full_sdt->status_full=EMPTY;
         log_message( log_module, MSG_DEBUG,"We didn't got the good SDT (wrong table id) we search for a new one\n");
         return 0;
       }

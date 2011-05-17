@@ -780,6 +780,21 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
           memset (channels[channel_number].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
           pthread_mutex_init(&channels[channel_number].pmt_packet->packetmutex,NULL);
         }
+#ifdef ENABLE_CAM_SUPPORT
+        //We allocate the packet for storing the PMT for CAM purposes
+        if(channels[channel_number].cam_pmt_packet==NULL)
+        {
+          channels[channel_number].cam_pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
+          if(channels[channel_number].cam_pmt_packet==NULL)
+          {
+            log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+            Interrupted=ERROR_MEMORY<<8;
+            return -1;
+          }
+          memset (channels[channel_number].cam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+          pthread_mutex_init(&channels[channel_number].cam_pmt_packet->packetmutex,NULL);
+        }
+#endif
         //We update the unicast port, the connection will be created in autoconf_finish_full
         if(unicast_port_per_channel && unicast_vars->unicast)
         {
@@ -999,8 +1014,6 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
           //we finish full autoconfiguration
           iRet = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams, fds, unicast_vars, server_id);
         }
-        else
-          autoconf_vars->autoconf_temp_pat->status_full=EMPTY;//we clear it
       }
     }
     else if(pid==17) //SDT : contains the names of the services
@@ -1008,7 +1021,6 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
       if(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_sdt))
       {
         autoconf_read_sdt(autoconf_vars->autoconf_temp_sdt->data_full,autoconf_vars->autoconf_temp_sdt->len_full,autoconf_vars->services);
-        autoconf_vars->autoconf_temp_sdt->status_full=EMPTY;//we clear it
       }
     }
     else if(pid==PSIP_PID && tuneparams->fe_type==FE_ATSC) //PSIP : contains the names of the services
@@ -1016,7 +1028,6 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
       if(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_psip))
       {
         autoconf_read_psip(autoconf_vars);
-        autoconf_vars->autoconf_temp_psip->status_full=EMPTY;//we clear it
       }
     }
   }

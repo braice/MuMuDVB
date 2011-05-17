@@ -30,7 +30,7 @@ http://mumudvb.braice.net/mumudvb/test/
 
 // To compile this code, run "make check"
 
-#define PRESS_ENTER 1
+#define PRESS_ENTER 0
 
 #define FILES_TEST_READ_SDT_TS "tests/BBC123_pids0_18.dump.ts", "tests/TestDump17.ts"//,"tests/test_autoconf_numericableparis_PAT_SDT.ts","tests/astra_TP_11856.00V_PAT_SDT.ts"
 #define NUM_READ_SDT 100
@@ -41,7 +41,7 @@ http://mumudvb.braice.net/mumudvb/test/
 #define TEST_STRING_COMPUT_RES 108
 
 #define FILES_TEST_AUTOCONF "tests/astra_TP_11856.00V_pids_0_18.ts","tests/test_autoconf_numericableparis.ts","tests/astra_TP_11856.00V_pids_0_18__2.ts","tests/BBC123_pids0_18.dump.ts","tests/BBC123.dump.ts"
-#define NUM_FILES_TEST_AUTOCONF 0
+#define NUM_FILES_TEST_AUTOCONF 5
 
 #include <stdio.h>
 #include <string.h>
@@ -173,7 +173,6 @@ int main(void)
                 log_message( log_module, MSG_INFO,"New packet -- parsing\n" );
                 num_sdt_read++;
                 autoconf_read_sdt(ts_packet_mumu.data_full,ts_packet_mumu.len_full,&services);
-                ts_packet_mumu.status_full=EMPTY;
               }
           }
         log_message( log_module, MSG_INFO,"Final services list .... \n");
@@ -209,7 +208,6 @@ int main(void)
 	  unsigned char ts_packet_raw[TS_PACKET_SIZE];
 	  int num_rand_read=0;
 	  mumudvb_ts_packet_t ts_packet_mumu;
-	  ts_packet_mumu.status_full=EMPTY;
 	  //Just to make pthread happy
 	  pthread_mutex_init(&ts_packet_mumu.packetmutex,NULL);
 	  int iRet;
@@ -222,7 +220,6 @@ int main(void)
 	      if(iRet==1)//packet is parsed
 		{
 		  log_message( log_module, MSG_INFO,"New VALID packet\n" );
-		  ts_packet_mumu.status_full=EMPTY;
 		}
 	    }
 	  fclose(testfile);
@@ -284,9 +281,9 @@ int main(void)
       {
         // get the pid of the received ts packet
         pid = ((actual_ts_packet[1] & 0x1f) << 8) | (actual_ts_packet[2]);
-        log_message( log_module, MSG_DEBUG,"New elementary (188bytes TS packet) pid %d continuity_counter %d",
+        /*log_message( log_module, MSG_DEBUG,"New elementary (188bytes TS packet) pid %d continuity_counter %d",
                          pid,
-                         ((ts_header_t *)actual_ts_packet)->continuity_counter );
+                         ((ts_header_t *)actual_ts_packet)->continuity_counter );*/
 
         iret = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tuneparams, &multicast_vars, &unicast_vars, 0);
 

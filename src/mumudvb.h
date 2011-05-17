@@ -258,6 +258,10 @@ typedef struct mumudvb_channel_t{
   int pmt_needs_update;
   /**The PMT packet*/
   mumudvb_ts_packet_t *pmt_packet;
+#ifdef ENABLE_CAM_SUPPORT
+  /** The PMT packet for CAM purposes*/
+  mumudvb_ts_packet_t *cam_pmt_packet;
+#endif
 
   /**the RTP header (just before the buffer so it can be sended together)*/
   unsigned char buf_with_rtp_header[RTP_HEADER_LEN];

@@ -553,10 +553,8 @@ void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t
     //Checking without crc32, it there is a change we get the full packet for crc32 checking
     actual_channel->pmt_needs_update=pmt_need_update(actual_channel,get_ts_begin(ts_packet));
 
-    if(actual_channel->pmt_needs_update && actual_channel->pmt_packet) //It needs update we mark the packet as empty
-      actual_channel->pmt_packet->status_full=EMPTY;
   }
-  /*We need to update the full packet, we download it*/
+  /*We need to update the full packet, we get it*/
   if(actual_channel->pmt_needs_update)
   {
     if(get_ts_packet(ts_packet,actual_channel->pmt_packet))
@@ -572,8 +570,6 @@ void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t
           update_pmt_version(actual_channel);
           actual_channel->pmt_needs_update=0;
         }
-        else
-          actual_channel->pmt_packet->status_full=EMPTY;
       }
       else
       {

@@ -437,9 +437,6 @@ static void *camthread_func(void* arg)
             log_message( log_module,  MSG_DETAIL,
                           "Channel \"%s\" highly scrambled for more than %ds. We ask the CAM to update.\n",
                           chan_and_pids.channels[curr_channel].name,cam_params->cam_reask_interval);
-            pthread_mutex_lock(&chan_and_pids.channels[curr_channel].pmt_packet->packetmutex);
-            chan_and_pids.channels[curr_channel].pmt_packet->status_full=EMPTY; //We set the PMT packet as empty to be sure it will be updated
-            pthread_mutex_unlock(&chan_and_pids.channels[curr_channel].pmt_packet->packetmutex);
             chan_and_pids.channels[curr_channel].cam_asking_time=tv.tv_sec;
           }
         }
@@ -1102,7 +1099,7 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
 }
 
 /** @brief This function is called when a new PMT packet is there */
-int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, cam_parameters_t *cam_vars, mumudvb_channel_t *actual_channel)
+int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, cam_parameters_t *cam_vars, mumudvb_channel_t *actual_channel)
 {
   int iRet;
   struct timeval tv;
@@ -1110,15 +1107,12 @@ int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autoconf
 
   if (((actual_channel->need_cam_ask==CAM_NEED_ASK)||(actual_channel->need_cam_ask==CAM_NEED_UPDATE))&& (actual_channel->pmt_pid == pid))
   {
-    //if the packet is already ok, we don't get it (it can be updated by pmt_follow)
-    if((autoconf_vars->autoconf_pid_update && actual_channel->pmt_packet->status_full==VALID)||
-        (!autoconf_vars->autoconf_pid_update && get_ts_packet(ts_packet,actual_channel->pmt_packet))||
-        (autoconf_vars->autoconf_pid_update && !actual_channel->pmt_needs_update && get_ts_packet(ts_packet,actual_channel->pmt_packet)))
+    if(get_ts_packet(ts_packet,actual_channel->cam_pmt_packet))
     {
       //We check the transport stream id of the packet
-      if(check_pmt_service_id(actual_channel->pmt_packet, actual_channel))
+      if(check_pmt_service_id(actual_channel->cam_pmt_packet, actual_channel))
       {
-        iRet=mumudvb_cam_new_pmt(cam_vars, actual_channel->pmt_packet,actual_channel->need_cam_ask);
+        iRet=mumudvb_cam_new_pmt(cam_vars, actual_channel->cam_pmt_packet,actual_channel->need_cam_ask);
         if(iRet==1)
         {
           if(actual_channel->need_cam_ask==CAM_NEED_UPDATE)
@@ -1134,17 +1128,23 @@ int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autoconf
         else if(iRet==-1)
         {
           log_message( log_module,  MSG_DETAIL,"Problem sending CA PMT for channel %d : \"%s\"\n", curr_channel, actual_channel->name );
-          actual_channel->pmt_packet->status_full=EMPTY;//if there was a problem, we reset the packet
         }
       }
-      else
-      {
-        actual_channel->pmt_packet->status_full=EMPTY;//The service_id is bad, we will try to get another PMT packet
-      }
+      //else //The service_id is bad, we will try to get another PMT packet
     }
   }
   return 0;
 }
+
+
+
+
+
+
+
+/*************************************************************************************************************************************
+  This part of the code is a bit particular, it allows the PMT to be followed for non autoconfigurated channels
+ *************************************************************************************************************************************/
 
 
 //from autoconf_pmt.c
@@ -1161,8 +1161,6 @@ void cam_pmt_follow(unsigned char *ts_packet,  mumudvb_channel_t *actual_channel
     //Checking without crc32, it there is a change we get the full packet for crc32 checking
     actual_channel->pmt_needs_update=pmt_need_update(actual_channel,get_ts_begin(ts_packet));
 
-    if(actual_channel->pmt_needs_update && actual_channel->pmt_packet) //It needs update we mark the packet as empty
-      actual_channel->pmt_packet->status_full=EMPTY;
   }
   /*We need to update the full packet, we download it*/
   if(actual_channel->pmt_needs_update)
@@ -1179,7 +1177,6 @@ void cam_pmt_follow(unsigned char *ts_packet,  mumudvb_channel_t *actual_channel
         if(header->current_next_indicator == 0)
         {
           log_message( log_module, MSG_DEBUG,"The current_next_indicator is set to 0, this PMT is not valid for the current stream\n");
-          actual_channel->pmt_packet->status_full=EMPTY;
         }else{
           actual_channel->need_cam_ask=CAM_NEED_UPDATE; //We we resend this packet to the CAM
           update_pmt_version(actual_channel);

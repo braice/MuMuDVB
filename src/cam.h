@@ -145,7 +145,7 @@ typedef struct cam_parameters_t{
 int cam_start(cam_parameters_t *, int);
 void cam_stop(cam_parameters_t *);
 int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
-int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, cam_parameters_t *cam_vars, mumudvb_channel_t *actual_channel);
+int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, cam_parameters_t *cam_vars, mumudvb_channel_t *actual_channel);
 
 void cam_pmt_follow(unsigned char *ts_packet,  mumudvb_channel_t *actual_channel);
 #endif
