@@ -643,6 +643,8 @@ typedef struct {
   unsigned char data_full[MAX_TS_SIZE];
   /** the length of the data contained in data_full */
   int len_full;
+
+  //starting from here, these variables MUSN'T be accessed outside ts.c
   /** The packet status*/
   packet_status_t status_full;
   /** the buffer for the partial packet (never valid, shouldn't be accessed by funtions other than get_ts_packet)*/

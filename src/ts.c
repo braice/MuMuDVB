@@ -374,6 +374,7 @@ void ts_move_part_to_full(mumudvb_ts_packet_t *ts_packet)
  */
 int ts_check_raw_crc32(unsigned char *data)
 {
+  /**@todo : use this function where CRC32 calculation is needed elsewhere */
   int i,len;
   uint32_t crc32;
   tbl_h_t *tbl_struct;
@@ -443,7 +444,7 @@ int ts_partial_full( mumudvb_ts_packet_t *packet)
  */
 unsigned char *get_ts_begin(unsigned char *buf)
 {
-
+  /**@todo : take in account the case where several sections are in the same TS packet */
   ts_header_t *header;
   int ok=0;
   int delta;
