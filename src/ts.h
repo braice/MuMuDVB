@@ -660,10 +660,8 @@ typedef struct {
   /**the countinuity counter, incremented in each packet*/
   int cc;
 
-#ifdef HAVE_LIBPTHREAD
   /** If we have threads, the lock on the packet */
   pthread_mutex_t packetmutex;
-#endif
 }mumudvb_ts_packet_t;
 
 
