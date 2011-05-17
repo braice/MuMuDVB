@@ -633,6 +633,14 @@ typedef enum packet_status {
   VALID      //All the expected data are in the packet and the CRC32 is valid
 } packet_status_t;
 
+
+
+
+#define MAX_FULL_PACKETS 10
+//MAX_TS_SIZE + TS_PACKET_SIZE ???
+#define FULL_BUFFER_SIZE 2*MAX_TS_SIZE
+
+
 /**@brief structure for the build of a ts packet
   Since a packet can be finished and another one starts in the same
   elementary TS packet, there is two packets in this structure
@@ -645,8 +653,14 @@ typedef struct {
   int len_full;
 
   //starting from here, these variables MUSN'T be accessed outside ts.c
-  /** The packet status*/
-  packet_status_t status_full;
+  /** The number of full packets */
+  int full_number;
+  /** The lengths of the full packets */
+  int full_lengths[MAX_FULL_PACKETS];
+  /** The amount of data in the full buffer */
+  int full_buffer_len;
+  /** The buffer containing the full packets */
+  unsigned char buffer_full[FULL_BUFFER_SIZE];
   /** the buffer for the partial packet (never valid, shouldn't be accessed by funtions other than get_ts_packet)*/
   unsigned char data_partial[MAX_TS_SIZE];
   /** the length of the data contained in data_partial */
@@ -665,7 +679,8 @@ typedef struct {
 }mumudvb_ts_packet_t;
 
 
-int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *pmt);
+int get_ts_packet(unsigned char *, mumudvb_ts_packet_t *);
+
 unsigned char *get_ts_begin(unsigned char *buf);
 
 struct mumudvb_channel_t;

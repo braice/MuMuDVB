@@ -43,44 +43,54 @@ int  ts_check_crc32(mumudvb_ts_packet_t *ts_packet);
 int  ts_partial_full(mumudvb_ts_packet_t *ts_packet);
 
 
+int get_ts_packet_v2(unsigned char *buf, mumudvb_ts_packet_t *);
+int get_ts_packet_v3(unsigned char *buf, mumudvb_ts_packet_t *);
+void ts_move_part_to_full_v3(mumudvb_ts_packet_t *ts_packet);
+
+#define NO_START 0
+#define START_TS 1
+#define START_SECTION 2
+
+void add_ts_packet_data(unsigned char *buf, mumudvb_ts_packet_t *pkt, int data_left, int start_flag, int pid, int cc);
+
 
 /** @brief This function will join the 188 bytes packet until the PMT/PAT/SDT is full
  * Once it's full we check the CRC32 and say if it's ok or not
- * 
  * There is two important mpeg2-ts fields to do that
- * 
  *  * the continuity counter wich is incremented for each packet
- * 
  *  * The payload_unit_start_indicator wich says if it's the first packet
  *
  * When a packet is cutted in 188 bytes packets, there must be no other pid between two sub packets
  *
- * This function deals partially with the case of very dense transponders (ie using pointer field)
- *
- * Return 1 when the packet is full and OK
+ * Return 1 when there is one packet full and OK
  *
  * @param buf : the received buffer from the card
  * @param ts_packet : the packet to be completed
  */
-int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
+int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *pkt)
 {
-  pthread_mutex_lock(&ts_packet->packetmutex);
-  if(ts_packet->status_full==VALID)
+  //see doc/diagrams/TS_packet_getting_all_cases.pdf for documentation
+  pthread_mutex_lock(&pkt->packetmutex);
+  //We check if there is already a full packet, in this case we remove one
+  if(pkt->full_number > 0)
   {
-    log_message( log_module,  MSG_FLOOD, "Full packet left, we mark it empty\n");
-    ts_packet->status_full=EMPTY;
-  }
-  //If on a previous call we left the partial packet with all the data
-  //This can append if after a finishing packet (with pointer field) there was a very small one
-  //   OR if all the packets are small
-  //we check the CRC32
-  //if ok tranfer this packet to the full
-  if(ts_partial_full( ts_packet))
-  {
-    log_message( log_module,  MSG_FLOOD, "Full partial_packet left we check the CRC32\n");
-    //The partial packet is full, we check the CRC32
-    if(ts_check_crc32(ts_packet))
-      ts_move_part_to_full(ts_packet); //Everything is perfect, the packet full is ok
+    log_message( log_module,  MSG_FLOOD, "Full packet left: %d, we remove one\n",pkt->full_number);
+    pkt->full_number--;
+    //We update the size of the buffer
+    pkt->full_buffer_len-=pkt->len_full;
+    //if there is one packet left, we put it in the full data and remove one packet
+    if(pkt->full_number > 0)
+    {
+      log_message( log_module,  MSG_FLOOD, "Remove one packet size %d, but another size: %d\n",pkt->len_full, pkt->full_lengths[1]);
+      //We move the data inside the buffer full
+      memmove(pkt->buffer_full,pkt->buffer_full+pkt->len_full,pkt->full_buffer_len);
+      //we update the lengths of the full packets
+      memmove(pkt->full_lengths,pkt->full_lengths+1,(MAX_FULL_PACKETS-1)*sizeof(int));
+      //we update the length
+      pkt->len_full= pkt->full_lengths[0];
+      //we update the data
+      memcpy(pkt->data_full,pkt->buffer_full,pkt->len_full);
+    }
   }
 
   ts_header_t *header;
@@ -103,7 +113,6 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
               header->payload_unit_start_indicator,
               header->continuity_counter);
 
-
   //we skip the adaptation field
   //Sometimes there is some more data in the header, the adaptation field say it
   if (header->adaptation_field_control & 0x2)
@@ -114,7 +123,8 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
     if(offset>=TS_PACKET_SIZE)
     {
       log_message( log_module,  MSG_DEBUG, "Invalid adapt.field.len \n");
-      goto final_check;
+      pthread_mutex_unlock(&pkt->packetmutex);
+      return (pkt->full_number > 0);
     }
   }
   else if (header->adaptation_field_control & 0x1)
@@ -124,20 +134,22 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
       // -- PES/PS
       //tspid->id   = buf[j+3];
       log_message( log_module,  MSG_FLOOD, "#PES/PS ----- We ignore \n");
-      goto final_check;
+      pthread_mutex_unlock(&pkt->packetmutex);
+      return (pkt->full_number > 0);
     }
   }
   if (header->adaptation_field_control == 3)
   {
     log_message( log_module,  MSG_DEBUG, "adaptation_field_control 3\n");
-    goto final_check;
+    pthread_mutex_unlock(&pkt->packetmutex);
+    return (pkt->full_number > 0);
   }
+
 
   //We are now at the beginning of the Transport stream packet, we check if there is a pointer field
   //the pointer fields tells if there is the end of the previous packet before the beginning of a new one
   //and how long is this data
-
-  if(header->payload_unit_start_indicator) //It's the beginning of a new packet
+  if(header->payload_unit_start_indicator) //There is AT LEAST one packet beginning here
   {
     //Pointer field
     //This is an 8-bit field whose value shall be the number of bytes, immediately following the pointer_field
@@ -155,218 +167,192 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *ts_packet)
       if((TS_PACKET_SIZE-offset-pointer_field)<0)
       {
         log_message(log_module, MSG_DETAIL, "Pointer field too big 0x%02x, packet dropped\n",pointer_field);
-        ts_packet->status_partial=EMPTY;
-        goto final_check;
+        pkt->status_partial=EMPTY;
+        pthread_mutex_unlock(&pkt->packetmutex);
+        return (pkt->full_number > 0);
       }
-
-      //We have a pointer field, we should happend this data to the actual partial packet, we check if it's started
-      if(ts_packet->status_partial!=STARTED)
-      {
-        log_message(log_module, MSG_FLOOD, "Pointer field and packet not started or full, we mark empty\n");
-        ts_packet->status_partial=EMPTY;
-      }
-      else if(ts_packet->cc==header->continuity_counter)
-      {
-        log_message(log_module, MSG_FLOOD, "Duplicate packet, continuity counter: %d\n", ts_packet->cc);
-      }
-      else if(((ts_packet->cc+1)%16)!=header->continuity_counter)
-      {
-        log_message(log_module, MSG_FLOOD, "The continuity counter is not valid saved packet cc %d actual cc %d\n", ts_packet->cc, header->continuity_counter);
-        ts_packet->status_partial=EMPTY;
-      }
-      else if(ts_packet->pid!=buf_pid)
-      {
-        log_message(log_module, MSG_FLOOD, "PID change. saved PID %d, actual pid %d\n", ts_packet->pid, buf_pid);
-        ts_packet->status_partial=EMPTY;
-      }
-      else
-      {
-        //packet started and pointer field, we append the data
-        log_message(log_module, MSG_FLOOD, "Pointer field and packet started, act packet len: %d, new len %d, expected len %d\n",
-                    ts_packet->len_partial,
-                    ts_packet->len_partial+pointer_field,
-                    ts_packet->expected_len_partial);
-        //we copy the data
-        memcpy(ts_packet->data_partial+ts_packet->len_partial,buf+offset,pointer_field);
-        //update the len
-        ts_packet->len_partial+=pointer_field;
-        //check if the packet is now full and valid
-        if(ts_partial_full(ts_packet))
-        {
-          //The partial packet is full, we check the CRC32
-          if(ts_check_crc32(ts_packet))
-            ts_move_part_to_full(ts_packet); //Everything is perfect, the packet full is ok
-        }
-        else
-        {
-          log_message(log_module, MSG_FLOOD, "The data from the pointer field didn't finished the packet len: %d\n", ts_packet->len_partial);
-          ts_packet->len_partial=0;
-          ts_packet->status_partial=EMPTY;
-        }
-      }
+      //We append the data of the ending packet
+      add_ts_packet_data(buf+offset, pkt, pointer_field, NO_START, buf_pid, header->continuity_counter);
     }
-    //We don't have a pointer field or we have finished dealing with the pointer field
-    //We check if a packet has been started before, just for information
-    if(ts_packet->status_partial!=EMPTY)
-    {
-      log_message(log_module, MSG_FLOOD, "Unfinished packet and beginning of a new one, we drop the started one len: %d\n", ts_packet->len_partial);
-      ts_packet->status_partial=EMPTY;
-      ts_packet->len_partial=0;
-    }
-    //We've read the pointer field data, we skip it
+    //we skip the pointer field_data
     offset+=pointer_field;
-    //========= This is the start of a new packet ===============
-    //We copy the data to the partial packet
-    ts_packet->status_partial=STARTED;
-    ts_packet->cc=header->continuity_counter;
-    ts_packet->pid=buf_pid;
-    //we can copy more data than needed, insert here a function which copy the data check if full etc...
-    ts_packet->len_partial=TS_PACKET_SIZE-offset;
-    memcpy(ts_packet->data_partial,buf+offset,ts_packet->len_partial);
-    tbl_h_t *tbl_struct=(tbl_h_t *)ts_packet->data_partial;
-    ts_packet->expected_len_partial=HILO(tbl_struct->section_length)+BYTES_BFR_SEC_LEN;
-    log_message(log_module, MSG_FLOOD, "Starting a packet PID %d cc %d len %d expected len %d\n",
-                ts_packet->pid,
-                ts_packet->cc,
-                ts_packet->len_partial,
-                ts_packet->expected_len_partial);
-    log_message(log_module, MSG_FLOOD, "First bytes\t 0x%02x 0x%02x 0x%02x 0x%02x  0x%02x 0x%02x 0x%02x 0x%02x\n",
-                ts_packet->data_partial[0],
-                ts_packet->data_partial[1],
-                ts_packet->data_partial[2],
-                ts_packet->data_partial[3],
-                ts_packet->data_partial[4],
-                ts_packet->data_partial[5],
-                ts_packet->data_partial[6],
-                ts_packet->data_partial[7]);
-       log_message(log_module, MSG_FLOOD, "Struct data\t table_id 0x%02x section_syntax_indicator 0x%02x section_length_hi 0x%02x section_length_lo 0x%02x transport_stream_id_hi 0x%02x transport_stream_id_lo 0x%02x version_number 0x%02x current_next_indicator 0x%02x last_section_number 0x%02x\n",
-                tbl_struct->table_id,
-                tbl_struct->section_syntax_indicator,
-                tbl_struct->section_length_hi,
-                tbl_struct->section_length_lo,
-                tbl_struct->transport_stream_id_hi,
-                tbl_struct->transport_stream_id_lo,
-                tbl_struct->version_number,
-                tbl_struct->current_next_indicator,
-                tbl_struct->last_section_number);
-    if(pointer_field==0)
-    {
-      //No pointer field_ we can check if the packet is full
-      if(ts_partial_full(ts_packet))
-      {
-        //The partial packet is full, we check the CRC32
-        if(ts_check_crc32(ts_packet))
-          ts_move_part_to_full(ts_packet); //Everything is perfect, the packet full is ok
-      }
-    }
-    else //pointer field, read the comment below
-    {
-      //we don't check if the packet is full here, this to avoid erasing the full if it has just been
-      //filled with the pointer_field
-      //The packet will be checked in the next call of this function, it basically add one packet delay
-      //check for infomation and debugging
-      if(ts_partial_full(ts_packet))
-      {
-        log_message(log_module, MSG_FLOOD, "Small full packet after a pointer field, this packet will be given at the next call. Len %d\n",ts_packet->len_partial);
-        //In fact they can hide another small packet, ie a big ends, a small is full and another one starts
-        if(offset+ts_packet->len_partial+7<TS_PACKET_SIZE)
-        {
-          //Note this part have to be rewritten
-          log_message(log_module, MSG_INFO, "!!! Please contact me, you are on a strange transponder and I would need a dump to improve MuMuDVB !!!\n");
-          log_message(log_module, MSG_FLOOD, "!!! There is another one !!! First bytes of the other one\t 0x%02x 0x%02x 0x%02x 0x%02x  0x%02x 0x%02x 0x%02x 0x%02x\n",
-                buf[offset+ts_packet->len_partial+0],
-                buf[offset+ts_packet->len_partial+1],
-                buf[offset+ts_packet->len_partial+2],
-                buf[offset+ts_packet->len_partial+3],
-                buf[offset+ts_packet->len_partial+4],
-                buf[offset+ts_packet->len_partial+5],
-                buf[offset+ts_packet->len_partial+6],
-                buf[offset+ts_packet->len_partial+7]);
-          tbl_h_t *tbl_struct=(tbl_h_t *)(buf+offset+ts_packet->len_partial);
-          log_message(log_module, MSG_FLOOD, "Struct data\t table_id 0x%02x section_syntax_indicator 0x%02x section_length_hi 0x%02x section_length_lo 0x%02x transport_stream_id_hi 0x%02x transport_stream_id_lo 0x%02x version_number 0x%02x current_next_indicator 0x%02x last_section_number 0x%02x\n",
-                tbl_struct->table_id,
-                tbl_struct->section_syntax_indicator,
-                tbl_struct->section_length_hi,
-                tbl_struct->section_length_lo,
-                tbl_struct->transport_stream_id_hi,
-                tbl_struct->transport_stream_id_lo,
-                tbl_struct->version_number,
-                tbl_struct->current_next_indicator,
-                tbl_struct->last_section_number);
-        }
-      }
-    }
+    //We add the data of the new packet
+    add_ts_packet_data(buf+offset, pkt,TS_PACKET_SIZE-offset , START_TS, buf_pid, header->continuity_counter);
   }
-  else //It's a continuing packet
+  else
+  //It's a continuing packet
   {
-    if(ts_packet->status_partial!=STARTED)
+    //We append the data of the ending packet
+    add_ts_packet_data(buf+offset, pkt,TS_PACKET_SIZE-offset , NO_START, buf_pid ,header->continuity_counter);
+  }
+
+  pthread_mutex_unlock(&pkt->packetmutex);
+  return (pkt->full_number > 0);
+}
+
+
+
+/** @brief This function will add data to the current partial section
+ * see doc/diagrams/TS_add_data_all_cases.pdf for documentation
+ */
+void add_ts_packet_data(unsigned char *buf, mumudvb_ts_packet_t *pkt, int data_left, int start_flag, int pid, int cc)
+{
+  int copy_len;
+  //We see if there is the start of a new section
+  if(start_flag == START_TS || start_flag == START_SECTION)
+  {
+    //if the start was detected by the end of a section we check for stuffing bytes
+    if(start_flag== START_SECTION)
+    {
+      /* Within a Transport Stream, packet stuffing bytes of value 0xFF may be found in the payload of Transport Stream
+       packets carrying PSI and/or private_sections only after the last byte of a section. In this case all bytes until the end of
+       the Transport Stream packet shall also be stuffing bytes of value 0xFF. These bytes may be discarded by a decoder. In
+       such a case, the payload of the next Transport Stream packet with the same PID value shall begin with a pointer_field of
+       value 0x00 indicating that the next section starts immediately thereafter.
+      */
+      if(buf[0]==0xff)
+      {
+        log_message(log_module, MSG_FLOOD, "Stuffing bytes found data left %d\n",data_left);
+        return;
+      }
+    }
+    //We check if a packet has been started before, just for information
+    if(pkt->status_partial!=EMPTY)
+      log_message(log_module, MSG_FLOOD, "Unfinished packet and beginning of a new one, we drop the started one len: %d\n", pkt->len_partial);
+    //We copy the data to the partial packet
+    pkt->status_partial=STARTED;
+    pkt->cc=cc;
+    pkt->pid=pid;
+    tbl_h_t *tbl_struct=(tbl_h_t *)buf;
+    pkt->expected_len_partial=HILO(tbl_struct->section_length)+BYTES_BFR_SEC_LEN;
+    //we copy the amount of data needed
+    if(pkt->expected_len_partial<data_left)
+      copy_len=pkt->expected_len_partial;
+    else
+      copy_len=data_left;
+    pkt->len_partial=copy_len;
+    //The real copy
+    memcpy(pkt->data_partial,buf,pkt->len_partial);
+    //we update the amount of data left
+    data_left-=copy_len;
+    //lot of debugging information
+    log_message(log_module, MSG_FLOOD, "Starting a packet PID %d cc %d len %d expected len %d\n",
+                pkt->pid,
+                pkt->cc,
+                pkt->len_partial,
+                pkt->expected_len_partial);
+    log_message(log_module, MSG_FLOOD, "First bytes\t 0x%02x 0x%02x 0x%02x 0x%02x  0x%02x 0x%02x 0x%02x 0x%02x\n",
+                pkt->data_partial[0],
+                pkt->data_partial[1],
+                pkt->data_partial[2],
+                pkt->data_partial[3],
+                pkt->data_partial[4],
+                pkt->data_partial[5],
+                pkt->data_partial[6],
+                pkt->data_partial[7]);
+    log_message(log_module, MSG_FLOOD, "Struct data\t table_id 0x%02x section_syntax_indicator 0x%02x section_length_hi 0x%02x section_length_lo 0x%02x transport_stream_id_hi 0x%02x transport_stream_id_lo 0x%02x version_number 0x%02x current_next_indicator 0x%02x last_section_number 0x%02x\n",
+                tbl_struct->table_id,
+                tbl_struct->section_syntax_indicator,
+                tbl_struct->section_length_hi,
+                tbl_struct->section_length_lo,
+                tbl_struct->transport_stream_id_hi,
+                tbl_struct->transport_stream_id_lo,
+                tbl_struct->version_number,
+                tbl_struct->current_next_indicator,
+                tbl_struct->last_section_number);
+   }
+  else
+  {
+    log_message(log_module, MSG_FLOOD, "Continuing packet, data left %d\n",data_left);
+     if(pkt->status_partial!=STARTED)
     {
       log_message(log_module, MSG_FLOOD, "Continuing packet and saved packet not started or full, can be a continuity error\n");
-      ts_packet->status_partial=EMPTY;
+      pkt->status_partial=EMPTY;
+      return;
     }
-    else if(ts_packet->cc==header->continuity_counter)
+    else if(pkt->cc==cc)
     {
-      log_message(log_module, MSG_FLOOD, "Duplicate packet, continuity counter: %d\n", ts_packet->cc);
+      log_message(log_module, MSG_FLOOD, "Duplicate packet, continuity counter: %d\n", pkt->cc);
+      return;
     }
-    else if(((ts_packet->cc+1)%16)!=header->continuity_counter)
+    else if(((pkt->cc+1)%16)!=cc)
     {
-      log_message(log_module, MSG_FLOOD, "The continuity counter is not valid saved packet cc %d actual cc %d\n", ts_packet->cc, header->continuity_counter);
-      ts_packet->status_partial=EMPTY;
+      log_message(log_module, MSG_FLOOD, "The continuity counter is not valid saved packet cc %d actual cc %d\n", pkt->cc, cc);
+      pkt->status_partial=EMPTY;
+      return;
     }
-    else if(ts_packet->pid!=buf_pid)
+    else if(pkt->pid!=pid)
     {
-      log_message(log_module, MSG_FLOOD, "PID change. saved PID %d, actual pid %d\n", ts_packet->pid, buf_pid);
-      ts_packet->status_partial=EMPTY;
+      log_message(log_module, MSG_FLOOD, "PID change. saved PID %d, actual pid %d\n", pkt->pid, pid);
+      pkt->status_partial=EMPTY;
+      return;
     }
     else
     {
       //packet started and continuing packet, we append the data
-      int copy_len;
-      if(ts_packet->len_partial+(TS_PACKET_SIZE-offset)<MAX_TS_SIZE)
-        copy_len=TS_PACKET_SIZE-offset;
+      //we copy the minimumamount of data
+      if((pkt->len_partial+data_left)> pkt->expected_len_partial)
+        copy_len=pkt->expected_len_partial - pkt->len_partial;
       else
+        copy_len=data_left;
+      //if too big we skip
+      if(pkt->len_partial+copy_len > MAX_TS_SIZE)
       {
-        copy_len=MAX_TS_SIZE-ts_packet->len_partial;
+        log_message(log_module, MSG_FLOOD, "The packet seems too big pkt->len_partial %d copy_len %d pkt->len_partial+copy_len %d\n",
+                    pkt->len_partial,
+                    copy_len,
+                    pkt->len_partial+copy_len);
+        copy_len=MAX_TS_SIZE-pkt->len_partial;
       }
-      memcpy(ts_packet->data_partial+ts_packet->len_partial,buf+offset,copy_len);//we add the packet to the buffer
-      ts_packet->len_partial+=copy_len;
-      ts_packet->cc=header->continuity_counter; //update cc
-      log_message(log_module, MSG_FLOOD, "Continuing a packet PID %d cc %d len %d\n",ts_packet->pid,ts_packet->cc,ts_packet->len_partial);
-      //we check if the packet is full
-      if(ts_partial_full(ts_packet))
-      {
-        //The partial packet is full, we check the CRC32
-        if(ts_check_crc32(ts_packet))
-          ts_move_part_to_full(ts_packet); //Everything is perfect, the packet full is ok
-      }
+      //We don't have any starting packet we make sure we don't believe there is
+      data_left=0;
+
+      memcpy(pkt->data_partial+pkt->len_partial,buf,copy_len);//we add the packet to the buffer
+      pkt->len_partial+=copy_len;
+      pkt->cc=cc; //update cc
+      log_message(log_module, MSG_FLOOD, "Continuing a packet PID %d cc %d len %d expected %d\n",pkt->pid,pkt->cc,pkt->len_partial,pkt->expected_len_partial);
     }
   }
 
-final_check:
-  pthread_mutex_unlock(&ts_packet->packetmutex);
-  //If the packet is full we return 1
-  if(ts_packet->status_full==VALID)
+  //We check if the packet is full
+  if(ts_partial_full(pkt))
   {
-    log_message(log_module, MSG_DETAIL, "Packet full and valid PID %d length %d\n",
-                ts_packet->pid,
-                ts_packet->len_full);
-    return 1;
+    //The partial packet is full, we check the CRC32
+    if(ts_check_crc32(pkt))
+      ts_move_part_to_full(pkt); //Everything is perfect, the packet full is ok
   }
-  return 0;
+
+  //If there is still data, a new section could begin, we call recursively
+  if(data_left)
+  {
+    log_message(log_module, MSG_FLOOD, "Calling recursively, data left %d\n",data_left);
+    add_ts_packet_data(buf+copy_len, pkt, data_left,START_SECTION, pid,cc);
+  }
 }
 
 
 /** @brief move the partial packet to the full packet */
-void ts_move_part_to_full(mumudvb_ts_packet_t *ts_packet)
+void ts_move_part_to_full(mumudvb_ts_packet_t *pkt)
 {
-  //copy the data
-  memcpy(ts_packet->data_full,ts_packet->data_partial,MAX_TS_SIZE);
-  ts_packet->len_full=ts_packet->len_partial;
-  ts_packet->status_full=ts_packet->status_partial;
-  ts_packet->len_partial=0;
-  ts_packet->status_partial=EMPTY;
-  log_message(log_module, MSG_FLOOD, "Packet full updated, len %d\n",ts_packet->len_full);
+  //append the data
+  memcpy(pkt->buffer_full+pkt->full_buffer_len,pkt->data_partial,pkt->len_partial);
+  pkt->full_buffer_len+=pkt->len_partial;
+  pkt->full_lengths[pkt->full_number]=pkt->len_partial;
+  pkt->full_number++;
+  log_message(log_module, MSG_FLOOD, "New full packet len %d. There's now %d full packet%c\n",pkt->len_partial,pkt->full_number,pkt->full_number>1?'s':' ');
+  //if it's the first we copy it to the full
+  if(pkt->full_number==1)
+  {
+    pkt->len_full=pkt->full_lengths[0];
+    log_message(log_module, MSG_FLOOD, "First full packet. len %d\n",pkt->len_full);
+    memcpy(pkt->data_full,pkt->buffer_full,pkt->len_full);
+  }
+  pkt->len_partial=0;
+  pkt->status_partial=EMPTY;
 }
+
+
+
 
 /**@brief Checking of the CRC32 of a raw buffer
  * return 1 if crc32 is ok, 0 otherwise

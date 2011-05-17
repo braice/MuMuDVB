@@ -30,7 +30,7 @@ http://mumudvb.braice.net/mumudvb/test/
 
 // To compile this code, run "make check"
 
-#define PRESS_ENTER 0
+#define PRESS_ENTER 1
 
 #define FILES_TEST_READ_SDT_TS "tests/BBC123_pids0_18.dump.ts", "tests/TestDump17.ts"//,"tests/test_autoconf_numericableparis_PAT_SDT.ts","tests/astra_TP_11856.00V_PAT_SDT.ts"
 #define NUM_READ_SDT 100
