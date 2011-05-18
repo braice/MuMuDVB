@@ -167,7 +167,6 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
         pid_type=PID_VIDEO_MPEG4_AVC;
         log_message( log_module,  MSG_DEBUG,"  Video MPEG4-AVC \tpid %d\n",pid);
         break;
-
       case 0x03:
         pid_type=PID_AUDIO_MPEG1;
         log_message( log_module,  MSG_DEBUG,"  Audio MPEG1 \tpid %d\n",pid);
@@ -252,8 +251,49 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
       case 0x0c:
         log_message( log_module,  MSG_DEBUG, "Dropped pid %d, type : 0x0C ISO/IEC 13818-6 type C (DSM-CC)\n",pid);
         continue;
+      case 0x0D:
+        log_message( log_module,  MSG_DEBUG, "Dropped pid %d, type : ISO/IEC 13818-6 type D",pid);
+        continue;
+      case 0x0E:
+        log_message( log_module,  MSG_DEBUG, "Dropped pid %d, type : ITU-T Rec. H.222.0 | ISO/IEC 13818-1 auxiliary",pid);
+        continue;
+      case 0x12:
+        log_message( log_module,  MSG_DEBUG, "Dropped pid %d, type : ISO/IEC 14496-1 SL-packetized stream or FlexMux stream carried in PES packets",pid);
+        continue;
+      case 0x13:
+        log_message( log_module,  MSG_DEBUG, "Dropped pid %d, type : ISO/IEC 14496-1 SL-packetized stream or FlexMux stream carried in ISO/IEC 14496_sections",pid);
+        continue;
+      case 0x14:
+        log_message( log_module,  MSG_DEBUG, "Dropped pid %d, type : ISO/IEC 13818-6 Synchronized Download Protocol",pid);
+        continue;
+      case 0x15:
+        log_message( log_module,  MSG_DEBUG, "Dropped pid %d, type : Metadata carried in PES packets",pid);
+        continue;
+      case 0x16:
+        log_message( log_module,  MSG_DEBUG, "Dropped pid %d, type : Metadata carried in metadata_sections",pid);
+        continue;
+      case 0x17:
+        log_message( log_module,  MSG_DEBUG, "Dropped pid %d, type : Metadata carried in ISO/IEC 13818-6 Data Carousel",pid);
+        continue;
+      case 0x18:
+        log_message( log_module,  MSG_DEBUG, "Dropped pid %d, type : Metadata carried in ISO/IEC 13818-6 Object Carousel",pid);
+        continue;
+      case 0x19:
+        log_message( log_module,  MSG_DEBUG, "Dropped pid %d, type : Metadata carried in ISO/IEC 13818-6 Synchronized Download Protocol",pid);
+        continue;
+      case 0x1A:
+        log_message( log_module,  MSG_DEBUG, "Dropped pid %d, type : IPMP stream (defined in ISO/IEC 13818-11, MPEG-2 IPMP)",pid);
+        continue;
+      case 0x7F:
+        log_message( log_module,  MSG_DEBUG, "Dropped pid %d, type : IPMP stream",pid);
+        continue;
       default:
-        log_message( log_module,  MSG_INFO, "!!!!Unknown stream type : 0x%02x, PID : %d cf ITU-T Rec. H.222.0 | ISO/IEC 13818\n",descr_header->stream_type,pid);
+        if(descr_header->stream_type >= 0x1C && descr_header->stream_type <= 0x7E)
+          log_message( log_module,  MSG_DEBUG, "Dropped pid %d, stream type : 0x%02x : ITU-T Rec. H.222.0 | ISO/IEC 13818-1 Reserved",pid,descr_header->stream_type);
+        else if(descr_header->stream_type >= 0x80)
+          log_message( log_module,  MSG_DEBUG, "Dropped pid %d, stream type : 0x%02x : User Private",pid,descr_header->stream_type);
+        else
+          log_message( log_module,  MSG_INFO, "!!!!Unknown stream type : 0x%02x, PID : %d cf ITU-T Rec. H.222.0 | ISO/IEC 13818\n",descr_header->stream_type,pid);
         continue;
     }
 
