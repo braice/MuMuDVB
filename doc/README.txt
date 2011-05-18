@@ -213,7 +213,7 @@ Possible options are:
 	More quiet (add for less)
 
 --dumpfile
-	Debug option : Dump the stream into the file specified
+	Debug option : Dump the stream into the specified file
 ------------------------------------------------------------------
 
 Signal: (see kill(1))

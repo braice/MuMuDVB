@@ -1558,7 +1558,8 @@ int
 
       //If the user asked to dump the streams it's here tath it should be done
       if(dump_file)
-        fwrite(actual_ts_packet,188,sizeof(unsigned char),dump_file);
+        if(fwrite(actual_ts_packet,188,sizeof(unsigned char),dump_file)<188)
+          log_message( log_module,MSG_WARN,"Error while writing the dump : %s", strerror(errno));
 
       // Test if the error bit is set in the TS packet received
       if ((actual_ts_packet[1] & 0x80) == 0x80)
