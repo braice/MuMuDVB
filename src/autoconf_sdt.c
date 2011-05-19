@@ -52,6 +52,7 @@ static char *log_module="Autoconf: ";
 void parse_sdt_descriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_service_t *services);
 void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *services);
 void autoconf_show_CA_identifier_descriptor(unsigned char *buf);
+void autoconf_show_country_avaibility_descriptor(unsigned char *buf);
 mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int service_id);
 
 /**
@@ -188,6 +189,8 @@ void parse_sdt_descriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_s
       parse_service_descriptor(buf,service);
     else if( descriptor_tag==0x53) //53 : CA identifier descriptor. This descriptor contains the CA_systems_id (the scrambling algorithms)
       autoconf_show_CA_identifier_descriptor(buf);
+    else if( descriptor_tag==0x49) //0x49 : Country availability descriptor.
+      autoconf_show_country_avaibility_descriptor(buf);
     else /** @todo : Add descriptor 0x50 Component descriptor (multilingual 0x5E)*/
        /** @todo : Add descriptor 0x5D  multilingual_service_name_descriptor*/
       log_message( log_module, MSG_FLOOD, "SDT descriptor_tag : 0x%2x, descriptor_len %d\n", descriptor_tag, descriptor_len);
@@ -373,5 +376,44 @@ void autoconf_show_CA_identifier_descriptor(unsigned char *buf)
     log_message( log_module,  MSG_DETAIL,"Ca system id 0x%04x : %s\n",ca_id, ca_sys_id_to_str(ca_id));
   }
 }
+
+typedef struct {
+   u_char descriptor_tag                         :8;
+   u_char descriptor_length                      :8;
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char country_availability_flag              :1;
+   u_char                                        :7;
+#else
+   u_char                                        :7;
+   u_char country_availability_flag              :1;
+#endif
+} country_avaibility_descr_t;
+
+/** @brief : show the contents of the country avaibility descriptor
+ *
+ * @param buf : the buffer containing the descriptor
+ */
+void autoconf_show_country_avaibility_descriptor(unsigned char *buf)
+{
+  int length,i;
+  country_avaibility_descr_t *descr;
+  log_message( log_module, MSG_DETAIL, "--- SDT descriptor --- country avaibility descriptor\n");
+
+  descr=(country_avaibility_descr_t *)buf;
+  length=descr->descriptor_length-1;
+  if(descr->country_availability_flag)
+    log_message( log_module, MSG_DETAIL, "The reception is intended for the following countries : \n");
+  else
+    log_message( log_module, MSG_DETAIL, "The reception is NOT intended for the following countries : \n");
+  for(i=0;i<length;i+=3)
+  {
+    log_message( log_module,  MSG_DETAIL,"Country : %c%c%c\n",buf[i+3], buf[i+3+1],buf[i+3+2]);
+  }
+}
+
+
+
+
+
 
 
