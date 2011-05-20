@@ -476,7 +476,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
   /*************************
   * Language template
   **************************/
-  int found =0;
+  found =0;
   int len=MAX_NAME_LEN;
   for(i=0;i<channel->num_pids && !found;i++)
   {
