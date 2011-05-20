@@ -473,6 +473,26 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
   /**************************
   * Channel update END
   **************************/
+  /*************************
+  * Language template
+  **************************/
+  int found =0;
+  int len=MAX_NAME_LEN;
+  for(i=0;i<channel->num_pids && !found;i++)
+  {
+    if(channel->pids_language[i][0]!='-')
+    {
+      log_message( log_module,  MSG_FLOOD, "Primary language for channel: %s",channel->pids_language[i]);
+      mumu_string_replace(channel->name,&len,0,"%lang",channel->pids_language[i]);
+      found=1; //we exit the loop
+    }
+  }
+  //If we don't find a lang we replace by our "usual" ---
+  if(!found)
+    mumu_string_replace(channel->name,&len,0,"%lang",channel->pids_language[0]);
+  /*************************
+  * Language template END
+  **************************/
 
   log_message( log_module,  MSG_DEBUG,"Number of pids after autoconf %d\n", channel->num_pids);
   return 0; 

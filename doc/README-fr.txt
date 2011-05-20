@@ -298,6 +298,7 @@ Il y a différents mot-clef disponibles
 |Mot clef |Description 
 |%name | Le nom donné par le diffuseur
 |%number | Le numéro de chaîne de MuMuDVB 
+|%lang | La langue par défaut/principale de la chaîne
 |%card | Le numéro de carte DVB
 |%tuner | Le numéro de tuner
 |%server| Le numéro de serveur, spécifié en ligne de commande ou via l'option server_id

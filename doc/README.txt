@@ -295,6 +295,7 @@ There is different keywords available:
 |Keyword |Description 
 |%name | The name given by the provider 
 |%number | The MuMuDVB channel number 
+|%lang | The channel primary language
 |%card | The DVB card number
 |%tuner | The tuner number
 |%server| The server number specified by server_id or the command line 
