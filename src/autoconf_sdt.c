@@ -231,6 +231,7 @@ int convert_en399468_string(char *string, int max_len)
     }
     else if(*src <= 0x20)
     {
+      log_message( log_module, MSG_FLOOD, "Encoding number 0x%02x, see EN 300 468 Annex A",*src);
       //control character recognition based on EN 300 468 v1.9.1 Annex A
       if(*src<=0x0b){
 	encoding_control_char=(int) *src+4-1;
@@ -258,18 +259,20 @@ int convert_en399468_string(char *string, int max_len)
     else if (*src >= 0x80 && *src <= 0x9f)
     {
       //to encode in UTF-8 we add 0xc2 before this control character
-      if(*src==0x86 || *src==0x87 || *src>=0x8a )
-      { 
-	*tempdest++ = 0xc2;
-	len++;
-	*tempdest++ = *src;
-	len++;
-      }
+      //but wh have to put it after iconv, it's a bit boring just for bold
+      //we drop them
+      if(*src==0x86)
+        log_message( log_module, MSG_DETAIL, "Control character \"Bold\", we drop",*src);
+      else if(*src==0x87)
+        log_message( log_module, MSG_DETAIL, "Control character \"UnBold\", we drop",*src);
+      else if(*src==0x8a)
+        log_message( log_module, MSG_DETAIL, "Control character \"CR/LF\", we drop",*src);
+      else if(*src>=0x8b )
+        log_message( log_module, MSG_DETAIL, "Control character 0x%02x \"User defined\" at len %d. We drop",*src,len);
       else
 	log_message( log_module, MSG_DEBUG, "\tUnimplemented name control_character : %x \n", *src);
     }
   }
-
 #ifdef HAVE_ICONV
   //Conversion to utf8
   iconv_t cd;
