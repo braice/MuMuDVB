@@ -30,14 +30,15 @@ http://mumudvb.braice.net/mumudvb/test/
 
 // To compile this code, run "make check"
 
+#define PRESS_ENTER 1
 
-
-#define FILES_TEST_READ_SDT_TS "tests/TestDump17.ts","tests/test_autoconf_numericableparis_PAT_SDT.ts","tests/astra_TP_11856.00V_PAT_SDT.ts"
-#define NUM_READ_SDT 200
-#define NUM_FILES_TEST_READ_SDT 3
+#define FILES_TEST_READ_SDT_TS "tests/BBC123_pids0_18.dump.ts", "tests/TestDump17.ts"//,"tests/test_autoconf_numericableparis_PAT_SDT.ts","tests/astra_TP_11856.00V_PAT_SDT.ts"
+#define NUM_READ_SDT 100
+#define NUM_FILES_TEST_READ_SDT 2
 #define FILES_TEST_READ_RAND "tests/random_1.ts","tests/random_2.ts"
-#define NUM_FILES_TEST_READ_RAND 2
+#define NUM_FILES_TEST_READ_RAND 0
 #define TEST_STRING_COMPUT "2+2*3+100"
+#define TEST_STRING_COMPUT_RES 108
 
 #define FILES_TEST_AUTOCONF "tests/astra_TP_11856.00V_pids_0_18.ts","tests/test_autoconf_numericableparis.ts","tests/astra_TP_11856.00V_pids_0_18__2.ts","tests/BBC123_pids0_18.dump.ts","tests/BBC123.dump.ts"
 #define NUM_FILES_TEST_AUTOCONF 5
@@ -72,10 +73,20 @@ multicast_parameters_t multicast_vars;
 extern log_params_t log_params;
 
 static char *log_module="======TEST======: ";
-
+void press_enter_func(int press_enter)
+{
+    if(press_enter)
+    {
+      log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
+      getchar();
+    }
+    else
+      log_message( log_module, MSG_INFO,"===================================================================\n");
+}
 
 int main(void)
 {
+  int press_enter = PRESS_ENTER;
 
   //We initalise the logging parameters
   log_params.verbosity = 999;
@@ -84,24 +95,23 @@ int main(void)
 
   log_message( log_module, MSG_INFO,"===================================================================\n");
   log_message( log_module, MSG_INFO,"Testing program for MuMuDVB\n");
-  log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-  getchar();
+  log_message( log_module, MSG_INFO,"===================================================================\n");
 
   /****************************  Very basic test ****************************************************/
   log_message( log_module, MSG_INFO,"===================================================================\n");
   log_message( log_module, MSG_INFO,"Display Ca system id 1\n" );
-  log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-  getchar();
+  log_message( log_module, MSG_INFO,"===================================================================\n");
+
   log_message( log_module, MSG_INFO,"%s\n\n" ,ca_sys_id_to_str(1));
 
   /****************************  Testing string compute *********************************************/
   log_message( log_module, MSG_INFO,"===================================================================\n");
   log_message( log_module, MSG_INFO,"Testing string compute %s\n",TEST_STRING_COMPUT );
-  log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-  getchar();
+  log_message( log_module, MSG_INFO,"===================================================================\n");
+
   int resultat;
   resultat=string_comput(TEST_STRING_COMPUT);
-  if(resultat==108)
+  if(resultat==TEST_STRING_COMPUT_RES)
     log_message( log_module, MSG_INFO,"%d  --  PASS\n\n" ,resultat);
   else
     log_message( log_module, MSG_INFO,"%d  --  FAIL\n\n" ,resultat);
@@ -112,27 +122,26 @@ int main(void)
   {
     log_message( log_module, MSG_INFO,"===================================================================\n");
     log_message( log_module, MSG_INFO,"Testing TS read for SDT - test %d on %d file %s\n", i_file+1, NUM_FILES_TEST_READ_SDT , files_sdt[i_file] );
-    log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-    getchar();
+    press_enter_func(press_enter);
     FILE *testfile;
     testfile=fopen (files_sdt[i_file], "r");
     if(testfile!=NULL)
       {
         //We read all the packets contained in the file
-        unsigned char ts_packet_raw[188];
+        unsigned char ts_packet_raw[TS_PACKET_SIZE];
         int num_sdt_read=0;
         mumudvb_ts_packet_t ts_packet_mumu;
         memset(&ts_packet_mumu, 0, sizeof(mumudvb_ts_packet_t));
-        ts_packet_mumu.empty=1;
+
         mumudvb_service_t services;
         memset(&services, 0, sizeof(mumudvb_service_t));
         //Just to make pthread happy
         pthread_mutex_init(&ts_packet_mumu.packetmutex,NULL);
         int iRet,pid;
         log_message( log_module, MSG_INFO,"File opened, reading packets\n" );
-        while(fread(ts_packet_raw,188,1, testfile) && num_sdt_read<NUM_READ_SDT)
+        while(fread(ts_packet_raw,TS_PACKET_SIZE,1, testfile) && num_sdt_read<NUM_READ_SDT)
           {
-            // Get the PID of the received TS packet
+            /************ SYNC *************/
             if(ts_packet_raw[0] != 0x47)
               {
                 log_message( log_module, MSG_INFO," !!!!!!!!!!!!! Sync error, we search for a new sync byte !!!!!!!!!!!!!!\n");
@@ -141,37 +150,36 @@ int main(void)
                 while(fread(&sync,1,1, testfile) && sync!=0x47);
                 ts_packet_raw[0]=sync;
                 //We found a "sync byte" we get the rest of the packet
-                if(!fread(ts_packet_raw-1,188-1,1, testfile))
+                if(!fread(ts_packet_raw-1,TS_PACKET_SIZE-1,1, testfile))
                   continue;
                 else
                   log_message( log_module, MSG_INFO," sync byte found :) \n");
               }
+            // Get the PID of the received TS packet
             pid = HILO(((ts_header_t *)ts_packet_raw)->pid);
+            if(pid != 17) continue;
             log_message( log_module, MSG_DEBUG,"New elementary (188bytes TS packet) pid %d continuity_counter %d",
                          pid,
                          ((ts_header_t *)ts_packet_raw)->continuity_counter );
-            if(pid != 17) continue;
             iRet=get_ts_packet(ts_packet_raw, &ts_packet_mumu);
             //If it's the beginning of a new packet we display some information
             if(((ts_header_t *)ts_packet_raw)->payload_unit_start_indicator)
               log_message(log_module, MSG_FLOOD, "First two bytes of the packet 0x%02x %02x",
-                          ts_packet_mumu.packet[0],
-                          ts_packet_mumu.packet[1]);
+                          ts_packet_mumu.data_partial[0],
+                          ts_packet_mumu.data_partial[1]);
 
             if(iRet==1)//packet is parsed
               {
                 log_message( log_module, MSG_INFO,"New packet -- parsing\n" );
                 num_sdt_read++;
-                autoconf_read_sdt(ts_packet_mumu.packet,ts_packet_mumu.len,&services);
-                ts_packet_mumu.empty=1;
+                autoconf_read_sdt(ts_packet_mumu.data_full,ts_packet_mumu.len_full,&services);
               }
           }
         log_message( log_module, MSG_INFO,"Final services list .... \n");
         autoconf_print_services(&services);
         log_message( log_module, MSG_INFO,"===================================================================\n");
         log_message( log_module, MSG_INFO,"Testing service sorting on this list\n" );
-        log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-        getchar();
+        press_enter_func(press_enter);
         autoconf_sort_services(&services);
         autoconf_print_services(&services);
         //We free starting at the next since the first is not malloc'ed
@@ -191,22 +199,20 @@ int main(void)
   for(int i_file=0;i_file<NUM_FILES_TEST_READ_RAND;i_file++)
     {
       log_message( log_module, MSG_INFO,"Testing Resistance to bad packets file %d on %d : %s\n", i_file+1, NUM_FILES_TEST_READ_RAND, files_rand[i_file] );
-      log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-      getchar();
+      press_enter_func(press_enter);
       FILE *testfile;
       testfile=fopen (files_rand[i_file] , "r");
       if(testfile!=NULL)
 	{
 	  //We read all the packets contained in the file
-	  unsigned char ts_packet_raw[188];
+	  unsigned char ts_packet_raw[TS_PACKET_SIZE];
 	  int num_rand_read=0;
 	  mumudvb_ts_packet_t ts_packet_mumu;
-	  ts_packet_mumu.empty=1;
 	  //Just to make pthread happy
 	  pthread_mutex_init(&ts_packet_mumu.packetmutex,NULL);
 	  int iRet;
 	  log_message( log_module, MSG_INFO,"File opened, reading packets\n" );
-	  while(fread(ts_packet_raw,188,1, testfile))
+	  while(fread(ts_packet_raw,TS_PACKET_SIZE,1, testfile))
 	    {
 	      num_rand_read++;
 	      log_message( log_module, MSG_INFO,"Position %d packets\n", num_rand_read);
@@ -214,7 +220,6 @@ int main(void)
 	      if(iRet==1)//packet is parsed
 		{
 		  log_message( log_module, MSG_INFO,"New VALID packet\n" );
-		  ts_packet_mumu.empty=1;
 		}
 	    }
 	  fclose(testfile);
@@ -229,8 +234,7 @@ int main(void)
 
     log_message( log_module, MSG_INFO,"===================================================================\n");
     log_message( log_module, MSG_INFO,"Testing autoconfiguration file %d on %d %s\n",i_file+1, NUM_FILES_TEST_AUTOCONF, files_autoconf[i_file]);
-    log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-    getchar();
+    press_enter_func(press_enter);
 
     FILE *testfile;
     testfile=fopen (files_autoconf[i_file] , "r");
@@ -271,15 +275,15 @@ int main(void)
         log_message( log_module, MSG_INFO,"error with autoconfiguration init\n");
       }
 
-      unsigned char actual_ts_packet[188];
+      unsigned char actual_ts_packet[TS_PACKET_SIZE];
       int pid;
-      while(fread(actual_ts_packet,188,1, testfile))
+      while(fread(actual_ts_packet,TS_PACKET_SIZE,1, testfile))
       {
         // get the pid of the received ts packet
         pid = ((actual_ts_packet[1] & 0x1f) << 8) | (actual_ts_packet[2]);
-        log_message( log_module, MSG_DEBUG,"New elementary (188bytes TS packet) pid %d continuity_counter %d",
+        /*log_message( log_module, MSG_DEBUG,"New elementary (188bytes TS packet) pid %d continuity_counter %d",
                          pid,
-                         ((ts_header_t *)actual_ts_packet)->continuity_counter );
+                         ((ts_header_t *)actual_ts_packet)->continuity_counter );*/
 
         iret = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tuneparams, &multicast_vars, &unicast_vars, 0);
 
@@ -302,8 +306,7 @@ int main(void)
         //We can tests other things here like REWRITE etc ....
         log_message( log_module, MSG_INFO,"===================================================================\n");
         log_message( log_module, MSG_INFO,"Testing SDT rewrite on this file (%s)\n", files_autoconf[i_file]);
-        log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-        getchar();
+        press_enter_func(press_enter);
         FILE *testfile;
         testfile=fopen (files_autoconf[i_file] , "r");
         if(testfile!=NULL)
@@ -334,7 +337,7 @@ int main(void)
           memset (rewrite_vars.full_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
           pthread_mutex_init(&rewrite_vars.full_sdt->packetmutex,NULL);
 
-          while(fread(actual_ts_packet,188,1, testfile))
+          while(fread(actual_ts_packet,TS_PACKET_SIZE,1, testfile))
           {
             // get the pid of the received ts packet
             pid = ((actual_ts_packet[1] & 0x1f) << 8) | (actual_ts_packet[2]);
@@ -375,10 +378,7 @@ int main(void)
 
   /**************************************************************************************************/
   //log_message( log_module, MSG_INFO,"===================================================================\n");
-  //log_message( log_module, MSG_INFO,"================= Press enter to continue =========================\n");
-  //getchar();
-  /**************************************************************************************************/
-  /**************************************************************************************************/
+  //press_enter_func(press_enter);
   /**************************************************************************************************/
   /**************************************************************************************************/
 

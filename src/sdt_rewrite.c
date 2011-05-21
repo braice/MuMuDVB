@@ -1,7 +1,7 @@
 /* 
  * MuMuDVB - Stream a DVB transport stream.
  * 
- * (C) 2004-2010 Brice DUBOST
+ * (C) 2004-2011 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -90,7 +90,7 @@ int sdt_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf)
 /** @brief update the version using the dowloaded SDT*/
 void update_sdt_version(rewrite_parameters_t *rewrite_vars)
 {
-  sdt_t       *sdt=(sdt_t*)(rewrite_vars->full_sdt->packet);
+  sdt_t       *sdt=(sdt_t*)(rewrite_vars->full_sdt->data_full);
   if(rewrite_vars->sdt_version!=sdt->version_number)
     log_message( log_module, MSG_DEBUG,"New sdt version. Old : %d, new: %d\n",rewrite_vars->sdt_version,sdt->version_number);
 
@@ -134,7 +134,7 @@ int sdt_rewrite_copy_descriptor(int descriptor_tag)
 int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel,  unsigned char *buf, int curr_channel)
 {
   ts_header_t *ts_header=(ts_header_t *)buf;
-  sdt_t       *sdt=(sdt_t*)(rewrite_vars->full_sdt->packet);
+  sdt_t       *sdt=(sdt_t*)(rewrite_vars->full_sdt->data_full);
   sdt_descr_t  *sdt_descr; //was prog
   unsigned long crc32;
 
@@ -182,7 +182,6 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
   if(sdt->table_id!=0x42)
   {
     rewrite_vars->sdt_needs_update=1;
-    rewrite_vars->full_sdt->empty=1;
     log_message( log_module, MSG_DETAIL,"We didn't got the good SDT (wrong table id) we search for a new one\n");
     return 0;
   }
@@ -191,7 +190,7 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
   //strict comparaison due to the calc of section len cf down
   while((buffer_pos+SDT_DESCR_LEN)<(section_length) && !found)
   {
-    sdt_descr=(sdt_descr_t *)((char*)rewrite_vars->full_sdt->packet+buffer_pos);
+    sdt_descr=(sdt_descr_t *)((char*)rewrite_vars->full_sdt->data_full+buffer_pos);
     descriptors_length=HILO(sdt_descr->descriptors_loop_length);
       //We check the transport stream id if present and the size of the packet
       // + 4 for the CRC32
@@ -202,23 +201,23 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
         //We loop on the descriptors
         int loop_length;
         loop_length=0;
-        unsigned char t_buffer[4096];
+        unsigned char t_buffer[MAX_TS_SIZE];
         sdt_descr_t *t_buffer_ptr;
         t_buffer_ptr = ((sdt_descr_t *)t_buffer);
         int pos=0;
         //we copy the header
-        memcpy(t_buffer,rewrite_vars->full_sdt->packet+buffer_pos,SDT_DESCR_LEN);
+        memcpy(t_buffer,rewrite_vars->full_sdt->data_full+buffer_pos,SDT_DESCR_LEN);
         while(pos<descriptors_length)
         {
           unsigned char descriptor_tag;
-          descriptor_tag = rewrite_vars->full_sdt->packet[buffer_pos+SDT_DESCR_LEN+pos];
+          descriptor_tag = rewrite_vars->full_sdt->data_full[buffer_pos+SDT_DESCR_LEN+pos];
           unsigned char descriptor_len;
-          descriptor_len = rewrite_vars->full_sdt->packet[buffer_pos+SDT_DESCR_LEN+pos]+2;
+          descriptor_len = rewrite_vars->full_sdt->data_full[buffer_pos+SDT_DESCR_LEN+pos]+2;
           if(sdt_rewrite_copy_descriptor(descriptor_tag))
           {
             //We keep the descriptor we copy it
             log_message( log_module, MSG_FLOOD,"We copy this descriptor : descriptor_tag 0x%02x descriptor_len %d loop length %d pos %d\n",descriptor_tag,descriptor_len, loop_length, pos);
-            memcpy(t_buffer+SDT_DESCR_LEN+loop_length,rewrite_vars->full_sdt->packet+buffer_pos+SDT_DESCR_LEN+pos,descriptor_len);
+            memcpy(t_buffer+SDT_DESCR_LEN+loop_length,rewrite_vars->full_sdt->data_full+buffer_pos+SDT_DESCR_LEN+pos,descriptor_len);
             loop_length += descriptor_len;
           }
           else
@@ -335,7 +334,6 @@ int sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
     {
       //We clear the section numbers seen
       memset(&rewrite_vars->sdt_section_numbers_seen,0,sizeof(rewrite_vars->sdt_section_numbers_seen));
-      rewrite_vars->full_sdt->empty=1;
     }
   }
   /*We need to update the full packet, we download it*/
@@ -343,19 +341,17 @@ int sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
   {
     if(get_ts_packet(ts_packet,rewrite_vars->full_sdt))
     {
-      sdt=(sdt_t*)(rewrite_vars->full_sdt->packet);
+      sdt=(sdt_t*)(rewrite_vars->full_sdt->data_full);
       /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
       sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
       and shall be the next table to become valid.*/
       if(sdt->current_next_indicator == 0)
       {
         log_message( log_module, MSG_FLOOD,"SDT not yet valid, we get a new one (current_next_indicator == 0)\n");
-        rewrite_vars->full_sdt->empty=1; //The packet is not valid for us, we mark it empty
       }
       else if(sdt->table_id!=0x42)
       {
         rewrite_vars->sdt_needs_update=1;
-        rewrite_vars->full_sdt->empty=1;
         log_message( log_module, MSG_DEBUG,"We didn't got the good SDT (wrong table id) we search for a new one\n");
         return 0;
       }

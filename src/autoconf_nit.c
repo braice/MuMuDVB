@@ -63,7 +63,7 @@ int autoconf_read_nit(autoconf_parameters_t *parameters, mumudvb_channel_t *chan
 
   //We get the packet
   nit_mumu=parameters->autoconf_temp_nit;
-  buf=nit_mumu->packet;
+  buf=nit_mumu->data_full;
   nit_t       *header=(nit_t*)(buf);
 
   //We look only for the following table Ox40 : network_information_section - actual_network

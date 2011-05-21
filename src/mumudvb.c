@@ -1169,6 +1169,19 @@ int
       //If the cam is properly initialised, we autoconfigure scrambled channels
       autoconf_vars.autoconf_scrambled=1;
     }
+    //We allocate the packet for storing the PMT for CAM purposes
+    if(chan_and_pids.channels[curr_channel].cam_pmt_packet==NULL)
+    {
+      chan_and_pids.channels[curr_channel].cam_pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
+      if(chan_and_pids.channels[curr_channel].cam_pmt_packet==NULL)
+      {
+        log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      Interrupted=ERROR_MEMORY<<8;
+      goto mumudvb_close_goto;
+      }
+      memset (chan_and_pids.channels[curr_channel].cam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+      pthread_mutex_init(&chan_and_pids.channels[curr_channel].cam_pmt_packet->packetmutex,NULL);
+    }
   }
 #endif
 
@@ -1246,7 +1259,7 @@ int
     chan_and_pids.channels[curr_channel].scrambled_channel = 0;
 
     //We alloc the channel pmt_packet (useful for autoconf and cam)
-    /**@todo : allocate only if autoconf or cam*/
+    /** @todo : allocate only if autoconf */
     if(chan_and_pids.channels[curr_channel].pmt_packet==NULL)
     {
       chan_and_pids.channels[curr_channel].pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
@@ -1675,7 +1688,7 @@ int
             cam_vars.ca_resource_connected &&
             ((now-cam_vars.cam_pmt_send_time)>=cam_vars.cam_interval_pmt_send ))
         {
-          if(cam_new_packet(pid, curr_channel, actual_ts_packet, &autoconf_vars, cam_vars_ptr, &chan_and_pids.channels[curr_channel]))
+          if(cam_new_packet(pid, curr_channel, actual_ts_packet, cam_vars_ptr, &chan_and_pids.channels[curr_channel]))
             cam_vars.cam_pmt_send_time=now; //A packet was sent to the CAM
         }
 #endif
@@ -1692,7 +1705,8 @@ int
           autoconf_pmt_follow( actual_ts_packet, &fds, &chan_and_pids.channels[curr_channel], tuneparams.card_dev_path, tuneparams.tuner, &chan_and_pids );
         }
         /******************************************************/
-        //PMT follow for the cam for  non autoconfigurated channels
+        //PMT follow for the cam for  non autoconfigurated channels.
+        // This is a PMT update forced for the CAM in case of no autoconfiguration
         /******************************************************/
 #ifdef ENABLE_CAM_SUPPORT
         if((cam_vars.cam_pmt_follow) &&

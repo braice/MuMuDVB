@@ -85,8 +85,8 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
 
   pid_type=0;
 
-  section_len=pmt->len;
-  header=(pmt_t *)pmt->packet;
+  section_len=pmt->len_full;
+  header=(pmt_t *)pmt->data_full;
 
   if(header->table_id!=0x02)
   {
@@ -138,7 +138,7 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
   {
     //we parse the part after the descriptors
     //we map the descriptor header
-    descr_header=(pmt_info_t *)(pmt->packet+i);
+    descr_header=(pmt_info_t *)(pmt->data_full+i);
     //We get the length of the descriptor
     descr_section_len=HILO(descr_header->ES_info_length);        //ES_info_length
 
@@ -193,39 +193,39 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
       case 0x06: /* Descriptor defined in EN 300 468 */
         if(descr_section_len) //If we have an accociated descriptor, we'll search inforation in it
         {
-          if(pmt_find_descriptor(0x45,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
+          if(pmt_find_descriptor(0x45,pmt->data_full+i+PMT_INFO_LEN,descr_section_len, NULL)){
             log_message( log_module,  MSG_DEBUG,"  VBI Data \tpid %d\n",pid);
             pid_type=PID_EXTRA_VBIDATA;
-          }else if(pmt_find_descriptor(0x46,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
+          }else if(pmt_find_descriptor(0x46,pmt->data_full+i+PMT_INFO_LEN,descr_section_len, NULL)){
             log_message( log_module,  MSG_DEBUG,"  VBI Teletext \tpid %d\n",pid);
             pid_type=PID_EXTRA_VBITELETEXT;
-          }else if(pmt_find_descriptor(0x56,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
+          }else if(pmt_find_descriptor(0x56,pmt->data_full+i+PMT_INFO_LEN,descr_section_len, NULL)){
             log_message( log_module,  MSG_DEBUG,"  Teletext \tpid %d\n",pid);
             pid_type=PID_EXTRA_TELETEXT;
-          }else if(pmt_find_descriptor(0x59,pmt->packet+i+PMT_INFO_LEN,descr_section_len, &pos)){
+          }else if(pmt_find_descriptor(0x59,pmt->data_full+i+PMT_INFO_LEN,descr_section_len, &pos)){
             log_message( log_module,  MSG_DEBUG,"  Subtitling \tpid %d\n",pid);
             pid_type=PID_EXTRA_SUBTITLE;
-            char * lng=(char *)(pmt->packet+i+PMT_INFO_LEN+pos+2);
+            char * lng=(char *)(pmt->data_full+i+PMT_INFO_LEN+pos+2);
             language[0]=lng[0];
             language[1]=lng[1];
             language[2]=lng[2];
             language[3]=0;
-          }else if(pmt_find_descriptor(0x6a,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
+          }else if(pmt_find_descriptor(0x6a,pmt->data_full+i+PMT_INFO_LEN,descr_section_len, NULL)){
             log_message( log_module,  MSG_DEBUG,"  AC3 (audio) \tpid %d\n",pid);
             pid_type=PID_AUDIO_AC3;
-          }else if(pmt_find_descriptor(0x7a,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
+          }else if(pmt_find_descriptor(0x7a,pmt->data_full+i+PMT_INFO_LEN,descr_section_len, NULL)){
             log_message( log_module,  MSG_DEBUG,"  Enhanced AC3 (audio) \tpid %d\n",pid);
             pid_type=PID_AUDIO_EAC3;
-          }else if(pmt_find_descriptor(0x7b,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
+          }else if(pmt_find_descriptor(0x7b,pmt->data_full+i+PMT_INFO_LEN,descr_section_len, NULL)){
             log_message( log_module,  MSG_DEBUG,"  DTS (audio) \tpid %d\n",pid);
             pid_type=PID_AUDIO_DTS;
-          }else if(pmt_find_descriptor(0x7c,pmt->packet+i+PMT_INFO_LEN,descr_section_len, NULL)){
+          }else if(pmt_find_descriptor(0x7c,pmt->data_full+i+PMT_INFO_LEN,descr_section_len, NULL)){
             log_message( log_module,  MSG_DEBUG,"  AAC (audio) \tpid %d\n",pid);
             pid_type=PID_AUDIO_AAC;
           }else
           {
             log_message( log_module,  MSG_DEBUG,"Unknown descriptor see EN 300 468 v1.9.1 table 12, pid %d descriptor tags : ", pid);
-            pmt_print_descriptor_tags(pmt->packet+i+PMT_INFO_LEN,descr_section_len);
+            pmt_print_descriptor_tags(pmt->data_full+i+PMT_INFO_LEN,descr_section_len);
             log_message( log_module,  MSG_DEBUG,"\n");
             continue;
           }
@@ -301,8 +301,8 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
 
     // We try to find a 0x0a (ISO639) descriptor to have language information about the stream
     pos=0;
-    if(pmt_find_descriptor(0x0a,pmt->packet+i+PMT_INFO_LEN,descr_section_len, &pos)){
-      char * lng=(char *)(pmt->packet+i+PMT_INFO_LEN+pos+2);
+    if(pmt_find_descriptor(0x0a,pmt->data_full+i+PMT_INFO_LEN,descr_section_len, &pos)){
+      char * lng=(char *)(pmt->data_full+i+PMT_INFO_LEN+pos+2);
       language[0]=lng[0];
       language[1]=lng[1];
       language[2]=lng[2];
@@ -316,10 +316,10 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
       int pos;
       int casysid;
       pos=0;
-      while(pmt_find_descriptor(0x09,pmt->packet+i+PMT_INFO_LEN,descr_section_len,&pos))
+      while(pmt_find_descriptor(0x09,pmt->data_full+i+PMT_INFO_LEN,descr_section_len,&pos))
       {
         descr_ca_t *ca_descriptor;
-        ca_descriptor=(descr_ca_t *)(pmt->packet+i+PMT_INFO_LEN+pos);
+        ca_descriptor=(descr_ca_t *)(pmt->data_full+i+PMT_INFO_LEN+pos);
         casysid=0;
         while(channel->ca_sys_id[casysid] && channel->ca_sys_id[casysid]!=HILO(ca_descriptor->CA_type)&& casysid<32 )
           casysid++;
@@ -594,7 +594,7 @@ int pmt_need_update(mumudvb_channel_t *channel, unsigned char *packet)
 /** @brief update the version using the dowloaded pmt*/
 void update_pmt_version(mumudvb_channel_t *channel)
 {
-  pmt_t       *pmt=(pmt_t*)(channel->pmt_packet->packet);
+  pmt_t       *pmt=(pmt_t*)(channel->pmt_packet->data_full);
   if(channel->pmt_version!=pmt->version_number)
     log_message( log_module, MSG_INFO,"New PMT version for channel %s. Old : %d, new: %d\n",channel->name,channel->pmt_version,pmt->version_number);
 
@@ -613,15 +613,13 @@ void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t
     //Checking without crc32, it there is a change we get the full packet for crc32 checking
     actual_channel->pmt_needs_update=pmt_need_update(actual_channel,get_ts_begin(ts_packet));
 
-    if(actual_channel->pmt_needs_update && actual_channel->pmt_packet) //It needs update we mark the packet as empty
-      actual_channel->pmt_packet->empty=1;
   }
-  /*We need to update the full packet, we download it*/
+  /*We need to update the full packet, we get it*/
   if(actual_channel->pmt_needs_update)
   {
     if(get_ts_packet(ts_packet,actual_channel->pmt_packet))
     {
-      if(pmt_need_update(actual_channel,actual_channel->pmt_packet->packet))
+      if(pmt_need_update(actual_channel,actual_channel->pmt_packet->data_full))
       {
         log_message( log_module, MSG_DETAIL,"PMT packet updated, we have now to check if there is new things\n");
         /*We've got the FULL PMT packet*/
@@ -632,8 +630,6 @@ void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t
           update_pmt_version(actual_channel);
           actual_channel->pmt_needs_update=0;
         }
-        else
-          actual_channel->pmt_packet->empty=1;
       }
       else
       {
