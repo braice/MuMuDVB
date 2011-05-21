@@ -559,3 +559,55 @@ int check_pmt_service_id(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 }
 
 
+
+/** @brief Display the PAT contents
+ *
+ * @param buf The buffer containing the PAT
+ */
+void ts_display_pat(char* log_module,unsigned char *buf)
+{
+  pat_t       *pat=(pat_t*)(buf);
+  pat_prog_t  *prog;
+  int delta=PAT_LEN;
+  int section_length=0;
+  int number_of_services=0;
+  log_message( log_module, MSG_FLOOD,"-------------- Display PAT ----------------\n");
+  section_length=HILO(pat->section_length);
+  log_message( log_module, MSG_FLOOD,  "transport stream id 0x%04x section_length %d version %i last_section_number %x current_next_indicator %d\n",
+              HILO(pat->transport_stream_id),
+              HILO(pat->section_length),
+              pat->version_number,
+              pat->last_section_number,
+              pat->current_next_indicator);
+
+  /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+  sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+  and shall be the next table to become valid.*/
+  if(pat->current_next_indicator == 0)
+    log_message( log_module, MSG_FLOOD,"The current_next_indicator is set to 0, this PAT is not valid for the current stream\n");
+
+  //We loop over the different programs included in the pat
+  while((delta+PAT_PROG_LEN)<(section_length))
+  {
+    prog=(pat_prog_t*)((char*)buf+delta);
+    if(HILO(prog->program_number)==0)
+    {
+      log_message( log_module, MSG_DEBUG,"Network PID %d (PID of the NIT)\n", HILO(prog->network_pid));
+    }
+    else
+    {
+      number_of_services++;
+      log_message( log_module, MSG_DEBUG,"service %d id 0x%04x %d\t PMT PID : %d",
+                   number_of_services,
+                   HILO(prog->program_number),
+                   HILO(prog->program_number),
+                   HILO(prog->network_pid));
+    }
+    delta+=PAT_PROG_LEN;
+  }
+  log_message( log_module, MSG_DEBUG,"This PAT contains %d services\n",number_of_services);
+  log_message( log_module, MSG_FLOOD,"-------------- PAT Displayed ----------------\n");
+
+
+}
+

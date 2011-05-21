@@ -384,16 +384,11 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
   int new_services=0;
 
   log_message( log_module, MSG_DEBUG,"---- New PAT ----\n");
-
+  //we display the contents
+  ts_display_pat(log_module,buf);
   //PAT reading
   section_length=HILO(pat->section_length);
 
-  log_message( log_module, MSG_DEBUG,  "pat info : transport stream id 0x%04x section_length %d version %i last_section_number %x current_next_indicator %d\n"
-	      ,HILO(pat->transport_stream_id)
-	      ,HILO(pat->section_length)
-	      ,pat->version_number
-	      ,pat->last_section_number
-	      ,pat->current_next_indicator);
 
   /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
   sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
@@ -411,11 +406,7 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
   while((delta+PAT_PROG_LEN)<(section_length))
   {
     prog=(pat_prog_t*)((char*)buf+delta);
-    if(HILO(prog->program_number)==0)
-    {
-      log_message( log_module, MSG_DEBUG,"Network pid %d\n", HILO(prog->network_pid));
-    }
-    else
+    if(HILO(prog->program_number)!=0)
     {
       //Do we have already this program in the service list ?
       //Ie : do we already know the channel name/type ?
@@ -427,7 +418,7 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
           //We found a new service without the PMT, pid, we update this service
           new_services=1;
           actual_service->pmt_pid=HILO(prog->network_pid);
-          log_message( log_module, MSG_DETAIL,"service updated  pmt pid : %d\t id 0x%x\t name \"%s\"\n",
+          log_message( log_module, MSG_DETAIL,"service updated  PMT PID : %d\t id 0x%x\t name \"%s\"\n",
                             actual_service->pmt_pid,
                             actual_service->id,
                             actual_service->name);
@@ -435,18 +426,16 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
       }
       else
       {
-        log_message( log_module, MSG_DEBUG,"service missing  pmt pid : %d\t id 0x%x %d\n",
+        log_message( log_module, MSG_DEBUG,"service missing  PMT PID : %d\t id 0x%x %d\n",
                         HILO(prog->network_pid),
                         HILO(prog->program_number),
                         HILO(prog->program_number));
         channels_missing++;
       }
+      number_of_services++;
     }
     delta+=PAT_PROG_LEN;
-    number_of_services++;
   }
-
-  log_message( log_module, MSG_DEBUG,"This pat contains %d services\n",number_of_services);
 
   if(channels_missing)
   {

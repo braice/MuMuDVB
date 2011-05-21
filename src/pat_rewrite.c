@@ -249,6 +249,7 @@ void pat_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_
         update_pat_version(rewrite_vars);
         rewrite_vars->pat_needs_update=0;
         rewrite_vars->full_pat_ok=1;
+        ts_display_pat(log_module,rewrite_vars->full_pat->data_full);
       }
     }
   }

@@ -685,6 +685,6 @@ unsigned char *get_ts_begin(unsigned char *buf);
 
 struct mumudvb_channel_t;
 int check_pmt_service_id(mumudvb_ts_packet_t *pmt, struct mumudvb_channel_t *channel);
-
+void ts_display_pat(char* log_module,unsigned char *buf);
 
 #endif
