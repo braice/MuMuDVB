@@ -130,7 +130,7 @@ int eit_sort_new_packet(unsigned char *ts_packet, mumudvb_channel_t *channel)
     set_continuity_counter(ts_packet,channel->eit_continuity_counter);
     /*To avoid discontinuities, we have to update the continuity counter*/
     channel->eit_continuity_counter++;
-    channel->eit_continuity_counter= channel->eit_continuity_counter % 32;
+    channel->eit_continuity_counter= channel->eit_continuity_counter % 16;
     return 1;
   }
   return 0;
