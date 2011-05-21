@@ -635,9 +635,13 @@ typedef enum packet_status {
 
 
 
-
-#define MAX_FULL_PACKETS 10
-//MAX_TS_SIZE + TS_PACKET_SIZE ???
+//The number of complete section we accept to have in one TS
+//A TS is 188bytes long minus 4 bytes for the header 184 bytes left
+//A section is at least 8 bytes long + one descriptor 3 bytes + CRC32 4 bytes
+//it's a total of 15bytes / section
+#define MAX_FULL_PACKETS 15
+//A minimum is MAX_TS_SIZE + TS_PACKET_SIZE
+//Just to add flexibility on how to write the code I take some margin
 #define FULL_BUFFER_SIZE 2*MAX_TS_SIZE
 
 
