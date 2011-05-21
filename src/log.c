@@ -193,7 +193,7 @@ char *priorities(int type)
 */
 void sync_logs()
 {
-  if (log_params.log_type |= LOGGING_FILE)
+  if (log_params.log_type |= LOGGING_FILE && log_params.log_file)
   {
     fflush(log_params.log_file);
     log_params.log_file=freopen(log_params.log_file_path,"a",log_params.log_file);
