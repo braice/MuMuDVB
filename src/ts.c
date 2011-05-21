@@ -1,22 +1,22 @@
-/* 
+/*
  * MuMuDVB - Stream a DVB transport stream.
- * 
+ *
  * (C) 2004-2011 Brice DUBOST <mumudvb@braice.net>
  *
  * The latest version can be found at http://mumudvb.braice.net
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -250,13 +250,11 @@ void add_ts_packet_data(unsigned char *buf, mumudvb_ts_packet_t *pkt, int data_l
                 pkt->data_partial[5],
                 pkt->data_partial[6],
                 pkt->data_partial[7]);
-    log_message(log_module, MSG_FLOOD, "Struct data\t table_id 0x%02x section_syntax_indicator 0x%02x section_length_hi 0x%02x section_length_lo 0x%02x transport_stream_id_hi 0x%02x transport_stream_id_lo 0x%02x version_number 0x%02x current_next_indicator 0x%02x last_section_number 0x%02x\n",
+    log_message(log_module, MSG_FLOOD, "Struct data\t table_id 0x%02x section_syntax_indicator 0x%02x section_length 0x%02x transport_stream_id 0x%02x version_number 0x%02x current_next_indicator 0x%02x last_section_number 0x%02x\n",
                 tbl_struct->table_id,
                 tbl_struct->section_syntax_indicator,
-                tbl_struct->section_length_hi,
-                tbl_struct->section_length_lo,
-                tbl_struct->transport_stream_id_hi,
-                tbl_struct->transport_stream_id_lo,
+                HILO(tbl_struct->section_length),
+                HILO(tbl_struct->transport_stream_id),
                 tbl_struct->version_number,
                 tbl_struct->current_next_indicator,
                 tbl_struct->last_section_number);
@@ -422,86 +420,71 @@ int ts_partial_full( mumudvb_ts_packet_t *packet)
 
 
 
-
-/** @brief This function will return a pointer to the beginning of the payload for a ts_packet with payload_unit_start_indicator set to 1
+/** @brief This function will return a pointer to the beginning of the first payload of a TS packet and NULL if no payload or error
  * It returns NULL in case of error
  *
  * @param buf : the received buffer from the card
  */
 unsigned char *get_ts_begin(unsigned char *buf)
 {
-  /**@todo : take in account the case where several sections are in the same TS packet */
   ts_header_t *header;
-  int ok=0;
   int delta;
-
   //mapping of the buffer onto the TS header
   header=(ts_header_t *)buf;
-
   //delta used to remove TS HEADER
   delta = TS_HEADER_LEN-1;
-
   //Sometimes there is some more data in the header, the adaptation field say it
   if (header->adaptation_field_control & 0x2)
+  {
+    log_message( log_module,  MSG_DEBUG, "Read TS : Adaptation field, len %d \n",buf[delta]);
+    if((TS_PACKET_SIZE-delta-buf[delta])<0)
     {
-      log_message( log_module,  MSG_DEBUG, "Read TS : Adaptation field, len %d \n",buf[delta]);
-      if((TS_PACKET_SIZE-delta-buf[delta])<0)
-      {
-        log_message(log_module, MSG_DETAIL, "Adaptation field too big 0x%02x, packet dropped\n",buf[delta]);
-        return NULL;
-      }
-      delta += buf[delta] ;        // add adapt.field.len
+      log_message(log_module, MSG_DETAIL, "Adaptation field too big 0x%02x, packet dropped\n",buf[delta]);
+      return NULL;
     }
+    delta += buf[delta];        // add adapt.field.len
+  }
   if (header->adaptation_field_control & 0x1) //There is a payload
+  {
+    if (buf[delta]==0x00 && buf[delta+1]==0x00 && buf[delta+2]==0x01)
     {
-      if (buf[delta]==0x00 && buf[delta+1]==0x00 && buf[delta+2]==0x01)
-        {
-          // -- PES/PS
-          //tspid->id   = buf[j+3];
-          log_message( log_module,  MSG_FLOOD, "#PES/PS ----- We ignore \n");
-          ok=0;
-        }
-      else
-          ok=1;
+      // -- PES/PS
+      //tspid->id   = buf[j+3];
+      log_message( log_module,  MSG_FLOOD, "#PES/PS ----- We ignore \n");
+      return NULL;
     }
+  }
 
   if (header->adaptation_field_control == 3)
-    {
-      log_message( log_module,  MSG_DEBUG, "adaptation_field_control 3\n");
-    }
+    log_message( log_module,  MSG_DEBUG, "adaptation_field_control 3\n");
 
   if ((header->adaptation_field_control == 2)||(header->adaptation_field_control == 0))
-    {
-      log_message( log_module,  MSG_DEBUG, "adaptation_field_control %d ie no payload\n", header->adaptation_field_control);
-      ok=0;
-    }
+  {
+    log_message( log_module,  MSG_DEBUG, "adaptation_field_control %d ie no payload\n", header->adaptation_field_control);
+    return NULL;
+  }
 
   if(header->payload_unit_start_indicator) //It's the beginning of a new packet
   {
-    if(ok)
+    int pointer_field=*(buf+delta);
+    delta++;
+    if(pointer_field!=0)
+      log_message(log_module, MSG_FLOOD, "Pointer field 0x%02x\n",pointer_field);
+    if((TS_PACKET_SIZE-delta-pointer_field)<0)
     {
-      int pointer_field=*(buf+delta);
-      delta++;
-      if(pointer_field!=0)
-      {
-        log_message(log_module, MSG_FLOOD, "Pointer field 0x%02x\n",pointer_field);
-      }
-      if((TS_PACKET_SIZE-delta-pointer_field)<0)
-      {
-        log_message(log_module, MSG_DETAIL, "Pointer field too big 0x%02x, packet dropped\n",pointer_field);
-        return NULL;
-      }
-      return buf+delta+pointer_field; //we give the address of the beginning of the payload
-      /*buf+delta+*1+pointer_field* because of pointer_field
-      This is an 8-bit field whose value shall be the number of bytes, immediately following the pointer_field
-      until the first byte of the first section that is present in the payload of the Transport Stream packet (so a value of 0x00 in
-      the pointer_field indicates that the section starts immediately after the pointer_field). When at least one section begins in
-      a given Transport Stream packet, then the payload_unit_start_indicator (refer to 2.4.3.2) shall be set to 1 and the first
-      byte of the payload of that Transport Stream packet shall contain the pointer. When no section begins in a given
-      Transport Stream packet, then the payload_unit_start_indicator shall be set to 0 and no pointer shall be sent in the
-      payload of that packet.
-      */
+      log_message(log_module, MSG_DETAIL, "Pointer field too big 0x%02x, packet dropped\n",pointer_field);
+      return NULL;
     }
+    return buf+delta+pointer_field; //we give the address of the beginning of the payload
+    /*
+     *     This is an 8-bit field whose value shall be the number of bytes, immediately following the pointer_field
+     *     until the first byte of the first section that is present in the payload of the Transport Stream packet (so a value of 0x00 in
+     *     the pointer_field indicates that the section starts immediately after the pointer_field). When at least one section begins in
+     *     a given Transport Stream packet, then the payload_unit_start_indicator (refer to 2.4.3.2) shall be set to 1 and the first
+     *     byte of the payload of that Transport Stream packet shall contain the pointer. When no section begins in a given
+     *     Transport Stream packet, then the payload_unit_start_indicator shall be set to 0 and no pointer shall be sent in the
+     *     payload of that packet.
+     */
   }
   return NULL;
 }

@@ -1559,7 +1559,7 @@ int
 
     if(card_buffer.dvr_buffer_size!=1 && stats_infos.show_buffer_stats)
     {
-      stats_infos.stats_num_packets_received+=(int) card_buffer.bytes_read/188;
+      stats_infos.stats_num_packets_received+=(int) card_buffer.bytes_read/TS_PACKET_SIZE;
       stats_infos.stats_num_reads++;
     }
  
@@ -1571,7 +1571,7 @@ int
 
       //If the user asked to dump the streams it's here tath it should be done
       if(dump_file)
-        if(fwrite(actual_ts_packet,188,sizeof(unsigned char),dump_file)<188)
+        if(fwrite(actual_ts_packet,TS_PACKET_SIZE,sizeof(unsigned char),dump_file)<TS_PACKET_SIZE)
           log_message( log_module,MSG_WARN,"Error while writing the dump : %s", strerror(errno));
 
       // Test if the error bit is set in the TS packet received

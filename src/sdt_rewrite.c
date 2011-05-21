@@ -1,22 +1,22 @@
-/* 
+/*
  * MuMuDVB - Stream a DVB transport stream.
- * 
+ *
  * (C) 2004-2011 Brice DUBOST
- * 
+ *
  * The latest version can be found at http://mumudvb.braice.net
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -140,7 +140,7 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
 
   int found=0;
   //destination buffer
-  unsigned char buf_dest[188];
+  unsigned char buf_dest[TS_PACKET_SIZE];
   int buf_dest_pos=0;
   int buffer_pos=SDT_LEN;
 
@@ -277,7 +277,6 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
 
 
   //We write the CRC32 to the buffer
-  /// @todo check if Is this one safe with little/big endian ?
   buf_dest[buf_dest_pos]=(crc32>>24) & 0xff;
   buf_dest_pos+=1;
   buf_dest[buf_dest_pos]=(crc32>>16) & 0xff;
@@ -288,7 +287,7 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
   buf_dest_pos+=1;
 
 
-  //Padding with 0xFF 
+  //Padding with 0xFF
   memset(buf_dest+buf_dest_pos,0xFF,TS_PACKET_SIZE-buf_dest_pos);
 
   if(found)
@@ -315,7 +314,7 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
 
   /*We update the version*/
   channel->generated_sdt_version=rewrite_vars->sdt_version;
-  //Everything is Ok ....*/
+  //Everything is Ok ....
   return 1;
 }
 
