@@ -399,7 +399,7 @@ int sdt_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_
       /*We generate the rewritten packet*/
       if(!sdt_channel_rewrite(rewrite_vars, channel, ts_packet, curr_channel))
       {
-        log_message( log_module, MSG_DEBUG,"ERROR with the SDT for the channel %d : \"%s\"\n", curr_channel, channel->name);
+        log_message( log_module, MSG_DEBUG,"Cannot rewrite (for the moment) the SDT for the channel %d : \"%s\"\n", curr_channel, channel->name);
         return 0;
       }
 
