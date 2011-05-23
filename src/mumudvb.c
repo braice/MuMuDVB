@@ -1169,18 +1169,21 @@ int
       //If the cam is properly initialised, we autoconfigure scrambled channels
       autoconf_vars.autoconf_scrambled=1;
     }
-    //We allocate the packet for storing the PMT for CAM purposes
-    if(chan_and_pids.channels[curr_channel].cam_pmt_packet==NULL)
+    for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
     {
-      chan_and_pids.channels[curr_channel].cam_pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
+      //We allocate the packet for storing the PMT for CAM purposes
       if(chan_and_pids.channels[curr_channel].cam_pmt_packet==NULL)
       {
-        log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      Interrupted=ERROR_MEMORY<<8;
-      goto mumudvb_close_goto;
+        chan_and_pids.channels[curr_channel].cam_pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
+        if(chan_and_pids.channels[curr_channel].cam_pmt_packet==NULL)
+        {
+          log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+          Interrupted=ERROR_MEMORY<<8;
+          goto mumudvb_close_goto;
+        }
+        memset (chan_and_pids.channels[curr_channel].cam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+        pthread_mutex_init(&chan_and_pids.channels[curr_channel].cam_pmt_packet->packetmutex,NULL);
       }
-      memset (chan_and_pids.channels[curr_channel].cam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-      pthread_mutex_init(&chan_and_pids.channels[curr_channel].cam_pmt_packet->packetmutex,NULL);
     }
   }
 #endif
