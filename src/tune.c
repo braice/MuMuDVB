@@ -242,6 +242,18 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
       tuneparams->TransmissionMode=TRANSMISSION_MODE_8K;
     else if (!strcmp (substring, "auto"))
       tuneparams->TransmissionMode=TRANSMISSION_MODE_AUTO;
+#ifdef TRANSMISSION_MODE_4K //DVB-T2
+    else if (!strcmp (substring, "4k"))
+      tuneparams->TransmissionMode=TRANSMISSION_MODE_4K;
+#endif
+#ifdef TRANSMISSION_MODE_16K //DVB-T2
+    else if (!strcmp (substring, "16k"))
+      tuneparams->TransmissionMode=TRANSMISSION_MODE_16K;
+#endif
+#ifdef TRANSMISSION_MODE_32K //DVB-T2
+    else if (!strcmp (substring, "32k"))
+      tuneparams->TransmissionMode=TRANSMISSION_MODE_32K;
+#endif
     else
     {
       log_message( log_module,  MSG_ERROR,
@@ -262,6 +274,20 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
       tuneparams->bandwidth=BANDWIDTH_6_MHZ;
     else if (!strcmp (substring, "auto"))
       tuneparams->bandwidth=BANDWIDTH_AUTO;
+    // DVB-T2
+    // @See https://patchwork.kernel.org/patch/761652/
+#ifdef BANDWIDTH_5_MHZ
+    else if (!strcmp (substring, "5MHz"))
+      tuneparams->bandwidth=BANDWIDTH_5_MHZ;
+#endif
+#ifdef BANDWIDTH_10_MHZ
+    else if (!strcmp (substring, "10MHz"))
+      tuneparams->bandwidth=BANDWIDTH_10_MHZ;
+#endif
+#ifdef BANDWIDTH_1_712_MHZ
+    else if (!strcmp (substring, "1.712MHz"))
+      tuneparams->bandwidth=BANDWIDTH_1_712_MHZ;
+#endif
     else
     {
       log_message( log_module,  MSG_ERROR,
@@ -284,6 +310,19 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
       tuneparams->guardInterval=GUARD_INTERVAL_1_4;
     else if (!strcmp (substring, "auto"))
       tuneparams->guardInterval=GUARD_INTERVAL_AUTO;
+    // DVB-T2
+#ifdef GUARD_INTERVAL_1_128
+    else if (!strcmp (substring, "1/128"))
+      tuneparams->guardInterval=GUARD_INTERVAL_1_128;
+#endif
+#ifdef GUARD_INTERVAL_19_128
+    else if (!strcmp (substring, "19/128"))
+      tuneparams->guardInterval=GUARD_INTERVAL_19_128;
+#endif
+#ifdef GUARD_INTERVAL_19_256
+    else if (!strcmp (substring, "19/256"))
+      tuneparams->guardInterval=GUARD_INTERVAL_19_256;
+#endif
     else
     {
       log_message( log_module,  MSG_ERROR,
@@ -342,6 +381,10 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
       tuneparams->delivery_system=SYS_DVBC_ANNEX_B;
     else if (!strcmp (substring, "DVBT"))
       tuneparams->delivery_system=SYS_DVBT;
+#ifdef SYS_DVBT2
+    else if (!strcmp (substring, "DVBT2"))
+      tuneparams->delivery_system=SYS_DVBT2;
+#endif
     else if (!strcmp (substring, "DSS"))
       tuneparams->delivery_system=SYS_DSS;
     else if (!strcmp (substring, "DVBS"))
@@ -791,9 +834,14 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
   switch(fe_info.type) {
   case FE_OFDM: //DVB-T
 #if DVB_API_VERSION >= 5
-    if((tuneparams->delivery_system!=SYS_UNDEFINED)&&(tuneparams->delivery_system!=SYS_DVBT))
+    if((tuneparams->delivery_system!=SYS_UNDEFINED)&&(tuneparams->delivery_system!=SYS_DVBT)
+#ifdef SYS_DVBT2
+       &&(tuneparams->delivery_system!=SYS_DVBT2))
+#else
+      )
+#endif
     {
-      log_message( log_module,  MSG_ERROR, "ERROR : The delivery system does not fit with the card frontend type (DVB-T)..\n");
+      log_message( log_module,  MSG_ERROR, "ERROR : The delivery system does not fit with the card frontend type (DVB-T/T2)..\n");
       Interrupted=ERROR_TUNE<<8;
       return -1;
     }
@@ -1004,7 +1052,12 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
       cmdseq->props[commandnum++].u.data = PILOT_AUTO;
       cmdseq->props[commandnum++].cmd    = DTV_TUNE;
     }
-    else if(tuneparams->delivery_system==SYS_DVBT)
+    else if((tuneparams->delivery_system==SYS_DVBT)
+#ifdef SYS_DVBT2
+            ||(tuneparams->delivery_system==SYS_DVBT2))
+#else
+     )
+#endif
     {
       cmdseq->props[commandnum].cmd      = DTV_DELIVERY_SYSTEM;
       cmdseq->props[commandnum++].u.data = tuneparams->delivery_system;

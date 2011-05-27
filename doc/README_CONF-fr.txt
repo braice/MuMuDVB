@@ -84,7 +84,7 @@ Dans la liste suivante, seul le paramètre `freq` est obligatoire
 |Nom |Description | Valeur par défaut | Commentaires
 |freq | Fréquence du transpondeur en MHz  | | Obligatoire
 |modulation | Le type de modulation utilisé (valeurs possibles : QPSK QAM16 QAM32 QAM64 QAM128 QAM256 QAMAUTO VSB8 VSB16 8PSK 16APSK 32APSK DQPSK)  | ATSC: VSB_8, cable/terrestrial: QAM_AUTO, satellite: QPSK | Optionnel la plupart du temps
-|delivery_system | Le type de système utilisé (valeurs possibles : DVBT DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC) | Non défini | Spécifiez le si vous voulez utiliser la nouvelle API pour l'accord des cartes (DVB API 5/S2API). Obligatoire pour le DVB-S2
+|delivery_system | Le type de système utilisé (valeurs possibles : DVBT DVBT2 DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC) | Non défini | Spécifiez le si vous voulez utiliser la nouvelle API pour l'accord des cartes (DVB API 5/S2API). Obligatoire pour le DVB-S2 et DVB-T2
 |card | Le numéro de carte DVB/ATSC| 0 | Limité seulement par l'OS
 |tuner | Le numéro de tuner | 0 | Si vous avez une carte avec plusieurs tuners (ie il y a plusieurs frontend* dans /dev/dvb/adapter%d)
 |card_dev_path | Le chemin vers le répertoire contenant les "devices" DVB. Utilisez cette option si vous utilisez des chemins personalisés comme /dev/dvb/card_astra | /dev/dvb/adapter%d | 
@@ -131,9 +131,9 @@ Paramètres spécifiques à la réception terrestre (DVB-T)
 [width="80%",cols="2,8,1,4",options="header"]
 |==================================================================================================================
 |Nom |Description | Valeur par défaut | Valeurs possibles
-|bandwidth | Largeur de bande | 8MHz | 8MHz, 7MHz, 6MHz, auto 
-|trans_mode |Mode de transmission | auto | 2k, 8k, auto 
-|guardinterval |Intervalle de garde | auto |  1/32, 1/16, 1/8, 1/4, auto 
+|bandwidth | Largeur de bande | 8MHz | 8MHz, 7MHz, 6MHz, auto (DVB-T2 : 5MHz, 10MHz, 1.712MHz) 
+|trans_mode |Mode de transmission | auto | 2k, 8k, auto (DVB-T2 : 4k, 16k, 32k) 
+|guardinterval |Intervalle de garde | auto |  1/32, 1/16, 1/8, 1/4, auto (DVB-T2 : 1/128, 19/128, 19/256) 
 |coderate  |coderate, aussi appelé FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto 
 |==================================================================================================================
 

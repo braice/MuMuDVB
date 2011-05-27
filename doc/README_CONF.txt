@@ -79,7 +79,7 @@ In the following list, only the parameter `freq` is mandatory
 |Parameter name |Description | Default value | Comments
 |freq | transponder's frequency in MHz  | | Mandatory
 |modulation | The kind of modulation used (can be : QPSK QAM16 QAM32 QAM64 QAM128 QAM256 QAMAUTO VSB8 VSB16 8PSK 16APSK 32APSK DQPSK)  | ATSC: VSB_8, cable/terrestrial: QAM_AUTO, satellite: QPSK | Optionnal most of the times
-|delivery_system | the delivery system used (can be DVBT DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC) | Undefined | Set it if you want to use the new tuning API (DVB API 5/S2API). Mandatory for DVB-S2
+|delivery_system | the delivery system used (can be DVBT DVBT2 DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC) | Undefined | Set it if you want to use the new tuning API (DVB API 5/S2API). Mandatory for DVB-S2 and DVB-T2
 |card | The DVB/ATSC card number | 0 | only limited by your OS
 |tuner | The tuner number | 0 | If you have a card with multiple tuners (ie there is several frontend* in /dev/dvb/adapter%d)
 |card_dev_path | The path of the DVB card devices. Use it if you have a personalised path like /dev/dvb/card_astra | /dev/dvb/adapter%d | 
@@ -128,9 +128,9 @@ Parameters specific to terrestrial (DVB-T)
 [width="80%",cols="2,8,1,4",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values
-|bandwidth |bandwidth | 8MHz | 8MHz, 7MHz, 6MHz, auto 
-|trans_mode |transmission mode | auto | 2k, 8k, auto 
-|guardinterval |guard interval | auto |  1/32, 1/16, 1/8, 1/4, auto 
+|bandwidth |bandwidth | 8MHz | 8MHz, 7MHz, 6MHz, auto (DVB-T2: 5MHz, 10MHz, 1.712MHz) 
+|trans_mode |transmission mode | auto | 2k, 8k, auto (DVB-T2: 4k, 16k, 32k) 
+|guardinterval |guard interval | auto |  1/32, 1/16, 1/8, 1/4, auto (DVB-T2 : 1/128, 19/128, 19/256) 
 |coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto 
 |==================================================================================================================
 

@@ -1011,6 +1011,9 @@ void print_info ()
 #endif
 #if DVB_API_VERSION >= 5
                "Built with support for DVB API Version 5 (DVB-S2).\n"
+#ifdef SYS_DVBT2
+               "\tBuilt with support for DVB-T2.\n"
+#endif
 #endif
                "---------\n"
                "Originally based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
