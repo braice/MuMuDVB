@@ -36,11 +36,11 @@ http://mumudvb.braice.net/mumudvb/test/
 #define NUM_READ_SDT 100
 #define NUM_FILES_TEST_READ_SDT 2
 #define FILES_TEST_READ_RAND "tests/random_1.ts","tests/random_2.ts"
-#define NUM_FILES_TEST_READ_RAND 0
+#define NUM_FILES_TEST_READ_RAND 2
 #define TEST_STRING_COMPUT "2+2*3+100"
 #define TEST_STRING_COMPUT_RES 108
 
-#define FILES_TEST_AUTOCONF "tests/astra_TP_11856.00V_pids_0_18.ts","tests/test_autoconf_numericableparis.ts","tests/astra_TP_11856.00V_pids_0_18__2.ts","tests/BBC123_pids0_18.dump.ts","tests/BBC123.dump.ts"
+#define FILES_TEST_AUTOCONF "tests/astra_TP_11856.00V_pids_0_18.ts","tests/test_autoconf_numericableparis.ts","tests/astra_TP_11856.00V_pids_0_18__2.ts","tests/BBC123.dump.ts","tests/Astra19.2-12187.50-German.cap"
 #define NUM_FILES_TEST_AUTOCONF 5
 
 #include <stdio.h>
@@ -277,13 +277,34 @@ int main(void)
 
       unsigned char actual_ts_packet[TS_PACKET_SIZE];
       int pid;
+      int packet_count=0;
       while(fread(actual_ts_packet,TS_PACKET_SIZE,1, testfile))
       {
         // get the pid of the received ts packet
         pid = ((actual_ts_packet[1] & 0x1f) << 8) | (actual_ts_packet[2]);
-        /*log_message( log_module, MSG_DEBUG,"New elementary (188bytes TS packet) pid %d continuity_counter %d",
-                         pid,
-                         ((ts_header_t *)actual_ts_packet)->continuity_counter );*/
+        packet_count++;
+        if(!(packet_count %100))
+          log_message( log_module, MSG_DEBUG,"Packet count %d", packet_count);
+
+        iret = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tuneparams, &multicast_vars, &unicast_vars, 0);
+
+      }
+      log_message( log_module, MSG_INFO,"===================================================================\n");
+      log_message( log_module, MSG_INFO,"Forcing to finish and re read");
+      press_enter_func(press_enter);
+      //if there is a partial service list, we force autoconf to go to the next step
+      autoconf_vars.time_start_autoconfiguration=1;
+      autoconf_poll(100000, &autoconf_vars, &chan_and_pids, &tuneparams, &multicast_vars, &fds, &unicast_vars, 0);
+      press_enter_func(press_enter);
+      rewind(testfile);
+      while(fread(actual_ts_packet,TS_PACKET_SIZE,1, testfile))
+      {
+        // get the pid of the received ts packet
+        pid = ((actual_ts_packet[1] & 0x1f) << 8) | (actual_ts_packet[2]);
+        log_message( log_module, MSG_DEBUG,"PID  %d", pid);
+        packet_count++;
+        if(!(packet_count %100))
+          log_message( log_module, MSG_DEBUG,"Packet count %d", packet_count);
 
         iret = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tuneparams, &multicast_vars, &unicast_vars, 0);
 
