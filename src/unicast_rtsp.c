@@ -214,7 +214,7 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
     l = sizeof(struct sockaddr_in);
     struct sockaddr_in tempsin;
     tempsin.sin_family = AF_INET;
-    tempsin.sin_port=htons(4242);
+    tempsin.sin_port=htons(unicast_vars->rtsp_portOut);
     tempsin.sin_addr=tempSocketAddr.sin_addr;
     int iRet;
     iRet=bind(client->rtsp_Socket,(struct sockaddr *) &tempsin,l);
@@ -223,7 +223,7 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
       log_message( MSG_ERROR,"bind failed : %s\n", strerror(errno));
     }
     //client->rtsp_server_port=ntohs(client->rtsp_SocketAddr.sin_port);
-    client->rtsp_server_port=4242;
+    client->rtsp_server_port=unicast_vars->rtsp_portOut;
     unicast_send_rtsp_setup(client, CSeq, TransportType);  // send response trough RTSP Server socket
     unicast_flush_client(client);
     return 0;
