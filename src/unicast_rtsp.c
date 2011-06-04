@@ -197,7 +197,7 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
       log_message(MSG_DEBUG,"Client ports not found\n");
       /** @todo implement RTSP error
       rtsp_reply_prepare_headers(reply, 451, CSeq);
-      rtsp_send_reply(reply, Socket, "text/plain");  */
+      rtsp_send_reply(reply, Socket);  */
 
       return CLOSE_CONNECTION;
     }
@@ -211,7 +211,7 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
     log_message(MSG_DETAIL,"Unicast : Client ip %s port %d \n",client->client_ip,(unsigned short) client->rtsp_client_port);
 
     client->rtsp_Socket=makeUDPsocket (client->client_ip, client->rtsp_client_port,&client->rtsp_SocketAddr);
-    log_message(MSG_DETAIL,"Unicast : New RTSP socket d_IP %s, d_port:%d n°%d\n",inet_ntoa(client->rtsp_SocketAddr.sin_addr), ntohs(client->rtsp_SocketAddr.sin_port), client->rtsp_Socket);
+    log_message(MSG_DETAIL,"Unicast : New RTSP socket n°%d\n, d_IP %s, d_port:%d", client->rtsp_Socket, inet_ntoa(client->rtsp_SocketAddr.sin_addr), ntohs(client->rtsp_SocketAddr.sin_port));
 
     struct sockaddr_in tempSocketAddr;
     unsigned int l;
@@ -303,13 +303,35 @@ int rtsp_reply_prepare_headers(unicast_reply_t *reply, int code, int CSeq)
 /** @brief Send a RTSP message
  *  The method add headers the to a reply message
  */
-int rtsp_send_reply(unicast_reply_t *reply, int socket, const char* content_type)
+int rtsp_send_reply_sdp(unicast_reply_t *reply, int socket, const char* content_type)
 {
   //we add the header information
   reply->type = REPLY_HEADER;
   if(reply->used_body)
   {
     unicast_reply_write(reply, "Content-type: %s\r\n", content_type);
+    unicast_reply_write(reply, "Content-length: %d\r\n", reply->used_body);
+  }
+  unicast_reply_write(reply, "\r\n"); /* end header */
+  //we merge the header and the body
+  reply->buffer_header = realloc(reply->buffer_header, reply->used_header+reply->used_body);
+  memcpy(&reply->buffer_header[reply->used_header],reply->buffer_body,sizeof(char)*reply->used_body);
+  reply->used_header+=reply->used_body;
+  //now we write the data
+  int size = write(socket, reply->buffer_header, reply->used_header);
+  return size;
+}
+
+
+/** @brief Send a RTSP message
+ *  The method add headers the to a reply message
+ */
+int rtsp_send_reply(unicast_reply_t *reply, int socket)
+{
+  //we add the header information
+  reply->type = REPLY_HEADER;
+  if(reply->used_body)
+  {
     unicast_reply_write(reply, "Content-length: %d\r\n", reply->used_body);
   }
   unicast_reply_write(reply, "\r\n"); /* end header */
@@ -346,7 +368,6 @@ int unicast_rtsp_describe_reply (int Socket, int CSeq)
   //if (TransportType) TransportType="RTP/AVP/TCP"; // =0:UDP, =1:TCP
   char *source_host = "MuMuDVB-server";
 
-  unicast_reply_write(reply, "\r\n");
   unicast_reply_write(reply, "v=0\r\n");
   unicast_reply_write(reply, "o=- 14904518995472011776 14904518995472011776 IN IP4 %s\r\n", source_host);
   unicast_reply_write(reply, "s=unknown\r\n");
@@ -356,7 +377,7 @@ int unicast_rtsp_describe_reply (int Socket, int CSeq)
   unicast_reply_write(reply, "m=video 0 %s 33\r\n", TransportType);
 
   rtsp_reply_prepare_headers(reply, 200, CSeq);
-  rtsp_send_reply(reply, Socket,"application/sdp");
+  rtsp_send_reply_sdp(reply, Socket,"application/sdp");
 
   if (0 != unicast_reply_free(reply))
   {
@@ -384,7 +405,7 @@ int unicast_rtsp_options_reply (int Socket, int CSeq)
   log_message(MSG_INFO,"RTSP OPTIONS request\n");  ;
 
   rtsp_reply_prepare_headers(reply, 200, CSeq);
-  rtsp_send_reply(reply, Socket,"text/plain");
+  rtsp_send_reply(reply, Socket);
 
   if (0 != unicast_reply_free(reply))
   {
@@ -428,7 +449,7 @@ int unicast_rtsp_setup_reply (unicast_client_t *client, int CSeq, int Tsprt_type
   strcpy( broadcast_type,"unicast");
   log_message(MSG_DEBUG, "Transport: %s;%s;mode=play;destination=%s;client_port=%d-%d;server_port=%d\r\n", TransportType, broadcast_type, client->client_ip, client->rtsp_client_port, client->rtsp_client_port+1, client->rtsp_server_port);
   unicast_reply_write(reply, "Transport: %s;%s;mode=play;destination=%s;client_port=%d-%d;server_port=%d\r\n", TransportType, broadcast_type, client->client_ip, client->rtsp_client_port, client->rtsp_client_port+1, client->rtsp_server_port);
-  rtsp_send_reply(reply, Socket,"text/plain");
+  rtsp_send_reply(reply, Socket);
 
   if (0 != unicast_reply_free(reply))
   {
@@ -475,7 +496,7 @@ int unicast_rtsp_play_reply (int Socket, int CSeq, unicast_client_t *client, mum
     log_message(MSG_INFO,"Unicast : Path not found i.e. 404\n");
     unicast_reply_write(reply, "Session: %s\r\n", client->session);
     rtsp_reply_prepare_headers(reply, 404, CSeq);
-    rtsp_send_reply(reply, Socket, "text/plain");;
+    rtsp_send_reply(reply, Socket);
     if (0 != unicast_reply_free(reply)) {
       log_message(MSG_INFO,"Unicast : Error when releasing the RTSP reply after sendinf it\n");
     }
@@ -484,7 +505,7 @@ int unicast_rtsp_play_reply (int Socket, int CSeq, unicast_client_t *client, mum
 
   unicast_reply_write(reply, "Session: %s\r\n", client->session);
   rtsp_reply_prepare_headers(reply, 200, CSeq);
-  rtsp_send_reply(reply, Socket, "text/plain");
+  rtsp_send_reply(reply, Socket);
 
   if(requested_channel)
   {
@@ -538,7 +559,7 @@ int unicast_rtsp_teardown_reply (int Socket, int CSeq, unicast_client_t *client 
     log_message(MSG_INFO,"Unicast : Path not found i.e. 404\n");
     unicast_reply_write(reply, "Session: %s\r\n", client->session);
     rtsp_reply_prepare_headers(reply, err, CSeq);
-    rtsp_send_reply(reply, Socket, "text/plain");;
+    rtsp_send_reply(reply, Socket);
     if (0 != unicast_reply_free(reply)) {
       log_message(MSG_INFO,"Unicast : Error when releasing the RTSP reply after sendinf it\n");
     }
@@ -547,7 +568,7 @@ int unicast_rtsp_teardown_reply (int Socket, int CSeq, unicast_client_t *client 
 
   unicast_reply_write(reply, "Session: %s\r\n", client->session);
   rtsp_reply_prepare_headers(reply, 200, CSeq);
-  rtsp_send_reply(reply, Socket, "text/plain");
+  rtsp_send_reply(reply, Socket);
 
   if(requested_channel)
   {
