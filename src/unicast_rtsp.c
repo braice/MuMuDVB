@@ -250,6 +250,7 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
     if(iRet)
       return CLOSE_CONNECTION;
     unicast_flush_client(client);
+    unicast_show(unicast_vars, channels);
 
 /** @todo important : test if the client already exist when a new client arrives, delete dead clients*/
 
@@ -309,6 +310,29 @@ int rtsp_reply_prepare_headers(unicast_reply_t *reply, int code, int CSeq)
   return 0;
 }
 
+/** @brief Show all the clients sessions
+*
+* @param unicast_vars the unicast parameters
+* @param channels : the channels structure
+*/
+void unicast_show(unicast_parameters_t *unicast_vars, mumudvb_channel_t *channels)
+{
+  unicast_client_t *actual_client;
+  unicast_client_t *next_client;
+  int i=0;
+
+  for(actual_client=unicast_vars->clients; actual_client != NULL; actual_client=next_client)
+  {
+    next_client= actual_client->next;
+    // if(client->client_type==CLIENT_RTSP && client->rtsp_Socket)
+    if (actual_client->client_type==CLIENT_RTSP)
+    {
+        log_message(MSG_DEBUG,"Unicast : Client n°%d, Session : %s\n", i, actual_client->session);
+    }
+    i++;
+
+  }
+}
 
 /** @brief Send a RTSP message
  *  The method add headers the to a reply message
