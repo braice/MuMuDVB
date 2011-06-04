@@ -70,6 +70,24 @@ int unicast_rtsp_setup_reply (unicast_client_t *client, int CSeq, int Tsprt_type
 int unicast_rtsp_play_reply (int Socket, int CSeq, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels);
 int unicast_rtsp_teardown_reply (int Socket, int CSeq, unicast_client_t *client , mumudvb_channel_t *channels, unicast_parameters_t *unicast_vars, fds_t *fds, int number_of_channels);
 
+
+
+/** @brief Create a random number as session id
+*/
+int unicast_rtsp_session(char *session)
+{
+    for (int i=0;i<15;i++)
+    {
+      float randomnum;
+      randomnum = rand();
+      randomnum/=RAND_MAX;
+      session[i]='a'+(int)(randomnum*25);
+    }
+    session[15]='\0';
+    return 0;
+}
+
+
 /** @brief Deal with an incoming message on the unicast client connection
 * This function will store and answer the RTSP requests
 *
@@ -135,16 +153,8 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
   {
     pos=0;
     char *pos_search;
-    /** @todo put this in a function */
     char session[16];
-    for (int i=0;i<15;i++)
-    {
-      float randomnum;
-      randomnum = rand();
-      randomnum/=RAND_MAX;
-      session[i]='a'+(int)(randomnum*25);
-    }
-    session[15]='\0';
+    unicast_rtsp_session(session);
     strcpy(client->session, session);
     log_message(MSG_DEBUG,"Session : %s\n", session );
 
@@ -211,7 +221,7 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
     log_message(MSG_DETAIL,"Unicast : Client ip %s port %d \n",client->client_ip,(unsigned short) client->rtsp_client_port);
 
     client->rtsp_Socket=makeUDPsocket (client->client_ip, client->rtsp_client_port,&client->rtsp_SocketAddr);
-    log_message(MSG_DETAIL,"Unicast : New RTSP socket n°%d\n, d_IP %s, d_port:%d", client->rtsp_Socket, inet_ntoa(client->rtsp_SocketAddr.sin_addr), ntohs(client->rtsp_SocketAddr.sin_port));
+    log_message(MSG_DETAIL,"Unicast : New RTSP socket n°%d\n, d_IP %s, d_port:%d\n", client->rtsp_Socket, inet_ntoa(client->rtsp_SocketAddr.sin_addr), ntohs(client->rtsp_SocketAddr.sin_port));
 
     struct sockaddr_in tempSocketAddr;
     unsigned int l;
