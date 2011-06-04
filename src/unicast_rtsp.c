@@ -457,7 +457,7 @@ int unicast_rtsp_play_reply (int Socket, int CSeq, unicast_client_t *client, mum
     return -1;
   }
 
-  log_message(MSG_INFO,"Unicast : Requete PLAY RTSP\n");
+  log_message(MSG_INFO,"Unicast : RTSP PLAY request\n");
 
   tempstring=strstr(client->buffer,"rtsp://");
   tempstring=strstr(tempstring+7,"/");
