@@ -127,7 +127,7 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
   log_message(MSG_FLOOD,"Buffer : %s\n",client->buffer);
   if(poscseq==NULL)
   {
-    log_message(MSG_DEBUG,"Sequence number not found\n");
+    log_message(MSG_ERROR,"Sequence number not found\n");
     /** @todo Implement an error following the RTSP protocol*/
     return CLOSE_CONNECTION; //tu n'est pas content ...
   }
@@ -186,7 +186,7 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
     }
     else
     {
-      log_message(MSG_INFO,"Error 461 : Unsupported transport type");
+      log_message(MSG_ERROR,"Error 461 : Unsupported transport type");
 /*      rtsp_reply_prepare_headers(reply, 461, CSeq);
       rtsp_send_reply(reply, Socket,"text/plain");
 
@@ -236,7 +236,7 @@ int unicast_handle_rtsp_message(unicast_parameters_t *unicast_vars, unicast_clie
     iRet=bind(client->rtsp_Socket,(struct sockaddr *) &tempsin,l);
     if (iRet == 0)
     {
-      log_message( MSG_ERROR,"bind failed : %s\n", strerror(errno));
+      log_message( MSG_ERROR,"bind failed : %s\n", strerror(errno) );
     }
     //client->rtsp_server_port=ntohs(client->rtsp_SocketAddr.sin_port);
     client->rtsp_server_port=unicast_vars->rtsp_portOut;
@@ -369,7 +369,7 @@ int unicast_rtsp_describe_reply (int Socket, int CSeq)
   unicast_reply_t* reply = unicast_reply_init();
   if (NULL == reply)
   {
-    log_message(MSG_INFO,"Unicast : Error when creating the RTSP reply\n");
+    log_message(MSG_ERROR,"Unicast : Error when creating the RTSP reply\n");
     return -1;
   }
   log_message(MSG_INFO,"RTSP DESCRIBE request\n");
@@ -396,7 +396,7 @@ int unicast_rtsp_describe_reply (int Socket, int CSeq)
 
   if (0 != unicast_reply_free(reply))
   {
-    log_message(MSG_INFO,"Unicast : Error when releasing the RTSP reply after sendinf it\n");
+    log_message(MSG_ERROR,"Unicast : Error when releasing the RTSP reply after sendinf it\n");
     return -1;
   }
 
@@ -413,7 +413,7 @@ int unicast_rtsp_options_reply (int Socket, int CSeq)
   unicast_reply_t* reply = unicast_reply_init();
   if (NULL == reply)
   {
-    log_message(MSG_INFO,"Unicast : Error when creating the RTSP reply\n");
+    log_message(MSG_ERROR,"Unicast : Error when creating the RTSP reply\n");
     return -1;
   }
 
@@ -424,7 +424,7 @@ int unicast_rtsp_options_reply (int Socket, int CSeq)
 
   if (0 != unicast_reply_free(reply))
   {
-    log_message(MSG_INFO,"Unicast : Error when releasing the RTSP reply after sendinf it\n");
+    log_message(MSG_ERROR,"Unicast : Error when releasing the RTSP reply after sendinf it\n");
     return -1;
   }
 
@@ -443,7 +443,7 @@ int unicast_rtsp_setup_reply (unicast_client_t *client, int CSeq, int Tsprt_type
   unicast_reply_t* reply = unicast_reply_init();
   if (NULL == reply)
   {
-    log_message(MSG_INFO,"Unicast : Error when creating the RTSP reply\n");
+    log_message(MSG_ERROR,"Unicast : Error when creating the RTSP reply\n");
     return -1;
   }
 
@@ -468,7 +468,7 @@ int unicast_rtsp_setup_reply (unicast_client_t *client, int CSeq, int Tsprt_type
 
   if (0 != unicast_reply_free(reply))
   {
-    log_message(MSG_INFO,"Unicast : Error when releasing the RTSP reply after sendinf it\n");
+    log_message(MSG_ERROR,"Unicast : Error when releasing the RTSP reply after sendinf it\n");
     return -1;
   }
 
@@ -489,7 +489,7 @@ int unicast_rtsp_play_reply (int Socket, int CSeq, unicast_client_t *client, mum
   unicast_reply_t* reply = unicast_reply_init();
   if (NULL == reply)
   {
-    log_message(MSG_INFO,"Unicast : Error when creating the RTSP reply\n");
+    log_message(MSG_ERROR,"Unicast : Error when creating the RTSP reply\n");
     return -1;
   }
 
@@ -513,7 +513,7 @@ int unicast_rtsp_play_reply (int Socket, int CSeq, unicast_client_t *client, mum
     rtsp_reply_prepare_headers(reply, 404, CSeq);
     rtsp_send_reply(reply, Socket);
     if (0 != unicast_reply_free(reply)) {
-      log_message(MSG_INFO,"Unicast : Error when releasing the RTSP reply after sendinf it\n");
+      log_message(MSG_ERROR,"Unicast : Error when releasing the RTSP reply after sendinf it\n");
     }
     return CLOSE_CONNECTION; //to delete the client
   }
@@ -553,7 +553,7 @@ int unicast_rtsp_teardown_reply (int Socket, int CSeq, unicast_client_t *client 
   unicast_reply_t* reply = unicast_reply_init();
   if (NULL == reply)
   {
-    log_message(MSG_INFO,"Unicast : Error when creating the RTSP reply\n");
+    log_message(MSG_ERROR,"Unicast : Error when creating the RTSP reply\n");
     return -1;
   }
 
@@ -576,7 +576,7 @@ int unicast_rtsp_teardown_reply (int Socket, int CSeq, unicast_client_t *client 
     rtsp_reply_prepare_headers(reply, err, CSeq);
     rtsp_send_reply(reply, Socket);
     if (0 != unicast_reply_free(reply)) {
-      log_message(MSG_INFO,"Unicast : Error when releasing the RTSP reply after sendinf it\n");
+      log_message(MSG_ERROR,"Unicast : Error when releasing the RTSP reply after sendinf it\n");
     }
     return CLOSE_CONNECTION; //to delete the client
   }
