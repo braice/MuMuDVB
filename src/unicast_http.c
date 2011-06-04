@@ -87,6 +87,8 @@ int
 unicast_send_signal_power_js (int Socket, fds_t *fds);
 int
 unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *channels, int Socket);
+int
+unicast_send_channel_clients_js (int number_of_clients, int Socket);
 
 
 
@@ -224,6 +226,13 @@ int unicast_handle_http_message(unicast_parameters_t *unicast_vars, unicast_clie
           unicast_send_channel_traffic_js(number_of_channels, channels, client->Socket);
           return CLOSE_CONNECTION; //We close the connection afterwards
         }
+        else if(strstr(client->buffer +pos ,"/monitor/clients.json ")==(client->buffer +pos))
+        {
+          log_message(MSG_DETAIL,"Unicast Clients\n");
+          unicast_send_channel_clients_js(unicast_vars->client_number, client->Socket);
+          return CLOSE_CONNECTION; //We close the connection afterwards
+        }
+
         //Not implemented path --> 404
         else
           err404=1;
@@ -623,6 +632,35 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
     reply->used_body -= 2; // dirty hack to erase the last comma
     unicast_reply_write(reply, "]\n");
   }
+
+  unicast_reply_send(reply, Socket, 200, "application/json");
+
+  if (0 != unicast_reply_free(reply)) {
+    log_message(MSG_INFO,"Unicast : Error when releasing the HTTP reply after sendinf it\n");
+    return -1;
+  }
+  return 0;
+}
+
+
+
+
+/** @brief Send a basic JSON file containig the clients
+*
+* @param number_of_clients the number of clients
+* @param channels the channels array
+* @param Socket the socket on wich the information have to be sent
+*/
+int
+ unicast_send_channel_clients_js (int number_of_clients, int Socket)
+{
+  unicast_reply_t* reply = unicast_reply_init();
+  if (NULL == reply) {
+    log_message(MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
+    return -1;
+  }
+
+  unicast_reply_write(reply, "{\"number\":%d},\n", number_of_clients);
 
   unicast_reply_send(reply, Socket, 200, "application/json");
 
