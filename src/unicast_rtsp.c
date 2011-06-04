@@ -368,8 +368,13 @@ int unicast_rtsp_describe_reply (int Socket, int CSeq)
   //if (TransportType) TransportType="RTP/AVP/TCP"; // =0:UDP, =1:TCP
   char *source_host = "MuMuDVB-server";
 
+  // time of day as Session ID and Session version value
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  log_message(MSG_DEBUG,"Unicast : time of day: %d\n", tv.tv_sec);
+
   unicast_reply_write(reply, "v=0\r\n");
-  unicast_reply_write(reply, "o=- 14904518995472011776 14904518995472011776 IN IP4 %s\r\n", source_host);
+  unicast_reply_write(reply, "o=- %u %u IN IP4 %s\r\n", tv.tv_sec, tv.tv_sec, source_host);
   unicast_reply_write(reply, "s=unknown\r\n");
   unicast_reply_write(reply, "i=unknown\r\n");
   unicast_reply_write(reply, "c=IN IP4 0.0.0.0\r\n");
