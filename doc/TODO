@@ -1,4 +1,4 @@
- * Http unicast
+ * HTTP unicast
   * Master connection not mandatory, option unicast=1
 
  * Autoconfiguration

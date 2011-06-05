@@ -328,7 +328,7 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
 	}
       else if (channels[curr_channel].num_pids==1)
 	{
-	  //Only one pid with autoconfiguration=1, it's the PMT pid
+	  //Only one pid with autoconfiguration=partial, it's the PMT pid
 	  channels[curr_channel].pmt_pid=channels[curr_channel].pids[0];
           channels[curr_channel].pids_type[0]=PID_PMT;
           snprintf(channels[curr_channel].pids_language[0],4,"%s","---");
