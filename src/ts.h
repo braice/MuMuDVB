@@ -494,6 +494,49 @@ typedef struct {
 
 
 
+/** @brief 0x5a terrestrial_delivery_system_descriptor */
+typedef struct {
+  u_char descriptor_tag                         :8;
+  u_char descriptor_length                      :8;
+  u_char frequency_4                            :8;
+  u_char frequency_3                            :8;
+  u_char frequency_2                            :8;
+  u_char frequency_1                            :8;
+#if BYTE_ORDER == BIG_ENDIAN
+  u_char bandwidth                              :3;
+  u_char priority                               :1;
+  u_char Time_Slicing_indicator                 :1;
+  u_char MPE_FEC_indicator                      :1;
+  u_char                                        :2;
+#else
+  u_char                                        :2;
+  u_char MPE_FEC_indicator                      :1;
+  u_char Time_Slicing_indicator                 :1;
+  u_char priority                               :1;
+  u_char bandwidth                              :3;
+#endif
+#if BYTE_ORDER == BIG_ENDIAN
+  u_char constellation                          :2;
+  u_char hierarchy_information                  :3;
+  u_char code_rate_HP_stream                    :3;
+#else
+  u_char code_rate_HP_stream                    :3;
+  u_char hierarchy_information                  :3;
+  u_char constellation                          :2;
+#endif
+#if BYTE_ORDER == BIG_ENDIAN
+  u_char code_rate_LP_stream                    :3;
+  u_char guard_interval                         :2;
+  u_char transmission_mode                      :2;
+  u_char other_frequency_flag                   :1;
+#else
+  u_char other_frequency_flag                   :1;
+  u_char transmission_mode                      :2;
+  u_char guard_interval                         :2;
+  u_char code_rate_LP_stream                    :3;
+#endif
+} descr_terr_delivery_t;
+
 
 
 

@@ -1,27 +1,27 @@
 /* 
  * MuMuDVB - Stream a DVB transport stream.
  * File for Autoconfiguration
- * 
- * (C) 2008-2010 Brice DUBOST <mumudvb@braice.net>
- *  
+ *
+ * (C) 2008-2011 Brice DUBOST <mumudvb@braice.net>
+ *
  * Parts of this code come from libdvb, modified for mumudvb
  * by Brice DUBOST 
  * Libdvb part : Copyright (C) 2000 Klaus Schmidinger
- * 
+ *
  * The latest version can be found at http://mumudvb.braice.net
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -51,6 +51,8 @@ int convert_en399468_string(char *string, int max_len);
 void parse_network_name_descriptor(unsigned char *buf);
 void parse_multilingual_network_name_descriptor(unsigned char *buf);
 void parse_lcn_descriptor(unsigned char *buf, mumudvb_channel_t *channels, int number_of_channels);
+void parse_service_list_descriptor_descriptor(unsigned char *buf);
+void parse_terrestrial_delivery_system_descriptor(unsigned char *buf);
 
 /** @brief Read the network information table (cf EN 300 468)
  *
@@ -161,8 +163,12 @@ void parse_nit_ts_descriptor(unsigned char* buf, int ts_descriptors_loop_len, mu
       }
       if(descriptor_tag==0x83)
 	parse_lcn_descriptor(buf, channels, number_of_channels);
+      else if(descriptor_tag==0x41)
+        parse_service_list_descriptor_descriptor(buf);
+      else if(descriptor_tag==0x5A)
+        parse_terrestrial_delivery_system_descriptor(buf);
       else
-        log_message( log_module, MSG_FLOOD, " --- NIT descriptor --- descriptor_tag == 0x%02x len %d descriptors_loop_len %d\n", descriptor_tag, descriptor_len, descriptors_loop_len);
+        log_message( log_module, MSG_FLOOD, " --- NIT descriptor --- descriptor_tag == 0x%02x len %d descriptors_loop_len %d ------------\n", descriptor_tag, descriptor_len, descriptors_loop_len);
       buf += descriptor_len;
       descriptors_loop_len -= descriptor_len;
     }
@@ -290,3 +296,217 @@ void parse_lcn_descriptor(unsigned char* buf, mumudvb_channel_t* channels, int n
     descriptor_len -= NIT_LCN_LEN;
     }
 }
+
+
+
+
+void parse_service_list_descriptor_descriptor(unsigned char *buf)
+{
+  /* Service list descriptor :
+     descriptor_tag                     8
+     descriptor_length                  8
+     for (i=0;i<N;I++){
+       service_id                       8
+       service_type                     16
+     }
+   */
+
+  int i,service_id,service_type;
+  unsigned char descriptor_len = buf[1];
+  buf += 2;
+  log_message( log_module, MSG_DETAIL, "--- NIT descriptor --- Service list descriptor\n");
+  for(i=0;i<descriptor_len;i+=3)
+  {
+    service_id=(buf[i]<<8)+buf[i+1];;
+    service_type=buf[i+2];
+    log_message( log_module, MSG_DETAIL, "Service ID : 0x%x service type: 0x%x : %s \n",service_id, service_type, service_type_to_str(service_type));
+  }
+}
+
+/** @brief display the contents of terrestrial_delivery_system_descriptor
+  * EN 300 468    6.2.13.4 Terrestrial delivery system descriptor
+  */
+void parse_terrestrial_delivery_system_descriptor(unsigned char *buf)
+{
+  descr_terr_delivery_t *descr;
+  descr=(descr_terr_delivery_t *)buf;
+
+  log_message( log_module, MSG_DETAIL, "--- NIT descriptor --- terrestrial delivery system descriptor\n");
+
+  log_message( log_module, MSG_DETAIL, "Frequency: %ldHz", ((descr->frequency_4<<24)+(descr->frequency_3<<16)+(descr->frequency_2<<8)+descr->frequency_1) *10 );
+  if(descr->bandwidth<=3)
+    log_message( log_module, MSG_DETAIL, "Bandwidth: %dMHz",8-descr->bandwidth);
+  else
+    log_message( log_module, MSG_DETAIL, "Bandwidth: Reserved for future use");
+  if(descr->priority)
+    log_message( log_module, MSG_DETAIL, "Priority: HP (high priority)");
+  else
+    log_message( log_module, MSG_DETAIL, "Priority: LP (low priority)");
+  log_message( log_module, MSG_DETAIL, "Time_Slicing_indicator: %d",descr->Time_Slicing_indicator);
+  log_message( log_module, MSG_DETAIL, "MPE_FEC_indicator: %d",descr->MPE_FEC_indicator );
+  switch(descr->constellation)
+  {
+    case 0:
+      log_message( log_module, MSG_DETAIL, "Constellation: QPSK");
+      break;
+    case 1:
+      log_message( log_module, MSG_DETAIL, "Constellation: 16-QAM");
+      break;
+    case 2:
+      log_message( log_module, MSG_DETAIL, "Constellation: 64-QAM");
+      break;
+    case 3:
+      log_message( log_module, MSG_DETAIL, "Constellation: RFU");
+      break;
+    default:
+      log_message( log_module, MSG_DETAIL, "Constellation: BUG");
+      break;
+  }
+  switch(descr->hierarchy_information)
+  {
+    case 0:
+      log_message( log_module, MSG_DETAIL, "hierarchy_information: non-hierarchical, native interleaver");
+      break;
+    case 1:
+      log_message( log_module, MSG_DETAIL, "hierarchy_information: α = 1, native interleaver");
+      break;
+    case 2:
+      log_message( log_module, MSG_DETAIL, "hierarchy_information: α = 2, native interleaver");
+      break;
+    case 3:
+      log_message( log_module, MSG_DETAIL, "hierarchy_information: α = 4, native interleaver");
+      break;
+    case 4:
+      log_message( log_module, MSG_DETAIL, "hierarchy_information: non-hierarchical, in-depth interleaver");
+      break;
+    case 5:
+      log_message( log_module, MSG_DETAIL, "hierarchy_information: α = 1, in-depth interleaver");
+      break;
+    case 6:
+      log_message( log_module, MSG_DETAIL, "hierarchy_information: α = 2, in-depth interleaver");
+      break;
+    case 7:
+      log_message( log_module, MSG_DETAIL, "hierarchy_information: α = 4, in-depth interleaver");
+      break;
+    default:
+      log_message( log_module, MSG_DETAIL, "hierarchy_information: BUG please contact");
+      break;
+  }
+
+  switch(descr->code_rate_HP_stream)
+  {
+    case 0:
+      log_message( log_module, MSG_DETAIL, "code_rate_HP_stream: 1/2");
+      break;
+    case 1:
+      log_message( log_module, MSG_DETAIL, "code_rate_HP_stream: 2/3");
+      break;
+    case 2:
+      log_message( log_module, MSG_DETAIL, "code_rate_HP_stream: 3/4");
+      break;
+    case 3:
+      log_message( log_module, MSG_DETAIL, "code_rate_HP_stream: 5/6");
+      break;
+    case 4:
+      log_message( log_module, MSG_DETAIL, "code_rate_HP_stream: 7/8");
+      break;
+    case 5:
+    case 6:
+    case 7:
+    default:
+      log_message( log_module, MSG_DETAIL, "code_rate_HP_stream: RFU");
+      break;
+  }
+  switch(descr->code_rate_LP_stream)
+  {
+    case 0:
+      log_message( log_module, MSG_DETAIL, "code_rate_LP_stream: 1/2");
+      break;
+    case 1:
+      log_message( log_module, MSG_DETAIL, "code_rate_LP_stream: 2/3");
+      break;
+    case 2:
+      log_message( log_module, MSG_DETAIL, "code_rate_LP_stream: 3/4");
+      break;
+    case 3:
+      log_message( log_module, MSG_DETAIL, "code_rate_LP_stream: 5/6");
+      break;
+    case 4:
+      log_message( log_module, MSG_DETAIL, "code_rate_LP_stream: 7/8");
+      break;
+    case 5:
+    case 6:
+    case 7:
+    default:
+      log_message( log_module, MSG_DETAIL, "code_rate_LP_stream: RFU");
+      break;
+  }
+
+
+  switch(descr->guard_interval)
+  {
+    case 0:
+      log_message( log_module, MSG_DETAIL, "guard_interval: 1/32");
+      break;
+    case 1:
+      log_message( log_module, MSG_DETAIL, "guard_interval: 1/16");
+      break;
+    case 2:
+      log_message( log_module, MSG_DETAIL, "guard_interval: 1/8");
+      break;
+    case 3:
+      log_message( log_module, MSG_DETAIL, "guard_interval: 1/4");
+      break;
+    default:
+      log_message( log_module, MSG_DETAIL, "guard_interval: BUG");
+      break;
+  }
+
+  switch(descr->transmission_mode)
+  {
+    case 0:
+      log_message( log_module, MSG_DETAIL, "transmission_mode: 2k");
+      break;
+    case 1:
+      log_message( log_module, MSG_DETAIL, "transmission_mode: 8k");
+      break;
+    case 2:
+      log_message( log_module, MSG_DETAIL, "transmission_mode: 4k");
+      break;
+    case 3:
+      log_message( log_module, MSG_DETAIL, "transmission_mode: RFU");
+      break;
+    default:
+      log_message( log_module, MSG_DETAIL, "transmission_mode: BUG");
+      break;
+  }
+
+  if(descr->other_frequency_flag)
+    log_message( log_module, MSG_DETAIL, "other_frequency_flag: one or more other frequencies are in use");
+  else
+    log_message( log_module, MSG_DETAIL, "other_frequency_flag: no other frequency is in use");
+
+  log_message( log_module, MSG_DETAIL, "--- descriptor done ---\n");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

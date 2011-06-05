@@ -373,6 +373,7 @@ void autoconf_show_CA_identifier_descriptor(unsigned char *buf)
   log_message( log_module, MSG_DETAIL, "CA_system_ids : \n");
 
   length=buf[1];
+  buf+=2;
   for(i=0;i<length;i+=2)
   {
     ca_id=(buf[i]<<8)+buf[i+1];
