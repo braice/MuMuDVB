@@ -1345,7 +1345,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
   #ifdef ENABLE_CAM_SUPPORT
     unicast_reply_write(reply, "\t<cam_support>%d</cam_support>\n",cam_vars->cam_support);
     unicast_reply_write(reply, "\t<cam_number>%d</cam_number>\n",cam_vars->cam_number);
-    unicast_reply_write(reply, "\t<cam_menustring><![CDATA[%s]]></cam_menustring>\n",cam_vars->cam_menu_string);
+    unicast_reply_write(reply, "\t<cam_menustring><![CDATA[%s]]></cam_menustring>\n",cam_vars->cam_menu_string.string);
     unicast_reply_write(reply, "\t<cam_initialized>%d</cam_initialized>\n",cam_vars->ca_resource_connected);
   #else
     unicast_reply_write(reply, "\t<cam_support>%d</cam_support>\n",0);
@@ -1425,10 +1425,10 @@ unicast_send_cam_menu (int Socket, void *cam_vars_v)
     log_message( log_module, MSG_INFO,"Unicast : Error when creating the HTTP reply\n");
     return -1;
   }
-  
+
   // UTF-8 Byte Order Mark (BOM)
   unicast_reply_write(reply, "\xef\xbb\xbf");
-  
+
   // Date time formatting
   time_t rawtime;
   time (&rawtime);
@@ -1445,16 +1445,14 @@ unicast_send_cam_menu (int Socket, void *cam_vars_v)
   // Sending the last menu if existing
   if (cam_vars->ca_resource_connected!=0)
   {
-    if (cam_vars->cam_menulist_lines>0)
+    if (cam_vars->cam_menulist_str.length>0)
     {
-      int i;
-      for (i=0; i<cam_vars->cam_menulist_lines; i++)
-        unicast_reply_write(reply, "%s",cam_vars->cam_menulist[i]);
+        unicast_reply_write(reply, "%s",cam_vars->cam_menulist_str.string);
     }
     else
     {
       unicast_reply_write(reply, "\t<datetime><![CDATA[%s]]></datetime>\n",sdatetime);
-      unicast_reply_write(reply, "\t<cammenustring><![CDATA[%s]]></cammenustring>\n",cam_vars->cam_menu_string);
+      unicast_reply_write(reply, "\t<cammenustring><![CDATA[%s]]></cammenustring>\n",cam_vars->cam_menu_string.string);
       unicast_reply_write(reply, "\t<object><![CDATA[NONE]]></object>\n");
       unicast_reply_write(reply, "\t<title><![CDATA[No menu to display]]></title>\n");
     }

@@ -673,8 +673,9 @@ static int mumudvb_cam_ai_callback(void *arg, uint8_t slot_id, uint16_t session_
   log_message( log_module,  MSG_INFO, "CAM Menu string: %.*s\n", menu_string_length, menu_string);
 
   // Store the CAM menu string for easy identification
-  snprintf(cam_params->cam_menu_string, 256, "%.*s", menu_string_length, menu_string);
-  
+  mumu_free_string(&cam_params->cam_menu_string);
+  mumu_string_append(&cam_params->cam_menu_string, "%.*s", menu_string_length, menu_string);
+
   // Try to append the information to the cam_info log file
   FILE *file_cam_info;
   file_cam_info = fopen (cam_params->filename_cam_info, "a");
@@ -854,34 +855,20 @@ static int mumudvb_cam_mmi_menu_list_callback(void *arg, uint8_t slot_id, uint16
   (void) items_raw;
 
   // New CAM menu received, we prepared its storage for future display
-  cam_params->cam_menulist_lines=0;
+  mumu_free_string(&cam_params->cam_menulist_str);
   // We save the date/time when the menu was received
   time_t rawtime;
   time (&rawtime);
-  char sdatetime[25];
-  snprintf(sdatetime,25,"%s",ctime(&rawtime));
   // Add line to CAM menu storage - Date and Time
-  if (cam_params->cam_menulist_lines<MAX_STORED_MENU_LINES)
-  {
-	snprintf(cam_params->cam_menulist[cam_params->cam_menulist_lines],256,"\t<datetime><![CDATA[%s]]></datetime>\n",sdatetime);
-	cam_params->cam_menulist_lines++;
-  }
+  mumu_string_append(&cam_params->cam_menulist_str,"\t<datetime><![CDATA[%s]]></datetime>\n",ctime(&rawtime));
   // Add line to CAM menu storage - CAM Menu String (model)
-  if (cam_params->cam_menulist_lines<MAX_STORED_MENU_LINES)
-  {
-	snprintf(cam_params->cam_menulist[cam_params->cam_menulist_lines],256,"\t<cammenustring><![CDATA[%s]]></cammenustring>\n",cam_params->cam_menu_string);
-	cam_params->cam_menulist_lines++;
-  }
+  mumu_string_append(&cam_params->cam_menulist_str,"\t<cammenustring><![CDATA[%s]]></cammenustring>\n",cam_params->cam_menu_string.string);
   // Add line to CAM menu storage - CAM Object type : LIST or MENU
-  if (cam_params->cam_menulist_lines<MAX_STORED_MENU_LINES)
-  {
-    if (object_type==DISPLAY_TYPE_LIST)
-      snprintf(cam_params->cam_menulist[cam_params->cam_menulist_lines],256,"\t<object><![CDATA[LIST]]></object>\n");
-	if (object_type==DISPLAY_TYPE_MENU)
-      snprintf(cam_params->cam_menulist[cam_params->cam_menulist_lines],256,"\t<object><![CDATA[MENU]]></object>\n");
-	cam_params->cam_menulist_lines++;
-  }
-  
+  if (object_type==DISPLAY_TYPE_LIST)
+    mumu_string_append(&cam_params->cam_menulist_str,"\t<object><![CDATA[LIST]]></object>\n");
+  if (object_type==DISPLAY_TYPE_MENU)
+    mumu_string_append(&cam_params->cam_menulist_str,"\t<object><![CDATA[MENU]]></object>\n");
+
   // Showing beginning of CAM menu
   if (object_type==DISPLAY_TYPE_LIST)
     log_message( log_module,  MSG_INFO, "------------------ NEW CAM LIST ------------------\n");
@@ -889,57 +876,41 @@ static int mumudvb_cam_mmi_menu_list_callback(void *arg, uint8_t slot_id, uint16
     log_message( log_module,  MSG_INFO, "------------------ NEW CAM MENU ------------------\n");
 
   // Title
-  if (title->text_length) {
+  if (title->text_length)
+  {
     log_message( log_module,  MSG_INFO, "Menu_Title    : %.*s\n", title->text_length, title->text);
     // Add line to CAM menu storage - Title
-    if (cam_params->cam_menulist_lines<MAX_STORED_MENU_LINES)
-    {
-	  snprintf(cam_params->cam_menulist[cam_params->cam_menulist_lines],256,"\t<title><![CDATA[%.*s]]></title>\n", title->text_length, title->text);
-	  cam_params->cam_menulist_lines++;
-    }
+    mumu_string_append(&cam_params->cam_menulist_str,"\t<title><![CDATA[%.*s]]></title>\n", title->text_length, title->text);
   }
-  
+
   // Subtitle
-  if (sub_title->text_length) {
+  if (sub_title->text_length)
+  {
     log_message( log_module,  MSG_INFO, "Menu_Subtitle : %.*s\n", sub_title->text_length, sub_title->text);
     // Add line to CAM menu storage - Subtitle
-    if (cam_params->cam_menulist_lines<MAX_STORED_MENU_LINES)
-    {
-	  snprintf(cam_params->cam_menulist[cam_params->cam_menulist_lines],256,"\t<subtitle><![CDATA[%.*s]]></subtitle>\n", sub_title->text_length, sub_title->text);
-	  cam_params->cam_menulist_lines++;
-    }
+    mumu_string_append(&cam_params->cam_menulist_str,"\t<subtitle><![CDATA[%.*s]]></subtitle>\n", sub_title->text_length, sub_title->text);
   }
 
   // Choice 0 is always for cancel/return/ok action in MENU and LIST
   log_message( log_module,  MSG_INFO, "Menu_Item 0   : Return\n");
   // Add line to CAM menu storage - Items
-  if (cam_params->cam_menulist_lines<MAX_STORED_MENU_LINES)
-  {
-     snprintf(cam_params->cam_menulist[cam_params->cam_menulist_lines],256,"\t<item num=\"0\"><![CDATA[Return]]></item>\n");
-     cam_params->cam_menulist_lines++;
-  }
-  
+  mumu_string_append(&cam_params->cam_menulist_str,"\t<item num=\"0\"><![CDATA[Return]]></item>\n");
+
   // Items
   uint32_t i;
-  for(i=0; i< item_count; i++) {
+  for(i=0; i< item_count; i++)
+  {
     log_message( log_module,  MSG_INFO, "Menu_Item %d   : %.*s\n", (i+1), items[i].text_length, items[i].text);
     // Add line to CAM menu storage - Items
-    if (cam_params->cam_menulist_lines<MAX_STORED_MENU_LINES)
-    {
-	  snprintf(cam_params->cam_menulist[cam_params->cam_menulist_lines],256,"\t<item num=\"%d\"><![CDATA[%.*s]]></item>\n", (i+1), items[i].text_length, items[i].text);
-	  cam_params->cam_menulist_lines++;
-    }
+    mumu_string_append(&cam_params->cam_menulist_str,"\t<item num=\"%d\"><![CDATA[%.*s]]></item>\n", (i+1), items[i].text_length, items[i].text);
   }
 
   // Bottom
-  if (bottom->text_length) {
+  if (bottom->text_length)
+  {
     log_message( log_module,  MSG_INFO, "Menu_Bottom   : %.*s\n", bottom->text_length, bottom->text);
     // Add line to CAM menu storage - Bottom
-    if (cam_params->cam_menulist_lines<MAX_STORED_MENU_LINES)
-    {
-	  snprintf(cam_params->cam_menulist[cam_params->cam_menulist_lines],256,"\t<bottom><![CDATA[%.*s]]></bottom>\n", bottom->text_length, bottom->text);
-	  cam_params->cam_menulist_lines++;
-    }
+    mumu_string_append(&cam_params->cam_menulist_str,"\t<bottom><![CDATA[%.*s]]></bottom>\n", bottom->text_length, bottom->text);
   }
 
   // Showing end of CAM menu
@@ -954,7 +925,7 @@ static int mumudvb_cam_mmi_menu_list_callback(void *arg, uint8_t slot_id, uint16
     // Autoresponse
     log_message( log_module,  MSG_INFO, "Menu autoresponse, send CANCEL\n");
     en50221_app_mmi_menu_answ(cam_params->stdcam->mmi_resource, cam_params->stdcam->mmi_session_number, 0);
-	cam_params->mmi_state = MMI_STATE_OPEN;
+    cam_params->mmi_state = MMI_STATE_OPEN;
   }
   else
     // We wait an answer from the user
@@ -976,13 +947,13 @@ static int mumudvb_cam_mmi_close_callback(void *arg, uint8_t slot_id, uint16_t s
 
   // The CAM told us that the menu was closed
   log_message( log_module,  MSG_INFO, "Closing CAM Menu\n");
-  
+
   // Remove last stored menu content
-  cam_params->cam_menulist_lines=0;
-  
+  mumu_free_string(&cam_params->cam_menulist_str);
+
   // Indicate that the menu was closed (for our own record)
   cam_params->mmi_state = MMI_STATE_CLOSED;
-  
+
   // Close the session with the CAM or a new session MMI will not be allowed
   en50221_sl_destroy_session(cam_params->sl,session_number);
 
@@ -1033,47 +1004,27 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
   log_message( log_module,  MSG_INFO, "Question: %.*s\n", text_size, text);
   log_message( log_module,  MSG_INFO, "Expected answer length: %d\n", expected_answer_length);
   log_message( log_module,  MSG_INFO, "--------------------------------------------------\n");
-  
+
   // New CAM enquiry received, we prepared its storage for future display
-  cam_params->cam_menulist_lines=0;
+  mumu_free_string(&cam_params->cam_menulist_str);
   // We save the date/time when the enquiry was received
   time_t rawtime;
-  time (&rawtime);
-  char sdatetime[25];
-  snprintf(sdatetime,25,"%s",ctime(&rawtime));
+  time(&rawtime);
   // Add line to CAM enquiry storage - Date and Time
-  if (cam_params->cam_menulist_lines<MAX_STORED_MENU_LINES)
-  {
-	snprintf(cam_params->cam_menulist[cam_params->cam_menulist_lines],256,"\t<datetime><![CDATA[%s]]></datetime>\n",sdatetime);
-	cam_params->cam_menulist_lines++;
-  }
+  mumu_string_append(&cam_params->cam_menulist_str,"\t<datetime><![CDATA[%s]]></datetime>\n",ctime(&rawtime));
+
   // Add line to CAM menu storage - CAM Menu String (model)
-  if (cam_params->cam_menulist_lines<MAX_STORED_MENU_LINES)
-  {
-	snprintf(cam_params->cam_menulist[cam_params->cam_menulist_lines],256,"\t<cammenustring><![CDATA[%s]]></cammenustring>\n",cam_params->cam_menu_string);
-	cam_params->cam_menulist_lines++;
-  }
+  mumu_string_append(&cam_params->cam_menulist_str,"\t<cammenustring><![CDATA[%s]]></cammenustring>\n",cam_params->cam_menu_string.string);
+
   // Add line to CAM menu storage - CAM Object type : ENQUIRY
-  if (cam_params->cam_menulist_lines<MAX_STORED_MENU_LINES)
-  {
-    snprintf(cam_params->cam_menulist[cam_params->cam_menulist_lines],256,"\t<object><![CDATA[ENQUIRY]]></object>\n");
-	cam_params->cam_menulist_lines++;
-  }
-  
+  mumu_string_append(&cam_params->cam_menulist_str,"\t<object><![CDATA[ENQUIRY]]></object>\n");
+
   // We put the question in the "Title" field
-  if (cam_params->cam_menulist_lines<MAX_STORED_MENU_LINES)
-  {
-    snprintf(cam_params->cam_menulist[cam_params->cam_menulist_lines],256,"\t<title><![CDATA[%.*s]]></title>\n", text_size, text);
-	cam_params->cam_menulist_lines++;
-  }
-  
+  mumu_string_append(&cam_params->cam_menulist_str,"\t<title><![CDATA[%.*s]]></title>\n", text_size, text);
+
   // We put the answer length in the "Subtitle" field
-  if (cam_params->cam_menulist_lines<MAX_STORED_MENU_LINES)
-  {
-    snprintf(cam_params->cam_menulist[cam_params->cam_menulist_lines],256,"\t<subtitle><![CDATA[Expected answer length: %d]]></subtitle>\n", expected_answer_length);
-    cam_params->cam_menulist_lines++;
-  }
-  
+  mumu_string_append(&cam_params->cam_menulist_str,"\t<subtitle><![CDATA[Expected answer length: %d]]></subtitle>\n", expected_answer_length);
+
   // We don't care to hide or display the answer...
   cam_params->mmi_enq_blind = blind_answer;
   // The expected length of the answer (number of characters)
@@ -1082,7 +1033,7 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
   if (cam_params->mmi_enq_length>MAX_ENQUIRY_ANSWER_LENGTH) cam_params->mmi_enq_length=MAX_ENQUIRY_ANSWER_LENGTH;
   // The actual number of typed characters
   cam_params->mmi_enq_entered = 0;
-  
+
   //We leave (CANCEL) if autoresponse is active (default=yes if no menu asked)
   if (cam_params->cam_mmi_autoresponse==1)
   {

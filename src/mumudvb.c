@@ -341,11 +341,12 @@ int
     .cam_delay_pmt_send=0,
     .cam_interval_pmt_send=3,
     .cam_pmt_send_time=0,
-    .cam_menu_string="Not retrieved",
-    .cam_menulist_lines=0,
     .cam_mmi_autoresponse=1,
     .cam_pmt_follow=1,
+    .cam_menulist_str = EMPTY_STRING,
+    .cam_menu_string = EMPTY_STRING,
   };
+  mumu_string_append(&cam_vars.cam_menu_string,"Not retrieved");
   cam_parameters_t *cam_vars_ptr=&cam_vars;
   #else
   void *cam_vars_ptr=NULL;
@@ -1957,6 +1958,8 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
                    "%s: %s\n",
                    cam_vars->filename_cam_info, strerror (errno));
     }
+    mumu_free_string(&cam_vars->cam_menulist_str);
+    mumu_free_string(&cam_vars->cam_menu_string);
   }
 #endif
 

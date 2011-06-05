@@ -64,7 +64,6 @@ int cam_send_ca_pmt( mumudvb_ts_packet_t *pmt, struct ca_info *cai);
 int convert_desc(struct ca_info *cai, uint8_t *out, uint8_t *buf, int dslen, uint8_t cmd, int quiet);
 int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt, uint8_t list, uint8_t cmd,int quiet);
 
-#define MAX_STORED_MENU_LINES 30
 #define MAX_ENQUIRY_ANSWER_LENGTH 20
 #define DISPLAY_TYPE_LIST 1
 #define DISPLAY_TYPE_MENU 2
@@ -104,11 +103,11 @@ typedef struct cam_parameters_t{
   /** The delay between two PMT asking */
   int cam_interval_pmt_send;
   long cam_pmt_send_time;
-  char filename_cam_info[256];
-  char cam_menu_string[256];
-  char cam_menulist [MAX_STORED_MENU_LINES][256];
-  int cam_menulist_lines;
+  char filename_cam_info[DEFAULT_PATH_LEN];
+  mumu_string_t cam_menu_string;
+  mumu_string_t cam_menulist_str;
   int cam_mmi_autoresponse;
+  /** Do we follow the version of the PMT for the CAM ?*/
   int cam_pmt_follow;
 }cam_parameters_t;
 
