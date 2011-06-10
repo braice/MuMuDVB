@@ -335,7 +335,7 @@ MuMuDVB trouvera les PIDs audio, vidéo, PCR, télétexte, sous-titres et AC3 av
 Si vous mettez plus d'un PID pour une chaîne, MuMuDVB désactivera l'autoconfiguration pour cette chaîne.
 
 [NOTE]
-Un fichier de configuration détaillé et documenté (en anglais) se trouve à l'emplacement : `doc/configuration_examples/autoconf1.conf`
+Un fichier de configuration détaillé et documenté (en anglais) se trouve à l'emplacement : `doc/configuration_examples/autoconf_partial.conf`
 
 [NOTE]
 L'autoconfiguration simple peut ne pas réussir à trouver les bon PIDs si le PID PMT est partagé entre plusieurs chaînes. Dans ce cas, vous devez spécifier le numéro de programme ( service identifier ou stream identifier ) via l'option `service_id`.
@@ -574,7 +574,7 @@ Il vous suffit d'ajouter `cam_support=1` à votre fichier de configuration.
 
 
 [NOTE]
-Vous avez un exemple de fichier de configuration avec le support pour les chaînes brouillées dans `doc/configuration_examples/autoconf1.conf`
+Vous avez un exemple de fichier de configuration avec le support pour les chaînes brouillées dans `doc/configuration_examples/autoconf_partial.conf`
 
 
 Débrouillage logiciel

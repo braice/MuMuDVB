@@ -332,7 +332,7 @@ MuMuDVB will find the audio, video, PCR, teletext, subtitling and AC3 PIDs for y
 If you put more than one PID for a channel, MuMuDVB will desactivate autoconfiguration for this channel.
 
 [NOTE]
-A detailled, documented example configuration file can be found in `doc/configuration_examples/autoconf1.conf`
+A detailled, documented example configuration file can be found in `doc/configuration_examples/autoconf_partial.conf`
 
 [NOTE]
 Simple autoconfiguration can fail finding the good pids if a PMT pid is shared within multiples channels. In this case you have to add the `service_id` option to the channel to specify the service id.
@@ -573,7 +573,7 @@ Just add `cam_support=1` to your config file
  * For each scrambled channel add the `cam_pmt_pid` option. This option is made for MuMuDVB to know wich PID is the PMT PID wich will be used to ask for descrambling
 
 [NOTE]
-You have an example of CAM support in doc/configuration_examples/autoconf1.conf
+You have an example of CAM support in doc/configuration_examples/autoconf_partial.conf
 
 
 
