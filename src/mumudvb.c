@@ -104,6 +104,7 @@
 #include <syslog.h>
 #include <getopt.h>
 #include <errno.h>
+#include <time.h>
 #include <linux/dvb/version.h>
 
 #include "mumudvb.h"
@@ -1878,6 +1879,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
 {
 
   int curr_channel;
+  int iRet;
 
   #ifndef ENABLE_CAM_SUPPORT
    (void) cam_vars_v; //to make compiler happy
@@ -1892,12 +1894,18 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
     else
       log_message( log_module,  MSG_INFO, "Closing cleanly. Error %d\n",Interrupted>>8);
   }
+  struct timespec ts;
 
   if(signalpowerthread)
   {
     log_message(log_module,MSG_DEBUG,"Signal/power Thread closing\n");
     *strengththreadshutdown=1;
-    pthread_join(signalpowerthread, NULL);
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_sec += 5;
+    iRet=pthread_timedjoin_np(signalpowerthread, NULL, &ts);
+    if(iRet)
+      log_message(log_module,MSG_WARN,"Signal/power Thread badly closed: %s\n", strerror(iRet));
+      
   }
   if(cardthreadparams.thread_running)
   {
@@ -1911,7 +1919,11 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
   {
     log_message(log_module,MSG_DEBUG,"Monitor Thread closing\n");
     monitor_thread_params->threadshutdown=1;
-    pthread_join(monitorthread, NULL);
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_sec += 5;
+    iRet=pthread_timedjoin_np(monitorthread, NULL, &ts);
+    if(iRet)
+      log_message(log_module,MSG_WARN,"Monitor Thread badly closed: %s\n", strerror(iRet));
   }
 
   for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)

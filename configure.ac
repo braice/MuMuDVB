@@ -6,6 +6,7 @@ AC_INIT([MuMuDVB], [1.6.1b_20110605_master], [mumudvb@braice.net])
 AC_CONFIG_SRCDIR([src/mumudvb.c])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([src/config.h])
+AC_SEARCH_LIBS([clock_gettime],[rt posix4])
 
 dnl
 dnl Check for linux dvb api headers
