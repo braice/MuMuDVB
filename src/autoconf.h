@@ -91,8 +91,6 @@ Possible values for this variable
   int autoconf_scrambled;
   /** Do we follow pmt changes*/
   int autoconf_pid_update;
-  /**Do we search the logical channel number */
-  int autoconf_lcn;
   //Different packets used by autoconfiguration
   mumudvb_ts_packet_t *autoconf_temp_pat;
   mumudvb_ts_packet_t *autoconf_temp_sdt;

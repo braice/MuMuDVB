@@ -302,7 +302,7 @@ Il y a différents mot-clef disponibles
 |%card | Le numéro de carte DVB
 |%tuner | Le numéro de tuner
 |%server| Le numéro de serveur, spécifié en ligne de commande ou via l'option server_id
-|%lcn | Le "logical channel number" ( numéro de chaîne attribué par le diffuseur ). Vous devez mettre `autoconf_lcn=1` dans votre fichier de configuration et votre diffuseur doit diffuser le LCN. Le LCN sera "affiché" avec trois chiffre incluant des 0. Ex "002". Si le LCN n'est pas détecté, %lcn sera remplacé par une chaîne de caractères vide
+|%lcn | Le "logical channel number" ( numéro de chaîne attribué par le diffuseur ). Votre diffuseur doit diffuser le LCN. Le LCN sera "affiché" avec trois chiffre incluant des 0. Ex "002". Si le LCN n'est pas détecté, %lcn sera remplacé par une chaîne de caractères vide
 |%2lcn | Idem que précédemment mais avec un format à deux chiffres.
 |==================================================================================================================
 

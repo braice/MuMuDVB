@@ -116,16 +116,6 @@ int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, c
     substring = strtok (NULL, delimiteurs);
     autoconf_vars->autoconf_pid_update = atoi (substring);
   }
-  else if (!strcmp (substring, "autoconf_lcn"))
-  {
-    substring = strtok (NULL, delimiteurs);
-    autoconf_vars->autoconf_lcn = atoi (substring);
-    if(autoconf_vars->autoconf_lcn)
-    {
-      log_message( log_module, MSG_INFO,
-                   "You enabled the search for the logical channel numbers. This should work well on european terestrial. For other the results are not guaranteed\n");
-    }
-  }
   else if (!strcmp (substring, "autoconfiguration"))
   {
     substring = strtok (NULL, delimiteurs);
@@ -336,8 +326,6 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
     }
     if (autoconf_vars->autoconfiguration)
     {
-      if(autoconf_vars->autoconf_lcn)
-      {
         autoconf_vars->autoconf_temp_nit=malloc(sizeof(mumudvb_ts_packet_t));
         if(autoconf_vars->autoconf_temp_nit==NULL)
         {
@@ -347,7 +335,6 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
         }
         memset (autoconf_vars->autoconf_temp_nit, 0, sizeof( mumudvb_ts_packet_t));//we clear it
         pthread_mutex_init(&autoconf_vars->autoconf_temp_nit->packetmutex,NULL);
-      }
     }
   return 0;
 
@@ -1036,14 +1023,11 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
 
             chan_and_pids->channels[curr_channel].autoconfigurated=1;
 
-            //We check if autoconfiguration is finished
-	    if(autoconf_vars->autoconf_lcn)
+            //We parse the NIT before finishing autoconfiguration
 	      autoconf_vars->autoconfiguration=AUTOCONF_MODE_NIT;
-	    else
-	      autoconf_vars->autoconfiguration=0;
             for (curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
               if(!chan_and_pids->channels[curr_channel].autoconfigurated)
-                autoconf_vars->autoconfiguration=AUTOCONF_MODE_PIDS;
+                autoconf_vars->autoconfiguration=AUTOCONF_MODE_PIDS;  //not finished we continue
 
             //if it's finished, we open the new descriptors and add the new filters
             if(autoconf_vars->autoconfiguration!=AUTOCONF_MODE_PIDS)
@@ -1063,7 +1047,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
   }
   else if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_NIT) //We search the NIT
   {
-    if(autoconf_vars->autoconf_lcn && (pid==16)) //NIT : Network Information Table
+    if(pid==16) //NIT : Network Information Table
     {
       if(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_nit))
       {
@@ -1118,20 +1102,8 @@ int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_a
       autoconf_set_channel_filt(tuneparams->card_dev_path, tuneparams->tuner, chan_and_pids, fds);
       //We free autoconf memory
       autoconf_freeing(autoconf_vars);
-      if(autoconf_vars->autoconf_lcn)
-      {
-          autoconf_vars->autoconfiguration=AUTOCONF_MODE_NIT;
-          autoconf_vars->time_start_autoconfiguration=now;
-      }
-      else
-      {
-        autoconf_definite_end(tuneparams->card, tuneparams->tuner, chan_and_pids, multicast_vars, unicast_vars);
-        if(autoconf_vars->autoconf_temp_nit)
-        {
-	  free(autoconf_vars->autoconf_temp_nit);
-          autoconf_vars->autoconf_temp_nit=NULL;
-        }
-      }
+      autoconf_vars->autoconfiguration=AUTOCONF_MODE_NIT;
+      autoconf_vars->time_start_autoconfiguration=now;
     }
     else if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL)
     {

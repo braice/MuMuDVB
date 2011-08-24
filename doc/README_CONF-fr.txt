@@ -261,7 +261,6 @@ Paramètres pour l'autoconfiguration
 |autoconf_unicast_port |Le port unicast pour chaque chaine. Ex "2000+%number" (autoconfiguration complète) |  |  | Vous pouvez utiliser des expressions contenant `+` `*` `%card`, `%tuner` et `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
 |autoconf_sid_list |Pour ne pas autoconfigurer toutes les chaînes du transpondeur en autoconfiguration complète, spécifiez avec cette option la liste des service id (numeros de programme) des chaînes que vous voulez configurer | vide |  | 
 |autoconf_name_template |Le modèle pour le nom des chaînes en autoconfiguration complète, ex `%number-%name` | vide |  | Voir README-fr pour plus de détails.
-|autoconf_lcn | Si vous voulez obtenir le logical channel number vous devez specifier cette option à 1. Cette option est utile pour les templates %lcn et %2lcn | 0 | 0 ou 1 | Voir le README pour plus de details
 |==================================================================================================================
 
 Paramètres concernant les annonces SAP

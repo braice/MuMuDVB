@@ -299,7 +299,7 @@ There is different keywords available:
 |%card | The DVB card number
 |%tuner | The tuner number
 |%server| The server number specified by server_id or the command line 
-|%lcn | The logical channel number (channel number given by the provider). You have to put `autoconf_lcn=1` in your configuration file and your provider have to stream LCN. The LCN will be displayed with three digits including 0. Ex "002". If the LCN is not detected, %lcn will be replaced by an empty string.
+|%lcn | The logical channel number (channel number given by the provider). Your provider have to stream the LCN. The LCN will be displayed with three digits including 0. Ex "002". If the LCN is not detected, %lcn will be replaced by an empty string.
 |%2lcn | Same as above but with a two digits format
 |==================================================================================================================
 

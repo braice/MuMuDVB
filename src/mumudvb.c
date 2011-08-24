@@ -185,7 +185,6 @@ autoconf_parameters_t autoconf_vars={
   .autoconf_radios=0,
   .autoconf_scrambled=0,
   .autoconf_pid_update=1,
-  .autoconf_lcn=0,
   .autoconf_ip4="239.100.%card.%number",
   .autoconf_ip6="FF15:4242::%server:%card:%number",
   .time_start_autoconfiguration=0,
