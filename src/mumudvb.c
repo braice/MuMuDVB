@@ -532,6 +532,32 @@ int
   //paranoya we clear all the content of all the channels
   memset (&chan_and_pids.channels, 0, sizeof (mumudvb_channel_t)*MAX_CHANNELS);
 
+  
+  /******************************************************/
+  // config file displaying
+  /******************************************************/
+  conf_file = fopen (conf_filename, "r");
+  if (conf_file == NULL)
+  {
+    log_message( log_module,  MSG_ERROR, "%s: %s\n",
+                 conf_filename, strerror (errno));
+    free(conf_filename);
+    exit(ERROR_CONF_FILE);
+  }
+  log_message( log_module, MSG_FLOOD,"==== Configuration file ====");
+  int line_num=1;
+   while (fgets (current_line, CONF_LINELEN, conf_file))
+  {
+    int line_len;
+    //We suppress the end of line 
+    line_len=strlen(current_line);
+    if(current_line[line_len-1]=='\r' ||current_line[line_len-1]=='\n')
+      current_line[line_len-1]=0;
+    log_message( log_module, MSG_FLOOD,"%03d %s\n",line_num,current_line);
+    line_num++;
+  }
+  log_message( log_module, MSG_FLOOD,"============ done ===========\n");
+  fclose (conf_file);
   /******************************************************/
   // config file reading
   /******************************************************/
@@ -551,8 +577,8 @@ int
   int line_len;
   while (fgets (current_line, CONF_LINELEN, conf_file))
   {
-      //We suppress the end of line (this can disturb atoi if there is spaces at the end of the line)
-      //Thanks to pierre gronlier pierre.gronlier at gmail.com for finding that bug
+    //We suppress the end of line (this can disturb atoi if there is spaces at the end of the line)
+    //Thanks to pierre gronlier pierre.gronlier at gmail.com for finding that bug
     line_len=strlen(current_line);
     if(current_line[line_len-1]=='\r' ||current_line[line_len-1]=='\n')
       current_line[line_len-1]=0;
