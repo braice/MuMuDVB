@@ -1,7 +1,7 @@
 MuMuDVB - README
 ================
 Brice Dubost <mumudvb@braice.net>
-Version 1.6.1
+Version 1.7
 
 [NOTE]
 An HTML version of this file is availaible on http://mumudvb.braice.net[MuMuDVB's website].
@@ -695,7 +695,9 @@ The message "Thread trowing dvb packets" informs you that the thread buffer is f
 Transcoding
 -----------
 
-MuMuDVB supports transcoding to various formats to save bandwidth. The transcoding is made using ffmpeg librairies. This feature is pretty new, so feel free to contact if you have comments/suggestions
+MuMuDVB supports transcoding to various formats to save bandwidth. The transcoding is made using ffmpeg librairies. This feature is pretty new, so feel free to contact if you have comments/suggestions.
+
+For transcoding support, you have to compile MuMuDVB yourself. Due tu API changes, transcoding is broken for recent versions of MuMuDVB.
 
 [NOTE]
 Transcoding doesn't work for the moment with unicast

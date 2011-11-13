@@ -1,7 +1,7 @@
 MuMuDVB - README
 ================
 Brice Dubost <mumudvb@braice.net>
-Version 1.6.1
+Version 1.7
 
 [NOTE]
 Une version HTML de ce fichier est disponible sur http://mumudvb.braice.net[le site web de MuMuDVB].
@@ -694,6 +694,8 @@ Transcoding
 -----------
 
 MuMuDVB peux transcoder le flux dans différents formats pour économiser de la bande passante. Le transcodage est effectué en utilisant les librairies du projet ffmpeg. Cette fonctionnalité est assez nouvelle, n'hesitez pas à envoyer vos remarques/suggestions.
+
+Pour activer le transcodage vous devez compiler MuMuDVB vous même. À cause de changement dans l'API des librairies ffmpeg, le transcoding ne marche pas avec des versions trop récentes de ffmpeg.
 
 [NOTE]
 Le transcodage ne fonctionne pas pour le moment avec l'unicast.

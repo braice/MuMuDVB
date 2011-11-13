@@ -1,7 +1,7 @@
 MuMuDVB - README for the configuration file
 ===========================================
 Brice Dubost <mumudvb@braice.net>
-Version 1.6.1
+Version 1.7
 
 General behavior
 ----------------
