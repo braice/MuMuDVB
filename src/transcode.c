@@ -32,7 +32,7 @@
 #include "errors.h"
 #include "log.h"
 
-#include <pthread.h>
+
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
@@ -44,6 +44,8 @@
 
 #define TRANSCODE_QUEUE_SIZE (5 * 1024 * 1024)
 
+static char *log_module="Transcode : ";
+
 void* transcode_thread_routine(void *p)
 {
     transcode_thread_data_t *transcode_thread_data = p;
@@ -51,7 +53,7 @@ void* transcode_thread_routine(void *p)
     while (!transcode_thread_data->terminate_thread_flag) {
         
         if (0 >= transcode_thread_data->data_queue.data_size) {
-            log_message(MSG_DEBUG, "[Transcode] No data for transcoding.\n");
+            log_message( log_module, MSG_DEBUG, "No data for transcoding.\n");
 
             /* Sleep 100 times for 0.1 sec with checking transcode_thread_data->terminate_thread_flag */
             int i;
@@ -67,7 +69,7 @@ void* transcode_thread_routine(void *p)
         void *transcode_handle = initialize_transcode(transcode_thread_data);
         
         if (NULL == transcode_handle) {
-            log_message(MSG_ERROR, "[Transcode] Failed to initialize transcoding.\n");
+            log_message( log_module, MSG_ERROR, "Failed to initialize transcoding.\n");
             
             /* Sleep 100 times for 0.1 sec with checking transcode_thread_data->terminate_thread_flag */
             int i;
@@ -78,15 +80,15 @@ void* transcode_thread_routine(void *p)
             continue;
         }
 
-        log_message(MSG_INFO, "[Transcode] Transcoding sarted.\n");
+        log_message( log_module, MSG_INFO, "Transcoding sarted.\n");
         transcode_thread_data->is_initialized = 1;
-        
+
         /* Transcode */
         transcode(transcode_handle, transcode_thread_data);
 
-        transcode_thread_data->is_initialized = 0;        
-        log_message(MSG_INFO, "[Transcode] Transcoding finished.\n");
- 
+        transcode_thread_data->is_initialized = 0;
+        log_message( log_module, MSG_INFO, "Transcoding finished.\n");
+
         /* Free transcode data - requires threadsafety */
         free_transcode(transcode_handle, transcode_thread_data);
     }
@@ -120,7 +122,7 @@ void* transcode_start_thread(int socket, struct sockaddr_in *socket_addr,
 
     if (pthread_mutex_init(&transcode_thread_data->queue_mutex, NULL) != 0) {
         /* Mutext initialization failed */
-        log_message(MSG_ERROR, "[Transcode] pthread_mutex_init failed.\n");
+        log_message( log_module, MSG_ERROR, "pthread_mutex_init failed.\n");
         free(transcode_thread_data);
         return NULL;
     }
@@ -128,7 +130,7 @@ void* transcode_start_thread(int socket, struct sockaddr_in *socket_addr,
     if (pthread_create(&transcode_thread_data->thread, NULL,
             transcode_thread_routine, transcode_thread_data) != 0) {
         /* Thread initialization failed */
-        log_message(MSG_ERROR, "[Transcode] pthread_create failed.\n");
+        log_message( log_module, MSG_ERROR, "pthread_create failed.\n");
         pthread_mutex_destroy(&transcode_thread_data->queue_mutex);
         free(transcode_thread_data);
         return NULL;
@@ -170,7 +172,7 @@ void transcode_wait_thread_end(void *transcode_handle)
 }
 
 int transcode_enqueue_data(void *transcode_handle, void *data, int data_size)
-{    
+{
     if (NULL == transcode_handle) {
         return -1;
     }
@@ -184,14 +186,21 @@ int transcode_enqueue_data(void *transcode_handle, void *data, int data_size)
     int result = data_queue_enqueue(&transcode_thread_data->data_queue, data, data_size);
 
     if (-1 == result) {
-        log_message(MSG_ERROR, "[Transcode] Failed to enqueue data.\n");
+        log_message( log_module, MSG_ERROR, "Failed to enqueue data.\n");
     }
     else if (0 == result) {
         if (transcode_thread_data->is_initialized) {
-            log_message(MSG_INFO, "[Transcode] Data queue is full.\n");
+          if(!transcode_thread_data->data_queue_full) {
+            transcode_thread_data->data_queue_full=1;
+            log_message( log_module, MSG_INFO, "Data queue is full.\n");
+          }
         }
     }
-
+    else if(transcode_thread_data->data_queue_full)
+    {
+      log_message( log_module, MSG_DETAIL, "Data queue is NOT full anymore.\n");
+      transcode_thread_data->data_queue_full=0;
+    }
     pthread_mutex_unlock(&transcode_thread_data->queue_mutex);
 
     return result;
@@ -199,46 +208,31 @@ int transcode_enqueue_data(void *transcode_handle, void *data, int data_size)
 
 #define SET_OPTION_INT(config_option_name, struct_option_name)\
 else if (!strcmp(*substring, config_option_name)) {\
-    if (0 == ip_ok) {\
-        log_message( MSG_ERROR,\
-            config_option_name" : You have to start a channel first (using ip= or channel_next)\n");\
-        exit(ERROR_CONF);\
+    if (NULL == struct_option_name) {\
+        struct_option_name = malloc(sizeof(int));\
     }\
-    if (NULL == channel->struct_option_name) {\
-        channel->struct_option_name = malloc(sizeof(int));\
-    }\
-    *(channel->struct_option_name) = atoi(strtok(NULL, delimiteurs));\
+    *(struct_option_name) = atoi(strtok(NULL, delimiteurs));\
 }
 
 #define SET_OPTION_FLT(config_option_name, struct_option_name)\
 else if (!strcmp(*substring, config_option_name)) {\
-    if (0 == ip_ok) {\
-        log_message( MSG_ERROR,\
-            config_option_name" : You have to start a channel first (using ip= or channel_next)\n");\
-        exit(ERROR_CONF);\
+    if (NULL == struct_option_name) {\
+        struct_option_name = malloc(sizeof(float));\
     }\
-    if (NULL == channel->struct_option_name) {\
-        channel->struct_option_name = malloc(sizeof(float));\
-    }\
-    *(channel->struct_option_name) = atof(strtok(NULL, delimiteurs));\
+    *(struct_option_name) = atof(strtok(NULL, delimiteurs));\
 }
 
 #define SET_OPTION_STR(config_option_name, struct_option_name, max_length)\
 else if (!strcmp(*substring, config_option_name)) {\
-    if (0 == ip_ok) {\
-        log_message( MSG_ERROR,\
-            config_option_name" : You have to start a channel first (using ip= or channel_next)\n");\
-        exit(ERROR_CONF);\
-    }\
     *substring = strtok(NULL, delimiteurs);\
     int length = strlen(*substring);\
     if (length <= max_length) {\
-        if (NULL != channel->struct_option_name) {\
-            free(channel->struct_option_name);\
+        if (NULL != struct_option_name) {\
+            free(struct_option_name);\
         }\
-        channel->struct_option_name = malloc(length + 1);\
-        strcpy(channel->struct_option_name, *substring);\
-        trim(channel->struct_option_name);\
+        struct_option_name = malloc(length + 1);\
+        strcpy(struct_option_name, *substring);\
+        trim(struct_option_name);\
     }\
 }
 
@@ -270,19 +264,13 @@ void trim(char *s)
     }
 }
 
-int transcode_read_option(mumudvb_channel_t *channel, int ip_ok, char *delimiteurs, char **substring)
+int transcode_read_option(struct transcode_options_t *transcode_options, char *delimiteurs, char **substring)
 {
     if (!strcmp(*substring, "transcode_streaming_type")) {
-        if (0 == ip_ok) {
-            log_message( MSG_ERROR,
-                "transcode_streaming_type : You have to start a channel first (using ip= or channel_next)\n");
-            exit(ERROR_CONF);
-        }
 
         *substring = strtok(NULL, delimiteurs);
 
         if (strlen(*substring) <= TRANSCODE_STREAMING_TYPE_MAX) {
-            transcode_options_t *transcode_options = &channel->transcode_options;
 
             int streaming_type;
             int streaming_type_set = 0;
@@ -316,16 +304,10 @@ int transcode_read_option(mumudvb_channel_t *channel, int ip_ok, char *delimiteu
         }
     }
     else if (!strcmp(*substring, "transcode_x264_profile")) {
-        if (0 == ip_ok) {
-            log_message( MSG_ERROR,
-                "transcode_x264_profile : You have to start a channel first (using ip= or channel_next)\n");
-            exit(ERROR_CONF);
-        }
 
         *substring = strtok(NULL, delimiteurs);
 
         if (strlen(*substring) <= TRANSCODE_PROFILE_MAX) {
-            transcode_options_t *transcode_options = &channel->transcode_options;
             int profile_set = 0;
 
             char *profile_string = malloc(strlen(*substring) + 1);
@@ -393,16 +375,10 @@ int transcode_read_option(mumudvb_channel_t *channel, int ip_ok, char *delimiteu
         }
     }
     else if (!strcmp(*substring, "transcode_aac_profile")) {
-        if (0 == ip_ok) {
-            log_message( MSG_ERROR,
-                "transcode_aac_profile : You have to start a channel first (using ip= or channel_next)\n");
-            exit(ERROR_CONF);
-        }
 
         *substring = strtok(NULL, delimiteurs);
 
         if (strlen(*substring) <= TRANSCODE_AAC_PROFILE_MAX) {
-            transcode_options_t *transcode_options = &channel->transcode_options;
 
             int aac_profile_set = 0;
             int aac_profile;
@@ -440,48 +416,180 @@ int transcode_read_option(mumudvb_channel_t *channel, int ip_ok, char *delimiteu
         }
     }
 
-    SET_OPTION_INT("transcode_enable", transcode_options.enable)
-    SET_OPTION_INT("transcode_video_bitrate", transcode_options.video_bitrate)
-    SET_OPTION_INT("transcode_audio_bitrate", transcode_options.audio_bitrate)
-    SET_OPTION_INT("transcode_gop", transcode_options.gop)
-    SET_OPTION_INT("transcode_b_frames", transcode_options.b_frames)
-    SET_OPTION_INT("transcode_mbd", transcode_options.mbd)
-    SET_OPTION_INT("transcode_cmp", transcode_options.cmp)
-    SET_OPTION_INT("transcode_subcmp", transcode_options.subcmp)
-    SET_OPTION_STR("transcode_video_codec", transcode_options.video_codec, TRANSCODE_CODEC_MAX)
-    SET_OPTION_STR("transcode_audio_codec", transcode_options.audio_codec, TRANSCODE_CODEC_MAX)
-    SET_OPTION_FLT("transcode_crf", transcode_options.crf)
-    SET_OPTION_INT("transcode_refs", transcode_options.refs)
-    SET_OPTION_INT("transcode_b_strategy", transcode_options.b_strategy)
-    SET_OPTION_INT("transcode_coder_type", transcode_options.coder_type)
-    SET_OPTION_INT("transcode_me_method", transcode_options.me_method)
-    SET_OPTION_INT("transcode_me_range", transcode_options.me_range)
-    SET_OPTION_INT("transcode_subq", transcode_options.subq)
-    SET_OPTION_INT("transcode_trellis", transcode_options.trellis)
-    SET_OPTION_INT("transcode_sc_threshold", transcode_options.sc_threshold)
-    SET_OPTION_STR("transcode_rc_eq", transcode_options.rc_eq, TRANSCODE_RC_EQ_MAX)
-    SET_OPTION_FLT("transcode_qcomp", transcode_options.qcomp)
-    SET_OPTION_INT("transcode_qmin", transcode_options.qmin)
-    SET_OPTION_INT("transcode_qmax", transcode_options.qmax)
-    SET_OPTION_INT("transcode_qdiff", transcode_options.qdiff)
-    SET_OPTION_INT("transcode_loop_filter", transcode_options.loop_filter)
-    SET_OPTION_INT("transcode_mixed_refs", transcode_options.mixed_refs)
-    SET_OPTION_INT("transcode_enable_8x8dct", transcode_options.enable_8x8dct)
-    SET_OPTION_INT("transcode_x264_partitions", transcode_options.x264_partitions)
-    SET_OPTION_INT("transcode_level", transcode_options.level)
-    SET_OPTION_STR("transcode_sdp_filename", transcode_options.sdp_filename, TRANSCODE_SDP_FILENAME_MAX)
-    SET_OPTION_FLT("transcode_video_scale", transcode_options.video_scale)
-    SET_OPTION_INT("transcode_aac_latm", transcode_options.aac_latm)
-    SET_OPTION_STR("transcode_ffm_url", transcode_options.ffm_url, TRANSCODE_FFM_URL_MAX)
-    SET_OPTION_INT("transcode_audio_channels", transcode_options.audio_channels)
-    SET_OPTION_INT("transcode_audio_sample_rate", transcode_options.audio_sample_rate)
-    SET_OPTION_INT("transcode_video_frames_per_second", transcode_options.video_frames_per_second)
-    SET_OPTION_INT("transcode_rtp_port", transcode_options.rtp_port)
-    SET_OPTION_INT("transcode_keyint_min", transcode_options.keyint_min)
-
+    SET_OPTION_INT("transcode_enable", transcode_options->enable)
+    SET_OPTION_INT("transcode_video_bitrate", transcode_options->video_bitrate)
+    SET_OPTION_INT("transcode_audio_bitrate", transcode_options->audio_bitrate)
+    SET_OPTION_INT("transcode_gop", transcode_options->gop)
+    SET_OPTION_INT("transcode_b_frames", transcode_options->b_frames)
+    SET_OPTION_INT("transcode_mbd", transcode_options->mbd)
+    SET_OPTION_INT("transcode_cmp", transcode_options->cmp)
+    SET_OPTION_INT("transcode_subcmp", transcode_options->subcmp)
+    SET_OPTION_STR("transcode_video_codec", transcode_options->video_codec, TRANSCODE_CODEC_MAX)
+    SET_OPTION_STR("transcode_audio_codec", transcode_options->audio_codec, TRANSCODE_CODEC_MAX)
+    SET_OPTION_FLT("transcode_crf", transcode_options->crf)
+    SET_OPTION_INT("transcode_refs", transcode_options->refs)
+    SET_OPTION_INT("transcode_b_strategy", transcode_options->b_strategy)
+    SET_OPTION_INT("transcode_coder_type", transcode_options->coder_type)
+    SET_OPTION_INT("transcode_me_method", transcode_options->me_method)
+    SET_OPTION_INT("transcode_me_range", transcode_options->me_range)
+    SET_OPTION_INT("transcode_subq", transcode_options->subq)
+    SET_OPTION_INT("transcode_trellis", transcode_options->trellis)
+    SET_OPTION_INT("transcode_sc_threshold", transcode_options->sc_threshold)
+    SET_OPTION_STR("transcode_rc_eq", transcode_options->rc_eq, TRANSCODE_RC_EQ_MAX)
+    SET_OPTION_FLT("transcode_qcomp", transcode_options->qcomp)
+    SET_OPTION_INT("transcode_qmin", transcode_options->qmin)
+    SET_OPTION_INT("transcode_qmax", transcode_options->qmax)
+    SET_OPTION_INT("transcode_qdiff", transcode_options->qdiff)
+    SET_OPTION_INT("transcode_loop_filter", transcode_options->loop_filter)
+    SET_OPTION_INT("transcode_mixed_refs", transcode_options->mixed_refs)
+    SET_OPTION_INT("transcode_enable_8x8dct", transcode_options->enable_8x8dct)
+    SET_OPTION_INT("transcode_x264_partitions", transcode_options->x264_partitions)
+    SET_OPTION_INT("transcode_level", transcode_options->level)
+    SET_OPTION_STR("transcode_sdp_filename", transcode_options->sdp_filename, TRANSCODE_SDP_FILENAME_MAX)
+    SET_OPTION_FLT("transcode_video_scale", transcode_options->video_scale)
+    SET_OPTION_INT("transcode_aac_latm", transcode_options->aac_latm)
+    SET_OPTION_STR("transcode_ffm_url", transcode_options->ffm_url, TRANSCODE_FFM_URL_MAX)
+    SET_OPTION_INT("transcode_audio_channels", transcode_options->audio_channels)
+    SET_OPTION_INT("transcode_audio_sample_rate", transcode_options->audio_sample_rate)
+    SET_OPTION_INT("transcode_video_frames_per_second", transcode_options->video_frames_per_second)
+    SET_OPTION_STR("transcode_rtp_port", transcode_options->s_rtp_port,TRANSCODE_RTP_PORT_MAX)
+    SET_OPTION_INT("transcode_keyint_min", transcode_options->keyint_min)
+    SET_OPTION_INT("transcode_send_transcoded_only", transcode_options->send_transcoded_only)
     else {
         return 0;
     }
-    
     return 1;
 }
+
+
+/********** Functions to copy transcode options *********************/
+
+#define COPY_OPTION_INT(option_name, struct_source, struct_dest)\
+  if(NULL != struct_source->option_name){\
+    if (NULL == struct_dest->option_name) {\
+      struct_dest->option_name = malloc(sizeof(int));\
+    }\
+    *(struct_dest->option_name) = *(struct_source->option_name);\
+  }
+
+
+#define COPY_OPTION_FLT(option_name, struct_source, struct_dest)\
+  if(NULL != struct_source->option_name){\
+    if (NULL == struct_dest->option_name) {\
+      struct_dest->option_name = malloc(sizeof(float));\
+    }\
+    *(struct_dest->option_name) = *(struct_source->option_name);\
+  }
+
+
+
+#define COPY_OPTION_STR(option_name, struct_source, struct_dest)\
+  if(NULL != struct_source->option_name){\
+    length = strlen(struct_source->option_name);\
+    if (NULL != struct_dest->option_name) {\
+      free(struct_dest->option_name);\
+    }\
+    struct_dest->option_name = malloc(length + 1);\
+    strcpy(struct_dest->option_name, struct_source->option_name);\
+  }
+
+
+
+/******* End of functions to copy transcode options *****************/
+
+
+
+void transcode_copy_options(struct transcode_options_t *src, struct transcode_options_t *dst)
+{
+  int length=0;
+  COPY_OPTION_INT(enable,src,dst)
+  COPY_OPTION_INT(video_bitrate,src,dst)
+  COPY_OPTION_INT(audio_bitrate,src,dst)
+  COPY_OPTION_INT(gop,src,dst)
+  COPY_OPTION_INT(b_frames,src,dst)
+  COPY_OPTION_INT(mbd,src,dst)
+  COPY_OPTION_INT(cmp,src,dst)
+  COPY_OPTION_INT(subcmp,src,dst)
+  COPY_OPTION_STR(video_codec,src,dst)
+  COPY_OPTION_STR(audio_codec,src,dst)
+  COPY_OPTION_FLT(crf,src,dst)
+  COPY_OPTION_INT(refs,src,dst)
+  COPY_OPTION_INT(b_strategy,src,dst)
+  COPY_OPTION_INT(coder_type,src,dst)
+  COPY_OPTION_INT(me_method,src,dst)
+  COPY_OPTION_INT(me_range,src,dst)
+  COPY_OPTION_INT(subq,src,dst)
+  COPY_OPTION_INT(trellis,src,dst)
+  COPY_OPTION_INT(sc_threshold,src,dst)
+  COPY_OPTION_STR(rc_eq,src,dst)
+  COPY_OPTION_FLT(qcomp,src,dst)
+  COPY_OPTION_INT(qmin,src,dst)
+  COPY_OPTION_INT(qmax,src,dst)
+  COPY_OPTION_INT(qdiff,src,dst)
+  COPY_OPTION_INT(loop_filter,src,dst)
+  COPY_OPTION_INT(mixed_refs,src,dst)
+  COPY_OPTION_INT(enable_8x8dct,src,dst)
+  COPY_OPTION_INT(x264_partitions,src,dst)
+  COPY_OPTION_INT(level,src,dst)
+  COPY_OPTION_INT(streaming_type,src,dst)
+  COPY_OPTION_STR(sdp_filename,src,dst)
+  COPY_OPTION_INT(aac_profile,src,dst)
+  COPY_OPTION_INT(aac_latm,src,dst)
+  COPY_OPTION_FLT(video_scale,src,dst)
+  COPY_OPTION_STR(ffm_url,src,dst)
+  COPY_OPTION_INT(audio_channels,src,dst)
+  COPY_OPTION_INT(audio_sample_rate,src,dst)
+  COPY_OPTION_INT(video_frames_per_second,src,dst)
+  COPY_OPTION_STR(s_rtp_port,src,dst)
+  COPY_OPTION_INT(keyint_min,src,dst)
+  COPY_OPTION_INT(send_transcoded_only,src,dst)
+}
+
+
+
+void transcode_options_apply_templates(struct transcode_options_t *opt, int card, int tuner, int server, int channel_number)
+{
+  char c_number[10];
+  char c_card[10];
+  char c_tuner[10];
+  char c_server[10];
+  int len;
+  sprintf(c_number,"%d",channel_number+1);
+  sprintf(c_card,"%d",card);
+  sprintf(c_tuner,"%d",tuner);
+  sprintf(c_server,"%d",server);
+  if(opt->sdp_filename)
+  {
+    len=strlen(opt->sdp_filename)+1;
+    opt->sdp_filename=mumu_string_replace(opt->sdp_filename,&len,1,"%number",c_number);
+    opt->sdp_filename=mumu_string_replace(opt->sdp_filename,&len,1,"%card",c_card);
+    opt->sdp_filename=mumu_string_replace(opt->sdp_filename,&len,1,"%tuner",c_tuner);
+    opt->sdp_filename=mumu_string_replace(opt->sdp_filename,&len,1,"%server",c_server);
+    log_message(log_module,MSG_DETAIL,"Channel %d, sdp_filename %s\n",channel_number,opt->sdp_filename);
+  }
+  if(opt->ffm_url)
+  {
+    len=strlen(opt->ffm_url)+1;
+    opt->ffm_url=mumu_string_replace(opt->ffm_url,&len,1,"%number",c_number);
+    opt->ffm_url=mumu_string_replace(opt->ffm_url,&len,1,"%card",c_card);
+    opt->ffm_url=mumu_string_replace(opt->ffm_url,&len,1,"%tuner",c_tuner);
+    opt->ffm_url=mumu_string_replace(opt->ffm_url,&len,1,"%server",c_server);
+    log_message(log_module,MSG_DETAIL,"Channel %d, ffm_url %s\n",channel_number,opt->ffm_url);
+  }
+  if(opt->s_rtp_port)
+  {
+    len=strlen(opt->s_rtp_port)+1;
+    opt->s_rtp_port=mumu_string_replace(opt->s_rtp_port,&len,1,"%number",c_number);
+    opt->s_rtp_port=mumu_string_replace(opt->s_rtp_port,&len,1,"%card",c_card);
+    opt->s_rtp_port=mumu_string_replace(opt->s_rtp_port,&len,1,"%tuner",c_tuner);
+    opt->s_rtp_port=mumu_string_replace(opt->s_rtp_port,&len,1,"%server",c_server);
+    opt->rtp_port=malloc(sizeof(int));
+    *opt->rtp_port=string_comput(opt->s_rtp_port);
+    log_message(log_module,MSG_DETAIL,"Channel %d, computed RTP port %d\n",channel_number,*opt->rtp_port);
+  }
+
+}
+
+
+
+

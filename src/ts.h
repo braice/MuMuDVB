@@ -1,7 +1,7 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB - Stream a DVB transport stream.
  * 
- * (C) 2004-2009 Brice DUBOST
+ * (C) 2004-2011 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -32,6 +32,11 @@
 
 #include <sys/types.h>
 #include <stdint.h>
+
+#include "config.h"
+
+//The maximum size for a TS packet
+#define MAX_TS_SIZE 4096
 
 //0x1ffb=8187 It's the pid for the information tables in ATSC
 #define PSIP_PID 8187
@@ -451,6 +456,92 @@ typedef struct {
    u_char logical_channel_number_lo              :8;
 }nit_lcn_t;
 
+
+/** length of the common tables header */
+#define TABLE_LEN 8
+#define BYTES_BFR_SEC_LEN 3 //the number of bytes before the section_length (so must be added to section_length to get full len)
+
+/** @brief Common Table headers (PAT, EIT, SDT, PMT, NIT):
+ * This header is the first 8 bytes common to all tables
+ * it's mainly used to get the section length
+ */
+typedef struct {
+   u_char table_id                               :8;
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char section_syntax_indicator               :1;
+   u_char                                        :3;
+   u_char section_length_hi                      :4;
+#else
+   u_char section_length_hi                      :4;
+   u_char                                        :3;
+   u_char section_syntax_indicator               :1;
+#endif
+   u_char section_length_lo                      :8;
+   u_char transport_stream_id_hi                 :8;
+   u_char transport_stream_id_lo                 :8;
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char                                        :2;
+   u_char version_number                         :5;
+   u_char current_next_indicator                 :1;
+#else
+   u_char current_next_indicator                 :1;
+   u_char version_number                         :5;
+   u_char                                        :2;
+#endif
+   u_char section_number                         :8;
+   u_char last_section_number                    :8;
+} tbl_h_t;
+
+
+
+/** @brief 0x5a terrestrial_delivery_system_descriptor */
+typedef struct {
+  u_char descriptor_tag                         :8;
+  u_char descriptor_length                      :8;
+  u_char frequency_4                            :8;
+  u_char frequency_3                            :8;
+  u_char frequency_2                            :8;
+  u_char frequency_1                            :8;
+#if BYTE_ORDER == BIG_ENDIAN
+  u_char bandwidth                              :3;
+  u_char priority                               :1;
+  u_char Time_Slicing_indicator                 :1;
+  u_char MPE_FEC_indicator                      :1;
+  u_char                                        :2;
+#else
+  u_char                                        :2;
+  u_char MPE_FEC_indicator                      :1;
+  u_char Time_Slicing_indicator                 :1;
+  u_char priority                               :1;
+  u_char bandwidth                              :3;
+#endif
+#if BYTE_ORDER == BIG_ENDIAN
+  u_char constellation                          :2;
+  u_char hierarchy_information                  :3;
+  u_char code_rate_HP_stream                    :3;
+#else
+  u_char code_rate_HP_stream                    :3;
+  u_char hierarchy_information                  :3;
+  u_char constellation                          :2;
+#endif
+#if BYTE_ORDER == BIG_ENDIAN
+  u_char code_rate_LP_stream                    :3;
+  u_char guard_interval                         :2;
+  u_char transmission_mode                      :2;
+  u_char other_frequency_flag                   :1;
+#else
+  u_char other_frequency_flag                   :1;
+  u_char transmission_mode                      :2;
+  u_char guard_interval                         :2;
+  u_char code_rate_LP_stream                    :3;
+#endif
+} descr_terr_delivery_t;
+
+
+
+
+
+
 /***************************************************
  *                ATSC PSIP tables                 *
  * See A/65C                                       *
@@ -578,30 +669,69 @@ typedef struct {
  *****************************/
 
 
-/**@brief structure for the build of a ts packet*/
+/** Enum to tell if the option is set*/
+typedef enum packet_status {
+  EMPTY,     //No data in the packet
+  STARTED,   //Some data are in the packet
+  VALID      //All the expected data are in the packet and the CRC32 is valid
+} packet_status_t;
+
+
+
+//The number of complete section we accept to have in one TS
+//A TS is 188bytes long minus 4 bytes for the header 184 bytes left
+//A section is at least 8 bytes long + one descriptor 3 bytes + CRC32 4 bytes
+//it's a total of 15bytes / section
+#define MAX_FULL_PACKETS 15
+//A minimum is MAX_TS_SIZE + TS_PACKET_SIZE
+//Just to add flexibility on how to write the code I take some margin
+#define FULL_BUFFER_SIZE 2*MAX_TS_SIZE
+
+
+/**@brief structure for the build of a ts packet
+  Since a packet can be finished and another one starts in the same
+  elementary TS packet, there is two packets in this structure
+
+ */
 typedef struct {
-  /**say if the packet is empty*/
-  int empty; 
-  /**say if the packet is ok*/
-  int packet_ok; 
+  /** the buffer for the packet full (empty or contains a valid full packet)*/
+  unsigned char data_full[MAX_TS_SIZE];
+  /** the length of the data contained in data_full */
+  int len_full;
+
+  //starting from here, these variables MUSN'T be accessed outside ts.c
+  /** The number of full packets */
+  int full_number;
+  /** The lengths of the full packets */
+  int full_lengths[MAX_FULL_PACKETS];
+  /** The amount of data in the full buffer */
+  int full_buffer_len;
+  /** The buffer containing the full packets */
+  unsigned char buffer_full[FULL_BUFFER_SIZE];
+  /** the buffer for the partial packet (never valid, shouldn't be accessed by funtions other than get_ts_packet)*/
+  unsigned char data_partial[MAX_TS_SIZE];
+  /** the length of the data contained in data_partial */
+  int len_partial;
+  /** the expected length of the data contained in data_partial */
+  int expected_len_partial;
+  /** The packet status*/
+  packet_status_t status_partial;
   /**The PID of the packet*/
   int pid;
   /**the countinuity counter, incremented in each packet*/
-  int continuity_counter;
-  /** packet len*/
-  int len;
-  /**the buffer*/
-  unsigned char packet[4096];
+  int cc;
+
+  /** If we have threads, the lock on the packet */
+  pthread_mutex_t packetmutex;
 }mumudvb_ts_packet_t;
 
 
-int ts_check_CRC( mumudvb_ts_packet_t *pmt);
-int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *pmt);
-int AddPacketStart (unsigned char *packet, unsigned char *buf, unsigned int len);
-int AddPacketContinue  (unsigned char *packet, unsigned char *buf, unsigned int len, unsigned int act_len);
+int get_ts_packet(unsigned char *, mumudvb_ts_packet_t *);
+
+unsigned char *get_ts_begin(unsigned char *buf);
 
 struct mumudvb_channel_t;
-int check_pmt_ts_id(mumudvb_ts_packet_t *pmt, struct mumudvb_channel_t *channel);
-
+int check_pmt_service_id(mumudvb_ts_packet_t *pmt, struct mumudvb_channel_t *channel);
+void ts_display_pat(char* log_module,unsigned char *buf);
 
 #endif

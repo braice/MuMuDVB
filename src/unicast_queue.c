@@ -25,7 +25,7 @@
 /** @file
  * @brief File for HTTP unicast Queue and data sending
  * @author Brice DUBOST
- * @date 2009
+ * @date 2009-2010
  */
 
 #include <errno.h>
@@ -39,6 +39,7 @@
 #include "errors.h"
 #include "log.h"
 
+static char *log_module="Unicast : ";
 
 int unicast_queue_remove_data(unicast_queue_header_t *header);
 int unicast_queue_add_data(unicast_queue_header_t *header, unsigned char *data, int data_len);
@@ -81,7 +82,7 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 	  if(!actual_client->queue.full)
 	  {
 	    actual_client->queue.full=1;
-	    log_message(MSG_DETAIL,"Unicast: The queue is full, we now throw away new packets for client %s:%d\n",
+	    log_message( log_module, MSG_DETAIL,"The queue is full, we now throw away new packets for client %s:%d\n",
 		        inet_ntoa(actual_client->SocketAddr.sin_addr),
 		        actual_client->SocketAddr.sin_port);
 	  }
@@ -104,7 +105,7 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 	  {
 	    if(errno != actual_client->last_write_error)
 	    {
-	      log_message(MSG_DEBUG,"Unicast: New error when writing to client %s:%d : %s\n",
+	      log_message( log_module, MSG_DEBUG,"New error when writing to client %s:%d : %s\n",
 			  inet_ntoa(actual_client->SocketAddr.sin_addr),
 			  actual_client->SocketAddr.sin_port,
 			  strerror(errno));
@@ -114,25 +115,47 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 	  }
 	  else
 	  {
-	    log_message(MSG_DEBUG,"Unicast: Not all the data was written to %s:%d. Asked len : %d, written len %d\n",
+	    log_message( log_module, MSG_DEBUG,"Not all the data was written to %s:%d. Asked len : %d, written len %d\n",
 			inet_ntoa(actual_client->SocketAddr.sin_addr),
 			actual_client->SocketAddr.sin_port,
 			actual_channel->nb_bytes,
 			written_len);
 	  }
-	    if(!data_from_queue)
-	    {
-	      //We store the non sent data in the queue
-	      if((actual_client->queue.data_bytes_in_queue+buffer_len-written_len)< unicast_vars->queue_max_size)
-	      {
-		unicast_queue_add_data(&actual_client->queue, buffer+written_len, buffer_len-written_len);
-		log_message(MSG_DEBUG,"Unicast: We start queuing packets ... \n");
-	      }
-	    }
+	  if(!(unicast_vars->flush_on_eagain &&(errno==EAGAIN)))//Debug feature : we can drop data if eagain error
+          {
+            //No drop on eagain or no eagain
+            if(!data_from_queue)
+            {
+              //We store the non sent data in the queue
+              if((actual_client->queue.data_bytes_in_queue+buffer_len-written_len)< unicast_vars->queue_max_size)
+              {
+                unicast_queue_add_data(&actual_client->queue, buffer+written_len, buffer_len-written_len);
+                log_message( log_module, MSG_DEBUG,"We start queuing packets ... \n");
+              }
+            }
+            else if(written_len > 0)
+            {
+              unicast_queue_remove_data(&actual_client->queue);
+              unicast_queue_add_data(&actual_client->queue, buffer+written_len, buffer_len-written_len);
+              log_message( log_module, MSG_DEBUG,"We requeue the non sent data ... \n");
+            }
+          }else{
+            //this is an EAGAIN error and we want to drop the data
+            if(!data_from_queue)
+            {
+            //Not from the queue we dont do anything
+              log_message( log_module, MSG_DEBUG,"We drop not from queue ... \n");
+            }
+            else
+            {
+            unicast_queue_clear(&actual_client->queue);
+            log_message( log_module, MSG_DEBUG,"Eagain error we flush the queue ... \n");
+            }
+          }
 
 	  if(!actual_client->consecutive_errors)
 	  {
-	    log_message(MSG_DETAIL,"Unicast: Error when writing to client %s:%d : %s\n",
+	    log_message( log_module, MSG_DETAIL,"Error when writing to client %s:%d : %s\n",
 			inet_ntoa(actual_client->SocketAddr.sin_addr),
 			actual_client->SocketAddr.sin_port,
 			strerror(errno));
@@ -146,7 +169,7 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 	    gettimeofday (&tv, (struct timezone *) NULL);
 	    if((unicast_vars->consecutive_errors_timeout > 0) && (tv.tv_sec - actual_client->first_error_time) > unicast_vars->consecutive_errors_timeout)
 	    {
-	      log_message(MSG_INFO,"Unicast: Consecutive errors when writing to client %s:%d during too much time, we disconnect\n",
+	      log_message( log_module, MSG_INFO,"Consecutive errors when writing to client %s:%d during too much time, we disconnect\n",
 			  inet_ntoa(actual_client->SocketAddr.sin_addr),
 			  actual_client->SocketAddr.sin_port);
 			  temp_client=actual_client->chan_next;
@@ -160,13 +183,13 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 	  //data successfully written
 	  if (actual_client->consecutive_errors)
 	  {
-	    log_message(MSG_DETAIL,"Unicast: We can write again to client %s:%d\n",
+	    log_message( log_module, MSG_DETAIL,"We can write again to client %s:%d\n",
 			inet_ntoa(actual_client->SocketAddr.sin_addr),
 			actual_client->SocketAddr.sin_port);
 	    actual_client->consecutive_errors=0;
 	    actual_client->last_write_error=0;
 	    if(data_from_queue)
-	      log_message(MSG_DEBUG,"Unicast: We start dequeuing packets Packets in queue: %d. Bytes in queue: %d\n",
+	      log_message( log_module, MSG_DEBUG,"We start dequeuing packets Packets in queue: %d. Bytes in queue: %d\n",
 			  actual_client->queue.packets_in_queue,
 			  actual_client->queue.data_bytes_in_queue);
 	  }
@@ -177,7 +200,7 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 	    unicast_queue_remove_data(&actual_client->queue);
 	    if(actual_client->queue.packets_in_queue!=0)
 	    {
-	      //log_message(MSG_DEBUG,"Unicast: Still packets in the queue,next one\n");
+	      //log_message( log_module, MSG_DEBUG,"Still packets in the queue,next one\n");
 	      //still packets in the queue, we continue sending
 	      if(packets_left)
 		buffer=unicast_queue_get_data(&actual_client->queue, &buffer_len);
@@ -185,7 +208,7 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
 	    else //queue now empty
 	    {
 	      packets_left=0;
-	      log_message(MSG_DEBUG,"Unicast: The queue is now empty :) client %s:%d \n",
+	      log_message( log_module, MSG_DEBUG,"The queue is now empty :) client %s:%d \n",
 			  inet_ntoa(actual_client->SocketAddr.sin_addr),
 		          actual_client->SocketAddr.sin_port);
 	    }
@@ -217,7 +240,7 @@ int unicast_queue_add_data(unicast_queue_header_t *header, unsigned char *data, 
     header->first=malloc(sizeof(unicast_queue_data_t));
     if(header->first==NULL)
     {
-      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       return -1;
     }
     dest=header->first;
@@ -229,7 +252,7 @@ int unicast_queue_add_data(unicast_queue_header_t *header, unsigned char *data, 
     header->last->next=malloc(sizeof(unicast_queue_data_t));
     if(header->last->next==NULL)
     {
-      log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       return -1;
     }
     dest=header->last->next;
@@ -239,14 +262,14 @@ int unicast_queue_add_data(unicast_queue_header_t *header, unsigned char *data, 
   dest->data=malloc(sizeof(unsigned char)*data_len);
   if(dest->data==NULL)
   {
-    log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     return -1;
   }
   memcpy(dest->data,data,data_len);
   dest->data_length=data_len;
   header->packets_in_queue++;
   header->data_bytes_in_queue+=data_len;
-  //log_message(MSG_DEBUG,"Unicast : queuing new packet. Packets in queue: %d. Bytes in queue: %d\n",header->packets_in_queue,header->data_bytes_in_queue);
+  //log_message( log_module, MSG_DEBUG,"queuing new packet. Packets in queue: %d. Bytes in queue: %d\n",header->packets_in_queue,header->data_bytes_in_queue);
   return 0;
 }
 
@@ -257,7 +280,7 @@ unsigned char *unicast_queue_get_data(unicast_queue_header_t *header, int *data_
 {
   if(header->packets_in_queue == 0)
   {
-    log_message(MSG_ERROR,"BUG : Cannot dequeue an empty queue\n");
+    log_message( log_module, MSG_ERROR,"BUG : Cannot dequeue an empty queue\n");
       return NULL;
   }
 
@@ -274,7 +297,7 @@ int unicast_queue_remove_data(unicast_queue_header_t *header)
   unicast_queue_data_t *tobedeleted;
   if(header->packets_in_queue == 0)
   {
-    log_message(MSG_ERROR,"BUG : Cannot remove from an empty queue\n");
+    log_message( log_module, MSG_ERROR,"BUG : Cannot remove from an empty queue\n");
       return -1;
   }
   tobedeleted=header->first;

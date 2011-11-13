@@ -46,39 +46,76 @@ typedef struct stats_infos_t{
   /** */
   int show_buffer_stats;
   /** */
-  long show_buffer_stats_time;
+  double show_buffer_stats_time;
   /** How often we how the statistics about the DVR buffer*/
   int show_buffer_stats_interval;
   //statistics for the traffic
   /** do we periodically show the traffic ?*/
   int show_traffic;
-  /** */
+  /** last time we show the traffic */
   long show_traffic_time;
-  /** */
-  int show_traffic_time_usec;
-  /** */
-  long compute_traffic_time;
-  /** */
-  int compute_traffic_time_usec;
+  /** last time we computed the traffic */
+  double compute_traffic_time;
   /** The interval for the traffic display */
   int show_traffic_interval;
   /** The interval for the traffic calculation */
-  int compute_traffic_interval; 
+  int compute_traffic_interval;
+  /** The number of packets per second (PMT excluded) for going to the UP state */
+  int up_threshold;
+  /** The number of packets per second (PMT excluded) for going to the DOWN state */
+  int down_threshold;
+  /** Do we display the number of packets per second to debug up/down detection ? */
+  int debug_updown;
 }stats_infos_t;
+
+
+
+#define LOGGING_UNDEFINED       0
+#define LOGGING_CONSOLE         1
+#define LOGGING_SYSLOG          2
+#define LOGGING_FILE            4
+
+#define DEFAULT_LOG_HEADER "%priority:  %module "
+
+typedef struct log_params_t{
+  /** the verbosity level for log messages */
+  int verbosity;
+  /**say if we log to the console, syslog*/
+  int log_type;
+  /** Says if syslog is initialised */
+  int syslog_initialised;
+  /**Say if the logging file could be rotated*/
+  int rotating_log_file;
+  /** The logging file */
+  FILE *log_file;
+  /** The logging file path */
+  char *log_file_path;
+  /** The header with templates for the log messages*/
+  char *log_header;
+  /**  Flushing interval */
+  float log_flush_interval;
+}log_params_t;
+
 
 
 void print_info ();
 void usage (char *name);
-void log_message( int , const char *, ... );
+void log_message( char* log_module, int , const char *, ... );
 void gen_file_streamed_channels (char *nom_fich_chaines_diff, char *nom_fich_chaines_non_diff, int nb_flux, mumudvb_channel_t *channels);
-void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels, int multicast, int unicast, int unicast_master_port, char *unicastipOut);
+void log_streamed_channels(char *log_module,int number_of_channels, mumudvb_channel_t *channels, int multicast_ipv4, int multicast_ipv6, int unicast, int unicast_master_port, char *unicastipOut);
 void gen_config_file_header(char *orig_conf_filename, char *saving_filename);
 void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *saving_filename);
 char *ca_sys_id_to_str(int id);
-void display_service_type(int type, int loglevel);
+void display_service_type(int type, int loglevel,char *log_module);
 char *pid_type_to_str(int type);
 char *service_type_to_str(int type);
 char *simple_service_type_to_str(int type);
-void show_traffic(long now, int show_traffic_interval, mumudvb_chan_and_pids_t *chan_and_pids);
+void show_traffic(char *log_module, double now, int show_traffic_interval, mumudvb_chan_and_pids_t *chan_and_pids);
+char *liben50221_error_to_str(int error);
+char *liben50221_error_to_str_descr(int error);
+void log_pids(char *log_module, mumudvb_channel_t *channel, int curr_channel);
+int read_logging_configuration(stats_infos_t *stats_infos, char *substring);
+void sync_logs();
+
 
 #endif

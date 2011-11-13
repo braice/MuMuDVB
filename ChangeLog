@@ -1,6 +1,35 @@
+-- MuMuDVB 1.7 --
+New features / improvements :
+ * Implements dual stack for IPv6 Mulicast
+ * Tuning: Support for multiple tuners and DVB-T2 DVB-S2
+ * Error : Add option filter_transport_error to send packets with error bit set by decoder
+ * Dump : Possibility to dump the raw stream for debugging purposes + update of the man page
+ * Logging: Possibility to choose the destination of the logs : console, file or syslog. The formatting of the logs can be adjusted.
+ * CAM Menu : CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.txt
+ * Templates support for more flexibility in autoconfiguration
+ * Webservices : XML webservice exposing detailed streaming status (see WEBSERVICES.txt)
+ * PID : Add option filename_pid Possibility to define the path for the pid file :
+ * DiSEqC : improvments : support of uncommited switches. Set of the tone burst
+ * Autoconfiguration: Several improvements in the options and in the parsing of the DVB tables
+ * Possibility to tune the up/down detection thresholds
+ * Testing suite : test program for various MuMuDVB functions to compile this program, run "make check"
+ * Table parsing : the NIT is parsed for debugging purposes, possibility to use the LCN in autoconfiguration, better detection of PIDs
+ * Signal display : more information (uncorrected blocks)
+ * Cards listing with their capabilities.
+
+Bugs corrected :
+ * SDT rewrite improve : we copy only the interesting services to the rewritten SDT
+ * Filter : New option psi_tables_filtering to keep only mandatory PSI PID. Useful for some STB.
+ * Memory leaks
+
+Next :
+ * autoconfiguration : merge of the two autoconfiguration modes
+ * IPv6 : HTTP unicast IPv6
+ * RTSP
+
 -- MuMuDVB 1.6 --
 
-New features / improvements : 
+New features / improvements :
  * Support for HTTP Unicast
  * Implementation of the RTP headers.
  * The limit in the size of the PAT PID for PAT rewriting has been removed

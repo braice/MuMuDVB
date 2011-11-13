@@ -45,6 +45,8 @@
 #include <sys/ioctl.h>
 #include <time.h>
 #include <stdlib.h>
+#include <netinet/tcp.h>
+
 
 #include "unicast_http.h"
 #include "unicast_queue.h"
@@ -53,6 +55,8 @@
 #include "log.h"
 
 
+
+static char *log_module="Unicast : ";
 
 /** @brief Add a client to the chained list of clients
 * Will allocate the memory and fill the structure
@@ -66,17 +70,17 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 
   unicast_client_t *client;
   unicast_client_t *prev_client;
-  log_message(MSG_DEBUG,"Unicast : We create a client associated with the socket %d\n",Socket);
+  log_message( log_module, MSG_FLOOD,"We create a client associated with the socket %d\n",Socket);
   //We allocate a new client
   if(unicast_vars->clients==NULL)
   {
-    log_message(MSG_DEBUG,"Unicast : first client\n");
+    log_message( log_module, MSG_FLOOD,"first client\n");
     client=unicast_vars->clients=malloc(sizeof(unicast_client_t));
     prev_client=NULL;
   }
   else
   {
-    log_message(MSG_DEBUG,"Unicast : there is already clients\n");
+    log_message( log_module, MSG_FLOOD,"there is already clients\n");
     client=unicast_vars->clients;
     while(client->next!=NULL)
       client=client->next;
@@ -86,9 +90,48 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
   }
   if(client==NULL)
   {
-    log_message(MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     close(Socket);
     return NULL;
+  }
+
+
+  // Disable the Nagle (TCP No Delay) algorithm
+  int iRet;
+  int on = 1;
+  iRet=setsockopt(Socket, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on));
+  if (iRet < 0)
+  {
+    log_message( log_module,  MSG_WARN,"setsockopt TCP_NODELAY failed : %s\n", strerror(errno));
+  }
+
+  int buffer_size;
+  socklen_t size;
+  size=sizeof(buffer_size);
+  iRet=getsockopt( Socket, SOL_SOCKET, SO_SNDBUF, &buffer_size, &size);
+  if (iRet < 0)
+  {
+    log_message( log_module,  MSG_WARN,"get SO_SNDBUF failed : %s\n", strerror(errno));
+  }
+  else
+    log_message( log_module,  MSG_FLOOD,"Actual SO_SNDBUF size : %d\n", buffer_size);
+  if(unicast_vars->socket_sendbuf_size)
+  {
+    buffer_size = unicast_vars->socket_sendbuf_size;
+    iRet=setsockopt(Socket, SOL_SOCKET, SO_SNDBUF, &buffer_size, sizeof(buffer_size));
+    if (iRet < 0)
+    {
+      log_message( log_module,  MSG_WARN,"setsockopt SO_SNDBUF failed : %s\n", strerror(errno));
+    }
+    else
+    {
+      size=sizeof(buffer_size);
+      iRet=getsockopt( Socket, SOL_SOCKET, SO_SNDBUF, &buffer_size, &size);
+      if (iRet < 0)
+        log_message( log_module,  MSG_WARN,"2nd get SO_SNDBUF failed : %s\n", strerror(errno));
+      else
+        log_message( log_module,  MSG_DETAIL,"New SO_SNDBUF size : %d\n", buffer_size);
+    }
   }
 
   //We fill the client data
@@ -130,7 +173,7 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *cli
 {
   unicast_client_t *prev_client,*next_client;
 
-  log_message(MSG_DETAIL,"Unicast : We delete the client %s:%d, socket %d\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port, client->Socket);
+  log_message( log_module, MSG_FLOOD,"We delete the client %s:%d, socket %d\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port, client->Socket);
 
   if (client->Socket >= 0)
   {
@@ -141,7 +184,7 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *cli
   next_client=client->next;
   if(prev_client==NULL)
   {
-    log_message(MSG_DEBUG,"Unicast : We delete the first client\n");
+    log_message( log_module, MSG_FLOOD,"We delete the first client\n");
     unicast_vars->clients=client->next;
   }
   else
@@ -153,7 +196,7 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *cli
   //We delete the client in the channel
   if(client->channel!=-1)
   {
-    log_message(MSG_DEBUG,"Unicast : We remove the client from the channel \"%s\"\n",channels[client->channel].name);
+    log_message( log_module, MSG_DEBUG,"We remove the client from the channel \"%s\"\n",channels[client->channel].name);
 
     if(client->chan_prev==NULL)
     {
@@ -193,12 +236,12 @@ int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *chann
   unicast_client_t *last_client;
   int iRet;
 
-  log_message(MSG_INFO,"Unicast : We add the client %s:%d to the channel \"%s\"\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port,channel->name);
+  log_message( log_module, MSG_INFO,"We add the client %s:%d to the channel \"%s\"\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port,channel->name);
 
   iRet=write(client->Socket,HTTP_OK_REPLY, strlen(HTTP_OK_REPLY));
   if(iRet!=strlen(HTTP_OK_REPLY))
   {
-    log_message(MSG_INFO,"Unicast : Error when sending the HTTP reply\n");
+    log_message( log_module, MSG_INFO,"Error when sending the HTTP reply\n");
     return -1;
   }
 

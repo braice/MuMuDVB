@@ -77,6 +77,8 @@
 typedef struct tuning_parameters_t{
   /**The card number*/
   int card;
+  /**The tuner number*/
+  int tuner;
   /** The path of the card */
   char card_dev_path[256];
   /**Is the card actually tuned ?*/
@@ -103,6 +105,8 @@ typedef struct tuning_parameters_t{
   int lnb_voltage_off;
   /**The satellite number ie the LNB number*/
   unsigned char sat_number;
+  /**The type of switch U uncommitted C committed*/
+  char switch_type;
   /** The kind of modulation */
   fe_modulation_t modulation;
   int modulation_set;
@@ -123,10 +127,14 @@ typedef struct tuning_parameters_t{
   fe_hierarchy_t hier;
   /** do we periodically display the strenght of the signal ?*/
   int display_strenght;
+  /** do we periodically check the status of the card ?*/
+  int check_status;
   /**shutdown the thread for display strength */
   int strengththreadshutdown;
   /**The frontend type*/
   fe_type_t fe_type;
+  /** The frontend name */
+  char fe_name[256];
 #if DVB_API_VERSION >= 5
   /** DVB API version 5*/
   /**Delivery system : DVB-S DVB-T etc ...*/
@@ -140,5 +148,6 @@ typedef struct tuning_parameters_t{
 
 int tune_it(int, tuning_parameters_t *);
 int read_tuning_configuration(tuning_parameters_t *, char *);
+void print_status(fe_status_t festatus);
 
 #endif

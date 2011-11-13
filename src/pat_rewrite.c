@@ -1,26 +1,26 @@
-/* 
- * mumudvb - UDP-ize a DVB transport stream.
- * 
- * (C) 2004-2009 Brice DUBOST
- * 
+/*
+ * MuMuDVB - Stream a DVB transport stream.
+ *
+ * (C) 2004-2011 Brice DUBOST
+ *
  * The latest version can be found at http://mumudvb.braice.net
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *     
+ *
  */
 
 /**@file
@@ -40,7 +40,7 @@
 #include <stdint.h>
 
 extern uint32_t       crc32_table[256];
-
+static char *log_module="PAT Rewrite: ";
 
 /** @brief, tell if the pat have a newer version than the one recorded actually
  * In the PAT pid there is a field to say if the PAT was updated
@@ -53,17 +53,24 @@ extern uint32_t       crc32_table[256];
  */
 int pat_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf)
 {
-  pat_t       *pat=(pat_t*)(buf+TS_HEADER_LEN);
-  ts_header_t *header=(ts_header_t *)buf;
+  pat_t       *pat=(pat_t*)(get_ts_begin(buf));
 
-  if(header->payload_unit_start_indicator) //It's the beginning of a new packet
+
+  if(pat) //It's the beginning of a new packet
+  {
+    /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+    sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+    and shall be the next table to become valid.*/
+    if(pat->current_next_indicator == 0)
+    {
+      return 0;
+    }
     if(pat->version_number!=rewrite_vars->pat_version)
-      {
-	log_message(MSG_DEBUG,"Pat rewrite : Need update. stored version : %d, new: %d\n",rewrite_vars->pat_version,pat->version_number);
-	if(rewrite_vars->pat_version!=-1)
-	  log_message(MSG_WARN,"The PAT version changed, so the channels changed probably. If you are using autoconfiguration it's safer to relaunch MuMuDVB or if the pids are set manually, check them.\n");
-	return 1;
-      }
+    {
+      log_message( log_module, MSG_DEBUG,"Need update. stored version : %d, new: %d\n",rewrite_vars->pat_version,pat->version_number);
+      return 1;
+    }
+  }
   return 0;
 
 }
@@ -71,10 +78,14 @@ int pat_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf)
 /** @brief update the version using the dowloaded pat*/
 void update_pat_version(rewrite_parameters_t *rewrite_vars)
 {
-  pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->packet);
+  pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->data_full);
   if(rewrite_vars->pat_version!=pat->version_number)
-    log_message(MSG_DEBUG,"Pat rewrite : New pat version. Old : %d, new: %d\n",rewrite_vars->pat_version,pat->version_number);
-  
+  {
+    log_message( log_module, MSG_DEBUG,"New pat version. Old : %d, new: %d\n",rewrite_vars->pat_version,pat->version_number);
+    if(rewrite_vars->pat_version!=-1)
+      log_message( log_module, MSG_WARN,"The PAT version changed, so the channels changed probably. If you are using autoconfiguration it's safer to relaunch MuMuDVB or if the PIDs are set manually, check the PMTs. It can also happend when services are added/removed\n");
+  }
+
   rewrite_vars->pat_version=pat->version_number;
 }
 
@@ -93,12 +104,12 @@ void update_pat_version(rewrite_parameters_t *rewrite_vars)
 int pat_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel,  unsigned char *buf, int curr_channel)
 {
   ts_header_t *ts_header=(ts_header_t *)buf;
-  pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->packet);
+  pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->data_full);
   pat_prog_t  *prog;
   unsigned long crc32;
 
   //destination buffer
-  unsigned char buf_dest[188];
+  unsigned char buf_dest[TS_PACKET_SIZE];
   int buf_dest_pos=0;
   int delta=PAT_LEN;
 
@@ -108,7 +119,7 @@ int pat_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
 
   if(ts_header->payload_unit_start_indicator)
   {
-    log_message(MSG_DEBUG,"PAT rewrite : pointer field 0x%x \n", buf[TS_HEADER_LEN-1]);
+    log_message( log_module, MSG_DEBUG,"PAT rewrite : pointer field 0x%x \n", buf[TS_HEADER_LEN-1]);
   }
   section_length=HILO(pat->section_length);
 
@@ -131,36 +142,36 @@ int pat_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
   //strict comparaison due to the calc of section len cf down
   while((delta+PAT_PROG_LEN)<(section_length))
   {
-    prog=(pat_prog_t*)((char*)rewrite_vars->full_pat->packet+delta);
+    prog=(pat_prog_t*)((char*)rewrite_vars->full_pat->data_full+delta);
     if(HILO(prog->program_number)!=0)
     {
       /*We check the transport stream id if present and the size of the packet*/
       /* + 4 for the CRC32*/
       if((buf_dest_pos+PAT_PROG_LEN+4<TS_PACKET_SIZE) &&
-          (!channel->ts_id || (channel->ts_id == HILO(prog->program_number)) ))
+          (!channel->service_id || (channel->service_id == HILO(prog->program_number)) ))
       {
         for(i=0;i<channel->num_pids;i++)
           if(channel->pids[i]==HILO(prog->network_pid))
         {
           if(buf_dest_pos+PAT_PROG_LEN+4+1>TS_PACKET_SIZE) //The +4 is for CRC32 +1 is because indexing starts at 0
           {
-            log_message(MSG_WARN,"Pat rewrite : The generated PAT is too big for channel %d : \"%s\", we skip the other pids/programs\n", curr_channel, channel->name);
+            log_message( log_module, MSG_WARN,"The generated PAT is too big for channel %d : \"%s\", we skip the other pids/programs\n", curr_channel, channel->name);
             i=channel->num_pids;
           }
           else
           {
-            log_message(MSG_DETAIL,"Pat rewrite : NEW program for channel %d : \"%s\". PMT pid : %d\n", curr_channel, channel->name,channel->pids[i]);
+            log_message( log_module, MSG_DETAIL,"NEW program for channel %d : \"%s\". PMT pid : %d\n", curr_channel, channel->name,channel->pids[i]);
             /*we found a announce for a PMT pid in our stream, we keep it*/
-            memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->packet+delta,PAT_PROG_LEN);
+            memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->data_full+delta,PAT_PROG_LEN);
             buf_dest_pos+=PAT_PROG_LEN;
           }
         }
       }
       else
-        log_message(MSG_DEBUG,"Pat rewrite : Program dropped because of ts_id. channel %d :\"%s\". ts_id chan : %d ts_id prog %d\n", 
+        log_message( log_module, MSG_DEBUG,"Program dropped because of service_id. channel %d :\"%s\". service_id chan : %d service_id prog %d\n",
                     curr_channel,
                     channel->name,
-                    channel->ts_id,
+                    channel->service_id,
                     HILO(prog->program_number));
     }
     delta+=PAT_PROG_LEN;
@@ -217,19 +228,29 @@ void pat_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_
   if(!rewrite_vars->pat_needs_update)
   {
     rewrite_vars->pat_needs_update=pat_need_update(rewrite_vars,ts_packet);
-    if(rewrite_vars->pat_needs_update) //It needs update we mark the packet as empty
-      rewrite_vars->full_pat->empty=1;
   }
   /*We need to update the full packet, we download it*/
   if(rewrite_vars->pat_needs_update)
   {
     if(get_ts_packet(ts_packet,rewrite_vars->full_pat))
     {
-      log_message(MSG_DEBUG,"Pat rewrite : Full pat updated\n");
-      /*We've got the FULL PAT packet*/
-      update_pat_version(rewrite_vars);
-      rewrite_vars->pat_needs_update=0;
-      rewrite_vars->full_pat_ok=1;
+      pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->data_full);
+      /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+      sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+      and shall be the next table to become valid.*/
+      if(pat->current_next_indicator == 0)
+      {
+        log_message( log_module, MSG_FLOOD,"PAT not yet valid, we get a new one (current_next_indicator == 0)\n");
+      }
+      else
+      {
+        log_message( log_module, MSG_DEBUG,"Full PAT updated\n");
+        /*We've got the FULL PAT packet*/
+        update_pat_version(rewrite_vars);
+        rewrite_vars->pat_needs_update=0;
+        rewrite_vars->full_pat_ok=1;
+        ts_display_pat(log_module,rewrite_vars->full_pat->data_full);
+      }
     }
   }
   //To avoid the duplicates, we have to update the continuity counter
@@ -249,7 +270,7 @@ int pat_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_
     /*We check if the versions corresponds*/
     if(!rewrite_vars->pat_needs_update && channel->generated_pat_version!=rewrite_vars->pat_version)//We check the version only if the PAT is not currently updated
     {
-      log_message(MSG_DEBUG,"Pat rewrite : We need to rewrite the PAT for the channel %d : \"%s\"\n", curr_channel, channel->name);
+      log_message( log_module, MSG_DEBUG,"We need to rewrite the PAT for the channel %d : \"%s\"\n", curr_channel, channel->name);
       /*They mismatch*/
       /*We generate the rewritten packet*/
       if(pat_channel_rewrite(rewrite_vars, channel, ts_packet, curr_channel))
@@ -259,7 +280,7 @@ int pat_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_
       }
       else
       {
-        log_message(MSG_DEBUG,"Pat rewrite : ERROR with the pat for the channel %d : \"%s\"\n", curr_channel, channel->name);
+        log_message( log_module, MSG_DEBUG,"ERROR with the PAT for the channel %d : \"%s\"\n", curr_channel, channel->name);
         return 0;
       }
     }
@@ -273,13 +294,13 @@ int pat_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_
     else
     {
       return 0;
-      log_message(MSG_DEBUG,"Pat rewrite : Bad pat channel version, we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channel->name);
+      log_message( log_module, MSG_DEBUG,"Bad pat channel version, we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channel->name);
     }
   }
   else
   {
     return 0;
-    log_message(MSG_DEBUG,"Pat rewrite : We need a global pat update, we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channel->name);
+    log_message( log_module, MSG_DEBUG,"We need a global pat update, we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channel->name);
   }
   return 1;
   

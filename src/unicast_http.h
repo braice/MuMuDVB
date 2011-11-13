@@ -153,6 +153,8 @@ typedef struct unicast_parameters_t{
   char ipOut[20];
   /** The "HTTP" port*/
   int portOut;
+  /** The "HTTP" port string version before parsing*/
+  char *portOut_str;
   /** The HTTP input socket*/
   struct sockaddr_in sIn;
   /**  The HTTP input socket*/
@@ -169,11 +171,16 @@ typedef struct unicast_parameters_t{
   unicast_fd_info_t *fd_info;
   /** The maximim size of the queue */
   int queue_max_size;
+  /** The socket SO_SNDBUF size*/
+  int socket_sendbuf_size;
+  /** Debug : do we flush the queue when we get eagain errors ? */
+  int flush_on_eagain;
 }unicast_parameters_t;
 
 int unicast_create_listening_socket(int socket_type, int socket_channel, char *ipOut, int port, struct sockaddr_in *sIn, int *socketIn, fds_t *fds, unicast_parameters_t *unicast_vars);
 
-int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels);
+struct strength_parameters_t; //just to avoid including dvb.h for one structure
+int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels, struct strength_parameters_t *strengthparams, struct autoconf_parameters_t *autoconf_vars, void *cam_vars);
 
 int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels);
 

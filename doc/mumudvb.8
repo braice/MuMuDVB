@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH MUMUDVB 8 "24 December 2009" "MuMuDVB v1.6.1"
+.TH MUMUDVB 8 "13 November 2011" "MuMuDVB v1.7"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -52,6 +52,9 @@ List the DVB cards and exit
 .B \-\-cards
 The DVB card to use (overrided by the configuration file)
 .TP
+.B \-\-server_id
+The server id (for autoconfiguration, overrided by the configuration file)
+.TP
 .B \-d, \-\-debug
 Don't deamonize
 .TP
@@ -63,6 +66,9 @@ More Verbose
 .TP
 .B \-q
 More quiet
+.TP
+.B \-\-dumpfile
+Debug option : Dump the stream into the specified file
 
 .SH SEE ALSO
 The program is documented in README and for french speaking people in README-fr.
@@ -78,8 +84,16 @@ Stéphane Glondu <glondu@crans.ens-cachan.fr> (makefile cleaning, man page, debi
 .br
 Manuel SABBAN <manu@crans.ens-cachan.fr> (use of getopt)
 .br
+Sébastien Raillard
+.br
+Pierre Gronlier
+.br
+Ludovic Boué
+.br
+Utelisys Communications B.V. (transcoding)
+.br
 Acknowledgements:
 .br
-Dave CHAPMAN (for writing dvbstream)
+Dave CHAPMAN (for writing dvbstream and contributions), Pierre Gronlier, Sébastien Raillard, Utelisys Communications B.V. (transcoding), Romolo Manfredini, Ludovic Boué
 .PP
 This manual page was written by Stephane Glondu <stephane.glondu@crans.org> and Brice DUBOST <mumudvb@braice.net>.

@@ -1,0 +1,174 @@
+Webservices
+===========
+Sebastien RAILLARD
+
+To activate the webservices, just enable the unicast mode with something like that:
+----------------
+unicast=1         : Activate the internal webserver
+ip_http=127.0.0.1 : IP address for accepting the HTTP requests
+port_http=8005    : Listening port
+----------------
+
+The webservices responses are not SOAP compliant, but formatted in simple XML documents (UTF-8).
+The output can be easily parsed in PHP for example.
+
+Status monitoring :
+---------------------
+
+There is no input parameters.
+URL : http://ip_http:port_http/monitor/state.xml
+
+Example of response with comments:
+
+----------------
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<mumudvb card="5" frontend="0">                                          => adapter and frontend devices
+	<global_version><![CDATA[1.6.1b_20101101]]></global_version>         => MuMuDVB version
+	<global_pid>19574</global_pid>                                       => process PID
+	<global_uptime>45</global_uptime>                                    => process uptime in seconds
+	<frontend_name><![CDATA[ST STV0299 DVB-S]]></frontend_name>          => frontend name
+	<frontend_tuned>1</frontend_tuned>                                   => 0 if adapter not tuned, 1 if adapter is tuned
+	<frontend_frequency>11856000</frontend_frequency>                    => tuning frequency (always in kHz)
+	<frontend_polarization><![CDATA[V]]></frontend_polarization>         => "-" if polarization isn't applicable, or "V" (Vertical), "H" (Horizontal", "L" (Left), "R" (Right)
+	<frontend_symbolrate>27500000</frontend_symbolrate>                  => Satellite symbole rate in symbols per second (or 0 if not applicable)
+	<frontend_system><![CDATA[DVB-S]]></frontend_system>                 => System used : "DVB-C", "DVB-T", "DVB-S", "DVB-S2", "ATSC"
+	<frontend_status><![CDATA[SCVYL]]></frontend_status>                 => Tuner lock status: "S"/"-" (Signal), "C"/"-" (Carrier), "V"/"-" (Viterbi), "Y"/"-" (Synchro), "L"/"-" (Locked) 
+	<frontend_ber>0</frontend_ber>                                       => RAW BER value from driver (unsigned 16-bits integer)
+	<frontend_signal>56955</frontend_signal>                             => RAW Signal level value from driver (unsigned 16-bits integer)
+	<frontend_snr>54759</frontend_snr>                                   => RAW Signal to noise ratio from driver (unsigned 16-bits integer)
+	<autoconf_end>1</autoconf_end>                                       => 0 if not autoconfiguration or autoconfiguration in progress, 1 if autoconfiguration is finished
+	<cam_support>1</cam_support>                                         => 0 if no CAM support asked, 1 if CAM support was asked
+	<cam_number>0</cam_number>                                           => CAM slot number
+	<cam_menustring><![CDATA[Not retrieved]]></cam_menustring>           => When CAM is initialized, CAM model
+	<cam_initialized>0</cam_initialized>                                 => 0 if CAM isn't initialized, 1 if CAM is initialized
+	
+	<channel number="1">                                                 => Loop over channels, one node per channel, with MuMuDVB internal id (starting at 1)
+		<lcn>0</lcn>                                                     => If present, Channel Logical Number (Channel number)
+		<name><![CDATA[CANAL+]]></name>                                  => Channel name
+		<service_type type="1"><![CDATA[Television]]></service_type>     => See function "service_type_to_str" in "log.c" file for complete description
+		<ip_multicast><![CDATA[0.0.0.0]]></ip_multicast>                 => Multicast IP address (0.0.0.0 if multicast is disabled)
+		<port_multicast>0</port_multicast>                               => Multicast UDP port (0 if multicast is disabled)
+		<is_up>0</is_up>                                                 => 0 if channel is not streamed, 1 if channel is streamed
+		<traffic>7</traffic>                                             => Channel streamed IP bandwidth in kB (kilo-Bytes) per second
+		<ratio_scrambled>99</ratio_scrambled>                            => Percentage of scrambled packets received
+		<service_id>8201</service_id>                                    => Service ID of channel
+		<pmt_pid>1280</pmt_pid>                                          => PMT PID of channel
+		<unicast_port>0</unicast_port>                                   => Unicast port associated with the channle if unicast is setup by port
+		<ca_sys>                                                         => Loop over all the CA systems listed in the PMT for the channel
+			<ca num="256"><![CDATA[Canal Plus]]></ca>                    => CA identifier and description if avaliable
+		</ca_sys>                                                        => End of CA systems loop
+		<pids>                                                           => Loop over all PID related to the channel and declared in the PMT
+			<pid number="1280" language="---"><![CDATA[PMT]]></pid>      => PID number, Language associated (or "---" if no language associated), PID description if avaliable
+			<pid number="160" language="---"><![CDATA[Video (MPEG2)]]></pid>
+			<pid number="80" language="fra"><![CDATA[Audio (MPEG2)]]></pid>
+			<pid number="81" language="eng"><![CDATA[Audio (MPEG2)]]></pid>
+			<pid number="32" language="---"><![CDATA[Teletext]]></pid>
+			<pid number="82" language="fra"><![CDATA[Audio (AC3)]]></pid>
+			<pid number="83" language="eng"><![CDATA[Audio (AC3)]]></pid>
+		</pids>                                                          => End of PID loop
+	</channel>                                                           => End of channels loop
+</mumudvb>                                                               => End of response
+----------------
+
+Access to the CAM menu:
+-------------------------
+
+These two webservices allow for accessing the CAM menu during streaming.
+This is usefull for checking rights or download status for example.
+
+
+The file `cam_menu.php` is a simple demonstration on how to use these webservices in order to make a web interface with AJAX compatible with the most important browsers (Firefox, Chrome, Internet Explorer).
+
+For using it, you just need a webserver (lighttpd, apache, etc.) with PHP activated.
+The web page accept one GET parameter: `port_server`. This is the unicast port setup for accessing MuMuDVB webservices.
+
+The CAM menu is refresded every 2 seconds and buttons can be used to navigate in the menus.
+MENU, LIST and ENQUIRY MMI objects are supported.
+
+ * First webservice return the latest menu returned by the CAM.
+There is no input parameters.
+URL : http://ip_http:port_http/cam/menu.xml
+Below, some examples of response with comments.
+
+Case when the CAM isn't initialized:
+----------------
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<menu>
+	<datetime><![CDATA[Mon Nov  1 22:08:17 2010]]></datetime>  => Last update time/date
+	<object><![CDATA[NONE]]></object>                          => No object to show
+	<title><![CDATA[CAM not initialized!]]></title>            => Message about CAM not initialized
+</menu>
+----------------
+
+Case when the CAM is initialized but there is no menu to display:
+----------------
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<menu>
+	<datetime><![CDATA[Tue Nov  2 22:38:37 2010]]></datetime>       => Last update time/date
+	<cammenustring><![CDATA[Aston Module 2.1800]]></cammenustring>  => CAM model
+	<object><![CDATA[NONE]]></object>                               => No object to show
+	<title><![CDATA[No menu to display]]></title>                   => Message about no menu to display
+</menu>
+----------------
+Case when a object is send by the CAM to be displayed:
+----------------
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<menu>
+	<datetime><![CDATA[Tue Nov  2 22:39:58 2010]]></datetime>       => When the object was received
+	<cammenustring><![CDATA[Aston Module 2.1800]]></cammenustring>  => CAM model
+	<object><![CDATA[MENU]]></object>                               => Object: "MENU", "LIST" or "ENQUIRY"
+	<title><![CDATA[Module Aston]]></title>                         => Object title
+	<subtitle><![CDATA[Carte num ro 544.193.724]]></subtitle>       => Object subtitle (when an "ENQUIRY" object is display, show the number of characters expected in the answer)
+	<item num="0"><![CDATA[Return]]></item>                         => For "MENU" and "LIST" objects, contain the lines of information or the items to be choosen. The "num" attribute correspond to the key to press to choose the item.
+	<item num="1"><![CDATA[Consultation des droits]]></item>
+	<item num="2"><![CDATA[R glages]]></item>
+	<item num="3"><![CDATA[Information]]></item>
+	<bottom><![CDATA[Votre choix, svp]]></bottom>                   => Object bottom line
+</menu>
+----------------
+
+ *  Second webservice allows for sending response to the CAM.
+There is one integer GET paramter: `key`.
+Possible keys: `0` to `9` (numbers), `M` for asking the CAM menu, `C` for cancelling an `ENQUIRY` object.
+URL : http://ip_http:port_http/cam/action.xml?key=X
+There are 4 king of responses.
+
+OK:
+----------------
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<action>
+	<datetime><![CDATA[Mon Nov  1 22:13:30 2010]]></datetime>
+	<key><![CDATA[X]]></key>
+	<result><![CDATA[OK]]></result>
+</action>
+----------------
+
+Unknown key:
+----------------
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<action>
+	<datetime><![CDATA[Mon Nov  1 22:13:30 2010]]></datetime>
+	<key><![CDATA[X]]></key>
+	<result><![CDATA[ERROR: Unknown key!]]></result>
+</action>
+----------------
+
+CAM not initialized:
+----------------
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<action>
+	<datetime><![CDATA[Mon Nov  1 22:13:30 2010]]></datetime>
+	<key><![CDATA[X]]></key>
+	<result><![CDATA[ERROR: CAM not initialized!]]></result>
+</action>
+----------------
+
+MuMuDVB compiled without CAM support:
+----------------
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<action>
+	<datetime><![CDATA[Mon Nov  1 22:13:30 2010]]></datetime>
+	<key><![CDATA[X]]></key>
+	<result><![CDATA[Compiled without CAM support]]></result>
+</action>
+----------------

@@ -4,10 +4,111 @@ MuMuDVB - README for the configuration of the transcoding
 General information
 -------------------
 
-Transcoding configuration is per channel
 
-To see the installed codecs on your system you can use the `ffmpeg -formats` command (see `man ffmpeg` for more information on this command)
+Compiling MuMuDVB with transcoding support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+In order to compile MuMuDVB with transcoding you will need the following librairies: libavcodec, libavformat and libswscale
+
+Then you have to add the --enable-transcoding flag to your configure. Ex: `./configure --enable-transcoding`
+
+Check at the end of the configure that the transcoding is effectively enabled. If not there is probably a library missing.
+
+
+Using transcoding
+~~~~~~~~~~~~~~~~~
+
+For transconding the stream you have to make a choice for three different parameters : 
+
+- The video Codec (and it's encoding parameters)
+- The audio Codec (and it's encoding parameters)
+- The container (how the audio and video data are mixed together)
+
+
+Future developments for transcoding
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Making it work with unicast, in particular RTSP
+
+Common problems
+~~~~~~~~~~~~~~~
+
+
+Data queue is full.
+^^^^^^^^^^^^^^^^^^^
+
+If you get the message `Data queue is full`, this usually means that your system is too slow to transcode what you asked. Ie the video data arrives faster that your ability to transcode it.
+
+
+Codec not found
+^^^^^^^^^^^^^^^
+
+If you get a message like `Couldn't find video encoder.` or `Couldn't find audio encoder.` this means that you don't have the codec you asked for installed on your system. You can check if you made a typo in the
+codec name by <<list_codecs,listing the availaible codecs>>.
+
+If the codec is really missing there is several solutions: 
+
+- Install extra codecs (libavcodec-extra-* on debian/ubuntu)
+- On debian, due to licence restrictions, you could try to install ffmpeg from the debian-multimedia repositories
+- Compile ffmpeg yourself
+
+
+Broken ffmpeg default settings detected
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you get a message saying "Broken ffmpeg default settings detected"
+
+Adding the following options to your transcoding configuration will make it work
+
+------------------------------
+transcode_me_range=16
+transcode_qdiff=4
+transcode_qmin=10
+transcode_qmax=51
+------------------------------
+
+
+
+The untranscoded stream is still sent
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For avoiding the original stream to be also sent, use the transcode_send_transcoded_only option
+
+
+Placement of the options
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+All the transcoding configuration concerning a channel has to come just after the channel it concerns.
+If you define some transcoding option before any channel, this configuration will be common to all channels.
+
+[[list_codecs]]
+Listing the available codecs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To see the installed codecs on your system run MuMuDVB in verbose mode (one -v on the command line) with transcoding enabled and configured (ie transcode_enable=1). The available codecs will be displayed on the log output after the initialisation of avlibs.
+
+Otherwise you can use the `ffmpeg -codecs` command (see `man ffmpeg` for more information on this command).
+
+If your ffmpeg is not sufficiently recent, you can use `ffmpeg -formats` which will give you a clue.
+
+
+Transcode and autoconfiguration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Transcoding should work with autoconfiguration, please report any problem.
+
+Templates
+~~~~~~~~~
+
+You can use templates for the following options : 
+
+- transcode_sdp_filename
+- transcode_ffm_url
+- transcode_rtp_port
+
+In the case of *transcode_rtp_port* you can use mathematical expressions like "transcode_rtp_port=1000+%server*100+%number*2"
+
+The allowed templates are: `%server`, `%card`, `%tuner` and `%number`;
 
 Examples
 --------
@@ -28,6 +129,14 @@ transcode_enable
 
 *Possible Values:* 0 - disable (default); 1 - enable.
 
+transcode_send_transcoded_only
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Type:* <int>
+
+*Description:* Send only the transcoded stream
+
+*Possible Values:* 0 - send both (default); 1 - send only the transcoded stream.
 
 transcode_video_codec
 ~~~~~~~~~~~~~~~~~~~~~
@@ -71,6 +180,7 @@ transcode_ffm_url
 
 *Description:* URL of FFM feed (required for FFM streaming)
 
+*Allowed templates:* `%number`, `%card`, `%tuner` and `%server`
 
 transcode_rtp_port
 ~~~~~~~~~~~~~~~~~~
@@ -79,10 +189,10 @@ transcode_rtp_port
 
 *Description:* base port for RTP streaming
 
-Each RTP stream (audio or video) must go on an even port. Mumudvb will took for
+Each RTP stream (audio or video) must go on an even port. MuMuDVB will took for
 each media stream next even port starting from value specified in this option.
 
-
+*Allowed templates:* `%number`, `%card`, `%tuner` and `%server`. You can use operations `*` and `+` like "transcode_rtp_port=1000+%server*100+%number*2"
 
 transcode_sdp_filename
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -91,7 +201,7 @@ transcode_sdp_filename
 
 *Description:* path to generated SDP file (for RTP streaming)
 
-
+*Allowed templates:* `%number`, `%card`, `%tuner` and `%server`
 
 transcode_video_scale
 ~~~~~~~~~~~~~~~~~~~~~
@@ -188,7 +298,7 @@ Enables target bitrate mode for audio.
 transcode_x264_profile
 ~~~~~~~~~~~~~~~~~~~~~~
 
-*Type:* <int>
+*Type:* <string>
 
 *Description:* set H.264 encoding profile
 
@@ -196,11 +306,42 @@ transcode_x264_profile
 *Possible Values:* 
 
 * baseline - Baseline Profile
+
+This is equivalent to :
+-----------------------------------
+transcode_coder_type=0
+transcode_enable_8x8dct=0
+transcode_loop_filter=1
+transcode_sc_threshold=1
+transcode_x264_partitions=1
+transcode_video_codec=libx264
+-----------------------------------
+
 * main - Main Profile
+This is equivalent to :
+-----------------------------------
+transcode_coder_type=1
+transcode_enable_8x8dct=0
+transcode_loop_filter=1
+transcode_sc_threshold=1
+transcode_x264_partitions=1
+transcode_video_codec=libx264
+-----------------------------------
+
 * high - High Profile
 
+This is equivalent to :
+-----------------------------------
+transcode_coder_type=1
+transcode_enable_8x8dct=1
+transcode_loop_filter=1
+transcode_sc_threshold=1
+transcode_x264_partitions=1
+transcode_video_codec=libx264
+-----------------------------------
+
 [NOTE]
-Specify different video encoding options after declaration of transcode_x264_profile may change profile to higher one. For example option "enable_8x8dct=1" will enable 8x8 transform that is supported only by High Profile.
+Specify different video encoding options after declaration of transcode_x264_profile may change profile to higher one. For example option "transcode_enable_8x8dct=1" will enable 8x8 transform that is supported only by High Profile.
 
 
 
@@ -275,8 +416,8 @@ H.264 allows p8x8 blocks to select different references for each p8x8 block. Thi
 
 
 
-enable_8x8dct
-~~~~~~~~~~~~~
+transcode_enable_8x8dct
+~~~~~~~~~~~~~~~~~~~~~~~
 
 *Type:* <int>
 

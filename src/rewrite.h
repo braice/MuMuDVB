@@ -61,6 +61,12 @@ typedef struct rewrite_parameters_t{
   int sdt_version;
   /**Do the actual full SDT needs to be updated ?*/
   int sdt_needs_update;
+  /** Do we need to see other SDT ?*/
+  int sdt_need_others;
+  /** The last_section_number of the current version */
+  int sdt_last_section_number;
+  /** Array storing the section numbers we saw */
+  int sdt_section_numbers_seen[256];
   /**Do the full SDT is ok ?*/
   int full_sdt_ok;
   /** The Complete SDT PID */

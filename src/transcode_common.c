@@ -73,6 +73,8 @@ void free_transcode_options(transcode_options_t *transcode_options)
     FREE_TRANSOCDE_OPTION(audio_channels)
     FREE_TRANSOCDE_OPTION(audio_sample_rate)
     FREE_TRANSOCDE_OPTION(video_frames_per_second)
+    FREE_TRANSOCDE_OPTION(s_rtp_port)
     FREE_TRANSOCDE_OPTION(rtp_port)
     FREE_TRANSOCDE_OPTION(keyint_min)
+    FREE_TRANSOCDE_OPTION(send_transcoded_only)
 }

@@ -1,7 +1,7 @@
 MuMuDVB - README
 ================
 Brice Dubost <mumudvb@braice.net>
-Version 1.6.1
+Version 1.7
 
 [NOTE]
 Une version HTML de ce fichier est disponible sur http://mumudvb.braice.net[le site web de MuMuDVB].
@@ -34,9 +34,10 @@ Auteurs et contacts
 
 .Contributeurs
 - mailto:manu@REMOVEMEcrans.ens-cachan.fr[Manuel Sabban] (getopt)
-- mailto:glondu@REMOVEMEcrans.ens-cachan.fr[Stéphane Glondu] (makefile cleaning, man page, debian package)
-- Special thanks to Dave Chapman (dvbstream author)
-- Pierre Gronlier, Sébastien Raillard
+- mailto:glondu@REMOVEMEcrans.ens-cachan.fr[Stéphane Glondu] (man page, debian package)
+- Special thanks to Dave Chapman (dvbstream author and contributor)
+- Pierre Gronlier, Sébastien Raillard, Ludovic Boué, Romolo Manfredini
+- Utelisys Communications B.V. pour le transcodage
 
 
 .Liste de discussion
@@ -62,6 +63,9 @@ Fonctionalités principales
 - Support pour DVB-S2 (satellite), DVB-S (satellite), DVB-C (cable), DVB-T (terrestre) et ATSC (terrestre ou cable en amérique du nord)
 - Support pour l'unicast HTTP. voir la section <<unicast,unicast HTTP>>
 - Support pour les en-têtes RTP (seulement pour la diffusion en multicast)
+- Transcodage, référez vous à la section <<transcoding,Transcodage>>
+- Acces au Menu cam pendant la diffustion (Utilisant une interface web/AJAX - voir link:WEBSERVICES.html[WEBSERVICES.txt])
+
 
 Liste détaillée des fonctionalités
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -91,11 +95,8 @@ Liste détaillée des fonctionalités
 - Peut trier le PID EIT pour envoyer seulement ceux correspondant a la chaine courante
 - La lecture des données peux se faire via un thread, voir la section <<threaded_read, lecture par thread>>
 - Génération de listes de lecture, voir <<playlist, playlist>>
+- Possibilité d'utiliser des mots-clefs
 
-D'autres petits programmes sont disponibles depuis le http://gitweb.braice.net/gitweb?p=mumudvb_tools;a=summary[dépot MuMuDVB Tools] :
-
-- relay: ce programme s'inscrit a un flux multicast et le renvoie sur une autre adresse. Il peux être utilisé pour traverser des réseaux ne supportant pas le multicast.
-- recup_sap: très petit et basique client sap. Récupère les annonces pendant 60 secondes et les place dans un fichier.
 
 
 Installation
@@ -108,7 +109,7 @@ Installation
 À partir d'un snapshot
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Si vous avez téléchargé un snapshot, vous devez regénérer les fichiers d'auto(conf make etc ...). Pour faire cela, vous avec besoin des autotools, automake et libtool et taper, dans le répertoire de MuMuDVB : 
+Si vous avez téléchargé un snapshot, vous devez regénérer les fichiers d'auto(conf make etc ...). Pour faire cela, vous avec besoin des autotools, automake, gettext et libtool et taper, dans le répertoire de MuMuDVB : 
 
 ----------------
 autoreconf -i -f
@@ -142,7 +143,7 @@ $ ./configure --help
 --------------------
 
 [NOTE]
-Le support pour les modules CAM dépends des librairies libdvben50221, libucsi ( des dvb-apps de linuxtv ) et libpthread. Le script configure détectera la présence de ces librairies et désactivera le support pour les modules CAM si l'une d'elle est absente.
+Le support pour les modules CAM dépends des librairies libdvben50221, libucsi ( des dvb-apps de linuxtv ). Le script configure détectera la présence de ces librairies et désactivera le support pour les modules CAM si l'une d'elle est absente.
 
 [NOTE]
 Le décodage des noms de chaîne longs pour l'autocoonfiguration en ATSC dépends de la librairie libucsi ( des dvb-apps de linuxtv ). Le script configure détectera la présence de cette librairies et désactivera le support pour les noms longs si elle est absente. L'autoconfiguration complète fonctionnera toujours avec l'ATSC mais les noms de chaîne seront des noms courts ( 7 caractères maximum ).
@@ -202,6 +203,9 @@ Les différentes options sont :
 --card
 	La carte DVB a utiliser ( le fichier de configuration est prioritaire en cas de conflit )
 
+--server_id
+	Le server id ( pour l'autoconfiguration, le fichier de configuration est prioritaire en cas de conflit )
+
 -h, --help
 	Montre l'aide ( en Anglais )
 
@@ -210,12 +214,17 @@ Les différentes options sont :
 
 -q
 	Plus silencieux ( ajouter pour rendre encore plus silencieux )
+
+--dumpfile
+	Option de debug : Sauvegarde le flux reçu dans le fichier spécifié
+
 --------------------------------------------------------------------------------------
 
 Signal: ( voir kill(1) )
 ------------------------------------------------------------------
     SIGUSR1: bascule l'affichage de la force du signal
     SIGUSR2: bascule l'affichage du traffic
+    SIGHUP: force l'écriture des fichiers de log
 ------------------------------------------------------------------
 
 [[autoconfiguration]]
@@ -226,7 +235,7 @@ MuMuDVB est capable de trouver les différentes chaînes dans le transpondeur et
 
 Sans l'autoconfiguration, vous devez spécifier les paramètres du transpondeur et, pour chaque chaîne, l'ip de multicast, le nom et les PIDs ( PMT, audio, vidéo, télétexte etc... ).
 
-À la fin de l'autoconfiguration MuMuDVB génère un fichier de configuration avec les paramètres obtenus. Le fichier généré est : `/var/run/mumudvb/mumudvb_generated_conf_card%d`
+À la fin de l'autoconfiguration MuMuDVB génère un fichier de configuration avec les paramètres obtenus. Le fichier généré est, par défaut : `/var/run/mumudvb/mumudvb_generated_conf_card%d_tuner%d`
 
 Si les PIDs sont changés, MuMuDVB mettra automatiquement à jour les chaînes sauf si vous mettez `autoconf_pid_update=0` dans votre fichier de configuration.
 
@@ -237,7 +246,10 @@ Autoconfiguration "complète"
 
 C'est la manière la plus simple pour utiliser MuMuDVB.
 
-Utilisez ce mode lorsque vous voulez diffuser un transpondeur entier.
+Utilisez ce mode lorsque vous voulez diffuser un transpondeur entier ou une partie d'un transpondeur (en utilisant autoconf_sid_list).
+
+[NOTE]
+Vous ne devez pas spécifier de chaînes en utilisant ce mode.
 
 Dans ce mode, MuMuDVB trouvera pour vous les différentes chaînes, leurs noms et leurs PIDs (PMT, PCR, Audio, Vidéo, Sous-titres, Télétexte et AC3).
 
@@ -286,9 +298,15 @@ Il y a différents mot-clef disponibles
 |Mot clef |Description 
 |%name | Le nom donné par le diffuseur
 |%number | Le numéro de chaîne de MuMuDVB 
-|%lcn | Le "logical channel number" ( numéro de chaîne attribué par le diffuseur ). Vous devez mettre `autoconf_lcn=1` dans votre fichier de configuration et votre diffuseur doit diffuser le LCN. Le LCN sera "affiché" avec trois chiffre incluant des 0. Ex "002". Si le LCN n'est pas détecté, %lcn sera remplacé par une chaîne de caractères vide
+|%lang | La langue par défaut/principale de la chaîne
+|%card | Le numéro de carte DVB
+|%tuner | Le numéro de tuner
+|%server| Le numéro de serveur, spécifié en ligne de commande ou via l'option server_id
+|%lcn | Le "logical channel number" ( numéro de chaîne attribué par le diffuseur ). Votre diffuseur doit diffuser le LCN. Le LCN sera "affiché" avec trois chiffre incluant des 0. Ex "002". Si le LCN n'est pas détecté, %lcn sera remplacé par une chaîne de caractères vide
 |%2lcn | Idem que précédemment mais avec un format à deux chiffres.
 |==================================================================================================================
+
+Reférez vous au README_CONF pour savoir quelles options acceptent quels mot clefs
 
 D'autres mot clefs peuvent être facilement ajoutés si nécessaire.
 
@@ -298,7 +316,10 @@ D'autres mot clefs peuvent être facilement ajoutés si nécessaire.
 Autoconfiguration "simple"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Utilisez ce mode lorsque vous voulez contrôler le nom des chaînes et quelle chaînes vous voulez diffuser.
+[NOTE]
+Ce mode d'autoconfiguration disparaîtra bientôt. Si vous en avez absolument besoin pour autre chose que spécifier le nom ou l'IP merci de me contacter.
+
+Utilisez ce mode lorsque vous voulez contrôler le nom des chaînes, leurs IP d'une manière plus approfondie qu'avec les templates.
 
 - Vous devez ajouter 'autoconfiguration=partial' dans le début de votre fichier de configuration.
 - Pour chaque chaîne, vous devez préciser : 
@@ -314,10 +335,10 @@ MuMuDVB trouvera les PIDs audio, vidéo, PCR, télétexte, sous-titres et AC3 av
 Si vous mettez plus d'un PID pour une chaîne, MuMuDVB désactivera l'autoconfiguration pour cette chaîne.
 
 [NOTE]
-Un fichier de configuration détaillé et documenté (en anglais) se trouve à l'emplacement : `doc/configuration_examples/autoconf1.conf`
+Un fichier de configuration détaillé et documenté (en anglais) se trouve à l'emplacement : `doc/configuration_examples/autoconf_partial.conf`
 
 [NOTE]
-L'autoconfiguration simple peut ne pas réussir à trouver les bon PIDs si le PID PMT est partagé entre plusieurs chaînes. Dans ce cas, vous devez spécifier le numéro de programme ( transport stream identifier ou stream identifier ) via l'option `ts_id`.
+L'autoconfiguration simple peut ne pas réussir à trouver les bon PIDs si le PID PMT est partagé entre plusieurs chaînes. Dans ce cas, vous devez spécifier le numéro de programme ( service identifier ou stream identifier ) via l'option `service_id`.
 
 
 [[sap]]
@@ -417,7 +438,7 @@ vlc http://10.0.0.1:4242/playlist.m3u
 -------------------------------------
 
 [NOTE]
-Dans la playlist, les chaînes seront annoncées avec des URL du type `/bynumber/` ( voir plus bas ), si vous voulez des URLs de chaîne par port utilisez l'URL `/playlist_port.m3u`.
+Dans la playlist, les chaînes seront annoncées avec des URL du type `/bysid/` ( voir plus bas ), si vous voulez des URLs de chaîne par port utilisez l'URL `/playlist_port.m3u`.
 
 [NOTE]
 Des playlists pour la lecture multicast sont aussi générées, elles sont accessibles aux addresses suivantes : "playlist_multicast.m3u" et "playlist_multicast_vlc.m3u"
@@ -446,18 +467,18 @@ vlc http://10.0.0.1:4242/bynumber/3
 
 vous donnera la chaîne numéro 3. Ceci marche aussi avec xine et mplayer.
 
-Obtenir les chaînes par leur transport stream id
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Obtenir les chaînes par leur service id
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Vous pouvez obtenir les chaînes en utilisant leur transport stream id.
+Vous pouvez obtenir les chaînes en utilisant leur service id.
 
 Si votre serveur écoute sur l'ip 10.0.0.1 et le port 4242,
 
 ------------------------------------
-vlc http://10.0.0.1:4242/bytsid/100
+vlc http://10.0.0.1:4242/bysid/100
 ------------------------------------
 
-vous donnera la chaîne numéro avec le transport stream id 100 (ou une erreur 404 si il n'y a pas de chaine avec ce transport stream id). Ceci marche aussi avec xine et mplayer.
+vous donnera la chaîne numéro avec le service id 100 (ou une erreur 404 si il n'y a pas de chaine avec ce service id). Ceci marche aussi avec xine et mplayer.
 
 Obtenir les chaînes par leur nom
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -492,7 +513,7 @@ Vous pouvez utiliser http://mmonit.com/monit/[Monit] pour surveiller MuMuDVB et 
 Vous devez installer les scripts de démarrage ( fait automatiquement si vous utilisez le paquet Debian ) et ajouter les lignes suivantes à votre fichier `/etc/monit/services` :
 
 ----------------------------------------------------------------------
-check process mumudvb with pidfile /var/run/mumudvb/mumudvb_carte0.pid
+check process mumudvb with pidfile /var/run/mumudvb/mumudvb_adapter0_tuner0.pid
     start program = "/etc/init.d/mumudvb start"
     stop program = "/etc/init.d/mumudvb stop"
 ----------------------------------------------------------------------
@@ -523,7 +544,7 @@ Le débrouillage matériel n'utilise quasiment aucune puissance processeur, tout
 [NOTE]
 MuMuDVB ne demande pas au module CAM si le débrouillage est possible. Cette fonctionnalité des modules CAM n'est pas fiable. La plupart des modules CAM répondront par un menu si le débrouillage n'est pas possible et MuMuDVB l'affichera sur la sortie standard d'erreur.
 
-Les informations concernant le module CAM sont stockées dans le fichier '''/var/run/mumudvb/caminfo_carte%d''' où %d est le numéro de carte DVB.
+Les informations concernant le module CAM sont stockées dans le fichier '''/var/run/mumudvb/caminfo_adapter%d_tuner%d''' où %d est le numéro de carte DVB.
 
 .Example 
 ----------------------------------------------------
@@ -534,6 +555,10 @@ CAM_Menu_String=PowerCam_HD V2.0
 ID_CA_Supported=0100
 ID_CA_Supported=0500
 ----------------------------------------------------
+
+[NOTE]
+En cas de problème avec certaines CAM, il se peux que vous aillez à appliquer un correctif à la libdvben50221 :
+http://article.gmane.org/gmane.linux.drivers.video-input-infrastructure/29866[Lien vers le patch]
 
 
 Comment demander le débrouillage ?
@@ -549,7 +574,7 @@ Il vous suffit d'ajouter `cam_support=1` à votre fichier de configuration.
 
 
 [NOTE]
-Vous avez un exemple de fichier de configuration avec le support pour les chaînes brouillées dans `doc/configuration_examples/autoconf1.conf`
+Vous avez un exemple de fichier de configuration avec le support pour les chaînes brouillées dans `doc/configuration_examples/autoconf_partial.conf`
 
 
 Débrouillage logiciel
@@ -562,6 +587,22 @@ MuMuDVB a été testé avec succès avec des solutions de débrouillage logiciel
 Dans ce cas, vous n'avez pas besoin de définir l'option `cam_support`. Vous devez juste ajuste l'option `card` pour être en accord avec votre carte virtuelle dvbloopback.
 
 Si vous utilisez ces solutions référez vous à la section <<reduce_cpu,réduire l'utilisation CPU de MuMuDVB>>.
+
+Some information on how to configure SASC-NG
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following informations have been given by MuMuDVB users on the MuMuDVB-dev mailing list
+
+When the channels are not sucessfully descrambled (channel down in MuMuDVB) the following options are reported to improve the situation
+
+--------------------------------------------------
+--sid-nocache --buffer 8M --sid-filt=200 -D
+--------------------------------------------------
+
+You can try also the option --sid-allpid
+It seems to happend with transponders with a lot of channels (TV or RADIO channels).
+
+
 
 État du débrouillage
 ~~~~~~~~~~~~~~~~~~~~
@@ -595,7 +636,7 @@ Cette fonctionnalité est principalement destinée pour les set-top boxes. Cette
 Pour activer la réécriture du PAT, ajoutez `rewrite_pat=1` à votre fichier de configuration. Cette fonctionnalité utilise peu de puissance processeur, la table PAT étant réécrite une fois par chaîne et stockée en mémoire.
 
 [NOTE]
-La réécriture du PAT peu échouer (i.e. ne résout pas les symptômes précédents) pour certaines chaînes si le PID PMT est partagé par plusieurs chaînes. Dans ce cas, vous devez ajouter l'option `ts_id` pour spécifier le "transport stream id", encore appelé "service id" ou numéro de programme.
+La réécriture du PAT peu échouer (i.e. ne résout pas les symptômes précédents) pour certaines chaînes si le PID PMT est partagé par plusieurs chaînes. Dans ce cas, vous devez ajouter l'option `service_id` pour spécifier le "service id" ou numéro de programme.
 
 [[sdt_rewrite]]
 Réécriture du PID SDT (Service Description Table)
@@ -606,7 +647,7 @@ Cette option permet d'annoncer uniquement la chaîne diffusée dans le PID SDT (
 Pour activer la réécriture du SDT, ajoutez `rewrite_sdt=1` à votre fichier de configuration. Cette fonctionnalité utilise peu de puissance processeur, la table SDT étant réécrite une fois par chaîne et stockée en mémoire.
 
 [NOTE]
-Si vous n'utilisez pas l'autoconfiguration complète, la réécriture du SDT nécessite l'option `ts_id` pour spécifier le "transport stream id", encore appelé "service id" ou numéro de programme.
+Si vous n'utilisez pas l'autoconfiguration complète, la réécriture du SDT nécessite l'option `service_id` pour spécifier le "service id" ou numéro de programme.
 
 Tri du PID EIT (Event Information Table)
 ----------------------------------------
@@ -616,7 +657,7 @@ Cette option permet de ne diffuser que les packets EIT (Event Information Table)
 Pour activer le tri du PID EIT, ajoutez `sort_eit=1` à votre fichier de configuration.
 
 [NOTE]
-Si vous n'utilisez pas l'autoconfiguration complète, le tri du PID EIT nécessite l'option `ts_id` pour spécifier le "transport stream id", encore appelé "service id" ou numéro de programme.
+Si vous n'utilisez pas l'autoconfiguration complète, le tri du PID EIT nécessite l'option `service_id` pour spécifier le "service id" ou numéro de programme.
 
 
 [[reduce_cpu]]
@@ -654,8 +695,10 @@ Transcoding
 
 MuMuDVB peux transcoder le flux dans différents formats pour économiser de la bande passante. Le transcodage est effectué en utilisant les librairies du projet ffmpeg. Cette fonctionnalité est assez nouvelle, n'hesitez pas à envoyer vos remarques/suggestions.
 
+Pour activer le transcodage vous devez compiler MuMuDVB vous même. À cause de changement dans l'API des librairies ffmpeg, le transcoding ne marche pas avec des versions trop récentes de ffmpeg.
+
 [NOTE]
-Le transcodage ne fonctionne pas pour le moment avec l'autoconfiguratin complète/l'unicast.
+Le transcodage ne fonctionne pas pour le moment avec l'unicast.
 
 
 Compiler MuMuDVB avec le support pour le transcodage
@@ -696,6 +739,34 @@ transcode_qmax=51
 ------------------------------
 
 
+Codec not found
+^^^^^^^^^^^^^^^
+
+Si le module de transodage ne trouve pas le codec que vous voulez, vous devez probablement installer des codecs supplementaires (libavcodec-extra-52 pour debian).
+
+Lancez MuMuDVB en mode verbeux vous donnera la liste des codecs disponible.
+
+
+Le flux non transcodé est envoyé
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Pour eviter aux flux original d'être envoyé, vous pouvez utiliser l'option transcode_send_transcoded_only.
+
+
+
+[[ipv6]]
+IPv6
+----
+
+MuMuDVB supporte le multicast IPv6. Il n'est pas activé par défaut. Vous devez l'activer avec l'option multicast_ipv6.
+
+Pour "apprécier" le multicast IPv6 vous devez utiliser des switch supportant le protocole http://en.wikipedia.org/wiki/Multicast_Listener_Discovery[Multicast Listener Discovery].
+
+IPv6 utilise intensivement le concept de [http://en.wikipedia.org/wiki/Multicast_address]scope. Par défaut, MuMuDVB utilise le scope "site-local" (càd des addresses multicast commencant par FF05) les annonces SAP sont aussi envoyées avec ce scope. Si vous avez besoin de plus de flexibilité de ce coté merci de contacter.
+
+Pour plus de détails consultez http://mumudvb.braice.net/mumudrupal/node/52[la page sur l'IPv6] sur le site de MuMuDVB.
+
+
 
 Détails techniques (en vrac)
 ----------------------------
@@ -704,13 +775,27 @@ Détails techniques (en vrac)
 
  * Essayez d'éviter les vieux chipset via ou nForce et, de manière générale les cartes mères à très bas coût. Ils ne supportent pas d'avoir un important flux de données sur le bus PCI.
 
- * Lorsque le programme démarre, il écrit la liste des chaînes dans le fichier `/var/run/mumudvb/chaines_diffusees_carte%d` ( où %d est le numéro de carte ). Ce fichier contient la liste des chaînes diffusées ( mise à jour toutes les 5 secondes ) sous la forme : "nom:ip:port:EtatDuBrouillage"
+ * Lorsque le programme démarre, il écrit la liste des chaînes dans le fichier `/var/run/mumudvb/channels_streamed_adapter%d_tuner%d` ( où %d sont le numéro de carte et le numéro de tuner ). Ce fichier contient la liste des chaînes diffusées ( mise à jour toutes les 5 secondes ) sous la forme : "nom:ip:port:EtatDuBrouillage"
 
  * MuMuDVB peut supporter autant de cartes que le système d'exploitation. Les anciennes version de udev+glibc ne supportaient pas plus de 4 cartes mais ce problème est résolu en utilisant des versions relativement récentes ( udev > 104 et libc6 > 2.7 )
 
- * Lorsque MuMuDVB tourne en démon, il écrit son identifiant de processus dans le fichier `/var/run/mumudvb/mumudvb_carte%d.pid`, où %d est remplacé par le numéro de carte.
+ * Lorsque MuMuDVB tourne en démon, il écrit son identifiant de processus dans le fichier `/var/run/mumudvb/mumudvb_adapter%d_tuner%d.pid`, où %d est remplacé par le numéro de carte et de tuner.
 
  * MuMuDVB supporte la réception satellite en bande Ku avec des LNB universel ou standard. Le support pour la réception satellite en bande S ou C est implémenté via l'utilisation de l'option `lo_frequency`. Référez vous au fichier `doc/README_CONF-fr` ( link:README_CONF-fr.html[Version HTML] ) pour plus de détails.
+
+
+
+MuMuDVB Logs
+------------
+
+MuMuDVB peux envoyer ses logs sur la console, dans un fichier ou via syslog. Il peux aussi les envoyer dans plusieurs de ces canaux. Le formattage des messages peut aussi etre ajusté.
+
+Par défaut, les logs sont envoyé sur la console si MuMuDVB ne tourne pas en démon et via syslog sinon.
+
+Si les logs sont envoyés dans un fichier, vous pouvez forcer l'écriture (flush) en envoyant le signal SIGHUP au processus MuMuDVB.
+
+Pour plus d'informations référez vous au fichier `doc/README_CONF-fr` ( link:README_CONF-fr.html[Version HTML] ).
+
 
 Problèmes connus
 ----------------
@@ -836,6 +921,9 @@ Pour spécifier l'interface, vous povez définir une route pour le traffic multi
 route add -net 224.0.0.0 netmask 240.0.0.0 dev eth2
 ---------------------------------------------------
 
+ou vous pouvez utiliser les options multicast_iface4 et multicast_iface6
+
+
 Que veulent dire les codes d'erreur de MuMuDVB ?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -856,6 +944,32 @@ Voici une courte description des codes d'erreur
     ERROR_GENERIC,
     ERROR_NO_CAM_INIT,
 ------------------------------
+
+
+J'obtiens le message "DVR Read Error: Value too large for defined data type"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Ce message indique qu'un débordement de tampon a eu lieu dans le tampon du pilote de la carte DVB. C'est à dire que MuMuDVB n'a pas été capable de récupérer les paquets assez vite. Ce problème peut avoir des causes
+variées. Tout ce qui ralenti (beaucoup) MuMuDVB peut être la source de ce problème. Pour l'éviter vous pouvez essayer <<threaded_read, la lecture par thread>>.
+
+Des problèmes réseau peuvent provoquer ce message :
+
+I experienced the "DVR Read Error..." message very often on my  Streaming Server (ia64 Madison 1.3Ghz) (with errors in the video).
+I could solve the problem by exchanging the network switch. The old  switch was limiting multicast traffic to 10Mb/s per port. This limit  is not documented.
+
+I have tested the limit the programm dd and mnc (Multicast netcat,  http://code.google.com/p/mnc/)
+
+dd if=/dev/zero bs=188 count=1000000 | ./mnc-bin 239.10.0.3
+
+I looked with "iftop" at the current network statistics and with my  old switch i saw the limit at 10Mb/s with another switch I was able to  transmit 92Mb/s ~ 100% of the avaiable bandwith.
+
+Merci à Jan-Philipp Hülshoff
+
+
+Utilisation avec des clients "particuliers"
+-------------------------------------------
+
+Cette section n'est pas traduite, referez vous a la version anglaise.
 
 
 

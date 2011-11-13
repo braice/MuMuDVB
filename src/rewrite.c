@@ -1,7 +1,7 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB - Stream a DVB transport stream.
  * 
- * (C) 2004-2009 Brice DUBOST
+ * (C) 2004-2010 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -20,12 +20,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *     
+ *
  */
 
 /**@file
- * @brief This file contains the general functions for rewriting 
-
+ * @brief This file contains the general functions for rewriting
  */
 
 #include <stdlib.h>
@@ -37,6 +36,7 @@
 #include "log.h"
 #include <stdint.h>
 
+static char *log_module="Rewrite: ";
 
 /** @brief Read a line of the configuration file to check if there is a rewrite parameter
  *
@@ -52,7 +52,7 @@ int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substri
     if(atoi (substring))
     {
       rewrite_vars->rewrite_pat = OPTION_ON;
-      log_message( MSG_INFO,
+      log_message( log_module, MSG_INFO,
                    "You have enabled the PAT Rewriting\n");
     }
     else
@@ -64,7 +64,7 @@ int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substri
     if(atoi (substring))
     {
       rewrite_vars->rewrite_sdt = OPTION_ON;
-      log_message( MSG_INFO,
+      log_message( log_module, MSG_INFO,
                    "You have enabled the SDT Rewriting\n");
     }
     else
@@ -77,7 +77,7 @@ int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substri
     if(atoi (substring))
     {
       rewrite_vars->eit_sort = OPTION_ON;
-      log_message( MSG_INFO,
+      log_message( log_module, MSG_INFO,
                    "You have enabled the sort of the EIT PID\n");
     }
     else
@@ -101,18 +101,17 @@ void set_continuity_counter(unsigned char *buf,int continuity_counter)
   ts_header->continuity_counter=continuity_counter;
 }
 
-/** @brief This function is called when a new PAT packet for a channel is there and we asked for rewrite
- * This function copy the rewritten PAT to the buffer. And checks if the PAT was changed so the rewritten version have to be updated
+/** @brief This function tells if we have to send the EIT packet
  */
 int eit_sort_new_packet(unsigned char *ts_packet, mumudvb_channel_t *channel)
 {
   int send_packet=1;
   ts_header_t *ts_header=(ts_header_t *)ts_packet;
-  eit_t       *eit_header=(eit_t*)(ts_packet+TS_HEADER_LEN);
-  if(ts_header->payload_unit_start_indicator) //New packet ?
+  eit_t       *eit_header=(eit_t*)(get_ts_begin(ts_packet));
+  if(ts_header->payload_unit_start_indicator && eit_header) //New packet ?
   {
-    if((channel->ts_id) &&
-        (channel->ts_id!= (HILO(eit_header->service_id))))
+    if((channel->service_id) &&
+        (channel->service_id!= (HILO(eit_header->service_id))))
     {
       send_packet=0;
       channel->eit_dropping=1; //We say that we will drop all the other parts of this packet
@@ -131,7 +130,7 @@ int eit_sort_new_packet(unsigned char *ts_packet, mumudvb_channel_t *channel)
     set_continuity_counter(ts_packet,channel->eit_continuity_counter);
     /*To avoid discontinuities, we have to update the continuity counter*/
     channel->eit_continuity_counter++;
-    channel->eit_continuity_counter= channel->eit_continuity_counter % 32;
+    channel->eit_continuity_counter= channel->eit_continuity_counter % 16;
     return 1;
   }
   return 0;

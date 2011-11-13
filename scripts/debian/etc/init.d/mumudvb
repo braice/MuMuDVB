@@ -34,7 +34,7 @@ do_start() {
                 mkdir -p $PIDDIR
         fi
         chown $DAEMONUSER $PIDDIR
-	if [ -x $LAUNCH_BEFORE_MUMU ]; then
+	if [ -x "$LAUNCH_BEFORE_MUMU" ]; then
 		log_daemon_msg "Launching pre script ..."
 		eval $LAUNCH_BEFORE_MUMU
 		log_daemon_msg "Done."
@@ -47,7 +47,7 @@ do_start() {
                    log_warning_msg " Card $ADAPTER: Config file $CONFIG_FILE not found."
 		else
 		   start-stop-daemon --start --oknodo --pidfile "$PIDDIR/mumudvb_carte$ADAPTER.pid"\
-               		 --chuid $DAEMONUSER --exec $DAEMON -- $DAEMON_OPTS -c $CONFIG_FILE
+               		 --chuid $DAEMONUSER --exec $DAEMON -- $DAEMON_OPTS --card $ADAPTER -c $CONFIG_FILE
 		fi
 	done
 }

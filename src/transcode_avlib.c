@@ -4,6 +4,8 @@
  * 
  * Code written by Utelisys Communications B.V.
  * Copyright (C) 2009 Utelisys Communications B.V.
+ * Copyright (c) 2000-2003 Fabrice Bellard
+ * Copyright (c) 2009-2010 Brice Dubost
  *
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -55,6 +57,7 @@
 
 #include <sys/time.h>
 
+static char *log_module="Transcode : ";
 
 #define TRANSCODE_BUF_SIZE (5 * 1024 * 1024)
 #define TRANSCODE_INPUT_BUFFER_SIZE (5 * 1024 * 1024)
@@ -87,17 +90,7 @@ if (NULL != options->config_option) {\
 
 /************ Compatibility for "old" libavcodec ********************/
 //see http://lists.mplayerhq.hu/pipermail/ffmpeg-cvslog/2009-February/019812.html
-#undef OLD_LIBAVCODEC
-#if LIBAVCODEC_VERSION_MAJOR < 52
-#define OLD_LIBAVCODEC 1
-#endif
-
-#if LIBAVCODEC_VERSION_MAJOR == 52
-#if LIBAVCODEC_VERSION_MAJOR < 15
-#define OLD_LIBAVCODEC 1
-#endif
-#endif
-#if OLD_LIBAVCODEC
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(15<<8)+0)
 #warning You are using an "old" version of libavcodec, the audio resampling might not work
 ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
                                         int output_rate, int input_rate,
@@ -118,7 +111,10 @@ ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
 
 /************ End of Compatibility for "old" libavcodec *****************/
 
+void show_codecs(void);
 
+//see http://git.ffmpeg.org/?p=ffmpeg;a=commitdiff;h=a9cef968e49190daf68ad824f71994bd6579bb34
+#ifdef HAVE_URL_SPLIT
 /* FIXME: don't know another way to include this ffmpeg function */
 void url_split(char *proto, int proto_size,
            char *authorization, int authorization_size,
@@ -126,6 +122,21 @@ void url_split(char *proto, int proto_size,
            int *port_ptr,
            char *path, int path_size,
            const char *url);
+#define URL_SPLIT_MUMU url_split
+#endif
+#ifdef HAVE_FF_URL_SPLIT
+/* FIXME: don't know another way to include this ffmpeg function */
+void ff_url_split(char *proto, int proto_size,
+           char *authorization, int authorization_size,
+           char *hostname, int hostname_size,
+           int *port_ptr,
+           char *path, int path_size,
+           const char *url);
+#define URL_SPLIT_MUMU ff_url_split
+#endif
+#ifndef URL_SPLIT_MUMU
+#error "url_split not present, please report"
+#endif
 
 typedef struct output_stream_transcode_data_t
 {
@@ -357,7 +368,7 @@ int create_sdp(AVFormatContext *ac[], int n_files, char *buff, int size)
                 /* Get port */
 
                 int port;
-                url_split(NULL, 0, NULL, 0, NULL, 0, &port, NULL, 0, ac[i]->filename);
+                URL_SPLIT_MUMU(NULL, 0, NULL, 0, NULL, 0, &port, NULL, 0, ac[i]->filename);
 
                 /* Generate SDP lines for MP4A-LATM */
 
@@ -426,7 +437,7 @@ int read_input_packet(void *opaque, uint8_t *buf, int buf_size)
         }
         else {
             if (6 == context_data->no_data_counter) { /* 3 Sec */
-                log_message(MSG_INFO, "[Transcode] No data for transcoding.\n");
+                log_message( log_module, MSG_INFO, "No data for transcoding.\n");
                 return -1;
             }
 
@@ -440,7 +451,7 @@ int read_input_packet(void *opaque, uint8_t *buf, int buf_size)
 
 int write_output_packet(void *opaque, uint8_t *buf, int buf_size)
 {
-    /*log_message(MSG_INFO, "[Transcode] Sending data %d.\n", buf_size);*/
+    /*log_message( log_module, MSG_INFO, "Sending data %d.\n", buf_size);*/
     output_context_data_t *context_data = opaque;
     sendudp(context_data->socket, context_data->socket_addr, buf, buf_size);
     return buf_size;
@@ -454,7 +465,7 @@ ByteIOContext* create_input_byte_context(data_queue_t *queue, pthread_mutex_t *q
     unsigned char *input_buffer = (unsigned char*)av_malloc(input_buffer_size);
 
     if (NULL == input_buffer) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't allocate input buffer.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't allocate input buffer.\n");
         return NULL;
     }
 
@@ -463,7 +474,7 @@ ByteIOContext* create_input_byte_context(data_queue_t *queue, pthread_mutex_t *q
     input_context_data_t *context_data = malloc(sizeof(input_context_data_t));
 
     if (NULL == context_data) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't allocate input context data.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't allocate input context data.\n");
         av_free(input_buffer);
         return NULL;
     }
@@ -482,7 +493,7 @@ ByteIOContext* create_input_byte_context(data_queue_t *queue, pthread_mutex_t *q
         NULL);
     
     if (NULL == input_io) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't create input IO context.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't create input IO context.\n");
         free(context_data);
         av_free(input_buffer);
         return NULL;
@@ -500,7 +511,7 @@ ByteIOContext* create_output_byte_context(int socket, struct sockaddr_in *socket
     unsigned char *output_buffer = (unsigned char*)av_malloc(output_buffer_size);
 
     if (NULL == output_buffer) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't allocate output buffer.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't allocate output buffer.\n");
         return NULL;
     }
 
@@ -509,23 +520,23 @@ ByteIOContext* create_output_byte_context(int socket, struct sockaddr_in *socket
     output_context_data_t *context_data = malloc(sizeof(output_context_data_t));
 
     if (NULL == context_data) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't allocate output context data.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't allocate output context data.\n");
         av_free(output_buffer);
         return NULL;
     }
-    
+
     context_data->socket = socket;
     context_data->socket_addr = socket_addr;
-    
+
     /* Creating ByteIOContext using input_buffer */
 
     ByteIOContext *output_io = av_alloc_put_byte(output_buffer, output_buffer_size, 1, context_data,
         NULL,
         write_output_packet,
         NULL);
-    
+
     if (NULL == output_io) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't create output IO context.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't create output IO context.\n");
         free(context_data);
         av_free(output_buffer);
         return NULL;
@@ -600,7 +611,7 @@ AVFormatContext *create_input_format_context(data_queue_t *queue, pthread_mutex_
     AVInputFormat *input_format = av_find_input_format("mpegts");
 
     if (NULL == input_format) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't find input format.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't find input format.\n");
         free_byte_context(input_io);
         return NULL;
     }
@@ -610,7 +621,7 @@ AVFormatContext *create_input_format_context(data_queue_t *queue, pthread_mutex_
     AVFormatContext *in_context;
 
     if (0 != av_open_input_stream(&in_context, input_io, "stream", input_format, NULL)) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't open input stream.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't open input stream.\n");
         free_byte_context(input_io);
         return NULL;
     }
@@ -620,7 +631,7 @@ AVFormatContext *create_input_format_context(data_queue_t *queue, pthread_mutex_
     pthread_mutex_lock(&avlib_mutex); /*avcodec_open\close require thread safety */
     
     if (0 > av_find_stream_info(in_context)) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't find stream information.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't find stream information.\n");
         pthread_mutex_unlock(&avlib_mutex);
         free_format_context(in_context, 1, 0);
         return NULL;
@@ -653,16 +664,18 @@ AVFormatContext *create_output_format_context(int socket, struct sockaddr_in *so
     }
 
     if (NULL == fmt) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't define output format.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't define output format.\n");
         return NULL;
     }
+    else
+      log_message( log_module, MSG_ERROR, "Output format: %s\n",fmt->long_name);
 
     /* Create output context */
 
     AVFormatContext *out_context = av_alloc_format_context();
 
     if (NULL == out_context) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't create output format context.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't create output format context.\n");
         return NULL;
     }
 
@@ -681,7 +694,7 @@ AVFormatContext *create_output_format_context(int socket, struct sockaddr_in *so
     }
 
     if (open_byte_context && NULL == out_context->pb) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't create output format context.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't create output format context.\n");
         av_free(out_context);
         return NULL;
     }
@@ -698,7 +711,7 @@ int initialize_out_video_stream(AVStream *out_stream,  AVStream *in_stream, tran
     AVCodec *codec = avcodec_find_encoder_by_name(NULL != options->video_codec ? options->video_codec : "mpeg4");
 
     if (NULL == codec || CODEC_TYPE_VIDEO != codec->type) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't find video encoder.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't find video encoder.\n");
         return 0;
     }
 
@@ -809,7 +822,7 @@ int initialize_out_video_stream(AVStream *out_stream,  AVStream *in_stream, tran
     /*}*/
 
     if (0 > avcodec_open(out_stream->codec, codec)) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't open codec for encoding.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't open codec for encoding.\n");
         return 0;
     }
 
@@ -825,7 +838,7 @@ int initialize_out_audio_stream(AVStream *out_stream,  AVStream *in_stream,
         NULL != options->audio_codec ? options->audio_codec : "libmp3lame");
 
     if (NULL == codec || codec->type != CODEC_TYPE_AUDIO) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't find audio encoder.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't find audio encoder.\n");
         return 0;
     }
 
@@ -877,7 +890,7 @@ int initialize_out_audio_stream(AVStream *out_stream,  AVStream *in_stream,
     //out_stream->pts.v-al = 100;
 
     if (0 > avcodec_open(out_stream->codec, codec)) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't open codec for encoding.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't open codec for encoding.\n");
         return 0;
     }
 
@@ -928,14 +941,14 @@ transcode_data_t* initialize_transcode_data(transcode_thread_data_t *transcode_t
 
     AVFormatContext *in_context = NULL;
 
-    log_message(MSG_INFO, "[Transcode] Initializing transcoding.\n");
+    log_message( log_module, MSG_INFO, "Initializing transcoding.\n");
 
     in_context = create_input_format_context(&transcode_thread_data->data_queue,
         &transcode_thread_data->queue_mutex, &transcode_thread_data->terminate_thread_flag,
         TRANSCODE_INPUT_BUFFER_SIZE);
 
     if (NULL == in_context) { /* CAM not initialized or wrong stream */
-        log_message(MSG_ERROR, "[Transcode] Failed to initialize input format context.\n");
+        log_message( log_module, MSG_ERROR, "Failed to initialize input format context.\n");
         return NULL;
     }
 
@@ -945,7 +958,7 @@ transcode_data_t* initialize_transcode_data(transcode_thread_data_t *transcode_t
     transcode_data_t *transcode_data = malloc(sizeof(transcode_data_t));
 
     if (NULL == transcode_data) {
-        log_message(MSG_ERROR, "[Transcode] Failed to initialize transcode data.\n");
+        log_message( log_module, MSG_ERROR, "Failed to initialize transcode data.\n");
 
         free_format_context(in_context, 1, 0);
 
@@ -961,7 +974,7 @@ transcode_data_t* initialize_transcode_data(transcode_thread_data_t *transcode_t
     transcode_data->input_streams_count = in_context->nb_streams;
 
     if (NULL == transcode_data->input_streams_transcode_data) {
-        log_message(MSG_ERROR, "[Transcode] Failed to initialize transcode data.\n");
+        log_message( log_module, MSG_ERROR, "Failed to initialize transcode data.\n");
 
         free_format_context(in_context, 1, 0);
         free(transcode_data);
@@ -997,7 +1010,7 @@ int initialize_video_parameters(input_stream_transcode_data_t *input_stream_tran
                 SWS_BICUBIC, NULL, NULL, NULL);
 
         if (NULL == output_stream_transcode_data->sws_context) {
-            log_message(MSG_ERROR, "[Transcode] Image scaling initialization failed.\n");
+            log_message( log_module, MSG_ERROR, "Image scaling initialization failed.\n");
             return 0;
         }
 
@@ -1006,7 +1019,7 @@ int initialize_video_parameters(input_stream_transcode_data_t *input_stream_tran
         if (avpicture_alloc((AVPicture*)&output_stream_transcode_data->temp_picture,
             out_stream->codec->pix_fmt, out_stream->codec->width, out_stream->codec->height) != 0) {
 
-            log_message(MSG_ERROR, "[Transcode] Image scaling initialization failed.\n");
+            log_message( log_module, MSG_ERROR, "Image scaling initialization failed.\n");
             sws_freeContext(output_stream_transcode_data->sws_context);
             return 0;
         }
@@ -1020,7 +1033,7 @@ int initialize_audio_parameters(input_stream_transcode_data_t *input_stream_tran
     AVStream *in_stream, AVStream *out_stream) 
 {
     if (out_stream->codec->frame_size < 1) {
-        log_message(MSG_ERROR, "[Transcode] Initialize audio frame buffer failed: frame size < 1.\n");
+        log_message( log_module, MSG_ERROR, "Initialize audio frame buffer failed: frame size < 1.\n");
         return 0;
     }
 
@@ -1041,7 +1054,7 @@ int initialize_audio_parameters(input_stream_transcode_data_t *input_stream_tran
         malloc(output_stream_transcode_data->frame_size);
 
     if (NULL == output_stream_transcode_data->frame_buf) {
-        log_message(MSG_ERROR, "[Transcode] Initialize audio frame buffer failed.\n");
+        log_message( log_module, MSG_ERROR, "Initialize audio frame buffer failed.\n");
         return 0;
     }
 
@@ -1069,7 +1082,7 @@ int initialize_audio_parameters(input_stream_transcode_data_t *input_stream_tran
                 16, 10, 0, 0.8);
 
         if (NULL == output_stream_transcode_data->resample_context) {
-            log_message(MSG_ERROR, "[Transcode] Can not initialize audio resampling.\n");
+            log_message( log_module, MSG_ERROR, "Can not initialize audio resampling.\n");
             free(output_stream_transcode_data->frame_buf);
             return 0;
         }
@@ -1092,7 +1105,7 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
     AVFormatContext **out_contexts = calloc(in_context->nb_streams, sizeof(AVFormatContext*));
 
     if (NULL == out_contexts) {
-        log_message(MSG_ERROR, "[Transcode] Failed to initialize output contexts buffer.\n");
+        log_message( log_module, MSG_ERROR, "Failed to initialize output contexts buffer.\n");
 
         free_format_context(in_context, 1, 0);
         free(transcode_data->input_streams_transcode_data);
@@ -1105,7 +1118,7 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
 
     if (NULL == transcode_thread_data->options->streaming_type ||
             STREAMING_TYPE_MPEGTS == *transcode_thread_data->options->streaming_type) {
-        
+
         /* Need single output format context for all streams */
 
         out_context = create_output_format_context(transcode_thread_data->socket,
@@ -1114,8 +1127,8 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
                 STREAMING_TYPE_MPEGTS : *transcode_thread_data->options->streaming_type, 1);
 
         if (NULL == out_context) {
-            log_message(MSG_ERROR, "[Transcode] Failed to create output context.\n");
-            
+            log_message( log_module, MSG_ERROR, "Failed to create output context.\n");
+
             free_format_context(in_context, 1, 0);
             free(transcode_data->input_streams_transcode_data);
             free(transcode_data);
@@ -1161,18 +1174,17 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
             CODEC_TYPE_SUBTITLE == in_stream->codec->codec_type*/) {
 
             /* Initialize decoder for input stream */
-                
             AVCodec *codec = avcodec_find_decoder(in_stream->codec->codec_id);
 
             if (NULL == codec) {
-                log_message(MSG_ERROR, "[Transcode] Couldn't find codec for decoding.\n");
+                log_message( log_module, MSG_ERROR, "Couldn't find codec for decoding.\n");
                 continue;
             }
 
             pthread_mutex_lock(&avlib_mutex);
 
             if (0 > avcodec_open(in_stream->codec, codec)) {
-                log_message(MSG_ERROR, "[Transcode] Couldn't open codec for decoding.\n");
+                log_message( log_module, MSG_ERROR, "Couldn't open codec for decoding.\n");
                 pthread_mutex_unlock(&avlib_mutex);
                 continue;
             }
@@ -1181,13 +1193,13 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
                 Skip it. */
             if (0 == in_stream->codec->sample_rate &&
                 CODEC_TYPE_AUDIO == in_stream->codec->codec_type) {
-                
+
                 initialize_transcode_common_free(in_stream->codec, 1, NULL, NULL,
                     NULL, NULL, NULL, NULL);
-                
+
                 /* Fix memory leak in av_read_paket when reading this stream */
                 in_stream->need_parsing = AVSTREAM_PARSE_NONE;
-                
+
                 continue;
             }
 
@@ -1197,7 +1209,7 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
                 /* Creating separate output format context for each stream */
 
                 out_context = NULL;
-                
+
                 /* URL for RTP sreaming */
                 char url[30];
                 sprintf(url, "rtp://%s:%d", transcode_thread_data->options->ip, rtp_port);
@@ -1219,7 +1231,7 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
 
             if (!out_stream) {
 
-                log_message(MSG_ERROR, "[Transcode] Couldn't create new output stream.\n");
+                log_message( log_module, MSG_ERROR, "Couldn't create new output stream.\n");
 
                 initialize_transcode_common_free(in_stream->codec, 1,
                     out_context, transcode_thread_data->options->streaming_type,
@@ -1247,7 +1259,6 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
             pthread_mutex_unlock(&avlib_mutex);
 
             /* Add stream info to transcoding data */
-                
             /* Calculating start time for all streams */
             if (in_stream->start_time < smallest_start_time || 0 == smallest_start_time) {
                 smallest_start_time = in_stream->start_time;
@@ -1288,7 +1299,7 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
 
                 if (0 > av_set_parameters(out_context, NULL)) {
 
-                    log_message(MSG_ERROR, "[Transcode] Couldn't set output context parameters.\n");
+                    log_message( log_module, MSG_ERROR, "Couldn't set output context parameters.\n");
 
                     initialize_transcode_common_free(in_stream->codec, 0,
                         out_context, transcode_thread_data->options->streaming_type,
@@ -1303,8 +1314,7 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
                 /* Write output context header */
 
                 if (0 != av_write_header(out_context)) {
-                    
-                    log_message(MSG_ERROR, "[Transcode] Writing header failed.\n");
+                    log_message( log_module, MSG_ERROR, "Writing header failed.\n");
 
                     initialize_transcode_common_free(in_stream->codec, 0,
                         out_context, transcode_thread_data->options->streaming_type,
@@ -1328,9 +1338,9 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
 
             transcode_data->input_streams_transcode_data[i].output_streams_transcode_data =
                 malloc(sizeof(output_stream_transcode_data_t));
-         
+
             if (NULL == transcode_data->input_streams_transcode_data[i].output_streams_transcode_data) {
-                log_message(MSG_ERROR, "[Transcode] Failed to allocate memory for output_streams_transcode_data.\n");
+                log_message( log_module, MSG_ERROR, "Failed to allocate memory for output_streams_transcode_data.\n");
 
                 initialize_transcode_common_free(in_stream->codec, 0,
                     out_context, transcode_thread_data->options->streaming_type,
@@ -1346,7 +1356,7 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
             output_stream_transcode_data.out_stream = out_stream;
 
             transcode_data->input_streams_transcode_data[i].output_streams_transcode_data[0] = output_stream_transcode_data;
-            transcode_data->input_streams_transcode_data[i].output_streams_count = 1;     
+            transcode_data->input_streams_transcode_data[i].output_streams_count = 1;
 
             output_streams_counter++;
         }
@@ -1375,7 +1385,6 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
 
                 free(buff);
             }
-            
             fclose(sdp_file);
         }
     }
@@ -1394,14 +1403,14 @@ void* initialize_transcode_common(transcode_thread_data_t *transcode_thread_data
         /* Set output context parameters */
 
         if (0 > av_set_parameters(out_context, NULL)) {
-            log_message(MSG_ERROR, "[Transcode] Couldn't set output context parameters.\n");
+            log_message( log_module, MSG_ERROR, "Couldn't set output context parameters.\n");
             goto INITIALIZE_TRANSCODING_ERROR;
         }
 
         /* Write output context header */
 
         if (0 != av_write_header(out_context)) {
-            log_message(MSG_ERROR, "[Transcode] Writing header failed.\n");
+            log_message( log_module, MSG_ERROR, "Writing header failed.\n");
             goto INITIALIZE_TRANSCODING_ERROR;
         }
 
@@ -1421,7 +1430,7 @@ INITIALIZE_TRANSCODING_ERROR:
 void* initialize_transcode_ffm(transcode_thread_data_t *transcode_thread_data)
 {
     if (NULL == transcode_thread_data->options->ffm_url) {
-    log_message(MSG_ERROR, "[Transcode] URL of FFM feed was not specified (transcode_ffm_url).\n");
+    log_message( log_module, MSG_ERROR, "URL of FFM feed was not specified (transcode_ffm_url).\n");
         return NULL;
     }
 
@@ -1443,7 +1452,7 @@ void* initialize_transcode_ffm(transcode_thread_data_t *transcode_thread_data)
         transcode_thread_data->options->ffm_url, streaming_type, 0);
 
     if (NULL == out_context) {
-        log_message(MSG_ERROR, "[Transcode] Failed to initialize output format context.\n");
+        log_message( log_module, MSG_ERROR, "Failed to initialize output format context.\n");
 
         free_format_context(in_context, 1, 0);
         free(transcode_data->input_streams_transcode_data);
@@ -1461,7 +1470,7 @@ void* initialize_transcode_ffm(transcode_thread_data_t *transcode_thread_data)
     AVFormatContext *ffm_format_context;
 
     if (0 > av_open_input_file(&ffm_format_context, transcode_thread_data->options->ffm_url, NULL, FFM_PACKET_SIZE, NULL)) {
-        log_message(MSG_ERROR, "[Transcode] Failed to read FFM feed.\n");
+        log_message( log_module, MSG_ERROR, "Failed to read FFM feed.\n");
         pthread_mutex_unlock(&avlib_mutex);
         free_format_context(out_context, 0, streaming_type);
         free_format_context(in_context, 1, 0);
@@ -1497,7 +1506,7 @@ void* initialize_transcode_ffm(transcode_thread_data_t *transcode_thread_data)
     url_fopen(&out_context->pb, out_context->filename, URL_WRONLY);
 
     if (NULL == out_context->pb) {
-        log_message(MSG_ERROR, "[Transcode] Failed to open FFM feed.\n");
+        log_message( log_module, MSG_ERROR, "Failed to open FFM feed.\n");
 
         free_format_context(out_context, 0, streaming_type);
         free_format_context(in_context, 1, 0);
@@ -1524,7 +1533,7 @@ void* initialize_transcode_ffm(transcode_thread_data_t *transcode_thread_data)
         pthread_mutex_lock(&avlib_mutex);
 
         if (0 > avcodec_open(out_context->streams[i]->codec, codec)) {
-            log_message(MSG_ERROR, "[Transcode] Couldn't open codec for encoding.\n");
+            log_message( log_module, MSG_ERROR, "Couldn't open codec for encoding.\n");
             pthread_mutex_unlock(&avlib_mutex);
             continue;
         }
@@ -1540,7 +1549,7 @@ void* initialize_transcode_ffm(transcode_thread_data_t *transcode_thread_data)
     }
 
     if (0 == output_video_streams && 0 == output_audio_streams) {
-        log_message(MSG_ERROR, "[Transcode] No output streams for transcoding.\n");
+        log_message( log_module, MSG_ERROR, "No output streams for transcoding.\n");
         free_transcode(transcode_data, transcode_thread_data);
         return NULL;
     }
@@ -1565,14 +1574,14 @@ void* initialize_transcode_ffm(transcode_thread_data_t *transcode_thread_data)
             AVCodec *codec = avcodec_find_decoder(in_stream->codec->codec_id);
 
             if (NULL == codec) {
-                log_message(MSG_ERROR, "[Transcode] Couldn't find codec for decoding.\n");
+                log_message( log_module, MSG_ERROR, "Couldn't find codec for decoding.\n");
                 continue;
             }
 
             pthread_mutex_lock(&avlib_mutex);
 
             if (0 > avcodec_open(in_stream->codec, codec)) {
-                log_message(MSG_ERROR, "[Transcode] Couldn't open codec for decoding.\n");
+                log_message( log_module, MSG_ERROR, "Couldn't open codec for decoding.\n");
                 pthread_mutex_unlock(&avlib_mutex);
                 continue;
             }
@@ -1669,7 +1678,7 @@ void* initialize_transcode_ffm(transcode_thread_data_t *transcode_thread_data)
     }
 
     if (!is_video_initialized && !is_audio_initialized) {
-        log_message(MSG_ERROR, "[Transcode] No input streams for transcoding.\n");
+        log_message( log_module, MSG_ERROR, "No input streams for transcoding.\n");
         free_transcode(transcode_data, transcode_thread_data);
         return NULL;
     }
@@ -1683,7 +1692,7 @@ void* initialize_transcode_ffm(transcode_thread_data_t *transcode_thread_data)
     /* Set output context pameters */
 
     if (0 > av_set_parameters(out_context, NULL)) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't set output context parameters.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't set output context parameters.\n");
                 free_transcode(transcode_data, transcode_thread_data);
         return NULL;
     }
@@ -1691,7 +1700,7 @@ void* initialize_transcode_ffm(transcode_thread_data_t *transcode_thread_data)
     /* Write output context header */
 
     if (0 != av_write_header(out_context)) {
-        log_message(MSG_ERROR, "[Transcode] Writing header failed.\n");
+        log_message( log_module, MSG_ERROR, "Writing header failed.\n");
         free_transcode(transcode_data, transcode_thread_data);
         return NULL;
     }
@@ -1710,10 +1719,11 @@ void* initialize_transcode(transcode_thread_data_t *transcode_thread_data)
     static int avlib_initialized = 0;
 
     if (!avlib_initialized) {
-        log_message(MSG_ERROR, "[Transcode] Initializing avlibs.\n");
+        log_message( log_module, MSG_INFO, "Initializing avlibs.\n");
         avlib_initialized = 1;
         avcodec_register_all();
         av_register_all();
+        show_codecs(); //show the available codecs
     }
 
     pthread_mutex_unlock(&avlib_mutex);
@@ -1738,9 +1748,9 @@ void free_transcode(void *transcode_avlib_handle, transcode_thread_data_t *trans
     while (NULL != (out_context = ref_queue_dequeue(&transcode_data->out_contexts))) {
         /* Writing trailer */
         if (0 != av_write_trailer(out_context)) {
-            log_message(MSG_ERROR, "[Transcode] Couldn't write trailer.\n");
+            log_message( log_module, MSG_ERROR, "Couldn't write trailer.\n");
         }
-        
+
         free_format_context(out_context, 0,
             NULL == transcode_thread_data->options->streaming_type ?
             STREAMING_TYPE_MPEGTS : *transcode_thread_data->options->streaming_type);
@@ -1825,10 +1835,10 @@ int copy_packet_to_queue(ref_queue_t *queue, AVPacket *packet)
 
     if (1 != result) {
         if (0 == result) {
-            log_message(MSG_INFO, "[Transcode] Frames queue is full.\n");
+            log_message( log_module, MSG_INFO, "Frames queue is full.\n");
         }
         else if (-1 == result) {
-            log_message(MSG_ERROR, "[Transcode] Failed to add video frame to queue.\n");
+            log_message( log_module, MSG_ERROR, "Failed to add video frame to queue.\n");
         }
 
         av_free(copy->data);
@@ -1857,7 +1867,7 @@ int write_frames_from_queue(AVFormatContext *out_context, ref_queue_t *queue, in
         }*/
 
         if (0 > av_interleaved_write_frame(out_context, packet)) {
-            log_message(MSG_ERROR, "[Transcode] Couldn't write frame.\n");
+            log_message( log_module, MSG_ERROR, "Couldn't write frame.\n");
             av_free(packet->data);
             free(packet);
             /* Error writing frame */
@@ -1907,7 +1917,7 @@ int write_succeeded_frame(transcode_data_t *transcode_data, int input_stream_ind
     out_packet.size = out_size;
 
     /*if (0 > av_interleaved_write_frame(output_stream_data->out_context, &out_packet)) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't write frame.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't write frame.\n");
         return -1;
     }
 
@@ -1982,7 +1992,7 @@ int write_succeeded_frame(transcode_data_t *transcode_data, int input_stream_ind
                     continue;
                 }
                 else if (0 > written_frames) {
-                    log_message(MSG_ERROR, "[Transcode] Error writing frame\n");
+                    log_message( log_module, MSG_ERROR, "Error writing frame\n");
                     return -1; /* Error writing frame */
                 }
 
@@ -2013,14 +2023,14 @@ void transcode(void *transcode_avlib_handle, transcode_thread_data_t *transcode_
      AVFrame *frame = avcodec_alloc_frame();
  
      if (NULL == frame) {
-         log_message(MSG_ERROR, "[Transcode] Couldn't allocate frame.\n");
+         log_message( log_module, MSG_ERROR, "Couldn't allocate frame.\n");
          return;
      }
  
      uint8_t *outbuf = (uint8_t*)av_malloc(TRANSCODE_BUF_SIZE);
  
      if (NULL == outbuf) {
-         log_message(MSG_ERROR, "[Transcode] Couldn't allocate buffer.\n");
+         log_message( log_module, MSG_ERROR, "Couldn't allocate buffer.\n");
          av_free(frame);
          return;
      }
@@ -2028,7 +2038,7 @@ void transcode(void *transcode_avlib_handle, transcode_thread_data_t *transcode_
      int16_t *inbuf = (int16_t*)av_malloc(TRANSCODE_BUF_SIZE);
  
      if (NULL == inbuf) {
-         log_message(MSG_ERROR, "[Transcode] Couldn't allocate buffer.\n");
+         log_message( log_module, MSG_ERROR, "Couldn't allocate buffer.\n");
          av_free(frame);
          av_free(outbuf);
          return;
@@ -2037,7 +2047,7 @@ void transcode(void *transcode_avlib_handle, transcode_thread_data_t *transcode_
     int16_t *inbuf2 = (int16_t*)av_malloc(TRANSCODE_BUF_SIZE);
  
     if (NULL == inbuf2) {
-        log_message(MSG_ERROR, "[Transcode] Couldn't allocate buffer.\n");
+        log_message( log_module, MSG_ERROR, "Couldn't allocate buffer.\n");
         av_free(frame);
         av_free(inbuf);
         av_free(outbuf);
@@ -2055,7 +2065,7 @@ void transcode(void *transcode_avlib_handle, transcode_thread_data_t *transcode_
      while (!transcode_thread_data->terminate_thread_flag && !terminate_loop_flag) {
  
         if (0 > av_read_frame(in_context, &packet)) {
-            log_message(MSG_ERROR, "[Transcode] Ending transcoding - av_read_frame returned error.\n");
+            log_message( log_module, MSG_ERROR, "Ending transcoding - av_read_frame returned error.\n");
             break;
         }
 
@@ -2091,11 +2101,11 @@ void transcode(void *transcode_avlib_handle, transcode_thread_data_t *transcode_
 
             if (0 >= bytes_decoded) {
                 /* Video was not decoded */
-                log_message(MSG_ERROR, "[Transcode] Video was not decoded.\n");
+                log_message( log_module, MSG_ERROR, "Video was not decoded.\n");
             }
             else if (!is_frame_finished) {
                 /* Video was not decoded */
-                /* log_message(MSG_ERROR, "[Transcode] Frame not finished.\n"); */
+                /* log_message( log_module, MSG_ERROR, "Frame not finished.\n"); */
             }
             else {
                 /* Video was decoded. Encode video for each output stream */
@@ -2112,7 +2122,7 @@ void transcode(void *transcode_avlib_handle, transcode_thread_data_t *transcode_
                             cur_output_stream_transcode_data->frame_rate_factor) {
 
                         if (input_frame_no < 0) {
-                            log_message(MSG_INFO, "[Transcode] Reset transcoding: input frame number < 0.\n");
+                            log_message( log_module, MSG_INFO, "Reset transcoding: input frame number < 0.\n");
                             terminate_loop_flag = 1;
                         }
 
@@ -2151,7 +2161,7 @@ void transcode(void *transcode_avlib_handle, transcode_thread_data_t *transcode_
 
                         if (0 > out_size) {
                             /* Error encoding video frame */
-                            log_message(MSG_ERROR, "[Transcode] Error encoding video frame.\n");
+                            log_message( log_module, MSG_ERROR, "Error encoding video frame.\n");
                             break;
                         }
                         else {
@@ -2180,25 +2190,25 @@ void transcode(void *transcode_avlib_handle, transcode_thread_data_t *transcode_
                 }
             }
         }
-        else if (CODEC_TYPE_AUDIO == in_stream->codec->codec_type) {            
+        else if (CODEC_TYPE_AUDIO == in_stream->codec->codec_type) {
 
             /* Decode audio */
  
             int result_bytes = TRANSCODE_BUF_SIZE;
-            
+
             /* Decoding audio to input buffer */
             bytes_decoded = avcodec_decode_audio2(in_stream->codec, inbuf,
                 &result_bytes, packet.data, packet.size);
 
             if (0 > bytes_decoded) {
-                log_message(MSG_ERROR, "[Transcode] Error decoding audio frame.\n");
+                log_message( log_module, MSG_ERROR, "Error decoding audio frame.\n");
             }
             else if (0 == bytes_decoded || 0 == result_bytes) {
-                log_message(MSG_ERROR, "[Transcode] Frame could not be decoded.\n");
+                log_message( log_module, MSG_ERROR, "Frame could not be decoded.\n");
             }
             else {
                 if (bytes_decoded != packet.size) {
-                    log_message(MSG_ERROR, "[Transcode] bytes_decoded != packet.size.\n");
+                    log_message( log_module, MSG_ERROR, "bytes_decoded != packet.size.\n");
                 }
 
                 /* Audio was decoded. Encode audio */
@@ -2214,7 +2224,7 @@ void transcode(void *transcode_avlib_handle, transcode_thread_data_t *transcode_
                             cur_output_stream_transcode_data->frame_rate_factor) {
 
                         if (input_frame_no < 0) {
-                            log_message(MSG_INFO, "[Transcode] Reset transcoding: input frame number < 0.\n");
+                            log_message( log_module, MSG_INFO, "Reset transcoding: input frame number < 0.\n");
                             terminate_loop_flag = 1;
                         }
 
@@ -2272,11 +2282,11 @@ void transcode(void *transcode_avlib_handle, transcode_thread_data_t *transcode_
                             cur_output_stream_transcode_data->frame_buf_data_length = 0;
 
                             if (0 > out_size) {
-                                log_message(MSG_ERROR, "[Transcode] Error encoding audio.\n");
+                                log_message( log_module, MSG_ERROR, "Error encoding audio.\n");
                                 continue;
                             }
                             if (0 == out_size) {
-                                //log_message(MSG_ERROR, "[Transcode] Error not enough data for encoding audio frame.\n");
+                                //log_message( log_module, MSG_ERROR, "Error not enough data for encoding audio frame.\n");
                                 continue;
                             }
                             else {
@@ -2313,4 +2323,73 @@ FREE_PACKET_AND_CONTINUE:
      av_free(frame);
  
      return;
+}
+
+
+/** @brief Show the available codecs
+ * This code is from the ffmpeg source code, snapshotted 16 june 2010
+ * slightly modified by Brice Dubost
+ *
+ * Copyright (c) 2000-2003 Fabrice Bellard
+*/
+void show_codecs(void)
+{
+    AVCodec *p=NULL, *p2;
+    const char *last_name;
+    log_message (log_module, MSG_DETAIL,
+        "Codecs available:\n"
+        " D.. = Decoding supported\n"
+        " .E. = Encoding supported\n"
+        " ..V = Video codec\n"
+        " ..A = Audio codec\n"
+        " ..S = Subtitle codec\n");
+    last_name= "000";
+    for(;;){
+        int decode=0;
+        int encode=0;
+        const char *type_str;
+
+        p2=NULL;
+        while((p= av_codec_next(p))) {
+            if((p2==NULL || strcmp(p->name, p2->name)<0) &&
+                strcmp(p->name, last_name)>0){
+                p2= p;
+                decode= encode= 0;
+            }
+            if(p2 && strcmp(p->name, p2->name)==0){
+                if(p->decode) decode=1;
+                if(p->encode) encode=1;
+            }
+        }
+        if(p2==NULL)
+            break;
+        last_name= p2->name;
+
+        switch(p2->type) {
+        case CODEC_TYPE_VIDEO:
+            type_str = "V";
+            break;
+        case CODEC_TYPE_AUDIO:
+            type_str = "A";
+            break;
+        case CODEC_TYPE_SUBTITLE:
+            type_str = "S";
+            break;
+        default:
+            type_str = "?";
+            break;
+        }
+        log_message (log_module, MSG_DETAIL,
+            " %s%s%s %-15s %s\n",
+            decode ? "D":" ",
+            encode ? "E":" ",
+            type_str,
+            p2->name,
+//see http://git.ffmpeg.org/?p=ffmpeg;a=commitdiff;h=639cd7fb3af2e40b67e054c2218e6366d17fc0c2
+#if LIBAVCODEC_VERSION_INT < ((51<<16)+(55<<8)+0)
+            "");
+#else
+            p2->long_name ? p2->long_name : "");
+#endif
+    }
 }

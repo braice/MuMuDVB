@@ -2,7 +2,7 @@
  * MuMuDVB - UDP-ize a DVB transport stream.
  * File for Conditionnal Access Modules support
  * 
- * (C) 2009 Brice DUBOST
+ * (C) 2009-2011 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -49,7 +49,6 @@
  */
 
 #include <libdvben50221/en50221_stdcam.h>
-#include <pthread.h>
 
 struct ca_info {
   int initialized; //are the cai complete ?
@@ -65,6 +64,9 @@ int cam_send_ca_pmt( mumudvb_ts_packet_t *pmt, struct ca_info *cai);
 int convert_desc(struct ca_info *cai, uint8_t *out, uint8_t *buf, int dslen, uint8_t cmd, int quiet);
 int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt, uint8_t list, uint8_t cmd,int quiet);
 
+#define MAX_ENQUIRY_ANSWER_LENGTH 20
+#define DISPLAY_TYPE_LIST 1
+#define DISPLAY_TYPE_MENU 2
 
 /** @brief the parameters for the cam
  * This structure contain the parameters needed for the CAM
@@ -74,6 +76,8 @@ typedef struct cam_parameters_t{
   int cam_support;
   /**The came number (in case of multiple cams)*/
   int cam_number;
+  /** Do we reask channels asked and keept scrambled and what is the interval between reasks*/
+  int cam_reask_interval;
   int cam_type;
   int need_reset;
   int reset_counts;
@@ -87,15 +91,31 @@ typedef struct cam_parameters_t{
   int camthread_shutdown;
   pthread_t camthread;
   int moveca;
-  int delay; //used to get the menu answer
   int mmi_state;
   int mmi_enq_blind;
   int mmi_enq_length;
+  int mmi_enq_entered;
+  char mmi_enq_answer[10];
+  /** Used to say if we received the CA info callback */
+  long ca_info_ok_time;
+  /** The delay for sending the PMT to the CAM*/
+  int cam_delay_pmt_send;
+  /** The delay between two PMT asking */
+  int cam_interval_pmt_send;
+  long cam_pmt_send_time;
+  char filename_cam_info[DEFAULT_PATH_LEN];
+  mumu_string_t cam_menu_string;
+  mumu_string_t cam_menulist_str;
+  int cam_mmi_autoresponse;
+  /** Do we follow the version of the PMT for the CAM ?*/
+  int cam_pmt_follow;
 }cam_parameters_t;
 
 /*****************************************************************************
  * Code for dealing with libdvben50221
  *****************************************************************************/
+
+#define SL_MAX_SESSIONS 16
 
 #define MMI_STATE_CLOSED 0
 #define MMI_STATE_OPEN 1
@@ -121,8 +141,10 @@ typedef struct cam_parameters_t{
 #define DVBCA_INTERFACE_LINK 0
 #define DVBCA_INTERFACE_HLCI 1
 
-int cam_start(cam_parameters_t *, int, char *);
+int cam_start(cam_parameters_t *, int);
 void cam_stop(cam_parameters_t *);
 int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
-void cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, cam_parameters_t *cam_vars, mumudvb_channel_t *actual_channel);
+int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, cam_parameters_t *cam_vars, mumudvb_channel_t *actual_channel);
+
+void cam_pmt_follow(unsigned char *ts_packet,  mumudvb_channel_t *actual_channel);
 #endif

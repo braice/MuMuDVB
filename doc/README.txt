@@ -1,7 +1,7 @@
 MuMuDVB - README
 ================
 Brice Dubost <mumudvb@braice.net>
-Version 1.6.1
+Version 1.7
 
 [NOTE]
 An HTML version of this file is availaible on http://mumudvb.braice.net[MuMuDVB's website].
@@ -36,9 +36,9 @@ Authors and contacts
 
 .Contributions
 - mailto:manu@REMOVEMEcrans.ens-cachan.fr[Manuel Sabban] (getopt)
-- mailto:glondu@REMOVEMEcrans.ens-cachan.fr[Stéphane Glondu] (makefile cleaning, man page, debian package)
-- Special thanks to Dave Chapman (dvbstream author)
-- Pierre Gronlier, Sébastien Raillard, Ludovic Boué
+- mailto:glondu@REMOVEMEcrans.ens-cachan.fr[Stéphane Glondu] (man page, debian package)
+- Special thanks to Dave Chapman (dvbstream author and contributor)
+- Pierre Gronlier, Sébastien Raillard, Ludovic Boué, Romolo Manfredini
 - Utelisys Communications B.V. for the transcoding code
 
 .Mailing list:
@@ -63,7 +63,8 @@ Features overview
 - Possibility to partially rewrite the stream for better compatibility with set-top boxes and some clients. See <<pat_rewrite,PAT Rewrite>> and <<sdt_rewrite,SDT Rewrite>> sections.
 - Support for HTTP unicast see <<unicast,http unicast>> section
 - Support for RTP headers (only for multicast)
-- Ability to transcode the stream (only for multicast, in beta test) see the <<transcoding,Transcoding>> section
+- Ability to transcode the stream (only for multicast for the moment) see the <<transcoding,Transcoding>> section
+- CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.txt and CAM_menu_interface.png for screenshot)
 
 Detailled feature list
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -93,12 +94,8 @@ Detailled feature list
 - Can sort the EIT PID to send only the ones corresponding to the current channel
 - Data reading can be done using a thread, see <<threaded_read, thread reading>> section.
 - Playlist generation, see <<playlist, playlist>>
-
-Others small programs are availaible from http://gitweb.braice.net/gitweb?p=mumudvb_tools;a=summary[MuMuDVB Tools Repository] :
-
-- relay: this program takes a stream and sends it again on a different ip. It can be used to unicast a stream over a network that doesn't support multicast, and multicast it again at the other end
-- recup_sap: tiny sap client, get sap announces during 60 seconds and put them on a file (unsorted)
-
+- Templates support
+- Simple webservice exposing detailed streaming status (see WEBSERVICES.txt)
 
 Installation
 ------------
@@ -109,7 +106,7 @@ From sources
 From a snapshot
 ^^^^^^^^^^^^^^^
 
-If you downloaded a snapshot, you will have to generate the auto(conf make etc ...) files. In order to do this you will need the autotools, automake and libtool and, type in the folder of MuMuDVB
+If you downloaded a snapshot, you will have to generate the auto(conf make etc ...) files. In order to do this you will need the autotools, automake, gettext and libtool and, type in the folder of MuMuDVB
 
 ----------------
 autoreconf -i -f
@@ -143,7 +140,7 @@ $ ./configure --help
 --------------------
 
 [NOTE]
-The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps) and libpthread. The configure script will detect automatically the presence of these libraries and desactivate the CAM support if one of them is not present.
+The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of these libraries and desactivate the CAM support if one of them is not present.
 
 [NOTE]
 The decoding of long channel names for autoconfiguration in ATSC depends on libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of this library and desactivate the long channel name support if it is not present. The full autoconfiguration will still work with ATSC but the channel names will be the short channels names (7 characters maximum)
@@ -203,6 +200,9 @@ Possible options are:
 --card
 	The DVB card to use (overrided by the configuration file)
 
+--server_id
+	The server id (for autoconfiguration, overrided by the configuration file)
+
 -h, --help
 	Show help
 
@@ -211,12 +211,16 @@ Possible options are:
 
 -q
 	More quiet (add for less)
+
+--dumpfile
+	Debug option : Dump the stream into the specified file
 ------------------------------------------------------------------
 
 Signal: (see kill(1))
 ------------------------------------------------------------------
     SIGUSR1: switch the signal strenght printing
     SIGUSR2: switch the traffic printing
+    SIGHUP: flush the log files
 ------------------------------------------------------------------
 
 [[autoconfiguration]]
@@ -227,7 +231,7 @@ MuMuDVB is able to find the channels in the transponder and their PIDs (Program 
 
 Without autoconfiguration, you have to set the transponder parameters, and for each channel, the multicast ip, the name and the PIDs (PMT, audio, video, teletext etc...)
 
-At the end of autoconfiguration, MuMuDVB generates a config file with the discovered parameters. This file is: `/var/run/mumudvb/mumudvb_generated_conf_card%d`
+At the end of autoconfiguration, MuMuDVB generates a config file with the discovered parameters. This file is: `/var/run/mumudvb/mumudvb_generated_conf_card%d_tuner%d`
 
 If the PIDs are changed, MuMuDVB will automatically update the channels except if you put `autoconf_pid_update=0` in your configuration file.
 
@@ -238,7 +242,10 @@ Full autoconfiguration
 
 This is the easiest way to use MuMuDVB.
 
-Use this when you want to stream a full transponder.
+Use this when you want to stream a full transponder or a subset of a transponder (using autoconf_sid_list).
+
+[NOTE]
+You don't have to specify any channel using this mode
 
 In this mode, MuMuDVB will find for you the different channels, their name and their PIDs (PMT, PCR, Audio, Video, Subtitle, Teletext and AC3).
 
@@ -288,10 +295,15 @@ There is different keywords available:
 |Keyword |Description 
 |%name | The name given by the provider 
 |%number | The MuMuDVB channel number 
-|%lcn | The logical channel number (channel number given by the provider). You have to put `autoconf_lcn=1` in your configuration file and your provider have to stream LCN. The LCN will be displayed with three digits including 0. Ex "002". If the LCN is not detected, %lcn will be replaced by an empty string.
+|%lang | The channel primary language
+|%card | The DVB card number
+|%tuner | The tuner number
+|%server| The server number specified by server_id or the command line 
+|%lcn | The logical channel number (channel number given by the provider). Your provider have to stream the LCN. The LCN will be displayed with three digits including 0. Ex "002". If the LCN is not detected, %lcn will be replaced by an empty string.
 |%2lcn | Same as above but with a two digits format
 |==================================================================================================================
 
+Please refer to README_CONF to see which options accept which templates
 
 Other keywords can be easily added if necessary.
 
@@ -301,7 +313,10 @@ Other keywords can be easily added if necessary.
 Simple autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Use this when you want to control the name of the channels, and wich channel you want to stream.
+[NOTE]
+This autoconfiguration mode will soon disapear. If you absolutely need it except for setting the channel names and their IP adresses, please contact.
+
+Use this when you want to control the name of the channels, and their IPs better than using the templates.
 
 
 - You have to add 'autoconfiguration=partial' in the head of your config file.
@@ -317,10 +332,10 @@ MuMuDVB will find the audio, video, PCR, teletext, subtitling and AC3 PIDs for y
 If you put more than one PID for a channel, MuMuDVB will desactivate autoconfiguration for this channel.
 
 [NOTE]
-A detailled, documented example configuration file can be found in `doc/configuration_examples/autoconf1.conf`
+A detailled, documented example configuration file can be found in `doc/configuration_examples/autoconf_partial.conf`
 
 [NOTE]
-Simple autoconfiguration can fail finding the good pids if a PMT pid is shared within multiples channels. In this case you have to add the `ts_id` option to the channel to specify the transport stream id, also known as service id.
+Simple autoconfiguration can fail finding the good pids if a PMT pid is shared within multiples channels. In this case you have to add the `service_id` option to the channel to specify the service id.
 
 [[sap]]
 SAP announces
@@ -424,7 +439,7 @@ vlc http://10.0.0.1:4242/playlist.m3u
 -------------------------------------
 
 [NOTE]
-In this playlist the channels will be announced with URLs type `/bynumber/` (see below), if you want a playlist for single channel sockets, use the URL `/playlist_port.m3u`.
+In this playlist the channels will be announced with URLs type `/bysid/` (see below), if you want a playlist for single channel sockets, use the URL `/playlist_port.m3u`.
 
 [NOTE]
 Playlists for multicast are also generated, they are accessible using the following names: "playlist_multicast.m3u" and "playlist_multicast_vlc.m3u"
@@ -454,18 +469,18 @@ vlc http://10.0.0.1:4242/bynumber/3
 
 will give you the channel number 3. This works also with xine and mplayer.
 
-Get the channel by transport stream id
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Get the channel by service id
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can ask the channel by the transport stream id.
+You can ask the channel by the service id.
 
 If you server is listening on the ip 10.0.0.1 and the port 4242,
 
-------------------------------------
-vlc http://10.0.0.1:4242/bytsid/100
-------------------------------------
+----------------------------------
+vlc http://10.0.0.1:4242/bysid/100
+----------------------------------
 
-will give you the channel with the ts id 100, or a 404 error if there is no channel with this ts id. This works also with xine and mplayer.
+will give you the channel with the service id 100, or a 404 error if there is no channel with this service id. This works also with xine and mplayer.
 
 Get the channel by name
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -499,7 +514,7 @@ You can use http://mmonit.com/monit/[Monit] to monitor MuMuDVB an restart it whe
 You have to install the init scripts (automatic if you used the Debian package) and add the following lines to your `/etc/monit/services` file:
 
 ----------------------------------------------------------------------
-check process mumudvb with pidfile /var/run/mumudvb/mumudvb_carte0.pid
+check process mumudvb with pidfile /var/run/mumudvb/mumudvb_adapter0_tuner0.pid
     start program = "/etc/init.d/mumudvb start"
     stop program = "/etc/init.d/mumudvb stop"
 ----------------------------------------------------------------------
@@ -530,7 +545,7 @@ The hardware descramblig uses almost no CPU, all the descrambling is made by the
 [NOTE]
 MuMuDVB doesn't query the CAM before asking for descrambling. The query is not reliable. Most of CAMs answer a menu when the descrambling is not possible and MuMuDVB will display it on the standard error.
 
-The information concerning the CAM is stored in '''/var/run/mumudvb/caminfo_carte%d''' where %d is the DVB card number.
+The information concerning the CAM is stored in '''/var/run/mumudvb/caminfo_adapter%d_tuner%d''' where %d is the DVB card number.
 
 .Example contents of '''/var/run/mumudvb/caminfo_carte%d''' 
 ----------------------------------------------------
@@ -542,6 +557,9 @@ ID_CA_Supported=0100
 ID_CA_Supported=0500
 ----------------------------------------------------
 
+[NOTE]
+In case of issues with some king of CAMs the libdvben50221 could have to be patched:
+http://article.gmane.org/gmane.linux.drivers.video-input-infrastructure/29866[Link to the patch]
 
 How to ask MuMuDVB for descrambling?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -555,7 +573,7 @@ Just add `cam_support=1` to your config file
  * For each scrambled channel add the `cam_pmt_pid` option. This option is made for MuMuDVB to know wich PID is the PMT PID wich will be used to ask for descrambling
 
 [NOTE]
-You have an example of CAM support in doc/configuration_examples/autoconf1.conf
+You have an example of CAM support in doc/configuration_examples/autoconf_partial.conf
 
 
 
@@ -569,6 +587,22 @@ MuMuDVB has been reported to work with software descrambling solutions like sasc
 In this case  you don't need to set the `cam_support` option. Just ajust the `card` option to fit with your virtual dvbloopback card. 
 
 If you use these solutions, see <<reduce_cpu,reduce MuMuDVB CPU usage>> section.
+
+Some information on how to configure SASC-NG
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following informations have been given by MuMuDVB users on the MuMuDVB-dev mailing list
+
+When the channels are not sucessfully descrambled (channel down in MuMuDVB) the following options are reported to improve the situation
+
+--------------------------------------------------
+--sid-nocache --buffer 8M --sid-filt=200 -D
+--------------------------------------------------
+
+You can try also the option --sid-allpid
+It seems to happend with transponders with a lot of channels (TV or RADIO channels).
+ 
+
 
 Scrambling status
 ~~~~~~~~~~~~~~~~~
@@ -602,7 +636,7 @@ This feature is mainly intended for set-top boxes. This option will announce onl
 To enable PAT rewriting, add `rewrite_pat=1` to your config file. This feature consumes few CPU, since the rewritten PAT is stored in memory and computed only once per channel.
 
 [NOTE]
-PAT rewrite can fail (i.e. doesn't solve the previous symptoms) for some channels if their PMT pid is shared. In this case you have to add the `ts_id` option to the channel to specify the transport stream id, also known as service id.
+PAT rewrite can fail (i.e. doesn't solve the previous symptoms) for some channels if their PMT pid is shared. In this case you have to add the `service_id` option to the channel to specify the service id.
 
 [[sdt_rewrite]]
 SDT (Service Description Table) Rewriting
@@ -613,7 +647,7 @@ This option will announce only the streamed channel in the Service Description T
 To enable SDT rewriting, add `rewrite_sdt=1` to your config file. This feature consumes few CPU, since the rewritten SDT is stored in memory and computed only once per channel.
 
 [NOTE]
-If you don't use full autoconfiguration, SDT rewrite needs the `ts_id` option for each channel to specify the transport stream id, also known as service id.
+If you don't use full autoconfiguration, SDT rewrite needs the `service_id` option for each channel to specify the service id.
 
 
 
@@ -625,7 +659,7 @@ This option will make MuMuDVB stream only the EIT packets corresponding to the s
 To enable EIT sorting, add `sort_eit=1` to your config file. 
 
 [NOTE]
-If you don't use full autoconfiguration, EIT sorting needs the `ts_id` option for each channel to specify the transport stream id, also known as service id.
+If you don't use full autoconfiguration, EIT sorting needs the `service_id` option for each channel to specify the service id.
 
 [[reduce_cpu]]
 Reduce MuMuDVB CPU usage
@@ -661,47 +695,28 @@ The message "Thread trowing dvb packets" informs you that the thread buffer is f
 Transcoding
 -----------
 
-MuMuDVB supports transcoding to various formats to save bandwith. The transcoding is made using ffmpeg librairies. This feature is pretty new, so feel free to contact if you have comments/suggestions
+MuMuDVB supports transcoding to various formats to save bandwidth. The transcoding is made using ffmpeg librairies. This feature is pretty new, so feel free to contact if you have comments/suggestions.
+
+For transcoding support, you have to compile MuMuDVB yourself. Due tu API changes, transcoding is broken for recent versions of MuMuDVB.
 
 [NOTE]
-Transcoding doesn't work for the moment with full autoconfiguration/unicast
+Transcoding doesn't work for the moment with unicast
+
+To have more details on transcoding, see the dedicated documentation file
 
 
-Compiling MuMuDVB with transcoding support
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[[ipv6]]
+IPv6
+----
 
-In order to compile MuMuDVB with transcoding you will need the following librairies: libavcodec, libavformat and libswscale
+MuMuDVB supports IPv6 multicasting. It is not enabled by default you have to activate it using the multicast_ipv6 option
 
-Then you have to add the --enable-transcoding flag to your configure. Ex: `./configure --enable-transcoding`
+To "enjoy" multicasting you need a switch which supports the http://en.wikipedia.org/wiki/Multicast_Listener_Discovery[Multicast Listener Discovery] protocol.
 
-Check at the end of the configure that the transcoding is effectively enabled. If not there is probably a library missing.
+IPv6 use extensively the concept of http://en.wikipedia.org/wiki/Multicast_address[scoping]. By default MuMuDVB uses the scope "site-local" (ie multicast addresses starting with FF05) the SAP announcements are also sent with this scope. If you need to have more flexibility on this side, please contact.
 
+For more details, please consult the http://mumudvb.braice.net/mumudrupal/node/52[IPv6 page] on MuMuDVB's website
 
-Using transcoding
-~~~~~~~~~~~~~~~~~
-Please read the documentation file concerning the transcoding options and the examples
-
-Future developments for transcoding
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Making it work with unicast, in particular RTSP
-
-Common problems
-~~~~~~~~~~~~~~~
-
-Broken ffmpeg default settings detected
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If you get a message saying "Broken ffmpeg default settings detected"
-
-Adding the following options to your transcoding configuration will make it work
-
-------------------------------
-transcode_me_range=16
-transcode_qdiff=4
-transcode_qmin=10
-transcode_qmax=51
-------------------------------
 
 Technical details (not sorted)
 ------------------------------
@@ -710,13 +725,25 @@ Technical details (not sorted)
 
  * Try to avoid old via or nForce chipsets and in general ultra low cost motherboards. They can't deal with a lot of data on the PCI bus.
 
- * When the program starts, he writes the channel list in the file `/var/run/mumudvb/chaines_diffusees_carte%d` (where %d is the card number). This file contains streamed channels (updated every 5 seconds) in the form: "name:ip:port:Scramblingstatus"
+ * When the program starts, he writes the channel list in the file `/var/run/mumudvb/channels_streamed_adapter%d_tuner%d` (where %d are the card number and the tuner number). This file contains streamed channels (updated every 5 seconds) in the form: "name:ip:port:Scramblingstatus"
 
  * MuMuDVB is able to support as many cards as the operating system does. Old versions of udev+glibc were not able to support more than 4 cards but this problem is solved using relatively recent versions (udev > 104 and libc6 > 2.7)
 
- * When daemonized, MuMuDVB writes its process identifier in `/var/run/mumudvb/mumudvb_carte%d.pid`, where %d is replaced by the card number
+ * When daemonized, MuMuDVB writes its process identifier in `/var/run/mumudvb/mumudvb_adapter%d_tuner%d.pid`, where %d is replaced by the card number and the tuner number
 
  * MuMuDVB supports satellite in the Ku band, with universal or standard LNBs. The support of satellites in the S or C band is implemented via the use of the lo_frequency option. See `doc/README_CONF.txt` (link:README_CONF.html[HTML version]).
+
+MuMuDVB Logs
+------------
+
+MuMuDVB can send it's logs to the console, to a file or via syslog. It can also be several of these channels. The formatting of the logs can also be adjusted.
+
+By default, the logs are sent to the console if not daemonized and via syslog otherwise.
+
+If the logs are sent to a file, you can ask MuMuDVB to flush the file using the SIGHUP signal.
+
+For more detail about these features see `doc/README_CONF.txt` (link:README_CONF.html[HTML version]). 
+
 
 Known issues
 ------------
@@ -839,6 +866,8 @@ In order to specify the interface, you can specify a route for the multicast tra
 route add -net 224.0.0.0 netmask 240.0.0.0 dev eth2
 ---------------------------------------------------
 
+or use multicast_iface4 and multicast_iface6 options
+
 What does the MuMuDVB error code means ?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -859,5 +888,156 @@ Here's a short description of the error codes
     ERROR_GENERIC,
     ERROR_NO_CAM_INIT,
 ------------------------------
+
+I get the message "DVR Read Error: Value too large for defined data type" what does it mean ?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This message means that an overflow append in the ard drivers buffer. I.e MuMuDVB was not able to get the packets sufficiently fast. This issue can have various causes, anything which an slow down (a lot) MuMuDVB an create this message.
+To avoid it you can try threaded_read see <<threaded_read, thread reading>> section.
+
+An explanation can be networking issues :
+
+I experienced the "DVR Read Error..." message very often on my  Streaming Server (ia64 Madison 1.3Ghz) (with errors in the video).
+I could solve the problem by exchanging the network switch. The old  switch was limiting multicast traffic to 10Mb/s per port. This limit  is not documented.
+
+I have tested the limit the programm dd and mnc (Multicast netcat,  http://code.google.com/p/mnc/)
+
+dd if=/dev/zero bs=188 count=1000000 | ./mnc-bin 239.10.0.3
+
+I looked with "iftop" at the current network statistics and with my  old switch i saw the limit at 10Mb/s with another switch I was able to  transmit 92Mb/s ~ 100% of the avaiable bandwith.
+
+Thanks to Jan-Philipp Hülshoff for the report
+
+
+
+Using MuMuDVB with "particular" clients
+---------------------------------------
+
+People were able to use MuMuDVB with various clients, I will report here the tutorials I received for some of them
+
+XBMC (for XBOX originally)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Description:* XBMC (XBMP really) started as a program for modified XBOX consoles. In the following years, XBMC has grown into a multi-platform, multi-architecture media center that runs on most standard hardware. The hardware and legal limitations of the XBOX were always a concern and the Team has instead focused on running on the hardware that most people already have.
+
+*Website:* http://xbmc.org/
+
+*Tutorial:*
+Here`s what You have to do, open Your favorite text editor and write an ip address with the protocol You are using of the particular program and port save it as something.strm. You have to create .strm files for every program You are streaming. Once you have done that fire up WinSCP and connect to the ip address of Your XBMC box if You are using the live version username and password is xbmc xbmc if You have installed the live version then You have provided the username and password during install process. Now copy theoes .strm files to the XBMC box in lets say home folder. Now in XBMC go to the video menu then click add source then click browse and navigate to the home folder and click ok then u have to give the name of that source use what ever You like and click ok and thats it. Go to the video menu You will see that You have a folder named as You named the source open it and You will see all of Yours .strm files click on it and it will start to play the stream from mumudvb. Works weather You are using multicast or unicast.
+
+Thanks to Ivan Cabraja for the tutorial
+
+MythTV
+~~~~~~
+
+*Description:* MythTV is a Free Open Source software digital video recorder (DVR) project distributed under the terms of the GNU GPL.
+
+*Website:* http://www.mythtv.org/
+
+*Tutorial:* Configuring Mythtv and mumudvb
+
+Mumudvb Configuration:
+^^^^^^^^^^^^^^^^^^^^^^
+
+You need to turn pat rewriting on  (i.e. rewrite_pat=1).
+
+You can use either multicast or udp streaming to mythtv (udp streaming
+is achieved by using a non-multicast ip address in the  configuration
+file  i.e. ip=192.168.1.100). Http unicast streaming is not supported in
+mythtv, but RTSP should be when this is implemented in mumudvb.
+
+The channel name needs to be in the following format "channel number" -
+"channel name" (e.g. name=1 - TV One )
+
+Mythtv configuration:
+^^^^^^^^^^^^^^^^^^^^^
+
+*Single-transponder*
+
+In mythtv-setup you need to add a new "network recorder" capture card.
+Enter the address of the playlist mumudvb provides in the  "M3U URL"
+field. This will be something like
+http://192.168.2.2:4242/playlist_multicast.m3u
+ 
+You then create a video source as normal, and associate this with the
+"Network recorder" capture card via the "input connections" option. 
+
+You then need to carry out a channel scan (while you are associating the
+video source or via the channel editor).
+
+The channel scan appears to hang on 0%, but just select finish after a
+couple of seconds. This should have loaded the channels defined in the
+M3U file into mythtv. 
+
+Relying on the EIT information embedded in the stream does not appear to
+work, so you need to load this information from an external xmltv
+source. You do this by going into the channel editor and adding the
+correct xmltv ID for each channel. Once you have done this you exit out
+of mythtv-setup and run something like: mythfilldatabase --file 1
+freeview.xml  (where in this case the the xmltv file is called
+freeview.xml).
+
+To allow recording and viewing of multiple channels from the one
+transponder, you need to add additional (identically configured)
+"network recorder" capture cards. For example if you want to be able to
+record two channels and watch a third at the same time you need to have
+set up a total of three network recorder cards.
+
+*Multiple-Transponders*
+
+if you are streaming channels from several transponders (by using
+several instances of mumudvb) you have two options:
+
+1) The obvious thing to do is to define a different network recorder for
+each transponder (with the appropriate playlist defined), each
+transponder has to be associated with a different video source (assuming
+each transponder contains different channels). However, this does not
+seem to work well, with regular crashes when changing channels, and it
+also requires that you first switch between video sources to be able to
+change between channels on different transponders [this may be due to my
+lack of skill at configuring mythtv]
+
+2) An easier way is to generate a custom m3u file, that contains the
+channels of all the transponders. This also allows you to define the
+xmltvid of each channel as well - removing the need to do this manually
+in the channel editor. In this case when you set up the network
+recorders, you can enter a file path for the location of the m3u file,
+as opposed to accessing it via a web-server (e.g.
+file///home/nick/channels.m3u ). Once again you simply make multiple
+copies of the (identical) network recorder capture card if you want to
+record/watch multiple channels.
+
+An example of a m3u file is as follows (in this case the first four
+channels defined are from one mumudvb instance, and the last two from
+another - of course care has to be taken in configuring the various
+mumudvb instances to make sure none of the channels are assigned the
+same port etc):
+
+
+--------------------------------------------------
+#EXTM3U
+#EXTINF:0,1 - TV1
+#EXTMYTHTV:xmltvid=tv1.freeviewnz.tv
+udp://192.168.2.101:1233
+#EXTINF:0,2 - TV2
+#EXTMYTHTV:xmltvid=tv2.freeviewnz.tv
+udp://192.168.2.101:1235
+#EXTINF:0,6 - TVNZ 6
+#EXTMYTHTV:xmltvid=tvnz6.freeviewnz.tv
+udp://192.168.2.101:1236
+#EXTINF:0,7 - TVNZ 7
+#EXTMYTHTV:xmltvid=tvnz7.freeviewnz.tv
+udp://192.168.2.101:1237
+#EXTINF:0,3 - TV3
+#EXTMYTHTV:xmltvid=tv3.freeviewnz.tv
+udp://192.168.2.101:1238
+#EXTINF:0,4 - c4
+#EXTMYTHTV:xmltvid=c4.freeviewnz.tv
+udp://192.168.2.101:1239
+--------------------------------------------------
+
+
+Thanks to Nick Graham for the tutorial
+
 
 

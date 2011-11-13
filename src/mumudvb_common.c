@@ -1,8 +1,8 @@
 /* 
- * MuMuDVB - UDP-ize a DVB transport stream.
+ * MuMuDVB - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * (C) 2004-2009 Brice DUBOST
+ * (C) 2004-2011 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -21,7 +21,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *     
+ *
  */
 
 
@@ -35,11 +35,13 @@
 #include "errors.h"
 
 #include <sys/poll.h>
+#include <sys/time.h>
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
-
+static char *log_module="Common: ";
 
 /** @brief : poll the file descriptors fds with a limit in the number of errors
  *
@@ -67,7 +69,7 @@ int mumudvb_poll(fds_t *fds)
       poll_eintr++;
       if(poll_eintr==10)
       {
-        log_message( MSG_DEBUG, "Poll : 10 successive EINTR\n");
+        log_message( log_module, MSG_DEBUG, "Poll : 10 successive EINTR\n");
         poll_eintr=0;
       }
     }
@@ -76,20 +78,20 @@ int mumudvb_poll(fds_t *fds)
 
   if(poll_try==MAX_POLL_TRIES)
   {
-    log_message( MSG_ERROR, "Poll : We reach the maximum number of polling tries\n\tLast error when polling: %s\n", strerror (errno));
+    log_message( log_module, MSG_ERROR, "Poll : We reach the maximum number of polling tries\n\tLast error when polling: %s\n", strerror (errno));
     Interrupted=errno<<8; //the <<8 is to make difference beetween signals and errors;
     return Interrupted;
   }
   else if(poll_try)
   {
-    log_message( MSG_WARN, "Poll : Warning : error when polling: %s\n", strerror (last_poll_error));
+    log_message( log_module, MSG_WARN, "Poll : Warning : error when polling: %s\n", strerror (last_poll_error));
   }
   return 0;
 }
 
 /** @brief replace a tring by another
 * @param source
-* @param length the length of the source buffer
+* @param length the length of the source buffer (including '\0')
 * @param can_realloc Is the source string allocated by a malloc or fixed. The realloc is done only when the dest is bigger
 * @param toreplace the pattern to replace
 * @param replacement the replacement string for the pattern
@@ -112,6 +114,11 @@ char *mumu_string_replace(char *source, int *length, int can_realloc, char *tore
   lengthsource=strlen(source);
   lengthtempstring=lengthsource+1;
   tempstring=malloc(sizeof(char)*lengthtempstring);
+  if(tempstring==NULL)
+    {
+        log_message(log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+	return NULL;
+    }
   strcpy(tempstring,source);
   pospattern=strstr(tempstring,toreplace);
   while(pospattern!=NULL)
@@ -119,9 +126,14 @@ char *mumu_string_replace(char *source, int *length, int can_realloc, char *tore
     if(lengthreplacment>lengthpattern)
     {
       tempstring=realloc(tempstring,sizeof(char)*(lengthtempstring+lengthreplacment-lengthpattern+1));
+      if(tempstring==NULL)
+	{
+	  log_message(log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+	  return NULL;
+	}
       pospattern=strstr(tempstring,toreplace);
     }
-    memmove(pospattern+lengthreplacment,pospattern+lengthpattern,lengthtempstring-((int)(pospattern-tempstring))-lengthpattern-1);
+    memmove(pospattern+lengthreplacment,pospattern+lengthpattern,lengthtempstring-((int)(pospattern-tempstring))-lengthpattern);
     memcpy(pospattern,replacement,lengthreplacment);
     lengthtempstring+=lengthreplacment-lengthpattern;
     pospattern=strstr(tempstring,toreplace);
@@ -134,7 +146,7 @@ char *mumu_string_replace(char *source, int *length, int can_realloc, char *tore
       reallocresult=realloc(source,sizeof(char)*(lengthtempstring));
       if(reallocresult==NULL)
       {
-        log_message(MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+        log_message(log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
         return NULL;
       }
       source=reallocresult;
@@ -151,5 +163,130 @@ char *mumu_string_replace(char *source, int *length, int can_realloc, char *tore
     strncpy(source,tempstring,*length-1);
     source[*length-1]='\0';
   }
+  free(tempstring);
   return source;
 }
+
+int string_mult(char *string);
+/** @brief Evaluate a string containing sum and mult keeping the priority of the mult over the +
+ * Ex : string_sum("2+2*3") returns 8
+ * @param string the string to evaluate
+*/
+int string_comput(char *string)
+{
+  int number1,len;
+  char *pluspos=NULL;
+  char *tempchar;
+  pluspos=strchr(string,'+');
+  if(pluspos==NULL)
+  {
+    len=strlen(string);
+  }
+  else
+  {
+    len=pluspos-string;
+  }
+  tempchar=malloc(sizeof(char)*(len+1));
+  strncpy(tempchar,string,len);
+  tempchar[len]='\0';
+  number1=string_mult(tempchar);
+  free(tempchar);
+  if(pluspos==NULL)
+    return number1;
+  if(strchr(pluspos+1,'+')!=NULL)
+    return number1+string_comput(pluspos+1);
+  return number1+string_mult(pluspos+1);
+}
+
+/** @brief Evaluate a string containing a multiplication. Doesn't work if there is a sum inside
+ * Ex : string_sum("2*6") returns 6
+ * @param string the string to evaluate
+*/
+int string_mult(char *string)
+{
+  int number1,len;
+  char *multpos=NULL;
+  char *tempchar;
+  multpos=strchr(string,'*');
+  if(multpos==NULL)
+    return atoi(string);
+  len=multpos-string;
+  tempchar=malloc(sizeof(char)*(len+1));
+  strncpy(tempchar,string,len);
+  tempchar[len]='\0';
+  number1=atoi(tempchar);
+  free(tempchar);
+  if(strchr(multpos+1,'*')!=NULL)
+    return number1*string_mult(multpos+1);
+  return number1*atoi(multpos+1);
+}
+
+/** @brief Special sprintf wich append the text to an existing string and allocate the memory for it
+*/
+int mumu_string_append(mumu_string_t *string, const char *psz_format, ...)
+{
+  int size;
+  va_list args;
+
+  va_start( args, psz_format );
+  size=vsnprintf(NULL, 0, psz_format, args);
+  va_end( args );
+  string->string=realloc(string->string,(string->length+size+1)*sizeof(char));
+  if(string->string==NULL)
+  {
+    log_message(log_module,MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    return ERROR_MEMORY<<8;
+  }
+  va_start( args, psz_format );
+  vsnprintf(string->string+string->length, size+1, psz_format, args);
+  string->length=string->length+size;
+  va_end( args );
+  return 0;
+}
+
+/** @brief Free a MuMuDVB string
+*/
+void mumu_free_string(mumu_string_t *string)
+{
+  if(string->string)
+  {
+    free(string->string);
+    string->string=NULL;
+    string->length=0;
+  }
+}
+
+
+
+
+
+
+
+
+/** @brief return the time (in usec) elapsed between the two last calls of this function.
+ */
+long int mumu_timing()
+{
+  static int started=0;
+  static struct timeval oldtime;
+  struct timeval tv;
+  long delta;
+  gettimeofday(&tv,NULL);
+  if(started)
+    {
+      delta=(tv.tv_sec-oldtime.tv_sec)*1000000+(tv.tv_usec-oldtime.tv_usec);
+    }
+  else
+    {
+      delta=0;
+      started=1;
+    }
+  oldtime=tv;
+  return delta;
+}
+
+
+
+
+
+

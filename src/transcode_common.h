@@ -34,14 +34,15 @@
 #define TRANSCODE_SDP_FILENAME_MAX 1024
 #define TRANSCODE_AAC_PROFILE_MAX 32
 #define TRANSCODE_FFM_URL_MAX 1024
+#define TRANSCODE_RTP_PORT_MAX 1024
 
 #define STREAMING_TYPE_MPEGTS 1
 #define STREAMING_TYPE_RTP 2
 #define STREAMING_TYPE_FFM 3
 
 #include "transcode_queues.h"
-
 #include <pthread.h>
+
 
 typedef struct transcode_options_t
 {
@@ -83,10 +84,11 @@ typedef struct transcode_options_t
     int *audio_channels;
     int *audio_sample_rate;
     int *video_frames_per_second;
-    int *rtp_port;
+    char *s_rtp_port;
+    int *rtp_port;  //used after templating
     int *keyint_min;
-    char ip[20];
-    int port;
+    int *send_transcoded_only;
+    char ip[20]; //for rtp streaming
 } transcode_options_t;
 
 typedef struct transcode_thread_data_t
@@ -105,6 +107,8 @@ typedef struct transcode_thread_data_t
     
     /* Transcode data queue */
     struct data_queue_t data_queue;
+    /* Is the queue full */
+    int data_queue_full;
 
     /* Transcode parameters */
     struct transcode_options_t *options;

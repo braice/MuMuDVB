@@ -1,8 +1,8 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * mumudvb - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * (C) 2004-2009 Brice DUBOST
+ * (C) 2004-2010 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -21,7 +21,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *     
+ *
  */
 
 /** @file
@@ -36,37 +36,277 @@
 #include <syslog.h>
 #include <errno.h>
 #include <linux/dvb/version.h>
+#include <time.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 
 #include "mumudvb.h"
 #include "errors.h"
 #include "log.h"
+#include "tune.h"
 
+#ifdef ENABLE_CAM_SUPPORT
+#include <libdvben50221/en50221_errno.h>
+#endif
 
+#define LOG_HEAD_LEN 6
 extern int no_daemon;
-extern int verbosity;
-extern int log_initialised;
+extern int Interrupted;
+
+log_params_t log_params={
+  .verbosity = MSG_INFO+1,
+  .log_type=LOGGING_UNDEFINED,
+  .rotating_log_file=0,
+  .syslog_initialised=0,
+  .log_header=NULL,
+  .log_file=NULL,
+  .log_flush_interval = -1,
+};
+
+static char *log_module="Logs: ";
+
+
+/** @brief Read a line of the configuration file to check if there is a logging parameter
+ *
+ * @param stats_infos the stats infos parameters
+ * @param log_params the logging parameters
+ * @param substring The currrent line
+ */
+int read_logging_configuration(stats_infos_t *stats_infos, char *substring)
+{
+
+  char delimiteurs[] = CONFIG_FILE_SEPARATOR;
+  if (!strcmp (substring, "show_traffic_interval"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    stats_infos->show_traffic_interval= atoi (substring);
+    if(stats_infos->show_traffic_interval<1)
+    {
+      stats_infos->show_traffic_interval=1;
+      log_message( log_module, MSG_WARN,"Sorry the minimum interval for showing the traffic is 1s\n");
+    }
+  }
+  else if (!strcmp (substring, "compute_traffic_interval"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    stats_infos->compute_traffic_interval= atoi (substring);
+    if(stats_infos->compute_traffic_interval<1)
+    {
+      stats_infos->compute_traffic_interval=1;
+      log_message( log_module, MSG_WARN,"Sorry the minimum interval for computing the traffic is 1s\n");
+    }
+  }
+  else if (!strcmp (substring, "up_threshold"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    stats_infos->up_threshold= atoi (substring);
+  }
+  else if (!strcmp (substring, "down_threshold"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    stats_infos->down_threshold= atoi (substring);
+  }
+  else if (!strcmp (substring, "debug_updown"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    stats_infos->debug_updown= atoi (substring);
+  }
+  else if (!strcmp (substring, "log_type"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    if (!strcmp (substring, "console"))
+      log_params.log_type |= LOGGING_CONSOLE;
+    else if (!strcmp (substring, "syslog"))
+    {
+      openlog ("MUMUDVB", LOG_PID, 0);
+      log_params.log_type |= LOGGING_SYSLOG;
+      log_params.syslog_initialised=1;
+    }
+    else
+      log_message(log_module,MSG_WARN,"Invalid value for log_type\n");
+  }
+  else if (!strcmp (substring, "log_file"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    log_params.log_file_path=malloc((strlen(substring)+1)*sizeof(char));
+    strncpy(log_params.log_file_path,substring,strlen(substring)+1);
+    if(log_params.log_file_path==NULL)
+    {
+      log_message(log_module,MSG_WARN,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      return -1;
+    }
+  }
+  else if (!strcmp (substring, "log_header"))
+  {
+    substring = strtok (NULL,"=" );
+    if(log_params.log_header!=NULL)
+      free(log_params.log_header);
+    log_params.log_header=malloc((strlen(substring)+1)*sizeof(char));
+    if(log_params.log_header==NULL)
+    {
+      log_message(log_module,MSG_WARN,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      return -1;
+    }
+    sprintf(log_params.log_header,"%s",substring);
+  }
+  else if (!strcmp (substring, "log_flush_interval"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    log_params.log_flush_interval = atof (substring);
+  }
+  else
+    return 0;
+  return 1;
+}
 
 /**
- * @brief Print a log message on the console or via syslog 
- * depending if mumudvb is daemonized or not
+ * @brief Return a string description of the log priorities
+*/
+char *priorities(int type)
+{
+  switch(type)
+  {
+    case MSG_ERROR:
+      return "ERRO";
+    case MSG_WARN:
+      return "WARN";
+    case MSG_INFO:
+      return "Info";
+    case MSG_DETAIL:
+      return "Deb0";
+    case MSG_DEBUG:
+      return "Deb1";
+    case MSG_FLOOD:
+      return "Deb2";
+    default:
+      return "";
+  }
+}
+
+
+/**
+ * @brief Sync_log for logrotate
+ * This function is called when a sighup is received. This function flushes the log and reopen the logfile
  *
+ *
+*/
+void sync_logs()
+{
+  if (log_params.log_type |= LOGGING_FILE && log_params.log_file)
+  {
+    fflush(log_params.log_file);
+    log_params.log_file=freopen(log_params.log_file_path,"a",log_params.log_file);
+  }
+}
+
+
+/**
+ * @brief Print a log message
+ *
+ * @param log_module : the name of the part of MuMuDVB which send the message
  * @param type : message type MSG_*
  * @param psz_format : the message in the printf format
 */
-void log_message( int type,
+void log_message( char* log_module, int type,
                     const char *psz_format, ... )
 {
   va_list args;
-  int priority;
+  int priority=0;
+  char *tempchar;
+  int message_size;
+  mumu_string_t log_string;
+  log_string.string=NULL;
+  log_string.length=0;
 
-  priority=LOG_USER;
-  va_start( args, psz_format );
+  /*****************************************/
+  //if the log header is not initialised
+  // we do it
+  /*****************************************/
 
-  if(type<verbosity)
+  if(log_params.log_header==NULL)
+  {
+    log_params.log_header=malloc((strlen(DEFAULT_LOG_HEADER)+1)*sizeof(char));
+    if(log_params.log_header==NULL)
     {
-      if (no_daemon || !log_initialised)
-	vfprintf(stderr, psz_format, args );
+      if (log_params.log_type == LOGGING_FILE)
+        fprintf( log_params.log_file,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      else if (log_params.log_type == LOGGING_SYSLOG)
+        syslog (MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       else
+        fprintf( stderr,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      va_end( args );
+      Interrupted=ERROR_MEMORY<<8;
+      return;
+    }
+    sprintf(log_params.log_header,"%s",DEFAULT_LOG_HEADER);
+
+  }
+  /*****************************************/
+  //We apply the templates to the header
+  /*****************************************/
+  mumu_string_append(&log_string, "%s",log_params.log_header);
+  log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%priority",priorities(type));
+  if(log_module!=NULL)
+    log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%module",log_module);
+  else
+    log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%module","");
+
+  char timestring[40];
+  time_t actual_time;
+  actual_time=time(NULL);
+  sprintf(timestring,"%jd", (intmax_t)actual_time);
+  log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%timeepoch",timestring);
+  asctime_r(localtime(&actual_time),timestring);
+  timestring[strlen(timestring)-1]='\0'; //In order to remove the final '\n' but by asctime
+  log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%date",timestring);
+
+  char pidstring[10];
+  sprintf (pidstring, "%d", getpid ());
+  log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%pid",pidstring);
+
+
+  /*****************************************/
+  //We append the log message
+  /*****************************************/
+  //The length returned by mumu_string_replace is the allocated length not the string length
+  //If we want mumu_string_append to work we need to update the length to the string length
+  log_string.length=strlen(log_string.string);
+  va_start( args, psz_format );
+  message_size=vsnprintf(NULL, 0, psz_format, args);
+  va_end( args );
+  tempchar=malloc((message_size+1)*sizeof(char));
+  if(tempchar==NULL)
+  {
+    if (log_params.log_type == LOGGING_FILE)
+      fprintf( log_params.log_file,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    else if (log_params.log_type == LOGGING_SYSLOG)
+      syslog (MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    else
+      fprintf( stderr,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    va_end( args );
+    Interrupted=ERROR_MEMORY<<8;
+    return;
+  }
+
+  va_start( args, psz_format );
+  vsprintf(tempchar, psz_format, args );
+  va_end( args );
+  //If there is no \n at the end of the message we add it
+  char terminator='\0';
+  if(tempchar[strlen(tempchar)-1] != '\n')
+    terminator='\n';
+  mumu_string_append(&log_string,"%s%c",tempchar,terminator);
+  free(tempchar);
+
+  /*****************************************/
+  //We "display" the log message
+  /*****************************************/
+  if(type<log_params.verbosity)
+    {
+      if ( log_params.log_type & LOGGING_FILE)
+	fprintf(log_params.log_file,"%s",log_string.string);
+      if((log_params.log_type & LOGGING_SYSLOG) && (log_params.syslog_initialised))
 	{
 	  //what is the priority ?
 	  switch(type)
@@ -87,12 +327,18 @@ void log_message( int type,
 	    case MSG_FLOOD:
 	      priority|=LOG_DEBUG;
 	      break;
+            default:
+              priority=LOG_USER;
 	    }
-	  vsyslog (priority, psz_format, args );
+	  syslog (priority,"%s",log_string.string);
 	}
+	if((log_params.log_type == LOGGING_UNDEFINED) ||
+          (log_params.log_type & LOGGING_CONSOLE) ||
+          ((log_params.log_type & LOGGING_SYSLOG) && (log_params.syslog_initialised==0)))
+          fprintf(stderr,"%s",log_string.string);
     }
+  mumu_free_string(&log_string);
 
-  va_end( args );
 }
 
 /**
@@ -101,30 +347,66 @@ void log_message( int type,
  * @param number_of_channels the number of channels
  * @param channels : the channels array
  */
-void log_streamed_channels(int number_of_channels, mumudvb_channel_t *channels, int multicast, int unicast, int unicast_master_port, char *unicastipOut)
+void log_streamed_channels(char *log_module,int number_of_channels, mumudvb_channel_t *channels, int multicast_ipv4,int multicast_ipv6, int unicast, int unicast_master_port, char *unicastipOut)
 {
   int curr_channel;
   int curr_pid;
 
-  log_message( MSG_INFO, "Diffusion %d channel%s\n", number_of_channels,
+  log_message( log_module,  MSG_INFO, "Diffusion %d channel%s\n", number_of_channels,
 	       (number_of_channels <= 1 ? "" : "s"));
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-    {
-	  log_message( MSG_INFO, "Channel number : %3d, name : \"%s\"  TS id %d \n", curr_channel, channels[curr_channel].name, channels[curr_channel].ts_id);
-      if(multicast)
-	log_message( MSG_INFO, "\tMulticast ip : %s:%d\n", channels[curr_channel].ipOut, channels[curr_channel].portOut);
-      if(unicast)
+  {
+    log_message( log_module,  MSG_INFO, "Channel number : %3d, name : \"%s\"  service id %d \n", curr_channel, channels[curr_channel].name, channels[curr_channel].service_id);
+    if(multicast_ipv4)
       {
-	log_message( MSG_INFO, "\tUnicast : Channel accessible via the master connection, %s:%d\n",unicastipOut, unicast_master_port);
-	if(channels[curr_channel].unicast_port)
-	  log_message( MSG_INFO, "\tUnicast : Channel accessible directly via %s:%d\n",unicastipOut, channels[curr_channel].unicast_port);
+	log_message( log_module,  MSG_INFO, "\tMulticast4 ip : %s:%d\n", channels[curr_channel].ip4Out, channels[curr_channel].portOut);
       }
-      log_message( MSG_DETAIL, "        pids : ");/**@todo Generate a strind and call log_message after, in syslog it generates one line per pid*/
-      for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
-	log_message( MSG_DETAIL, "%d (%s) ", channels[curr_channel].pids[curr_pid], pid_type_to_str(channels[curr_channel].pids_type[curr_pid]));
-      log_message( MSG_DETAIL, "\n");
+    if(multicast_ipv6)
+      {
+	log_message( log_module,  MSG_INFO, "\tMulticast6 ip : [%s]:%d\n", channels[curr_channel].ip6Out, channels[curr_channel].portOut);
+      }
+    if(unicast)
+    {
+      log_message( log_module,  MSG_INFO, "\tUnicast : Channel accessible via the master connection, %s:%d\n",unicastipOut, unicast_master_port);
+      if(channels[curr_channel].unicast_port)
+        log_message( log_module,  MSG_INFO, "\tUnicast : Channel accessible directly via %s:%d\n",unicastipOut, channels[curr_channel].unicast_port);
     }
+    mumu_string_t string=EMPTY_STRING;
+    char lang[5];
+    if((Interrupted=mumu_string_append(&string, "        pids : ")))return;
+    for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+    {
+      strncpy(lang+1,channels[curr_channel].pids_language[curr_pid],4);
+      lang[0]=(lang[1]=='-') ? '\0': ' ';
+      if((Interrupted=mumu_string_append(&string, "%d (%s%s), ", channels[curr_channel].pids[curr_pid], pid_type_to_str(channels[curr_channel].pids_type[curr_pid]), lang)))
+        return;
+    }
+    log_message( log_module, MSG_DETAIL,"%s\n",string.string);
+    mumu_free_string(&string);
+  }
 }
+
+/**
+ * @brief Display the PIDs of a channel
+ *
+ */
+void log_pids(char *log_module, mumudvb_channel_t *channel, int curr_channel)
+{
+  /******** display the pids **********/
+
+  mumu_string_t string=EMPTY_STRING;
+  if((Interrupted=mumu_string_append(&string, "PIDs for channel %d \"%s\" : ",curr_channel, channel->name)))return;
+  for (int curr_pid = 0; curr_pid < channel->num_pids; curr_pid++)
+  {
+    if((Interrupted=mumu_string_append(&string, " %d",channel->pids[curr_pid])))return;
+  }
+  log_message( log_module, MSG_DETAIL,"%s\n",string.string);
+  mumu_free_string(&string);
+  /********  end of display the pids **********/
+}
+
+
+
 
 /**
  * @brief Generate a file containing the list of the streamed channels
@@ -147,8 +429,8 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
   file_streamed_channels = fopen (file_streamed_channels_filename, "w");
   if (file_streamed_channels == NULL)
     {
-      log_message( MSG_WARN,
-		   "%s: %s\n",
+      log_message( log_module, MSG_WARN,
+		   "Error file_streamed_channels %s: %s\n",
 		   file_streamed_channels_filename, strerror (errno));
       return;
     }
@@ -156,26 +438,26 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
   file_not_streamed_channels = fopen (file_not_streamed_channels_filename, "w");
   if (file_not_streamed_channels == NULL)
     {
-      log_message( MSG_WARN,
-		   "%s: %s\n",
+      log_message( log_module,  MSG_WARN,
+		   "Error file_not_streamed_channels %s: %s\n",
 		   file_not_streamed_channels_filename, strerror (errno));
       return;
     }
 
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     //We store the old to be sure that we store only channels over the minimum packets limit
-    if (channels[curr_channel].streamed_channel_old)
+    if (channels[curr_channel].streamed_channel)
       {
-	fprintf (file_streamed_channels, "%s:%d:%s", channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
-	if (channels[curr_channel].scrambled_channel_old == FULLY_UNSCRAMBLED)
+	fprintf (file_streamed_channels, "%s:%d:%s", channels[curr_channel].ip4Out, channels[curr_channel].portOut, channels[curr_channel].name);
+	if (channels[curr_channel].scrambled_channel == FULLY_UNSCRAMBLED)
 	  fprintf (file_streamed_channels, ":FullyUnscrambled\n");
-	else if (channels[curr_channel].scrambled_channel_old == PARTIALLY_UNSCRAMBLED)
+ 	else if (channels[curr_channel].scrambled_channel == PARTIALLY_UNSCRAMBLED)
 	  fprintf (file_streamed_channels, ":PartiallyUnscrambled\n");
 	else //HIGHLY_SCRAMBLED
 	  fprintf (file_streamed_channels, ":HighlyScrambled\n");
       }
     else
-      fprintf (file_not_streamed_channels, "%s:%d:%s\n", channels[curr_channel].ipOut, channels[curr_channel].portOut, channels[curr_channel].name);
+      fprintf (file_not_streamed_channels, "%s:%d:%s\n", channels[curr_channel].ip4Out, channels[curr_channel].portOut, channels[curr_channel].name);
   fclose (file_streamed_channels);
   fclose (file_not_streamed_channels);
 
@@ -205,7 +487,7 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
   orig_conf_file = fopen (orig_conf_filename, "r");
   if (orig_conf_file == NULL)
     {
-      log_message( MSG_WARN, "Strange error %s: %s\n",
+      log_message( log_module,  MSG_WARN, "Strange error %s: %s\n",
 		   orig_conf_filename, strerror (errno));
       return;
     }
@@ -214,8 +496,8 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
   config_file = fopen (saving_filename, "w");
   if (config_file == NULL)
     {
-      log_message( MSG_WARN,
-		   "%s: %s\n",
+      log_message( log_module,  MSG_WARN,
+		   "saving_filename %s: %s\n",
 		   saving_filename, strerror (errno));
       return;
     }
@@ -233,19 +515,7 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
       //We remove the channels and parameters concerning autoconfiguration
       if (!strcmp (substring, "autoconfiguration"))
 	continue;
-      else if (!strcmp (substring, "autoconf_ip_header"))
-	continue;
-      else if (!strcmp (substring, "autoconf_scrambled"))
-	continue;
-      else if (!strcmp (substring, "autoconf_radios"))
-	continue;
-      else if (!strcmp (substring, "autoconf_unicast_start_port"))
-        continue;
-      else if (!strcmp (substring, "autoconf_pid_update"))
-        continue;
-      else if (!strcmp (substring, "autoconf_tsid_list"))
-        continue;
-      else if (!strcmp (substring, "autoconf_name_template"))
+      else if (!strncmp (substring, "autoconf_", strlen("autoconf_")))
         continue;
       else if (!strcmp (substring, "channel_next"))
         continue;
@@ -256,6 +526,8 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
       else if (!strcmp (substring, "unicast_port"))
         continue;
       else if (!strcmp (substring, "ts_id"))
+        continue;
+      else if (!strcmp (substring, "service_id"))
         continue;
       else if (!strcmp (substring, "cam_pmt_pid"))
 	continue;
@@ -297,8 +569,8 @@ void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *
   config_file = fopen (saving_filename, "a");
   if (config_file == NULL)
     {
-      log_message( MSG_WARN,
-		   "%s: %s\n",
+      log_message( log_module,  MSG_WARN,
+		   "Error config_file %s: %s\n",
 		   saving_filename, strerror (errno));
       return;
     }
@@ -309,7 +581,7 @@ void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *
     {
       fprintf ( config_file, "#Channel number : %3d\nip=%s\nport=%d\nname=%s\n",
 		curr_channel,
-		channels[curr_channel].ipOut,
+		channels[curr_channel].ip4Out,
 		channels[curr_channel].portOut,
 		channels[curr_channel].name);
 
@@ -317,8 +589,8 @@ void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *
 	fprintf ( config_file, "sap_group=%s\n", channels[curr_channel].sap_group);
       if (channels[curr_channel].need_cam_ask)
         fprintf ( config_file, "cam_pmt_pid=%d\n", channels[curr_channel].pmt_pid);
-      if (channels[curr_channel].ts_id)
-        fprintf ( config_file, "ts_id=%d\n", channels[curr_channel].ts_id);
+      if (channels[curr_channel].service_id)
+        fprintf ( config_file, "service_id=%d\n", channels[curr_channel].service_id);
       if (channels[curr_channel].unicast_port)
         fprintf ( config_file, "unicast_port=%d\n", channels[curr_channel].unicast_port);
       fprintf ( config_file, "pids=");
@@ -340,7 +612,7 @@ typedef struct ca_sys_id_t
   char descr[128];
 }ca_sys_id_t;
 
-//updated 2009 12 02
+//updated 2010 06 12
   ca_sys_id_t casysids[]={
   {0x01,0, "IPDC SPP (TS 102 474) Annex A "},
   {0x02,0, "IPDC SPP (TS 102 474) Annex B"},
@@ -439,6 +711,11 @@ typedef struct ca_sys_id_t
   {0x4B03 ,0 , "DuoCrypt"},
   {0x4B04 ,0 , "Great Wall CAS"},
   {0x4B05 ,0x4B06 , "DIGICAP"},
+  {0x4B07 ,0 , "Wuhan Reikost Technology Co., Ltd."},
+  {0x4B08 ,0 , "Philips"},
+  {0x4B09 ,0 , "Ambernetas"},
+  {0x4B0A ,0x4B0B , "Beijing Sumavision Technologies CO. LTD."},
+  {0x4B0C ,0x4B0F , "Sichuan changhong electric co.,ltd."},
   {0x5347 ,0 , "GkWare e.K."},
   {0x5601 ,0 , "Verimatrix, Inc. #1"},
   {0x5602 ,0 , "Verimatrix, Inc. #2"},
@@ -446,6 +723,7 @@ typedef struct ca_sys_id_t
   {0x5604 ,0 , "Verimatrix, Inc. #4"},
   {0x5605 ,0x5606 , "Sichuan Juizhou Electronic Co. Ltd"},
   {0x5607 ,0x5608 , "Viewscenes"},
+  {0x7BE0 ,0x7BE1 , "OOO"},
   {0xAA00 ,0 , "Best CAS Ltd"},
   };
   int num_casysids=105;
@@ -559,9 +837,9 @@ char *simple_service_type_to_str(int type)
  * @param type the type to display
  * @param loglevel : the loglevel for displaying it
  */
-void display_service_type(int type, int loglevel)
+void display_service_type(int type, int loglevel, char *log_module)
 {
-  log_message(loglevel, "Autoconf : service type: 0x%x : %s \n", type, service_type_to_str(type));
+  log_message( log_module, loglevel, "service type: 0x%x : %s \n", type, service_type_to_str(type));
 }
 
 /** @brief Write the PID type into a string
@@ -577,30 +855,136 @@ char *pid_type_to_str(int type)
       return "PMT";
     case PID_PCR:
       return "PCR";
-    case PID_VIDEO:
-      return "Video";
-    case PID_VIDEO_MPEG4:
-      return "Video (MPEG4)";
-    case PID_AUDIO:
-      return "Audio";
-    case PID_AUDIO_AAC:
-      return "Audio (AAC)";
+    case PID_VIDEO_MPEG1:
+      return "Video (MPEG1)";
+    case PID_VIDEO_MPEG2:
+      return "Video (MPEG2)";
+    case PID_VIDEO_MPEG4_ASP:
+      return "Video (MPEG4-ASP)";
+    case PID_VIDEO_MPEG4_AVC:
+      return "Video (MPEG4-AVC)";
+    case PID_AUDIO_MPEG1:
+      return "Audio (MPEG1)";
+    case PID_AUDIO_MPEG2:
+      return "Audio (MPEG2)";
+    case PID_AUDIO_AAC_LATM:
+      return "Audio (AAC-LATM)";
+    case PID_AUDIO_AAC_ADTS:
+      return "Audio (AAC-ADTS)";
+    case PID_AUDIO_ATSC:
+      return "Audio (ATSC A/53B)";
     case PID_AUDIO_AC3:
       return "Audio (AC3)";
     case PID_AUDIO_EAC3:
       return "Audio (E-AC3)";
     case PID_AUDIO_DTS:
       return "Audio (DTS)";
-    case PID_SUBTITLE:
-      return "Subtitle";
-    case PID_TELETEXT:
+    case PID_AUDIO_AAC:
+      return "Audio (AAC)";
+    case PID_EXTRA_VBIDATA:
+      return "VBI Data";
+    case PID_EXTRA_VBITELETEXT:
+      return "VBI Teletext";
+    case PID_EXTRA_TELETEXT:
       return "Teletext";
+    case PID_EXTRA_SUBTITLE:
+      return "Subtitling";
     case PID_UNKNOW:
     default:
       return "Unknown";
   }
 }
 
+#ifdef ENABLE_CAM_SUPPORT
+/** @brief Write the error from the libdvben50221  into a string
+ *
+ * @param dest : the destination string
+ * @param error the error to display
+ */
+char *liben50221_error_to_str(int error)
+{
+  switch(error)
+  {
+    case 0:
+      return "EN50221ERR_NONE";
+    case EN50221ERR_CAREAD:
+      return "EN50221ERR_CAREAD";
+    case EN50221ERR_CAWRITE:
+      return "EN50221ERR_CAWRITE";
+    case EN50221ERR_TIMEOUT:
+      return "EN50221ERR_TIMEOUT";
+    case EN50221ERR_BADSLOTID:
+      return "EN50221ERR_BADSLOTID";
+    case EN50221ERR_BADCONNECTIONID:
+      return "EN50221ERR_BADCONNECTIONID";
+    case EN50221ERR_BADSTATE:
+      return "EN50221ERR_BADSTATE";
+    case EN50221ERR_BADCAMDATA:
+      return "EN50221ERR_BADCAMDATA";
+    case EN50221ERR_OUTOFMEMORY:
+      return "EN50221ERR_OUTOFMEMORY";
+    case EN50221ERR_ASNENCODE:
+      return "EN50221ERR_ASNENCODE";
+    case EN50221ERR_OUTOFCONNECTIONS:
+      return "EN50221ERR_OUTOFCONNECTIONS";
+    case EN50221ERR_OUTOFSLOTS:
+      return "EN50221ERR_OUTOFSLOTS";
+    case EN50221ERR_IOVLIMIT:
+      return "EN50221ERR_IOVLIMIT";
+    case EN50221ERR_BADSESSIONNUMBER:
+      return "EN50221ERR_BADSESSIONNUMBER";
+    case EN50221ERR_OUTOFSESSIONS:
+      return "EN50221ERR_OUTOFSESSIONS";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+/** @brief Write the error from the libdvben50221  into a string containing the description of the error
+ *
+ * @param dest : the destination string
+ * @param error the error to display
+ */
+char *liben50221_error_to_str_descr(int error)
+{
+  switch(error)
+  {
+    case 0:
+      return "No Error.";
+    case EN50221ERR_CAREAD:
+      return "error during read from CA device.";
+    case EN50221ERR_CAWRITE:
+      return "error during write to CA device.";
+    case EN50221ERR_TIMEOUT:
+      return "timeout occured waiting for a response from a device.";
+    case EN50221ERR_BADSLOTID:
+      return "bad slot ID supplied by user - the offending slot_id will not be set.";
+    case EN50221ERR_BADCONNECTIONID:
+      return "bad connection ID supplied by user.";
+    case EN50221ERR_BADSTATE:
+      return "slot/connection in the wrong state.";
+    case EN50221ERR_BADCAMDATA:
+      return "CAM supplied an invalid request.";
+    case EN50221ERR_OUTOFMEMORY:
+      return "memory allocation failed.";
+    case EN50221ERR_ASNENCODE:
+      return "ASN.1 encode failure - indicates library bug.";
+    case EN50221ERR_OUTOFCONNECTIONS:
+      return "no more connections available.";
+    case EN50221ERR_OUTOFSLOTS:
+      return "no more slots available - the offending slot_id will not be set.";
+    case EN50221ERR_IOVLIMIT:
+      return "Too many struct iovecs were used.";
+    case EN50221ERR_BADSESSIONNUMBER:
+      return "Bad session number suppplied by user.";
+    case EN50221ERR_OUTOFSESSIONS:
+      return "no more sessions available.";
+    default:
+      return "Unknown error, please contact";
+  }
+}
+
+#endif
 
 /** @brief : display mumudvb info*/
 void print_info ()
@@ -627,11 +1011,9 @@ void print_info ()
 #endif
 #if DVB_API_VERSION >= 5
                "Built with support for DVB API Version 5 (DVB-S2).\n"
+#ifdef SYS_DVBT2
+               "\tBuilt with support for DVB-T2.\n"
 #endif
-#ifdef HAVE_LIBPTHREAD
-               "Built with pthread support (used for periodic signal strength display, cam support, transcoding, and threaded read).\n"
-#else
-               "Built without pthread support (NO periodic signal strength display, NO cam support, NO transcoding and NO threaded read).\n"
 #endif
                "---------\n"
                "Originally based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
@@ -639,6 +1021,7 @@ void print_info ()
                "Latest version available from http://mumudvb.braice.net/\n"
                "Project from the cr@ns (http://www.crans.org)\n"
                "by Brice DUBOST (mumudvb@braice.net)\n\n");
+
 }
 
 
@@ -654,15 +1037,17 @@ void usage (char *name)
           "-t, --traffic : Display channels traffic\n"
           "-l, --list-cards : List the DVB cards and exit\n"
           "--card       : The DVB card to use (overrided by the configuration file)\n"
+          "--server_id  : The server id (for autoconfiguration, overrided by the configuration file)\n"
           "-d, --debug  : Don't deamonize\n"
           "-v           : More verbose\n"
           "-q           : Less verbose\n"
+          "--dumpfile   : Debug option : Dump the stream into the specified file\n"
           "-h, --help   : Help\n"
           "\n", name);
   print_info ();
 }
 
-void show_traffic(long now, int show_traffic_interval, mumudvb_chan_and_pids_t *chan_and_pids)
+void show_traffic( char *log_module, double now, int show_traffic_interval, mumudvb_chan_and_pids_t *chan_and_pids)
 {
   static long show_traffic_time=0;
 
@@ -673,11 +1058,9 @@ void show_traffic(long now, int show_traffic_interval, mumudvb_chan_and_pids_t *
       show_traffic_time=now;
       for (int curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
         {
-          log_message( MSG_INFO, "Traffic :  %.2f kB/s \t  for channel \"%s\"\n",
-                       chan_and_pids->channels[curr_channel].traffic,
+          log_message( log_module,  MSG_INFO, "Traffic :  %.2f kb/s \t  for channel \"%s\"\n",
+                       chan_and_pids->channels[curr_channel].traffic*8,
                        chan_and_pids->channels[curr_channel].name);
         }
     }
-  
-
 }

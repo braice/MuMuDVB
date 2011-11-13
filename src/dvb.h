@@ -50,9 +50,9 @@
 #include "tune.h"
 
 #define DVB_DEV_PATH "/dev/dvb/adapter%d"
-#define FRONTEND_DEV_NAME "frontend0"
-#define DEMUX_DEV_NAME    "demux0"
-#define DVR_DEV_NAME      "dvr0"
+#define FRONTEND_DEV_NAME "frontend"
+#define DEMUX_DEV_NAME    "demux"
+#define DVR_DEV_NAME      "dvr"
 
 enum
 {
@@ -61,12 +61,14 @@ enum
   PID_FILTERED,
 };
 
-#ifdef HAVE_LIBPTHREAD
 
 /** The parameters for the thread for showing the strength */
 typedef struct strength_parameters_t{
   tuning_parameters_t *tuneparams;
   fds_t *fds;
+  fe_status_t festatus;
+  int strength, ber, snr, ub;
+  int ts_discontinuities;
 }strength_parameters_t;
 
 /** The parameters for the thread for reading the data from the card */
@@ -91,12 +93,10 @@ typedef struct card_thread_parameters_t{
 void *read_card_thread_func(void* arg);
 
 
-#endif
 
-
-int open_fe (int *fd_frontend, char *base_path);
+int open_fe (int *fd_frontend, char *base_path, int tuner);
 void set_ts_filt (int fd,uint16_t pid);
-int create_card_fd(char *base_path, uint8_t *asked_pid, fds_t *fds);
+int create_card_fd(char *base_path, int tuner, uint8_t *asked_pid, fds_t *fds);
 void set_filters(uint8_t *asked_pid, fds_t *fds);
 void close_card_fd(fds_t fds);
 
