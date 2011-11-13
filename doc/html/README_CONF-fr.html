@@ -2,15 +2,28 @@
     "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<meta name="generator" content="AsciiDoc 8.4.4" />
+<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="generator" content="AsciiDoc 8.6.3" />
 <title>MuMuDVB - README concernant le fichier de configuration</title>
 <style type="text/css">
-/* Debug borders */
-p, li, dt, dd, div, pre, h1, h2, h3, h4, h5, h6 {
-/*
-  border: 1px solid red;
-*/
+/* Sans-serif font. */
+h1, h2, h3, h4, h5, h6,
+div.title, caption.title,
+thead, p.table.header,
+div#toctitle,
+span#author, span#revnumber, span#revdate, span#revremark,
+div#footer {
+  font-family: Arial,Helvetica,sans-serif;
+}
+
+/* Serif font. */
+div.sectionbody {
+  font-family: Georgia,"Times New Roman",Times,serif;
+}
+
+/* Monospace font. */
+tt {
+  font-size: inherit;
 }
 
 body {
@@ -36,12 +49,12 @@ strong {
 }
 
 tt {
+  font-size: inherit;
   color: navy;
 }
 
 h1, h2, h3, h4, h5, h6 {
   color: #527bbd;
-  font-family: sans-serif;
   margin-top: 1.2em;
   margin-bottom: 0.5em;
   line-height: 1.3;
@@ -61,7 +74,6 @@ h3 + * {
 }
 
 div.sectionbody {
-  font-family: serif;
   margin-left: 0;
 }
 
@@ -77,6 +89,8 @@ p {
 ul, ol, li > p {
   margin-top: 0;
 }
+ul > li     { color: #aaa; }
+ul > li > * { color: black; }
 
 pre {
   padding: 0;
@@ -85,18 +99,15 @@ pre {
 
 span#author {
   color: #527bbd;
-  font-family: sans-serif;
   font-weight: bold;
   font-size: 1.1em;
 }
 span#email {
 }
-span#revision {
-  font-family: sans-serif;
+span#revnumber, span#revdate, span#revremark {
 }
 
 div#footer {
-  font-family: sans-serif;
   font-size: small;
   border-top: 2px solid silver;
   padding-top: 0.5em;
@@ -118,12 +129,14 @@ div#preamble {
 div.tableblock, div.imageblock, div.exampleblock, div.verseblock,
 div.quoteblock, div.literalblock, div.listingblock, div.sidebarblock,
 div.admonitionblock {
-  margin-top: 1.5em;
+  margin-top: 1.0em;
   margin-bottom: 1.5em;
 }
 div.admonitionblock {
-  margin-top: 2.5em;
-  margin-bottom: 2.5em;
+  margin-top: 2.0em;
+  margin-bottom: 2.0em;
+  margin-right: 10%;
+  color: #606060;
 }
 
 div.content { /* Block element content. */
@@ -133,7 +146,6 @@ div.content { /* Block element content. */
 /* Block element titles. */
 div.title, caption.title {
   color: #527bbd;
-  font-family: sans-serif;
   font-weight: bold;
   text-align: left;
   margin-top: 1.0em;
@@ -155,31 +167,34 @@ div.content + div.title {
 
 div.sidebarblock > div.content {
   background: #ffffee;
-  border: 1px solid silver;
+  border: 1px solid #dddddd;
+  border-left: 4px solid #f0f0f0;
   padding: 0.5em;
 }
 
 div.listingblock > div.content {
-  border: 1px solid silver;
-  background: #f4f4f4;
+  border: 1px solid #dddddd;
+  border-left: 5px solid #f0f0f0;
+  background: #f8f8f8;
   padding: 0.5em;
 }
 
-div.quoteblock {
-  padding-left: 2.0em;
+div.quoteblock, div.verseblock {
+  padding-left: 1.0em;
+  margin-left: 1.0em;
   margin-right: 10%;
+  border-left: 5px solid #f0f0f0;
+  color: #777777;
 }
+
 div.quoteblock > div.attribution {
   padding-top: 0.5em;
   text-align: right;
 }
 
-div.verseblock {
-  padding-left: 2.0em;
-  margin-right: 10%;
-}
-div.verseblock > div.content {
-  white-space: pre;
+div.verseblock > pre.content {
+  font-family: inherit;
+  font-size: inherit;
 }
 div.verseblock > div.attribution {
   padding-top: 0.75em;
@@ -200,17 +215,17 @@ div.admonitionblock .icon {
 }
 div.admonitionblock td.content {
   padding-left: 0.5em;
-  border-left: 2px solid silver;
+  border-left: 3px solid #dddddd;
 }
 
 div.exampleblock > div.content {
-  border-left: 2px solid silver;
-  padding: 0.5em;
+  border-left: 3px solid #dddddd;
+  padding-left: 0.5em;
 }
 
 div.imageblock div.content { padding-left: 0; }
-div.imageblock img { border: 1px solid silver; }
 span.image img { border-style: none; }
+a.image:visited { color: white; }
 
 dl {
   margin-top: 0.8em;
@@ -255,9 +270,9 @@ div.compact div, div.compact div {
 div.tableblock > table {
   border: 3px solid #527bbd;
 }
-thead {
-  font-family: sans-serif;
+thead, p.table.header {
   font-weight: bold;
+  color: #527bbd;
 }
 tfoot {
   font-weight: bold;
@@ -310,13 +325,52 @@ div.hdlist.compact tr {
   background: yellow;
 }
 
+.footnote, .footnoteref {
+  font-size: 0.8em;
+}
+
+span.footnote, span.footnoteref {
+  vertical-align: super;
+}
+
+#footnotes {
+  margin: 20px 0 20px 0;
+  padding: 7px 0 0 0;
+}
+
+#footnotes div.footnote {
+  margin: 0 0 5px 0;
+}
+
+#footnotes hr {
+  border: none;
+  border-top: 1px solid silver;
+  height: 1px;
+  text-align: left;
+  margin-left: 0;
+  width: 20%;
+  min-width: 100px;
+}
+
+div.colist td {
+  padding-right: 0.5em;
+  padding-bottom: 0.3em;
+  vertical-align: top;
+}
+div.colist td img {
+  margin-top: 0.3em;
+}
+
 @media print {
   div#footer-badges { display: none; }
 }
 
+div#toc {
+  margin-bottom: 2.5em;
+}
+
 div#toctitle {
   color: #527bbd;
-  font-family: sans-serif;
   font-size: 1.1em;
   font-weight: bold;
   margin-top: 1.0em;
@@ -339,51 +393,17 @@ div.toclevel4 {
   margin-left: 6em;
   font-size: 0.9em;
 }
-/* Workarounds for IE6's broken and incomplete CSS2. */
 
-div.sidebar-content {
-  background: #ffffee;
-  border: 1px solid silver;
-  padding: 0.5em;
-}
-div.sidebar-title, div.image-title {
-  color: #527bbd;
-  font-family: sans-serif;
-  font-weight: bold;
-  margin-top: 0.0em;
-  margin-bottom: 0.5em;
-}
-
-div.listingblock div.content {
-  border: 1px solid silver;
-  background: #f4f4f4;
-  padding: 0.5em;
-}
-
-div.quoteblock-attribution {
-  padding-top: 0.5em;
-  text-align: right;
-}
-
-div.verseblock-content {
-  white-space: pre;
-}
-div.verseblock-attribution {
-  padding-top: 0.75em;
-  text-align: left;
-}
-
-div.exampleblock-content {
-  border-left: 2px solid silver;
-  padding-left: 0.5em;
-}
-
-/* IE6 sets dynamically generated links as visited. */
-div#toc a:visited { color: blue; }
 </style>
 <script type="text/javascript">
 /*<![CDATA[*/
-window.onload = function(){generateToc(2)}
+window.onload = function(){asciidoc.footnotes(); asciidoc.toc(2);}
+var asciidoc = {  // Namespace.
+
+/////////////////////////////////////////////////////////////////////
+// Table Of Contents generator
+/////////////////////////////////////////////////////////////////////
+
 /* Author: Mihai Bazon, September 2002
  * http://students.infoiasi.ro/~mishoo
  *
@@ -395,53 +415,55 @@ window.onload = function(){generateToc(2)}
  */
 
  /* modified by Troy D. Hanson, September 2006. License: GPL */
- /* modified by Stuart Rackham, October 2006. License: GPL */
+ /* modified by Stuart Rackham, 2006, 2009. License: GPL */
 
-function getText(el) {
-  var text = "";
-  for (var i = el.firstChild; i != null; i = i.nextSibling) {
-    if (i.nodeType == 3 /* Node.TEXT_NODE */) // IE doesn't speak constants.
-      text += i.data;
-    else if (i.firstChild != null)
-      text += getText(i);
-  }
-  return text;
-}
+// toclevels = 1..4.
+toc: function (toclevels) {
 
-function TocEntry(el, text, toclevel) {
-  this.element = el;
-  this.text = text;
-  this.toclevel = toclevel;
-}
-
-function tocEntries(el, toclevels) {
-  var result = new Array;
-  var re = new RegExp('[hH]([2-'+(toclevels+1)+'])');
-  // Function that scans the DOM tree for header elements (the DOM2
-  // nodeIterator API would be a better technique but not supported by all
-  // browsers).
-  var iterate = function (el) {
+  function getText(el) {
+    var text = "";
     for (var i = el.firstChild; i != null; i = i.nextSibling) {
-      if (i.nodeType == 1 /* Node.ELEMENT_NODE */) {
-        var mo = re.exec(i.tagName)
-        if (mo)
-          result[result.length] = new TocEntry(i, getText(i), mo[1]-1);
-        iterate(i);
+      if (i.nodeType == 3 /* Node.TEXT_NODE */) // IE doesn't speak constants.
+        text += i.data;
+      else if (i.firstChild != null)
+        text += getText(i);
+    }
+    return text;
+  }
+
+  function TocEntry(el, text, toclevel) {
+    this.element = el;
+    this.text = text;
+    this.toclevel = toclevel;
+  }
+
+  function tocEntries(el, toclevels) {
+    var result = new Array;
+    var re = new RegExp('[hH]([2-'+(toclevels+1)+'])');
+    // Function that scans the DOM tree for header elements (the DOM2
+    // nodeIterator API would be a better technique but not supported by all
+    // browsers).
+    var iterate = function (el) {
+      for (var i = el.firstChild; i != null; i = i.nextSibling) {
+        if (i.nodeType == 1 /* Node.ELEMENT_NODE */) {
+          var mo = re.exec(i.tagName);
+          if (mo && (i.getAttribute("class") || i.getAttribute("className")) != "float") {
+            result[result.length] = new TocEntry(i, getText(i), mo[1]-1);
+          }
+          iterate(i);
+        }
       }
     }
+    iterate(el);
+    return result;
   }
-  iterate(el);
-  return result;
-}
 
-// This function does the work. toclevels = 1..4.
-function generateToc(toclevels) {
   var toc = document.getElementById("toc");
-  var entries = tocEntries(document.getElementsByTagName("body")[0], toclevels);
+  var entries = tocEntries(document.getElementById("content"), toclevels);
   for (var i = 0; i < entries.length; ++i) {
     var entry = entries[i];
     if (entry.element.id == "")
-      entry.element.id = "toc" + i;
+      entry.element.id = "_toc_" + i;
     var a = document.createElement("a");
     a.href = "#" + entry.element.id;
     a.appendChild(document.createTextNode(entry.text));
@@ -451,22 +473,75 @@ function generateToc(toclevels) {
     toc.appendChild(div);
   }
   if (entries.length == 0)
-    document.getElementById("header").removeChild(toc);
+    toc.parentNode.removeChild(toc);
+},
+
+
+/////////////////////////////////////////////////////////////////////
+// Footnotes generator
+/////////////////////////////////////////////////////////////////////
+
+/* Based on footnote generation code from:
+ * http://www.brandspankingnew.net/archive/2005/07/format_footnote.html
+ */
+
+footnotes: function () {
+  var cont = document.getElementById("content");
+  var noteholder = document.getElementById("footnotes");
+  var spans = cont.getElementsByTagName("span");
+  var refs = {};
+  var n = 0;
+  for (i=0; i<spans.length; i++) {
+    if (spans[i].className == "footnote") {
+      n++;
+      // Use [\s\S] in place of . so multi-line matches work.
+      // Because JavaScript has no s (dotall) regex flag.
+      note = spans[i].innerHTML.match(/\s*\[([\s\S]*)]\s*/)[1];
+      noteholder.innerHTML +=
+        "<div class='footnote' id='_footnote_" + n + "'>" +
+        "<a href='#_footnoteref_" + n + "' title='Return to text'>" +
+        n + "</a>. " + note + "</div>";
+      spans[i].innerHTML =
+        "[<a id='_footnoteref_" + n + "' href='#_footnote_" + n +
+        "' title='View footnote' class='footnote'>" + n + "</a>]";
+      var id =spans[i].getAttribute("id");
+      if (id != null) refs["#"+id] = n;
+    }
+  }
+  if (n == 0)
+    noteholder.parentNode.removeChild(noteholder);
+  else {
+    // Process footnoterefs.
+    for (i=0; i<spans.length; i++) {
+      if (spans[i].className == "footnoteref") {
+        var href = spans[i].getElementsByTagName("a")[0].getAttribute("href");
+        href = href.match(/#.*/)[0];  // Because IE return full URL.
+        n = refs[href];
+        spans[i].innerHTML =
+          "[<a href='#_footnote_" + n +
+          "' title='View footnote' class='footnote'>" + n + "</a>]";
+      }
+    }
+  }
+}
+
 }
 /*]]>*/
 </script>
 </head>
-<body>
+<body class="article">
 <div id="header">
 <h1>MuMuDVB - README concernant le fichier de configuration</h1>
 <span id="author">Brice Dubost</span><br />
 <span id="email"><tt>&lt;<a href="mailto:mumudvb@braice.net">mumudvb@braice.net</a>&gt;</tt></span><br />
-Version 1.6.1
+<span id="revdate">Version 1.7</span>
 <div id="toc">
   <div id="toctitle">Table of Contents</div>
   <noscript><p><b>JavaScript must be enabled in your browser to display the table of contents.</b></p></noscript>
 </div>
 </div>
+<div id="content">
+<div class="sect1">
 <h2 id="_comportement_g_n_ral">1. Comportement général</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>Pour fonctionner correctement, MuMuDVB a besoin d&#8217;un fichier de configuration.</p></div>
@@ -480,10 +555,13 @@ Version 1.6.1
 freq=11987</tt></pre>
 </div></div>
 <div class="paragraph"><p>Le fichier de configurations est constitué de deux parts : une partie générale, et une partie définissant les chaînes</p></div>
-<h3 id="_partie_g_n_rale">1.1. Partie générale</h3><div style="clear:left"></div>
+<div class="sect2">
+<h3 id="_partie_g_n_rale">1.1. Partie générale</h3>
 <div class="paragraph"><p>Cette partie, la première du fichier de configuration, contient les paramètres nécessaires pour accorder la carte DVB et les autres paramètres globaux.</p></div>
 <div class="paragraph"><p>Pour les paramètres concernant l&#8217;accord de la carte, référez vous à la section <a href="#tuning">paramètres d&#8217;accord</a>. Pour les autres paramètres globaux, référez vous à la section <a href="#other_global">paramètres globaux</a></p></div>
-<h3 id="_partie_concernant_les_cha_nes">1.2. Partie concernant les chaînes</h3><div style="clear:left"></div>
+</div>
+<div class="sect2">
+<h3 id="_partie_concernant_les_cha_nes">1.2. Partie concernant les chaînes</h3>
 <div class="paragraph"><p>Si vous n&#8217;utilisez pas l&#8217;autoconfiguration complète, vous devez définir les chaînes que vous voulez diffuser.</p></div>
 <div class="paragraph"><p>Chaque définition de chaîne commence par une ligne <tt>ip=</tt> ou <tt>channel_next</tt>.</p></div>
 <div class="listingblock">
@@ -504,10 +582,15 @@ pids=272 256 257 258</tt></pre>
 </div></div>
 <div class="paragraph"><p>Référez vous a la section <a href="#channel_parameters">configuration des chaînes</a> pour une liste détaillée des différents paramètres.</p></div>
 </div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_fichiers_d_8217_exemple">2. Fichiers d&#8217;exemple</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>Vous pouvez trouver des fichiers de configuration documentés dans le répertoire  <tt>doc/configuration_examples</tt></p></div>
 </div>
+</div>
+<div class="sect1">
 <h2 id="tuning">3. Paramètres concernant l&#8217;accord de la carte</h2>
 <div class="sectionbody">
 <div class="admonitionblock">
@@ -515,11 +598,13 @@ pids=272 256 257 258</tt></pre>
 <td class="icon">
 <div class="title">Note</div>
 </td>
-<td class="content">Pour la réception terrestre et câblée, vous pouvez utiliser w_scan pour savoir quelles chaînes vous pouvez recevoir. Pour plus de détails référez vous a la section <a href="#w_scan">w_scan</a>. Sinon vous pouvez regarder le contenu des "initial tuning files" fourni avec dvb-apps de linuxtv.
+<td class="content">Vous pouvez utiliser w_scan pour savoir quelles chaînes vous pouvez recevoir. Pour plus de détails référez vous a la section <a href="#w_scan">w_scan</a>.
+Sinon vous pouvez regarder le contenu des "initial tuning files" fourni avec dvb-apps de linuxtv.
 Le site  <a href="http://www.kingofsat.net">King Of Sat</a> référence les chaînes satellite pouvant être reçues en Europe</td>
 </tr></table>
 </div>
-<h3 id="_param_tres_communs_tous_les_modes_de_r_ception_terrestre_satellite_c_ble_et_atsc">3.1. Paramètres communs à tous les modes de réception (terrestre, satellite, câble et ATSC)</h3><div style="clear:left"></div>
+<div class="sect2">
+<h3 id="_param_tres_communs_tous_les_modes_de_r_ception_terrestre_satellite_c_ble_et_atsc">3.1. Paramètres communs à tous les modes de réception (terrestre, satellite, câble et ATSC)</h3>
 <div class="paragraph"><p>Dans la liste suivante, seul le paramètre <tt>freq</tt> est obligatoire</p></div>
 <div class="tableblock">
 <table rules="all"
@@ -553,15 +638,21 @@ cellspacing="0" cellpadding="4">
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">delivery_system</p></td>
-<td align="left" valign="top"><p class="table">Le type de système utilisé (valeurs possibles : DVBT DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC)</p></td>
+<td align="left" valign="top"><p class="table">Le type de système utilisé (valeurs possibles : DVBT DVBT2 DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC)</p></td>
 <td align="left" valign="top"><p class="table">Non défini</p></td>
-<td align="left" valign="top"><p class="table">Spécifiez le si vous voulez utiliser la nouvelle API pour l&#8217;accord des cartes (DVB API 5/S2API). Obligatoire pour le DVB-S2</p></td>
+<td align="left" valign="top"><p class="table">Spécifiez le si vous voulez utiliser la nouvelle API pour l&#8217;accord des cartes (DVB API 5/S2API). Obligatoire pour le DVB-S2 et DVB-T2</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">card</p></td>
 <td align="left" valign="top"><p class="table">Le numéro de carte DVB/ATSC</p></td>
 <td align="left" valign="top"><p class="table">0</p></td>
 <td align="left" valign="top"><p class="table">Limité seulement par l&#8217;OS</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">tuner</p></td>
+<td align="left" valign="top"><p class="table">Le numéro de tuner</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">Si vous avez une carte avec plusieurs tuners (ie il y a plusieurs frontend* dans /dev/dvb/adapter%d)</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">card_dev_path</p></td>
@@ -581,10 +672,18 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">600</p></td>
 <td align="left" valign="top"><p class="table">0 = attente infinie</p></td>
 </tr>
+<tr>
+<td align="left" valign="top"><p class="table">check_status</p></td>
+<td align="left" valign="top"><p class="table">Est ce que MuMuDVB verifie le status de la carte en permanence et affiche un message si le signal est perdu</p></td>
+<td align="left" valign="top"><p class="table">1</p></td>
+<td align="left" valign="top"><p class="table">0 = pas de verification.</p></td>
+</tr>
 </tbody>
 </table>
 </div>
-<h3 id="_param_tres_sp_cifiques_la_r_ception_satellite">3.2. Paramètres spécifiques à la réception satellite</h3><div style="clear:left"></div>
+</div>
+<div class="sect2">
+<h3 id="_param_tres_sp_cifiques_la_r_ception_satellite">3.2. Paramètres spécifiques à la réception satellite</h3>
 <div class="tableblock">
 <table rules="all"
 width="80%"
@@ -662,6 +761,13 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table"></p></td>
 </tr>
 <tr>
+<td align="left" valign="top"><p class="table">switch_type</p></td>
+<td align="left" valign="top"><p class="table">Le type de switch DiSEqC : Committed ou Uncommitted</p></td>
+<td align="left" valign="top"><p class="table">C</p></td>
+<td align="left" valign="top"><p class="table">C, c, U or U</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
 <td align="left" valign="top"><p class="table">lnb_voltage_off</p></td>
 <td align="left" valign="top"><p class="table">Force la tension pour le LNB à 0V (au lieu de 13V ou 18V). Ceci est utile si votre LNB possède sa propre alimentation.</p></td>
 <td align="left" valign="top"><p class="table">0</p></td>
@@ -685,6 +791,7 @@ cellspacing="0" cellpadding="4">
 </tbody>
 </table>
 </div>
+<div class="sect3">
 <h4 id="_fr_quences_pour_l_8217_oscillateur_local">3.2.1. Fréquences pour l&#8217;oscillateur local :</h4>
 <div class="ulist"><ul>
 <li>
@@ -708,7 +815,10 @@ Bande Ku : C&#8217;est la bande par défaut, vous n&#8217;avez pas a spécifier 
 </p>
 </li>
 </ul></div>
-<h3 id="_param_tres_sp_cifiques_la_r_ception_terrestre_dvb_t">3.3. Paramètres spécifiques à la réception terrestre (DVB-T)</h3><div style="clear:left"></div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_param_tres_sp_cifiques_la_r_ception_terrestre_dvb_t">3.3. Paramètres spécifiques à la réception terrestre (DVB-T)</h3>
 <div class="admonitionblock">
 <table><tr>
 <td class="icon">
@@ -739,19 +849,19 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">bandwidth</p></td>
 <td align="left" valign="top"><p class="table">Largeur de bande</p></td>
 <td align="left" valign="top"><p class="table">8MHz</p></td>
-<td align="left" valign="top"><p class="table">8MHz, 7MHz, 6MHz, auto</p></td>
+<td align="left" valign="top"><p class="table">8MHz, 7MHz, 6MHz, auto (DVB-T2 : 5MHz, 10MHz, 1.712MHz)</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">trans_mode</p></td>
 <td align="left" valign="top"><p class="table">Mode de transmission</p></td>
 <td align="left" valign="top"><p class="table">auto</p></td>
-<td align="left" valign="top"><p class="table">2k, 8k, auto</p></td>
+<td align="left" valign="top"><p class="table">2k, 8k, auto (DVB-T2 : 4k, 16k, 32k)</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">guardinterval</p></td>
 <td align="left" valign="top"><p class="table">Intervalle de garde</p></td>
 <td align="left" valign="top"><p class="table">auto</p></td>
-<td align="left" valign="top"><p class="table">1/32, 1/16, 1/8, 1/4, auto</p></td>
+<td align="left" valign="top"><p class="table">1/32, 1/16, 1/8, 1/4, auto (DVB-T2 : 1/128, 19/128, 19/256)</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">coderate</p></td>
@@ -762,7 +872,9 @@ cellspacing="0" cellpadding="4">
 </tbody>
 </table>
 </div>
-<h3 id="_param_tres_sp_cifiques_a_la_r_ception_par_c_ble_dvb_c">3.4. Paramètres spécifiques a la réception par câble (DVB-C)</h3><div style="clear:left"></div>
+</div>
+<div class="sect2">
+<h3 id="_param_tres_sp_cifiques_a_la_r_ception_par_c_ble_dvb_c">3.4. Paramètres spécifiques a la réception par câble (DVB-C)</h3>
 <div class="tableblock">
 <table rules="all"
 width="80%"
@@ -815,7 +927,9 @@ cellspacing="0" cellpadding="4">
 <td class="content"><a href="http://www.rfcafe.com/references/electrical/spectral-inv.htm">L&#8217;inversion spectrale</a> est fixée à OFF, ceci doit fonctionner pour la plupart des utilisateurs. Merci de contacter si vous avez besoin de changer ce paramètre.</td>
 </tr></table>
 </div>
-<h3 id="_param_tres_pour_la_r_ception_atsc_c_ble_ou_terrestre">3.5. Paramètres pour la réception ATSC (Câble ou Terrestre)</h3><div style="clear:left"></div>
+</div>
+<div class="sect2">
+<h3 id="_param_tres_pour_la_r_ception_atsc_c_ble_ou_terrestre">3.5. Paramètres pour la réception ATSC (Câble ou Terrestre)</h3>
 <div class="tableblock">
 <table rules="all"
 width="80%"
@@ -855,9 +969,95 @@ cellspacing="0" cellpadding="4">
 </tr></table>
 </div>
 </div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="other_global">4. Autres paramètres globaux</h2>
 <div class="sectionbody">
-<h3 id="_param_tres_divers">4.1. Paramètres divers</h3><div style="clear:left"></div>
+<div class="sect2">
+<h3 id="_param_tres_divers">4.1. Paramètres divers</h3>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="12%" />
+<col width="50%" />
+<col width="6%" />
+<col width="12%" />
+<col width="18%" />
+<thead>
+<tr>
+<th align="left" valign="top">Nom </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Valeur par défaut </th>
+<th align="left" valign="top"> Valeurs possibles </th>
+<th align="left" valign="top"> Commentaires</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left" valign="top"><p class="table">show_traffic_interval</p></td>
+<td align="left" valign="top"><p class="table">Le temps en secondes entre deux affichages du trafic</p></td>
+<td align="left" valign="top"><p class="table">10</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">compute_traffic_interval</p></td>
+<td align="left" valign="top"><p class="table">Le temps en secondes entre deux calculs du trafic</p></td>
+<td align="left" valign="top"><p class="table">10</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">dvr_buffer_size</p></td>
+<td align="left" valign="top"><p class="table">La taille du  "tampon DVR" en paquets de 188 octets</p></td>
+<td align="left" valign="top"><p class="table">20</p></td>
+<td align="left" valign="top"><p class="table">&gt;=1</p></td>
+<td align="left" valign="top"><p class="table">Se référer au README</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">dvr_thread</p></td>
+<td align="left" valign="top"><p class="table">Est ce que les packets sont reçus par un thread ?</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 ou 1</p></td>
+<td align="left" valign="top"><p class="table">Fonctionnalité "expérimentale", se référer au README</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">dvr_thread_buffer_size</p></td>
+<td align="left" valign="top"><p class="table">La taille du tampon pour le thread en packets de 188 octets</p></td>
+<td align="left" valign="top"><p class="table">5000</p></td>
+<td align="left" valign="top"><p class="table">&gt;=1</p></td>
+<td align="left" valign="top"><p class="table">se référer au README</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">server_id</p></td>
+<td align="left" valign="top"><p class="table">Le numero de serveur pour les templates <tt>%server</tt></p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">filename_pid</p></td>
+<td align="left" valign="top"><p class="table">Permet d&#8217;indiquer le chemin dans lequel MuMuDVB va ecrire son PID (Processus IDentifier)</p></td>
+<td align="left" valign="top"><p class="table">/var/run/mumudvb/mumudvb_adapter%card_tuner%tuner.pid</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Les templates %card %tuner et %server sont utilisables</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">check_cc</p></td>
+<td align="left" valign="top"><p class="table">Est ce que MuMuDVB compte les discontinuités dans le flux ?</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Information disponible via le XML ou l&#8217;affichage de la force du signal</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_param_tres_concernant_l_8217_envoi_des_paquets">4.2. Paramètres concernant l&#8217;envoi des paquets</h3>
 <div class="tableblock">
 <table rules="all"
 width="80%"
@@ -886,46 +1086,18 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table"></p></td>
 </tr>
 <tr>
-<td align="left" valign="top"><p class="table">show_traffic_interval</p></td>
-<td align="left" valign="top"><p class="table">Le temps en secondes entre deux affichages du trafic</p></td>
-<td align="left" valign="top"><p class="table">10</p></td>
-<td align="left" valign="top"><p class="table">&gt;2</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">compute_traffic_interval</p></td>
-<td align="left" valign="top"><p class="table">Le temps en secondes entre deux calculs du trafic</p></td>
-<td align="left" valign="top"><p class="table">10</p></td>
-<td align="left" valign="top"><p class="table">&gt;2</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">rtp_header</p></td>
-<td align="left" valign="top"><p class="table">Envoie les en-têtes RTP avec le flux (excepté pour l&#8217;unicast HTTP)</p></td>
+<td align="left" valign="top"><p class="table">filter_transport_error</p></td>
+<td align="left" valign="top"><p class="table">Si positionné à 1, MuMuDVB n&#8217;enverra pas les paquets vus comme erronés par le démodulateur (drapeau transport error).</p></td>
 <td align="left" valign="top"><p class="table">0</p></td>
-<td align="left" valign="top"><p class="table">0 ou 1</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 </tr>
 <tr>
-<td align="left" valign="top"><p class="table">dvr_buffer_size</p></td>
-<td align="left" valign="top"><p class="table">La taille du  "tampon DVR" en paquets de 188 octets</p></td>
-<td align="left" valign="top"><p class="table">1</p></td>
-<td align="left" valign="top"><p class="table">&gt;=1</p></td>
-<td align="left" valign="top"><p class="table">Se référer au README</p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">dvr_thread</p></td>
-<td align="left" valign="top"><p class="table">Est ce que les packets sont reçus par un thread ?</p></td>
-<td align="left" valign="top"><p class="table">0</p></td>
-<td align="left" valign="top"><p class="table">0 ou 1</p></td>
-<td align="left" valign="top"><p class="table">Fonctionnalité "expérimentale", se référer au README</p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">dvr_thread_buffer_size</p></td>
-<td align="left" valign="top"><p class="table">La taille du tampon pour le thread en packets de 188 octets</p></td>
-<td align="left" valign="top"><p class="table">5000</p></td>
-<td align="left" valign="top"><p class="table">&gt;=1</p></td>
-<td align="left" valign="top"><p class="table">se référer au README</p></td>
+<td align="left" valign="top"><p class="table">psi_tables_filtering</p></td>
+<td align="left" valign="top"><p class="table"><em>none</em> les paquets avec des PIDs de 0x00 à 0x1F sont envoyés, <em>pat</em> : les PIDs de 0x01 à 0x1F ne sont pas envoyés. <em>pat_cat</em> : les PIDs de 0x02 à 0x1F ne sont pas envoyés.</p></td>
+<td align="left" valign="top"><p class="table"><em>none</em></p></td>
+<td align="left" valign="top"><p class="table">Option pour garder seulement les PID PSI obligatoires</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">rewrite_pat</p></td>
@@ -948,10 +1120,73 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">0 ou 1</p></td>
 <td align="left" valign="top"><p class="table">cf README</p></td>
 </tr>
+<tr>
+<td align="left" valign="top"><p class="table">rtp_header</p></td>
+<td align="left" valign="top"><p class="table">Envoie les en-têtes RTP avec le flux (excepté pour l&#8217;unicast HTTP)</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 ou 1</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
 </tbody>
 </table>
 </div>
-<h3 id="_param_tres_concernant_le_multicast">4.2. Paramètres concernant le multicast</h3><div style="clear:left"></div>
+</div>
+<div class="sect2">
+<h3 id="_param_tres_concernant_les_logs">4.3. Paramètres concernant les logs</h3>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="12%" />
+<col width="25%" />
+<col width="25%" />
+<col width="12%" />
+<col width="25%" />
+<thead>
+<tr>
+<th align="left" valign="top">Nom </th>
+<th align="left" valign="top">Description </th>
+<th align="left" valign="top"> Valeur par défaut </th>
+<th align="left" valign="top"> Valeurs possibles </th>
+<th align="left" valign="top"> Commentaires</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left" valign="top"><p class="table">log_header</p></td>
+<td align="left" valign="top"><p class="table">Specifie l&#8217;en tête des logs</p></td>
+<td align="left" valign="top"><p class="table">%priority:  %module</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Vous pouvez utiliser les templates  %priority %module %timeepoch %date %pid</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">log_flush_interval</p></td>
+<td align="left" valign="top"><p class="table">L&#8217;intervalle (en secondes) pour forcer l'écriture des fichies de logs</p></td>
+<td align="left" valign="top"><p class="table">-1 : pas de forcage periodique</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">log_type</p></td>
+<td align="left" valign="top"><p class="table">Où les logs vont aller</p></td>
+<td align="left" valign="top"><p class="table">Si cette option et log_file ne sont pas specifies, syslog si MuMuDVB tourne en démon, console sinon</p></td>
+<td align="left" valign="top"><p class="table">syslog, console</p></td>
+<td align="left" valign="top"><p class="table">La premiere fois que vous spécifiez une méthode pour les logs, elle remplace la meéthode par défaut. Ensuite, chaque méthode est ajoutée a la précédente.</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">log_file</p></td>
+<td align="left" valign="top"><p class="table">Le fichier ou les logs seront écris</p></td>
+<td align="left" valign="top"><p class="table">pas de fichier de log</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Les templates suivants peuvent être utilisés : %card %tuner %server</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_param_tres_concernant_le_multicast">4.4. Paramètres concernant le multicast</h3>
 <div class="tableblock">
 <table rules="all"
 width="80%"
@@ -974,9 +1209,37 @@ cellspacing="0" cellpadding="4">
 <tbody>
 <tr>
 <td align="left" valign="top"><p class="table">multicast</p></td>
-<td align="left" valign="top"><p class="table">Est ce que le multicast est activé ?</p></td>
+<td align="left" valign="top"><p class="table">Est ce que le multicast est activé ? Obsolète, utilisez multicast_ipv4 à la place</p></td>
 <td align="left" valign="top"><p class="table">1</p></td>
 <td align="left" valign="top"><p class="table">0 ou 1</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">multicast_ipv4</p></td>
+<td align="left" valign="top"><p class="table">Est ce que le multicast IPv4 est activé ?</p></td>
+<td align="left" valign="top"><p class="table">1</p></td>
+<td align="left" valign="top"><p class="table">0 ou 1</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">multicast_ipv6</p></td>
+<td align="left" valign="top"><p class="table">Est ce que le multicast IPv6 est activé ?</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 ou 1</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">multicast_iface4</p></td>
+<td align="left" valign="top"><p class="table">L&#8217;interface résau pour envoyer les paquets multicast IPv4</p></td>
+<td align="left" valign="top"><p class="table">vide (laisse le système choisir)</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">multicast_iface6</p></td>
+<td align="left" valign="top"><p class="table">L&#8217;interface résau pour envoyer les paquets multicast IPv6</p></td>
+<td align="left" valign="top"><p class="table">vide (laisse le système choisir)</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 </tr>
 <tr>
@@ -1003,17 +1266,19 @@ cellspacing="0" cellpadding="4">
 </tbody>
 </table>
 </div>
-<h3 id="_param_tres_concernant_le_support_des_cartes_cam">4.3. Paramètres concernant le support des cartes CAM</h3><div style="clear:left"></div>
+</div>
+<div class="sect2">
+<h3 id="_param_tres_concernant_le_support_des_cartes_cam">4.5. Paramètres concernant le support des cartes CAM</h3>
 <div class="tableblock">
 <table rules="all"
 width="80%"
 frame="border"
 cellspacing="0" cellpadding="4">
 <col width="12%" />
-<col width="50%" />
-<col width="6%" />
+<col width="31%" />
 <col width="12%" />
-<col width="18%" />
+<col width="12%" />
+<col width="31%" />
 <thead>
 <tr>
 <th align="left" valign="top">Nom </th>
@@ -1045,20 +1310,37 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">Si la réinitialisation échoue, MuMuDVB retentera de réinitialiser le module après cet intervelle de temps. Le nombre maximum de tentatives de réinitialisations avant de quitter est 5.</p></td>
 </tr>
+<tr>
+<td align="left" valign="top"><p class="table">cam_delay_pmt_send</p></td>
+<td align="left" valign="top"><p class="table">The time (in seconds) we wait between the initialization of the CAM and the sending of the first PMT This behavior is made for some "cray" CAMs like powercam v4 which doesn&#8217;t accept the PMT just after the ca_info\
+_callback</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Normally this time doesn&#8217;t have to be changed.</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">cam_interval_pmt_send</p></td>
+<td align="left" valign="top"><p class="table">The time (in seconds) we wait between possible updates to the PMT sent to the CAM</p></td>
+<td align="left" valign="top"><p class="table">3</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Normally this time doesn&#8217;t have to be changed.</p></td>
+</tr>
 </tbody>
 </table>
 </div>
-<h3 id="_param_tres_pour_l_8217_autoconfiguration">4.4. Paramètres pour l&#8217;autoconfiguration</h3><div style="clear:left"></div>
+</div>
+<div class="sect2">
+<h3 id="_param_tres_pour_l_8217_autoconfiguration">4.6. Paramètres pour l&#8217;autoconfiguration</h3>
 <div class="tableblock">
 <table rules="all"
 width="80%"
 frame="border"
 cellspacing="0" cellpadding="4">
-<col width="13%" />
-<col width="40%" />
+<col width="18%" />
+<col width="31%" />
 <col width="6%" />
-<col width="13%" />
-<col width="26%" />
+<col width="12%" />
+<col width="31%" />
 <thead>
 <tr>
 <th align="left" valign="top">Nom </th>
@@ -1079,9 +1361,23 @@ cellspacing="0" cellpadding="4">
 <tr>
 <td align="left" valign="top"><p class="table">autoconf_ip_header</p></td>
 <td align="left" valign="top"><p class="table">Pour l&#8217;autoconfiguration complète, la première partie de l&#8217;ip des chaînes diffusées</p></td>
-<td align="left" valign="top"><p class="table">239.100</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table">Se référer au README pour plus de détails</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Option obsolète, utilisez <tt>autoconf_ip4</tt> à la place</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">autoconf_ip4</p></td>
+<td align="left" valign="top"><p class="table">Pour l&#8217;autoconfiguration complète, le modèle pour l&#8217;ipv4 de la chaîne diffusée</p></td>
+<td align="left" valign="top"><p class="table">239.100.%card.%number</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Vous pouvez utiliser les mot clefs <tt>%card</tt>, <tt>%tuner</tt>, <tt>%number</tt> et <tt>%server</tt></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">autoconf_ip6</p></td>
+<td align="left" valign="top"><p class="table">Pour l&#8217;autoconfiguration complète, le modèle pour l&#8217;ipv6 de la chaîne diffusée</p></td>
+<td align="left" valign="top"><p class="table">FF15:4242::%server:%card:%number</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Vous pouvez utiliser les mot clefs <tt>%card</tt>, <tt>%tuner</tt>, <tt>%number</tt> et <tt>%server</tt></p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">autoconf_radios</p></td>
@@ -1112,8 +1408,15 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">Voir README-fr pour plus de détails.</p></td>
 </tr>
 <tr>
-<td align="left" valign="top"><p class="table">autoconf_tsid_list</p></td>
-<td align="left" valign="top"><p class="table">Pour ne pas autoconfigurer toutes les chaînes du transpondeur en autoconfiguration complète, spécifiez avec cette option la liste des transport stream id (numeros de programme) des chaînes que vous voulez configurer</p></td>
+<td align="left" valign="top"><p class="table">autoconf_unicast_port</p></td>
+<td align="left" valign="top"><p class="table">Le port unicast pour chaque chaine. Ex "2000+%number" (autoconfiguration complète)</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Vous pouvez utiliser des expressions contenant <tt>+</tt> <tt>*</tt> <tt>%card</tt>, <tt>%tuner</tt> et <tt>%number</tt>. Ex : <tt>autoconf_unicast_port=2000+100*%card+%number</tt></p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">autoconf_sid_list</p></td>
+<td align="left" valign="top"><p class="table">Pour ne pas autoconfigurer toutes les chaînes du transpondeur en autoconfiguration complète, spécifiez avec cette option la liste des service id (numeros de programme) des chaînes que vous voulez configurer</p></td>
 <td align="left" valign="top"><p class="table">vide</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table"></p></td>
@@ -1128,17 +1431,19 @@ cellspacing="0" cellpadding="4">
 </tbody>
 </table>
 </div>
-<h3 id="_param_tres_concernant_les_annonces_sap">4.5. Paramètres concernant les annonces SAP</h3><div style="clear:left"></div>
+</div>
+<div class="sect2">
+<h3 id="_param_tres_concernant_les_annonces_sap">4.7. Paramètres concernant les annonces SAP</h3>
 <div class="tableblock">
 <table rules="all"
 width="80%"
 frame="border"
 cellspacing="0" cellpadding="4">
 <col width="12%" />
-<col width="50%" />
+<col width="37%" />
 <col width="6%" />
 <col width="12%" />
-<col width="18%" />
+<col width="31%" />
 <thead>
 <tr>
 <th align="left" valign="top">Nom </th>
@@ -1201,7 +1506,9 @@ cellspacing="0" cellpadding="4">
 </tbody>
 </table>
 </div>
-<h3 id="_param_tres_concernant_l_8217_unicast_http">4.6. Paramètres concernant l&#8217;unicast HTTP</h3><div style="clear:left"></div>
+</div>
+<div class="sect2">
+<h3 id="_param_tres_concernant_l_8217_unicast_http">4.8. Paramètres concernant l&#8217;unicast HTTP</h3>
 <div class="tableblock">
 <table rules="all"
 width="80%"
@@ -1210,14 +1517,12 @@ cellspacing="0" cellpadding="4">
 <col width="12%" />
 <col width="50%" />
 <col width="6%" />
-<col width="12%" />
-<col width="18%" />
+<col width="31%" />
 <thead>
 <tr>
 <th align="left" valign="top">Nom </th>
 <th align="left" valign="top">Description </th>
 <th align="left" valign="top"> Valeur par défaut </th>
-<th align="left" valign="top"> Valeurs possibles </th>
 <th align="left" valign="top"> Commentaires</th>
 </tr>
 </thead>
@@ -1226,48 +1531,45 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">unicast</p></td>
 <td align="left" valign="top"><p class="table">Utilisez cette option pour activer l&#8217;unicast HTTP</p></td>
 <td align="left" valign="top"><p class="table">0</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">se référer au README pour plus de détails</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">ip_http</p></td>
 <td align="left" valign="top"><p class="table">L&#8217;ip d'écoute du serveur unicast. Si vous voulez écouter sur toutes les interfaces mettez 0.0.0.0</p></td>
 <td align="left" valign="top"><p class="table">0.0.0.0</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">se référer au README pour plus de détails.</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">port_http</p></td>
 <td align="left" valign="top"><p class="table">Le port d'écoute pour l&#8217;unicast HTTP</p></td>
 <td align="left" valign="top"><p class="table">4242</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table">se référer au README pour plus de détails.</p></td>
+<td align="left" valign="top"><p class="table">Vous pouvez utiliser des expressions mathématiques contenant des entiers, * et +. Vous pouvez utiliser les mots clefs <tt>%card</tt>, <tt>%tuner</tt> et <tt>%server</tt>. Ex <tt>port_http=2000+%card*100</tt></p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">unicast_consecutive_errors_timeout</p></td>
 <td align="left" valign="top"><p class="table">Le délai pour déconnecter un client qui ne réponds pas</p></td>
 <td align="left" valign="top"><p class="table">5</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">Un client sera déconnecté si aucune donnée n&#8217;a été envoyée avec succès durant cet intervalle. Une valeur 0 désactive cette fonctionnalité (déconseillé).</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">unicast_max_clients</p></td>
 <td align="left" valign="top"><p class="table">Limite sur le nombre de clients simultanés</p></td>
 <td align="left" valign="top"><p class="table">0</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">0 : pas de limite.</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">unicast_queue_size</p></td>
 <td align="left" valign="top"><p class="table">La taille maximum du tampon utilisé lorsque l'écriture pour un client échoue.</p></td>
 <td align="left" valign="top"><p class="table">512k octets</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">en octets.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="channel_parameters">5. Paramètres concernant les chaînes</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>Chaque définition de chaîne commence par une ligne <tt>ip=</tt> ou <tt>channel_next</tt>. Le seul autre paramètre obligatoire est le paramètre <tt>name</tt>.</p></div>
@@ -1292,9 +1594,15 @@ cellspacing="0" cellpadding="4">
 <tbody>
 <tr>
 <td align="left" valign="top"><p class="table">ip</p></td>
-<td align="left" valign="top"><p class="table">Adresse ip multicast sur laquelle la chaîne sera diffusée</p></td>
+<td align="left" valign="top"><p class="table">Adresse ipv4 multicast sur laquelle la chaîne sera diffusée</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">Optionnel si multicast=0 (si non utilisé, channel_next doit être utilisé à la place)</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">ip6</p></td>
+<td align="left" valign="top"><p class="table">Adresse ipv6 multicast sur laquelle la chaîne sera diffusée</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">Optionnel si multicast=0</p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">port</p></td>
@@ -1321,14 +1629,14 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table"></p></td>
 </tr>
 <tr>
-<td align="left" valign="top"><p class="table">ts_id</p></td>
-<td align="left" valign="top"><p class="table">Le  "transport stream id" (appelé aussi "program number"), uniquement pour l&#8217;autoconfiguration ou la réécriture du PID PAT ou SDT, se référer au README pour plus de détails</p></td>
+<td align="left" valign="top"><p class="table">service_id</p></td>
+<td align="left" valign="top"><p class="table">Le  "service id" (appelé aussi "program number"), uniquement pour l&#8217;autoconfiguration ou la réécriture du PID PAT ou SDT, se référer au README pour plus de détails</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 </tr>
 <tr>
 <td align="left" valign="top"><p class="table">name</p></td>
-<td align="left" valign="top"><p class="table">Le nom de la chaîne. Sera utilisé pour /var/run/mumudvb/chaines_diffusees%d, les journaux et les annonces SAP</p></td>
+<td align="left" valign="top"><p class="table">Le nom de la chaîne. Sera utilisé pour /var/run/mumudvb/channels_streamed_adapter%d_tuner%d, les journaux et les annonces SAP</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">Obligatoire</p></td>
 </tr>
@@ -1342,13 +1650,18 @@ cellspacing="0" cellpadding="4">
 </table>
 </div>
 </div>
+</div>
+<div class="sect1">
 <h2 id="getpids">6. Obtenir les PIDs</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>La manière la plus simple est d&#8217;utiliser l&#8217;autoconfiguration et de modifier le fichier de configuration généré : <tt>/var/run/mumudvb/mumudvb_generated_conf_card%d</tt></p></div>
-<h3 id="_vous_utilisez_l_8217_autoconfiguration">6.1. Vous utilisez l&#8217;autoconfiguration</h3><div style="clear:left"></div>
+<div class="paragraph"><p>La manière la plus simple est d&#8217;utiliser l&#8217;autoconfiguration et de modifier le fichier de configuration généré : <tt>/var/run/mumudvb/mumudvb_generated_conf_card%d_tuner%d</tt></p></div>
+<div class="sect2">
+<h3 id="_vous_utilisez_l_8217_autoconfiguration">6.1. Vous utilisez l&#8217;autoconfiguration</h3>
 <div class="paragraph"><p>Si vous utilisez l&#8217;autoconfiguration complète, vous n&#8217;avez à spécifier aucune chaîne et vous n&#8217;avez besoin de spécifier aucun PID, cette section ne vous concerne donc pas.</p></div>
-<div class="paragraph"><p>Si vous utilisez l&#8217;autoconfiguration partielle, vous aurez besoin seulement du PID PMT pour chaque chaîne, lisez la suite pour savoir comment l&#8217;obtenir.</p></div>
-<h3 id="_vous_n_8217_utilisez_pas_l_8217_autoconfiguration">6.2. Vous n&#8217;utilisez pas l&#8217;autoconfiguration</h3><div style="clear:left"></div>
+<div class="paragraph"><p>Si vous utilisez l&#8217;autoconfiguration partielle, vous aurez besoin du PID PMT pour chaque chaîne, lisez la suite pour savoir comment l&#8217;obtenir.</p></div>
+</div>
+<div class="sect2">
+<h3 id="_vous_n_8217_utilisez_pas_l_8217_autoconfiguration">6.2. Vous n&#8217;utilisez pas l&#8217;autoconfiguration</h3>
 <div class="paragraph"><p>Si vous n&#8217;utilisez pas l&#8217;autoconfiguration, vous devez obtenir les PIDs (Program Identifier) pour chaque chaîne.</p></div>
 <div class="paragraph"><p>Pour chaque chaîne, il est conseillé de spécifier au minimum :</p></div>
 <div class="ulist"><ul>
@@ -1373,64 +1686,50 @@ Le PID PCR (si différent du PID audio/video)
 </p>
 </li>
 </ul></div>
-<div class="paragraph"><p>Si vous n&#8217;avez pas accès aux PIDs via un site web comme <a href="http://www.kingofsat.net">King Of Sat</a>, la manière la plus facile pour les obtenir est d&#8217;utiliser les dvb-apps de linuxtv.</p></div>
+<div class="paragraph"><p>Si vous n&#8217;avez pas accès aux PIDs via un site web comme <a href="http://www.kingofsat.net">King Of Sat</a>, la manière la plus facile pour les obtenir est d&#8217;utiliser les dvb-apps de linuxtv ou w_scan.</p></div>
 <div class="paragraph"><p>Si vous ne savez pas sur quelle fréquence accorder votre carte ou les chaînes que vous pouvez recevoir, vous pouvez utiliser <a href="#w_scan">w_scan</a> ou <a href="#scan_inital_tuning">scan</a> (des dvb-apps) si vous avez un fichier d&#8217;accord initial (généralement fourni avec la documentation de scan).</p></div>
+<div class="sect3">
 <h4 id="w_scan">6.2.1. Utiliser w_scan pour obtenir un fichier d&#8217;accord initial</h4>
 <div class="admonitionblock">
 <table><tr>
 <td class="icon">
 <div class="title">Note</div>
 </td>
-<td class="content">w_scan fonctionne uniquement pour la réception terrestre ou câblée.</td>
+<td class="content">w_scan fonctionne uniquement pour la réception terrestre, câblée, ATSC et satellite.</td>
 </tr></table>
 </div>
-<div class="paragraph"><p>Vous pouvez obtenir w_scan à partir du <a href="http://edafe.org/vdr/w_scan/">site web de w_scan</a>.</p></div>
-<div class="paragraph"><p>Une fois que vous l&#8217;avez compilé (facultatif pour les x86), vous pouvez le lancer en utilisant</p></div>
-<div class="listingblock">
-<div class="content">
-<pre><tt>./w_scan -x &gt;&gt; inital_tuning_file.txt</tt></pre>
-</div></div>
+<div class="paragraph"><p>Vous pouvez obtenir w_scan à partir du site web de w_scan : <a href="http://wirbel.htpc-forum.de/w_scan/index2.html">Allemand</a> or <a href="http://wirbel.htpc-forum.de/w_scan/index_en.html">Traduction Anglaise</a></p></div>
+<div class="paragraph"><p>w_scan a un inconvénient comparé au programme scan de dvb-apps : w_scan prends ( habituellement ) plus de temps. Mais w_scan a plusieurs avantages : pas besoin de fichier de fréquence initial, autodétection de la carte et
+ recherche de chaîne plus "profonde".</p></div>
+<div class="paragraph"><p>Un fois que vous l&#8217;avez compilé (facultatif pour x86), lancez le avec les options nécessaires (country est obligatoire pour la réception terrestre et cable. Pour le DVB-S/S2 vous devez spécifier le satellite)</p></div>
 <div class="admonitionblock">
 <table><tr>
 <td class="icon">
 <div class="title">Note</div>
 </td>
-<td class="content">Si vous n&#8217;utilisez pas une carte DVB-T vous aurez a définir l&#8217;option</td>
+<td class="content">Options principales de w_scan</td>
 </tr></table>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre><tt>-f type frontend type
- What programs do you want to search for?
-  a = atsc (vsb/qam)
-  c = cable
-  t = terrestrian [default]</tt></pre>
+<pre><tt>        -f type frontend type
+                What programs do you want to search for?
+                a = atsc (vsb/qam)
+                c = cable
+                s = sat
+                t = terrestrian [default]
+        -c      choose your country here:
+                        DE, GB, US, AU, ..
+                        ? for list
+        -s      choose your satellite here:
+                        S19E2, S13E0, S15W0, ..
+                        ? for list</tt></pre>
 </div></div>
-<div class="paragraph"><p>Votre fichier <tt>initial_tuning_file.txt</tt> devrai contenir des lignes similaires à</p></div>
-<div class="listingblock">
-<div class="content">
-<pre><tt>T 482000000 8MHz AUTO AUTO AUTO AUTO AUTO AUTO
-T 498000000 8MHz AUTO AUTO AUTO AUTO AUTO AUTO
-T 514000000 8MHz 2/3 2/3 QAM64 8k 1/4 NONE</tt></pre>
-</div></div>
-<div class="paragraph"><p>Si vous voulez utiliser l&#8217;autoconfiguration complète, ce fichier contient toutes les informations nécessaires. Par exemple, la seconde colonne est la fréquence ( en Hz ).</p></div>
-<div class="paragraph"><p>Le format est le suivant :</p></div>
-<div class="listingblock">
-<div class="title">Terrestre</div>
-<div class="content">
-<pre><tt>T freq bandwidth fec_hi fec_lo modulation transmission-mode guard-interval hierarchy</tt></pre>
-</div></div>
-<div class="listingblock">
-<div class="title">Câble</div>
-<div class="content">
-<pre><tt>C freq symbol_rate fec modulation</tt></pre>
-</div></div>
-<div class="listingblock">
-<div class="title">ATSC</div>
-<div class="content">
-<pre><tt>A freq modulation</tt></pre>
-</div></div>
-<div class="paragraph"><p>Si vous ne voulez pas utiliser l&#8217;autoconfiguration complète, vous pouvez utiliser <tt>scan</tt> avec ce fichier, voir la section  <a href="#scan_inital_tuning">utiliser scan avec un fichier d&#8217;accord initial</a>.</p></div>
+<div class="paragraph"><p>Pour plus d&#8217;informations consultez l&#8217;aide de w_scan.</p></div>
+<div class="paragraph"><p>Vous obtiendrez une liste des chaînes disponibles. Le format de cette liste est décrit <a href="http://www.vdr-wiki.de/wiki/index.php/Vdr%285%29#CHANNELS">ici</a></p></div>
+<div class="paragraph"><p>Si vous voulez utiliser l&#8217;autoconfiguration complète, cette liste contient toutes les informations nécessaires. Par exemple, la seconde colonne est la fréquence.</p></div>
+</div>
+<div class="sect3">
 <h4 id="scan_inital_tuning">6.2.2. Utiliser scan avec un fichier d&#8217;accord initial</h4>
 <div class="admonitionblock">
 <table><tr>
@@ -1440,8 +1739,9 @@ T 514000000 8MHz 2/3 2/3 QAM64 8k 1/4 NONE</tt></pre>
 <td class="content">En réception satellite, ceci vous permet de trouver toutes les fréquences (si le diffuseur suit la norme). En effet chaque transpondeur annonce les autres.</td>
 </tr></table>
 </div>
+<div class="paragraph"><p>Si vous ne savez pas ou trouver les fichiers d&#8217;accord initiaux, les versions récentes donnent une liste des fichiers installés par défaut lorsque scan est convoqué sans arguments.</p></div>
 <div class="paragraph"><p>Dans la suite vous aurez besoin de l&#8217;utilitaire <tt>scan</tt> des dvb-apps.</p></div>
-<div class="paragraph"><p>Si vous avez un fichier d&#8217;accord initial de <tt>w_scan</tt>, de la documentation de scan ou tout autre source, tapez :</p></div>
+<div class="paragraph"><p>Tapez :</p></div>
 <div class="listingblock">
 <div class="content">
 <pre><tt>scan -o pids cheminversvotrefichierdaccordinitial</tt></pre>
@@ -1472,6 +1772,8 @@ TV3                      (0x0321) 01: PCR == V   V 0x006f A 0x0070 (cat) 0x0072 
 </div></div>
 <div class="paragraph"><p>Vouz avez maintenant accès aux autres PIDs.</p></div>
 <div class="paragraph"><p>MuMuDVB a besoin des PIDs en décimal, vous avez donc a faire la conversion Hexadécimal&#8594;décimal.</p></div>
+</div>
+<div class="sect3">
 <h4 id="_scanner_seulement_un_transpondeur">6.2.3. Scanner seulement un transpondeur</h4>
 <div class="paragraph"><p>Vous devez d&#8217;abord accorder votre carte sur la fréquence désirée ( avec, par exemple, <tt>tune</tt>, <tt>szap</tt> ou <tt>tzap</tt> ).</p></div>
 <div class="paragraph"><p>Ensuite vous pouvez utiliser l&#8217;utilitaire scan :</p></div>
@@ -1482,9 +1784,14 @@ TV3                      (0x0321) 01: PCR == V   V 0x006f A 0x0070 (cat) 0x0072 
 <div class="paragraph"><p>Où 0 doit être remplacé par le numéro de carte</p></div>
 <div class="paragraph"><p>Et vous obtiendrez des résultats similaires a ceux présentés dans la section <a href="#scan_initial_tuning">utiliser scan avec un fichier d&#8217;accord initial</a></p></div>
 </div>
+</div>
+</div>
+</div>
+</div>
+<div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2010-01-01 18:49:56 CEST
+Last updated 2011-11-13 14:15:24 CET
 </div>
 </div>
 </body>

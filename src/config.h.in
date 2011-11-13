@@ -27,6 +27,9 @@
 /* Define to 1 if you have the <ffmpeg/swscale.h> header file. */
 #undef HAVE_FFMPEG_SWSCALE_H
 
+/* Define if the function ff_url_split exists */
+#undef HAVE_FF_URL_SPLIT
+
 /* Define to 1 if you have the `gettimeofday' function. */
 #undef HAVE_GETTIMEOFDAY
 
@@ -136,6 +139,9 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define if the function url_split exists */
+#undef HAVE_URL_SPLIT
 
 /* Define to 1 if you have the <values.h> header file. */
 #undef HAVE_VALUES_H
