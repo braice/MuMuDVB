@@ -843,26 +843,26 @@ int
     if((sap_vars.sap == OPTION_UNDEFINED) && (multicast_vars.multicast))
     {
       log_message( log_module,  MSG_INFO,
-                   "Full autoconfiguration, we activate SAP announces. if you want to desactivate them see the README.\n");
+                   "Full autoconfiguration, we activate SAP announces. if you want to deactivate them see the README.\n");
       sap_vars.sap=OPTION_ON;
     }
     if(rewrite_vars.rewrite_pat == OPTION_UNDEFINED)
     {
       rewrite_vars.rewrite_pat=OPTION_ON;
       log_message( log_module,  MSG_INFO,
-                   "Full autoconfiguration, we activate PAT rewritting. if you want to desactivate it see the README.\n");
+                   "Full autoconfiguration, we activate PAT rewritting. if you want to deactivate it see the README.\n");
     }
     if(rewrite_vars.rewrite_sdt == OPTION_UNDEFINED)
     {
       rewrite_vars.rewrite_sdt=OPTION_ON;
       log_message( log_module,  MSG_INFO,
-                   "Full autoconfiguration, we activate SDT rewritting. if you want to desactivate it see the README.\n");
+                   "Full autoconfiguration, we activate SDT rewritting. if you want to deactivate it see the README.\n");
     }
     if(rewrite_vars.eit_sort == OPTION_UNDEFINED)
     {
       rewrite_vars.eit_sort=OPTION_ON;
       log_message( log_module,  MSG_INFO,
-                   "Full autoconfiguration, we activate sorting of the EIT PID. if you want to desactivate it see the README.\n");
+                   "Full autoconfiguration, we activate sorting of the EIT PID. if you want to deactivate it see the README.\n");
     }
   }
   if(card_buffer.max_thread_buffer_size<card_buffer.dvr_buffer_size)
@@ -980,10 +980,10 @@ int
   }
 #endif
 
-  //We desactivate things depending on multicast if multicast is suppressed
+  //We deactivate things depending on multicast if multicast is suppressed
   if(!multicast_vars.ttl)
   {
-    log_message( log_module,  MSG_INFO, "The multicast TTL is set to 0, multicast will be desactivated.\n");
+    log_message( log_module,  MSG_INFO, "The multicast TTL is set to 0, multicast will be deactivated.\n");
     multicast_vars.multicast=0;
   }
   if(!multicast_vars.multicast)
@@ -993,7 +993,7 @@ int
     {
       if(chan_and_pids.channels[curr_channel].transcode_options.enable)
       {
-	log_message( log_module,  MSG_INFO, "NO Multicast, transcoding desactivated for channel \"%s\".\n", chan_and_pids.channels[curr_channel].name);
+	log_message( log_module,  MSG_INFO, "NO Multicast, transcoding deactivated for channel \"%s\".\n", chan_and_pids.channels[curr_channel].name);
 	chan_and_pids.channels[curr_channel].transcode_options.enable=0;
       }
     }
@@ -1001,11 +1001,11 @@ int
       if(multicast_vars.rtp_header)
       {
 	multicast_vars.rtp_header=0;
-	log_message( log_module,  MSG_INFO, "NO Multicast, RTP Header is desactivated.\n");
+	log_message( log_module,  MSG_INFO, "NO Multicast, RTP Header is deactivated.\n");
       }
       if(sap_vars.sap==OPTION_ON)
       {
-	log_message( log_module,  MSG_INFO, "NO Multicast, SAP announces are desactivated.\n");
+	log_message( log_module,  MSG_INFO, "NO Multicast, SAP announces are deactivated.\n");
 	sap_vars.sap=OPTION_OFF;
       }
   }

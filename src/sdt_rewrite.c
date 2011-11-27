@@ -151,7 +151,7 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
 
   if(!channel->service_id)
   {
-    log_message( log_module, MSG_WARN,"Cannot rewrite a program without the service_id set. We desactivate SDT rewrititng for this channel %d : \"%s\"\n", curr_channel, channel->name);
+    log_message( log_module, MSG_WARN,"Cannot rewrite a program without the service_id set. We deactivate SDT rewrititng for this channel %d : \"%s\"\n", curr_channel, channel->name);
     channel->sdt_rewrite_skip=1;
     return 0;
   }
@@ -301,7 +301,7 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
     //We check if we saw all the section numbers
     if(sdt_rewrite_all_sections_seen(rewrite_vars))
     {
-      log_message( log_module, MSG_WARN,"The SDT rewrite failed (no program found, wrong service_id ?) we desactivate for this channel %d : \"%s\"\n", curr_channel, channel->name);
+      log_message( log_module, MSG_WARN,"The SDT rewrite failed (no program found, wrong service_id ?) we deactivate for this channel %d : \"%s\"\n", curr_channel, channel->name);
       channel->sdt_rewrite_skip=1;
     }
     else

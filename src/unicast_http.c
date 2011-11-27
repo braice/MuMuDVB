@@ -166,7 +166,7 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
     unicast_vars->consecutive_errors_timeout = atoi (substring);
     if(unicast_vars->consecutive_errors_timeout<=0)
       log_message( log_module,  MSG_WARN,
-                   "Warning : You have desactivated the unicast timeout for disconnecting clients, this can lead to an accumulation of zombie clients, this is unadvised, prefer a long timeout\n");
+                   "Warning : You have deactivated the unicast timeout for disconnecting clients, this can lead to an accumulation of zombie clients, this is unadvised, prefer a long timeout\n");
   }
   else if (!strcmp (substring, "unicast_max_clients"))
   {

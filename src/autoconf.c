@@ -313,7 +313,7 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
       //For no autoconfiguration
       if(channels[curr_channel].num_pids>1)
 	{
-	  log_message( log_module,  MSG_DETAIL, "Autoconfiguration desactivated for channel \"%s\" \n", channels[curr_channel].name);
+	  log_message( log_module,  MSG_DETAIL, "Autoconfiguration deactivated for channel \"%s\" \n", channels[curr_channel].name);
 	  channels[curr_channel].autoconfigurated=1;
 	}
       else if (channels[curr_channel].num_pids==1)
