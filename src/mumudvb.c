@@ -936,6 +936,7 @@ int
     mumu_string_replace(filename_pid,&len,0,"%tuner",number);
     sprintf(number,"%d",server_id);
     mumu_string_replace(filename_pid,&len,0,"%server",number);;
+    log_message( log_module, MSG_INFO, "The pid will be written in %s", filename_pid);
     pidfile = fopen (filename_pid, "w");
     if (pidfile == NULL)
     {
