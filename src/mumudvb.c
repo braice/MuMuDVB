@@ -1067,6 +1067,36 @@ int
 
   if (open_fe (&fds.fd_frontend, tuneparams.card_dev_path, tuneparams.tuner))
   {
+
+  /*****************************************************/
+  //daemon part two, we write our PID as we are tuned
+  /*****************************************************/
+
+  // We write our pid in a file if we deamonize
+  if (!no_daemon)
+  {
+    int len;
+    len=DEFAULT_PATH_LEN;
+    char number[10];
+    sprintf(number,"%d",tuneparams.card);
+    mumu_string_replace(filename_pid,&len,0,"%card",number);
+    sprintf(number,"%d",tuneparams.tuner);
+    mumu_string_replace(filename_pid,&len,0,"%tuner",number);
+    sprintf(number,"%d",server_id);
+    mumu_string_replace(filename_pid,&len,0,"%server",number);;
+    log_message( log_module, MSG_INFO, "The pid will be written in %s", filename_pid);
+    pidfile = fopen (filename_pid, "w");
+    if (pidfile == NULL)
+    {
+      log_message( log_module,  MSG_INFO,"%s: %s\n",
+                   filename_pid, strerror (errno));
+      exit(ERROR_CREATE_FILE);
+    }
+    fprintf (pidfile, "%d\n", getpid ());
+    fclose (pidfile);
+  }
+
+
     iRet =
         tune_it (fds.fd_frontend, &tuneparams);
   }
@@ -1132,33 +1162,6 @@ int
 
 
 
-  /*****************************************************/
-  //daemon part two, we write our PID as we are tuned
-  /*****************************************************/
-
-  // We write our pid in a file if we deamonize
-  if (!no_daemon)
-  {
-    int len;
-    len=DEFAULT_PATH_LEN;
-    char number[10];
-    sprintf(number,"%d",tuneparams.card);
-    mumu_string_replace(filename_pid,&len,0,"%card",number);
-    sprintf(number,"%d",tuneparams.tuner);
-    mumu_string_replace(filename_pid,&len,0,"%tuner",number);
-    sprintf(number,"%d",server_id);
-    mumu_string_replace(filename_pid,&len,0,"%server",number);;
-    log_message( log_module, MSG_INFO, "The pid will be written in %s", filename_pid);
-    pidfile = fopen (filename_pid, "w");
-    if (pidfile == NULL)
-    {
-      log_message( log_module,  MSG_INFO,"%s: %s\n",
-                   filename_pid, strerror (errno));
-      exit(ERROR_CREATE_FILE);
-    }
-    fprintf (pidfile, "%d\n", getpid ());
-    fclose (pidfile);
-  }
 
   /******************************************************/
   // Monitor Thread
