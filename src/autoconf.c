@@ -977,7 +977,6 @@ void autoconf_definite_end(int card, int tuner, mumudvb_chan_and_pids_t *chan_an
 /** @brief This function is called when a new packet is there and the autoconf is not finished*/
 int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, fds_t *fds, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars,  unicast_parameters_t *unicast_vars, int server_id)
 {
-  int iRet=0;
   if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL) //Full autoconfiguration, we search the channels and their names
   {
     if(pid==0) //PAT : contains the services identifiers and the PMT PID for each service
@@ -988,7 +987,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
         {
           log_message( log_module, MSG_DEBUG,"It seems that we have finished to get the services list\n");
           //we finish full autoconfiguration
-          iRet = autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams, fds, unicast_vars, server_id);
+          autoconf_finish_full(chan_and_pids, autoconf_vars, multicast_vars, tuneparams, fds, unicast_vars, server_id);
         }
       }
     }

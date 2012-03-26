@@ -257,7 +257,7 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
       sap_message4->version=(sap_message4->version+1)&0x000f;
       sap_message4->buf[0]=SAP_HEADER4_BYTE0;
       sap_message4->buf[1]=SAP_HEADER4_BYTE1;
-      sap_message4->buf[2]=((sap_message4->version<<12+curr_channel)&0xff00)>>8;
+      sap_message4->buf[2]=(((sap_message4->version<<12)+curr_channel)&0xff00)>>8;
       sap_message4->buf[3]=curr_channel&0xff;
   }
   if(channel->socketOut6)
@@ -268,7 +268,7 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
       sap_message6->version=(sap_message6->version+1)&0x000f;
       sap_message6->buf[0]=SAP_HEADER6_BYTE0;
       sap_message6->buf[1]=SAP_HEADER6_BYTE1;
-      sap_message6->buf[2]=((sap_message6->version<<12+curr_channel)&0xff00)>>8;
+      sap_message6->buf[2]=(((sap_message6->version<<12)+curr_channel)&0xff00)>>8;
       sap_message6->buf[3]=curr_channel&0xff;
   }
 
