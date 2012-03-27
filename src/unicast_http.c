@@ -1369,7 +1369,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
   int curr_channel;
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
   {
-    unicast_reply_write(reply, "\t<channel number=\"%d\">\n",curr_channel+1);
+    unicast_reply_write(reply, "\t<channel number=\"%d\" is_up=\"%d\">\n",curr_channel+1,channels[curr_channel].streamed_channel);
     unicast_reply_write(reply, "\t\t<lcn>%d</lcn>\n",channels[curr_channel].logical_channel_number);
     unicast_reply_write(reply, "\t\t<name><![CDATA[%s]]></name>\n",channels[curr_channel].name);
     unicast_reply_write(reply, "\t\t<service_type type=\"%d\"><![CDATA[%s]]></service_type>\n",channels[curr_channel].channel_type,service_type_to_str(channels[curr_channel].channel_type));
@@ -1378,7 +1378,6 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 	else
 		unicast_reply_write(reply, "\t\t<ip_multicast><![CDATA[%s]]></ip_multicast>\n",channels[curr_channel].ip4Out);
     unicast_reply_write(reply, "\t\t<port_multicast>%d</port_multicast>\n",channels[curr_channel].portOut);
-    unicast_reply_write(reply, "\t\t<is_up>%d</is_up>\n",channels[curr_channel].streamed_channel);
     unicast_reply_write(reply, "\t\t<traffic>%.0f</traffic>\n",channels[curr_channel].traffic);
     unicast_reply_write(reply, "\t\t<ratio_scrambled>%d</ratio_scrambled>\n",channels[curr_channel].ratio_scrambled);
     unicast_reply_write(reply, "\t\t<service_id>%d</service_id>\n",channels[curr_channel].service_id);
