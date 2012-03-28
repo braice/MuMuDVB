@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include "log.h"
 
+extern uint32_t       crc32_table[256];
 static char *log_module="SAP: ";
 
 int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumudvb_sap_message_t *sap_message4, mumudvb_sap_message_t *sap_message6, multicast_parameters_t multicast_vars);
@@ -257,8 +258,9 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
       sap_message4->version=(sap_message4->version+1)&0x000f;
       sap_message4->buf[0]=SAP_HEADER4_BYTE0;
       sap_message4->buf[1]=SAP_HEADER4_BYTE1;
-      sap_message4->buf[2]=(((sap_message4->version<<12)+curr_channel)&0xff00)>>8;
-      sap_message4->buf[3]=curr_channel&0xff;
+      //Hash of SAP message: see end of this function
+      sap_message4->buf[2]=0;
+      sap_message4->buf[3]=0;
   }
   if(channel->socketOut6)
   {
@@ -268,8 +270,9 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
       sap_message6->version=(sap_message6->version+1)&0x000f;
       sap_message6->buf[0]=SAP_HEADER6_BYTE0;
       sap_message6->buf[1]=SAP_HEADER6_BYTE1;
-      sap_message6->buf[2]=(((sap_message6->version<<12)+curr_channel)&0xff00)>>8;
-      sap_message6->buf[3]=curr_channel&0xff;
+      //Hash of SAP message: see end of this function
+      sap_message6->buf[2]=0;
+      sap_message6->buf[3]=0;
   }
 
 
@@ -326,6 +329,30 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
   // one program per message
   sap_add_program(channel, sap_vars, sap_message4, sap_message6, multicast_vars);
 
+
+  //we compute the CRC32 of the message in order to generate a hash
+  unsigned long crc32;
+  int i;
+  crc32=0xffffffff;
+  if(channel->socketOut4)
+    {
+      for(i = 0; i < sap_message4->len-1; i++) {
+	crc32 = (crc32 << 8) ^ crc32_table[((crc32 >> 24) ^ sap_message4->buf[i])&0xff];
+      }
+      //Hash of SAP message : we use the CRC32 that we merge onto 16bits
+      sap_message4->buf[2]=(((crc32>>24) & 0xff)+((crc32>>16) & 0xff)) & 0xff;
+      sap_message4->buf[3]=(((crc32>>8) & 0xff)+(crc32 & 0xff)) & 0xff;
+    }
+  crc32=0xffffffff;
+  if(channel->socketOut6)
+    {
+      for(i = 0; i < sap_message6->len-1; i++) {
+	crc32 = (crc32 << 8) ^ crc32_table[((crc32 >> 24) ^ sap_message6->buf[i])&0xff];
+      }
+      //Hash of SAP message : we use the CRC32 that we merge onto 16bits
+      sap_message6->buf[2]=(((crc32>>24) & 0xff)+((crc32>>16) & 0xff)) & 0xff;
+      sap_message6->buf[3]=(((crc32>>8) & 0xff)+(crc32 & 0xff)) & 0xff;
+    }
   return 0;
 
 }
