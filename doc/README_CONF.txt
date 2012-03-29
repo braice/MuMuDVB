@@ -264,7 +264,8 @@ SAP announces parameters
 |sap | Generation of SAP announces | 0 (1 if full autoconfiguration) | 0 or 1 | 
 |sap_organisation |Organisation field sent in the SAP announces | MuMuDVB | | Optionnal
 |sap_uri |URI  field sent in the SAP announces |  | | Optionnal
-|sap_sending_ip |The SAP sender IP address | 0.0.0.0 | | Optionnal, not autodetected
+|sap_sending_ip4 |The SAP sender IPv4 address | 0.0.0.0 | | Optionnal, not autodetected, if set, enable RFC 4570 SDP Source Filters field
+|sap_sending_ip6 |The SAP sender IPv6 address | :: | | Optionnal, not autodetected, if set, enable RFC 4570 SDP Source Filters field
 |sap_interval |Interval in seconds between sap announces | 5 | positive integers | 
 |sap_default_group | The default playlist group for sap announces | | string | Optionnal. You can use the keyword %type, see README
 |sap_ttl |The TTL for the multicast SAP packets | 255 |  | The RFC 2974 says "SAP announcements ... SHOULD be sent with an IP time-to-live of 255 (the use of TTL scoping for multicast is discouraged [RFC 2365])."

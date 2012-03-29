@@ -283,7 +283,7 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
       {
 	  ip4=ip_struct4.s_addr;
 	  /* Bytes 4-7 (or 4-19) byte: Originating source */
-	  log_message( log_module, MSG_DEBUG,"sap sending ip address : 0x%x\n", ip4);
+	  log_message( log_module, MSG_DEBUG,"sap sending ipv4  address : %s (binary : 0x%x)\n",sap_vars->sap_sending_ip4, ip4);
 	  memcpy (sap_message4->buf + 4, &ip4, 4);
       }
       else
@@ -300,6 +300,7 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
       if( inet_pton(AF_INET6, sap_vars->sap_sending_ip6, &ip_struct6))
       {
 	  ip6=ip_struct6.sin6_addr;
+	  log_message( log_module, MSG_DEBUG,"sap sending ipv6  address : %s\n",sap_vars->sap_sending_ip6);
 	  /* Bytes 4-7 (or 4-19) byte: Originating source */
 	  memcpy (sap_message6->buf + 4, &ip6.s6_addr, 16);
       }
@@ -472,6 +473,35 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
       mumu_string_append(&payload4,"t=0 0\r\na=tool:mumudvb-%s\r\na=type:broadcast\r\n", VERSION);
   if(channel->socketOut6)
       mumu_string_append(&payload6,"t=0 0\r\na=tool:mumudvb-%s\r\na=type:broadcast\r\n", VERSION);
+
+
+  /**  @subsection "source-filter" attribute
+       RFC 4570 SDP Source Filters
+       ex : a=source-filter: incl IN IP4 235.255.215.1 192.168.1.1
+       only defined when the sending ip address is defined
+  */
+
+  if(channel->socketOut4)
+    {
+      struct in_addr ip_struct4;
+      if( inet_aton(sap_vars->sap_sending_ip4, &ip_struct4) && ip_struct4.s_addr)
+	mumu_string_append(&payload4,
+			   "a=source-filter: incl IN IP4 %s %s\r\n", channel->ip4Out, sap_vars->sap_sending_ip4);
+    }
+  if(channel->socketOut6)
+    {
+      struct sockaddr_in6 ip_struct6;
+      if( inet_pton(AF_INET6, sap_vars->sap_sending_ip6, &ip_struct6))
+	{
+	  //ugly way to test non zero ipv6 addr but I didn found a better one
+	  u_int8_t  *s6;
+	  s6=ip_struct6.sin6_addr.s6_addr;
+	  if(s6[0]||s6[1]||s6[2]||s6[3]||s6[4]||s6[5]||s6[6]||s6[7]||s6[8]||s6[9]||s6[10]||s6[11]||s6[12]||s6[13]||s6[14]||s6[15])
+	    mumu_string_append(&payload6,
+			       "a=source-filter: incl IP6 %s %s\r\n", channel->ip6Out, sap_vars->sap_sending_ip6);
+	}
+    }
+
 
   /**  @subsection media name and transport address See RFC 1890
      m=...
