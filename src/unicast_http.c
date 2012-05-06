@@ -417,7 +417,9 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
   {
     int iRet;
     log_message( log_module, MSG_INFO,"Too many clients connected, we raise an error to  %s\n", inet_ntoa(tempSocketAddrIn.sin_addr));
-    iRet=write(tempSocket,HTTP_503_REPLY, strlen(HTTP_503_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
+    iRet=write(tempSocket,HTTP_503_REPLY, strlen(HTTP_503_REPLY));
+    if(iRet<0)
+      log_message( log_module, MSG_INFO,"Error writing to %s\n", inet_ntoa(tempSocketAddrIn.sin_addr));
     close(tempSocket);
     return NULL;
   }
@@ -583,7 +585,10 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
           if(client->channel!=-1)
           {
             log_message( log_module, MSG_INFO,"A channel (%d) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->channel);
-            iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
+            iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY)); 
+	    if(iRet<0)
+	      log_message( log_module, MSG_INFO,"Error writing reply\n");
+
             return -2; //to delete the client
           }
 

@@ -110,6 +110,9 @@ We cannot discover easily the MTU with unconnected UDP
 #define RTP_HEADER_LEN 12
 
 #define SAP_GROUP_LENGTH 20
+
+
+
 enum
   {
     FULLY_UNSCRAMBLED=0,
@@ -171,8 +174,18 @@ typedef struct {
   struct pollfd *pfds;	//  DVR device + unicast http clients
   int pfdsnum;
 }fds_t;
+#ifdef ENABLE_SCAM_SUPPORT
+/**@brief Structure containing ring buffer*/
+typedef struct {
+  unsigned char ** data;
+  uint64_t * time;
 
-
+  uint64_t * time_decsa;
+  unsigned int read_t2_idx;
+  unsigned int num_packets;
+  unsigned int write_idx, read_idx, read_idx2, write_t_idx, read_t_idx;
+}ring_buffer_t;  
+  #endif
 
 /**@brief Structure containing the card buffers*/
 typedef struct card_buffer_t{
@@ -262,6 +275,44 @@ typedef struct mumudvb_channel_t{
   /** The PMT packet for CAM purposes*/
   mumudvb_ts_packet_t *cam_pmt_packet;
 #endif
+#ifdef ENABLE_SCAM_SUPPORT
+  /** The camd socket for SCAM*/
+  int camd_socket;
+  /**Say if we need to ask this channel to the oscam*/
+  int need_scam_ask;
+  /**Say if this channel should be descrambled using scam*/
+  int oscam_support;
+
+//  unsigned char odd_cw_w_idx,odd_cw_r_idx;
+//  unsigned char even_cw_w_idx,even_cw_r_idx;  
+  unsigned char odd_cw[8];
+  unsigned char even_cw[8];
+  unsigned char got_key_even,got_key_odd;
+  pthread_mutex_t decsa_key_odd_mutex;
+  pthread_cond_t  decsa_key_odd_cond;
+  pthread_mutex_t decsa_key_even_mutex;
+  pthread_cond_t  decsa_key_even_cond;
+
+  pthread_t decsathread;
+  int decsathread_shutdown;
+  pthread_mutex_t decsa_mutex;
+  pthread_cond_t  decsa_cond;
+  unsigned char started_cw_get;
+  unsigned char scrambling_control;
+  //unsigned int decsa_delay;
+  
+  /**ring buffer for sending and software descrambling*/
+  ring_buffer_t* ring_buf;
+
+  unsigned int to_send;
+  pthread_t sendthread;
+  int sendthread_shutdown;
+  unsigned char clock_rbuf_idx;
+  unsigned char started_sending;
+  uint64_t ring_buffer_size,decsa_delay,send_delay,decsa_wait;
+#endif
+  
+
 
   /**the RTP header (just before the buffer so it can be sended together)*/
   unsigned char buf_with_rtp_header[RTP_HEADER_LEN];
@@ -353,6 +404,8 @@ typedef struct multicast_parameters_t{
   char iface4[IF_NAMESIZE+1];
   /** The interface for IPv6 */
   char iface6[IF_NAMESIZE+1];
+  /** num mpeg packets in one sent packet */
+  unsigned char num_pack;
 }multicast_parameters_t;
 
 /** No PSI tables filtering */
@@ -382,6 +435,11 @@ typedef struct mumudvb_chan_and_pids_t{
   /** The number of TS discontinuities per PID **/
   int16_t continuity_counter_pid[8193]; //on 16 bits for storing the initial -1
   uint8_t check_cc;
+#ifdef ENABLE_SCAM_SUPPORT
+  mumudvb_channel_t* send_capmt_idx[MAX_CHANNELS]; 
+  mumudvb_channel_t* scam_idx[MAX_CHANNELS]; 
+  uint8_t started_pid_get[MAX_CHANNELS]; 
+#endif
 }mumudvb_chan_and_pids_t;
 
 
@@ -418,6 +476,7 @@ void mumu_free_string(mumu_string_t *string);
 int mumudvb_poll(fds_t *fds);
 char *mumu_string_replace(char *source, int *length, int can_realloc, char *toreplace, char *replacement);
 int string_comput(char *string);
+uint64_t get_time(void);
 
 
 long int mumu_timing();

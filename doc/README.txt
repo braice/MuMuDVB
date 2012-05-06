@@ -65,7 +65,7 @@ Features overview
 - Support for RTP headers (only for multicast)
 - Ability to transcode the stream (only for multicast for the moment) see the <<transcoding,Transcoding>> section
 - CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.txt and CAM_menu_interface.png for screenshot)
-
+- Software descrambling through oscam dvbapi and libdvbcsa
 Detailled feature list
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -129,6 +129,7 @@ The `[configure options]` specific to MuMuDVB are:
 
 ---------------------------------------------------------------------
   --enable-cam-support    CAM support (default enabled)
+  --enable-scam-support   SCAM support (default enabled)
   --enable-coverage       build for test coverage (default disabled)
   --enable-duma           Debbuging DUMA library (default disabled)
 ---------------------------------------------------------------------

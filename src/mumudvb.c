@@ -106,6 +106,7 @@
 #include <errno.h>
 #include <time.h>
 #include <linux/dvb/version.h>
+#include <sys/mman.h>
 
 #include "mumudvb.h"
 #include "tune.h"
@@ -113,6 +114,12 @@
 #include "dvb.h"
 #ifdef ENABLE_CAM_SUPPORT
 #include "cam.h"
+#endif
+#ifdef ENABLE_SCAM_SUPPORT
+#include "scam_capmt.h"
+#include "scam_common.h"
+#include "scam_getcw.h"
+#include "scam_decsa.h"
 #endif
 #include "ts.h"
 #include "errors.h"
@@ -147,7 +154,7 @@ int no_daemon = 0;
 int Interrupted = 0;
 int  write_streamed_channels=1;
 
-
+uint64_t now_time;
 pthread_t signalpowerthread;
 pthread_t cardthread;
 pthread_t monitorthread;
@@ -174,6 +181,19 @@ multicast_parameters_t multicast_vars={
   .rtp_header = 0,
   .iface4="\0",
   .iface6="\0",
+};
+
+//Parameters for HTTP unicast
+unicast_parameters_t unicast_vars={
+	.unicast=0,
+	.ipOut="0.0.0.0",
+	.portOut=4242,
+	.portOut_str=NULL,
+	.consecutive_errors_timeout=UNICAST_CONSECUTIVE_ERROR_TIMEOUT,
+	.max_clients=-1,
+	.queue_max_size=UNICAST_DEFAULT_QUEUE_MAX,
+	.socket_sendbuf_size=0,
+	.flush_on_eagain=0,
 };
 
 
@@ -232,13 +252,15 @@ extern log_params_t log_params;
 static void SignalHandler (int signum);//below
 int read_multicast_configuration(multicast_parameters_t *, mumudvb_channel_t *, int, int *, char *); //in multicast.c
 void *monitor_func(void* arg);
-int mumudvb_close(monitor_parameters_t* monitor_thread_params, unicast_parameters_t* unicast_vars, int* strengththreadshutdown, void *cam_vars_v, char* filename_channels_not_streamed,char *filename_channels_streamed, char *filename_pid, int Interrupted);
+int mumudvb_close(monitor_parameters_t* monitor_thread_params, unicast_parameters_t* unicast_vars, int* strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char* filename_channels_not_streamed,char *filename_channels_streamed, char *filename_pid, int Interrupted);
+void *sendthread_func(void* arg); //The sending thread
+
 
 int
     main (int argc, char **argv)
 {
 
-
+  //uint64_t now_time_t;
   //sap announces
   sap_parameters_t sap_vars={
     .sap_messages4=NULL,
@@ -268,19 +290,6 @@ int
   .up_threshold = 80,
   .down_threshold = 30,
   .debug_updown = 0,
-  };
-
-  //Parameters for HTTP unicast
-  unicast_parameters_t unicast_vars={
-    .unicast=0,
-    .ipOut="0.0.0.0",
-    .portOut=4242,
-    .portOut_str=NULL,
-    .consecutive_errors_timeout=UNICAST_CONSECUTIVE_ERROR_TIMEOUT,
-    .max_clients=-1,
-    .queue_max_size=UNICAST_DEFAULT_QUEUE_MAX,
-    .socket_sendbuf_size=0,
-    .flush_on_eagain=0,
   };
 
 
@@ -350,6 +359,16 @@ int
   cam_parameters_t *cam_vars_ptr=&cam_vars;
   #else
   void *cam_vars_ptr=NULL;
+  #endif
+
+
+  #ifdef ENABLE_SCAM_SUPPORT
+  //SCAM (software conditionnal Access Modules : for scrambled channels)
+  scam_parameters_t scam_vars={.scamthread_shutdown=0};
+  scam_parameters_t *scam_vars_ptr=&scam_vars;
+  int send_capmt_index=0;
+  #else
+  void *scam_vars_ptr=NULL;
   #endif
 
   char filename_channels_not_streamed[DEFAULT_PATH_LEN];
@@ -427,6 +446,7 @@ int
     {0, 0, 0, 0}
   };
   int c, option_index = 0;
+  uint64_t i;
 
   if (argc == 1)
   {
@@ -629,6 +649,13 @@ int
     }
 #ifdef ENABLE_CAM_SUPPORT
     else if((iRet=read_cam_configuration(cam_vars_ptr, &chan_and_pids.channels[curr_channel], channel_start, substring))) //Read the line concerning the cam parameters
+    {
+      if(iRet==-1)
+        exit(ERROR_CONF);
+    }
+#endif
+#ifdef ENABLE_SCAM_SUPPORT
+    else if((iRet=read_scam_configuration(scam_vars_ptr, &chan_and_pids.channels[curr_channel], channel_start, substring))) //Read the line concerning the cam parameters
     {
       if(iRet==-1)
         exit(ERROR_CONF);
@@ -920,33 +947,6 @@ int
   // Show in log that we are starting
   log_message( log_module,  MSG_INFO,"========== End of configuration, MuMuDVB version %s is starting ==========",VERSION);
 
-  /*****************************************************/
-  //daemon part two, we write our PID as we know the card number
-  /*****************************************************/
-
-  // We write our pid in a file if we deamonize
-  if (!no_daemon)
-  {
-    int len;
-    len=DEFAULT_PATH_LEN;
-    char number[10];
-    sprintf(number,"%d",tuneparams.card);
-    mumu_string_replace(filename_pid,&len,0,"%card",number);
-    sprintf(number,"%d",tuneparams.tuner);
-    mumu_string_replace(filename_pid,&len,0,"%tuner",number);
-    sprintf(number,"%d",server_id);
-    mumu_string_replace(filename_pid,&len,0,"%server",number);;
-    log_message( log_module, MSG_INFO, "The pid will be written in %s", filename_pid);
-    pidfile = fopen (filename_pid, "w");
-    if (pidfile == NULL)
-    {
-      log_message( log_module,  MSG_INFO,"%s: %s\n",
-                   filename_pid, strerror (errno));
-      exit(ERROR_CREATE_FILE);
-    }
-    fprintf (pidfile, "%d\n", getpid ());
-    fclose (pidfile);
-  }
 
   // + 1 Because of the new syntax
   chan_and_pids.number_of_channels = curr_channel+1;
@@ -1095,6 +1095,36 @@ int
 
   if (open_fe (&fds.fd_frontend, tuneparams.card_dev_path, tuneparams.tuner))
   {
+
+  /*****************************************************/
+  //daemon part two, we write our PID as we are tuned
+  /*****************************************************/
+
+  // We write our pid in a file if we deamonize
+  if (!no_daemon)
+  {
+    int len;
+    len=DEFAULT_PATH_LEN;
+    char number[10];
+    sprintf(number,"%d",tuneparams.card);
+    mumu_string_replace(filename_pid,&len,0,"%card",number);
+    sprintf(number,"%d",tuneparams.tuner);
+    mumu_string_replace(filename_pid,&len,0,"%tuner",number);
+    sprintf(number,"%d",server_id);
+    mumu_string_replace(filename_pid,&len,0,"%server",number);;
+    log_message( log_module, MSG_INFO, "The pid will be written in %s", filename_pid);
+    pidfile = fopen (filename_pid, "w");
+    if (pidfile == NULL)
+    {
+      log_message( log_module,  MSG_INFO,"%s: %s\n",
+                   filename_pid, strerror (errno));
+      exit(ERROR_CREATE_FILE);
+    }
+    fprintf (pidfile, "%d\n", getpid ());
+    fclose (pidfile);
+  }
+
+
     iRet =
         tune_it (fds.fd_frontend, &tuneparams);
   }
@@ -1179,7 +1209,21 @@ int
   };
 
   pthread_create(&(monitorthread), NULL, monitor_func, &monitor_thread_params);
+  
+  /*****************************************************/
+  //scam_support
+  /*****************************************************/
 
+#ifdef ENABLE_SCAM_SUPPORT
+   if(scam_vars.scam_support){
+	if(scam_getcw_start(scam_vars_ptr,tuneparams.card))
+    {
+      log_message("SCAM_GETCW: ", MSG_ERROR,"Cannot initalise scam\n");
+      scam_vars.scam_support=0;
+    }
+   }
+#endif
+  
   /*****************************************************/
   //cam_support
   /*****************************************************/
@@ -1275,7 +1319,11 @@ int
   /*****************************************************/
   //Some initialisations
   /*****************************************************/
-
+  if(multicast_vars.rtp_header)
+	multicast_vars.num_pack=(MAX_UDP_SIZE-TS_PACKET_SIZE)/TS_PACKET_SIZE;
+  else
+	multicast_vars.num_pack=(MAX_UDP_SIZE)/TS_PACKET_SIZE;
+	
   //Initialisation of the channels for RTP
   if(multicast_vars.rtp_header)
     for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
@@ -1302,7 +1350,59 @@ int
       }
       memset (chan_and_pids.channels[curr_channel].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
       pthread_mutex_init(&chan_and_pids.channels[curr_channel].pmt_packet->packetmutex,NULL);
+
     }
+#ifdef ENABLE_SCAM_SUPPORT	
+	if (chan_and_pids.channels[curr_channel].oscam_support) {
+	  	chan_and_pids.channels[curr_channel].ring_buf=malloc(sizeof(ring_buffer_t));
+	  	if (chan_and_pids.channels[curr_channel].ring_buf == NULL) {
+		  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+		  Interrupted=ERROR_MEMORY<<8;
+		  goto mumudvb_close_goto;
+	 	} 
+	    memset (chan_and_pids.channels[curr_channel].ring_buf, 0, sizeof( ring_buffer_t));//we clear it
+	  
+	    chan_and_pids.channels[curr_channel].ring_buf->data=malloc(chan_and_pids.channels[curr_channel].ring_buffer_size*sizeof(char *));
+	  	if (chan_and_pids.channels[curr_channel].ring_buf->data == NULL) {
+		  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+		  Interrupted=ERROR_MEMORY<<8;
+		  goto mumudvb_close_goto;
+	 	} 	  
+	    for ( i = 0; i< chan_and_pids.channels[curr_channel].ring_buffer_size; i++)
+	    {
+	  		chan_and_pids.channels[curr_channel].ring_buf->data[i]=malloc(TS_PACKET_SIZE*sizeof(char));
+		  	if (chan_and_pids.channels[curr_channel].ring_buf->data[i] == NULL) {
+			  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+			  Interrupted=ERROR_MEMORY<<8;
+			  goto mumudvb_close_goto;
+		 	} 
+		}
+	    chan_and_pids.channels[curr_channel].ring_buf->time=malloc(chan_and_pids.channels[curr_channel].ring_buffer_size/RING_TIME_INTERVAL * sizeof(uint64_t));
+	  	if (chan_and_pids.channels[curr_channel].ring_buf->time == NULL) {
+		  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+		  Interrupted=ERROR_MEMORY<<8;
+		  goto mumudvb_close_goto;
+	 	} 
+	    chan_and_pids.channels[curr_channel].ring_buf->time_decsa=malloc(chan_and_pids.channels[curr_channel].ring_buffer_size/RING_TIME_INTERVAL * sizeof(uint64_t));
+	  	if (chan_and_pids.channels[curr_channel].ring_buf->time_decsa == NULL) {
+		  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+		  Interrupted=ERROR_MEMORY<<8;
+		  goto mumudvb_close_goto;
+	 	} 
+	    memset (chan_and_pids.channels[curr_channel].ring_buf->time_decsa, 0, chan_and_pids.channels[curr_channel].ring_buffer_size/RING_TIME_INTERVAL * sizeof(uint64_t));//we clear it
+	    memset (chan_and_pids.channels[curr_channel].ring_buf->time, 0, chan_and_pids.channels[curr_channel].ring_buffer_size/RING_TIME_INTERVAL * sizeof(uint64_t));//we clear it	  
+	    start_thread_with_priority(&(chan_and_pids.channels[curr_channel].sendthread), sendthread_func, &chan_and_pids.channels[curr_channel]);
+	    //pthread_create(&(chan_and_pids.channels[curr_channel].sendthread), NULL, sendthread_func, &chan_and_pids.channels[curr_channel]);
+		//pthread_mutex_init(&chan_and_pids.channels[curr_channel].decsa_mutex,NULL);
+		//pthread_cond_init(&chan_and_pids.channels[curr_channel].decsa_cond,NULL);
+		pthread_mutex_init(&chan_and_pids.channels[curr_channel].decsa_key_odd_mutex,NULL);
+		pthread_cond_init(&chan_and_pids.channels[curr_channel].decsa_key_odd_cond,NULL);
+		pthread_mutex_init(&chan_and_pids.channels[curr_channel].decsa_key_even_mutex,NULL);
+		pthread_cond_init(&chan_and_pids.channels[curr_channel].decsa_key_even_cond,NULL);
+		//pthread_create(&(chan_and_pids.channels[curr_channel].decsathread), NULL, decsathread_func, &chan_and_pids.channels[curr_channel]);	
+	    scam_decsa_start(&chan_and_pids.channels[curr_channel]);
+	}
+#endif
 
   }
 
@@ -1506,7 +1606,7 @@ int
       free(dump_filename);
     }
   }
-
+  mlockall(MCL_CURRENT | MCL_FUTURE);
   /******************************************************/
   //Main loop where we get the packets and send them
   /******************************************************/
@@ -1725,6 +1825,22 @@ int
 #endif
 
         /******************************************************/
+	//scam support
+	// If we send the packet, we look if it's a cam pmt pid
+        /******************************************************/
+#ifdef ENABLE_SCAM_SUPPORT
+		if (scam_vars.scam_support &&(chan_and_pids.channels[curr_channel].need_scam_ask==CAM_NEED_ASK))
+		{
+			if (chan_and_pids.channels[curr_channel].oscam_support) {		
+				usleep(400000);
+				chan_and_pids.send_capmt_idx[send_capmt_index++]=&chan_and_pids.channels[curr_channel];
+				scam_send_capmt(&chan_and_pids.channels[curr_channel],tuneparams.card);	
+			}
+			chan_and_pids.channels[curr_channel].need_scam_ask=CAM_ASKED;
+		}
+#endif
+
+        /******************************************************/
 	//PMT follow (ie we check if the pids announced in the PMT changed)
         /******************************************************/
         if( (autoconf_vars.autoconf_pid_update) && 
@@ -1795,84 +1911,200 @@ int
         /******************************************************/
         if(send_packet==1)
         {
-          // we fill the channel buffer
-          memcpy(chan_and_pids.channels[curr_channel].buf + chan_and_pids.channels[curr_channel].nb_bytes, actual_ts_packet, TS_PACKET_SIZE);
+		    //now_time=get_time();
+#ifndef ENABLE_SCAM_SUPPORT
+      // we fill the channel buffer
+		      memcpy(chan_and_pids.channels[curr_channel].buf + chan_and_pids.channels[curr_channel].nb_bytes, actual_ts_packet, TS_PACKET_SIZE);
 
-          chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] =
-              (chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] & 0xe0) | hi_mappids[pid];
-          chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 2] = lo_mappids[pid];
+		      chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] =
+		          (chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] & 0xe0) | hi_mappids[pid];
+		      chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 2] = lo_mappids[pid];
 
-          chan_and_pids.channels[curr_channel].nb_bytes += TS_PACKET_SIZE;
-          //The buffer is full, we send it
-          if ((!multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
-	    ||(multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
-          {
-            //For bandwith measurement (traffic)
-            chan_and_pids.channels[curr_channel].sent_data+=chan_and_pids.channels[curr_channel].nb_bytes+20+8; // IP=20 bytes header and UDP=8 bytes header
-            if (multicast_vars.rtp_header) chan_and_pids.channels[curr_channel].sent_data+=RTP_HEADER_LEN;
+		      chan_and_pids.channels[curr_channel].nb_bytes += TS_PACKET_SIZE;
+		      //The buffer is full, we send it
+		      if ((!multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
+			||(multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
+		      {
+		        //For bandwith measurement (traffic)
+		        chan_and_pids.channels[curr_channel].sent_data+=chan_and_pids.channels[curr_channel].nb_bytes+20+8; // IP=20 bytes header and UDP=8 bytes header
+		        if (multicast_vars.rtp_header) chan_and_pids.channels[curr_channel].sent_data+=RTP_HEADER_LEN;
 
-            /********* TRANSCODE **********/
-#ifdef ENABLE_TRANSCODING
-	    if (NULL != chan_and_pids.channels[curr_channel].transcode_options.enable &&
-		    1 == *chan_and_pids.channels[curr_channel].transcode_options.enable) {
+		        /********* TRANSCODE **********/
+	#ifdef ENABLE_TRANSCODING
+			if (NULL != chan_and_pids.channels[curr_channel].transcode_options.enable &&
+				1 == *chan_and_pids.channels[curr_channel].transcode_options.enable) {
 
-		if (NULL == chan_and_pids.channels[curr_channel].transcode_handle) {
+			if (NULL == chan_and_pids.channels[curr_channel].transcode_handle) {
 
-		    strcpy(chan_and_pids.channels[curr_channel].transcode_options.ip, chan_and_pids.channels[curr_channel].ip4Out);
+				strcpy(chan_and_pids.channels[curr_channel].transcode_options.ip, chan_and_pids.channels[curr_channel].ip4Out);
 
-		    chan_and_pids.channels[curr_channel].transcode_handle = transcode_start_thread(chan_and_pids.channels[curr_channel].socketOut4,
-			&chan_and_pids.channels[curr_channel].sOut4, &chan_and_pids.channels[curr_channel].transcode_options);
-		}
+				chan_and_pids.channels[curr_channel].transcode_handle = transcode_start_thread(chan_and_pids.channels[curr_channel].socketOut4,
+				&chan_and_pids.channels[curr_channel].sOut4, &chan_and_pids.channels[curr_channel].transcode_options);
+			}
 
-		if (NULL != chan_and_pids.channels[curr_channel].transcode_handle) {
-		    transcode_enqueue_data(chan_and_pids.channels[curr_channel].transcode_handle,
-			chan_and_pids.channels[curr_channel].buf,
-					   chan_and_pids.channels[curr_channel].nb_bytes);
-		}
-	    }
+			if (NULL != chan_and_pids.channels[curr_channel].transcode_handle) {
+				transcode_enqueue_data(chan_and_pids.channels[curr_channel].transcode_handle,
+				chan_and_pids.channels[curr_channel].buf,
+						   chan_and_pids.channels[curr_channel].nb_bytes);
+			}
+			}
 
-	    if (NULL == chan_and_pids.channels[curr_channel].transcode_options.enable ||
-		    1 != *chan_and_pids.channels[curr_channel].transcode_options.enable ||
-		    ((NULL != chan_and_pids.channels[curr_channel].transcode_options.streaming_type &&
-		    STREAMING_TYPE_MPEGTS != *chan_and_pids.channels[curr_channel].transcode_options.streaming_type)&&
-		    (NULL == chan_and_pids.channels[curr_channel].transcode_options.send_transcoded_only ||
-		     1 != *chan_and_pids.channels[curr_channel].transcode_options.send_transcoded_only)))
+			if (NULL == chan_and_pids.channels[curr_channel].transcode_options.enable ||
+				1 != *chan_and_pids.channels[curr_channel].transcode_options.enable ||
+				((NULL != chan_and_pids.channels[curr_channel].transcode_options.streaming_type &&
+				STREAMING_TYPE_MPEGTS != *chan_and_pids.channels[curr_channel].transcode_options.streaming_type)&&
+				(NULL == chan_and_pids.channels[curr_channel].transcode_options.send_transcoded_only ||
+				 1 != *chan_and_pids.channels[curr_channel].transcode_options.send_transcoded_only)))
+	#endif
+		        /********** MULTICAST *************/
+		         //if the multicast TTL is set to 0 we don't send the multicast packets
+		        if(multicast_vars.multicast)
+			{
+			  unsigned char *data;
+			  int data_len;
+			  if(multicast_vars.rtp_header)
+			  {
+			/****** RTP *******/
+			now_time=get_time();	
+			rtp_update_sequence_number(&chan_and_pids.channels[curr_channel],now_time);
+			data=chan_and_pids.channels[curr_channel].buf_with_rtp_header;
+			data_len=chan_and_pids.channels[curr_channel].nb_bytes+RTP_HEADER_LEN;
+			  }
+			  else
+			{
+			  data=chan_and_pids.channels[curr_channel].buf;
+			  data_len=chan_and_pids.channels[curr_channel].nb_bytes;
+			}
+			  if(multicast_vars.multicast_ipv4)
+			sendudp (chan_and_pids.channels[curr_channel].socketOut4,
+				 &chan_and_pids.channels[curr_channel].sOut4,
+				 data,
+				 data_len);
+			  if(multicast_vars.multicast_ipv6)
+			sendudp6 (chan_and_pids.channels[curr_channel].socketOut6,
+				 &chan_and_pids.channels[curr_channel].sOut6,
+				 data,
+				 data_len);
+			}
+		        /*********** UNICAST **************/
+			unicast_data_send(&chan_and_pids.channels[curr_channel], chan_and_pids.channels, &fds, &unicast_vars);
+		        /********* END of UNICAST **********/
+			chan_and_pids.channels[curr_channel].nb_bytes = 0;
+		      }
+#else
+		  	if (chan_and_pids.channels[curr_channel].oscam_support) {
+				if (chan_and_pids.channels[curr_channel].started_cw_get) {
+					memcpy(chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx], actual_ts_packet, TS_PACKET_SIZE);
+
+					chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx][1] =
+					  (chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx][1] & 0xe0) | hi_mappids[pid];
+					chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx][2] = lo_mappids[pid];
+					++chan_and_pids.channels[curr_channel].ring_buf->write_idx;
+					chan_and_pids.channels[curr_channel].ring_buf->write_idx&=(chan_and_pids.channels[curr_channel].ring_buffer_size -1);
+				    ++chan_and_pids.channels[curr_channel].ring_buf->num_packets;
+					if ((chan_and_pids.channels[curr_channel].clock_rbuf_idx) == 0) {
+					  now_time=get_time();
+					  chan_and_pids.channels[curr_channel].ring_buf->time[chan_and_pids.channels[curr_channel].ring_buf->write_t_idx]=now_time + chan_and_pids.channels[curr_channel].send_delay;
+					  chan_and_pids.channels[curr_channel].ring_buf->time_decsa[chan_and_pids.channels[curr_channel].ring_buf->write_t_idx]=now_time + chan_and_pids.channels[curr_channel].decsa_delay;
+					  ++chan_and_pids.channels[curr_channel].ring_buf->write_t_idx;
+					  chan_and_pids.channels[curr_channel].ring_buf->write_t_idx&=(chan_and_pids.channels[curr_channel].ring_buffer_size/RING_TIME_INTERVAL)-1;
+					  chan_and_pids.channels[curr_channel].clock_rbuf_idx=0;
+					  chan_and_pids.channels[curr_channel].started_sending=1;
+					}
+					++chan_and_pids.channels[curr_channel].clock_rbuf_idx;
+					chan_and_pids.channels[curr_channel].clock_rbuf_idx&=RING_TIME_INTERVAL-1;
+
+				}
+			  }
+			else {
+		      // we fill the channel buffer
+		      memcpy(chan_and_pids.channels[curr_channel].buf + chan_and_pids.channels[curr_channel].nb_bytes, actual_ts_packet, TS_PACKET_SIZE);
+
+		      chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] =
+		          (chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] & 0xe0) | hi_mappids[pid];
+		      chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 2] = lo_mappids[pid];
+
+		      chan_and_pids.channels[curr_channel].nb_bytes += TS_PACKET_SIZE;
+		      //The buffer is full, we send it
+		      if ((!multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
+			||(multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
+		      {
+		        //For bandwith measurement (traffic)
+		        chan_and_pids.channels[curr_channel].sent_data+=chan_and_pids.channels[curr_channel].nb_bytes+20+8; // IP=20 bytes header and UDP=8 bytes header
+		        if (multicast_vars.rtp_header) chan_and_pids.channels[curr_channel].sent_data+=RTP_HEADER_LEN;
+
+		        /********* TRANSCODE **********/
+	#ifdef ENABLE_TRANSCODING
+			if (NULL != chan_and_pids.channels[curr_channel].transcode_options.enable &&
+				1 == *chan_and_pids.channels[curr_channel].transcode_options.enable) {
+
+			if (NULL == chan_and_pids.channels[curr_channel].transcode_handle) {
+
+				strcpy(chan_and_pids.channels[curr_channel].transcode_options.ip, chan_and_pids.channels[curr_channel].ip4Out);
+
+				chan_and_pids.channels[curr_channel].transcode_handle = transcode_start_thread(chan_and_pids.channels[curr_channel].socketOut4,
+				&chan_and_pids.channels[curr_channel].sOut4, &chan_and_pids.channels[curr_channel].transcode_options);
+			}
+
+			if (NULL != chan_and_pids.channels[curr_channel].transcode_handle) {
+				transcode_enqueue_data(chan_and_pids.channels[curr_channel].transcode_handle,
+				chan_and_pids.channels[curr_channel].buf,
+						   chan_and_pids.channels[curr_channel].nb_bytes);
+			}
+			}
+
+			if (NULL == chan_and_pids.channels[curr_channel].transcode_options.enable ||
+				1 != *chan_and_pids.channels[curr_channel].transcode_options.enable ||
+				((NULL != chan_and_pids.channels[curr_channel].transcode_options.streaming_type &&
+				STREAMING_TYPE_MPEGTS != *chan_and_pids.channels[curr_channel].transcode_options.streaming_type)&&
+				(NULL == chan_and_pids.channels[curr_channel].transcode_options.send_transcoded_only ||
+				 1 != *chan_and_pids.channels[curr_channel].transcode_options.send_transcoded_only)))
+	#endif
+		        /********** MULTICAST *************/
+		         //if the multicast TTL is set to 0 we don't send the multicast packets
+		        if(multicast_vars.multicast)
+			{
+			  unsigned char *data;
+			  int data_len;
+			  if(multicast_vars.rtp_header)
+			  {
+			/****** RTP *******/
+			now_time=get_time();	
+			rtp_update_sequence_number(&chan_and_pids.channels[curr_channel],now_time);
+			data=chan_and_pids.channels[curr_channel].buf_with_rtp_header;
+			data_len=chan_and_pids.channels[curr_channel].nb_bytes+RTP_HEADER_LEN;
+			  }
+			  else
+			{
+			  data=chan_and_pids.channels[curr_channel].buf;
+			  data_len=chan_and_pids.channels[curr_channel].nb_bytes;
+			}
+			  if(multicast_vars.multicast_ipv4)
+			sendudp (chan_and_pids.channels[curr_channel].socketOut4,
+				 &chan_and_pids.channels[curr_channel].sOut4,
+				 data,
+				 data_len);
+			  if(multicast_vars.multicast_ipv6)
+			sendudp6 (chan_and_pids.channels[curr_channel].socketOut6,
+				 &chan_and_pids.channels[curr_channel].sOut6,
+				 data,
+				 data_len);
+			}
+		        /*********** UNICAST **************/
+			unicast_data_send(&chan_and_pids.channels[curr_channel], chan_and_pids.channels, &fds, &unicast_vars);
+		        /********* END of UNICAST **********/
+			chan_and_pids.channels[curr_channel].nb_bytes = 0;
+		      }
+
+			}
+				  
 #endif
-            /********** MULTICAST *************/
-             //if the multicast TTL is set to 0 we don't send the multicast packets
-            if(multicast_vars.multicast)
-	    {
-	      unsigned char *data;
-	      int data_len;
-	      if(multicast_vars.rtp_header)
-	      {
-		/****** RTP *******/
-		rtp_update_sequence_number(&chan_and_pids.channels[curr_channel]);
-		data=chan_and_pids.channels[curr_channel].buf_with_rtp_header;
-		data_len=chan_and_pids.channels[curr_channel].nb_bytes+RTP_HEADER_LEN;
-	      }
-	      else
-		{
-		  data=chan_and_pids.channels[curr_channel].buf;
-		  data_len=chan_and_pids.channels[curr_channel].nb_bytes;
+			  
+			  
+		    //if (chan_and_pids.channels[curr_channel].to_send > 3072)
+				//pthread_cond_signal(&chan_and_pids.channels[curr_channel].send_cond);
+		    
 		}
-	      if(multicast_vars.multicast_ipv4)
-		sendudp (chan_and_pids.channels[curr_channel].socketOut4,
-			 &chan_and_pids.channels[curr_channel].sOut4,
-			 data,
-			 data_len);
-	      if(multicast_vars.multicast_ipv6)
-		sendudp6 (chan_and_pids.channels[curr_channel].socketOut6,
-			 &chan_and_pids.channels[curr_channel].sOut6,
-			 data,
-			 data_len);
-	    }
-            /*********** UNICAST **************/
-	    unicast_data_send(&chan_and_pids.channels[curr_channel], chan_and_pids.channels, &fds, &unicast_vars);
-            /********* END of UNICAST **********/
-	    chan_and_pids.channels[curr_channel].nb_bytes = 0;
-          }
-        }
       }
     }
   }
@@ -1893,7 +2125,7 @@ int
                  "We have got %d overflow errors\n",card_buffer.overflow_number );
 mumudvb_close_goto:
   //If the thread is not started, we don't send the unexisting address of monitor_thread_params
-  return mumudvb_close(monitorthread == 0 ? NULL:&monitor_thread_params , &unicast_vars, &tuneparams.strengththreadshutdown, cam_vars_ptr, filename_channels_not_streamed, filename_channels_streamed, filename_pid, Interrupted);
+  return mumudvb_close(monitorthread == 0 ? NULL:&monitor_thread_params , &unicast_vars, &tuneparams.strengththreadshutdown, cam_vars_ptr, scam_vars_ptr, filename_channels_not_streamed, filename_channels_streamed, filename_pid, Interrupted);
 
 }
 
@@ -1901,16 +2133,23 @@ mumudvb_close_goto:
  *
  *
  */
-int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, void *cam_vars_v, char *filename_channels_not_streamed, char *filename_channels_streamed, char *filename_pid, int Interrupted)
+int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char *filename_channels_not_streamed, char *filename_channels_streamed, char *filename_pid, int Interrupted)
 {
 
   int curr_channel;
   int iRet;
+  uint64_t i;
 
   #ifndef ENABLE_CAM_SUPPORT
    (void) cam_vars_v; //to make compiler happy
   #else
   cam_parameters_t *cam_vars=(cam_parameters_t *)cam_vars_v;
+  #endif
+
+  #ifndef ENABLE_SCAM_SUPPORT
+   (void) scam_vars_v; //to make compiler happy
+  #else
+  scam_parameters_t *scam_vars=(scam_parameters_t *)scam_vars_v;
   #endif
   if (Interrupted)
   {
@@ -1967,6 +2206,27 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
     if(chan_and_pids.channels[curr_channel].pmt_packet)
       free(chan_and_pids.channels[curr_channel].pmt_packet);
     chan_and_pids.channels[curr_channel].pmt_packet=NULL;
+	
+
+
+	if (chan_and_pids.channels[curr_channel].oscam_support) {
+	    log_message(log_module,MSG_DEBUG,"Send Thread closing, channel %s\n", chan_and_pids.channels[curr_channel].name);
+		chan_and_pids.channels[curr_channel].sendthread_shutdown=1;
+		pthread_join(chan_and_pids.channels[curr_channel].sendthread,NULL);
+		log_message(log_module,MSG_DEBUG,"Send Thread closed, channel %s\n", chan_and_pids.channels[curr_channel].name);
+		scam_decsa_stop(&chan_and_pids.channels[curr_channel]);
+	    for ( i = 0; i< chan_and_pids.channels[curr_channel].ring_buffer_size; i++)
+	    {
+	  		free(chan_and_pids.channels[curr_channel].ring_buf->data[i]);
+		}
+	    free(chan_and_pids.channels[curr_channel].ring_buf->data);
+	    free(chan_and_pids.channels[curr_channel].ring_buf->time);
+	    free(chan_and_pids.channels[curr_channel].ring_buf->time_decsa);
+	    free(chan_and_pids.channels[curr_channel].ring_buf);
+	}
+	
+	//free(chan_and_pids.channels[curr_channel].ring_buf);
+
   }
 
 #ifdef ENABLE_TRANSCODING
@@ -1999,6 +2259,12 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
     mumu_free_string(&cam_vars->cam_menulist_str);
     mumu_free_string(&cam_vars->cam_menu_string);
   }
+#endif
+#ifdef ENABLE_SCAM_SUPPORT
+  if(scam_vars->scam_support)
+  {
+	scam_getcw_stop(scam_vars);
+  }  
 #endif
 
   //autoconf variables freeing
@@ -2075,6 +2341,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
   }
   if(log_params.log_header!=NULL)
       free(log_params.log_header);
+  munlockall();
   
   // End
   return(ExitCode);
@@ -2431,11 +2698,162 @@ void *monitor_func(void* arg)
 }
 
 
+/** @brief updating clock for fixed time ts buffering
+ *
+ *
+ */
 
 
 
 
+/** @brief Sending available data with given delay
+ *
+ *
+ */
 
+void *sendthread_func(void* arg)
+{
+  unsigned char read_idx=0;
+  mumudvb_channel_t *channel;
+  channel = ((mumudvb_channel_t *) arg);
+  uint64_t res_time;
+  struct timespec r_time;
+  log_message( "SEND: ", MSG_DEBUG, "thread started, channel %s\n",channel->name); 
+  while(!channel->started_sending && !channel->sendthread_shutdown)
+	usleep(50000);
+	
+  while(!channel->sendthread_shutdown) {
+	  if (now_time<channel->ring_buf->time[channel->ring_buf->read_t_idx]) {
+	  	now_time=get_time();
+		if (now_time<channel->ring_buf->time[channel->ring_buf->read_t_idx]) {
+		  //if ( channel->ring_buf->time[channel->ring_buf->read_t_idx] - now_time > 11000)
+		  	//usleep((channel->ring_buf->time[channel->ring_buf->read_t_idx] - now_time)); 
+		  res_time=channel->ring_buf->time[channel->ring_buf->read_t_idx] - now_time;
+		  //if (res_time > 1000) {
+			//res_time-=100;
+		  	r_time.tv_sec=res_time/(1000000ull);
+		  	r_time.tv_nsec=1000*(res_time%(1000000ull));
+		  	while(nanosleep(&r_time, &r_time));
+		  	now_time=get_time();
+/*			while (now_time < channel->ring_buf->time[channel->ring_buf->read_t_idx]) {
+			  now_time=get_time();
+			}
+		  }
+		  else {
+			while (now_time < channel->ring_buf->time[channel->ring_buf->read_t_idx]) {
+			  now_time=get_time();
+			}
+			
+		  	//now_time=channel->ring_buf->time[channel->ring_buf->read_t_idx];
+		  }*/
+		}
+	  }
+	  else if (channel->to_send) {
+	  
+	  //if (now_time>=channel->ring_buf->time[channel->ring_buf->read_t_idx] && channel->to_send) {
+
+		  memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data[channel->ring_buf->read_idx], TS_PACKET_SIZE);
+
+		  ++channel->ring_buf->read_idx;
+		  channel->ring_buf->read_idx&=(channel->ring_buffer_size -1);
+
+          channel->nb_bytes += TS_PACKET_SIZE;
+		  --channel->to_send;
+		  ++read_idx;
+		  if (read_idx==RING_TIME_INTERVAL) {
+		  	++channel->ring_buf->read_t_idx;
+		  	channel->ring_buf->read_t_idx&=(channel->ring_buffer_size/RING_TIME_INTERVAL)-1;
+			read_idx=0;
+		  }
+			
+          //The buffer is full, we send it
+          if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
+	    ||(multicast_vars.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
+          {
+            //For bandwith measurement (traffic)
+            channel->sent_data+=channel->nb_bytes+20+8; // IP=20 bytes header and UDP=8 bytes header
+            if (multicast_vars.rtp_header) channel->sent_data+=RTP_HEADER_LEN;
+
+            /********* TRANSCODE **********/
+#ifdef ENABLE_TRANSCODING
+	    if (NULL != channel->transcode_options.enable &&
+		    1 == *channel->transcode_options.enable) {
+
+		if (NULL == channel->transcode_handle) {
+
+		    strcpy(channel->transcode_options.ip, channel->ip4Out);
+
+		    channel->transcode_handle = transcode_start_thread(channel->socketOut4,
+			&channel->sOut4, &channel->transcode_options);
+		}
+
+		if (NULL != channel->transcode_handle) {
+		    transcode_enqueue_data(channel->transcode_handle,
+			channel->buf,
+					   channel->nb_bytes);
+		}
+	    }
+
+	    if (NULL == channel->transcode_options.enable ||
+		    1 != *channel->transcode_options.enable ||
+		    ((NULL != channel->transcode_options.streaming_type &&
+		    STREAMING_TYPE_MPEGTS != *channel->transcode_options.streaming_type)&&
+		    (NULL == channel->transcode_options.send_transcoded_only ||
+		     1 != *channel->transcode_options.send_transcoded_only)))
+#endif
+            /********** MULTICAST *************/
+             //if the multicast TTL is set to 0 we don't send the multicast packets
+            if(multicast_vars.multicast)
+	    {
+	      unsigned char *data;
+	      int data_len;
+	      if(multicast_vars.rtp_header)
+	      {
+		/****** RTP *******/
+		rtp_update_sequence_number(channel,now_time>=channel->ring_buf->time[channel->ring_buf->read_t_idx]);
+		data=channel->buf_with_rtp_header;
+		data_len=channel->nb_bytes+RTP_HEADER_LEN;
+	      }
+	      else
+		{
+		  data=channel->buf;
+		  data_len=channel->nb_bytes;
+		}
+	      if(multicast_vars.multicast_ipv4)
+		sendudp (channel->socketOut4,
+			 &channel->sOut4,
+			 data,
+			 data_len);
+	      if(multicast_vars.multicast_ipv6)
+		sendudp6 (channel->socketOut6,
+			 &channel->sOut6,
+			 data,
+			 data_len);
+	    }
+            /*********** UNICAST **************/
+	    unicast_data_send(channel, chan_and_pids.channels, &fds, &unicast_vars);
+            /********* END of UNICAST **********/
+	    channel->nb_bytes = 0;
+          }
+  		}
+	  else {
+	    log_message( "SEND: ", MSG_DEBUG, "buffer starved, channel %s %u %u\n",channel->name,channel->ring_buf->num_packets,channel->to_send); 
+	    usleep(1000);
+	  }
+/*	  else {
+	    if (channel->to_send) {
+	  	  usleep((channel->ring_buf->time[channel->ring_buf->read_t_idx] - now_time));
+		  //now_time=get_time();
+		}
+	    else
+	  	  usleep(100);
+		usleep(1000);
+	  }*/
+		
+
+  }
+  return 0;
+}
 
 
 

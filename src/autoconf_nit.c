@@ -60,7 +60,6 @@ void parse_terrestrial_delivery_system_descriptor(unsigned char *buf);
 int autoconf_read_nit(autoconf_parameters_t *parameters, mumudvb_channel_t *channels, int number_of_channels)
 {
   mumudvb_ts_packet_t *nit_mumu;
-  int delta=0;
   unsigned char *buf=NULL;
 
   //We get the packet
@@ -92,7 +91,6 @@ int autoconf_read_nit(autoconf_parameters_t *parameters, mumudvb_channel_t *chan
 
   //Loop over different descriptors in the NIT
   buf+=NIT_LEN;
-  delta=0;
 
   //We read the descriptors
   parse_nit_descriptors(buf,network_descriptors_length);

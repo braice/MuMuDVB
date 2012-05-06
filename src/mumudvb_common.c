@@ -285,7 +285,14 @@ long int mumu_timing()
   return delta;
 }
 
-
+uint64_t get_time(void) {
+	struct timespec ts;
+/*	if (*/
+	    clock_gettime(CLOCK_MONOTONIC, &ts);
+/*	    == EINVAL) // Shouldn't happen on modern Linux
+		clock_gettime(CLOCK_REALTIME, &ts);*/
+	return (ts.tv_sec * 1000000ll + ts.tv_nsec / 1000);
+}
 
 
 

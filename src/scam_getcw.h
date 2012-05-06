@@ -1,10 +1,14 @@
 /* 
- * MuMuDVB - UDP-ize a DVB transport stream.
+ * MuMuDVB - Stream a DVB transport stream.
+ * Header file for software descrambling connection with oscam
  * 
- * (C) 2009 Brice DUBOST <mumudvb@braice.net>
+ * (C) 2004-2010 Brice DUBOST
  *
  * The latest version can be found at http://mumudvb.braice.net
  *
+ * Code inspired by vdr plugin dvbapi
+ * Copyright (C) 2011,2012 Mariusz Białończyk <manio@skyboo.net>
+ * 
  * Copyright notice:
  * 
  * This program is free software; you can redistribute it and/or modify
@@ -23,14 +27,21 @@
  */
 
 
-/** @file 
- * This file contains the headers concerning the RTP header
- */
+#ifndef _SCAM_GETCW_H
+#define _SCAM_GETCW_H
 
-#ifndef _RTP_H
-#define _RTP_H
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <sys/ioctl.h>
+#include <linux/dvb/ca.h>
+#include <stdlib.h>
+#include <netinet/in.h>
+#include <sys/time.h>
 
-void init_rtp_header(mumudvb_channel_t *channel);
-void rtp_update_sequence_number(mumudvb_channel_t *channel, uint64_t time);
+int scam_getcw_start(scam_parameters_t *, int);
+void scam_getcw_stop(scam_parameters_t *);
 
 #endif

@@ -237,6 +237,18 @@ _callback |  0 | | Normally this time doesn't have to be changed.
 |cam_interval_pmt_send |The time (in seconds) we wait between possible updates to the PMT sent to the CAM |  3 | | Normally this time doesn't have to be changed.
 |==================================================================================================================
 
+SCAM support parameters
+~~~~~~~~~~~~~~~~~~~~~~
+[width="80%",cols="2,5,2,2,5",options="header"]
+|==================================================================================================================
+|Parameter name |Description | Default value | Possible values | Comments
+|scam_support |Specify if we wants the support for software descrambling channels | 0 | 0 or 1 |
+|ring_buffer_default_size | default number of ts packets in ring buffer (when not specified by channel specific config) | 131072 |it must be power of 2!!!|
+|decsa_default_delay | default delay time between getting packet and descrambling (when not specified by channel specific config) | 4500000 | |
+|send_default_delay | default delay time between getting packet and sending (when not specified by channel specific config) | 7000000 | |
+|decsa_default_wait | default wait time for full batch used by libdvbcsa (when not specified by channel specific config) | 500000 | |
+|==================================================================================================================
+
 Autoconfiguration parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 [width="80%",cols="3,5,1,2,5",options="header"]
@@ -264,7 +276,8 @@ SAP announces parameters
 |sap | Generation of SAP announces | 0 (1 if full autoconfiguration) | 0 or 1 | 
 |sap_organisation |Organisation field sent in the SAP announces | MuMuDVB | | Optionnal
 |sap_uri |URI  field sent in the SAP announces |  | | Optionnal
-|sap_sending_ip |The SAP sender IP address | 0.0.0.0 | | Optionnal, not autodetected
+|sap_sending_ip4 |The SAP sender IPv4 address | 0.0.0.0 | | Optionnal, not autodetected, if set, enable RFC 4570 SDP Source Filters field
+|sap_sending_ip6 |The SAP sender IPv6 address | :: | | Optionnal, not autodetected, if set, enable RFC 4570 SDP Source Filters field
 |sap_interval |Interval in seconds between sap announces | 5 | positive integers | 
 |sap_default_group | The default playlist group for sap announces | | string | Optionnal. You can use the keyword %type, see README
 |sap_ttl |The TTL for the multicast SAP packets | 255 |  | The RFC 2974 says "SAP announcements ... SHOULD be sent with an IP time-to-live of 255 (the use of TTL scoping for multicast is discouraged [RFC 2365])."
@@ -305,6 +318,11 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 |service_id |The service id (program number), olny for autoconfiguration, or rewrite (PAT or SDT) see README for more details | | | 
 |name | The name of the channel. Will be used for /var/run/mumudvb/channels_streamed_adapter%d_tuner%d, logging and SAP announces | | | Mandatory
 |pids | The PIDs list, separated by spaces | | | some pids are always sent (PAT CAT EIT SDT TDT NIT), see README for more details
+|oscam |Do we activate oscam software descrambling for this channel| 0 | 0 or 1 |
+|ring_buffer_size | number of ts packets in ring buffer when using oscam software descrambling | 131072 |it must be power of 2!!!|
+|decsa_delay | delay time between getting packet and descrambling when using oscam software descrambling | 4500000 | |
+|send_delay | delay time between getting packet and sending when using oscam software descrambling | 7000000 | |
+|decsa_wait | wait time for full batch used by libdvbcsa when using oscam software descrambling | 500000 | |
 |==================================================================================================================
 
 

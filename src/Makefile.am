@@ -25,6 +25,21 @@ SOURCES_camsupport = \
         cam.c \
 	cam.h \
         $(NULL)
+        
+if BUILD_SCAMSUPPORT
+mumudvb_SOURCES += $(SOURCES_scamsupport)
+endif
+
+SOURCES_scamsupport = \
+        scam_capmt.c \
+	scam_capmt.h \
+        scam_common.c \
+	scam_common.h \
+        scam_getcw.c \
+	scam_getcw.h \
+        scam_decsa.c \
+	scam_decsa.h \
+        $(NULL)
 
 if BUILD_TRANSCODING
 mumudvb_SOURCES += $(SOURCES_transcoding)

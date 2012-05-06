@@ -54,6 +54,27 @@ else
 fi
 AM_CONDITIONAL(BUILD_CAMSUPPORT, [test "${enable_cam_support}" != "no"])
 
+
+dnl
+dnl scam support
+dnl
+AC_ARG_ENABLE(scam_support,
+  [  --enable-scam-support          SCAM support (default enabled)],,[enable_scam_support="yes"])
+
+if test "${enable_scam_support}" = "yes"
+then
+  AC_CHECK_LIB([dvbcsa], [dvbcsa_bs_decrypt],[], [enable_scam_support="no"])
+  if test "${enable_scam_support}" != "no"
+  then
+    AC_DEFINE(ENABLE_SCAM_SUPPORT, 1, Define if you want the SCAM support)
+  else
+    AC_MSG_WARN([libdvbcsa are needed for SCAM support])
+  fi
+else
+  enable_scam_support="no"
+fi
+AM_CONDITIONAL(BUILD_SCAMSUPPORT, [test "${enable_scam_support}" != "no"])
+
 dnl
 dnl transcoding support
 dnl
@@ -146,6 +167,12 @@ if test "${enable_cam_support}" != "no" ; then
         echo "Build with CAM support:                             yes"
 else
         echo "Build with CAM support:                              no"
+fi
+
+if test "${enable_scam_support}" != "no" ; then
+        echo "Build with SCAM support:                             yes"
+else
+        echo "Build with SCAM support:                              no"
 fi
 
 
