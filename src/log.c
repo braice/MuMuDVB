@@ -1010,7 +1010,7 @@ void print_info ()
 #endif
 #endif
 #if DVB_API_VERSION >= 5
-               "Built with support for DVB API Version 5 (DVB-S2).\n"
+               "Built with support for DVB API Version 5.\n"
 #ifdef SYS_DVBT2
                "\tBuilt with support for DVB-T2.\n"
 #endif
