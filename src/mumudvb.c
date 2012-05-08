@@ -2605,7 +2605,16 @@ void *monitor_func(void* arg)
         else
           num_scrambled=0;
         if (monitor_now>last_updown_check)
-          packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
+
+	  		#ifdef ENABLE_SCAM_SUPPORT
+	  		if (current->oscam_support)
+		  		packets_per_sec=((double)current->num_packet_descrambled_sent)/(monitor_now-last_updown_check);
+	  			//params->chan_and_pids->channels[curr_channel].num_packet_descrambled_sent = 0;
+			else
+		  		packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
+  			#else
+				packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);		
+  	  		#endif
         else
           packets_per_sec=0;
         if( params->stats_infos->debug_updown)
@@ -2639,6 +2648,10 @@ void *monitor_func(void* arg)
     {
       params->chan_and_pids->channels[curr_channel].num_packet = 0;
       params->chan_and_pids->channels[curr_channel].num_scrambled_packets = 0;
+	  #ifdef ENABLE_SCAM_SUPPORT
+	  if (params->chan_and_pids->channels[curr_channel].oscam_support)
+	  	params->chan_and_pids->channels[curr_channel].num_packet_descrambled_sent = 0;
+  	  #endif
     }
     last_updown_check=monitor_now;
 
@@ -2719,12 +2732,14 @@ void *sendthread_func(void* arg)
   uint64_t res_time;
   struct timespec r_time;
   log_message( "SEND: ", MSG_DEBUG, "thread started, channel %s\n",channel->name); 
+  channel->num_packet_descrambled_sent=0;
   while(!channel->started_sending && !channel->sendthread_shutdown)
 	usleep(50000);
 	
   while(!channel->sendthread_shutdown) {
 	  if (now_time<channel->ring_buf->time[channel->ring_buf->read_t_idx]) {
 	  	now_time=get_time();
+		channel->num_packet_descrambled_sent++;
 		if (now_time<channel->ring_buf->time[channel->ring_buf->read_t_idx]) {
 		  //if ( channel->ring_buf->time[channel->ring_buf->read_t_idx] - now_time > 11000)
 		  	//usleep((channel->ring_buf->time[channel->ring_buf->read_t_idx] - now_time)); 

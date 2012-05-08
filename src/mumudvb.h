@@ -276,6 +276,8 @@ typedef struct mumudvb_channel_t{
   mumudvb_ts_packet_t *cam_pmt_packet;
 #endif
 #ifdef ENABLE_SCAM_SUPPORT
+  /**Tell the total packet number (without pmt) for the scrambling ratio and up/down detection*/
+  int num_packet_descrambled_sent;
   /** The camd socket for SCAM*/
   int camd_socket;
   /**Say if we need to ask this channel to the oscam*/
