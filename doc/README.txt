@@ -141,10 +141,10 @@ $ ./configure --help
 --------------------
 
 [NOTE]
-The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of these libraries and deactivate the CAM support if one of them is not present.
+The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of these libraries and deactivate the CAM support if one of them is not present. It needs also trunk version of oscam to get control words. Oscam configuration is described below in section concerning software descrambling inside mumudvb.
 
 [NOTE]
-The SCAM support depends on libdvbcsa from videolan. The configure script will detect automatically the presence of these libraries and deactivate the SCAM support if one of them is not present.
+The SCAM support depends on libdvbcsa from videolan. The configure script will detect automatically the presence of these libraries and deactivate the SCAM support if one of them is not present. 
 
 [NOTE]
 The decoding of long channel names for autoconfiguration in ATSC depends on libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of this library and deactivate the long channel name support if it is not present. The full autoconfiguration will still work with ATSC but the channel names will be the short channels names (7 characters maximum)
@@ -581,7 +581,7 @@ You have an example of CAM support in doc/configuration_examples/autoconf_partia
 
 
 
-Software descrambling
+Software descrambling v1
 ~~~~~~~~~~~~~~~~~~~~~
 
 Important note : this solution is not allowed by some provider contracts.
@@ -630,6 +630,31 @@ The scrambling status is stored together with the streamed channel list.
  * FullyUnscrambled : less than 5% of scrambled packets
  * PartiallyUnscrambled : between 5% and 95% of scrambled packets
  * HighlyScrambled : more than 95% of scrambled packets
+
+
+Software descrambling v2
+~~~~~~~~~~~~~~~~~~~~~
+
+Important note : this solution is not allowed by some provider contracts.
+
+MuMuDVB now has support for software descrambling on its own, to do that you'll need to have trunk version of oscam and libdvbcsa installed.
+To enable you have to add to global options 
+scam_support=1
+on program options add
+oscam=1
+Other setting are documented at README_CONF.txt, there is also example available at configuration_examples/oscam.conf
+Some information on how to configure oscam
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In the oscam.conf file add following options
+        [dvbapi]
+        enabled = 1
+        au = 1
+        boxtype = pc
+        user = vdr
+        pmt_mode = 4
+        request_mode = 1
+
 
 [[pat_rewrite]]
 PAT (Program Allocation Table) Rewriting

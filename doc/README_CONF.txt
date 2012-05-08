@@ -243,10 +243,10 @@ SCAM support parameters
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |scam_support |Specify if we wants the support for software descrambling channels | 0 | 0 or 1 |
-|ring_buffer_default_size | default number of ts packets in ring buffer (when not specified by channel specific config) | 131072 |it must be power of 2!!!|
-|decsa_default_delay | default delay time between getting packet and descrambling (when not specified by channel specific config) | 4500000 | |
-|send_default_delay | default delay time between getting packet and sending (when not specified by channel specific config) | 7000000 | |
-|decsa_default_wait | default wait time for full batch used by libdvbcsa (when not specified by channel specific config) | 500000 | |
+|ring_buffer_default_size | default number of ts packets in ring buffer (when not specified by channel specific config) | 131072 |it gets rounded to the value that is power of 2 not lower than it|
+|decsa_default_delay | default delay time in ns between getting packet and descrambling (when not specified by channel specific config) | 4500000 | |
+|send_default_delay | default delay time in ns between getting packet and sending (when not specified by channel specific config) | 7000000 | |
+|decsa_default_wait | default wait time in ns for full batch used by libdvbcsa (when not specified by channel specific config) | 500000 | |
 |==================================================================================================================
 
 Autoconfiguration parameters
@@ -318,11 +318,11 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 |service_id |The service id (program number), olny for autoconfiguration, or rewrite (PAT or SDT) see README for more details | | | 
 |name | The name of the channel. Will be used for /var/run/mumudvb/channels_streamed_adapter%d_tuner%d, logging and SAP announces | | | Mandatory
 |pids | The PIDs list, separated by spaces | | | some pids are always sent (PAT CAT EIT SDT TDT NIT), see README for more details
-|oscam |Do we activate oscam software descrambling for this channel| 0 | 0 or 1 |
-|ring_buffer_size | number of ts packets in ring buffer when using oscam software descrambling | 131072 |it must be power of 2!!!|
-|decsa_delay | delay time between getting packet and descrambling when using oscam software descrambling | 4500000 | |
-|send_delay | delay time between getting packet and sending when using oscam software descrambling | 7000000 | |
-|decsa_wait | wait time for full batch used by libdvbcsa when using oscam software descrambling | 500000 | |
+|oscam |Do we activate software descrambling for this channel| 0 | 0 or 1 |
+|ring_buffer_size | number of ts packets in ring buffer (when not specified by channel specific config) | 131072 |it gets rounded to the value that is power of 2 not lower than it|
+|decsa_delay | delay time in ns between getting packet and descrambling (when not specified by channel specific config) | 4500000 | |
+|send_delay | delay time in ns between getting packet and sending (when not specified by channel specific config) | 7000000 | |
+|decsa_wait | wait time in ns for full batch used by libdvbcsa (when not specified by channel specific config) | 500000 | |
 |==================================================================================================================
 
 
