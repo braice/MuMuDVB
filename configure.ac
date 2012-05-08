@@ -32,6 +32,7 @@ AC_CHECK_LIB([ucsi], [atsc_text_segment_decode],[atsc_long_names="yes"], [atsc_l
 #AC_CHECK_LIB([dvben50221], [en50221_stdcam_create],,,[ucsi,pthread])
 AC_CHECK_LIB([pthread], [pthread_create])
 AC_CHECK_LIB([rt], [clock_gettime])
+AC_CHECK_LIB([m], [log2l])
 
 dnl
 dnl cam support
