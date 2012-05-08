@@ -688,6 +688,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
           char number[10];
           char ip[80];
           int len=80;
+
           if(strlen(parameters.autoconf_multicast_port))
           {
             strcpy(tempstring,parameters.autoconf_multicast_port);
@@ -716,7 +717,16 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 	      mumu_string_replace(ip,&len,0,"%tuner",number);
 	      sprintf(number,"%d",server_id);
 	      mumu_string_replace(ip,&len,0,"%server",number);
-	      strcpy(channels[channel_number].ip4Out,ip);
+	      // Compute the string, ex: 239.255.130+0*10+2.1
+	      log_message( log_module, MSG_DEBUG,"Computing expressions in string \"%s\"\n",ip);
+	      //Splitting and computing. use of strtok_r because it's safer
+	      int tn[4];
+	      char *sptr;
+	      tn[0]=string_comput(strtok_r (ip,".",&sptr));
+	      tn[1]=string_comput(strtok_r (NULL,".",&sptr));
+	      tn[2]=string_comput(strtok_r (NULL,".",&sptr));
+	      tn[3]=string_comput(strtok_r (NULL,".",&sptr));
+	      sprintf(channels[channel_number].ip4Out,"%d.%d.%d.%d",tn[0],tn[1],tn[2],tn[3]); // In C the evalutation order of arguments in a fct  is undefined, no more easy factoring
 	      log_message( log_module, MSG_DEBUG,"Channel IPv4 : \"%s\" port : %d\n",channels[channel_number].ip4Out,channels[channel_number].portOut);
 	    }
 	  if(multicast_vars->multicast_ipv6)
