@@ -66,6 +66,12 @@ Todo list
 #ifdef ENABLE_CAM_SUPPORT
 #include "cam.h"
 #endif
+#ifdef ENABLE_SCAM_SUPPORT
+#include "scam_capmt.h"
+#include "scam_common.h"
+#include "scam_getcw.h"
+#include "scam_decsa.h"
+#endif
 
 extern int Interrupted;
 static char *log_module="Unicast : ";
@@ -90,13 +96,13 @@ unicast_send_signal_power_js (int Socket, strength_parameters_t *strengthparams)
 int
 unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *channels, int Socket);
 int
-unicast_send_xml_state (int number_of_channels, mumudvb_channel_t* channels, int Socket, strength_parameters_t* strengthparams, autoconf_parameters_t* autoconf_vars, void* cam_vars_v);
+unicast_send_xml_state (int number_of_channels, mumudvb_channel_t* channels, int Socket, strength_parameters_t* strengthparams, autoconf_parameters_t* autoconf_vars, void* cam_vars_v, void* scam_vars_v);
 int
 unicast_send_cam_menu (int Socket, void *cam_vars);
 int
 unicast_send_cam_action (int Socket, char *Key, void *cam_vars);
 
-int unicast_handle_message(unicast_parameters_t* unicast_vars, unicast_client_t* client, mumudvb_channel_t* channels, int number_of_channels, strength_parameters_t* strengthparams, autoconf_parameters_t* autoconf_vars, void* cam_vars);
+int unicast_handle_message(unicast_parameters_t* unicast_vars, unicast_client_t* client, mumudvb_channel_t* channels, int number_of_channels, strength_parameters_t* strengthparams, autoconf_parameters_t* autoconf_vars, void* cam_vars, void* scam_vars);
 
 #define REPLY_HEADER 0
 #define REPLY_BODY 1
@@ -274,7 +280,7 @@ int unicast_create_listening_socket(int socket_type, int socket_channel, char *i
 * If the event is on a channel specific socket, it accepts the new connection and starts streaming
 *
 */
-int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels, strength_parameters_t *strengthparams, autoconf_parameters_t *autoconf_vars, void *cam_vars)
+int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels, strength_parameters_t *strengthparams, autoconf_parameters_t *autoconf_vars, void *cam_vars, void *scam_vars)
 {
   int iRet;
   //We look what happened for which connection
@@ -353,7 +359,7 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
       {
         //Event on a client connectio i.e. the client asked something
         log_message( log_module, MSG_FLOOD,"New message for socket %d\n", fds->pfds[actual_fd].fd);
-        iRet=unicast_handle_message(unicast_vars,unicast_vars->fd_info[actual_fd].client, channels, number_of_channels, strengthparams, autoconf_vars, cam_vars);
+        iRet=unicast_handle_message(unicast_vars,unicast_vars->fd_info[actual_fd].client, channels, number_of_channels, strengthparams, autoconf_vars, cam_vars, scam_vars);
         if (iRet==-2 ) //iRet==-2 --> 0 received data or error, we close the connection
         {
           unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels);
@@ -508,7 +514,7 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
 * @param channels the channel array
 * @param number_of_channels quite explicit ...
 */
-int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels, strength_parameters_t *strengthparams, autoconf_parameters_t *autoconf_vars, void *cam_vars)
+int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels, strength_parameters_t *strengthparams, autoconf_parameters_t *autoconf_vars, void *cam_vars, void *scam_vars)
 {
   int received_len;
   (void) unicast_vars;
@@ -729,7 +735,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
         else if(strstr(client->buffer +pos ,"/monitor/state.xml ")==(client->buffer +pos))
         {
           log_message( log_module, MSG_DETAIL,"HTTP request for XML State\n");
-          unicast_send_xml_state(number_of_channels, channels, client->Socket, strengthparams, autoconf_vars, cam_vars);
+          unicast_send_xml_state(number_of_channels, channels, client->Socket, strengthparams, autoconf_vars, cam_vars, scam_vars);
           return -2; //We close the connection afterwards
         }
         else if(strstr(client->buffer +pos ,"/cam/menu.xml ")==(client->buffer +pos))
@@ -1251,12 +1257,18 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
 * @param fds the frontend device structure
 */
 int
-unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int Socket, strength_parameters_t *strengthparams, autoconf_parameters_t *autoconf_vars, void *cam_vars_v)
+unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int Socket, strength_parameters_t *strengthparams, autoconf_parameters_t *autoconf_vars, void *cam_vars_v, void *scam_vars_v)
 {
   #ifndef ENABLE_CAM_SUPPORT
   (void) cam_vars_v; //to make compiler happy
   #else
   cam_parameters_t *cam_vars=(cam_parameters_t *)cam_vars_v;
+  #endif
+
+  #ifndef ENABLE_SCAM_SUPPORT
+  (void) scam_vars_v; //to make compiler happy
+  #else
+  scam_parameters_t *scam_vars=(scam_parameters_t *)scam_vars_v;
   #endif
   // Prepare the HTTP reply
   struct unicast_reply* reply = unicast_reply_init();
@@ -1358,6 +1370,17 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
     unicast_reply_write(reply, "\t<cam_initialized>%d</cam_initialized>\n",0);
   #endif
 
+  // SCAM information
+  #ifdef ENABLE_SCAM_SUPPORT
+    unicast_reply_write(reply, "\t<scam_support>%d</scam_support>\n",scam_vars->scam_support);
+    unicast_reply_write(reply, "\t<ring_buffer_default_size>%u</ring_buffer_default_size>\n",scam_vars->ring_buffer_default_size);
+    unicast_reply_write(reply, "\t<decsa_default_delay>%u</decsa_default_delay>\n",scam_vars->decsa_default_delay);
+    unicast_reply_write(reply, "\t<send_default_delay>%u</send_default_delay>\n",scam_vars->send_default_delay);
+    unicast_reply_write(reply, "\t<decsa_default_wait>%u</decsa_default_wait>\n",scam_vars->decsa_default_wait);
+  #else
+    unicast_reply_write(reply, "\t<scam_support>%d</scam_support>\n",0);
+  #endif
+
   // Channels list
   int curr_channel;
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
@@ -1377,6 +1400,16 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
     unicast_reply_write(reply, "\t\t<service_id>%d</service_id>\n",channels[curr_channel].service_id);
     unicast_reply_write(reply, "\t\t<pmt_pid>%d</pmt_pid>\n",channels[curr_channel].pmt_pid);
     unicast_reply_write(reply, "\t\t<unicast_port>%d</unicast_port>\n",channels[curr_channel].unicast_port);
+	// SCAM information
+  	#ifdef ENABLE_SCAM_SUPPORT
+	unicast_reply_write(reply, "\t\t<oscam>\n");
+		unicast_reply_write(reply, "\t<oscam_decsa>%d</oscam_decsa>\n",channels[curr_channel].oscam_support);
+		unicast_reply_write(reply, "\t<ring_buffer_size>%u</ring_buffer_size>\n",channels[curr_channel].ring_buffer_size);
+		unicast_reply_write(reply, "\t<decsa_delay>%u</decsa_delay>\n",channels[curr_channel].decsa_delay);
+		unicast_reply_write(reply, "\t<send_delay>%u</send_delay>\n",channels[curr_channel].send_delay);
+		unicast_reply_write(reply, "\t<decsa_wait>%u</decsa_wait>\n",channels[curr_channel].decsa_wait);
+	unicast_reply_write(reply, "\t\t</oscam>\n");
+  	#endif
     unicast_reply_write(reply, "\t\t<ca_sys>\n");
     for(int i=0;i<32;i++)
       if(channels[curr_channel].ca_sys_id[i]!=0)

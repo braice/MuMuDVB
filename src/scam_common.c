@@ -103,11 +103,13 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
     }
     substring = strtok (NULL, delimiteurs);
     current_channel->oscam_support = atoi (substring);
-    current_channel->need_scam_ask=CAM_NEED_ASK;
-	current_channel->ring_buffer_size=scam_vars->ring_buffer_default_size;
-	current_channel->decsa_delay=scam_vars->decsa_default_delay;
-	current_channel->send_delay=scam_vars->send_default_delay;
-	current_channel->decsa_wait=scam_vars->decsa_default_wait;
+	if (current_channel->oscam_support) {
+		current_channel->need_scam_ask=CAM_NEED_ASK;
+		current_channel->ring_buffer_size=scam_vars->ring_buffer_default_size;
+		current_channel->decsa_delay=scam_vars->decsa_default_delay;
+		current_channel->send_delay=scam_vars->send_default_delay;
+		current_channel->decsa_wait=scam_vars->decsa_default_wait;
+	}
   }
   else if (!strcmp (substring, "ring_buffer_size"))
   {
