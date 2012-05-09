@@ -141,7 +141,7 @@ $ ./configure --help
 --------------------
 
 [NOTE]
-The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of these libraries and deactivate the CAM support if one of them is not present. It needs also trunk version of oscam to get control words. Oscam configuration is described below in section concerning software descrambling inside mumudvb.
+The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of these libraries and deactivate the CAM support if one of them is not present. It needs also trunk version of oscam to get control words. Oscam configuration is described below in section concerning software descrambling v2 inside mumudvb. Full autoconfiguration is not yet supported
 
 [NOTE]
 The SCAM support depends on libdvbcsa from videolan. The configure script will detect automatically the presence of these libraries and deactivate the SCAM support if one of them is not present. 
@@ -637,12 +637,24 @@ Software descrambling v2
 
 Important note : this solution is not allowed by some provider contracts.
 
+Full autoconfiguration is not yet supported
+
 MuMuDVB now has support for software descrambling on its own, to do that you'll need to have trunk version of oscam and libdvbcsa installed.
 To enable you have to add to global options 
 scam_support=1
 on program options add
 oscam=1
 Other setting are documented at README_CONF.txt, there is also example available at configuration_examples/oscam.conf
+
+If channel has a lot of bandwidth it may be needed to extend ring buffer size. 
+
+If cw's don't get in time defined as decsa delay(default 4500000ns=4.5s) , you may try to extend it for example:
+	decsa_delay=9500000
+	send_delay=1200000
+
+note that bigger delays in ring buffer may need also extending ring buffer size
+  
+
 Some information on how to configure oscam
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
