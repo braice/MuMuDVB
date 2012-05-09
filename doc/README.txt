@@ -650,7 +650,7 @@ If channel has a lot of bandwidth it may be needed to extend ring buffer size.
 
 If cw's don't get in time defined as decsa delay(default 4500000ns=4.5s) , you may try to extend it for example:
 	decsa_delay=9500000
-	send_delay=1200000
+	send_delay=12000000
 
 note that bigger delays in ring buffer may need also extending ring buffer size
   
