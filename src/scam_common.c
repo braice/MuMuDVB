@@ -82,6 +82,8 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
   {
     substring = strtok (NULL, delimiteurs);
     scam_vars->decsa_default_delay = atoi (substring);
+	if (scam_vars->decsa_default_delay > 10000000)
+	  scam_vars->decsa_default_delay = 10000000;
   }
   else if (!strcmp (substring, "send_default_delay"))
   {
@@ -132,6 +134,8 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
     }
     substring = strtok (NULL, delimiteurs);
     current_channel->decsa_delay = atoi (substring);
+	if (current_channel->decsa_delay > 10000000)
+	  current_channel->decsa_delay = 10000000;
   }
   else if (!strcmp (substring, "send_delay"))
   {
