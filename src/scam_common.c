@@ -39,12 +39,16 @@
 #include <sys/time.h>
 #include <pthread.h>
 #include <math.h>
+#include <unistd.h>
+
 
 #include "scam_common.h"
 #include "errors.h"
 #include "ts.h"
 #include "mumudvb.h"
 #include "log.h"
+#include "unicast_http.h"
+#include "rtp.h"
 
 
 static char *log_module="SCAM_COMMON: ";
@@ -201,5 +205,127 @@ int start_thread_with_priority(pthread_t* thread, void *(*start_routine)(void*),
   pthread_attr_setschedparam(&attr, &param);
 
   return pthread_create(thread, &attr, start_routine, arg);
+}
+
+/** @brief Sending available data with given delay
+ *
+ *
+ */
+
+void *sendthread_func(void* arg)
+{
+  extern uint64_t now_time;
+  extern unicast_parameters_t unicast_vars;
+  extern multicast_parameters_t multicast_vars;
+  extern mumudvb_chan_and_pids_t chan_and_pids;
+  extern fds_t fds;
+  mumudvb_channel_t *channel;
+  channel = ((mumudvb_channel_t *) arg);
+  uint64_t res_time;
+  struct timespec r_time;
+  log_message( "SEND: ", MSG_DEBUG, "thread started, channel %s\n",channel->name); 
+  channel->num_packet_descrambled_sent=0;
+  while(!channel->ring_buf->to_send && !channel->sendthread_shutdown)
+	usleep(50000);
+	
+  while(!channel->sendthread_shutdown) {
+	  if (now_time<channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)]) {
+	  	now_time=get_time();
+		channel->num_packet_descrambled_sent++;
+		if (now_time<channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)]) {
+			res_time=channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)] - now_time;
+			r_time.tv_sec=res_time/(1000000ull);
+			r_time.tv_nsec=1000*(res_time%(1000000ull));
+			while(nanosleep(&r_time, &r_time));
+			now_time=get_time();
+		}
+	  }
+	  else if (channel->ring_buf->to_send) {
+		  memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data[channel->ring_buf->read_send_idx], TS_PACKET_SIZE);
+
+		  ++channel->ring_buf->read_send_idx;
+		  channel->ring_buf->read_send_idx&=(channel->ring_buffer_size -1);
+
+          channel->nb_bytes += TS_PACKET_SIZE;
+		  --channel->ring_buf->to_send;
+		  --channel->ring_buf->num_packets;
+			
+          //The buffer is full, we send it
+          if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
+	    ||(multicast_vars.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
+          {
+            //For bandwith measurement (traffic)
+            channel->sent_data+=channel->nb_bytes+20+8; // IP=20 bytes header and UDP=8 bytes header
+            if (multicast_vars.rtp_header) channel->sent_data+=RTP_HEADER_LEN;
+
+            /********* TRANSCODE **********/
+#ifdef ENABLE_TRANSCODING
+	    if (NULL != channel->transcode_options.enable &&
+		    1 == *channel->transcode_options.enable) {
+
+		if (NULL == channel->transcode_handle) {
+
+		    strcpy(channel->transcode_options.ip, channel->ip4Out);
+
+		    channel->transcode_handle = transcode_start_thread(channel->socketOut4,
+			&channel->sOut4, &channel->transcode_options);
+		}
+
+		if (NULL != channel->transcode_handle) {
+		    transcode_enqueue_data(channel->transcode_handle,
+			channel->buf,
+					   channel->nb_bytes);
+		}
+	    }
+
+	    if (NULL == channel->transcode_options.enable ||
+		    1 != *channel->transcode_options.enable ||
+		    ((NULL != channel->transcode_options.streaming_type &&
+		    STREAMING_TYPE_MPEGTS != *channel->transcode_options.streaming_type)&&
+		    (NULL == channel->transcode_options.send_transcoded_only ||
+		     1 != *channel->transcode_options.send_transcoded_only)))
+#endif
+            /********** MULTICAST *************/
+             //if the multicast TTL is set to 0 we don't send the multicast packets
+            if(multicast_vars.multicast)
+	    {
+	      unsigned char *data;
+	      int data_len;
+	      if(multicast_vars.rtp_header)
+	      {
+		/****** RTP *******/
+		rtp_update_sequence_number(channel,now_time>=channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)]);
+		data=channel->buf_with_rtp_header;
+		data_len=channel->nb_bytes+RTP_HEADER_LEN;
+	      }
+	      else
+		{
+		  data=channel->buf;
+		  data_len=channel->nb_bytes;
+		}
+	      if(multicast_vars.multicast_ipv4)
+		sendudp (channel->socketOut4,
+			 &channel->sOut4,
+			 data,
+			 data_len);
+	      if(multicast_vars.multicast_ipv6)
+		sendudp6 (channel->socketOut6,
+			 &channel->sOut6,
+			 data,
+			 data_len);
+	    }
+            /*********** UNICAST **************/
+	    unicast_data_send(channel, chan_and_pids.channels, &fds, &unicast_vars);
+            /********* END of UNICAST **********/
+	    channel->nb_bytes = 0;
+          }
+  		}
+	  else {
+	    log_message( "SEND: ", MSG_DEBUG, "buffer starved, channel %s %u %u\n",channel->name,channel->ring_buf->to_descramble,channel->ring_buf->to_send); 
+	    usleep(1000);
+	  }
+
+  }
+  return 0;
 }
 

@@ -177,14 +177,23 @@ typedef struct {
 #ifdef ENABLE_SCAM_SUPPORT
 /**@brief Structure containing ring buffer*/
 typedef struct {
+  /** Buffer with dvb packets*/
   unsigned char ** data;
-  uint64_t * time;
-
+  /** Write index of buffer */
+  unsigned int write_idx;
+  /** Buffer with descrambling timestamps*/
   uint64_t * time_decsa;
-  unsigned int read_t2_idx;
+  /** Number of packets left to descramble*/
   unsigned int to_descramble;
-  unsigned int write_idx, read_idx, read_idx2, write_t_idx, read_t_idx;
+  /** Read index of buffer for descrambling thread */
+  unsigned int read_decsa_idx;
+  /** Buffer with sending timestamps*/
+  uint64_t * time_send;
+  /** Number of packets left to send*/
   unsigned int to_send;
+  /** Read index of buffer for sending thread */
+  unsigned int read_send_idx;
+  /** Number of packets in the buffer*/	
   unsigned int num_packets;
 }ring_buffer_t;  
   #endif
@@ -282,37 +291,47 @@ typedef struct mumudvb_channel_t{
   int num_packet_descrambled_sent;
   /** The camd socket for SCAM*/
   int camd_socket;
-  /**Say if we need to ask this channel to the oscam*/
+  /** Say if we need to ask this channel to the oscam*/
   int need_scam_ask;
-  /**Say if this channel should be descrambled using scam*/
+  /** Say if this channel should be descrambled using scam*/
   int oscam_support;
-
-//  unsigned char odd_cw_w_idx,odd_cw_r_idx;
-//  unsigned char even_cw_w_idx,even_cw_r_idx;  
+  /** Odd control word for descrambling */
   unsigned char odd_cw[8];
+  /** Even control word for descrambling */
   unsigned char even_cw[8];
-  unsigned char got_key_even,got_key_odd;
+  /** Indicating if we have another odd cw for descrambling */
+  unsigned char got_key_odd;
+  /** Indicating if we have another even cw for descrambling */
+  unsigned char got_key_even;
+  /** Mutex for odd cw (used at decsa thread startup)  */
   pthread_mutex_t decsa_key_odd_mutex;
+  /** Condition for odd cw (used at decsa thread startup) */
   pthread_cond_t  decsa_key_odd_cond;
+  /** Mutex for even cw (used at decsa thread startup)  */
   pthread_mutex_t decsa_key_even_mutex;
+  /** Condition for even cw (used at decsa thread startup) */
   pthread_cond_t  decsa_key_even_cond;
-
+  /** Thread for software descrambling */
   pthread_t decsathread;
+  /** Descrambling thread shutdown control */
   int decsathread_shutdown;
-  pthread_mutex_t decsa_mutex;
-  pthread_cond_t  decsa_cond;
+  /** Indicates if we've got first cw for this channel */
   unsigned char started_cw_get;
-  unsigned char scrambling_control;
-  //unsigned int decsa_delay;
   
   /**ring buffer for sending and software descrambling*/
   ring_buffer_t* ring_buf;
-
+  /** Thread for sending packets software descrambled */
   pthread_t sendthread;
+  /** Sending thread shutdown control */
   int sendthread_shutdown;
-  unsigned char clock_rbuf_idx;
-  unsigned char started_sending;
-  uint64_t ring_buffer_size,decsa_delay,send_delay,decsa_wait;
+  /** Size of ring buffer */
+  uint64_t ring_buffer_size;
+  /** Delay of descrambling in ns*/
+  uint64_t decsa_delay;
+  /** Delay of sending in ns*/
+  uint64_t send_delay;
+  /** Time to wait for full batch for descrambling*/
+  uint64_t decsa_wait;
 #endif
   
 

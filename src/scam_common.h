@@ -46,10 +46,10 @@
 #include "mumudvb.h"
 #include "log.h"
 
-#define RING_BUFFER_DEFAULT_SIZE   131072
-#define RING_TIME_INTERVAL 4
+#define RING_BUFFER_DEFAULT_SIZE   65536
+
 #define DECSA_DEFAULT_DELAY 4500000
-#define SEND_DEFAULT_DELAY 7000000
+#define SEND_DEFAULT_DELAY 5500000
 #define DECSA_DEFAULT_WAIT 500000
 
 typedef struct scam_parameters_t{
@@ -66,6 +66,7 @@ typedef struct scam_parameters_t{
 int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
 unsigned char ts_packet_get_payload_offset(unsigned char *);
 int start_thread_with_priority(pthread_t* thread, void *(*start_routine)(void*), void* arg);
+void *sendthread_func(void* arg); 
 
 
 #endif

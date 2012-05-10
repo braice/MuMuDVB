@@ -57,9 +57,6 @@ static char *log_module="SCAM_DECSA: ";
 
 int scam_decsa_start(mumudvb_channel_t *channel)
 {
-  //channel->decsa_delay=1000;
-  pthread_mutex_init(&channel->decsa_mutex,NULL);
-  pthread_cond_init(&channel->decsa_cond,NULL);
   pthread_create(&(channel->decsathread), NULL, decsathread_func, channel);	 
 
   log_message(log_module, MSG_DEBUG,"Decsa thread started\n");
@@ -73,7 +70,6 @@ void scam_decsa_stop(mumudvb_channel_t *channel)
 
     log_message(log_module,MSG_DEBUG,"Decsa Thread closing, channel %s\n", channel->name);
     channel->decsathread_shutdown=1;
-	pthread_cond_signal(&channel->decsa_cond);
     pthread_cond_signal(&channel->decsa_key_odd_cond);
     pthread_cond_signal(&channel->decsa_key_even_cond);
     pthread_join(channel->decsathread,NULL); 
@@ -108,10 +104,10 @@ static void *decsathread_func(void* arg)
   log_message( log_module, MSG_DEBUG, "thread started, channel %s\n",channel->name);
   
   while (!started && !channel->decsathread_shutdown) {
-	if ((now_time >=channel->ring_buf->time_decsa[channel->ring_buf->read_t2_idx] )&& channel->started_cw_get && channel->ring_buf->to_descramble) {
+	if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>5)] )&& channel->started_cw_get && channel->ring_buf->to_descramble) {
 	  
 		started =1;
-		scrambling_control=((channel->ring_buf->data[channel->ring_buf->read_idx2][3] & 0xc0) >> 6);
+		scrambling_control=((channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3] & 0xc0) >> 6);
 		pthread_mutex_lock(&channel->decsa_key_even_mutex);
 		pthread_mutex_lock(&channel->decsa_key_odd_mutex);
 			  
@@ -136,7 +132,7 @@ static void *decsathread_func(void* arg)
 	
   while(!channel->decsathread_shutdown) {
 
-	if ((now_time >=channel->ring_buf->time_decsa[channel->ring_buf->read_t2_idx] )&& channel->started_cw_get && (channel->ring_buf->to_descramble!=0)) {		  
+	if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>5)] )&& channel->started_cw_get && (channel->ring_buf->to_descramble!=0)) {		  
 		now_time=get_time();
 	  	batch_stop_time=now_time + channel->decsa_wait;  
 		while((scrambled!=batch_size) && (batch_stop_time >= now_time)) {		  
@@ -146,8 +142,8 @@ static void *decsathread_func(void* arg)
 		  }
 		  if (channel->ring_buf->to_descramble == 0)
 			break;
-		  scrambling_control_packet = ((channel->ring_buf->data[channel->ring_buf->read_idx2][3] & 0xc0) >> 6);
-	      offset = ts_packet_get_payload_offset(channel->ring_buf->data[channel->ring_buf->read_idx2]);
+		  scrambling_control_packet = ((channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3] & 0xc0) >> 6);
+	      offset = ts_packet_get_payload_offset(channel->ring_buf->data[channel->ring_buf->read_decsa_idx]);
 		  len=188-offset;
 		  switch (scrambling_control_packet) {
 			case 0:
@@ -155,13 +151,13 @@ static void *decsathread_func(void* arg)
 			  break;
 			case 2:
 			  ++scrambled;
-			  even_batch[even_batch_idx].data = channel->ring_buf->data[channel->ring_buf->read_idx2] + offset;
+			  even_batch[even_batch_idx].data = channel->ring_buf->data[channel->ring_buf->read_decsa_idx] + offset;
 			  even_batch[even_batch_idx].len = len;
 			  ++even_batch_idx;
 			  break;
 			case 3:
 			  ++scrambled;
-			  odd_batch[odd_batch_idx].data = channel->ring_buf->data[channel->ring_buf->read_idx2] + offset;
+			  odd_batch[odd_batch_idx].data = channel->ring_buf->data[channel->ring_buf->read_decsa_idx] + offset;
 			  odd_batch[odd_batch_idx].len = len;
 			  ++odd_batch_idx;
 			  break;
@@ -169,14 +165,9 @@ static void *decsathread_func(void* arg)
 			  ++unscrambled;
 			  break;
 		  }
-		  ++channel->ring_buf->read_idx2;
-		  channel->ring_buf->read_idx2&=(channel->ring_buffer_size -1);	
+		  ++channel->ring_buf->read_decsa_idx;
+		  channel->ring_buf->read_decsa_idx&=(channel->ring_buffer_size -1);	
 		  ++read_idx;
-		  if (read_idx==RING_TIME_INTERVAL) {
-		  	++channel->ring_buf->read_t2_idx;
-		  	channel->ring_buf->read_t2_idx&=(channel->ring_buffer_size/RING_TIME_INTERVAL)-1;
-			read_idx=0;
-		  }
 		  --channel->ring_buf->to_descramble;
 		}
 	
@@ -224,7 +215,6 @@ static void *decsathread_func(void* arg)
 	 else {
 	   usleep(1000);
 	   now_time=get_time();
-	   	//usleep((channel->ring_buf->time_decsa[channel->ring_buf->read_t2_idx] - now_time));
 
  	 }
   }
