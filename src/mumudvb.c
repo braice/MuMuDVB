@@ -2001,6 +2001,7 @@ int
 					chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx][2] = lo_mappids[pid];
 					++chan_and_pids.channels[curr_channel].ring_buf->write_idx;
 					chan_and_pids.channels[curr_channel].ring_buf->write_idx&=(chan_and_pids.channels[curr_channel].ring_buffer_size -1);
+				    ++chan_and_pids.channels[curr_channel].ring_buf->to_descramble;
 				    ++chan_and_pids.channels[curr_channel].ring_buf->num_packets;
 					if ((chan_and_pids.channels[curr_channel].clock_rbuf_idx) == 0) {
 					  now_time=get_time();
@@ -2674,6 +2675,21 @@ void *monitor_func(void* arg)
     /*If we don't have active channels and this is the first time, we store the time*/
     else if(!time_no_diff)
       time_no_diff=(long)monitor_now;
+	  
+	#ifdef ENABLE_SCAM_SUPPORT
+    /*******************************************/
+    /* we check num of packets in ring buffer                */
+    /*******************************************/
+    for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++) {
+      if (params->chan_and_pids->channels[curr_channel].oscam_support) {
+		if (params->chan_and_pids->channels[curr_channel].ring_buf->num_packets>=params->chan_and_pids->channels[curr_channel].ring_buffer_size)
+      		log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow\n",params->chan_and_pids->channels[curr_channel].name);
+		else
+			log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %u\n",params->chan_and_pids->channels[curr_channel].name, params->chan_and_pids->channels[curr_channel].ring_buf->num_packets, params->chan_and_pids->channels[curr_channel].ring_buffer_size);
+	  }
+	}
+		
+	#endif
 
 
     /*******************************************/
@@ -2763,7 +2779,7 @@ void *sendthread_func(void* arg)
 		  }*/
 		}
 	  }
-	  else if (channel->to_send) {
+	  else if (channel->ring_buf->to_send) {
 	  
 	  //if (now_time>=channel->ring_buf->time[channel->ring_buf->read_t_idx] && channel->to_send) {
 
@@ -2773,7 +2789,8 @@ void *sendthread_func(void* arg)
 		  channel->ring_buf->read_idx&=(channel->ring_buffer_size -1);
 
           channel->nb_bytes += TS_PACKET_SIZE;
-		  --channel->to_send;
+		  --channel->ring_buf->to_send;
+		  --channel->ring_buf->num_packets;
 		  ++read_idx;
 		  if (read_idx==RING_TIME_INTERVAL) {
 		  	++channel->ring_buf->read_t_idx;
@@ -2852,7 +2869,7 @@ void *sendthread_func(void* arg)
           }
   		}
 	  else {
-	    log_message( "SEND: ", MSG_DEBUG, "buffer starved, channel %s %u %u\n",channel->name,channel->ring_buf->num_packets,channel->to_send); 
+	    log_message( "SEND: ", MSG_DEBUG, "buffer starved, channel %s %u %u\n",channel->name,channel->ring_buf->to_descramble,channel->ring_buf->to_send); 
 	    usleep(1000);
 	  }
 /*	  else {

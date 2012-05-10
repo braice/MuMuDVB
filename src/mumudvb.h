@@ -182,8 +182,10 @@ typedef struct {
 
   uint64_t * time_decsa;
   unsigned int read_t2_idx;
-  unsigned int num_packets;
+  unsigned int to_descramble;
   unsigned int write_idx, read_idx, read_idx2, write_t_idx, read_t_idx;
+  unsigned int to_send;
+  unsigned int num_packets;
 }ring_buffer_t;  
   #endif
 
@@ -306,7 +308,6 @@ typedef struct mumudvb_channel_t{
   /**ring buffer for sending and software descrambling*/
   ring_buffer_t* ring_buf;
 
-  unsigned int to_send;
   pthread_t sendthread;
   int sendthread_shutdown;
   unsigned char clock_rbuf_idx;

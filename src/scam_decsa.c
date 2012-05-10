@@ -108,7 +108,7 @@ static void *decsathread_func(void* arg)
   log_message( log_module, MSG_DEBUG, "thread started, channel %s\n",channel->name);
   
   while (!started && !channel->decsathread_shutdown) {
-	if ((now_time >=channel->ring_buf->time_decsa[channel->ring_buf->read_t2_idx] )&& channel->started_cw_get && channel->ring_buf->num_packets) {
+	if ((now_time >=channel->ring_buf->time_decsa[channel->ring_buf->read_t2_idx] )&& channel->started_cw_get && channel->ring_buf->to_descramble) {
 	  
 		started =1;
 		scrambling_control=((channel->ring_buf->data[channel->ring_buf->read_idx2][3] & 0xc0) >> 6);
@@ -136,15 +136,15 @@ static void *decsathread_func(void* arg)
 	
   while(!channel->decsathread_shutdown) {
 
-	if ((now_time >=channel->ring_buf->time_decsa[channel->ring_buf->read_t2_idx] )&& channel->started_cw_get && (channel->ring_buf->num_packets!=0)) {		  
+	if ((now_time >=channel->ring_buf->time_decsa[channel->ring_buf->read_t2_idx] )&& channel->started_cw_get && (channel->ring_buf->to_descramble!=0)) {		  
 		now_time=get_time();
 	  	batch_stop_time=now_time + channel->decsa_wait;  
 		while((scrambled!=batch_size) && (batch_stop_time >= now_time)) {		  
-		  while ((channel->ring_buf->num_packets == 0)&& (batch_stop_time >= now_time)) {			
+		  while ((channel->ring_buf->to_descramble == 0)&& (batch_stop_time >= now_time)) {			
 			usleep(1000);
 			now_time=get_time();
 		  }
-		  if (channel->ring_buf->num_packets == 0)
+		  if (channel->ring_buf->to_descramble == 0)
 			break;
 		  scrambling_control_packet = ((channel->ring_buf->data[channel->ring_buf->read_idx2][3] & 0xc0) >> 6);
 	      offset = ts_packet_get_payload_offset(channel->ring_buf->data[channel->ring_buf->read_idx2]);
@@ -177,7 +177,7 @@ static void *decsathread_func(void* arg)
 		  	channel->ring_buf->read_t2_idx&=(channel->ring_buffer_size/RING_TIME_INTERVAL)-1;
 			read_idx=0;
 		  }
-		  --channel->ring_buf->num_packets;
+		  --channel->ring_buf->to_descramble;
 		}
 	
 		even_batch[even_batch_idx].data=0;
@@ -214,7 +214,7 @@ static void *decsathread_func(void* arg)
 		}
 		even_batch_idx = 0;
 		odd_batch_idx = 0;
-		channel->to_send+= scrambled  + unscrambled;
+		channel->ring_buf->to_send+= scrambled  + unscrambled;
 	    //channel->ring_buf->num_packets-=(scrambled  + unscrambled);
 		unscrambled=0;
 		scrambled=0;

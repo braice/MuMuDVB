@@ -1404,10 +1404,13 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
   	#ifdef ENABLE_SCAM_SUPPORT
 	unicast_reply_write(reply, "\t\t<oscam>\n");
 		unicast_reply_write(reply, "\t<oscam_decsa>%d</oscam_decsa>\n",channels[curr_channel].oscam_support);
-		unicast_reply_write(reply, "\t<ring_buffer_size>%u</ring_buffer_size>\n",channels[curr_channel].ring_buffer_size);
-		unicast_reply_write(reply, "\t<decsa_delay>%u</decsa_delay>\n",channels[curr_channel].decsa_delay);
-		unicast_reply_write(reply, "\t<send_delay>%u</send_delay>\n",channels[curr_channel].send_delay);
-		unicast_reply_write(reply, "\t<decsa_wait>%u</decsa_wait>\n",channels[curr_channel].decsa_wait);
+		if (channels[curr_channel].oscam_support) {
+			unicast_reply_write(reply, "\t<ring_buffer_size>%u</ring_buffer_size>\n",channels[curr_channel].ring_buffer_size);
+			unicast_reply_write(reply, "\t<decsa_delay>%u</decsa_delay>\n",channels[curr_channel].decsa_delay);
+			unicast_reply_write(reply, "\t<send_delay>%u</send_delay>\n",channels[curr_channel].send_delay);
+			unicast_reply_write(reply, "\t<decsa_wait>%u</decsa_wait>\n",channels[curr_channel].decsa_wait);
+		    unicast_reply_write(reply, "\t<num_packets>%u</num_packets>\n",channels[curr_channel].ring_buf->num_packets);
+		}
 	unicast_reply_write(reply, "\t\t</oscam>\n");
   	#endif
     unicast_reply_write(reply, "\t\t<ca_sys>\n");
