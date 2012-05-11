@@ -133,11 +133,11 @@ static void *decsathread_func(void* arg)
   while(!channel->decsathread_shutdown) {
 
 	if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>5)] )&& channel->started_cw_get && (channel->ring_buf->to_descramble!=0)) {		  
-		now_time=get_time();
+		//now_time=get_time();
 	  	batch_stop_time=now_time + channel->decsa_wait;  
 		while((scrambled!=batch_size) && (batch_stop_time >= now_time)) {		  
 		  while ((channel->ring_buf->to_descramble == 0)&& (batch_stop_time >= now_time)) {			
-			usleep(1000);
+			usleep(50000);
 			now_time=get_time();
 		  }
 		  if (channel->ring_buf->to_descramble == 0)
@@ -213,9 +213,13 @@ static void *decsathread_func(void* arg)
 		
 	 }
 	 else {
-	   usleep(1000);
+	   //usleep(1000);
 	   now_time=get_time();
-
+	   if (now_time < channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>5)]) {
+		 usleep(((channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>5)])-now_time));
+		 //usleep(1000);
+		 now_time=get_time();       
+	   }
  	 }
   }
 	if(odd_key)
