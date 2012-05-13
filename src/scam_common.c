@@ -231,7 +231,6 @@ void *sendthread_func(void* arg)
   while(!channel->sendthread_shutdown) {
 	  if (now_time<channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)]) {
 	  	now_time=get_time();
-		channel->num_packet_descrambled_sent++;
 		if (now_time<channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)]) {
 			res_time=channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)] - now_time;
 			r_time.tv_sec=res_time/(1000000ull);
@@ -244,12 +243,14 @@ void *sendthread_func(void* arg)
 		  memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data[channel->ring_buf->read_send_idx], TS_PACKET_SIZE);
 
 		  ++channel->ring_buf->read_send_idx;
+		
 		  channel->ring_buf->read_send_idx&=(channel->ring_buffer_size -1);
 
           channel->nb_bytes += TS_PACKET_SIZE;
 		  --channel->ring_buf->to_send;
 		  --channel->ring_buf->num_packets;
-			
+		  ++channel->num_packet_descrambled_sent;
+		
           //The buffer is full, we send it
           if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
 	    ||(multicast_vars.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
