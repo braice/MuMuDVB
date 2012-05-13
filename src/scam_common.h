@@ -45,6 +45,8 @@
 #include "ts.h"
 #include "mumudvb.h"
 #include "log.h"
+#include "unicast_http.h"
+#include "rtp.h"
 
 #define RING_BUFFER_DEFAULT_SIZE   65536
 
@@ -67,6 +69,7 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
 unsigned char ts_packet_get_payload_offset(unsigned char *);
 int start_thread_with_priority(pthread_t* thread, void *(*start_routine)(void*), void* arg);
 void *sendthread_func(void* arg); 
+
 
 
 #endif

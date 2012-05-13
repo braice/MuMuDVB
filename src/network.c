@@ -37,6 +37,7 @@
 #include "log.h"
 #include <net/if.h>
 
+
 extern int Interrupted;
 static char *log_module="Network: ";
 
@@ -324,5 +325,9 @@ makeTCPclientsocket (char *szAddr, unsigned short port,
 
   return iSocket;
 }
+
+
+
+
 
 

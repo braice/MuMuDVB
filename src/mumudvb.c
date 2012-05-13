@@ -153,9 +153,7 @@ fds_t fds; /** File descriptors associated with the card */
 int no_daemon = 0;
 int Interrupted = 0;
 int  write_streamed_channels=1;
-#ifdef ENABLE_SCAM_SUPPORT
 uint64_t now_time;
-#endif
 pthread_t signalpowerthread;
 pthread_t cardthread;
 pthread_t monitorthread;
@@ -1926,71 +1924,9 @@ int
 		      if ((!multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
 			||(multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
 		      {
-		        //For bandwith measurement (traffic)
-		        chan_and_pids.channels[curr_channel].sent_data+=chan_and_pids.channels[curr_channel].nb_bytes+20+8; // IP=20 bytes header and UDP=8 bytes header
-		        if (multicast_vars.rtp_header) chan_and_pids.channels[curr_channel].sent_data+=RTP_HEADER_LEN;
-
-		        /********* TRANSCODE **********/
-	#ifdef ENABLE_TRANSCODING
-			if (NULL != chan_and_pids.channels[curr_channel].transcode_options.enable &&
-				1 == *chan_and_pids.channels[curr_channel].transcode_options.enable) {
-
-			if (NULL == chan_and_pids.channels[curr_channel].transcode_handle) {
-
-				strcpy(chan_and_pids.channels[curr_channel].transcode_options.ip, chan_and_pids.channels[curr_channel].ip4Out);
-
-				chan_and_pids.channels[curr_channel].transcode_handle = transcode_start_thread(chan_and_pids.channels[curr_channel].socketOut4,
-				&chan_and_pids.channels[curr_channel].sOut4, &chan_and_pids.channels[curr_channel].transcode_options);
-			}
-
-			if (NULL != chan_and_pids.channels[curr_channel].transcode_handle) {
-				transcode_enqueue_data(chan_and_pids.channels[curr_channel].transcode_handle,
-				chan_and_pids.channels[curr_channel].buf,
-						   chan_and_pids.channels[curr_channel].nb_bytes);
-			}
-			}
-
-			if (NULL == chan_and_pids.channels[curr_channel].transcode_options.enable ||
-				1 != *chan_and_pids.channels[curr_channel].transcode_options.enable ||
-				((NULL != chan_and_pids.channels[curr_channel].transcode_options.streaming_type &&
-				STREAMING_TYPE_MPEGTS != *chan_and_pids.channels[curr_channel].transcode_options.streaming_type)&&
-				(NULL == chan_and_pids.channels[curr_channel].transcode_options.send_transcoded_only ||
-				 1 != *chan_and_pids.channels[curr_channel].transcode_options.send_transcoded_only)))
-	#endif
-		        /********** MULTICAST *************/
-		         //if the multicast TTL is set to 0 we don't send the multicast packets
-		        if(multicast_vars.multicast)
-			{
-			  unsigned char *data;
-			  int data_len;
-			  if(multicast_vars.rtp_header)
-			  {
-			/****** RTP *******/
-			rtp_update_sequence_number(&chan_and_pids.channels[curr_channel],get_time());
-			data=chan_and_pids.channels[curr_channel].buf_with_rtp_header;
-			data_len=chan_and_pids.channels[curr_channel].nb_bytes+RTP_HEADER_LEN;
+				now_time=get_time();
+				send_func(&chan_and_pids.channels[curr_channel], &now_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
 			  }
-			  else
-			{
-			  data=chan_and_pids.channels[curr_channel].buf;
-			  data_len=chan_and_pids.channels[curr_channel].nb_bytes;
-			}
-			  if(multicast_vars.multicast_ipv4)
-			sendudp (chan_and_pids.channels[curr_channel].socketOut4,
-				 &chan_and_pids.channels[curr_channel].sOut4,
-				 data,
-				 data_len);
-			  if(multicast_vars.multicast_ipv6)
-			sendudp6 (chan_and_pids.channels[curr_channel].socketOut6,
-				 &chan_and_pids.channels[curr_channel].sOut6,
-				 data,
-				 data_len);
-			}
-		        /*********** UNICAST **************/
-			unicast_data_send(&chan_and_pids.channels[curr_channel], chan_and_pids.channels, &fds, &unicast_vars);
-		        /********* END of UNICAST **********/
-			chan_and_pids.channels[curr_channel].nb_bytes = 0;
-		      }
 #else
 		  	if (chan_and_pids.channels[curr_channel].oscam_support) {
 				if (chan_and_pids.channels[curr_channel].started_cw_get) {
@@ -2026,71 +1962,8 @@ int
 		      if ((!multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
 			||(multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
 		      {
-		        //For bandwith measurement (traffic)
-		        chan_and_pids.channels[curr_channel].sent_data+=chan_and_pids.channels[curr_channel].nb_bytes+20+8; // IP=20 bytes header and UDP=8 bytes header
-		        if (multicast_vars.rtp_header) chan_and_pids.channels[curr_channel].sent_data+=RTP_HEADER_LEN;
-
-		        /********* TRANSCODE **********/
-	#ifdef ENABLE_TRANSCODING
-			if (NULL != chan_and_pids.channels[curr_channel].transcode_options.enable &&
-				1 == *chan_and_pids.channels[curr_channel].transcode_options.enable) {
-
-			if (NULL == chan_and_pids.channels[curr_channel].transcode_handle) {
-
-				strcpy(chan_and_pids.channels[curr_channel].transcode_options.ip, chan_and_pids.channels[curr_channel].ip4Out);
-
-				chan_and_pids.channels[curr_channel].transcode_handle = transcode_start_thread(chan_and_pids.channels[curr_channel].socketOut4,
-				&chan_and_pids.channels[curr_channel].sOut4, &chan_and_pids.channels[curr_channel].transcode_options);
-			}
-
-			if (NULL != chan_and_pids.channels[curr_channel].transcode_handle) {
-				transcode_enqueue_data(chan_and_pids.channels[curr_channel].transcode_handle,
-				chan_and_pids.channels[curr_channel].buf,
-						   chan_and_pids.channels[curr_channel].nb_bytes);
-			}
-			}
-
-			if (NULL == chan_and_pids.channels[curr_channel].transcode_options.enable ||
-				1 != *chan_and_pids.channels[curr_channel].transcode_options.enable ||
-				((NULL != chan_and_pids.channels[curr_channel].transcode_options.streaming_type &&
-				STREAMING_TYPE_MPEGTS != *chan_and_pids.channels[curr_channel].transcode_options.streaming_type)&&
-				(NULL == chan_and_pids.channels[curr_channel].transcode_options.send_transcoded_only ||
-				 1 != *chan_and_pids.channels[curr_channel].transcode_options.send_transcoded_only)))
-	#endif
-		        /********** MULTICAST *************/
-		         //if the multicast TTL is set to 0 we don't send the multicast packets
-		        if(multicast_vars.multicast)
-			{
-			  unsigned char *data;
-			  int data_len;
-			  if(multicast_vars.rtp_header)
-			  {
-			/****** RTP *******/
-			now_time=get_time();	
-			rtp_update_sequence_number(&chan_and_pids.channels[curr_channel],now_time);
-			data=chan_and_pids.channels[curr_channel].buf_with_rtp_header;
-			data_len=chan_and_pids.channels[curr_channel].nb_bytes+RTP_HEADER_LEN;
-			  }
-			  else
-			{
-			  data=chan_and_pids.channels[curr_channel].buf;
-			  data_len=chan_and_pids.channels[curr_channel].nb_bytes;
-			}
-			  if(multicast_vars.multicast_ipv4)
-			sendudp (chan_and_pids.channels[curr_channel].socketOut4,
-				 &chan_and_pids.channels[curr_channel].sOut4,
-				 data,
-				 data_len);
-			  if(multicast_vars.multicast_ipv6)
-			sendudp6 (chan_and_pids.channels[curr_channel].socketOut6,
-				 &chan_and_pids.channels[curr_channel].sOut6,
-				 data,
-				 data_len);
-			}
-		        /*********** UNICAST **************/
-			unicast_data_send(&chan_and_pids.channels[curr_channel], chan_and_pids.channels, &fds, &unicast_vars);
-		        /********* END of UNICAST **********/
-			chan_and_pids.channels[curr_channel].nb_bytes = 0;
+				now_time=get_time();
+				send_func(&chan_and_pids.channels[curr_channel], &now_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
 		      }
 
 			}
