@@ -61,7 +61,7 @@ int scam_getcw_start(scam_parameters_t *scam_params, int adapter_id)
     port = 9000 + adapter_id;
     socketAddr.sin_family = AF_INET;
     socketAddr.sin_port = htons(port);
-    socketAddr.sin_addr.s_addr = ((struct in_addr *) hostaddr->h_addr)->s_addr;
+	socketAddr.sin_addr.s_addr = ((struct in_addr *) hostaddr->h_addr)->s_addr;
     const struct protoent *const ptrp = getprotobyname("udp");
     if (ptrp)
     {
@@ -75,8 +75,7 @@ int scam_getcw_start(scam_parameters_t *scam_params, int adapter_id)
       }
     }
   }
-  //scam_params->batch_size=dvbcsa_bs_batch_size();
-  //printf("batch size %d\n", scam_params->batch_size);
+
   pthread_create(&(scam_params->scamthread), NULL, scamthread_func, scam_params);
   log_message(log_module, MSG_DEBUG,"SCAM thread started\n");
   return 0;

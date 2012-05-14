@@ -248,7 +248,7 @@ void *sendthread_func(void* arg)
 
           channel->nb_bytes += TS_PACKET_SIZE;
 		  --channel->ring_buf->to_send;
-		  --channel->ring_buf->num_packets;
+		  --channel->num_packets;
 		  ++channel->num_packet_descrambled_sent;
 		
           //The buffer is full, we send it
@@ -267,4 +267,52 @@ void *sendthread_func(void* arg)
   return 0;
 }
 
+/** @brief initialize the autoconfiguration : alloc the memory etc...
+ *
+ */
+int scam_init(autoconf_parameters_t *autoconf_vars, scam_parameters_t *scam_vars, mumudvb_channel_t *channels,int number_of_channels)
+{
+  int curr_channel;
+
+
+ if (scam_vars->scam_support){ 
+  if (autoconf_vars->autoconfiguration==AUTOCONF_MODE_PIDS || autoconf_vars->autoconfiguration==AUTOCONF_MODE_NONE)
+    for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+    {
+		if (channels[curr_channel].oscam_support==1 && channels[curr_channel].num_pids>1)
+		{
+		  //Only one pid with autoconfiguration=partial, it's the PMT pid
+		  channels[curr_channel].pmt_pid=channels[curr_channel].pids[0];
+		      channels[curr_channel].pids_type[0]=PID_PMT;
+		      snprintf(channels[curr_channel].pids_language[0],4,"%s","---");
+		  ++scam_vars->need_pmt_get;
+		}
+    }
+ }
+
+ return 0;
+
+}
+
+
+int scam_new_packet(int pid, unsigned char *ts_packet, scam_parameters_t *scam_vars, mumudvb_channel_t *channels)
+{
+  int curr_channel;
+
+  if(scam_vars->need_pmt_get) //We have the channels and their PMT, we search the other pids
+  {
+    for(curr_channel=0;curr_channel<MAX_CHANNELS;curr_channel++)
+    {
+      if((channels[curr_channel].pmt_pid==pid)&& pid && channels[curr_channel].oscam_support)
+      {
+		if(get_ts_packet(ts_packet,channels[curr_channel].pmt_packet))
+		{
+		  --scam_vars->need_pmt_get;
+		}
+	  }
+	}
+ }
+ return 0;
+
+}
 

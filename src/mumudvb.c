@@ -1258,7 +1258,7 @@ int
     }
   }
 #endif
-
+  
   /*****************************************************/
   //autoconfiguration
   //memory allocation for MPEG2-TS
@@ -1271,6 +1271,18 @@ int
     goto mumudvb_close_goto;
   }
 
+#ifdef ENABLE_SCAM_SUPPORT
+  /*****************************************************/
+  //scam
+  /*****************************************************/
+  iRet=scam_init(&autoconf_vars, scam_vars_ptr, chan_and_pids.channels,chan_and_pids.number_of_channels);
+  if(iRet)
+  {
+    Interrupted=ERROR_GENERIC<<8;
+    goto mumudvb_close_goto;
+  }
+
+#endif
   /*****************************************************/
   //Pat rewriting
   //memory allocation for MPEG2-TS
@@ -1752,6 +1764,20 @@ int
       /******************************************************/
 
       /******************************************************/
+      //   SCAM PMT GET PART in case of no autoconf
+      /******************************************************/
+      if(!ScramblingControl &&  scam_vars.need_pmt_get)
+      {
+        scam_new_packet(pid, actual_ts_packet, &scam_vars, chan_and_pids.channels);
+      }
+      if(scam_vars.need_pmt_get)
+        continue;
+
+      /******************************************************/
+      //   SCAM PMT GET PART FINISHED
+      /******************************************************/
+
+      /******************************************************/
       //Pat rewrite
       /******************************************************/
       if( (pid == 0) && //This is a PAT PID
@@ -1945,7 +1971,7 @@ int
 					++chan_and_pids.channels[curr_channel].ring_buf->write_idx;
 					chan_and_pids.channels[curr_channel].ring_buf->write_idx&=(chan_and_pids.channels[curr_channel].ring_buffer_size -1);
 				    ++chan_and_pids.channels[curr_channel].ring_buf->to_descramble;
-				    ++chan_and_pids.channels[curr_channel].ring_buf->num_packets;
+				    ++chan_and_pids.channels[curr_channel].num_packets;
 
 				}
 			  }
@@ -2551,10 +2577,10 @@ void *monitor_func(void* arg)
     /*******************************************/
     for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++) {
       if (params->chan_and_pids->channels[curr_channel].oscam_support) {
-		if (params->chan_and_pids->channels[curr_channel].ring_buf->num_packets>=params->chan_and_pids->channels[curr_channel].ring_buffer_size)
+		if (params->chan_and_pids->channels[curr_channel].num_packets>=params->chan_and_pids->channels[curr_channel].ring_buffer_size)
       		log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow\n",params->chan_and_pids->channels[curr_channel].name);
 		else
-			log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %u\n",params->chan_and_pids->channels[curr_channel].name, params->chan_and_pids->channels[curr_channel].ring_buf->num_packets, params->chan_and_pids->channels[curr_channel].ring_buffer_size);
+			log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %u\n",params->chan_and_pids->channels[curr_channel].name, params->chan_and_pids->channels[curr_channel].num_packets, params->chan_and_pids->channels[curr_channel].ring_buffer_size);
 	  }
 	}
 		

@@ -47,6 +47,7 @@
 #include "log.h"
 #include "unicast_http.h"
 #include "rtp.h"
+#include "autoconf.h"
 
 #define RING_BUFFER_DEFAULT_SIZE   65536
 
@@ -56,6 +57,7 @@
 
 typedef struct scam_parameters_t{
   int scam_support;
+  int need_pmt_get;
   pthread_t scamthread;
   int scamthread_shutdown;
   int net_socket_fd;
@@ -65,6 +67,8 @@ typedef struct scam_parameters_t{
   uint64_t ring_buffer_default_size,decsa_default_delay,send_default_delay,decsa_default_wait;
 }scam_parameters_t;  
 
+int scam_init(autoconf_parameters_t *autoconf_vars, scam_parameters_t *scam_vars, mumudvb_channel_t *channels, int number_of_channels);
+int scam_new_packet(int pid, unsigned char *ts_packet, scam_parameters_t *scam_vars, mumudvb_channel_t *channels);
 int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
 unsigned char ts_packet_get_payload_offset(unsigned char *);
 int start_thread_with_priority(pthread_t* thread, void *(*start_routine)(void*), void* arg);

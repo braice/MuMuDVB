@@ -193,8 +193,6 @@ typedef struct {
   unsigned int to_send;
   /** Read index of buffer for sending thread */
   unsigned int read_send_idx;
-  /** Number of packets in the buffer*/	
-  unsigned int num_packets;
 }ring_buffer_t;  
   #endif
 
@@ -332,6 +330,8 @@ typedef struct mumudvb_channel_t{
   uint64_t send_delay;
   /** Time to wait for full batch for descrambling in us*/
   uint64_t decsa_wait;
+  /** Number of packets in the ring buffer*/	
+  unsigned int num_packets;  
 #endif
   
 
