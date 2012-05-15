@@ -332,6 +332,8 @@ typedef struct mumudvb_channel_t{
   uint64_t decsa_wait;
   /** Number of packets in the ring buffer*/	
   unsigned int num_packets;  
+  /** Says if we need to get pmt for this channel on scam own*/	
+  int need_pmt_get;
 #endif
   
 

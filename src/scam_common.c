@@ -267,7 +267,7 @@ void *sendthread_func(void* arg)
   return 0;
 }
 
-/** @brief initialize the autoconfiguration : alloc the memory etc...
+/** @brief initialize the pmt get for scam descrambled channels
  *
  */
 int scam_init(autoconf_parameters_t *autoconf_vars, scam_parameters_t *scam_vars, mumudvb_channel_t *channels,int number_of_channels)
@@ -281,11 +281,11 @@ int scam_init(autoconf_parameters_t *autoconf_vars, scam_parameters_t *scam_vars
     {
 		if (channels[curr_channel].oscam_support==1 && channels[curr_channel].num_pids>1)
 		{
-		  //Only one pid with autoconfiguration=partial, it's the PMT pid
 		  channels[curr_channel].pmt_pid=channels[curr_channel].pids[0];
 		      channels[curr_channel].pids_type[0]=PID_PMT;
 		      snprintf(channels[curr_channel].pids_language[0],4,"%s","---");
 		  ++scam_vars->need_pmt_get;
+		  channels[curr_channel].need_pmt_get=1;
 		}
     }
  }
@@ -294,7 +294,9 @@ int scam_init(autoconf_parameters_t *autoconf_vars, scam_parameters_t *scam_vars
 
 }
 
-
+/** @brief pmt get for scam descrambled channels
+ *
+ */
 int scam_new_packet(int pid, unsigned char *ts_packet, scam_parameters_t *scam_vars, mumudvb_channel_t *channels)
 {
   int curr_channel;
@@ -303,11 +305,12 @@ int scam_new_packet(int pid, unsigned char *ts_packet, scam_parameters_t *scam_v
   {
     for(curr_channel=0;curr_channel<MAX_CHANNELS;curr_channel++)
     {
-      if((channels[curr_channel].pmt_pid==pid)&& pid && channels[curr_channel].oscam_support)
+      if((channels[curr_channel].pmt_pid==pid)&& pid && channels[curr_channel].oscam_support && channels[curr_channel].need_pmt_get)
       {
 		if(get_ts_packet(ts_packet,channels[curr_channel].pmt_packet))
 		{
 		  --scam_vars->need_pmt_get;
+		  channels[curr_channel].need_pmt_get=0;
 		}
 	  }
 	}
