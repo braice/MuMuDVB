@@ -70,8 +70,6 @@ void scam_decsa_stop(mumudvb_channel_t *channel)
 
     log_message(log_module,MSG_DEBUG,"Decsa Thread closing, channel %s\n", channel->name);
     channel->decsathread_shutdown=1;
-    pthread_cond_signal(&channel->decsa_key_odd_cond);
-    pthread_cond_signal(&channel->decsa_key_even_cond);
     pthread_join(channel->decsathread,NULL); 
 	log_message(log_module,MSG_DEBUG,"Decsa Thread closed, channel %s\n", channel->name);
 }
@@ -91,7 +89,6 @@ static void *decsathread_func(void* arg)
   unsigned char even_batch_idx=0;
   unsigned char offset=0,len=0;
   unsigned int unscrambled=0,scrambled=0;
-  unsigned char started=0;
   struct dvbcsa_bs_key_s *odd_key;
   struct dvbcsa_bs_key_s *even_key;
   odd_key=dvbcsa_bs_key_alloc();
@@ -103,27 +100,18 @@ static void *decsathread_func(void* arg)
   
   log_message( log_module, MSG_DEBUG, "thread started, channel %s\n",channel->name);
   
-  while (!started && !channel->decsathread_shutdown) {
-	if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>5)] )&& channel->started_cw_get && channel->ring_buf->to_descramble) {
+  while (!channel->decsathread_shutdown) {
+	if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>5)] )&& channel->got_key_odd && channel->got_key_even && channel->ring_buf->to_descramble) {
 	  
-		started =1;
 		scrambling_control=((channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3] & 0xc0) >> 6);
-		pthread_mutex_lock(&channel->decsa_key_even_mutex);
-		pthread_mutex_lock(&channel->decsa_key_odd_mutex);
 			  
-		if(!channel->got_key_even) 			    
-		  pthread_cond_wait(&channel->decsa_key_even_cond, &channel->decsa_key_even_mutex);   
 		dvbcsa_bs_key_set(channel->even_cw, even_key);
 		--channel->got_key_even;
 		log_message( log_module, MSG_DEBUG, "set first even key, channel %s, got %d, scr_cont %d\n",channel->name,channel->got_key_even, scrambling_control);
-		if(!channel->got_key_odd) 
-		  pthread_cond_wait(&channel->decsa_key_odd_cond, &channel->decsa_key_odd_mutex);
 		dvbcsa_bs_key_set(channel->odd_cw, odd_key);
 		--channel->got_key_odd;
 		log_message( log_module, MSG_DEBUG, "set first odd key, channel %s, got %d, scr_cont %d\n",channel->name,channel->got_key_even, scrambling_control);
-
-		pthread_mutex_unlock(&channel->decsa_key_even_mutex);
-		pthread_mutex_unlock(&channel->decsa_key_odd_mutex);
+    	break;
 	}
    else
 	  usleep(50000);
@@ -132,13 +120,13 @@ static void *decsathread_func(void* arg)
 	
   while(!channel->decsathread_shutdown) {
 
-	if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>5)] )&& channel->started_cw_get && (channel->ring_buf->to_descramble!=0)) {		  
-		//now_time=get_time();
+	if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>5)] ) && (channel->ring_buf->to_descramble!=0)) {		  
 	  	batch_stop_time=now_time + channel->decsa_wait;  
 		while((scrambled!=batch_size) && (batch_stop_time >= now_time)) {		  
 		  while ((channel->ring_buf->to_descramble == 0)&& (batch_stop_time >= now_time)) {			
 			usleep(50000);
 			now_time=get_time();
+			printf("here\n");
 		  }
 		  if (channel->ring_buf->to_descramble == 0)
 			break;
@@ -206,19 +194,20 @@ static void *decsathread_func(void* arg)
 		even_batch_idx = 0;
 		odd_batch_idx = 0;
 		channel->ring_buf->to_send+= scrambled  + unscrambled;
-	    //channel->ring_buf->num_packets-=(scrambled  + unscrambled);
 		unscrambled=0;
 		scrambled=0;
 		
 		
 	 }
 	 else {
-	   //usleep(1000);
 	   now_time=get_time();
 	   if (now_time < channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>5)]) {
 		 usleep(((channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>5)])-now_time));
-		 //usleep(1000);
 		 now_time=get_time();       
+	   }
+	   else {
+	    log_message( "log_module: ", MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,channel->ring_buf->to_descramble,channel->ring_buf->to_send); 
+	    usleep(50000);
 	   }
  	 }
   }

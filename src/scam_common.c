@@ -259,8 +259,8 @@ void *sendthread_func(void* arg)
           }
   		}
 	  else {
-	    log_message( "SEND: ", MSG_DEBUG, "buffer starved, channel %s %u %u\n",channel->name,channel->ring_buf->to_descramble,channel->ring_buf->to_send); 
-	    usleep(1000);
+	    log_message( "SEND: ", MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,channel->ring_buf->to_descramble,channel->ring_buf->to_send); 
+	    usleep(50000);
 	  }
 
   }

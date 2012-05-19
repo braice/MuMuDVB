@@ -301,20 +301,11 @@ typedef struct mumudvb_channel_t{
   unsigned char got_key_odd;
   /** Indicating if we have another even cw for descrambling */
   unsigned char got_key_even;
-  /** Mutex for odd cw (used at decsa thread startup)  */
-  pthread_mutex_t decsa_key_odd_mutex;
-  /** Condition for odd cw (used at decsa thread startup) */
-  pthread_cond_t  decsa_key_odd_cond;
-  /** Mutex for even cw (used at decsa thread startup)  */
-  pthread_mutex_t decsa_key_even_mutex;
-  /** Condition for even cw (used at decsa thread startup) */
-  pthread_cond_t  decsa_key_even_cond;
   /** Thread for software descrambling */
   pthread_t decsathread;
   /** Descrambling thread shutdown control */
   int decsathread_shutdown;
-  /** Indicates if we've got first cw for this channel */
-  unsigned char started_cw_get;
+  
   
   /**ring buffer for sending and software descrambling*/
   ring_buffer_t* ring_buf;

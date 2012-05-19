@@ -1404,14 +1404,6 @@ int
 	    memset (chan_and_pids.channels[curr_channel].ring_buf->time_decsa, 0, chan_and_pids.channels[curr_channel].ring_buffer_size/32 * sizeof(uint64_t));//we clear it
  
 	    start_thread_with_priority(&(chan_and_pids.channels[curr_channel].sendthread), sendthread_func, &chan_and_pids.channels[curr_channel]);
-	    //pthread_create(&(chan_and_pids.channels[curr_channel].sendthread), NULL, sendthread_func, &chan_and_pids.channels[curr_channel]);
-		//pthread_mutex_init(&chan_and_pids.channels[curr_channel].decsa_mutex,NULL);
-		//pthread_cond_init(&chan_and_pids.channels[curr_channel].decsa_cond,NULL);
-		pthread_mutex_init(&chan_and_pids.channels[curr_channel].decsa_key_odd_mutex,NULL);
-		pthread_cond_init(&chan_and_pids.channels[curr_channel].decsa_key_odd_cond,NULL);
-		pthread_mutex_init(&chan_and_pids.channels[curr_channel].decsa_key_even_mutex,NULL);
-		pthread_cond_init(&chan_and_pids.channels[curr_channel].decsa_key_even_cond,NULL);
-		//pthread_create(&(chan_and_pids.channels[curr_channel].decsathread), NULL, decsathread_func, &chan_and_pids.channels[curr_channel]);	
 	    scam_decsa_start(&chan_and_pids.channels[curr_channel]);
 	}
 #endif
@@ -1955,7 +1947,6 @@ int
 			  }
 #else
 		  	if (chan_and_pids.channels[curr_channel].oscam_support) {
-				if (chan_and_pids.channels[curr_channel].started_cw_get) {
 					memcpy(chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx], actual_ts_packet, TS_PACKET_SIZE);
 
 					chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx][1] =
@@ -1972,8 +1963,6 @@ int
 					chan_and_pids.channels[curr_channel].ring_buf->write_idx&=(chan_and_pids.channels[curr_channel].ring_buffer_size -1);
 				    ++chan_and_pids.channels[curr_channel].ring_buf->to_descramble;
 				    ++chan_and_pids.channels[curr_channel].num_packets;
-
-				}
 			  }
 			else {
 		      // we fill the channel buffer
@@ -1997,8 +1986,6 @@ int
 #endif
 			  
 			  
-		    //if (chan_and_pids.channels[curr_channel].to_send > 3072)
-				//pthread_cond_signal(&chan_and_pids.channels[curr_channel].send_cond);
 		    
 		}
       }
