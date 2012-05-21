@@ -73,6 +73,8 @@ typedef struct rewrite_parameters_t{
   mumudvb_ts_packet_t *full_sdt;
   /** The continuity counter of the sent SDT*/
   int sdt_continuity_counter;
+  /** Do we force the EIT presence ? */
+  int sdt_force_eit;
 
   /** Do we sort the EIT PID ?*/
   option_status_t eit_sort;
