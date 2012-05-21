@@ -206,7 +206,7 @@ static void *decsathread_func(void* arg)
 		 now_time=get_time();       
 	   }
 	   else {
-	    log_message( "log_module: ", MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,channel->ring_buf->to_descramble,channel->ring_buf->to_send); 
+	    log_message( log_module, MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,channel->ring_buf->to_descramble,channel->ring_buf->to_send); 
 	    usleep(50000);
 	   }
  	 }

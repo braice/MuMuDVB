@@ -248,7 +248,7 @@ void *sendthread_func(void* arg)
 
           channel->nb_bytes += TS_PACKET_SIZE;
 		  --channel->ring_buf->to_send;
-		  --channel->num_packets;
+		  --channel->ring_buffer_num_packets;
 		  ++channel->num_packet_descrambled_sent;
 		
           //The buffer is full, we send it
