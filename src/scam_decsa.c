@@ -47,6 +47,12 @@
 
 #include <dvbcsa/dvbcsa.h>
 
+/**@file
+ * @brief scam support
+ * 
+ * Code concerning software descrambling
+ */
+
 static void *decsathread_func(void* arg); //The polling thread
 static char *log_module="SCAM_DECSA: ";
 

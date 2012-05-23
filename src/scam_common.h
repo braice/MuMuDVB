@@ -41,13 +41,18 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 
-#include "errors.h"
-#include "ts.h"
+
 #include "mumudvb.h"
 #include "log.h"
 #include "unicast_http.h"
 #include "rtp.h"
 #include "autoconf.h"
+
+/**@file
+ * @brief scam support
+ * 
+ * Header file for code used by other software descrambling files
+ */
 
 #define RING_BUFFER_DEFAULT_SIZE   65536
 
@@ -55,6 +60,9 @@
 #define SEND_DEFAULT_DELAY 5500000
 #define DECSA_DEFAULT_WAIT 500000
 
+/** @brief the parameters for the scam
+ * This structure contain the parameters needed for the SCAM
+ */
 typedef struct scam_parameters_t{
   int scam_support;
   int need_pmt_get;
@@ -66,6 +74,8 @@ typedef struct scam_parameters_t{
   ca_pid_t ca_pid;
   uint64_t ring_buffer_default_size,decsa_default_delay,send_default_delay,decsa_default_wait;
 }scam_parameters_t;  
+
+
 
 int scam_init(autoconf_parameters_t *autoconf_vars, scam_parameters_t *scam_vars, mumudvb_channel_t *channels, int number_of_channels);
 int scam_new_packet(int pid, unsigned char *ts_packet, scam_parameters_t *scam_vars, mumudvb_channel_t *channels);

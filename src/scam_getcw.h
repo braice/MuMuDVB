@@ -41,6 +41,12 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 
+/**@file
+ * @brief scam support
+ * 
+ * Header for getting cw's from oscam
+ */
+
 int scam_getcw_start(scam_parameters_t *, int);
 void scam_getcw_stop(scam_parameters_t *);
 

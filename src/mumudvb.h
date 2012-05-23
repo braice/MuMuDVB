@@ -194,7 +194,7 @@ typedef struct {
   /** Read index of buffer for sending thread */
   unsigned int read_send_idx;
 }ring_buffer_t;  
-  #endif
+#endif
 
 /**@brief Structure containing the card buffers*/
 typedef struct card_buffer_t{
@@ -292,7 +292,7 @@ typedef struct mumudvb_channel_t{
   /** Say if we need to ask this channel to the oscam*/
   int need_scam_ask;
   /** Say if this channel should be descrambled using scam*/
-  int oscam_support;
+  int scam_support;
   /** Odd control word for descrambling */
   unsigned char odd_cw[8];
   /** Even control word for descrambling */

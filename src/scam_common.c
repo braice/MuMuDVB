@@ -27,6 +27,7 @@
  */
 
 
+
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -50,12 +51,18 @@
 #include "unicast_http.h"
 #include "rtp.h"
 
+/**@file
+ * @brief scam support
+ * 
+ * Code used by other software descrambling files
+ */
+
 
 static char *log_module="SCAM_COMMON: ";
 
-/** @brief Read a line of the configuration file to check if there is a cam parameter
+/** @brief Read a line of the configuration file to check if there is a scam parameter
  *
- * @param cam_vars the cam parameters
+ * @param scam_vars the scam parameters
  * @param substring The currrent line
  */
 int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring)
@@ -108,8 +115,8 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
       return -1;
     }
     substring = strtok (NULL, delimiteurs);
-    current_channel->oscam_support = atoi (substring);
-	if (current_channel->oscam_support) {
+    current_channel->scam_support = atoi (substring);
+	if (current_channel->scam_support) {
 		current_channel->need_scam_ask=CAM_NEED_ASK;
 		current_channel->ring_buffer_size=scam_vars->ring_buffer_default_size;
 		current_channel->decsa_delay=scam_vars->decsa_default_delay;
@@ -170,6 +177,10 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
 
 }
 
+/** @brief Getting ts payload starting point
+ *
+ *
+ */
 unsigned char ts_packet_get_payload_offset(unsigned char *ts_packet) {
 	if (ts_packet[0] != 0x47)
 		return 0;
@@ -194,6 +205,10 @@ unsigned char ts_packet_get_payload_offset(unsigned char *ts_packet) {
 	}
 }
 
+/** @brief Starting real time thread with high priority
+ *
+ *
+ */
 int start_thread_with_priority(pthread_t* thread, void *(*start_routine)(void*), void* arg)
 {
   pthread_attr_t attr;
@@ -279,7 +294,7 @@ int scam_init(autoconf_parameters_t *autoconf_vars, scam_parameters_t *scam_vars
   if (autoconf_vars->autoconfiguration==AUTOCONF_MODE_PIDS || autoconf_vars->autoconfiguration==AUTOCONF_MODE_NONE)
     for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
-		if (channels[curr_channel].oscam_support==1 && channels[curr_channel].num_pids>1)
+		if (channels[curr_channel].scam_support==1 && channels[curr_channel].num_pids>1)
 		{
 		  channels[curr_channel].pmt_pid=channels[curr_channel].pids[0];
 		      channels[curr_channel].pids_type[0]=PID_PMT;
@@ -305,7 +320,7 @@ int scam_new_packet(int pid, unsigned char *ts_packet, scam_parameters_t *scam_v
   {
     for(curr_channel=0;curr_channel<MAX_CHANNELS;curr_channel++)
     {
-      if((channels[curr_channel].pmt_pid==pid)&& pid && channels[curr_channel].oscam_support && channels[curr_channel].need_pmt_get)
+      if((channels[curr_channel].pmt_pid==pid)&& pid && channels[curr_channel].scam_support && channels[curr_channel].need_pmt_get)
       {
 		if(get_ts_packet(ts_packet,channels[curr_channel].pmt_packet))
 		{

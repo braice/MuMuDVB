@@ -1364,7 +1364,7 @@ int
 
     }
 #ifdef ENABLE_SCAM_SUPPORT	
-	if (chan_and_pids.channels[curr_channel].oscam_support) {
+	if (chan_and_pids.channels[curr_channel].scam_support) {
 	  	chan_and_pids.channels[curr_channel].ring_buf=malloc(sizeof(ring_buffer_t));
 	  	if (chan_and_pids.channels[curr_channel].ring_buf == NULL) {
 		  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
@@ -1849,7 +1849,7 @@ int
 #ifdef ENABLE_SCAM_SUPPORT
 		if (scam_vars.scam_support &&(chan_and_pids.channels[curr_channel].need_scam_ask==CAM_NEED_ASK))
 		{
-			if (chan_and_pids.channels[curr_channel].oscam_support) {		
+			if (chan_and_pids.channels[curr_channel].scam_support) {		
 				usleep(400000);
 				chan_and_pids.send_capmt_idx[send_capmt_index++]=&chan_and_pids.channels[curr_channel];
 				scam_send_capmt(&chan_and_pids.channels[curr_channel],tuneparams.card);	
@@ -1946,7 +1946,7 @@ int
 				send_func(&chan_and_pids.channels[curr_channel], &now_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
 			  }
 #else
-		  	if (chan_and_pids.channels[curr_channel].oscam_support) {
+		  	if (chan_and_pids.channels[curr_channel].scam_support) {
 					memcpy(chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx], actual_ts_packet, TS_PACKET_SIZE);
 
 					chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx][1] =
@@ -2092,7 +2092,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
 	
 
 
-	if (chan_and_pids.channels[curr_channel].oscam_support) {
+	if (chan_and_pids.channels[curr_channel].scam_support) {
 	    log_message(log_module,MSG_DEBUG,"Send Thread closing, channel %s\n", chan_and_pids.channels[curr_channel].name);
 		chan_and_pids.channels[curr_channel].sendthread_shutdown=1;
 		pthread_join(chan_and_pids.channels[curr_channel].sendthread,NULL);
@@ -2490,7 +2490,7 @@ void *monitor_func(void* arg)
         if (monitor_now>last_updown_check)
 
 	  		#ifdef ENABLE_SCAM_SUPPORT
-	  		if (current->oscam_support)
+	  		if (current->scam_support)
 		  		packets_per_sec=((double)current->num_packet_descrambled_sent)/(monitor_now-last_updown_check);
 	  			//params->chan_and_pids->channels[curr_channel].num_packet_descrambled_sent = 0;
 			else
@@ -2532,7 +2532,7 @@ void *monitor_func(void* arg)
       params->chan_and_pids->channels[curr_channel].num_packet = 0;
       params->chan_and_pids->channels[curr_channel].num_scrambled_packets = 0;
 	  #ifdef ENABLE_SCAM_SUPPORT
-	  if (params->chan_and_pids->channels[curr_channel].oscam_support)
+	  if (params->chan_and_pids->channels[curr_channel].scam_support)
 	  	params->chan_and_pids->channels[curr_channel].num_packet_descrambled_sent = 0;
   	  #endif
     }
@@ -2563,7 +2563,7 @@ void *monitor_func(void* arg)
     /* we check num of packets in ring buffer                */
     /*******************************************/
     for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++) {
-      if (params->chan_and_pids->channels[curr_channel].oscam_support) {
+      if (params->chan_and_pids->channels[curr_channel].scam_support) {
 		if (params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets>=params->chan_and_pids->channels[curr_channel].ring_buffer_size)
       		log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %u\n",params->chan_and_pids->channels[curr_channel].name, params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets, params->chan_and_pids->channels[curr_channel].ring_buffer_size);
 		else

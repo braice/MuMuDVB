@@ -44,11 +44,16 @@
 #include "mumudvb.h"
 #include "log.h"
 
+/**@file
+ * @brief scam support
+ * 
+ * Code for asking oscam to begin geting cw's for channel
+ */
 
 static char *log_module="SCAM_CAPMT: ";
 
 
-
+/** @brief sending to oscam data to begin geting cw's for channel */
 int scam_send_capmt(mumudvb_channel_t *channel, int adapter)
 {
   char *caPMT = (char *) malloc(1024);

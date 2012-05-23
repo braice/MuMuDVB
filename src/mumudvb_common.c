@@ -290,12 +290,16 @@ long int mumu_timing()
   return delta;
 }
 
+/** @brief getting current system time (in usec).
+ */
 uint64_t get_time(void) {
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	return (ts.tv_sec * 1000000ll + ts.tv_nsec / 1000);
 }
 
+/** @brief function for sending demultiplexed data.
+ */
 void send_func (mumudvb_channel_t *channel, uint64_t *now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
 {
 		        //For bandwith measurement (traffic)

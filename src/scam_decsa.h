@@ -41,6 +41,12 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 
+/**@file
+ * @brief scam support
+ * 
+ * Header file for code concerning software descrambling
+ */
+
 int scam_decsa_start(mumudvb_channel_t *);
 void scam_decsa_stop(mumudvb_channel_t *);
 

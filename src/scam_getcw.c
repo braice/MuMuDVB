@@ -47,9 +47,17 @@
 
 #include <dvbcsa/dvbcsa.h>
 
+/**@file
+ * @brief scam support
+ * 
+ * Code for getting cw's from oscam
+ */
+
 static void *scamthread_func(void* arg); //The polling thread
 static char *log_module="SCAM_GETCW: ";
 
+/** @brief start the thread for getting cw's from oscam
+ * This function will create the communication layers*/
 int scam_getcw_start(scam_parameters_t *scam_params, int adapter_id)
 {
   struct sockaddr_in socketAddr;
@@ -82,7 +90,7 @@ int scam_getcw_start(scam_parameters_t *scam_params, int adapter_id)
   
 }
 
-
+/** @brief stop the thread for getting cw's from oscam **/
 void scam_getcw_stop(scam_parameters_t *scam_params)
 {
 
@@ -93,7 +101,7 @@ void scam_getcw_stop(scam_parameters_t *scam_params)
   pthread_cancel(scam_params->scamthread);
 }
 
-/** @brief The thread for polling the cam */
+/** @brief The thread function for getting cw's from oscam */
 static void *scamthread_func(void* arg)
 {
   scam_parameters_t *scam_params;

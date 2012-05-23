@@ -41,6 +41,11 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 
+/**@file
+ * @brief scam support
+ * 
+ * Header file for asking oscam to begin geting cw's for channel
+ */
 int scam_send_capmt(mumudvb_channel_t *, int);
 
 #endif
