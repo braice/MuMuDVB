@@ -998,6 +998,11 @@ void print_info ()
 #else
                "Built without CAM support.\n"
 #endif
+#ifdef ENABLE_SCAM_SUPPORT
+               "Built with SCAM support.\n"
+#else
+               "Built without SCAM support.\n"
+#endif
 #ifdef ENABLE_TRANSCODING
                "Built with transcoding support.\n"
 #else
