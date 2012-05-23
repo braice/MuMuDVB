@@ -49,6 +49,9 @@
 #define TS_HEADER_LEN 5
 #define HILO(x) (x##_hi << 8 | x##_lo)
 
+#define BCDHI(x) (((x)>> 4) & 0x0f)
+#define BCDLO(x) ((x) & 0x0f)
+
  /*
  *
  *    ETSI ISO/IEC 13818-1 specifies SI which is referred to as PSI. The PSI
@@ -538,8 +541,40 @@ typedef struct {
 } descr_terr_delivery_t;
 
 
-
-
+/** @brief 0x43 satellite_delivery_system_descriptor */
+typedef struct {
+  u_char descriptor_tag                         :8;
+  u_char descriptor_length                      :8;
+  u_char frequency_4                            :8;
+  u_char frequency_3                            :8;
+  u_char frequency_2                            :8;
+  u_char frequency_1                            :8;
+  u_char orbital_position_hi                    :8;
+  u_char orbital_position_lo                    :8;
+#if BYTE_ORDER == BIG_ENDIAN
+  u_char west_east_flag                         :1;
+  u_char polarization	                        :2;
+  u_char roll_off		               			:2;
+  u_char modulation_system                      :1;
+  u_char modulation_type	               		:2;
+#else
+  u_char modulation_type	               		:2;
+  u_char modulation_system                      :1;
+  u_char roll_off		               			:2;
+  u_char polarization	                        :2;
+  u_char west_east_flag                         :1;
+#endif
+  u_char symbol_rate_12		               		:8;
+  u_char symbol_rate_34		               		:8;
+  u_char symbol_rate_56		               		:8;
+#if BYTE_ORDER == BIG_ENDIAN
+  u_char symbol_rate_7		               		:4;
+  u_char FEC_inner								:4;
+#else
+  u_char FEC_inner								:4;
+  u_char symbol_rate_7		               		:4;
+#endif
+} descr_sat_delivery_t;
 
 
 /***************************************************
@@ -664,10 +699,10 @@ typedef struct {
 //1 for number strings, 3 for language code,1 for number of segments
 #define MULTIPLE_STRING_STRUCTURE_HEADER 5
 
+
 /*****************************
  *  End of ATSC PSIP tables  *
  *****************************/
-
 
 /** Enum to tell if the option is set*/
 typedef enum packet_status {

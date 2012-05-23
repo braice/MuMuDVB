@@ -946,7 +946,6 @@ int
   // Show in log that we are starting
   log_message( log_module,  MSG_INFO,"========== End of configuration, MuMuDVB version %s is starting ==========",VERSION);
 
-
   // + 1 Because of the new syntax
   chan_and_pids.number_of_channels = curr_channel+1;
   /*****************************************************/
@@ -1186,6 +1185,7 @@ int
 
   if(stats_infos.show_traffic)
     log_message( log_module, MSG_INFO,"The traffic will be shown every %d second%c\n",stats_infos.show_traffic_interval, stats_infos.show_traffic_interval > 1? 's':' ');
+
 
 
 

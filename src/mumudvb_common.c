@@ -180,6 +180,8 @@ int string_comput(char *string)
   int number1,len;
   char *pluspos=NULL;
   char *tempchar;
+  if(string==NULL)
+    return 0;
   pluspos=strchr(string,'+');
   if(pluspos==NULL)
   {
