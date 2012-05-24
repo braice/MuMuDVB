@@ -1815,8 +1815,14 @@ int
         {
           send_packet=1;
           //avoid sending of scrambled channels if we asked to
+#ifdef ENABLE_SCAM_SUPPORT
+          if(chan_and_pids.dont_send_scrambled && (ScramblingControl>0)&& (pid != chan_and_pids.channels[curr_channel].pmt_pid)&& (!chan_and_pids.channels[curr_channel].scam_support) )
+            send_packet=0;
+#else
           if(chan_and_pids.dont_send_scrambled && (ScramblingControl>0)&& (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
             send_packet=0;
+#endif
+		  
           if ((ScramblingControl>0) && (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
             chan_and_pids.channels[curr_channel].num_scrambled_packets++;
 
@@ -2423,10 +2429,24 @@ void *monitor_func(void* arg)
       mumudvb_channel_t *current;
       current=&params->chan_and_pids->channels[curr_channel];
       /* Calcultation of the ratio (percentage) of scrambled packets received*/
+#ifndef ENABLE_SCAM_SUPPORT
       if (current->num_packet >0 && current->num_scrambled_packets>10)
         current->ratio_scrambled = (int)(current->num_scrambled_packets*100/(current->num_packet));
       else
         current->ratio_scrambled = 0;
+#else
+	  if (current->scam_support) {
+	      current->ratio_scrambled = 0;
+	  }
+	  else {
+		if (current->num_packet >0 && current->num_scrambled_packets>10)
+		  current->ratio_scrambled = (int)(current->num_scrambled_packets*100/(current->num_packet));
+		else
+		  current->ratio_scrambled = 0;
+	  }
+#endif
+		  
+		
 
       /* Test if we have only unscrambled packets (<2%) - scrambled_channel=FULLY_UNSCRAMBLED : fully unscrambled*/
       if ((current->ratio_scrambled < 2) && (current->scrambled_channel != FULLY_UNSCRAMBLED))
