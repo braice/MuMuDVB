@@ -655,6 +655,10 @@ If cw's don't get in time defined as decsa delay(default 4500000us=4.5s), you ma
 note that bigger delays in ring buffer may need also extending ring buffer size
 
 In debug mode number of packets in the buffer is reported and buffer overflow is detected, you should use that to tweak your delays and ring buffer size. In http state.xml number of packets in the buffer is also reported.
+
+
+[NOTE]
+Use the latest version of oscam from trunk, older versions did not have support for pc dvbapi. Instructions how to compile are on http://streamboard.gmc.to:8001/wiki/crosscompiling
   
 
 Some information on how to configure oscam
