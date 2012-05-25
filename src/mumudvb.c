@@ -1932,7 +1932,7 @@ int
         /******************************************************/
         // Test if we've got first cw
 		/******************************************************/
-        if (send_packet==1 && !chan_and_pids.channels[curr_channel].got_cw_started)
+        if (send_packet==1 && chan_and_pids.channels[curr_channel].scam_support && !chan_and_pids.channels[curr_channel].got_cw_started)
         {
            send_packet=0;
 		}
