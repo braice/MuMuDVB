@@ -145,6 +145,7 @@ static void *scamthread_func(void* arg)
 					memcpy(chan_and_pids.scam_idx[scam_params->ca_descr.index]->even_cw,scam_params->ca_descr.cw,8);		  
 		      		chan_and_pids.scam_idx[scam_params->ca_descr.index]->got_key_even=1;	
 		  		  }
+			  	  chan_and_pids.scam_idx[scam_params->ca_descr.index]->got_cw_started=1;
 			}
 		    else {
 			  log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR removal request, ignoring");

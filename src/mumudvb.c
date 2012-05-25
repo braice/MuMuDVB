@@ -1928,6 +1928,15 @@ int
            // Keep only PAT
            if (chan_and_pids.psi_tables_filtering==2 && pid>0) send_packet=0;
         }
+#ifdef ENABLE_SCAM_SUPPORT
+        /******************************************************/
+        // Test if we've got first cw
+		/******************************************************/
+        if (send_packet==1 && !chan_and_pids.channels[curr_channel].got_cw_started)
+        {
+           send_packet=0;
+		}
+#endif
 
         /******************************************************/
 	//Ok we must send this packet,

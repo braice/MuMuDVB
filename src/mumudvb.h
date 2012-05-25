@@ -325,6 +325,8 @@ typedef struct mumudvb_channel_t{
   unsigned int ring_buffer_num_packets;  
   /** Says if we need to get pmt for this channel on scam own*/	
   int need_pmt_get;
+  /** Says if we've got first cw for channel*/	
+  int got_cw_started;
 #endif
   
 
