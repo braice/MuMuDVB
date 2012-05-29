@@ -133,7 +133,6 @@ static void *decsathread_func(void* arg)
 		  while ((channel->ring_buf->to_descramble == 0)&& (batch_stop_time >= now_time)) {			
 			usleep(50000);
 			now_time=get_time();
-			printf("here\n");
 		  }
 		  if (channel->ring_buf->to_descramble == 0 || (batch_stop_time < now_time))
 			break;

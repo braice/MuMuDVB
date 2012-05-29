@@ -107,8 +107,8 @@ static void *scamthread_func(void* arg)
   scam_parameters_t *scam_params;
   scam_params= (scam_parameters_t *) arg;
   extern mumudvb_chan_and_pids_t chan_and_pids; /** @todo ugly way to access channel data */
-  unsigned int indx=0;
-
+  int curr_channel = 0;
+  int curr_pid = 0;
   
   //Loop
   while(!scam_params->scamthread_shutdown) {
@@ -167,9 +167,15 @@ static void *scamthread_func(void* arg)
 		  if (r == sizeof(ca_pid_t)) {
 			if(scam_params->ca_pid.index != -1) {
 				if (!(chan_and_pids.started_pid_get[scam_params->ca_pid.index])) {
-				  chan_and_pids.started_pid_get[scam_params->ca_pid.index] = 1;
-				  chan_and_pids.scam_idx[scam_params->ca_pid.index] = chan_and_pids.send_capmt_idx[indx];
-				  ++indx;
+			      for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++) {
+				    for (curr_pid = 0; curr_pid < chan_and_pids.channels[curr_channel].num_pids; curr_pid++) {
+				  		if (scam_params->ca_pid.pid == chan_and_pids.channels[curr_channel].pids[curr_pid]) {
+				  			chan_and_pids.started_pid_get[scam_params->ca_pid.index] = 1;
+				  			chan_and_pids.scam_idx[scam_params->ca_pid.index] = &chan_and_pids.channels[curr_channel];
+							break;
+						}
+					}
+				  }
 
 				}
 			    log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request for channel: %s pid: %d\n",chan_and_pids.scam_idx[scam_params->ca_pid.index]->name, scam_params->ca_pid.pid);

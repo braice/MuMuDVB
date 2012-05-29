@@ -254,7 +254,7 @@ void *sendthread_func(void* arg)
 			now_time=get_time();
 		}
 	  }
-	  else if (channel->ring_buf->to_send) {
+	  else if (channel->ring_buf->to_send && channel->ring_buffer_num_packets) {
 		  memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data[channel->ring_buf->read_send_idx], TS_PACKET_SIZE);
 
 		  ++channel->ring_buf->read_send_idx;
