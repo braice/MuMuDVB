@@ -240,6 +240,12 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
               log_message( log_module, MSG_WARN,"BUG file %s line %d\n",__FILE__,__LINE__);
               return 0;
             }
+	    // We force some flags if asked
+	    if(rewrite_vars->sdt_force_eit)
+	      {
+		t_buffer_ptr->eit_present_following_flag=1;
+		t_buffer_ptr->eit_schedule_flag=1;
+	      }
             //We copy the data
             memcpy(buf_dest+buf_dest_pos,t_buffer,SDT_DESCR_LEN+loop_length);
             buf_dest_pos+=SDT_DESCR_LEN+loop_length;

@@ -235,6 +235,7 @@ rewrite_parameters_t rewrite_vars={
   .full_sdt_ok=0,
   .sdt_continuity_counter=0,
   .eit_sort=OPTION_UNDEFINED,
+  .sdt_force_eit=OPTION_UNDEFINED,
 };
 
 
