@@ -1856,8 +1856,7 @@ int
 		if (scam_vars.scam_support &&(chan_and_pids.channels[curr_channel].need_scam_ask==CAM_NEED_ASK))
 		{
 			if (chan_and_pids.channels[curr_channel].scam_support) {		
-				usleep(400000);
-				chan_and_pids.send_capmt_idx[send_capmt_index++]=&chan_and_pids.channels[curr_channel];
+				//usleep(400000);
 				scam_send_capmt(&chan_and_pids.channels[curr_channel],tuneparams.card);	
 			}
 			chan_and_pids.channels[curr_channel].need_scam_ask=CAM_ASKED;

@@ -453,7 +453,6 @@ typedef struct mumudvb_chan_and_pids_t{
   int16_t continuity_counter_pid[8193]; //on 16 bits for storing the initial -1
   uint8_t check_cc;
 #ifdef ENABLE_SCAM_SUPPORT
-  mumudvb_channel_t* send_capmt_idx[MAX_CHANNELS]; 
   mumudvb_channel_t* scam_idx[MAX_CHANNELS]; 
   uint8_t started_pid_get[MAX_CHANNELS]; 
 #endif
