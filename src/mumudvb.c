@@ -366,7 +366,6 @@ int
   //SCAM (software conditionnal Access Modules : for scrambled channels)
   scam_parameters_t scam_vars={.scamthread_shutdown=0};
   scam_parameters_t *scam_vars_ptr=&scam_vars;
-  int send_capmt_index=0;
   #else
   void *scam_vars_ptr=NULL;
   #endif

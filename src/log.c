@@ -39,12 +39,14 @@
 #include <time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 
 #include "mumudvb.h"
 #include "errors.h"
 #include "log.h"
 #include "tune.h"
+
 
 #ifdef ENABLE_CAM_SUPPORT
 #include <libdvben50221/en50221_errno.h>
@@ -533,6 +535,16 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
 	continue;
       else if (!strcmp (substring, "pids"))
 	continue;
+      else if (!strcmp (substring, "oscam"))
+	continue;
+      else if (!strcmp (substring, "ring_buffer_size"))
+	continue;
+      else if (!strcmp (substring, "decsa_delay"))
+	continue;
+      else if (!strcmp (substring, "send_delay"))
+	continue;
+      else if (!strcmp (substring, "decsa_wait"))
+	continue;
       else if (!strcmp (substring, "sap_group"))
 	continue;
       else if (!strcmp (substring, "name"))
@@ -597,8 +609,18 @@ void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *
       for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
 	fprintf ( config_file, "%d ", channels[curr_channel].pids[curr_pid]);
       fprintf ( config_file, "\n");
-    }
+  #ifdef ENABLE_SCAM_SUPPORT
+      if (channels[curr_channel].scam_support) {
+        fprintf ( config_file, "oscam=%d\n", channels[curr_channel].scam_support);
+        fprintf ( config_file, "ring_buffer_size=%" PRIu64 "\n", channels[curr_channel].ring_buffer_size);
+		fprintf ( config_file, "decsa_delay=%" PRIu64 "\n", channels[curr_channel].decsa_delay);
+		fprintf ( config_file, "send_delay=%" PRIu64 "\n", channels[curr_channel].send_delay);
+		fprintf ( config_file, "decsa_wait=%" PRIu64 "\n", channels[curr_channel].decsa_wait);
+	  }
       fprintf ( config_file, "#End of config file\n");
+  #endif
+	}
+
 
   fclose (config_file);
 
