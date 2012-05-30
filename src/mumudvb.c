@@ -1969,10 +1969,11 @@ int
 					if ((chan_and_pids.channels[curr_channel].ring_buf->write_idx&0x3) == 0) {
 					  now_time=get_time();
 					  chan_and_pids.channels[curr_channel].ring_buf->time_send[(chan_and_pids.channels[curr_channel].ring_buf->write_idx>>2)]=now_time + chan_and_pids.channels[curr_channel].send_delay;
+					  if ((chan_and_pids.channels[curr_channel].ring_buf->write_idx&0x1f) == 0) {
+					    chan_and_pids.channels[curr_channel].ring_buf->time_decsa[(chan_and_pids.channels[curr_channel].ring_buf->write_idx>>5)]=now_time + chan_and_pids.channels[curr_channel].decsa_delay;
+					  }
 					}
-					if ((chan_and_pids.channels[curr_channel].ring_buf->write_idx&0x1f) == 0) {
-					  chan_and_pids.channels[curr_channel].ring_buf->time_decsa[(chan_and_pids.channels[curr_channel].ring_buf->write_idx>>5)]=now_time + chan_and_pids.channels[curr_channel].decsa_delay;
-					}
+
 					++chan_and_pids.channels[curr_channel].ring_buf->write_idx;
 					chan_and_pids.channels[curr_channel].ring_buf->write_idx&=(chan_and_pids.channels[curr_channel].ring_buffer_size -1);
 				    ++chan_and_pids.channels[curr_channel].ring_buf->to_descramble;

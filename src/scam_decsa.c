@@ -101,7 +101,6 @@ static void *decsathread_func(void* arg)
   even_key=dvbcsa_bs_key_alloc();
 
   extern uint64_t now_time;
-  unsigned char read_idx=0;  
   uint64_t batch_stop_time;
   
   log_message( log_module, MSG_DEBUG, "thread started, channel %s\n",channel->name);
@@ -161,7 +160,6 @@ static void *decsathread_func(void* arg)
 		  }
 		  ++channel->ring_buf->read_decsa_idx;
 		  channel->ring_buf->read_decsa_idx&=(channel->ring_buffer_size -1);	
-		  ++read_idx;
 		  --channel->ring_buf->to_descramble;
 		}
 	
