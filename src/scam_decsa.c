@@ -106,16 +106,19 @@ static void *decsathread_func(void* arg)
   log_message( log_module, MSG_DEBUG, "thread started, channel %s\n",channel->name);
   
   while (!channel->decsathread_shutdown) {
-	if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>5)] )&& channel->got_key_odd && channel->got_key_even && channel->ring_buf->to_descramble) {
+	if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>5)] )&& channel->got_cw_started && channel->ring_buf->to_descramble) {
 	  
 		scrambling_control=((channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3] & 0xc0) >> 6);
-			  
-		dvbcsa_bs_key_set(channel->even_cw, even_key);
-		--channel->got_key_even;
-		log_message( log_module, MSG_DEBUG, "set first even key, channel %s, got %d, scr_cont %d\n",channel->name,channel->got_key_even, scrambling_control);
-		dvbcsa_bs_key_set(channel->odd_cw, odd_key);
-		--channel->got_key_odd;
-		log_message( log_module, MSG_DEBUG, "set first odd key, channel %s, got %d, scr_cont %d\n",channel->name,channel->got_key_even, scrambling_control);
+		if (channel->got_key_even) {	  
+			dvbcsa_bs_key_set(channel->even_cw, even_key);
+			--channel->got_key_even;
+			log_message( log_module, MSG_DEBUG, "set first even key, channel %s, got %d, scr_cont %d\n",channel->name,channel->got_key_even, scrambling_control);
+		}
+	    if (channel->got_key_odd) {
+			dvbcsa_bs_key_set(channel->odd_cw, odd_key);
+			--channel->got_key_odd;
+			log_message( log_module, MSG_DEBUG, "set first odd key, channel %s, got %d, scr_cont %d\n",channel->name,channel->got_key_even, scrambling_control);
+		}
     	break;
 	}
    else
