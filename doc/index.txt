@@ -6,11 +6,7 @@ link:QUICKSTART.html[QUICKSTART guide]
 
 link:README.html[README english version]
 
-link:README-fr.html[README version française]
-
 link:README_CONF.html[README concerning the configuration file]
-
-link:README_CONF-fr.html[README concernant le fichier de configuration, version française]
 
 link:TRANSCODE.html[Information concerning the transcoding, english]
 
