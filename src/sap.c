@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include "log.h"
 
+extern uint32_t       crc32_table[256];
 static char *log_module="SAP: ";
 
 int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumudvb_sap_message_t *sap_message4, mumudvb_sap_message_t *sap_message6, multicast_parameters_t multicast_vars);
@@ -254,22 +255,24 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
       sap_message4=&(sap_vars->sap_messages4[curr_channel]);
       //paranoia
       memset(sap_message4->buf,0, MAX_UDP_SIZE * sizeof (unsigned char));
-      sap_message4->version++;
+      sap_message4->version=(sap_message4->version+1)&0x000f;
       sap_message4->buf[0]=SAP_HEADER4_BYTE0;
       sap_message4->buf[1]=SAP_HEADER4_BYTE1;
-      sap_message4->buf[2]=(sap_message4->version&0xff00)>>8;
-      sap_message4->buf[3]=sap_message4->version&0xff;
+      //Hash of SAP message: see end of this function
+      sap_message4->buf[2]=0;
+      sap_message4->buf[3]=0;
   }
   if(channel->socketOut6)
   {
       sap_message6=&(sap_vars->sap_messages6[curr_channel]);
       //paranoia
       memset(sap_message6->buf,0, MAX_UDP_SIZE * sizeof (unsigned char));
-      sap_message6->version++;
+      sap_message6->version=(sap_message6->version+1)&0x000f;
       sap_message6->buf[0]=SAP_HEADER6_BYTE0;
       sap_message6->buf[1]=SAP_HEADER6_BYTE1;
-      sap_message6->buf[2]=(sap_message6->version&0xff00)>>8;
-      sap_message6->buf[3]=sap_message6->version&0xff;
+      //Hash of SAP message: see end of this function
+      sap_message6->buf[2]=0;
+      sap_message6->buf[3]=0;
   }
 
 
@@ -280,7 +283,7 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
       {
 	  ip4=ip_struct4.s_addr;
 	  /* Bytes 4-7 (or 4-19) byte: Originating source */
-	  log_message( log_module, MSG_DEBUG,"sap sending ip address : 0x%x\n", ip4);
+	  log_message( log_module, MSG_DEBUG,"sap sending ipv4  address : %s (binary : 0x%x)\n",sap_vars->sap_sending_ip4, ip4);
 	  memcpy (sap_message4->buf + 4, &ip4, 4);
       }
       else
@@ -297,6 +300,7 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
       if( inet_pton(AF_INET6, sap_vars->sap_sending_ip6, &ip_struct6))
       {
 	  ip6=ip_struct6.sin6_addr;
+	  log_message( log_module, MSG_DEBUG,"sap sending ipv6  address : %s\n",sap_vars->sap_sending_ip6);
 	  /* Bytes 4-7 (or 4-19) byte: Originating source */
 	  memcpy (sap_message6->buf + 4, &ip6.s6_addr, 16);
       }
@@ -326,6 +330,30 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
   // one program per message
   sap_add_program(channel, sap_vars, sap_message4, sap_message6, multicast_vars);
 
+
+  //we compute the CRC32 of the message in order to generate a hash
+  unsigned long crc32;
+  int i;
+  crc32=0xffffffff;
+  if(channel->socketOut4)
+    {
+      for(i = 0; i < sap_message4->len-1; i++) {
+	crc32 = (crc32 << 8) ^ crc32_table[((crc32 >> 24) ^ sap_message4->buf[i])&0xff];
+      }
+      //Hash of SAP message : we use the CRC32 that we merge onto 16bits
+      sap_message4->buf[2]=(((crc32>>24) & 0xff)+((crc32>>16) & 0xff)) & 0xff;
+      sap_message4->buf[3]=(((crc32>>8) & 0xff)+(crc32 & 0xff)) & 0xff;
+    }
+  crc32=0xffffffff;
+  if(channel->socketOut6)
+    {
+      for(i = 0; i < sap_message6->len-1; i++) {
+	crc32 = (crc32 << 8) ^ crc32_table[((crc32 >> 24) ^ sap_message6->buf[i])&0xff];
+      }
+      //Hash of SAP message : we use the CRC32 that we merge onto 16bits
+      sap_message6->buf[2]=(((crc32>>24) & 0xff)+((crc32>>16) & 0xff)) & 0xff;
+      sap_message6->buf[3]=(((crc32>>8) & 0xff)+(crc32 & 0xff)) & 0xff;
+    }
   return 0;
 
 }
@@ -446,6 +474,56 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
   if(channel->socketOut6)
       mumu_string_append(&payload6,"t=0 0\r\na=tool:mumudvb-%s\r\na=type:broadcast\r\n", VERSION);
 
+
+  /**  @subsection "source-filter" attribute
+       RFC 4570 SDP Source Filters
+       ex : a=source-filter: incl IN IP4 235.255.215.1 192.168.1.1
+       only defined when the sending ip address is defined
+  */
+
+  if(channel->socketOut4)
+    {
+      struct in_addr ip_struct4;
+      if( inet_aton(sap_vars->sap_sending_ip4, &ip_struct4) && ip_struct4.s_addr)
+	mumu_string_append(&payload4,
+			   "a=source-filter: incl IN IP4 %s %s\r\n", channel->ip4Out, sap_vars->sap_sending_ip4);
+    }
+  if(channel->socketOut6)
+    {
+      struct sockaddr_in6 ip_struct6;
+      if( inet_pton(AF_INET6, sap_vars->sap_sending_ip6, &ip_struct6))
+	{
+	  //ugly way to test non zero ipv6 addr but I didn found a better one
+	  u_int8_t  *s6;
+	  s6=ip_struct6.sin6_addr.s6_addr;
+	  if(s6[0]||s6[1]||s6[2]||s6[3]||s6[4]||s6[5]||s6[6]||s6[7]||s6[8]||s6[9]||s6[10]||s6[11]||s6[12]||s6[13]||s6[14]||s6[15])
+	    mumu_string_append(&payload6,
+			       "a=source-filter: incl IP6 %s %s\r\n", channel->ip6Out, sap_vars->sap_sending_ip6);
+	}
+    }
+
+/**@subsection channel's group
+    a=cat channel's group
+    a=x-plgroup backward compatibility
+ */
+  if(strlen(channel->sap_group)||strlen(sap_vars->sap_default_group))
+    {
+      if(!strlen(channel->sap_group))
+      {
+        int len=SAP_GROUP_LENGTH;
+        strcpy(channel->sap_group,sap_vars->sap_default_group);
+        mumu_string_replace(channel->sap_group,&len,0,"%type",simple_service_type_to_str(channel->channel_type) );
+      }
+      if(channel->socketOut4)
+	  mumu_string_append(&payload4,"a=cat:%s\r\n", channel->sap_group);
+	  /* backward compatibility with VLC 0.7.3-2.0.0 senders */
+	  mumu_string_append(&payload4,"a=x-plgroup:%s\r\n", channel->sap_group);
+      if(channel->socketOut6)
+	  mumu_string_append(&payload6,"a=cat:%s\r\n", channel->sap_group);
+	  /* backward compatibility with VLC 0.7.3-2.0.0 senders */
+	  mumu_string_append(&payload6,"a=x-plgroup:%s\r\n", channel->sap_group);
+    }
+
   /**  @subsection media name and transport address See RFC 1890
      m=...
 
@@ -474,22 +552,7 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
   }
 
 
-
-  if(strlen(channel->sap_group)||strlen(sap_vars->sap_default_group))
-    {
-      if(!strlen(channel->sap_group))
-      {
-        int len=SAP_GROUP_LENGTH;
-        strcpy(channel->sap_group,sap_vars->sap_default_group);
-        mumu_string_replace(channel->sap_group,&len,0,"%type",simple_service_type_to_str(channel->channel_type) );
-      }
-      if(channel->socketOut4)
-	  mumu_string_append(&payload4,"a=x-plgroup:%s\r\n", channel->sap_group);
-      if(channel->socketOut6)
-	  mumu_string_append(&payload6,"a=x-plgroup:%s\r\n", channel->sap_group);
-
-    }
-
+ 
   if(channel->socketOut4)
   {
       if( (sap_message4->len+payload4.length)>1024)

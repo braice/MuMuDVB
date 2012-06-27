@@ -140,10 +140,10 @@ $ ./configure --help
 --------------------
 
 [NOTE]
-The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of these libraries and desactivate the CAM support if one of them is not present.
+The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of these libraries and deactivate the CAM support if one of them is not present.
 
 [NOTE]
-The decoding of long channel names for autoconfiguration in ATSC depends on libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of this library and desactivate the long channel name support if it is not present. The full autoconfiguration will still work with ATSC but the channel names will be the short channels names (7 characters maximum)
+The decoding of long channel names for autoconfiguration in ATSC depends on libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of this library and deactivate the long channel name support if it is not present. The full autoconfiguration will still work with ATSC but the channel names will be the short channels names (7 characters maximum)
 
 [NOTE]
 If you want to compile the doc i.e. generate HTML files using asciidoc, type `make doc`. The rendering for the tables will work with asciidoc 8.4.4 (can work with lower version but not tested).
@@ -269,10 +269,10 @@ The channels will be streamed over the multicasts ip adresses 239.100.c.n where 
 If you don't use the common_port directive, MuMuDVB will use the port 1234.
 
 [NOTE]
-By default, SAP announces are activated if you use this autoconfiguration mode. To desactivate them put `sap=0` in your config file.
-By default, SDT rewriting is activated if you use this autoconfiguration mode. To desactivate it put `rewrite_sdt=0` in your config file.
-By default, PAT rewriting is activated if you use this autoconfiguration mode. To desactivate it put `rewrite_pat=0` in your config file.
-By default, EIT sorting activated if you use this autoconfiguration mode. To desactivate it put `sort_eit=0` in your config file.
+By default, SAP announces are activated if you use this autoconfiguration mode. To deactivate them put `sap=0` in your config file.
+By default, SDT rewriting is activated if you use this autoconfiguration mode. To deactivate it put `rewrite_sdt=0` in your config file.
+By default, PAT rewriting is activated if you use this autoconfiguration mode. To deactivate it put `rewrite_pat=0` in your config file.
+By default, EIT sorting activated if you use this autoconfiguration mode. To deactivate it put `sort_eit=0` in your config file.
 
 [NOTE]
 A detailled, documented example configuration file can be found in `doc/configuration_examples/autoconf_full.conf`
@@ -329,7 +329,7 @@ Use this when you want to control the name of the channels, and their IPs better
 MuMuDVB will find the audio, video, PCR, teletext, subtitling and AC3 PIDs for you before streaming.
 
 [NOTE]
-If you put more than one PID for a channel, MuMuDVB will desactivate autoconfiguration for this channel.
+If you put more than one PID for a channel, MuMuDVB will deactivate autoconfiguration for this channel.
 
 [NOTE]
 A detailled, documented example configuration file can be found in `doc/configuration_examples/autoconf_partial.conf`
@@ -787,7 +787,7 @@ Simple autoconfiguration fails finding the right pids
 The CAM is complaining about locked channels
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
- * Some viaccess CAMs can have a lock for "mature" channels. To desactivate this lock go on the CAM menu using "gnutv -cammenu" for example (from linuxtv dvb-apps).
+ * Some viaccess CAMs can have a lock for "mature" channels. To deactivate this lock go on the CAM menu using "gnutv -cammenu" for example (from linuxtv dvb-apps).
 
 You have to set the maturity rating to maximum and unlock Maturity rating in Bolts submenu.
 

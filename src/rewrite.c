@@ -82,7 +82,18 @@ int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substri
     }
     else
       rewrite_vars->eit_sort = OPTION_OFF;
-
+  }
+  else if (!strcmp (substring, "sdt_force_eit"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    if(atoi (substring))
+    {
+      rewrite_vars->sdt_force_eit = OPTION_ON;
+      log_message( log_module, MSG_INFO,
+                   "You have enabled the forcing of the EIT flag in the SDT rewrite\n");
+    }
+    else
+      rewrite_vars->sdt_force_eit = OPTION_OFF;
   }
   else
     return 0; //Nothing concerning rewrite, we return 0 to explore the other possibilities

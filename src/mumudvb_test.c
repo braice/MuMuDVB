@@ -116,6 +116,37 @@ int main(void)
   else
     log_message( log_module, MSG_INFO,"%d  --  FAIL\n\n" ,resultat);
 
+  char *ip0="239.100+3.%card+1.%number";
+  char ip[80];
+  char ipd[80];
+  strcpy(ip,ip0);
+  int len=80;
+  int n[4];
+  
+  mumu_string_replace(ip,&len,0,"%number","1");
+  mumu_string_replace(ip,&len,0,"%card","42");
+  mumu_string_replace(ip,&len,0,"%tuner","0");
+  mumu_string_replace(ip,&len,0,"%server","0");
+  // Compute the string, ex: 239.255.130+0*10+2.1
+  log_message( log_module, MSG_DEBUG,"Computing expressions in string \"%s\"\n",ip);
+  char *sptr;
+  //Splitting and computing. use of strtok_r because it's safer
+  n[0]=string_comput(strtok_r (ip,".",&sptr));
+  n[1]=string_comput(strtok_r (NULL,".",&sptr));
+  n[2]=string_comput(strtok_r (NULL,".",&sptr));
+  n[3]=string_comput(strtok_r (NULL,".",&sptr));
+  log_message( log_module, MSG_DEBUG,"%d.%d.%d.%d",n[0],n[1],n[2],n[3]);
+  char *ip1="239.100+300.abcdef";
+  strcpy(ip,ip1);
+  log_message( log_module, MSG_DEBUG,"Computing expressions in string \"%s\"\n",ip);
+  //Splitting and computing. use of strtok_r because it's safer
+  n[0]=string_comput(strtok_r (ip,".",&sptr));
+  n[1]=string_comput(strtok_r (NULL,".",&sptr));
+  n[2]=string_comput(strtok_r (NULL,".",&sptr));
+  n[3]=string_comput(strtok_r (NULL,".",&sptr));
+  log_message( log_module, MSG_DEBUG,"%d.%d.%d.%d",n[0],n[1],n[2],n[3]);
+
+
   /************************************* Testing the SDT parser *************************************/
   char *files_sdt[NUM_FILES_TEST_READ_SDT]={FILES_TEST_READ_SDT_TS};
   for(int i_file=0;i_file<NUM_FILES_TEST_READ_SDT;i_file++)
@@ -251,7 +282,8 @@ int main(void)
       autoconf_vars.autoconfiguration=AUTOCONF_MODE_FULL;
       autoconf_vars.autoconf_radios=1;
       autoconf_vars.autoconf_scrambled=1;
-      strcpy (autoconf_vars.autoconf_ip4,"239.100.%card.%number");
+      log_message( log_module, MSG_INFO,"IP 239.100+3.%%card+1.%%number");
+      strcpy (autoconf_vars.autoconf_ip4,"239.100+3.%card+1.%number");
       autoconf_vars.transport_stream_id=-1;
 
 

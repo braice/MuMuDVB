@@ -193,6 +193,7 @@ Packets sending parameters
 |rewrite_pat | Do we rewrite the PAT PID | 0 | 0 or 1 | See README 
 |rewrite_sdt | Do we rewrite the SDT PID | 0 | 0 or 1 | See README 
 |sort_eit | Do we sort the EIT PID | 0 | 0 or 1 | See README 
+|sdt_force_eit | Do we force the EIT_schedule_flag and EIT_present_following_flag in SDT | 0 | 0 or 1 | Let to 0 if you don't understand
 |rtp_header | Send the stream with the rtp headers (execpt for HTTP unicast) | 0 | 0 or 1 | 
 |==================================================================================================================
 
@@ -244,7 +245,7 @@ Autoconfiguration parameters
 |Parameter name |Description | Default value | Possible values | Comments
 |autoconfiguration |autoconfiguration 1, partial: find audio and video PIDs, 2, full: full autoconfiguration | 0 | 0, 1, 2, partial or full | see the README for more details
 |autoconf_ip_header |For full autoconfiguration, the first part of the ip for streamed channel |  | |  obsolete, use `autoconf_ip4` instead
-|autoconf_ip4 |For full autoconfiguration, the template for the ipv4 for streamed channel | 239.100.%card.%number  | |  You can use the keywords `%card`, `%tuner`, `%server` and `%number`
+|autoconf_ip4 |For full autoconfiguration, the template for the ipv4 for streamed channel | 239.100.150+%server*10+%card.%number  | |  You can use expressions with `+`, `*` , `%card`, `%tuner`, `%server` and `%number`
 |autoconf_ip6 |For full autoconfiguration, the template for the ipv6 for streamed channel | FF15:4242::%server:%card:%number  | |  You can use the keywords `%card`, `%tuner`, `%server` and `%number`
 |autoconf_radios |Do we consider radios as valid channels during full autoconfiguration ? | 0 | 0 or 1 | 
 |autoconf_scrambled |Do we consider scrambled channels valid channels during full autoconfiguration ? | 0 | 0 or 1 | Automatic when cam_support=1. Sometimes a clear channel can be marked as scrambled. This option allows you to bypass the ckecking.
@@ -264,7 +265,8 @@ SAP announces parameters
 |sap | Generation of SAP announces | 0 (1 if full autoconfiguration) | 0 or 1 | 
 |sap_organisation |Organisation field sent in the SAP announces | MuMuDVB | | Optionnal
 |sap_uri |URI  field sent in the SAP announces |  | | Optionnal
-|sap_sending_ip |The SAP sender IP address | 0.0.0.0 | | Optionnal, not autodetected
+|sap_sending_ip4 |The SAP sender IPv4 address | 0.0.0.0 | | Optionnal, not autodetected, if set, enable RFC 4570 SDP Source Filters field
+|sap_sending_ip6 |The SAP sender IPv6 address | :: | | Optionnal, not autodetected, if set, enable RFC 4570 SDP Source Filters field
 |sap_interval |Interval in seconds between sap announces | 5 | positive integers | 
 |sap_default_group | The default playlist group for sap announces | | string | Optionnal. You can use the keyword %type, see README
 |sap_ttl |The TTL for the multicast SAP packets | 255 |  | The RFC 2974 says "SAP announcements ... SHOULD be sent with an IP time-to-live of 255 (the use of TTL scoping for multicast is discouraged [RFC 2365])."
@@ -278,7 +280,7 @@ HTTP unicast parameters
 |unicast |Set this option to one to activate HTTP unicast | 0  |   see the README for more details
 |ip_http |the listening ip for http unicast, if you want to listen to all interfaces put 0.0.0.0 | 0.0.0.0  |  see the README for more details
 |port_http | The listening port for http unicast | 4242 |  You can use mathematical expressions containing integers, * and +. You can use the %card, `%tuner` and %server template. Ex `port_http=2000+%card*100`
-|unicast_consecutive_errors_timeout | The timeout for disconnecting a client wich is not responding | 5 | A client will be disconnected if no data have been sucessfully sent during this interval. A value of 0 desactivate the timeout (unadvised).
+|unicast_consecutive_errors_timeout | The timeout for disconnecting a client wich is not responding | 5 | A client will be disconnected if no data have been sucessfully sent during this interval. A value of 0 deactivate the timeout (unadvised).
 |unicast_max_clients | The limit on the number of connected clients | 0 | 0 : no limit.
 |unicast_queue_size | The maximum size of the buffering when writting to a client fails | 512kBytes | in Bytes.
 |==================================================================================================================

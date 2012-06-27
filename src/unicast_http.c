@@ -166,7 +166,7 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
     unicast_vars->consecutive_errors_timeout = atoi (substring);
     if(unicast_vars->consecutive_errors_timeout<=0)
       log_message( log_module,  MSG_WARN,
-                   "Warning : You have desactivated the unicast timeout for disconnecting clients, this can lead to an accumulation of zombie clients, this is unadvised, prefer a long timeout\n");
+                   "Warning : You have deactivated the unicast timeout for disconnecting clients, this can lead to an accumulation of zombie clients, this is unadvised, prefer a long timeout\n");
   }
   else if (!strcmp (substring, "unicast_max_clients"))
   {
@@ -417,7 +417,9 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
   {
     int iRet;
     log_message( log_module, MSG_INFO,"Too many clients connected, we raise an error to  %s\n", inet_ntoa(tempSocketAddrIn.sin_addr));
-    iRet=write(tempSocket,HTTP_503_REPLY, strlen(HTTP_503_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
+    iRet=write(tempSocket,HTTP_503_REPLY, strlen(HTTP_503_REPLY));
+    if(iRet<0)
+      log_message( log_module, MSG_INFO,"Error writing to %s\n", inet_ntoa(tempSocketAddrIn.sin_addr));
     close(tempSocket);
     return NULL;
   }
@@ -583,7 +585,10 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
           if(client->channel!=-1)
           {
             log_message( log_module, MSG_INFO,"A channel (%d) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->channel);
-            iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
+            iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY)); 
+	    if(iRet<0)
+	      log_message( log_module, MSG_INFO,"Error writing reply\n");
+
             return -2; //to delete the client
           }
 
@@ -1289,7 +1294,10 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
   unicast_reply_write(reply, "\t<frontend_name><![CDATA[%s]]></frontend_name>\n",strengthparams->tuneparams->fe_name);
   unicast_reply_write(reply, "\t<frontend_tuned>%d</frontend_tuned>\n",strengthparams->tuneparams->card_tuned);
   if (strengthparams->tuneparams->fe_type==FE_QPSK) // Do some test for always showing frequency in kHz
+  {
 	unicast_reply_write(reply, "\t<frontend_frequency>%d</frontend_frequency>\n",strengthparams->tuneparams->freq);
+	unicast_reply_write(reply, "\t<frontend_satnumber>%d</frontend_satnumber>\n",strengthparams->tuneparams->sat_number);
+  }
   else
 	unicast_reply_write(reply, "\t<frontend_frequency>%d</frontend_frequency>\n",(strengthparams->tuneparams->freq)/1000);
   if (strengthparams->tuneparams->pol==0)
@@ -1307,7 +1315,11 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
   {
 #if DVB_API_VERSION >= 5
     if (strengthparams->tuneparams->delivery_system==SYS_DVBS2)
-      snprintf(fetype,10,"DVB-S2");  
+      snprintf(fetype,10,"DVB-S2");
+#ifdef SYS_DVBT2
+    else if (strengthparams->tuneparams->delivery_system==SYS_DVBT2)
+      snprintf(fetype,10,"DVB-T2");
+#endif
     else
       snprintf(fetype,10,"DVB-S");  
 #else
@@ -1331,8 +1343,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
   unicast_reply_write(reply, "\t<frontend_signal>%d</frontend_signal>\n",strengthparams->strength);
   unicast_reply_write(reply, "\t<frontend_snr>%d</frontend_snr>\n",strengthparams->snr);
   unicast_reply_write(reply, "\t<frontend_ub>%d</frontend_ub>\n",strengthparams->ub);
-  if(strengthparams->ts_discontinuities>0)
-    unicast_reply_write(reply, "\t<ts_discontinuities>%d</ts_discontinuities>\n",strengthparams->ts_discontinuities);
+  unicast_reply_write(reply, "\t<ts_discontinuities>%d</ts_discontinuities>\n",strengthparams->ts_discontinuities);
 
 
   // Autoconfiguration state
@@ -1358,7 +1369,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
   int curr_channel;
   for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
   {
-    unicast_reply_write(reply, "\t<channel number=\"%d\">\n",curr_channel+1);
+    unicast_reply_write(reply, "\t<channel number=\"%d\" is_up=\"%d\">\n",curr_channel+1,channels[curr_channel].streamed_channel);
     unicast_reply_write(reply, "\t\t<lcn>%d</lcn>\n",channels[curr_channel].logical_channel_number);
     unicast_reply_write(reply, "\t\t<name><![CDATA[%s]]></name>\n",channels[curr_channel].name);
     unicast_reply_write(reply, "\t\t<service_type type=\"%d\"><![CDATA[%s]]></service_type>\n",channels[curr_channel].channel_type,service_type_to_str(channels[curr_channel].channel_type));
@@ -1367,7 +1378,6 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 	else
 		unicast_reply_write(reply, "\t\t<ip_multicast><![CDATA[%s]]></ip_multicast>\n",channels[curr_channel].ip4Out);
     unicast_reply_write(reply, "\t\t<port_multicast>%d</port_multicast>\n",channels[curr_channel].portOut);
-    unicast_reply_write(reply, "\t\t<is_up>%d</is_up>\n",channels[curr_channel].streamed_channel);
     unicast_reply_write(reply, "\t\t<traffic>%.0f</traffic>\n",channels[curr_channel].traffic);
     unicast_reply_write(reply, "\t\t<ratio_scrambled>%d</ratio_scrambled>\n",channels[curr_channel].ratio_scrambled);
     unicast_reply_write(reply, "\t\t<service_id>%d</service_id>\n",channels[curr_channel].service_id);

@@ -216,6 +216,7 @@ rewrite_parameters_t rewrite_vars={
   .full_sdt_ok=0,
   .sdt_continuity_counter=0,
   .eit_sort=OPTION_UNDEFINED,
+  .sdt_force_eit=OPTION_UNDEFINED,
 };
 
 
@@ -843,26 +844,26 @@ int
     if((sap_vars.sap == OPTION_UNDEFINED) && (multicast_vars.multicast))
     {
       log_message( log_module,  MSG_INFO,
-                   "Full autoconfiguration, we activate SAP announces. if you want to desactivate them see the README.\n");
+                   "Full autoconfiguration, we activate SAP announces. if you want to deactivate them see the README.\n");
       sap_vars.sap=OPTION_ON;
     }
     if(rewrite_vars.rewrite_pat == OPTION_UNDEFINED)
     {
       rewrite_vars.rewrite_pat=OPTION_ON;
       log_message( log_module,  MSG_INFO,
-                   "Full autoconfiguration, we activate PAT rewritting. if you want to desactivate it see the README.\n");
+                   "Full autoconfiguration, we activate PAT rewritting. if you want to deactivate it see the README.\n");
     }
     if(rewrite_vars.rewrite_sdt == OPTION_UNDEFINED)
     {
       rewrite_vars.rewrite_sdt=OPTION_ON;
       log_message( log_module,  MSG_INFO,
-                   "Full autoconfiguration, we activate SDT rewritting. if you want to desactivate it see the README.\n");
+                   "Full autoconfiguration, we activate SDT rewritting. if you want to deactivate it see the README.\n");
     }
     if(rewrite_vars.eit_sort == OPTION_UNDEFINED)
     {
       rewrite_vars.eit_sort=OPTION_ON;
       log_message( log_module,  MSG_INFO,
-                   "Full autoconfiguration, we activate sorting of the EIT PID. if you want to desactivate it see the README.\n");
+                   "Full autoconfiguration, we activate sorting of the EIT PID. if you want to deactivate it see the README.\n");
     }
   }
   if(card_buffer.max_thread_buffer_size<card_buffer.dvr_buffer_size)
@@ -920,33 +921,6 @@ int
   // Show in log that we are starting
   log_message( log_module,  MSG_INFO,"========== End of configuration, MuMuDVB version %s is starting ==========",VERSION);
 
-  /*****************************************************/
-  //daemon part two, we write our PID as we know the card number
-  /*****************************************************/
-
-  // We write our pid in a file if we deamonize
-  if (!no_daemon)
-  {
-    int len;
-    len=DEFAULT_PATH_LEN;
-    char number[10];
-    sprintf(number,"%d",tuneparams.card);
-    mumu_string_replace(filename_pid,&len,0,"%card",number);
-    sprintf(number,"%d",tuneparams.tuner);
-    mumu_string_replace(filename_pid,&len,0,"%tuner",number);
-    sprintf(number,"%d",server_id);
-    mumu_string_replace(filename_pid,&len,0,"%server",number);;
-    pidfile = fopen (filename_pid, "w");
-    if (pidfile == NULL)
-    {
-      log_message( log_module,  MSG_INFO,"%s: %s\n",
-                   filename_pid, strerror (errno));
-      exit(ERROR_CREATE_FILE);
-    }
-    fprintf (pidfile, "%d\n", getpid ());
-    fclose (pidfile);
-  }
-
   // + 1 Because of the new syntax
   chan_and_pids.number_of_channels = curr_channel+1;
   /*****************************************************/
@@ -980,10 +954,10 @@ int
   }
 #endif
 
-  //We desactivate things depending on multicast if multicast is suppressed
+  //We deactivate things depending on multicast if multicast is suppressed
   if(!multicast_vars.ttl)
   {
-    log_message( log_module,  MSG_INFO, "The multicast TTL is set to 0, multicast will be desactivated.\n");
+    log_message( log_module,  MSG_INFO, "The multicast TTL is set to 0, multicast will be deactivated.\n");
     multicast_vars.multicast=0;
   }
   if(!multicast_vars.multicast)
@@ -993,7 +967,7 @@ int
     {
       if(chan_and_pids.channels[curr_channel].transcode_options.enable)
       {
-	log_message( log_module,  MSG_INFO, "NO Multicast, transcoding desactivated for channel \"%s\".\n", chan_and_pids.channels[curr_channel].name);
+	log_message( log_module,  MSG_INFO, "NO Multicast, transcoding deactivated for channel \"%s\".\n", chan_and_pids.channels[curr_channel].name);
 	chan_and_pids.channels[curr_channel].transcode_options.enable=0;
       }
     }
@@ -1001,11 +975,11 @@ int
       if(multicast_vars.rtp_header)
       {
 	multicast_vars.rtp_header=0;
-	log_message( log_module,  MSG_INFO, "NO Multicast, RTP Header is desactivated.\n");
+	log_message( log_module,  MSG_INFO, "NO Multicast, RTP Header is deactivated.\n");
       }
       if(sap_vars.sap==OPTION_ON)
       {
-	log_message( log_module,  MSG_INFO, "NO Multicast, SAP announces are desactivated.\n");
+	log_message( log_module,  MSG_INFO, "NO Multicast, SAP announces are deactivated.\n");
 	sap_vars.sap=OPTION_OFF;
       }
   }
@@ -1094,6 +1068,36 @@ int
 
   if (open_fe (&fds.fd_frontend, tuneparams.card_dev_path, tuneparams.tuner))
   {
+
+  /*****************************************************/
+  //daemon part two, we write our PID as we are tuned
+  /*****************************************************/
+
+  // We write our pid in a file if we deamonize
+  if (!no_daemon)
+  {
+    int len;
+    len=DEFAULT_PATH_LEN;
+    char number[10];
+    sprintf(number,"%d",tuneparams.card);
+    mumu_string_replace(filename_pid,&len,0,"%card",number);
+    sprintf(number,"%d",tuneparams.tuner);
+    mumu_string_replace(filename_pid,&len,0,"%tuner",number);
+    sprintf(number,"%d",server_id);
+    mumu_string_replace(filename_pid,&len,0,"%server",number);;
+    log_message( log_module, MSG_INFO, "The pid will be written in %s", filename_pid);
+    pidfile = fopen (filename_pid, "w");
+    if (pidfile == NULL)
+    {
+      log_message( log_module,  MSG_INFO,"%s: %s\n",
+                   filename_pid, strerror (errno));
+      exit(ERROR_CREATE_FILE);
+    }
+    fprintf (pidfile, "%d\n", getpid ());
+    fclose (pidfile);
+  }
+
+
     iRet =
         tune_it (fds.fd_frontend, &tuneparams);
   }
@@ -1156,6 +1160,7 @@ int
 
   if(stats_infos.show_traffic)
     log_message( log_module, MSG_INFO,"The traffic will be shown every %d second%c\n",stats_infos.show_traffic_interval, stats_infos.show_traffic_interval > 1? 's':' ');
+
 
 
 

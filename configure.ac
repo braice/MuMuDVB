@@ -2,11 +2,10 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.61])
-AC_INIT([MuMuDVB], [1.7], [mumudvb@braice.net])
+AC_INIT([MuMuDVB], [1.7.1_20120509_master], [mumudvb@braice.net])
 AC_CONFIG_SRCDIR([src/mumudvb.c])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([src/config.h])
-AC_SEARCH_LIBS([clock_gettime],[rt posix4])
 
 dnl
 dnl Check for linux dvb api headers
@@ -32,7 +31,7 @@ AC_CHECK_LIB([dvbapi], [dvbdemux_set_section_filter])
 AC_CHECK_LIB([ucsi], [atsc_text_segment_decode],[atsc_long_names="yes"], [atsc_long_names="no"])
 #AC_CHECK_LIB([dvben50221], [en50221_stdcam_create],,,[ucsi,pthread])
 AC_CHECK_LIB([pthread], [pthread_create])
-
+AC_CHECK_LIB([rt], [clock_gettime])
 
 dnl
 dnl cam support
