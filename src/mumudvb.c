@@ -2106,7 +2106,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
     chan_and_pids.channels[curr_channel].pmt_packet=NULL;
 	
 
-
+	  
 	if (chan_and_pids.channels[curr_channel].scam_support) {
 	    log_message(log_module,MSG_DEBUG,"Send Thread closing, channel %s\n", chan_and_pids.channels[curr_channel].name);
 		chan_and_pids.channels[curr_channel].sendthread_shutdown=1;
@@ -2121,9 +2121,9 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
 	    free(chan_and_pids.channels[curr_channel].ring_buf->time_send);
 	    free(chan_and_pids.channels[curr_channel].ring_buf->time_decsa);
 	    free(chan_and_pids.channels[curr_channel].ring_buf);
-	}
+	}	//free(chan_and_pids.channels[curr_channel].ring_buf);
 	
-	//free(chan_and_pids.channels[curr_channel].ring_buf);
+
 
   }
 
@@ -2300,6 +2300,7 @@ void *monitor_func(void* arg)
   double last_updown_check=0;
   double last_flush_time = 0;
   double time_no_diff=0;
+  double time_no_diff_cw=0;
   int num_big_buffer_show=0;
 
   gettimeofday (&tv, (struct timezone *) NULL);
@@ -2452,7 +2453,7 @@ void *monitor_func(void* arg)
 		  current->ratio_scrambled = (int)(current->num_scrambled_packets*100/(current->num_packet));
 		else
 		  current->ratio_scrambled = 0;
-	  }
+	  }		
 #endif
 		  
 		
@@ -2587,20 +2588,6 @@ void *monitor_func(void* arg)
     else if(!time_no_diff)
       time_no_diff=(long)monitor_now;
 	  
-	#ifdef ENABLE_SCAM_SUPPORT
-    /*******************************************/
-    /* we check num of packets in ring buffer                */
-    /*******************************************/
-    for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++) {
-      if (params->chan_and_pids->channels[curr_channel].scam_support) {
-		if (params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets>=params->chan_and_pids->channels[curr_channel].ring_buffer_size)
-      		log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %u\n",params->chan_and_pids->channels[curr_channel].name, params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets, params->chan_and_pids->channels[curr_channel].ring_buffer_size);
-		else
-			log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %u\n",params->chan_and_pids->channels[curr_channel].name, params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets, params->chan_and_pids->channels[curr_channel].ring_buffer_size);
-	  }
-	}
-		
-	#endif
 
 
     /*******************************************/
@@ -2615,7 +2602,50 @@ void *monitor_func(void* arg)
       Interrupted=ERROR_NO_DIFF<<8; //the <<8 is to make difference beetween signals and errors
     }
 
+		
+	#ifdef ENABLE_SCAM_SUPPORT
+    /*******************************************/
+    /* we check num of packets in ring buffer                */
+    /*******************************************/
+    for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++) {
+      if (params->chan_and_pids->channels[curr_channel].scam_support) {
+		if (params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets>=params->chan_and_pids->channels[curr_channel].ring_buffer_size)
+      		log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %u\n",params->chan_and_pids->channels[curr_channel].name, params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets, params->chan_and_pids->channels[curr_channel].ring_buffer_size);
+		else
+			log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %u\n",params->chan_and_pids->channels[curr_channel].name, params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets, params->chan_and_pids->channels[curr_channel].ring_buffer_size);
+	  }
+	}
 
+
+    /*******************************************/
+    /* we count oscam channels which got first cw*/
+    /*******************************************/
+    int count_of_channels_cw=0;
+    for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++)
+      if (params->chan_and_pids->channels[curr_channel].got_cw_started && params->chan_and_pids->channels[curr_channel].scam_support)
+        count_of_channels_cw++;
+
+    /*Time no diff is the time when we got 0 channels with first cw*/
+    /*if we have channels with first cw, we reinit this counter*/
+    if(count_of_channels_cw)
+      time_no_diff_cw=0;
+    /*If we don't have channels with first cw and this is the first time, we store the time*/
+    else if(!time_no_diff_cw)
+      time_no_diff_cw=(long)monitor_now;
+
+    /*******************************************/
+    /* If we don't have first cw for           */
+    /* a too long time, we exit                */
+    /*******************************************/
+    if((timeout_no_diff)&& (time_no_diff&&((monitor_now-time_no_diff_cw)>timeout_no_diff)))
+    {
+      log_message( log_module,  MSG_ERROR,
+                  "Haven't got first cw for %ds, exiting.\n",
+                  timeout_no_diff);
+      Interrupted=ERROR_NO_FIRST_CW<<8; //the <<8 is to make difference beetween signals and errors
+    }
+		
+	#endif
 
 
 
