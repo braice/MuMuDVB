@@ -469,6 +469,7 @@ typedef struct monitor_parameters_t{
   struct unicast_parameters_t *unicast_vars;
   struct tuning_parameters_t *tuneparams;
   struct stats_infos_t *stats_infos;
+  void *scam_vars_v;
   int server_id;
   char *filename_channels_not_streamed;
   char *filename_channels_streamed;

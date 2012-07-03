@@ -1380,12 +1380,24 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
   // SCAM information
   #ifdef ENABLE_SCAM_SUPPORT
     unicast_reply_write(reply, "\t<scam_support>%d</scam_support>\n",scam_vars->scam_support);
-    unicast_reply_write(reply, "\t<ring_buffer_default_size>%u</ring_buffer_default_size>\n",scam_vars->ring_buffer_default_size);
-    unicast_reply_write(reply, "\t<decsa_default_delay>%u</decsa_default_delay>\n",scam_vars->decsa_default_delay);
-    unicast_reply_write(reply, "\t<send_default_delay>%u</send_default_delay>\n",scam_vars->send_default_delay);
-    unicast_reply_write(reply, "\t<decsa_default_wait>%u</decsa_default_wait>\n",scam_vars->decsa_default_wait);
+	if (scam_vars->scam_support) {
+		unicast_reply_write(reply, "\t<ring_buffer_default_size>%u</ring_buffer_default_size>\n",scam_vars->ring_buffer_default_size);
+		unicast_reply_write(reply, "\t<decsa_default_delay>%u</decsa_default_delay>\n",scam_vars->decsa_default_delay);
+		unicast_reply_write(reply, "\t<send_default_delay>%u</send_default_delay>\n",scam_vars->send_default_delay);
+		unicast_reply_write(reply, "\t<decsa_default_wait>%u</decsa_default_wait>\n",scam_vars->decsa_default_wait);
+	}
+	else {
+		unicast_reply_write(reply, "\t<ring_buffer_default_size>%u</ring_buffer_default_size>\n",0);
+		unicast_reply_write(reply, "\t<decsa_default_delay>%u</decsa_default_delay>\n",0);
+		unicast_reply_write(reply, "\t<send_default_delay>%u</send_default_delay>\n",0);
+		unicast_reply_write(reply, "\t<decsa_default_wait>%u</decsa_default_wait>\n",0);
+	}
   #else
     unicast_reply_write(reply, "\t<scam_support>%d</scam_support>\n",0);
+    unicast_reply_write(reply, "\t<ring_buffer_default_size>%u</ring_buffer_default_size>\n",0);
+    unicast_reply_write(reply, "\t<decsa_default_delay>%u</decsa_default_delay>\n",0);
+    unicast_reply_write(reply, "\t<send_default_delay>%u</send_default_delay>\n",0);
+    unicast_reply_write(reply, "\t<decsa_default_wait>%u</decsa_default_wait>\n",0);
   #endif
 
   // Channels list
@@ -1408,15 +1420,17 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
     unicast_reply_write(reply, "\t\t<unicast_port>%d</unicast_port>\n",channels[curr_channel].unicast_port);
 	// SCAM information
   	#ifdef ENABLE_SCAM_SUPPORT
-	unicast_reply_write(reply, "\t\t<scam descrambled=\"%d\">\n",channels[curr_channel].scam_support);
-		if (channels[curr_channel].scam_support) {
-			unicast_reply_write(reply, "\t<ring_buffer_size>%u</ring_buffer_size>\n",channels[curr_channel].ring_buffer_size);
-			unicast_reply_write(reply, "\t<decsa_delay>%u</decsa_delay>\n",channels[curr_channel].decsa_delay);
-			unicast_reply_write(reply, "\t<send_delay>%u</send_delay>\n",channels[curr_channel].send_delay);
-			unicast_reply_write(reply, "\t<decsa_wait>%u</decsa_wait>\n",channels[curr_channel].decsa_wait);
-		    unicast_reply_write(reply, "\t<num_packets>%u</num_packets>\n",channels[curr_channel].ring_buffer_num_packets);
-		}
-	unicast_reply_write(reply, "\t\t</scam>\n");
+	if (scam_vars->scam_support) {
+		unicast_reply_write(reply, "\t\t<scam descrambled=\"%d\">\n",channels[curr_channel].scam_support);
+			if (channels[curr_channel].scam_support) {
+				unicast_reply_write(reply, "\t<ring_buffer_size>%u</ring_buffer_size>\n",channels[curr_channel].ring_buffer_size);
+				unicast_reply_write(reply, "\t<decsa_delay>%u</decsa_delay>\n",channels[curr_channel].decsa_delay);
+				unicast_reply_write(reply, "\t<send_delay>%u</send_delay>\n",channels[curr_channel].send_delay);
+				unicast_reply_write(reply, "\t<decsa_wait>%u</decsa_wait>\n",channels[curr_channel].decsa_wait);
+				unicast_reply_write(reply, "\t<num_packets>%u</num_packets>\n",channels[curr_channel].ring_buffer_num_packets);
+			}
+		unicast_reply_write(reply, "\t\t</scam>\n");
+	}
   	#endif
     unicast_reply_write(reply, "\t\t<ca_sys>\n");
     for(int i=0;i<32;i++)
