@@ -1396,14 +1396,14 @@ int
 			  Interrupted=ERROR_MEMORY<<8;
 			  goto mumudvb_close_goto;
 		 	} 
-			chan_and_pids.channels[curr_channel].ring_buf->time_decsa=malloc(chan_and_pids.channels[curr_channel].ring_buffer_size/32 * sizeof(uint64_t));
+			chan_and_pids.channels[curr_channel].ring_buf->time_decsa=malloc(chan_and_pids.channels[curr_channel].ring_buffer_size/4 * sizeof(uint64_t));
 		  	if (chan_and_pids.channels[curr_channel].ring_buf->time_decsa == NULL) {
 			  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 			  Interrupted=ERROR_MEMORY<<8;
 			  goto mumudvb_close_goto;
 		 	} 
 			memset (chan_and_pids.channels[curr_channel].ring_buf->time_send, 0, chan_and_pids.channels[curr_channel].ring_buffer_size/4 * sizeof(uint64_t));//we clear it	 
-			memset (chan_and_pids.channels[curr_channel].ring_buf->time_decsa, 0, chan_and_pids.channels[curr_channel].ring_buffer_size/32 * sizeof(uint64_t));//we clear it
+			memset (chan_and_pids.channels[curr_channel].ring_buf->time_decsa, 0, chan_and_pids.channels[curr_channel].ring_buffer_size/4 * sizeof(uint64_t));//we clear it
 	 
 			start_thread_with_priority(&(chan_and_pids.channels[curr_channel].sendthread), sendthread_func, &chan_and_pids.channels[curr_channel]);
 			scam_decsa_start(&chan_and_pids.channels[curr_channel]);
@@ -1975,9 +1975,9 @@ int
 					if ((chan_and_pids.channels[curr_channel].ring_buf->write_idx&0x3) == 0) {
 					  now_time=get_time();
 					  chan_and_pids.channels[curr_channel].ring_buf->time_send[(chan_and_pids.channels[curr_channel].ring_buf->write_idx>>2)]=now_time + chan_and_pids.channels[curr_channel].send_delay;
-					  if ((chan_and_pids.channels[curr_channel].ring_buf->write_idx&0x1f) == 0) {
-					    chan_and_pids.channels[curr_channel].ring_buf->time_decsa[(chan_and_pids.channels[curr_channel].ring_buf->write_idx>>5)]=now_time + chan_and_pids.channels[curr_channel].decsa_delay;
-					  }
+					  
+					  chan_and_pids.channels[curr_channel].ring_buf->time_decsa[(chan_and_pids.channels[curr_channel].ring_buf->write_idx>>2)]=now_time + chan_and_pids.channels[curr_channel].decsa_delay;
+					  
 					}
 
 					++chan_and_pids.channels[curr_channel].ring_buf->write_idx;

@@ -101,12 +101,12 @@ static void *decsathread_func(void* arg)
   even_key=dvbcsa_bs_key_alloc();
 
   extern uint64_t now_time;
-  uint64_t batch_stop_time;
+//  uint64_t batch_stop_time;
   
   log_message( log_module, MSG_DEBUG, "thread started, channel %s\n",channel->name);
   
   while (!channel->decsathread_shutdown) {
-	if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>5)] )&& channel->got_cw_started && channel->ring_buf->to_descramble) {
+	if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>2)] )&& channel->got_cw_started && channel->ring_buf->to_descramble) {
 	  
 		scrambling_control=((channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3] & 0xc0) >> 6);
 		if (channel->got_key_even) {	  
@@ -119,6 +119,7 @@ static void *decsathread_func(void* arg)
 			--channel->got_key_odd;
 			log_message( log_module, MSG_DEBUG, "set first odd key, channel %s, got %d, scr_cont %d\n",channel->name,channel->got_key_even, scrambling_control);
 		}
+		//batch_stop_time=now_time + channel->decsa_wait;  
     	break;
 	}
    else
@@ -127,17 +128,9 @@ static void *decsathread_func(void* arg)
 }
 	
   while(!channel->decsathread_shutdown) {
-
-	if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>5)] ) && (channel->ring_buf->to_descramble!=0)) {		  
-	  	batch_stop_time=now_time + channel->decsa_wait;  
-		while((scrambled!=batch_size) && (batch_stop_time >= now_time)) {		
-		  now_time=get_time();
-		  while ((channel->ring_buf->to_descramble == 0)&& (batch_stop_time >= now_time)) {			
-			usleep(50000);
-			now_time=get_time();
-		  }
-		  if (channel->ring_buf->to_descramble == 0 || (batch_stop_time < now_time))
-			break;
+	now_time=get_time();
+	if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>2)] )) {
+		if (channel->ring_buf->to_descramble!=0) {		 
 		  scrambling_control_packet = ((channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3] & 0xc0) >> 6);
 	      offset = ts_packet_get_payload_offset(channel->ring_buf->data[channel->ring_buf->read_decsa_idx]);
 		  len=188-offset;
@@ -164,59 +157,60 @@ static void *decsathread_func(void* arg)
 		  ++channel->ring_buf->read_decsa_idx;
 		  channel->ring_buf->read_decsa_idx&=(channel->ring_buffer_size -1);	
 		  --channel->ring_buf->to_descramble;
-		}
-	
-		even_batch[even_batch_idx].data=0;
-		odd_batch[odd_batch_idx].data=0;
-		if (scrambling_control==3) {
-		     if (even_batch_idx) {
-					scrambling_control=2;
-					if (channel->got_key_even) {
-					  dvbcsa_bs_key_set(channel->even_cw, even_key);
-					  log_message( log_module, MSG_DEBUG, "even key %016llx, channel %s, got %d, scr_cont %d\n",now_time,channel->name,channel->got_key_even, scrambling_control);
-					  --channel->got_key_even;
-					}
-		     }
-		}
+		  if ((scrambled==batch_size) ) {
+			even_batch[even_batch_idx].data=0;
+			odd_batch[odd_batch_idx].data=0;
+			if (scrambling_control==3) {
+				 if (even_batch_idx) {
+						scrambling_control=2;
+						if (channel->got_key_even) {
+						  dvbcsa_bs_key_set(channel->even_cw, even_key);
+						  log_message( log_module, MSG_DEBUG, "even key %016llx, channel %s, got %d, scr_cont %d\n",now_time,channel->name,channel->got_key_even, scrambling_control);
+						  --channel->got_key_even;
+						}
+				 }
+			}
 
-		else {
-		    if (odd_batch_idx) {		  
-					scrambling_control=3;
-					if (channel->got_key_odd) {
-					  dvbcsa_bs_key_set(channel->odd_cw, odd_key);
-					  log_message( log_module, MSG_DEBUG, "odd key %016llx, channel %s, got %d, scr_cont %d\n",now_time,channel->name,channel->got_key_odd, scrambling_control);
-					  --channel->got_key_odd;
-					}
-		    }
+			else {
+				if (odd_batch_idx) {		  
+						scrambling_control=3;
+						if (channel->got_key_odd) {
+						  dvbcsa_bs_key_set(channel->odd_cw, odd_key);
+						  log_message( log_module, MSG_DEBUG, "odd key %016llx, channel %s, got %d, scr_cont %d\n",now_time,channel->name,channel->got_key_odd, scrambling_control);
+						  --channel->got_key_odd;
+						}
+				}
 
-		}
-		if (even_batch_idx) {
+			}
+			if (even_batch_idx) {
 
-		  dvbcsa_bs_decrypt(even_key, even_batch, 184);
-	    }
-		if (odd_batch_idx) {
+			  dvbcsa_bs_decrypt(even_key, even_batch, 184);
+			}
+			if (odd_batch_idx) {
 
-		  dvbcsa_bs_decrypt(odd_key, odd_batch, 184);
-		}
-		even_batch_idx = 0;
-		odd_batch_idx = 0;
-		channel->ring_buf->to_send+= scrambled  + unscrambled;
-		unscrambled=0;
-		scrambled=0;
+			  dvbcsa_bs_decrypt(odd_key, odd_batch, 184);
+			}
+			even_batch_idx = 0;
+			odd_batch_idx = 0;
+			channel->ring_buf->to_send+= scrambled  + unscrambled;
+			unscrambled=0;
+			scrambled=0;
+//			batch_stop_time=now_time + channel->decsa_wait;  
 		
 		
-	 }
-	 else {
-	   now_time=get_time();
-	   if (now_time < channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>5)]) {
-		 usleep(((channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>5)])-now_time));
-		 now_time=get_time();       
-	   }
-	   else {
+		 }	
+	  }
+	  else {
 	    log_message( log_module, MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,channel->ring_buf->to_descramble,channel->ring_buf->to_send); 
 	    usleep(50000);
-	   }
- 	 }
+	  }
+
+	}
+	else {
+	 usleep(((channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>2)])-now_time));
+	}
+		
+
   }
 	if(odd_key)
       dvbcsa_bs_key_free(odd_key);
