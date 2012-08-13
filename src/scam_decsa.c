@@ -129,7 +129,7 @@ static void *decsathread_func(void* arg)
 	
   while(!channel->decsathread_shutdown) {
 	now_time=get_time();
-	if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>2)] )) {
+	  if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>2)] )) {
 		if (channel->ring_buf->to_descramble!=0) {		 
 		  scrambling_control_packet = ((channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3] & 0xc0) >> 6);
 	      offset = ts_packet_get_payload_offset(channel->ring_buf->data[channel->ring_buf->read_decsa_idx]);
@@ -195,9 +195,6 @@ static void *decsathread_func(void* arg)
 			channel->ring_buf->to_send+= scrambled  + unscrambled;
 			unscrambled=0;
 			scrambled=0;
-//			batch_stop_time=now_time + channel->decsa_wait;  
-		
-		
 		 }	
 	  }
 	  else {

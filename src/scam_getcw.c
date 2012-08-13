@@ -168,7 +168,7 @@ static void *scamthread_func(void* arg)
 			if(scam_params->ca_pid.index != -1) {
 				if (!(chan_and_pids.started_pid_get[scam_params->ca_pid.index])) {
 			      for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++) {
-				    for (curr_pid = 0; curr_pid < chan_and_pids.channels[curr_channel].num_pids; curr_pid++) {
+				    for (curr_pid = 1; curr_pid < chan_and_pids.channels[curr_channel].num_pids; curr_pid++) {
 				  		if (scam_params->ca_pid.pid == (unsigned int)chan_and_pids.channels[curr_channel].pids[curr_pid]) {
 				  			chan_and_pids.started_pid_get[scam_params->ca_pid.index] = 1;
 				  			chan_and_pids.scam_idx[scam_params->ca_pid.index] = &chan_and_pids.channels[curr_channel];
