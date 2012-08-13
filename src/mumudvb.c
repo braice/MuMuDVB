@@ -1404,7 +1404,13 @@ int
 		 	} 
 			memset (chan_and_pids.channels[curr_channel].ring_buf->time_send, 0, chan_and_pids.channels[curr_channel].ring_buffer_size/4 * sizeof(uint64_t));//we clear it	 
 			memset (chan_and_pids.channels[curr_channel].ring_buf->time_decsa, 0, chan_and_pids.channels[curr_channel].ring_buffer_size/4 * sizeof(uint64_t));//we clear it
-	 
+
+			pthread_mutex_init(&chan_and_pids.channels[curr_channel].ring_buffer_num_packets_mutex, NULL);
+
+
+			pthread_mutex_init(&chan_and_pids.channels[curr_channel].ring_buf->to_send_mutex, NULL);
+			pthread_mutex_init(&chan_and_pids.channels[curr_channel].ring_buf->to_descramble_mutex, NULL);
+			
 			start_thread_with_priority(&(chan_and_pids.channels[curr_channel].sendthread), sendthread_func, &chan_and_pids.channels[curr_channel]);
 			scam_decsa_start(&chan_and_pids.channels[curr_channel]);
 		}
@@ -1982,8 +1988,14 @@ int
 
 					++chan_and_pids.channels[curr_channel].ring_buf->write_idx;
 					chan_and_pids.channels[curr_channel].ring_buf->write_idx&=(chan_and_pids.channels[curr_channel].ring_buffer_size -1);
+
+				    pthread_mutex_lock(&chan_and_pids.channels[curr_channel].ring_buf->to_descramble_mutex);
 				    ++chan_and_pids.channels[curr_channel].ring_buf->to_descramble;
+				    pthread_mutex_unlock(&chan_and_pids.channels[curr_channel].ring_buf->to_descramble_mutex);
+
+				    pthread_mutex_lock(&chan_and_pids.channels[curr_channel].ring_buffer_num_packets_mutex);
 				    ++chan_and_pids.channels[curr_channel].ring_buffer_num_packets;
+				    pthread_mutex_unlock(&chan_and_pids.channels[curr_channel].ring_buffer_num_packets_mutex);
 			  }
 			else {
 		      // we fill the channel buffer
@@ -2126,6 +2138,12 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
 	    free(chan_and_pids.channels[curr_channel].ring_buf->data);
 	    free(chan_and_pids.channels[curr_channel].ring_buf->time_send);
 	    free(chan_and_pids.channels[curr_channel].ring_buf->time_decsa);
+					
+
+
+		pthread_mutex_destroy(&chan_and_pids.channels[curr_channel].ring_buf->to_send_mutex);
+		pthread_mutex_destroy(&chan_and_pids.channels[curr_channel].ring_buf->to_descramble_mutex);
+		pthread_mutex_destroy(&chan_and_pids.channels[curr_channel].ring_buffer_num_packets_mutex);
 	    free(chan_and_pids.channels[curr_channel].ring_buf);
 	}	//free(chan_and_pids.channels[curr_channel].ring_buf);
 	

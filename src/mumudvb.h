@@ -193,6 +193,9 @@ typedef struct {
   unsigned int to_send;
   /** Read index of buffer for sending thread */
   unsigned int read_send_idx;
+
+  pthread_mutex_t    to_descramble_mutex;
+  pthread_mutex_t    to_send_mutex;
 }ring_buffer_t;  
 #endif
 
@@ -327,6 +330,8 @@ typedef struct mumudvb_channel_t{
   int need_pmt_get;
   /** Says if we've got first cw for channel*/	
   int got_cw_started;
+
+  pthread_mutex_t    ring_buffer_num_packets_mutex;
 #endif
   
 

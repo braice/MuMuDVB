@@ -269,8 +269,15 @@ void *sendthread_func(void* arg)
 		  channel->ring_buf->read_send_idx&=(channel->ring_buffer_size -1);
 
           channel->nb_bytes += TS_PACKET_SIZE;
+		  
+		  pthread_mutex_lock(&channel->ring_buf->to_send_mutex);
 		  --channel->ring_buf->to_send;
+		  pthread_mutex_unlock(&channel->ring_buf->to_send_mutex);
+
+		  pthread_mutex_lock(&channel->ring_buffer_num_packets_mutex);
 		  --channel->ring_buffer_num_packets;
+		  pthread_mutex_unlock(&channel->ring_buffer_num_packets_mutex);
+		  
 		  ++channel->num_packet_descrambled_sent;
 		
           //The buffer is full, we send it

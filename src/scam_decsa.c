@@ -156,7 +156,11 @@ static void *decsathread_func(void* arg)
 		  }
 		  ++channel->ring_buf->read_decsa_idx;
 		  channel->ring_buf->read_decsa_idx&=(channel->ring_buffer_size -1);	
+
+		  pthread_mutex_lock(&channel->ring_buf->to_descramble_mutex);	
 		  --channel->ring_buf->to_descramble;
+		  pthread_mutex_unlock(&channel->ring_buf->to_descramble_mutex);
+			
 		  if ((scrambled==batch_size) ) {
 			even_batch[even_batch_idx].data=0;
 			odd_batch[odd_batch_idx].data=0;
@@ -192,7 +196,11 @@ static void *decsathread_func(void* arg)
 			}
 			even_batch_idx = 0;
 			odd_batch_idx = 0;
-			channel->ring_buf->to_send+= scrambled  + unscrambled;
+
+			pthread_mutex_lock(&channel->ring_buf->to_send_mutex);
+			channel->ring_buf->to_send+= (scrambled  + unscrambled);
+			pthread_mutex_unlock(&channel->ring_buf->to_send_mutex);  
+			  
 			unscrambled=0;
 			scrambled=0;
 		 }	
