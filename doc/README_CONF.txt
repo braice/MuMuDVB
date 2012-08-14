@@ -246,8 +246,7 @@ SCAM support parameters
 |scam_support |Specify if we wants the support for software descrambling channels | 0 | 0 or 1 |
 |ring_buffer_default_size | default number of ts packets in ring buffer (when not specified by channel specific config) | 65536 |it gets rounded to the value that is power of 2 not lower than it|
 |decsa_default_delay | default delay time in us between getting packet and descrambling (when not specified by channel specific config) | 4500000 |  max is 10000000 |
-|send_default_delay | default delay time in us between getting packet and sending (when not specified by channel specific config) | 5500000 | mustn't be lower than decsa delay + decsa wait |
-|decsa_default_wait | default wait time in us for full batch used by libdvbcsa (when not specified by channel specific config) | 500000 | |
+|send_default_delay | default delay time in us between getting packet and sending (when not specified by channel specific config) | 5500000 | mustn't be lower than decsa delay |
 |==================================================================================================================
 
 Autoconfiguration parameters
@@ -322,8 +321,7 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 |oscam |Do we activate software descrambling for this channel| 0 | 0 or 1 |
 |ring_buffer_size | number of ts packets in ring buffer (when not specified by channel specific config) | 131072 |it gets rounded to the value that is power of 2 not lower than it|
 |decsa_delay | delay time in us between getting packet and descrambling (when not specified by channel specific config) | 4500000 | max is 10000000 |
-|send_delay | delay time in us between getting packet and sending (when not specified by channel specific config) | 7000000 |  mustn't be lower than decsa delay + decsa wait |
-|decsa_wait | wait time in us for full batch used by libdvbcsa (when not specified by channel specific config) | 500000 | |
+|send_delay | delay time in us between getting packet and sending (when not specified by channel specific config) | 7000000 |  mustn't be lower than decsa delay |
 |==================================================================================================================
 
 

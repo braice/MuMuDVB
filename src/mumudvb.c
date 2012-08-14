@@ -1864,14 +1864,10 @@ int
 #ifdef ENABLE_SCAM_SUPPORT
 		if (scam_vars.scam_support &&(chan_and_pids.channels[curr_channel].need_scam_ask==CAM_NEED_ASK))
 		{ 
-			if (scam_vars.capmt_send_time < now) {
 				if (chan_and_pids.channels[curr_channel].scam_support) {		
-					//usleep(400000);
 					scam_send_capmt(&chan_and_pids.channels[curr_channel],tuneparams.card);	
 				}
 				chan_and_pids.channels[curr_channel].need_scam_ask=CAM_ASKED;
-				scam_vars.capmt_send_time=now+scam_vars.capmt_send_interval;
-			}
 		}
 #endif
 

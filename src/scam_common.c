@@ -80,9 +80,6 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
 	scam_vars->ring_buffer_default_size=RING_BUFFER_DEFAULT_SIZE;
 	scam_vars->decsa_default_delay=DECSA_DEFAULT_DELAY;
 	scam_vars->send_default_delay=SEND_DEFAULT_DELAY;
-	scam_vars->decsa_default_wait=DECSA_DEFAULT_WAIT;
-	scam_vars->capmt_send_interval=0;
-	scam_vars->capmt_send_time=0;
   }
   else if (!strcmp (substring, "ring_buffer_default_size"))
   {
@@ -103,16 +100,7 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
     substring = strtok (NULL, delimiteurs);
     scam_vars->send_default_delay = atoi (substring);
   }
-  else if (!strcmp (substring, "decsa_default_wait"))
-  {
-    substring = strtok (NULL, delimiteurs);
-    scam_vars->decsa_default_wait = atoi (substring);
-  }
-  else if (!strcmp (substring, "capmt_send_interval"))
-  {
-    substring = strtok (NULL, delimiteurs);
-    scam_vars->capmt_send_interval = atoi (substring);
-  }
+
   else if (!strcmp (substring, "oscam"))
   {
     if ( ip_ok == 0)
@@ -128,7 +116,6 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
 		current_channel->ring_buffer_size=scam_vars->ring_buffer_default_size;
 		current_channel->decsa_delay=scam_vars->decsa_default_delay;
 		current_channel->send_delay=scam_vars->send_default_delay;
-		current_channel->decsa_wait=scam_vars->decsa_default_wait;
 	}
   }
   else if (!strcmp (substring, "ring_buffer_size"))

@@ -319,7 +319,7 @@ typedef struct mumudvb_channel_t{
   /** Size of ring buffer */
   uint64_t ring_buffer_size;
   /** Delay of descrambling in us*/
-  uint64_t decsa_delay;
+  uint64_t decsa_delay;	
   /** Delay of sending in us*/
   uint64_t send_delay;
   /** Time to wait for full batch for descrambling in us*/
