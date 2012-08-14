@@ -1395,7 +1395,6 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
     unicast_reply_write(reply, "\t<ring_buffer_default_size>%u</ring_buffer_default_size>\n",0);
     unicast_reply_write(reply, "\t<decsa_default_delay>%u</decsa_default_delay>\n",0);
     unicast_reply_write(reply, "\t<send_default_delay>%u</send_default_delay>\n",0);
-    unicast_reply_write(reply, "\t<decsa_default_wait>%u</decsa_default_wait>\n",0);
   #endif
 
   // Channels list
