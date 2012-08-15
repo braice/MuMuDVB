@@ -2634,10 +2634,14 @@ void *monitor_func(void* arg)
 		/*******************************************/
 		for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++) {
 		  if (params->chan_and_pids->channels[curr_channel].scam_support) {
-			if (params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets>=params->chan_and_pids->channels[curr_channel].ring_buffer_size)
-		  		log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %u\n",params->chan_and_pids->channels[curr_channel].name, params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets, params->chan_and_pids->channels[curr_channel].ring_buffer_size);
-			else
-				log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %u, to descramble %u, to send %u\n",params->chan_and_pids->channels[curr_channel].name, params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets, params->chan_and_pids->channels[curr_channel].ring_buffer_size,params->chan_and_pids->channels[curr_channel].ring_buf->to_descramble,params->chan_and_pids->channels[curr_channel].ring_buf->to_send);
+			  if (chan_and_pids.channels[curr_channel].got_cw_started) {
+				if (params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets>=params->chan_and_pids->channels[curr_channel].ring_buffer_size)
+			  		log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %u\n",params->chan_and_pids->channels[curr_channel].name, params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets, params->chan_and_pids->channels[curr_channel].ring_buffer_size);
+				else
+					log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %u, to descramble %u, to send %u\n",params->chan_and_pids->channels[curr_channel].name, params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets, params->chan_and_pids->channels[curr_channel].ring_buffer_size,params->chan_and_pids->channels[curr_channel].ring_buf->to_descramble,params->chan_and_pids->channels[curr_channel].ring_buf->to_send);
+			  }
+			  else
+				log_message( log_module,  MSG_DEBUG, "%s: didn't get first cw\n",params->chan_and_pids->channels[curr_channel].name);
 		  }
 		}
 
