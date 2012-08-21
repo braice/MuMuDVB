@@ -322,8 +322,6 @@ typedef struct mumudvb_channel_t{
   uint64_t decsa_delay;	
   /** Delay of sending in us*/
   uint64_t send_delay;
-  /** Time to wait for full batch for descrambling in us*/
-  uint64_t decsa_wait;
   /** Number of packets in the ring buffer*/	
   unsigned int ring_buffer_num_packets;  
   /** Says if we need to get pmt for this channel on scam own*/	

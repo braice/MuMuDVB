@@ -153,17 +153,6 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
     substring = strtok (NULL, delimiteurs);
     current_channel->send_delay = atoi (substring);
   }
-  else if (!strcmp (substring, "decsa_wait"))
-  {
-    if ( ip_ok == 0)
-    {
-      log_message( log_module,  MSG_ERROR,
-                   "oscam : You have to start a channel first (using ip= or channel_next)\n");
-      return -1;
-    }
-    substring = strtok (NULL, delimiteurs);
-    current_channel->decsa_wait = atoi (substring);
-  }
   else
     return 0; //Nothing concerning cam, we return 0 to explore the other possibilities
 

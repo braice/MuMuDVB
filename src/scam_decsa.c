@@ -94,7 +94,7 @@ static void *decsathread_func(void* arg)
   unsigned char odd_batch_idx=0;
   unsigned char even_batch_idx=0;
   unsigned char offset=0,len=0;
-  unsigned int unscrambled=0,scrambled=0;
+  unsigned int nscrambled=0,scrambled=0;
   struct dvbcsa_bs_key_s *odd_key;
   struct dvbcsa_bs_key_s *even_key;
   odd_key=dvbcsa_bs_key_alloc();
@@ -136,7 +136,7 @@ static void *decsathread_func(void* arg)
 		  len=188-offset;
 		  switch (scrambling_control_packet) {
 			case 0:
-			  ++unscrambled;
+			  ++nscrambled;
 			  break;
 			case 2:
 			  ++scrambled;
@@ -151,7 +151,7 @@ static void *decsathread_func(void* arg)
 			  ++odd_batch_idx;
 			  break;
 			default :
-			  ++unscrambled;
+			  ++nscrambled;
 			  break;
 		  }
 		  ++channel->ring_buf->read_decsa_idx;
@@ -161,7 +161,7 @@ static void *decsathread_func(void* arg)
 		  --channel->ring_buf->to_descramble;
 		  pthread_mutex_unlock(&channel->ring_buf->to_descramble_mutex);
 			
-		  if ((scrambled==batch_size) ) {
+		  if ((scrambled==batch_size) || (nscrambled==batch_size)) {
 			even_batch[even_batch_idx].data=0;
 			odd_batch[odd_batch_idx].data=0;
 			if (scrambling_control==3) {
@@ -198,10 +198,10 @@ static void *decsathread_func(void* arg)
 			odd_batch_idx = 0;
 
 			pthread_mutex_lock(&channel->ring_buf->to_send_mutex);
-			channel->ring_buf->to_send+= (scrambled  + unscrambled);
+			channel->ring_buf->to_send+= (scrambled  + nscrambled);
 			pthread_mutex_unlock(&channel->ring_buf->to_send_mutex);  
 			  
-			unscrambled=0;
+			nscrambled=0;
 			scrambled=0;
 		 }	
 	  }

@@ -543,8 +543,6 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
 	continue;
       else if (!strcmp (substring, "send_delay"))
 	continue;
-      else if (!strcmp (substring, "decsa_wait"))
-	continue;
       else if (!strcmp (substring, "sap_group"))
 	continue;
       else if (!strcmp (substring, "name"))
@@ -614,7 +612,6 @@ void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *
         fprintf ( config_file, "oscam=%d\n", channels[curr_channel].scam_support);
         fprintf ( config_file, "ring_buffer_size=%" PRIu64 "\n", channels[curr_channel].ring_buffer_size);
 		fprintf ( config_file, "send_delay=%" PRIu64 "\n", channels[curr_channel].send_delay);
-		fprintf ( config_file, "decsa_wait=%" PRIu64 "\n", channels[curr_channel].decsa_wait);
 	  }
       fprintf ( config_file, "#End of config file\n");
   #endif
