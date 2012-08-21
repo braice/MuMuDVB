@@ -50,6 +50,7 @@
 #include "log.h"
 #include "unicast_http.h"
 #include "rtp.h"
+#include "scam_decsa.h"
 
 /**@file
  * @brief scam support
@@ -115,7 +116,7 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
 		current_channel->need_scam_ask=CAM_NEED_ASK;
 		current_channel->ring_buffer_size=scam_vars->ring_buffer_default_size;
 		current_channel->decsa_delay=scam_vars->decsa_default_delay;
-		current_channel->send_delay=scam_vars->send_default_delay;
+		current_channel->send_delay=scam_vars->send_default_delay;		
 	}
   }
   else if (!strcmp (substring, "ring_buffer_size"))
@@ -322,5 +323,56 @@ int scam_new_packet(int pid, unsigned char *ts_packet, scam_parameters_t *scam_v
  }
  return 0;
 
+}
+
+/** @brief create ring buffer and threads for sending and descrambling
+ *
+ */
+int scam_init_decsa(mumudvb_channel_t *channel)
+{
+	unsigned int i;
+	
+	channel->ring_buf=malloc(sizeof(ring_buffer_t));
+  	if (channel->ring_buf == NULL) {
+	  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+	  return ERROR_MEMORY<<8;
+ 	} 
+	memset (channel->ring_buf, 0, sizeof( ring_buffer_t));//we clear it
+  
+	channel->ring_buf->data=malloc(channel->ring_buffer_size*sizeof(char *));
+  	if (channel->ring_buf->data == NULL) {
+	  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+	  return ERROR_MEMORY<<8;
+ 	} 	  
+	for ( i = 0; i< channel->ring_buffer_size; i++)
+	{
+  		channel->ring_buf->data[i]=malloc(TS_PACKET_SIZE*sizeof(char));
+	  	if (channel->ring_buf->data[i] == NULL) {
+		  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+		  return ERROR_MEMORY<<8;
+	 	} 
+	}
+	channel->ring_buf->time_send=malloc(channel->ring_buffer_size/4 * sizeof(uint64_t));
+  	if (channel->ring_buf->time_send == NULL) {
+	  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+	  return ERROR_MEMORY<<8;
+ 	} 
+	channel->ring_buf->time_decsa=malloc(channel->ring_buffer_size/4 * sizeof(uint64_t));
+  	if (channel->ring_buf->time_decsa == NULL) {
+	  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+	  return ERROR_MEMORY<<8;
+ 	} 
+	memset (channel->ring_buf->time_send, 0, channel->ring_buffer_size/4 * sizeof(uint64_t));//we clear it	 
+	memset (channel->ring_buf->time_decsa, 0, channel->ring_buffer_size/4 * sizeof(uint64_t));//we clear it
+
+	pthread_mutex_init(&channel->ring_buffer_num_packets_mutex, NULL);
+
+
+	pthread_mutex_init(&channel->ring_buf->to_send_mutex, NULL);
+	pthread_mutex_init(&channel->ring_buf->to_descramble_mutex, NULL);
+
+	start_thread_with_priority(&(channel->sendthread), sendthread_func, channel);
+	scam_decsa_start(channel);
+	return 0;
 }
 

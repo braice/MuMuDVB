@@ -109,7 +109,8 @@ static void *scamthread_func(void* arg)
   extern mumudvb_chan_and_pids_t chan_and_pids; /** @todo ugly way to access channel data */
   int curr_channel = 0;
   int curr_pid = 0;
-  
+  extern int Interrupted; 
+	
   //Loop
   while(!scam_params->scamthread_shutdown) {
 	if(scam_params->bint){
@@ -172,6 +173,7 @@ static void *scamthread_func(void* arg)
 				  		if (scam_params->ca_pid.pid == (unsigned int)chan_and_pids.channels[curr_channel].pids[curr_pid]) {
 				  			chan_and_pids.started_pid_get[scam_params->ca_pid.index] = 1;
 				  			chan_and_pids.scam_idx[scam_params->ca_pid.index] = &chan_and_pids.channels[curr_channel];
+							Interrupted=scam_init_decsa (&chan_and_pids.channels[curr_channel]);
 							break;
 						}
 					}

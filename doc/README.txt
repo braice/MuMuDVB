@@ -637,8 +637,6 @@ Software descrambling v2
 
 Important note : this solution is not allowed by some provider contracts.
 
-Full autoconfiguration is not yet supported, use it with partial autoconfiguration or no autoconfiguration.
-
 MuMuDVB now has support for software descrambling on its own, to do that you'll need to have trunk version of oscam and libdvbcsa installed.
 To enable you have to add to global options 
 scam_support=1

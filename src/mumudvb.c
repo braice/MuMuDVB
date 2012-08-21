@@ -364,7 +364,10 @@ int
 
   #ifdef ENABLE_SCAM_SUPPORT
   //SCAM (software conditionnal Access Modules : for scrambled channels)
-  scam_parameters_t scam_vars={.scamthread_shutdown=0};
+  scam_parameters_t scam_vars={
+	  .scam_support = 0,
+	  .scamthread_shutdown=0,
+  };
   scam_parameters_t *scam_vars_ptr=&scam_vars;
   #else
   void *scam_vars_ptr=NULL;
@@ -445,7 +448,6 @@ int
     {0, 0, 0, 0}
   };
   int c, option_index = 0;
-  uint64_t i;
 
   if (argc == 1)
   {
@@ -1364,58 +1366,6 @@ int
       pthread_mutex_init(&chan_and_pids.channels[curr_channel].pmt_packet->packetmutex,NULL);
 
     }
-#ifdef ENABLE_SCAM_SUPPORT	
-	if (scam_vars.scam_support) {
-		if (chan_and_pids.channels[curr_channel].scam_support) {
-		  	chan_and_pids.channels[curr_channel].ring_buf=malloc(sizeof(ring_buffer_t));
-		  	if (chan_and_pids.channels[curr_channel].ring_buf == NULL) {
-			  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			  Interrupted=ERROR_MEMORY<<8;
-			  goto mumudvb_close_goto;
-		 	} 
-			memset (chan_and_pids.channels[curr_channel].ring_buf, 0, sizeof( ring_buffer_t));//we clear it
-		  
-			chan_and_pids.channels[curr_channel].ring_buf->data=malloc(chan_and_pids.channels[curr_channel].ring_buffer_size*sizeof(char *));
-		  	if (chan_and_pids.channels[curr_channel].ring_buf->data == NULL) {
-			  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			  Interrupted=ERROR_MEMORY<<8;
-			  goto mumudvb_close_goto;
-		 	} 	  
-			for ( i = 0; i< chan_and_pids.channels[curr_channel].ring_buffer_size; i++)
-			{
-		  		chan_and_pids.channels[curr_channel].ring_buf->data[i]=malloc(TS_PACKET_SIZE*sizeof(char));
-			  	if (chan_and_pids.channels[curr_channel].ring_buf->data[i] == NULL) {
-				  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-				  Interrupted=ERROR_MEMORY<<8;
-				  goto mumudvb_close_goto;
-			 	} 
-			}
-			chan_and_pids.channels[curr_channel].ring_buf->time_send=malloc(chan_and_pids.channels[curr_channel].ring_buffer_size/4 * sizeof(uint64_t));
-		  	if (chan_and_pids.channels[curr_channel].ring_buf->time_send == NULL) {
-			  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			  Interrupted=ERROR_MEMORY<<8;
-			  goto mumudvb_close_goto;
-		 	} 
-			chan_and_pids.channels[curr_channel].ring_buf->time_decsa=malloc(chan_and_pids.channels[curr_channel].ring_buffer_size/4 * sizeof(uint64_t));
-		  	if (chan_and_pids.channels[curr_channel].ring_buf->time_decsa == NULL) {
-			  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			  Interrupted=ERROR_MEMORY<<8;
-			  goto mumudvb_close_goto;
-		 	} 
-			memset (chan_and_pids.channels[curr_channel].ring_buf->time_send, 0, chan_and_pids.channels[curr_channel].ring_buffer_size/4 * sizeof(uint64_t));//we clear it	 
-			memset (chan_and_pids.channels[curr_channel].ring_buf->time_decsa, 0, chan_and_pids.channels[curr_channel].ring_buffer_size/4 * sizeof(uint64_t));//we clear it
-
-			pthread_mutex_init(&chan_and_pids.channels[curr_channel].ring_buffer_num_packets_mutex, NULL);
-
-
-			pthread_mutex_init(&chan_and_pids.channels[curr_channel].ring_buf->to_send_mutex, NULL);
-			pthread_mutex_init(&chan_and_pids.channels[curr_channel].ring_buf->to_descramble_mutex, NULL);
-			
-			start_thread_with_priority(&(chan_and_pids.channels[curr_channel].sendthread), sendthread_func, &chan_and_pids.channels[curr_channel]);
-			scam_decsa_start(&chan_and_pids.channels[curr_channel]);
-		}
-	}
-#endif
 
   }
 
@@ -1753,7 +1703,7 @@ int
       /******************************************************/
       if(!ScramblingControl &&  autoconf_vars.autoconfiguration)
       {
-        iRet = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tuneparams, &multicast_vars, &unicast_vars, server_id);
+        iRet = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tuneparams, &multicast_vars, &unicast_vars, server_id, scam_vars_ptr);
         if(iRet)
           Interrupted = iRet;
       }
@@ -1859,11 +1809,12 @@ int
 
         /******************************************************/
 	//scam support
-	// If we send the packet, we look if it's a cam pmt pid
+	// sending capmt to oscam
         /******************************************************/
 #ifdef ENABLE_SCAM_SUPPORT
 		if (scam_vars.scam_support &&(chan_and_pids.channels[curr_channel].need_scam_ask==CAM_NEED_ASK))
 		{ 
+
 				if (chan_and_pids.channels[curr_channel].scam_support) {		
 					scam_send_capmt(&chan_and_pids.channels[curr_channel],tuneparams.card);	
 				}
@@ -2141,7 +2092,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
 		pthread_mutex_destroy(&chan_and_pids.channels[curr_channel].ring_buf->to_descramble_mutex);
 		pthread_mutex_destroy(&chan_and_pids.channels[curr_channel].ring_buffer_num_packets_mutex);
 	    free(chan_and_pids.channels[curr_channel].ring_buf);
-	}	//free(chan_and_pids.channels[curr_channel].ring_buf);
+	}
 	
 
 
@@ -2365,7 +2316,7 @@ void *monitor_func(void* arg)
     if(params->autoconf_vars->autoconfiguration)
     {
       int iRet;
-      iRet = autoconf_poll(now, params->autoconf_vars, params->chan_and_pids, params->tuneparams, params->multicast_vars, &fds, params->unicast_vars, params->server_id);
+      iRet = autoconf_poll(now, params->autoconf_vars, params->chan_and_pids, params->tuneparams, params->multicast_vars, &fds, params->unicast_vars, params->server_id, params->scam_vars_v);
       if(iRet)
         Interrupted = iRet;
     }

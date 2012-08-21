@@ -83,6 +83,7 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
 unsigned char ts_packet_get_payload_offset(unsigned char *);
 int start_thread_with_priority(pthread_t* thread, void *(*start_routine)(void*), void* arg);
 void *sendthread_func(void* arg); 
+int scam_init_decsa(mumudvb_channel_t *channel);
 
 
 
