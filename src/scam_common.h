@@ -66,8 +66,8 @@
 typedef struct scam_parameters_t{
   int scam_support;
   int need_pmt_get;
-  pthread_t scamthread;
-  int scamthread_shutdown;
+  pthread_t getcwthread;
+  int getcwthread_shutdown;
   int net_socket_fd;
   int bint;
   ca_descr_t ca_descr;

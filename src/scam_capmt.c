@@ -95,6 +95,7 @@ int scam_send_capmt(mumudvb_channel_t *channel, int adapter)
     {
 	  log_message(log_module, MSG_ERROR,"Canot connect to /tmp/camd.socket for channel %s, Do you have OSCam running?\n", channel->name);
       channel->camd_socket = 0;
+	  return 1;
     }
     else
 	  log_message(log_module,  MSG_DEBUG, "created socket for channel %s\n", channel->name);

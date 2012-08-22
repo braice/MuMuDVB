@@ -53,7 +53,7 @@
  * Code for getting cw's from oscam
  */
 
-static void *scamthread_func(void* arg); //The polling thread
+static void *getcwthread_func(void* arg); //The polling thread
 static char *log_module="SCAM_GETCW: ";
 
 /** @brief start the thread for getting cw's from oscam
@@ -78,14 +78,17 @@ int scam_getcw_start(scam_parameters_t *scam_params, int adapter_id)
       {
         scam_params->bint = (bind(scam_params->net_socket_fd, (struct sockaddr *) &socketAddr, sizeof(socketAddr)) >= 0);
 		if (scam_params->bint >= 0)
-		  log_message( log_module,  MSG_DEBUG, "network socket bint %d\n", adapter_id);
-		  
+		  log_message( log_module,  MSG_DEBUG, "network socket bint\n");
+		else {
+		  log_message( log_module,  MSG_ERROR, "cannot bint network socket\n");
+		  return 1;
+		} 
       }
     }
   }
 
-  pthread_create(&(scam_params->scamthread), NULL, scamthread_func, scam_params);
-  log_message(log_module, MSG_DEBUG,"SCAM thread started\n");
+  pthread_create(&(scam_params->getcwthread), NULL, getcwthread_func, scam_params);
+  log_message(log_module, MSG_DEBUG,"Getcw thread started\n");
   return 0;
   
 }
@@ -94,15 +97,16 @@ int scam_getcw_start(scam_parameters_t *scam_params, int adapter_id)
 void scam_getcw_stop(scam_parameters_t *scam_params)
 {
 
-  log_message( log_module,  MSG_DEBUG,  "SCAM Stopping\n");
+  log_message( log_module,  MSG_DEBUG,  "Getcw thread stopping\n");
 
-  // shutdown the cam thread
-  scam_params->scamthread_shutdown = 1;
-  pthread_cancel(scam_params->scamthread);
+  // shutdown the getcw thread
+  scam_params->getcwthread_shutdown = 1;
+  pthread_cancel(scam_params->getcwthread);
+  log_message( log_module,  MSG_DEBUG,  "Getcw thread stopped\n");
 }
 
 /** @brief The thread function for getting cw's from oscam */
-static void *scamthread_func(void* arg)
+static void *getcwthread_func(void* arg)
 {
   scam_parameters_t *scam_params;
   scam_params= (scam_parameters_t *) arg;
@@ -112,7 +116,7 @@ static void *scamthread_func(void* arg)
   extern int Interrupted; 
 	
   //Loop
-  while(!scam_params->scamthread_shutdown) {
+  while(!scam_params->getcwthread_shutdown) {
 	if(scam_params->bint){
 		unsigned int r = 0;
 		int request = 0;
@@ -194,6 +198,5 @@ static void *scamthread_func(void* arg)
 		}
 	}
   }
-  log_message( log_module,  MSG_DEBUG,"SCAM Thread stopped\n");
   return 0;
 }

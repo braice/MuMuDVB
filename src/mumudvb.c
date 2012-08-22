@@ -366,7 +366,7 @@ int
   //SCAM (software conditionnal Access Modules : for scrambled channels)
   scam_parameters_t scam_vars={
 	  .scam_support = 0,
-	  .scamthread_shutdown=0,
+	  .getcwthread_shutdown=0,
   };
   scam_parameters_t *scam_vars_ptr=&scam_vars;
   #else
@@ -1814,9 +1814,13 @@ int
 #ifdef ENABLE_SCAM_SUPPORT
 		if (scam_vars.scam_support &&(chan_and_pids.channels[curr_channel].need_scam_ask==CAM_NEED_ASK))
 		{ 
-
-				if (chan_and_pids.channels[curr_channel].scam_support) {		
-					scam_send_capmt(&chan_and_pids.channels[curr_channel],tuneparams.card);	
+				if (chan_and_pids.channels[curr_channel].scam_support) {								
+					  iRet=scam_send_capmt(&chan_and_pids.channels[curr_channel],tuneparams.card);
+					  if(iRet)
+					  {
+						Interrupted=ERROR_GENERIC<<8;
+						goto mumudvb_close_goto;
+					  }
 				}
 				chan_and_pids.channels[curr_channel].need_scam_ask=CAM_ASKED;
 		}
