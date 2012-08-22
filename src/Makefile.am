@@ -39,6 +39,8 @@ SOURCES_scamsupport = \
 	scam_getcw.h \
         scam_decsa.c \
 	scam_decsa.h \
+        scam_send.c \
+	scam_send.h \
         $(NULL)
 
 if BUILD_TRANSCODING

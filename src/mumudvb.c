@@ -1278,7 +1278,7 @@ int
   /*****************************************************/
   //scam
   /*****************************************************/
-  iRet=scam_init(&autoconf_vars, scam_vars_ptr, chan_and_pids.channels,chan_and_pids.number_of_channels);
+  iRet=scam_init_no_autoconf(&autoconf_vars, scam_vars_ptr, chan_and_pids.channels,chan_and_pids.number_of_channels);
   if(iRet)
   {
     Interrupted=ERROR_GENERIC<<8;
@@ -2001,7 +2001,6 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
 
   int curr_channel;
   int iRet;
-  uint64_t i;
 
   #ifndef ENABLE_CAM_SUPPORT
    (void) cam_vars_v; //to make compiler happy
@@ -2073,25 +2072,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
 
 	  
 	if (chan_and_pids.channels[curr_channel].scam_support && scam_vars->scam_support) {
-	    log_message(log_module,MSG_DEBUG,"Send Thread closing, channel %s\n", chan_and_pids.channels[curr_channel].name);
-		chan_and_pids.channels[curr_channel].sendthread_shutdown=1;
-		pthread_join(chan_and_pids.channels[curr_channel].sendthread,NULL);
-		log_message(log_module,MSG_DEBUG,"Send Thread closed, channel %s\n", chan_and_pids.channels[curr_channel].name);
-		scam_decsa_stop(&chan_and_pids.channels[curr_channel]);
-	    for ( i = 0; i< chan_and_pids.channels[curr_channel].ring_buffer_size; i++)
-	    {
-	  		free(chan_and_pids.channels[curr_channel].ring_buf->data[i]);
-		}
-	    free(chan_and_pids.channels[curr_channel].ring_buf->data);
-	    free(chan_and_pids.channels[curr_channel].ring_buf->time_send);
-	    free(chan_and_pids.channels[curr_channel].ring_buf->time_decsa);
-					
-
-
-		pthread_mutex_destroy(&chan_and_pids.channels[curr_channel].ring_buf->to_send_mutex);
-		pthread_mutex_destroy(&chan_and_pids.channels[curr_channel].ring_buf->to_descramble_mutex);
-		pthread_mutex_destroy(&chan_and_pids.channels[curr_channel].ring_buffer_num_packets_mutex);
-	    free(chan_and_pids.channels[curr_channel].ring_buf);
+		scam_channel_stop(&chan_and_pids.channels[curr_channel]);
 	}
 	
 

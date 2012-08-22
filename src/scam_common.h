@@ -77,13 +77,12 @@ typedef struct scam_parameters_t{
 
 
 
-int scam_init(autoconf_parameters_t *autoconf_vars, scam_parameters_t *scam_vars, mumudvb_channel_t *channels, int number_of_channels);
+int scam_init_no_autoconf(autoconf_parameters_t *autoconf_vars, scam_parameters_t *scam_vars, mumudvb_channel_t *channels, int number_of_channels);
 int scam_new_packet(int pid, unsigned char *ts_packet, scam_parameters_t *scam_vars, mumudvb_channel_t *channels);
 int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
-unsigned char ts_packet_get_payload_offset(unsigned char *);
-int start_thread_with_priority(pthread_t* thread, void *(*start_routine)(void*), void* arg);
-void *sendthread_func(void* arg); 
-int scam_init_decsa(mumudvb_channel_t *channel);
+int scam_channel_start(mumudvb_channel_t *channel);
+void scam_channel_stop(mumudvb_channel_t *channel);
+
 
 
 

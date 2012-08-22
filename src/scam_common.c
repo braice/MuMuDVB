@@ -51,6 +51,7 @@
 #include "unicast_http.h"
 #include "rtp.h"
 #include "scam_decsa.h"
+#include "scam_send.h"
 
 /**@file
  * @brief scam support
@@ -161,122 +162,15 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
 
 }
 
-/** @brief Getting ts payload starting point
- *
- *
- */
-unsigned char ts_packet_get_payload_offset(unsigned char *ts_packet) {
-	if (ts_packet[0] != 0x47)
-		return 0;
 
-	unsigned char adapt_field   = (ts_packet[3] &~ 0xDF) >> 5; // 11x11111
-	unsigned char payload_field = (ts_packet[3] &~ 0xEF) >> 4; // 111x1111
 
-	if (!adapt_field && !payload_field) // Not allowed
-		return 0;
 
-	if (adapt_field) {
-		unsigned char adapt_len = ts_packet[4];
-		if (payload_field && adapt_len > 182) // Validity checks
-			return 0;
-		if (!payload_field && adapt_len > 183)
-			return 0;
-		if (adapt_len + 4 > 188) // adaptation field takes the whole packet
-			return 0;
-		return 4 + 1 + adapt_len; // ts header + adapt_field_len_byte + adapt_field_len
-	} else {
-		return 4; // No adaptation, data starts directly after TS header
-	}
-}
 
-/** @brief Starting real time thread with high priority
- *
- *
- */
-int start_thread_with_priority(pthread_t* thread, void *(*start_routine)(void*), void* arg)
-{
-  pthread_attr_t attr;
-  struct sched_param param;
-  
-  pthread_attr_init(&attr);
-  pthread_attr_setschedpolicy(&attr, SCHED_RR);
-  param.sched_priority = sched_get_priority_max(SCHED_RR);
-  pthread_attr_setschedparam(&attr, &param);
-
-  return pthread_create(thread, &attr, start_routine, arg);
-}
-
-/** @brief Sending available data with given delay
- *
- *
- */
-
-void *sendthread_func(void* arg)
-{
-  extern uint64_t now_time;
-  extern unicast_parameters_t unicast_vars;
-  extern multicast_parameters_t multicast_vars;
-  extern mumudvb_chan_and_pids_t chan_and_pids;
-  extern fds_t fds;
-  mumudvb_channel_t *channel;
-  channel = ((mumudvb_channel_t *) arg);
-  uint64_t res_time;
-  struct timespec r_time;
-  log_message( "SEND: ", MSG_DEBUG, "thread started, channel %s\n",channel->name); 
-  channel->num_packet_descrambled_sent=0;
-  while(!channel->ring_buf->to_send && !channel->sendthread_shutdown)
-	usleep(50000);
-	
-  while(!channel->sendthread_shutdown) {
-	  if (now_time<channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)]) {
-	  	now_time=get_time();
-		if (now_time<channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)]) {
-			res_time=channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)] - now_time;
-			r_time.tv_sec=res_time/(1000000ull);
-			r_time.tv_nsec=1000*(res_time%(1000000ull));
-			while(nanosleep(&r_time, &r_time));
-			now_time=get_time();
-		}
-	  }
-	  else if (channel->ring_buf->to_send && channel->ring_buffer_num_packets) {
-		  memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data[channel->ring_buf->read_send_idx], TS_PACKET_SIZE);
-
-		  ++channel->ring_buf->read_send_idx;
-		
-		  channel->ring_buf->read_send_idx&=(channel->ring_buffer_size -1);
-
-          channel->nb_bytes += TS_PACKET_SIZE;
-		  
-		  pthread_mutex_lock(&channel->ring_buf->to_send_mutex);
-		  --channel->ring_buf->to_send;
-		  pthread_mutex_unlock(&channel->ring_buf->to_send_mutex);
-
-		  pthread_mutex_lock(&channel->ring_buffer_num_packets_mutex);
-		  --channel->ring_buffer_num_packets;
-		  pthread_mutex_unlock(&channel->ring_buffer_num_packets_mutex);
-		  
-		  ++channel->num_packet_descrambled_sent;
-		
-          //The buffer is full, we send it
-          if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
-	    ||(multicast_vars.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
-          {
-			  send_func(channel, &channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)], &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
-          }
-  		}
-	  else {
-	    log_message( "SEND: ", MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,channel->ring_buf->to_descramble,channel->ring_buf->to_send); 
-	    usleep(50000);
-	  }
-
-  }
-  return 0;
-}
 
 /** @brief initialize the pmt get for scam descrambled channels
  *
  */
-int scam_init(autoconf_parameters_t *autoconf_vars, scam_parameters_t *scam_vars, mumudvb_channel_t *channels,int number_of_channels)
+int scam_init_no_autoconf(autoconf_parameters_t *autoconf_vars, scam_parameters_t *scam_vars, mumudvb_channel_t *channels,int number_of_channels)
 {
   int curr_channel;
 
@@ -288,8 +182,8 @@ int scam_init(autoconf_parameters_t *autoconf_vars, scam_parameters_t *scam_vars
 		if (channels[curr_channel].scam_support==1 && channels[curr_channel].num_pids>1)
 		{
 		  channels[curr_channel].pmt_pid=channels[curr_channel].pids[0];
-		      channels[curr_channel].pids_type[0]=PID_PMT;
-		      snprintf(channels[curr_channel].pids_language[0],4,"%s","---");
+	      channels[curr_channel].pids_type[0]=PID_PMT;
+	      snprintf(channels[curr_channel].pids_language[0],4,"%s","---");
 		  ++scam_vars->need_pmt_get;
 		  channels[curr_channel].need_pmt_get=1;
 		}
@@ -328,7 +222,7 @@ int scam_new_packet(int pid, unsigned char *ts_packet, scam_parameters_t *scam_v
 /** @brief create ring buffer and threads for sending and descrambling
  *
  */
-int scam_init_decsa(mumudvb_channel_t *channel)
+int scam_channel_start(mumudvb_channel_t *channel)
 {
 	unsigned int i;
 	
@@ -371,8 +265,30 @@ int scam_init_decsa(mumudvb_channel_t *channel)
 	pthread_mutex_init(&channel->ring_buf->to_send_mutex, NULL);
 	pthread_mutex_init(&channel->ring_buf->to_descramble_mutex, NULL);
 
-	start_thread_with_priority(&(channel->sendthread), sendthread_func, channel);
+	scam_send_start(channel);
 	scam_decsa_start(channel);
 	return 0;
 }
+
+void scam_channel_stop(mumudvb_channel_t *channel)
+{
+	uint64_t i;
+	scam_send_stop(channel);
+	scam_decsa_stop(channel);
+    for ( i = 0; i< channel->ring_buffer_size; i++)
+    {
+  		free(channel->ring_buf->data[i]);
+	}
+    free(channel->ring_buf->data);
+    free(channel->ring_buf->time_send);
+    free(channel->ring_buf->time_decsa);
+					
+	pthread_mutex_destroy(&channel->ring_buf->to_send_mutex);
+	pthread_mutex_destroy(&channel->ring_buf->to_descramble_mutex);
+	pthread_mutex_destroy(&channel->ring_buffer_num_packets_mutex);
+    free(channel->ring_buf);
+}
+
+
+
 

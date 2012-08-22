@@ -58,14 +58,40 @@ static char *log_module="SCAM_DECSA: ";
 
 
 
+/** @brief Getting ts payload starting point
+ *
+ *
+ */
+unsigned char ts_packet_get_payload_offset(unsigned char *ts_packet) {
+	if (ts_packet[0] != 0x47)
+		return 0;
 
+	unsigned char adapt_field   = (ts_packet[3] &~ 0xDF) >> 5; // 11x11111
+	unsigned char payload_field = (ts_packet[3] &~ 0xEF) >> 4; // 111x1111
+
+	if (!adapt_field && !payload_field) // Not allowed
+		return 0;
+
+	if (adapt_field) {
+		unsigned char adapt_len = ts_packet[4];
+		if (payload_field && adapt_len > 182) // Validity checks
+			return 0;
+		if (!payload_field && adapt_len > 183)
+			return 0;
+		if (adapt_len + 4 > 188) // adaptation field takes the whole packet
+			return 0;
+		return 4 + 1 + adapt_len; // ts header + adapt_field_len_byte + adapt_field_len
+	} else {
+		return 4; // No adaptation, data starts directly after TS header
+	}
+}
 
 
 int scam_decsa_start(mumudvb_channel_t *channel)
 {
   pthread_create(&(channel->decsathread), NULL, decsathread_func, channel);	 
 
-  log_message(log_module, MSG_DEBUG,"Decsa thread started\n");
+  log_message(log_module, MSG_DEBUG,"Decsa thread started, channel %s\n",channel->name);
   return 0;
   
 }
@@ -101,9 +127,6 @@ static void *decsathread_func(void* arg)
   even_key=dvbcsa_bs_key_alloc();
 
   extern uint64_t now_time;
-//  uint64_t batch_stop_time;
-  
-  log_message( log_module, MSG_DEBUG, "thread started, channel %s\n",channel->name);
   
   while (!channel->decsathread_shutdown) {
 	if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>2)] )&& channel->got_cw_started && channel->ring_buf->to_descramble) {
@@ -119,7 +142,6 @@ static void *decsathread_func(void* arg)
 			--channel->got_key_odd;
 			log_message( log_module, MSG_DEBUG, "set first odd key, channel %s, got %d, scr_cont %d\n",channel->name,channel->got_key_even, scrambling_control);
 		}
-		//batch_stop_time=now_time + channel->decsa_wait;  
     	break;
 	}
    else
