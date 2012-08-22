@@ -173,6 +173,7 @@ static void *scamthread_func(void* arg)
 				  		if (scam_params->ca_pid.pid == (unsigned int)chan_and_pids.channels[curr_channel].pids[curr_pid]) {
 				  			chan_and_pids.started_pid_get[scam_params->ca_pid.index] = 1;
 				  			chan_and_pids.scam_idx[scam_params->ca_pid.index] = &chan_and_pids.channels[curr_channel];
+							log_message( log_module,  MSG_DEBUG, "Got first CA_SET_PID request for channel: %s pid: %d\n",chan_and_pids.scam_idx[scam_params->ca_pid.index]->name, scam_params->ca_pid.pid);  
 							Interrupted=scam_channel_start(&chan_and_pids.channels[curr_channel]);
 							break;
 						}
@@ -180,7 +181,8 @@ static void *scamthread_func(void* arg)
 				  }
 
 				}
-			    log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request for channel: %s pid: %d\n",chan_and_pids.scam_idx[scam_params->ca_pid.index]->name, scam_params->ca_pid.pid);
+				else
+			    	log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request for channel: %s pid: %d\n",chan_and_pids.scam_idx[scam_params->ca_pid.index]->name, scam_params->ca_pid.pid);
 			}
 		    else {
 			  log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID removal request, ignoring");

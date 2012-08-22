@@ -200,17 +200,23 @@ int scam_init_no_autoconf(autoconf_parameters_t *autoconf_vars, scam_parameters_
 int scam_new_packet(int pid, unsigned char *ts_packet, scam_parameters_t *scam_vars, mumudvb_channel_t *channels)
 {
   int curr_channel;
+  pmt_t *header;
 
   if(scam_vars->need_pmt_get) //We have the channels and their PMT, we search the other pids
   {
     for(curr_channel=0;curr_channel<MAX_CHANNELS;curr_channel++)
     {
-      if((channels[curr_channel].pmt_pid==pid)&& pid && channels[curr_channel].scam_support && channels[curr_channel].need_pmt_get)
+      if((channels[curr_channel].pmt_pid==pid)&& pid && channels[curr_channel].scam_support && channels[curr_channel].need_pmt_get )
       {
 		if(get_ts_packet(ts_packet,channels[curr_channel].pmt_packet))
 		{
-		  --scam_vars->need_pmt_get;
-		  channels[curr_channel].need_pmt_get=0;
+			header=(pmt_t *)channels[curr_channel].pmt_packet->data_full;
+			if(channels[curr_channel].service_id == HILO(header->program_number)) {
+			  --scam_vars->need_pmt_get;
+			  channels[curr_channel].need_pmt_get=0;
+			  log_message(log_module,MSG_DEBUG,"Got pmt for channel %s\n", channels[curr_channel].name);
+			}
+			else log_message(log_module,MSG_DEBUG,"pmt not for channel %s\n", channels[curr_channel].name);
 		}
 	  }
 	}
