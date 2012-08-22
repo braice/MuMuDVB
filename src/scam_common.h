@@ -54,11 +54,10 @@
  * Header file for code used by other software descrambling files
  */
 
-#define RING_BUFFER_DEFAULT_SIZE   65536
+#define RING_BUFFER_DEFAULT_SIZE   32768
 
-#define DECSA_DEFAULT_DELAY 4500000
-#define SEND_DEFAULT_DELAY 5500000
-#define DECSA_DEFAULT_WAIT 500000
+#define DECSA_DEFAULT_DELAY 500000
+#define SEND_DEFAULT_DELAY 1500000
 
 /** @brief the parameters for the scam
  * This structure contain the parameters needed for the SCAM

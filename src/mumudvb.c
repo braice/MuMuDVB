@@ -2075,7 +2075,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
 	
 
 	  
-	if (chan_and_pids.channels[curr_channel].scam_support && scam_vars->scam_support) {
+	if (chan_and_pids.channels[curr_channel].scam_support && scam_vars->scam_support && chan_and_pids.channels[curr_channel].got_cw_started) {
 		scam_channel_stop(&chan_and_pids.channels[curr_channel]);
 	}
 	

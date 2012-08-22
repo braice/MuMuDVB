@@ -646,7 +646,7 @@ Other setting are documented at README_CONF.txt, there is also example available
 
 If channel has a lot of bandwidth it may be needed to extend ring buffer size. 
 
-If cw's don't get in time defined as decsa delay(default 4500000us=4.5s), you may try to extend it (decsa_delay max is 10000000, and send_delay should be lower than decsa_delay, because we can't send descrambled packets befor they're being descrambled) for example:
+If cw's don't get in time defined as decsa delay(default 500000us=0.5s), you may try to extend it (decsa_delay max is 10000000, and send_delay should be lower than decsa_delay, because we can't send descrambled packets befor they're being descrambled) for example:
 	decsa_delay=9500000
 	send_delay=10500000
 

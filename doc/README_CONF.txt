@@ -244,9 +244,9 @@ SCAM support parameters
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |scam_support |Specify if we wants the support for software descrambling channels | 0 | 0 or 1 |
-|ring_buffer_default_size | default number of ts packets in ring buffer (when not specified by channel specific config) | 65536 |it gets rounded to the value that is power of 2 not lower than it|
-|decsa_default_delay | default delay time in us between getting packet and descrambling (when not specified by channel specific config) | 4500000 |  max is 10000000 |
-|send_default_delay | default delay time in us between getting packet and sending (when not specified by channel specific config) | 5500000 | mustn't be lower than decsa delay |
+|ring_buffer_default_size | default number of ts packets in ring buffer (when not specified by channel specific config) | 32768 |it gets rounded to the value that is power of 2 not lower than it|
+|decsa_default_delay | default delay time in us between getting packet and descrambling (when not specified by channel specific config) | 500000 |  max is 10000000 |
+|send_default_delay | default delay time in us between getting packet and sending (when not specified by channel specific config) | 1500000 | mustn't be lower than decsa delay |
 |==================================================================================================================
 
 Autoconfiguration parameters
