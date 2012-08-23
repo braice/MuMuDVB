@@ -85,7 +85,7 @@ void *sendthread_func(void* arg)
 			now_time=get_time();
 		}
 	  }
-	  else if (channel->ring_buf->to_send && channel->ring_buffer_num_packets) {
+	  else if (channel->ring_buf->to_send) {
 		  memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data[channel->ring_buf->read_send_idx], TS_PACKET_SIZE);
 
 		  ++channel->ring_buf->read_send_idx;
@@ -128,14 +128,18 @@ void scam_send_start(mumudvb_channel_t *channel)
 {
   pthread_attr_t attr;
   struct sched_param param;
+  size_t stacksize;
+  stacksize = sizeof(mumudvb_channel_t)+sizeof(uint64_t)+sizeof(struct timespec)+50000;
   
   pthread_attr_init(&attr);
   pthread_attr_setschedpolicy(&attr, SCHED_RR);
   param.sched_priority = sched_get_priority_max(SCHED_RR);
   pthread_attr_setschedparam(&attr, &param);
+  pthread_attr_setstacksize (&attr, stacksize);
 
   pthread_create(&(channel->decsathread), &attr, sendthread_func, channel);
   log_message(log_module, MSG_DEBUG,"Send thread started, channel %s\n",channel->name);
+  pthread_attr_destroy(&attr);
 }
 
 void scam_send_stop(mumudvb_channel_t *channel)

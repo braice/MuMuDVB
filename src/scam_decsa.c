@@ -89,7 +89,18 @@ unsigned char ts_packet_get_payload_offset(unsigned char *ts_packet) {
 
 int scam_decsa_start(mumudvb_channel_t *channel)
 {
-  pthread_create(&(channel->decsathread), NULL, decsathread_func, channel);	 
+  pthread_attr_t attr;
+  struct sched_param param;
+  size_t stacksize;
+  unsigned int batch_size = dvbcsa_bs_batch_size();
+  stacksize = sizeof(mumudvb_channel_t *)+3*sizeof(unsigned int)+2*batch_size*sizeof(struct dvbcsa_bs_batch_s)+4*sizeof(unsigned char)+2*sizeof(struct dvbcsa_bs_key_s *)+50000;
+  
+  pthread_attr_init(&attr);
+  pthread_attr_setschedpolicy(&attr, SCHED_RR);
+  param.sched_priority = sched_get_priority_max(SCHED_RR);
+  pthread_attr_setschedparam(&attr, &param);
+  pthread_attr_setstacksize (&attr, stacksize);
+  pthread_create(&(channel->decsathread), &attr, decsathread_func, channel);	 
 
   log_message(log_module, MSG_DEBUG,"Decsa thread started, channel %s\n",channel->name);
   return 0;
