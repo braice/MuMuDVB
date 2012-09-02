@@ -114,31 +114,18 @@ static void *getcwthread_func(void* arg)
   int curr_channel = 0;
   int curr_pid = 0;
   extern int Interrupted; 
+  unsigned char buff[sizeof(int) + sizeof(ca_descr_t)];
+  int cRead, *request;
 	
   //Loop
   while(!scam_params->getcwthread_shutdown) {
 	if(scam_params->bint){
-		unsigned int r = 0;
-		int request = 0;
-		while (r < sizeof(request))
-		{
-		  int cRead = read(scam_params->net_socket_fd, (&request) + r, sizeof(request));
-		  if (cRead <= 0)
-		    break;
-		  r = +cRead;
-		}
-		if (request == CA_SET_DESCR)
-		{
-		  while (r < sizeof(ca_descr_t))
-		  {
-		    r = 0;
-		    int cRead = read(scam_params->net_socket_fd, (&(scam_params->ca_descr)) + r, sizeof(ca_descr_t));
-		    if (cRead <= 0)
-		      break;
-		    r = +cRead;
-		  }
-		  if (r == sizeof(ca_descr_t))
-		  {
+		cRead = read(scam_params->net_socket_fd, &buff, sizeof(buff));
+		if (cRead <= 0)
+		  break;
+		request = (int *) &buff;
+		if (*request == CA_SET_DESCR) {
+			memcpy((&(scam_params->ca_descr)), &buff[sizeof(int)], sizeof(ca_descr_t));
 			if(scam_params->ca_descr.index != (unsigned) -1) {
 				log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request for channel %s : index %d, parity %d, key %02x %02x %02x %02x  %02x %02x %02x %02x\n", chan_and_pids.scam_idx[scam_params->ca_descr.index]->name, scam_params->ca_descr.index, scam_params->ca_descr.parity, scam_params->ca_descr.cw[0], scam_params->ca_descr.cw[1], scam_params->ca_descr.cw[2], scam_params->ca_descr.cw[3], scam_params->ca_descr.cw[4], scam_params->ca_descr.cw[5], scam_params->ca_descr.cw[6], scam_params->ca_descr.cw[7]);
 				  if (scam_params->ca_descr.parity) {
@@ -155,21 +142,10 @@ static void *getcwthread_func(void* arg)
 		    else {
 			  log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR removal request, ignoring");
 		    }
-				
-			
-		  }
 		}
-		if (request == CA_SET_PID)
+		if (*request == CA_SET_PID)
 		{
-		  r = 0;
-		  while (r < sizeof(ca_pid_t))
-		  {
-		    int cRead = read(scam_params->net_socket_fd, (&(scam_params->ca_pid)) + r, sizeof(ca_pid_t));
-		    if (cRead <= 0)
-		      break;
-		    r = +cRead;
-		  }
-		  if (r == sizeof(ca_pid_t)) {
+			memcpy((&(scam_params->ca_pid)), &buff[sizeof(int)], sizeof(ca_pid_t));
 			if(scam_params->ca_pid.index != -1) {
 				if (!(chan_and_pids.started_pid_get[scam_params->ca_pid.index])) {
 			      for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++) {
@@ -192,9 +168,6 @@ static void *getcwthread_func(void* arg)
 			  log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID removal request, ignoring");
 		    }
 			  
-		 			
-			
-		  }
 		}
 	}
   }
