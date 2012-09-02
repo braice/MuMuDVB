@@ -70,12 +70,8 @@ void rtp_update_sequence_number(mumudvb_channel_t *channel, uint64_t time)
    jitter and to synchronize relative time drift between the transmitter
    and receiver.*/
 
-  //struct timeval tv;
   uint32_t timestamp;
 
-  //gettimeofday(&tv, NULL);
-
-  //timestamp=(uint32_t) (90000 * (tv.tv_sec + tv.tv_usec/1000000llu));	// 90 kHz Clock
   timestamp=(uint32_t) (90000 * (time/1000000ll))+(9*(time%1000000ll))/100;	// 90 kHz Clock
 
   // Change the header (sequence number)

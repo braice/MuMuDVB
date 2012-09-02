@@ -260,7 +260,6 @@ int
     main (int argc, char **argv)
 {
 
-  //uint64_t now_time_t;
   //sap announces
   sap_parameters_t sap_vars={
     .sap_messages4=NULL,
@@ -1204,7 +1203,9 @@ int
     .unicast_vars=&unicast_vars,
     .tuneparams=&tuneparams,
     .stats_infos=&stats_infos,
+#ifdef ENABLE_SCAM_SUPPORT
 	.scam_vars_v=scam_vars_ptr,
+#endif
     .server_id=server_id,
     .filename_channels_not_streamed=filename_channels_not_streamed,
     .filename_channels_streamed=filename_channels_streamed,
@@ -2476,14 +2477,13 @@ void *monitor_func(void* arg)
         if(params->chan_and_pids->dont_send_scrambled)
           num_scrambled=current->num_scrambled_packets;
         else
-          num_scrambled=0;
+			  num_scrambled=0;
         if (monitor_now>last_updown_check)
 
 	  		#ifdef ENABLE_SCAM_SUPPORT
 	  		if (current->scam_support && scam_vars->scam_support)
 		  		packets_per_sec=((double)current->num_packet_descrambled_sent)/(monitor_now-last_updown_check);
-	  			//params->chan_and_pids->channels[curr_channel].num_packet_descrambled_sent = 0;
-			else
+		  	else
 		  		packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
   			#else
 				packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);		
