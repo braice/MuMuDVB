@@ -656,7 +656,7 @@ In debug mode number of packets in the buffer is reported and buffer overflow is
 
 
 [NOTE]
-Use the latest version of oscam from trunk, older versions did not have support for pc dvbapi. Instructions how to compile are on http://streamboard.gmc.to:8001/wiki/crosscompiling
+Use the latest version of oscam from trunk, older versions did not have support for pc dvbapi. Instructions how to compile are on http://streamboard.de.vu:8001/wiki/crosscompiling
   
 
 Some information on how to configure oscam
