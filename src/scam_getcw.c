@@ -143,7 +143,7 @@ static void *getcwthread_func(void* arg)
 			  	  chan_and_pids.scam_idx[scam_params->ca_descr.index]->got_cw_started=1;
 				}
 				else
-					log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR with index %d, but no didn't get first pid", scam_params->ca_descr.index);					
+					log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR with index %d, but didn't get first pid", scam_params->ca_descr.index);					
 			}
 		    else {
 			  log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR removal request, ignoring");
