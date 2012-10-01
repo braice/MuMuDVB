@@ -167,7 +167,7 @@ static void *getcwthread_func(void* arg)
 			    	log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request for channel: %s pid: %d\n",chan_and_pids.scam_idx[scam_params->ca_pid.index]->name, scam_params->ca_pid.pid);
 			}
 		    else {
-			  log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID removal request, ignoring");
+			  log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID removal request, ignoring, pid: %d\n", scam_params->ca_pid.pid);
 		    }
 			  
 		}

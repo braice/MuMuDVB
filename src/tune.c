@@ -583,12 +583,24 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
   //1.x compatible equipment
   while (*cmd) {
     (*cmd)->cmd.msg_len=4;
-    log_message( log_module,  MSG_DETAIL ,"Sending Diseqc message %02x %02x %02x %02x %02x len %d\n",
+    log_message( log_module,  MSG_DETAIL ,"Sending first Diseqc message %02x %02x %02x %02x %02x len %d\n",
                  (*cmd)->cmd.msg[0],(*cmd)->cmd.msg[1],(*cmd)->cmd.msg[2],(*cmd)->cmd.msg[3],(*cmd)->cmd.msg[4],(*cmd)->cmd.msg[5],
                  (*cmd)->cmd.msg_len);
     if((err = ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &(*cmd)->cmd)))
     {
       log_message( log_module,  MSG_WARN, "problem sending the DiseqC message\n");
+      return -1;
+    }
+    msleep(15);
+    //Framing byte : Command from master, no reply required, repeated transmission : 0xe1
+    cmd[0]->cmd.msg[0] = 0xe1;
+    //cmd.msg[0] = 0xe1; /* framing: master, no reply, repeated TX */
+    log_message( log_module,  MSG_DETAIL ,"Sending repeated Diseqc message %02x %02x %02x %02x %02x len %d\n",
+                 (*cmd)->cmd.msg[0],(*cmd)->cmd.msg[1],(*cmd)->cmd.msg[2],(*cmd)->cmd.msg[3],(*cmd)->cmd.msg[4],(*cmd)->cmd.msg[5],
+                 (*cmd)->cmd.msg_len);
+    if((err = ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &(*cmd)->cmd)))
+    {
+      log_message( log_module,  MSG_WARN, "problem sending the repeated DiseqC message\n");
       return -1;
     }
     msleep((*cmd)->wait);

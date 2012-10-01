@@ -1,0 +1,1078 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="generator" content="AsciiDoc 8.4.4" />
+<title>MuMuDVB - README for the configuration of the transcoding</title>
+<style type="text/css">
+/* Debug borders */
+p, li, dt, dd, div, pre, h1, h2, h3, h4, h5, h6 {
+/*
+  border: 1px solid red;
+*/
+}
+
+body {
+  margin: 1em 5% 1em 5%;
+}
+
+a {
+  color: blue;
+  text-decoration: underline;
+}
+a:visited {
+  color: fuchsia;
+}
+
+em {
+  font-style: italic;
+  color: navy;
+}
+
+strong {
+  font-weight: bold;
+  color: #083194;
+}
+
+tt {
+  color: navy;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #527bbd;
+  font-family: sans-serif;
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
+}
+
+h1, h2, h3 {
+  border-bottom: 2px solid silver;
+}
+h2 {
+  padding-top: 0.5em;
+}
+h3 {
+  float: left;
+}
+h3 + * {
+  clear: left;
+}
+
+div.sectionbody {
+  font-family: serif;
+  margin-left: 0;
+}
+
+hr {
+  border: 1px solid silver;
+}
+
+p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+ul, ol, li > p {
+  margin-top: 0;
+}
+
+pre {
+  padding: 0;
+  margin: 0;
+}
+
+span#author {
+  color: #527bbd;
+  font-family: sans-serif;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+span#email {
+}
+span#revision {
+  font-family: sans-serif;
+}
+
+div#footer {
+  font-family: sans-serif;
+  font-size: small;
+  border-top: 2px solid silver;
+  padding-top: 0.5em;
+  margin-top: 4.0em;
+}
+div#footer-text {
+  float: left;
+  padding-bottom: 0.5em;
+}
+div#footer-badges {
+  float: right;
+  padding-bottom: 0.5em;
+}
+
+div#preamble {
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+}
+div.tableblock, div.imageblock, div.exampleblock, div.verseblock,
+div.quoteblock, div.literalblock, div.listingblock, div.sidebarblock,
+div.admonitionblock {
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+}
+div.admonitionblock {
+  margin-top: 2.5em;
+  margin-bottom: 2.5em;
+}
+
+div.content { /* Block element content. */
+  padding: 0;
+}
+
+/* Block element titles. */
+div.title, caption.title {
+  color: #527bbd;
+  font-family: sans-serif;
+  font-weight: bold;
+  text-align: left;
+  margin-top: 1.0em;
+  margin-bottom: 0.5em;
+}
+div.title + * {
+  margin-top: 0;
+}
+
+td div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content + div.title {
+  margin-top: 0.0em;
+}
+
+div.sidebarblock > div.content {
+  background: #ffffee;
+  border: 1px solid silver;
+  padding: 0.5em;
+}
+
+div.listingblock > div.content {
+  border: 1px solid silver;
+  background: #f4f4f4;
+  padding: 0.5em;
+}
+
+div.quoteblock {
+  padding-left: 2.0em;
+  margin-right: 10%;
+}
+div.quoteblock > div.attribution {
+  padding-top: 0.5em;
+  text-align: right;
+}
+
+div.verseblock {
+  padding-left: 2.0em;
+  margin-right: 10%;
+}
+div.verseblock > div.content {
+  white-space: pre;
+}
+div.verseblock > div.attribution {
+  padding-top: 0.75em;
+  text-align: left;
+}
+/* DEPRECATED: Pre version 8.2.7 verse style literal block. */
+div.verseblock + div.attribution {
+  text-align: left;
+}
+
+div.admonitionblock .icon {
+  vertical-align: top;
+  font-size: 1.1em;
+  font-weight: bold;
+  text-decoration: underline;
+  color: #527bbd;
+  padding-right: 0.5em;
+}
+div.admonitionblock td.content {
+  padding-left: 0.5em;
+  border-left: 2px solid silver;
+}
+
+div.exampleblock > div.content {
+  border-left: 2px solid silver;
+  padding: 0.5em;
+}
+
+div.imageblock div.content { padding-left: 0; }
+div.imageblock img { border: 1px solid silver; }
+span.image img { border-style: none; }
+
+dl {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+dt {
+  margin-top: 0.5em;
+  margin-bottom: 0;
+  font-style: normal;
+  color: navy;
+}
+dd > *:first-child {
+  margin-top: 0.1em;
+}
+
+ul, ol {
+    list-style-position: outside;
+}
+ol.arabic {
+  list-style-type: decimal;
+}
+ol.loweralpha {
+  list-style-type: lower-alpha;
+}
+ol.upperalpha {
+  list-style-type: upper-alpha;
+}
+ol.lowerroman {
+  list-style-type: lower-roman;
+}
+ol.upperroman {
+  list-style-type: upper-roman;
+}
+
+div.compact ul, div.compact ol,
+div.compact p, div.compact p,
+div.compact div, div.compact div {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
+
+div.tableblock > table {
+  border: 3px solid #527bbd;
+}
+thead {
+  font-family: sans-serif;
+  font-weight: bold;
+}
+tfoot {
+  font-weight: bold;
+}
+td > div.verse {
+  white-space: pre;
+}
+p.table {
+  margin-top: 0;
+}
+/* Because the table frame attribute is overriden by CSS in most browsers. */
+div.tableblock > table[frame="void"] {
+  border-style: none;
+}
+div.tableblock > table[frame="hsides"] {
+  border-left-style: none;
+  border-right-style: none;
+}
+div.tableblock > table[frame="vsides"] {
+  border-top-style: none;
+  border-bottom-style: none;
+}
+
+
+div.hdlist {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+div.hdlist tr {
+  padding-bottom: 15px;
+}
+dt.hdlist1.strong, td.hdlist1.strong {
+  font-weight: bold;
+}
+td.hdlist1 {
+  vertical-align: top;
+  font-style: normal;
+  padding-right: 0.8em;
+  color: navy;
+}
+td.hdlist2 {
+  vertical-align: top;
+}
+div.hdlist.compact tr {
+  margin: 0;
+  padding-bottom: 0;
+}
+
+.comment {
+  background: yellow;
+}
+
+@media print {
+  div#footer-badges { display: none; }
+}
+
+div#toctitle {
+  color: #527bbd;
+  font-family: sans-serif;
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-top: 1.0em;
+  margin-bottom: 0.1em;
+}
+
+div.toclevel1, div.toclevel2, div.toclevel3, div.toclevel4 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+div.toclevel2 {
+  margin-left: 2em;
+  font-size: 0.9em;
+}
+div.toclevel3 {
+  margin-left: 4em;
+  font-size: 0.9em;
+}
+div.toclevel4 {
+  margin-left: 6em;
+  font-size: 0.9em;
+}
+/* Workarounds for IE6's broken and incomplete CSS2. */
+
+div.sidebar-content {
+  background: #ffffee;
+  border: 1px solid silver;
+  padding: 0.5em;
+}
+div.sidebar-title, div.image-title {
+  color: #527bbd;
+  font-family: sans-serif;
+  font-weight: bold;
+  margin-top: 0.0em;
+  margin-bottom: 0.5em;
+}
+
+div.listingblock div.content {
+  border: 1px solid silver;
+  background: #f4f4f4;
+  padding: 0.5em;
+}
+
+div.quoteblock-attribution {
+  padding-top: 0.5em;
+  text-align: right;
+}
+
+div.verseblock-content {
+  white-space: pre;
+}
+div.verseblock-attribution {
+  padding-top: 0.75em;
+  text-align: left;
+}
+
+div.exampleblock-content {
+  border-left: 2px solid silver;
+  padding-left: 0.5em;
+}
+
+/* IE6 sets dynamically generated links as visited. */
+div#toc a:visited { color: blue; }
+</style>
+<script type="text/javascript">
+/*<![CDATA[*/
+window.onload = function(){generateToc(2)}
+/* Author: Mihai Bazon, September 2002
+ * http://students.infoiasi.ro/~mishoo
+ *
+ * Table Of Content generator
+ * Version: 0.4
+ *
+ * Feel free to use this script under the terms of the GNU General Public
+ * License, as long as you do not remove or alter this notice.
+ */
+
+ /* modified by Troy D. Hanson, September 2006. License: GPL */
+ /* modified by Stuart Rackham, October 2006. License: GPL */
+
+function getText(el) {
+  var text = "";
+  for (var i = el.firstChild; i != null; i = i.nextSibling) {
+    if (i.nodeType == 3 /* Node.TEXT_NODE */) // IE doesn't speak constants.
+      text += i.data;
+    else if (i.firstChild != null)
+      text += getText(i);
+  }
+  return text;
+}
+
+function TocEntry(el, text, toclevel) {
+  this.element = el;
+  this.text = text;
+  this.toclevel = toclevel;
+}
+
+function tocEntries(el, toclevels) {
+  var result = new Array;
+  var re = new RegExp('[hH]([2-'+(toclevels+1)+'])');
+  // Function that scans the DOM tree for header elements (the DOM2
+  // nodeIterator API would be a better technique but not supported by all
+  // browsers).
+  var iterate = function (el) {
+    for (var i = el.firstChild; i != null; i = i.nextSibling) {
+      if (i.nodeType == 1 /* Node.ELEMENT_NODE */) {
+        var mo = re.exec(i.tagName)
+        if (mo)
+          result[result.length] = new TocEntry(i, getText(i), mo[1]-1);
+        iterate(i);
+      }
+    }
+  }
+  iterate(el);
+  return result;
+}
+
+// This function does the work. toclevels = 1..4.
+function generateToc(toclevels) {
+  var toc = document.getElementById("toc");
+  var entries = tocEntries(document.getElementsByTagName("body")[0], toclevels);
+  for (var i = 0; i < entries.length; ++i) {
+    var entry = entries[i];
+    if (entry.element.id == "")
+      entry.element.id = "toc" + i;
+    var a = document.createElement("a");
+    a.href = "#" + entry.element.id;
+    a.appendChild(document.createTextNode(entry.text));
+    var div = document.createElement("div");
+    div.appendChild(a);
+    div.className = "toclevel" + entry.toclevel;
+    toc.appendChild(div);
+  }
+  if (entries.length == 0)
+    document.getElementById("header").removeChild(toc);
+}
+/*]]>*/
+</script>
+</head>
+<body>
+<div id="header">
+<h1>MuMuDVB - README for the configuration of the transcoding</h1>
+<div id="toc">
+  <div id="toctitle">Table of Contents</div>
+  <noscript><p><b>JavaScript must be enabled in your browser to display the table of contents.</b></p></noscript>
+</div>
+</div>
+<h2 id="_general_information">1. General information</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Transcoding configuration is per channel</p></div>
+<div class="paragraph"><p>To see the installed codecs on your system you can use the <tt>ffmpeg -formats</tt> command (see <tt>man ffmpeg</tt> for more information on this command)</p></div>
+</div>
+<h2 id="_examples">2. Examples</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>See the examples in the <tt>doc/transcode/examples</tt> directory</p></div>
+</div>
+<h2 id="_options">3. Options</h2>
+<div class="sectionbody">
+<h3 id="_transcode_enable">3.1. transcode_enable</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> enables or disables transcoding</p></div>
+<div class="paragraph"><p><strong>Possible Values:</strong> 0 - disable (default); 1 - enable.</p></div>
+<h3 id="_transcode_video_codec">3.2. transcode_video_codec</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;string&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> video codec for encoding</p></div>
+<div class="paragraph"><p><strong>Possible Values:</strong> mpeg4 (for MPEG-4), libx264 (for H.264) etc.</p></div>
+<h3 id="_transcode_audio_codec">3.3. transcode_audio_codec</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;string&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> audio codec for encoding</p></div>
+<div class="paragraph"><p><strong>Possible Values:</strong> libmp3lame (for MP3), libfaac (for AAC) etc.</p></div>
+<h3 id="_transcode_streaming_type">3.4. transcode_streaming_type</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;string&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> streaming type</p></div>
+<div class="paragraph"><p><strong>Possible Values:</strong></p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+mpegts - for MPEG-2 TS streaming.
+</p>
+</li>
+<li>
+<p>
+rtp - for RTP streaming.
+</p>
+</li>
+<li>
+<p>
+ffm - FFM feed to ffserver
+</p>
+</li>
+</ul></div>
+<h3 id="_transcode_ffm_url">3.5. transcode_ffm_url</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;string&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> URL of FFM feed (required for FFM streaming)</p></div>
+<h3 id="_transcode_rtp_port">3.6. transcode_rtp_port</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> base port for RTP streaming</p></div>
+<div class="paragraph"><p>Each RTP stream (audio or video) must go on an even port. Mumudvb will took for
+each media stream next even port starting from value specified in this option.</p></div>
+<h3 id="_transcode_sdp_filename">3.7. transcode_sdp_filename</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;string&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> path to generated SDP file (for RTP streaming)</p></div>
+<h3 id="_transcode_video_scale">3.8. transcode_video_scale</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;float&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> factor for video scaling</p></div>
+<h3 id="_transcode_video_frames_per_second">3.9. transcode_video_frames_per_second</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> FPS of output video</p></div>
+<h3 id="_transcode_audio_channels">3.10. transcode_audio_channels</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> number of output audio channels</p></div>
+<div class="paragraph"><p>Common values are:
+1 - mono
+2 - stereo</p></div>
+<h3 id="_transcode_audio_sample_rate">3.11. transcode_audio_sample_rate</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> output audio sample rate</p></div>
+<div class="paragraph"><p>Common values are: 96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350</p></div>
+<h3 id="_transcode_aac_latm">3.12. transcode_aac_latm</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> enable LATM payload type for AAC streams while RTP streaming</p></div>
+<div class="paragraph"><p><strong>Possible Values:</strong></p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+0 - disable (default)
+</p>
+</li>
+<li>
+<p>
+1 - enable
+</p>
+</li>
+</ul></div>
+<h3 id="_transcode_aac_profile">3.13. transcode_aac_profile</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;string&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> profile in case of AAC audio encoding</p></div>
+<div class="paragraph"><p><strong>Possible Values:</strong></p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+low  - Low Complexity (LC) - the simplest and most widely used and supported.
+</p>
+</li>
+<li>
+<p>
+main - Main Profile (MAIN) - like the LC profile, with the addition of backwards prediction.
+</p>
+</li>
+<li>
+<p>
+ssl  - Sample-Rate Scalable (SRS) - a.k.a. Scalable Sample Rate (MPEG-4 AAC-SSR).
+</p>
+</li>
+<li>
+<p>
+ltp  - Long Term Prediction (LTP) - added in the MPEG-4 standard an improvement of the
+          MAIN profile using a forward predictor with lower computational complexity.
+</p>
+</li>
+</ul></div>
+<h3 id="_transcode_video_bitrate">3.14. transcode_video_bitrate</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;string&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> set video bitrate (int bits/s)</p></div>
+<div class="paragraph"><p>Enables target bitrate mode for video. Attempts to reach a specific bitrate. Bitrate mode is generally the worst ratecontrol mode H.264 has.</p></div>
+<h3 id="_transcode_audio_bitrate">3.15. transcode_audio_bitrate</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> set audio bitrate (int bits/s)</p></div>
+<div class="paragraph"><p>Enables target bitrate mode for audio.</p></div>
+<h3 id="_transcode_x264_profile">3.16. transcode_x264_profile</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> set H.264 encoding profile</p></div>
+<div class="paragraph"><p><strong>Possible Values:</strong></p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+baseline - Baseline Profile
+</p>
+</li>
+<li>
+<p>
+main - Main Profile
+</p>
+</li>
+<li>
+<p>
+high - High Profile
+</p>
+</li>
+</ul></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">Specify different video encoding options after declaration of transcode_x264_profile may change profile to higher one. For example option "enable_8x8dct=1" will enable 8x8 transform that is supported only by High Profile.</td>
+</tr></table>
+</div>
+<h3 id="_transcode_level">3.17. transcode_level</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> set level of encoding</p></div>
+<div class="paragraph"><p>Example values:
+10 for level 1.0
+11 for level 1.1
+12 for level 1.2
+20 for level 2.0
+21 for level 2.1
+30 for level 3.0
+etc.</p></div>
+<h3 id="_transcode_x264_partitions">3.18. transcode_x264_partitions</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> enables best use of partitions for H.264</p></div>
+<div class="paragraph"><p><strong>Possible Values:</strong></p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+0 - disable
+</p>
+</li>
+<li>
+<p>
+1 - enable
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>Reccomended default to enable it for H.264.</p></div>
+<div class="paragraph"><p>FFmpeg equivalent: partitions +parti4x4+parti8x8+partp8x8+partb8x8</p></div>
+<div class="paragraph"><p>One of H.264&#8217;s most useful features is the ability to choose among many combinations of inter and intra partitions. P-macroblocks can be subdivided into 16x8, 8x16, 8x8, 4x8, 8x4, and 4x4 partitions. B-macroblocks can be divided into 16x8, 8x16, and 8x8 partitions. I-macroblocks can be divided into 4x4 or 8x8 partitions. Analyzing more partition options improves quality at the cost of speed. The default is to analyze all partitions except p4x4 (p8x8, i8x8, i4x4, b8x8), since p4x4 is not particularly useful except at high bitrates and lower resolutions. Note that i8x8 requires 8x8dct, and is therefore a High Profile-only partition. p8x8 is the most costly, speed-wise, of the partitions, but also gives the most benefit. Generally, whenever possible, all partition types except p4x4 should be used.</p></div>
+<h3 id="_transcode_loop_filter">3.19. transcode_loop_filter</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> enables loop filter</p></div>
+<div class="paragraph"><p><strong>Possible Values:</strong></p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+0 - disable
+</p>
+</li>
+<li>
+<p>
+1 - enable
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>Reccomended default to enable it for H.264.</p></div>
+<h3 id="_transcode_mixed_refs">3.20. transcode_mixed_refs</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> one reference per partition, as opposed to one reference per macroblock</p></div>
+<div class="paragraph"><p><strong>Possible Values:</strong></p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+0 - disable
+</p>
+</li>
+<li>
+<p>
+1 - enable
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>H.264 allows p8x8 blocks to select different references for each p8x8 block. This option allows this analysis to be done, and boosts quality with little speed impact. It should generally be used, though it obviously has no effect with only one reference frame.</p></div>
+<h3 id="_enable_8x8dct">3.21. enable_8x8dct</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> high profile 8x8 transform (H.264)</p></div>
+<div class="paragraph"><p><strong>Possible Values:</strong></p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+0 - disable
+</p>
+</li>
+<li>
+<p>
+1 - enable
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>Gives a notable quality boost by allowing x264 to choose between 8x8 and 4x4 frequency transform size. Required for i8x8 partitions. Speed cost for this option is near-zero both for encoding and decoding; the only reason to disable it is when one needs support on a device not compatible with High Profile.</p></div>
+<h3 id="_transcode_gop">3.22. transcode_gop</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> set the group of picture size</p></div>
+<div class="paragraph"><p>Keyframe interval, also known as GOP length. This determines the maximum distance between I-frames. Very high GOP lengths will result in slightly more efficient compression, but will make seeking in the video somewhat more difficult. For H.264 recommended default: 250.</p></div>
+<h3 id="_transcode_b_frames">3.23. transcode_b_frames</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> use <em>frames</em> B frames</p></div>
+<div class="paragraph"><p>B-frames are a core element of H.264 and are more efficient in H.264 than any previous standard. Some specific targets, such as HD-DVD and Blu-Ray, have limitations on the number of consecutive B-frames. Most, however, do not; as a result, there is rarely any negative effect to setting this to the maximum (16) since x264 will, if B-adapt is used, automatically choose the best number of B-frames anyways. This parameter simply serves to limit the max number of B-frames. Note that Baseline Profile, such as that used by iPods, does not support B-frames. Recommended default for H.264: 16.</p></div>
+<h3 id="_transcode_mbd">3.24. transcode_mbd</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> macroblock decision algorithm (high quality mode)</p></div>
+<div class="paragraph"><p><strong>Possible Values:</strong></p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+0 - simple - use mbcmp (default)
+</p>
+</li>
+<li>
+<p>
+1 - bits - use fewest bits
+</p>
+</li>
+<li>
+<p>
+2 - rd - use best rate distortion
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p><strong>FIXME</strong> enables high quality mode for MPEG-4 compression.</p></div>
+<h3 id="_transcode_cmp">3.25. transcode_cmp</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> full pel me compare function</p></div>
+<div class="paragraph"><p><strong>Possible Values:</strong></p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+0   - sad    - sum of absolute differences, fast (default)
+</p>
+</li>
+<li>
+<p>
+1   - sse    - sum of squared errors
+</p>
+</li>
+<li>
+<p>
+2   - satd   - sum of absolute Hadamard transformed differences
+</p>
+</li>
+<li>
+<p>
+3   - dct    - sum of absolute DCT transformed differences
+</p>
+</li>
+<li>
+<p>
+4   - psnr   - sum of squared quantization errors (avoid, low quality)
+</p>
+</li>
+<li>
+<p>
+5   - bit    - number of bits needed for the block
+</p>
+</li>
+<li>
+<p>
+6   - rd     - rate distortion optimal, slow
+</p>
+</li>
+<li>
+<p>
+7   - zero   - 0
+</p>
+</li>
+<li>
+<p>
+8   - vsad   - sum of absolute vertical differences
+</p>
+</li>
+<li>
+<p>
+9   - vsse   - sum of squared vertical differences
+</p>
+</li>
+<li>
+<p>
+10  - nsse   - noise preserving sum of squared differences
+</p>
+</li>
+<li>
+<p>
+11  - w53    - 5/3 wavelet, only used in snow
+</p>
+</li>
+<li>
+<p>
+12  - w97    - 9/7 wavelet, only used in snow
+</p>
+</li>
+<li>
+<p>
+13  - dctmax -
+</p>
+</li>
+<li>
+<p>
+14  - dct264 -
+</p>
+</li>
+<li>
+<p>
+256 - chroma -
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p><strong>FIXME</strong> Used in MPEG-4 compression</p></div>
+<h3 id="_transcode_subcmp">3.26. transcode_subcmp</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> sub pel me compare function</p></div>
+<div class="paragraph"><p><strong>Possible Values:</strong></p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+0   - sad    - sum of absolute differences, fast (default)
+</p>
+</li>
+<li>
+<p>
+1   - sse    - sum of squared errors
+</p>
+</li>
+<li>
+<p>
+2   - satd   - sum of absolute Hadamard transformed differences
+</p>
+</li>
+<li>
+<p>
+3   - dct    - sum of absolute DCT transformed differences
+</p>
+</li>
+<li>
+<p>
+4   - psnr   - sum of squared quantization errors (avoid, low quality)
+</p>
+</li>
+<li>
+<p>
+5   - bit    - number of bits needed for the block
+</p>
+</li>
+<li>
+<p>
+6   - rd     - rate distortion optimal, slow
+</p>
+</li>
+<li>
+<p>
+7   - zero   - 0
+</p>
+</li>
+<li>
+<p>
+8   - vsad   - sum of absolute vertical differences
+</p>
+</li>
+<li>
+<p>
+9   - vsse   - sum of squared vertical differences
+</p>
+</li>
+<li>
+<p>
+10  - nsse   - noise preserving sum of squared differences
+</p>
+</li>
+<li>
+<p>
+11  - w53    - 5/3 wavelet, only used in snow
+</p>
+</li>
+<li>
+<p>
+12  - w97    - 9/7 wavelet, only used in snow
+</p>
+</li>
+<li>
+<p>
+13  - dctmax -
+</p>
+</li>
+<li>
+<p>
+14  - dct264 -
+</p>
+</li>
+<li>
+<p>
+256 - chroma -
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p><strong>FIXME</strong> Used in MPEG-4 compression</p></div>
+<h3 id="_transcode_crf">3.27. transcode_crf</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;float&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> enables constant quality mode, and selects the quality (H.264 only)</p></div>
+<div class="paragraph"><p>Constant quality mode (also known as constant ratefactor). Bitrate corresponds approximately to that of constant quantizer, but gives better quality overall at little speed cost. The best one-pass option in H.264.</p></div>
+<h3 id="_transcode_refs">3.28. transcode_refs</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> reference frames to consider for motion compensation (H.264 only)</p></div>
+<div class="paragraph"><p>One of H.264&#8217;s most useful features is the abillity to reference frames other than the one immediately prior to the current frame. This parameter lets one specify how many references can be used, through a maximum of 16. Increasing the number of refs increases the DPB (Decoded Picture Buffer) requirement, which means hardware playback devices will often have strict limits to the number of refs they can handle. In live-action sources, more reference have limited use beyond 4-8, but in cartoon sources up to the maximum value of 16 is often useful. More reference frames require more processing power because every frame is searched by the motion search (except when an early skip decision is made). The slowdown is especially apparent with slower motion estimation methods. Recommended default for H.264: 6.</p></div>
+<h3 id="_transcode_b_strategy">3.29. transcode_b_strategy</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> strategy to choose between I/P/B-frames</p></div>
+<div class="paragraph"><p>libx264, by default, adaptively decides through a low-resolution lookahead the best number of B-frames to use. It is possible to disable this adaptivity; this is not recommended. Recommended default for H.264: 1
+0: Very fast, but not recommended. Does not work with pre-scenecut (scenecut must be off to force off b-adapt).
+1: Fast, default mode in libx264. A good balance between speed and quality.
+2: A much slower but more accurate B-frame decision mode that correctly detects fades and generally gives considerably better quality. Its speed gets considerably slower at high bframes values, so its recommended to keep bframes relatively low (perhaps around 3) when using this option. It also may slow down the first pass of libx264 when in threaded mode.</p></div>
+<h3 id="_transcode_coder_type">3.30. transcode_coder_type</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Possible Values:</strong></p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+0 = vlc       variable length coder / huffman coder
+</p>
+</li>
+<li>
+<p>
+1 = ac/CABAC  arithmetic coder
+</p>
+</li>
+<li>
+<p>
+2 = raw       raw (no encoding)
+</p>
+</li>
+<li>
+<p>
+3 = rle       run-length coder
+</p>
+</li>
+<li>
+<p>
+4 = deflate   deflate-based coder
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>CABAC is the default entropy encoder used by x264. Though somewhat slower on both the decoding and encoding end, it offers 10-15% improved compression on live-action sources and considerably higher improvements on animated sources, especially at low bitrates. It is also required for the use of trellis quantization. Disabling CABAC may somewhat improve decoding performance, especially at high bitrates. CABAC is not allowed in Baseline Profile.</p></div>
+<h3 id="_transcode_me_method">3.31. transcode_me_method</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> set motion estimation method</p></div>
+<div class="paragraph"><p><strong>Possible Values:</strong></p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+1  - zero     - zero motion estimation (fastest)
+</p>
+</li>
+<li>
+<p>
+2  - full/esa - full motion estimation (slowest)
+</p>
+</li>
+<li>
+<p>
+3  - log      - log motion estimation
+</p>
+</li>
+<li>
+<p>
+4  - phods    - phods motion estimation
+</p>
+</li>
+<li>
+<p>
+5  - epzs/dia - EPZS motion estimation (default)
+</p>
+</li>
+<li>
+<p>
+6  - x1       - X1 motion estimation
+</p>
+</li>
+<li>
+<p>
+7  - hex      - hex motion estimation (x264 specific)
+</p>
+</li>
+<li>
+<p>
+8  - umh      - umh motion estimation (x264 specific)
+</p>
+</li>
+<li>
+<p>
+9  - iter     - iter motion estimation (snow specific)
+</p>
+</li>
+<li>
+<p>
+10 - tesa     - tesa motion estimation (x264 specific)
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>One of the most important settings for x264, both speed and quality-wise.</p></div>
+<div class="paragraph"><p>epzs - is the simplest search, consisting of starting at the best predictor, checking the motion vectors at one pixel upwards, left, down, and to the right, picking the best, and repeating the process until it no longer finds any better motion vector.</p></div>
+<div class="paragraph"><p>hex - consists of a similar strategy, except it uses a range-2 search of 6 surrounding points, thus the name. It is considerably more efficient than DIA and hardly any slower, and therefore makes a good choice for general-use encoding.</p></div>
+<div class="paragraph"><p>umh - is considerably slower than HEX, but searches a complex multi-hexagon pattern in order to avoid missing harder-to-find motion vectors. Unlike HEX and DIA, the merange parameter directly controls UMH&#8217;s search radius, allowing one to increase or decrease the size of the wide search.</p></div>
+<div class="paragraph"><p>full - is a highly optimized intelligent search of the entire motion search space within merange of the best predictor. It is mathematically equivalent to the bruteforce method of searching every single motion vector in that area, though faster. However, it is still considerably slower than UMH, with not too much benefit, so is not particularly useful for everyday encoding.</p></div>
+<h3 id="_transcode_me_range">3.32. transcode_me_range</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> limit motion vectors range</p></div>
+<div class="paragraph"><p>MErange controls the max range of the motion search. For HEX and DIA, this is clamped to between 4 and 16, with a recommended of 16. For UMH and ESA, it can be increased beyond the 16 to allow for a wider-range motion search, which is useful on HD footage and for high-motion footage. Note that for UMH and ESA, increasing MErange will significantly slow down encoding.</p></div>
+<h3 id="_transcode_subq">3.33. transcode_subq</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> sub pel motion estimation quality</p></div>
+<div class="paragraph"><p>An extremely important encoding parameter for H.264 which determines what algorithms are used for both subpixel motion searching and partition decision.</p></div>
+<div class="paragraph"><p>1: Fastest, but extremely low quality. Should be avoided except on first pass encoding.
+2-5: Progressively better and slower, 5 serves as a good medium for higher speed encoding.
+6-7: 6 is the default. Activates rate-distortion optimization for partition decision. This can considerably improve efficiency, though it has a notable speed cost. 6 activates it in I/P frames, and subme7 activates it in B frames.
+8-9: Activates rate-distortion refinement, which uses RDO to refine both motion vectors and intra prediction modes. Slower than subme 6, but again, more efficient.</p></div>
+<h3 id="_transcode_trellis">3.34. transcode_trellis</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> rate-distortion optimal quantization</p></div>
+<div class="paragraph"><p><strong>Possible Values:</strong></p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+0 - disabled
+</p>
+</li>
+<li>
+<p>
+1 - enabled only on the final encode of a MB
+</p>
+</li>
+<li>
+<p>
+2 - enabled on all mode decisions
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>The main decision made in quantization is which coefficients to round up and which to round down. Trellis chooses the optimal rounding choices for the maximum rate-distortion score, to maximize PSNR relative to bitrate. This generally increases quality relative to bitrate by about 5% for a somewhat small speed cost. It should generally be enabled. Note that trellis requires CABAC.</p></div>
+<h3 id="_transcode_sc_threshold">3.35. transcode_sc_threshold</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> scene change threshold</p></div>
+<div class="paragraph"><p>Adjusts the sensitivity of x264&#8217;s scenecut detection. Rarely needs to be adjusted. Recommended default for H.264: 40.</p></div>
+<h3 id="_transcode_rc_eq">3.36. transcode_rc_eq</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;string&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> set rate control equation</p></div>
+<div class="paragraph"><p>Ratecontrol equation. Recommended default for H.264: <em>blurCplx^(1-qComp)</em>.</p></div>
+<h3 id="_transcode_qcomp">3.37. transcode_qcomp</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;float&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> video quantizer scale compression</p></div>
+<div class="paragraph"><p>QP curve compression: 0.0 &#8658; CBR, 1.0 &#8658; CQP. Recommended default for H.264: 0.60.</p></div>
+<h3 id="_transcode_qmin">3.38. transcode_qmin</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> min video quantizer scale</p></div>
+<div class="paragraph"><p>Minimum quantizer. Recommended default for H.264: 10.</p></div>
+<h3 id="_transcode_qmax">3.39. transcode_qmax</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> max video quantizer scale</p></div>
+<div class="paragraph"><p>Maximum quantizer. Recommended default for H.264: 51.</p></div>
+<h3 id="_transcode_qdiff">3.40. transcode_qdiff</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> max difference between the quantizer scale</p></div>
+<div class="paragraph"><p>Set max QP step. Recommended default: 4.</p></div>
+<h3 id="_transcode_keyint_min">3.41. transcode_keyint_min</h3><div style="clear:left"></div>
+<div class="paragraph"><p><strong>Type:</strong> &lt;int&gt;</p></div>
+<div class="paragraph"><p><strong>Description:</strong> key interval</p></div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2010-01-01 18:49:56 CEST
+</div>
+</div>
+</body>
+</html>
