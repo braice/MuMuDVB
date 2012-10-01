@@ -128,7 +128,9 @@ static void *getcwthread_func(void* arg)
 			memcpy((&(scam_params->ca_descr)), &buff[sizeof(int)], sizeof(ca_descr_t));
 			log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request index: %d, parity %d\n", scam_params->ca_descr.index, scam_params->ca_descr.parity);
 			if(scam_params->ca_descr.index != (unsigned) -1) {
-				log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request for channel %s : index %d, parity %d, key %02x %02x %02x %02x  %02x %02x %02x %02x\n", chan_and_pids.scam_idx[scam_params->ca_descr.index]->name, scam_params->ca_descr.index, scam_params->ca_descr.parity, scam_params->ca_descr.cw[0], scam_params->ca_descr.cw[1], scam_params->ca_descr.cw[2], scam_params->ca_descr.cw[3], scam_params->ca_descr.cw[4], scam_params->ca_descr.cw[5], scam_params->ca_descr.cw[6], scam_params->ca_descr.cw[7]);
+
+				if (chan_and_pids.started_pid_get[scam_params->ca_descr.index]) {
+				  log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request for channel %s : index %d, parity %d, key %02x %02x %02x %02x  %02x %02x %02x %02x\n", chan_and_pids.scam_idx[scam_params->ca_descr.index]->name, scam_params->ca_descr.index, scam_params->ca_descr.parity, scam_params->ca_descr.cw[0], scam_params->ca_descr.cw[1], scam_params->ca_descr.cw[2], scam_params->ca_descr.cw[3], scam_params->ca_descr.cw[4], scam_params->ca_descr.cw[5], scam_params->ca_descr.cw[6], scam_params->ca_descr.cw[7]);
 				  if (scam_params->ca_descr.parity) {
 					memcpy(chan_and_pids.scam_idx[scam_params->ca_descr.index]->odd_cw,scam_params->ca_descr.cw,8);
 					chan_and_pids.scam_idx[scam_params->ca_descr.index]->got_key_odd=1;					
@@ -139,6 +141,9 @@ static void *getcwthread_func(void* arg)
 		      		chan_and_pids.scam_idx[scam_params->ca_descr.index]->got_key_even=1;	
 		  		  }
 			  	  chan_and_pids.scam_idx[scam_params->ca_descr.index]->got_cw_started=1;
+				}
+				else
+					log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR with index %d, but no didn't get first pid", scam_params->ca_descr.index);					
 			}
 		    else {
 			  log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR removal request, ignoring");
