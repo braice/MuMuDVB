@@ -647,8 +647,8 @@ Other setting are documented at README_CONF.txt, there is also example available
 If channel has a lot of bandwidth it may be needed to extend ring buffer size. 
 
 If cw's don't get in time defined as decsa delay(default 500000us=0.5s), you may try to extend it (decsa_delay max is 10000000, and send_delay should be lower than decsa_delay, because we can't send descrambled packets befor they're being descrambled) for example:
-	decsa_delay=9500000
-	send_delay=10500000
+	decsa_delay=3500000
+	send_delay=4500000
 
 note that bigger delays in ring buffer may need also extending ring buffer size
 
@@ -662,6 +662,10 @@ Use the latest version of oscam from trunk, older versions did not have support 
 When using oscam with more than 16 channels adjust macro definition MAX_DEMUX (line below) on oscam header module-dvbapi.h to number of your channels
 25 #define MAX_DEMUX 16
 
+[NOTE]
+When using multiple channels per card (more than (ecm_change_time)/(2*card_response_time)), you may get timeouts on oscam on mumudvb startup, it's because on startup oscam asks card for two cw's at the same time.
+It should get right after a while.
+Currently there is no solution for that bug.
 
 Some information on how to configure oscam
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
