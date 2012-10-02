@@ -657,7 +657,11 @@ In debug mode number of packets in the buffer is reported and buffer overflow is
 
 [NOTE]
 Use the latest version of oscam from trunk, older versions did not have support for pc dvbapi. Instructions how to compile are on http://streamboard.de.vu:8001/wiki/crosscompiling
-  
+
+[NOTE] 
+When using oscam with more than 16 channels adjust macro definition MAX_DEMUX (line below) on oscam header module-dvbapi.h to number of your channels
+25 #define MAX_DEMUX 16
+
 
 Some information on how to configure oscam
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
