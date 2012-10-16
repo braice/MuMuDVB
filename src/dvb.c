@@ -487,7 +487,7 @@ void show_card_capabilities( int card, int tuner )
   if(display_sr)
     log_message( log_module,  MSG_INFO, " Symbol rate: %d k symbols/s to %d k symbols/s \n", (int)fe_info.symbol_rate_min/1000, (int)fe_info.symbol_rate_max/1000);
 
-  log_message( log_module,  MSG_DETAIL, "\n== Card capabilities ==\n");
+  log_message( log_module,  MSG_DETAIL, " == Card capabilities ==");
   log_message( log_module,  MSG_DEBUG, "caps 0x%x\n",fe_info.caps);
   frontend_cap_t caps[]={
     {0x1,"FE_CAN_INVERSION_AUTO"},
@@ -527,7 +527,7 @@ void show_card_capabilities( int card, int tuner )
       log_message( log_module,  MSG_DETAIL, "%s\n", caps[i].descr);
   close (frontend_fd);
 
-  log_message( log_module,  MSG_INFO, "\n\n");
+  log_message( log_module,  MSG_INFO, "\n");
 
 }
 
@@ -537,9 +537,9 @@ void show_card_capabilities( int card, int tuner )
 void list_dvb_cards ()
 {
   DIR *dvb_dir;
-  log_message( log_module, MSG_INFO,"==================================\n");
+  log_message( log_module, MSG_INFO,"==================================");
   log_message( log_module, MSG_INFO,"        DVB CARDS LISTING\n");
-  log_message( log_module, MSG_INFO,"==================================\n\n");
+  log_message( log_module, MSG_INFO,"==================================");
 
   dvb_dir = opendir ("/dev/dvb/");
   if (dvb_dir == NULL)
@@ -583,10 +583,9 @@ void list_dvb_cards ()
   {
     card_number=-1;
     for(j=0;j<num_cards;j++)
-      if((card_number<=old_card)||((cards[j]>old_card) && (cards[j]<card_number)))
-	card_number=cards[j];
-    old_card=card_number;
-
+	if((card_number<=old_card)||((cards[j]>old_card) && (cards[j]<card_number)))
+	  card_number=cards[j];
+	old_card=card_number;
 
     sprintf(card_dev_path,DVB_DEV_PATH,card_number);
     adapter_dir = opendir (card_dev_path);
@@ -602,7 +601,7 @@ void list_dvb_cards ()
       if(strncmp(d_tuner->d_name,FRONTEND_DEV_NAME,strlen(FRONTEND_DEV_NAME)))
         continue;
       tuner_number= atoi(d_tuner->d_name+strlen(FRONTEND_DEV_NAME));
-      log_message( log_module,  MSG_DEBUG, "\tfound Frontend %d\n", tuner_number);
+      log_message( log_module,  MSG_DEBUG, "\tCard %d found Frontend %d\n", card_number, tuner_number);
       /** show the current tuner */
       show_card_capabilities( card_number , tuner_number);
     }
