@@ -55,6 +55,18 @@
 #define ATSC 1
 #endif
 
+/*Do we support DVBT2 ?*/
+#undef DVBT2
+#if defined(DVB_API_VERSION_MINOR)
+#if DVB_API_VERSION == 5 && DVB_API_VERSION_MINOR >= 3
+#define DVBT2 1
+#endif
+#endif
+#if DVB_API_VERSION > 6
+#define DVBT2 1
+#endif
+
+
 /**the number of pids by channel*/
 #define MAX_PIDS_PAR_CHAINE     18
 

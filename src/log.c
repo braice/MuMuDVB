@@ -1010,9 +1010,9 @@ void print_info ()
 #endif
 #endif
 #if DVB_API_VERSION >= 5
-               "Built with support for DVB API Version 5.\n"
-#ifdef SYS_DVBT2
-               "\tBuilt with support for DVB-T2.\n"
+               "Built with support for DVB API Version %d.%d.\n"
+#ifdef DVBT2
+               "Built with support for DVB-T2.\n"
 #endif
 #endif
                "---------\n"
@@ -1020,7 +1020,7 @@ void print_info ()
                "Released under the GPL.\n"
                "Latest version available from http://mumudvb.braice.net/\n"
                "Project from the cr@ns (http://www.crans.org)\n"
-               "by Brice DUBOST (mumudvb@braice.net)\n\n");
+	   "by Brice DUBOST (mumudvb@braice.net)\n\n", DVB_API_VERSION,DVB_API_VERSION_MINOR);
 
 }
 
