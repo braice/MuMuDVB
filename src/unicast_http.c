@@ -1308,7 +1308,15 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 
   // Frontend type
   char fetype[10]="Unkonwn";
-  if (strengthparams->tuneparams->fe_type==FE_OFDM) snprintf(fetype,10,"DVB-T");
+  if (strengthparams->tuneparams->fe_type==FE_OFDM)
+#ifdef DVBT2
+    if (strengthparams->tuneparams->delivery_system==SYS_DVBT2)
+      snprintf(fetype,10,"DVB-T2");
+    else
+      snprintf(fetype,10,"DVB-T"); 
+#else
+      snprintf(fetype,10,"DVB-T"); 
+#endif
   if (strengthparams->tuneparams->fe_type==FE_QAM)  snprintf(fetype,10,"DVB-C");
   if (strengthparams->tuneparams->fe_type==FE_ATSC) snprintf(fetype,10,"ATSC");
   if (strengthparams->tuneparams->fe_type==FE_QPSK)
