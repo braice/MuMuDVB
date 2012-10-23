@@ -381,7 +381,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
       tuneparams->delivery_system=SYS_DVBC_ANNEX_B;
     else if (!strcmp (substring, "DVBT"))
       tuneparams->delivery_system=SYS_DVBT;
-#ifdef SYS_DVBT2
+#ifdef DVBT2
     else if (!strcmp (substring, "DVBT2"))
       tuneparams->delivery_system=SYS_DVBT2;
 #endif
@@ -895,7 +895,7 @@ int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
   switch(fe_info.type) {
   case FE_OFDM: //DVB-T
     if((tuneparams->delivery_system!=SYS_UNDEFINED)&&(tuneparams->delivery_system!=SYS_DVBT)
-#ifdef SYS_DVBT2
+#ifdef DVBT2
        &&(tuneparams->delivery_system!=SYS_DVBT2))
 #else
       )
@@ -1133,7 +1133,7 @@ if(change_deliv) //delivery system needs to be changed
       cmdseq->props[commandnum++].cmd    = DTV_TUNE;
     }
     else if((tuneparams->delivery_system==SYS_DVBT)
-#ifdef SYS_DVBT2
+#ifdef DVBT2
             ||(tuneparams->delivery_system==SYS_DVBT2))
 #else
      )

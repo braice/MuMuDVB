@@ -447,7 +447,7 @@ int
     {0, 0, 0, 0}
   };
   int c, option_index = 0;
-
+  int listingcards=0;
   if (argc == 1)
   {
     usage (program_invocation_short_name);
@@ -500,9 +500,7 @@ int
         exit(ERROR_ARGS);
         break;
       case 'l':
-        print_info ();
-        list_dvb_cards ();
-        exit(0);
+	listingcards=1;
         break;
       case 'z':
         dump_filename = (char *) malloc (strlen (optarg) + 1);
@@ -525,6 +523,13 @@ int
   /******************************************************/
   //end of command line options parsing
   /******************************************************/
+
+  if(listingcards)
+    {
+      print_info ();
+      list_dvb_cards ();
+      exit(0);
+    }
 
   // DO NOT REMOVE (make mumudvb a deamon)
   if(!no_daemon)
