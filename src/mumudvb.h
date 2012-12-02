@@ -122,6 +122,9 @@ We cannot discover easily the MTU with unconnected UDP
 #define RTP_HEADER_LEN 12
 
 #define SAP_GROUP_LENGTH 20
+
+
+
 enum
   {
     FULLY_UNSCRAMBLED=0,
@@ -183,8 +186,30 @@ typedef struct {
   struct pollfd *pfds;	//  DVR device + unicast http clients
   int pfdsnum;
 }fds_t;
+#ifdef ENABLE_SCAM_SUPPORT
+/**@brief Structure containing ring buffer*/
+typedef struct {
+  /** Buffer with dvb packets*/
+  unsigned char ** data;
+  /** Write index of buffer */
+  unsigned int write_idx;
+  /** Buffer with descrambling timestamps*/
+  uint64_t * time_decsa;
+  /** Number of packets left to descramble*/
+  unsigned int to_descramble;
+  /** Read index of buffer for descrambling thread */
+  unsigned int read_decsa_idx;
+  /** Buffer with sending timestamps*/
+  uint64_t * time_send;
+  /** Number of packets left to send*/
+  unsigned int to_send;
+  /** Read index of buffer for sending thread */
+  unsigned int read_send_idx;
 
-
+  pthread_mutex_t    to_descramble_mutex;
+  pthread_mutex_t    to_send_mutex;
+}ring_buffer_t;  
+#endif
 
 /**@brief Structure containing the card buffers*/
 typedef struct card_buffer_t{
@@ -274,6 +299,52 @@ typedef struct mumudvb_channel_t{
   /** The PMT packet for CAM purposes*/
   mumudvb_ts_packet_t *cam_pmt_packet;
 #endif
+#ifdef ENABLE_SCAM_SUPPORT
+  /**Tell the total packet number (without pmt) for the scrambling ratio and up/down detection*/
+  int num_packet_descrambled_sent;
+  /** The camd socket for SCAM*/
+  int camd_socket;
+  /** Say if we need to ask this channel to the oscam*/
+  int need_scam_ask;
+  /** Say if this channel should be descrambled using scam*/
+  int scam_support;
+  /** Odd control word for descrambling */
+  unsigned char odd_cw[8];
+  /** Even control word for descrambling */
+  unsigned char even_cw[8];
+  /** Indicating if we have another odd cw for descrambling */
+  unsigned char got_key_odd;
+  /** Indicating if we have another even cw for descrambling */
+  unsigned char got_key_even;
+  /** Thread for software descrambling */
+  pthread_t decsathread;
+  /** Descrambling thread shutdown control */
+  int decsathread_shutdown;
+  
+  
+  /**ring buffer for sending and software descrambling*/
+  ring_buffer_t* ring_buf;
+  /** Thread for sending packets software descrambled */
+  pthread_t sendthread;
+  /** Sending thread shutdown control */
+  int sendthread_shutdown;
+  /** Size of ring buffer */
+  uint64_t ring_buffer_size;
+  /** Delay of descrambling in us*/
+  uint64_t decsa_delay;	
+  /** Delay of sending in us*/
+  uint64_t send_delay;
+  /** Number of packets in the ring buffer*/	
+  unsigned int ring_buffer_num_packets;  
+  /** Says if we need to get pmt for this channel on scam own*/	
+  int need_pmt_get;
+  /** Says if we've got first cw for channel*/	
+  int got_cw_started;
+
+  pthread_mutex_t    ring_buffer_num_packets_mutex;
+#endif
+  
+
 
   /**the RTP header (just before the buffer so it can be sended together)*/
   unsigned char buf_with_rtp_header[RTP_HEADER_LEN];
@@ -365,6 +436,8 @@ typedef struct multicast_parameters_t{
   char iface4[IF_NAMESIZE+1];
   /** The interface for IPv6 */
   char iface6[IF_NAMESIZE+1];
+  /** num mpeg packets in one sent packet */
+  unsigned char num_pack;
 }multicast_parameters_t;
 
 /** No PSI tables filtering */
@@ -394,6 +467,10 @@ typedef struct mumudvb_chan_and_pids_t{
   /** The number of TS discontinuities per PID **/
   int16_t continuity_counter_pid[8193]; //on 16 bits for storing the initial -1
   uint8_t check_cc;
+#ifdef ENABLE_SCAM_SUPPORT
+  mumudvb_channel_t* scam_idx[MAX_CHANNELS]; 
+  uint8_t started_pid_get[MAX_CHANNELS]; 
+#endif
 }mumudvb_chan_and_pids_t;
 
 
@@ -407,6 +484,9 @@ typedef struct monitor_parameters_t{
   struct unicast_parameters_t *unicast_vars;
   struct tuning_parameters_t *tuneparams;
   struct stats_infos_t *stats_infos;
+#ifdef ENABLE_SCAM_SUPPORT
+  void *scam_vars_v;
+#endif
   int server_id;
   char *filename_channels_not_streamed;
   char *filename_channels_streamed;
@@ -430,6 +510,8 @@ void mumu_free_string(mumu_string_t *string);
 int mumudvb_poll(fds_t *fds);
 char *mumu_string_replace(char *source, int *length, int can_realloc, char *toreplace, char *replacement);
 int string_comput(char *string);
+uint64_t get_time(void);
+void send_func(mumudvb_channel_t *channel, uint64_t *now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds);
 
 
 long int mumu_timing();

@@ -55,7 +55,7 @@ void init_rtp_header(mumudvb_channel_t *channel)
 
 }
 
-void rtp_update_sequence_number(mumudvb_channel_t *channel)
+void rtp_update_sequence_number(mumudvb_channel_t *channel, uint64_t time)
 {
   /* From RFC 2250           RTP Format for MPEG1/MPEG2 Video        January 1998
   Each RTP packet will contain a timestamp derived from the sender's
@@ -70,12 +70,9 @@ void rtp_update_sequence_number(mumudvb_channel_t *channel)
    jitter and to synchronize relative time drift between the transmitter
    and receiver.*/
 
-  struct timeval tv;
   uint32_t timestamp;
 
-  gettimeofday(&tv, NULL);
-
-  timestamp=(uint32_t) (90000 * (tv.tv_sec + tv.tv_usec/1000000.0));	// 90 kHz Clock
+  timestamp=(uint32_t) (90000 * (time/1000000ll))+(9*(time%1000000ll))/100;	// 90 kHz Clock
 
   // Change the header (sequence number)
   channel->buf_with_rtp_header[2]=(char)((channel->rtp_packet_num >> 8) & 0xff); // sequence number (high)
