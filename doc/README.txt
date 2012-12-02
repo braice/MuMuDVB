@@ -65,7 +65,7 @@ Features overview
 - Support for RTP headers (only for multicast)
 - Ability to transcode the stream (only for multicast for the moment) see the <<transcoding,Transcoding>> section
 - CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.txt and CAM_menu_interface.png for screenshot)
-
+- Software descrambling through oscam dvbapi and libdvbcsa
 Detailled feature list
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -129,6 +129,7 @@ The `[configure options]` specific to MuMuDVB are:
 
 ---------------------------------------------------------------------
   --enable-cam-support    CAM support (default enabled)
+  --enable-scam-support   SCAM support (default enabled) (see note below)
   --enable-coverage       build for test coverage (default disabled)
   --enable-duma           Debbuging DUMA library (default disabled)
 ---------------------------------------------------------------------
@@ -140,7 +141,10 @@ $ ./configure --help
 --------------------
 
 [NOTE]
-The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of these libraries and deactivate the CAM support if one of them is not present.
+The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of these libraries and deactivate the CAM support if one of them is not present. 
+
+[NOTE]
+The SCAM support depends on libdvbcsa from videolan. The configure script will detect automatically the presence of these libraries and deactivate the SCAM support if one of them is not present. It needs also trunk version of oscam to get control words. Oscam configuration is described below in section concerning software descrambling v2 inside mumudvb. Full autoconfiguration is not yet supported, use partial autoconfiguration or no autoconfiguration. 
 
 [NOTE]
 The decoding of long channel names for autoconfiguration in ATSC depends on libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of this library and deactivate the long channel name support if it is not present. The full autoconfiguration will still work with ATSC but the channel names will be the short channels names (7 characters maximum)
@@ -577,7 +581,7 @@ You have an example of CAM support in doc/configuration_examples/autoconf_partia
 
 
 
-Software descrambling
+Software descrambling v1
 ~~~~~~~~~~~~~~~~~~~~~
 
 Important note : this solution is not allowed by some provider contracts.
@@ -626,6 +630,55 @@ The scrambling status is stored together with the streamed channel list.
  * FullyUnscrambled : less than 5% of scrambled packets
  * PartiallyUnscrambled : between 5% and 95% of scrambled packets
  * HighlyScrambled : more than 95% of scrambled packets
+
+
+Software descrambling v2
+~~~~~~~~~~~~~~~~~~~~~
+
+Important note : this solution is not allowed by some provider contracts.
+
+MuMuDVB now has support for software descrambling on its own, to do that you'll need to have trunk version of oscam and libdvbcsa installed.
+To enable you have to add to global options 
+scam_support=1
+on program options add
+oscam=1
+Other setting are documented at README_CONF.txt, there is also example available at configuration_examples/oscam.conf
+
+If channel has a lot of bandwidth it may be needed to extend ring buffer size. 
+
+If cw's don't get in time defined as decsa delay(default 500000us=0.5s), you may try to extend it (decsa_delay max is 10000000, and send_delay should be lower than decsa_delay, because we can't send descrambled packets befor they're being descrambled) for example:
+	decsa_delay=3500000
+	send_delay=4500000
+
+note that bigger delays in ring buffer may need also extending ring buffer size
+
+In debug mode number of packets in the buffer is reported and buffer overflow is detected, you should use that to tweak your delays and ring buffer size. In http state.xml number of packets in the buffer is also reported.
+
+
+[NOTE]
+Use the latest version of oscam from trunk, older versions did not have support for pc dvbapi. Instructions how to compile are on http://streamboard.de.vu:8001/wiki/crosscompiling
+
+[NOTE] 
+When using oscam with more than 16 channels adjust macro definition MAX_DEMUX (line below) on oscam header module-dvbapi.h to number of your channels
+25 #define MAX_DEMUX 16
+
+[NOTE]
+When using multiple channels per card (more than (ecm_change_time)/(2*card_response_time)), you may get timeouts on oscam on mumudvb startup, it's because on startup oscam asks card for two cw's at the same time.
+It should get right after a while.
+Currently there is no solution for that bug.
+
+Some information on how to configure oscam
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In the oscam.conf file add following options
+        [dvbapi]
+        enabled = 1
+        au = 1
+        boxtype = pc
+        user = mumudvb
+        pmt_mode = 4
+        request_mode = 1
+
 
 [[pat_rewrite]]
 PAT (Program Allocation Table) Rewriting

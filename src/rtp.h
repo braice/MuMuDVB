@@ -31,6 +31,6 @@
 #define _RTP_H
 
 void init_rtp_header(mumudvb_channel_t *channel);
-void rtp_update_sequence_number(mumudvb_channel_t *channel);
+void rtp_update_sequence_number(mumudvb_channel_t *channel, uint64_t time);
 
 #endif

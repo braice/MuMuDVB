@@ -238,6 +238,17 @@ _callback |  0 | | Normally this time doesn't have to be changed.
 |cam_interval_pmt_send |The time (in seconds) we wait between possible updates to the PMT sent to the CAM |  3 | | Normally this time doesn't have to be changed.
 |==================================================================================================================
 
+SCAM support parameters
+~~~~~~~~~~~~~~~~~~~~~~
+[width="80%",cols="2,5,2,2,5",options="header"]
+|==================================================================================================================
+|Parameter name |Description | Default value | Possible values | Comments
+|scam_support |Specify if we wants the support for software descrambling channels | 0 | 0 or 1 |
+|ring_buffer_default_size | default number of ts packets in ring buffer (when not specified by channel specific config) | 32768 |it gets rounded to the value that is power of 2 not lower than it|
+|decsa_default_delay | default delay time in us between getting packet and descrambling (when not specified by channel specific config) | 500000 |  max is 10000000 |
+|send_default_delay | default delay time in us between getting packet and sending (when not specified by channel specific config) | 1500000 | mustn't be lower than decsa delay |
+|==================================================================================================================
+
 Autoconfiguration parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 [width="80%",cols="3,5,1,2,5",options="header"]
@@ -307,6 +318,10 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 |service_id |The service id (program number), olny for autoconfiguration, or rewrite (PAT or SDT) see README for more details | | | 
 |name | The name of the channel. Will be used for /var/run/mumudvb/channels_streamed_adapter%d_tuner%d, logging and SAP announces | | | Mandatory
 |pids | The PIDs list, separated by spaces | | | some pids are always sent (PAT CAT EIT SDT TDT NIT), see README for more details
+|oscam |Do we activate software descrambling for this channel| 0 | 0 or 1 |
+|ring_buffer_size | number of ts packets in ring buffer (when not specified by channel specific config) | 131072 |it gets rounded to the value that is power of 2 not lower than it|
+|decsa_delay | delay time in us between getting packet and descrambling (when not specified by channel specific config) | 4500000 | max is 10000000 |
+|send_delay | delay time in us between getting packet and sending (when not specified by channel specific config) | 7000000 |  mustn't be lower than decsa delay |
 |==================================================================================================================
 
 

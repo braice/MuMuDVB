@@ -33,6 +33,8 @@
 #include "mumudvb.h"
 #include "log.h"
 #include "errors.h"
+#include "rtp.h"
+#include "unicast_http.h"
 
 #include <sys/poll.h>
 #include <sys/time.h>
@@ -40,6 +42,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+
 
 static char *log_module="Common: ";
 
@@ -287,8 +290,81 @@ long int mumu_timing()
   return delta;
 }
 
+/** @brief getting current system time (in usec).
+ */
+uint64_t get_time(void) {
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return (ts.tv_sec * 1000000ll + ts.tv_nsec / 1000);
+}
 
+/** @brief function for sending demultiplexed data.
+ */
+void send_func (mumudvb_channel_t *channel, uint64_t *now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
+{
+		        //For bandwith measurement (traffic)
+		        channel->sent_data+=channel->nb_bytes+20+8; // IP=20 bytes header and UDP=8 bytes header
+		        if (multicast_vars->rtp_header) channel->sent_data+=RTP_HEADER_LEN;
 
+		        /********* TRANSCODE **********/
+	#ifdef ENABLE_TRANSCODING
+			if (NULL != channel->transcode_options.enable &&
+				1 == *channel->transcode_options.enable) {
 
+			if (NULL == channel->transcode_handle) {
 
+				strcpy(channel->transcode_options.ip, channel->ip4Out);
 
+				channel->transcode_handle = transcode_start_thread(channel->socketOut4,
+				&channel->sOut4, &channel->transcode_options);
+			}
+
+			if (NULL != channel->transcode_handle) {
+				transcode_enqueue_data(channel->transcode_handle,
+				channel->buf,
+						   channel->nb_bytes);
+			}
+			}
+
+			if (NULL == channel->transcode_options.enable ||
+				1 != *channel->transcode_options.enable ||
+				((NULL != channel->transcode_options.streaming_type &&
+				STREAMING_TYPE_MPEGTS != *channel->transcode_options.streaming_type)&&
+				(NULL == channel->transcode_options.send_transcoded_only ||
+				 1 != *channel->transcode_options.send_transcoded_only)))
+	#endif
+		        /********** MULTICAST *************/
+		         //if the multicast TTL is set to 0 we don't send the multicast packets
+		        if(multicast_vars->multicast)
+			{
+			  unsigned char *data;
+			  int data_len;
+			  if(multicast_vars->rtp_header)
+			  {
+			/****** RTP *******/
+			rtp_update_sequence_number(channel,*now_time);
+			data=channel->buf_with_rtp_header;
+			data_len=channel->nb_bytes+RTP_HEADER_LEN;
+			  }
+			  else
+			{
+			  data=channel->buf;
+			  data_len=channel->nb_bytes;
+			}
+			  if(multicast_vars->multicast_ipv4)
+			sendudp (channel->socketOut4,
+				 &channel->sOut4,
+				 data,
+				 data_len);
+			  if(multicast_vars->multicast_ipv6)
+			sendudp6 (channel->socketOut6,
+				 &channel->sOut6,
+				 data,
+				 data_len);
+			}
+		        /*********** UNICAST **************/
+			unicast_data_send(channel, chan_and_pids->channels, fds, unicast_vars);
+		        /********* END of UNICAST **********/
+			channel->nb_bytes = 0;
+
+}
