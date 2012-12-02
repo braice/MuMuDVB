@@ -2080,10 +2080,11 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
     chan_and_pids.channels[curr_channel].pmt_packet=NULL;
 	
 
-	  
+#ifdef ENABLE_SCAM_SUPPORT
 	if (chan_and_pids.channels[curr_channel].scam_support && scam_vars->scam_support && chan_and_pids.channels[curr_channel].got_cw_started) {
 		scam_channel_stop(&chan_and_pids.channels[curr_channel]);
 	}
+#endif
 	
 
 
@@ -2308,6 +2309,7 @@ void *monitor_func(void* arg)
     {
       int iRet;
       iRet = autoconf_poll(now, params->autoconf_vars, params->chan_and_pids, params->tuneparams, params->multicast_vars, &fds, params->unicast_vars, params->server_id, params->scam_vars_v);
+
       if(iRet)
         Interrupted = iRet;
     }
