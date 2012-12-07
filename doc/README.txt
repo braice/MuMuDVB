@@ -144,7 +144,7 @@ $ ./configure --help
 The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of these libraries and deactivate the CAM support if one of them is not present. 
 
 [NOTE]
-The SCAM support depends on libdvbcsa from videolan. The configure script will detect automatically the presence of these libraries and deactivate the SCAM support if one of them is not present. It needs also trunk version of oscam to get control words. Oscam configuration is described below in section concerning software descrambling v2 inside mumudvb. Full autoconfiguration is not yet supported, use partial autoconfiguration or no autoconfiguration. 
+The SCAM support depends on libdvbcsa from videolan. The configure script will detect automatically the presence of these libraries and deactivate the SCAM support if one of them is not present. It needs also trunk version of oscam to get control words. Oscam configuration is described below in section concerning software descrambling v2 inside mumudvb. 
 
 [NOTE]
 The decoding of long channel names for autoconfiguration in ATSC depends on libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of this library and deactivate the long channel name support if it is not present. The full autoconfiguration will still work with ATSC but the channel names will be the short channels names (7 characters maximum)
