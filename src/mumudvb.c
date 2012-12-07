@@ -1229,6 +1229,11 @@ int
       log_message("SCAM_GETCW: ", MSG_ERROR,"Cannot initalise scam\n");
       scam_vars.scam_support=0;
     }
+    else
+    {
+      //If the scam is properly initialised, we autoconfigure scrambled channels
+      autoconf_vars.autoconf_scrambled=1;
+    }
    }
 #endif
   
