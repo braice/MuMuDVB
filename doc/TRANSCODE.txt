@@ -4,6 +4,10 @@ MuMuDVB - README for the configuration of the transcoding
 General information
 -------------------
 
+Due to frequent API changes on the ffmpeg side, the transcoding code in MuMuDVB is not supported anymore.
+Any work to get it working with recent ffmpeg versions would be very appreciated.
+The best current solution is to perform transcoding outside MuMuDVB, please refer to the link:TRANSCODE_EXTERNAL.html[external transcoding tutorial].
+
 
 Compiling MuMuDVB with transcoding support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

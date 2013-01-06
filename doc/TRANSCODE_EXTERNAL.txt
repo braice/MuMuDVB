@@ -1,0 +1,222 @@
+MuMuDVB - MuMuDVB and FFmpeg transcoding Tutorial
+=================================================
+
+By Meftah Tayeb (Tayeb|DOT|Meftah:-)@G.M.A.I.L.C.O.M
+Reviewed by Brice Dubost (mumudvb@braice.net)
+
+ 
+Introduction
+------------
+
+In the context of TV over IP the necessary bandwidth of the IP network is an important issue. In particular with stream coming from terrestrial or satellite broadcasting which represent about 6MBit/s per service with standard definition. In this context it can be useful to transcode the stream to reduce itś bandwidth footprint.
+
+MuMuDVB is a « air to ip » streaming software. In the following, a method to set-up MuMuDVB and Ffmpeg to perform transcoding is described.
+
+ 
+
+Please note that this way can probably be improved, feel free to provide feedback.
+
+ 
+
+ 
+
+Step 1: Configure MumuDVB
+-------------------------
+
+You need at least one service/channel up and running to perform transcoding.
+
+you have multiple choices to configure MuMuDVB, please refer to the main documentation for more details.
+
+ 
+
+An example configuration is provided here for "Almajd channels" on BadrSat (26.0E):
+
+ 
+-------------------------
+unicast=1
+port_http=8080
+freq=12476
+pol=v
+srate=27504
+autoconf_radios=1
+autoconfiguration=full
+multicast_ttl=16
+dvr_buffer_size=40
+-------------------------
+
+ 
+
+Step 2: Start MuMuDVB
+---------------------
+
+In order to start MuMuDVB with your configuration, use the following:
+
+--------------------------------------------------
+mumudvb -c /path-to-config/mumudvb.conf -d
+--------------------------------------------------
+ 
+
+The -d flag allow to obtain the message on the command line instead of the standard log. Once everything is working you can run without the -d flag alowing MuMuDVB to run as a deamon.
+
+ 
+With several cards you can use “--card=X” or add “card=X” to your configuration file where X is the card number.
+
+ 
+
+Step 3: FFserver configuration
+------------------------------
+
+With MuMuDVB up and running, we need to configure FFMpeg Server to perform the transcoding task.
+
+Before transcoding, please check that your stream is properly up and running in MPEG2TS over UDP
+
+ 
+
+Example FFserver configuration:
+
+ 
+----------------------------------------------------------------------------------------------------
+#specify the HTTP /RTSP Unicast port:
+
+Port 80
+RTSPPort 554
+#bind FFserver to a specific interface, better to be same as MuMu Interface
+BindAddress 192.168.100.100
+#Max http connection limitation
+MaxHTTPConnections 1000
+#how much IPTV client you want at the same time ?
+MaxClients 200
+#max bandwith to process
+MaxBandwidth 1000000
+CustomLog -
+#almajd01 channel feed configuration
+<Feed almajd01.ffm>
+#specify the temporary file to use to dump the stream to FFserver
+File /tmp/almajd01.ffm
+FileMaxSize 1000K
+</Feed>
+#all others feed's is similar;
+<Feed almajd02.ffm>
+File /tmp/almajd02.ffm
+FileMaxSize 1000K
+</Feed>
+<Feed almajd03.ffm>
+File /tmp/almajd03.ffm
+FileMaxSize 1000K
+</Feed>
+#Almajd01 Stream Definition
+#note the .asf reference, we're encapsulating our stream in ASF format. please check FFmpeg documentation for other formats.
+<Stream almajd01.asf>
+#referencing the previously defined feed, Almajd01
+Feed almajd01.ffm
+#specify the streaming format
+Format asf
+#prevent looping on a live channel, this is a continuous stream and not a file.
+NoLoop
+#Video codec definition
+VideoCodec mpeg4
+VideoFrameRate 25
+VideoBufferSize 100000
+videoBitRate 512k
+VideoQMin 1
+VideoQMax 31
+VideoSize 352x240
+PreRoll 0
+#Audio codec definition
+AudioCodec libmp3lame
+AudioBitRate 64
+AudioChannels 2
+AudioSampleRate 24000
+</Stream>
+#all others stream is similar.
+<Stream almajd02.asf>
+Feed almajd02.ffm
+Format asf
+NoLoop
+VideoCodec mpeg4
+VideoFrameRate 25
+VideoBufferSize 100000
+videoBitRate 256k
+VideoQMin 1
+VideoQMax 31
+VideoSize 352x240
+PreRoll 0
+AudioCodec libmp3lame
+AudioBitRate 48
+AudioChannels 2
+AudioSampleRate 24000
+</Stream>
+<Stream almajd03.asf>
+Feed almajd03.ffm
+Format asf
+NoLoop
+VideoCodec mpeg4
+VideoFrameRate 25
+VideoBufferSize 100000
+VideoBitRate 256k
+VideoQMin 1
+VideoQMax 31
+VideoSize 352x240
+PreRoll 0
+AudioCodec libmp3lame
+AudioBitRate 48
+AudioChannels 2
+AudioSampleRate 24000
+</Stream>
+#definition of the status stream to be able to see our FFserver status using a web browser
+<Stream stat.html>
+   Format status
+</Stream>
+----------------------------------------------------------------------------------------------------
+
+
+For the moment we have defined the stream and the transcoding you need. From this configuration Ffserver will wait for clients on is socket to push the data on the ffm files. The transcoded channels will be availaible on the .asm files
+
+ 
+
+Step 4: start FFserver
+----------------------
+
+to start FFserver do:
+
+------------------------------------------
+ffserver -f Path-To-Config-File.cfg
+------------------------------------------
+
+ 
+
+Step 5: Push the streams to FFserver using FFmpeg
+-------------------------------------------------
+
+For the moment, FFserver have no data to process, we need to push the data from MuMuDVB to FFserver, for this we can use ffmpeg.
+
+after starting the FFserver, run the following:
+
+------------------------------------------------------------------------------------
+ffmpeg -i udp://@239.100.0.0:1234 http://192.168.100.100/almajd01.ffm
+------------------------------------------------------------------------------------
+
+ 
+This line have to be changed according to your configuration where the first part is the access path to the UDP channel (the @ after udp:// specifies that the channel have to be accessed in multicast), the second part corresponds to the path defined in your ffserver configuration.
+
+ 
+
+You need multiple FFmpeg instances, one per channel.
+
+To start ffmpeg in background please use nohup ffmpeg -i ...
+
+ 
+Now the channels can be accessed in unicast on URLs like http://192.168.100.100/almajd01.asf
+
+ 
+
+Acknowledgements
+----------------
+
+thank you Brice and Matthias for helping me all the time it is very appreciated
+
+thank to everyone that helped me getting my home brew IPTV up and running, i can watch everywhere, anywhere.
+
+thank to Georgeus roger for helping me with Oscam setup so now i have my channels descrambled.
+
+if you need any help please don't hesitate to contact me on the mailing list!
