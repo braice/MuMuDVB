@@ -949,8 +949,16 @@ int unicast_reply_send(struct unicast_reply *reply, int socket, int code, const 
   reply->buffer_header = realloc(reply->buffer_header, reply->used_header+reply->used_body);
   memcpy(&reply->buffer_header[reply->used_header],reply->buffer_body,sizeof(char)*reply->used_body);
   reply->used_header+=reply->used_body;
+  //int size=write(socket, reply->buffer_header, reply->used_header);
   //now we write the data
-  int size = write(socket, reply->buffer_header, reply->used_header);
+  int size=0;
+  int temp_size=0;
+
+  while (size<reply->used_header){
+	temp_size = write(socket, reply->buffer_header+size, reply->used_header-size);
+	size += temp_size!=-1 ? temp_size : 0 ;
+
+  }
   return size;
 }
 
