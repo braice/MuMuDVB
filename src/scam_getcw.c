@@ -158,8 +158,8 @@ static void *getcwthread_func(void* arg)
 			log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request index: %d pid: %d\n",scam_params->ca_pid.index, scam_params->ca_pid.pid);
 			got_pid=0;
 			if (!got_pid_t[scam_params->ca_pid.pid]) {
+				got_pid_t[scam_params->ca_pid.pid]=1;
 				if(scam_params->ca_pid.index != -1) {
-				    got_pid_t[scam_params->ca_pid.pid]=1;
 					if (!(chan_and_pids.started_pid_get[scam_params->ca_pid.index])) {
 					  for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels  && !got_pid; curr_channel++) {
 						for (curr_pid = 1; curr_pid < chan_and_pids.channels[curr_channel].num_pids && !got_pid; curr_pid++) {
