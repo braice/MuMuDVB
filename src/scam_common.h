@@ -72,6 +72,7 @@ typedef struct scam_parameters_t{
   ca_descr_t ca_descr;
   ca_pid_t ca_pid;
   uint64_t ring_buffer_default_size,decsa_default_delay,send_default_delay;
+  char got_pid_t[1<<13];
 }scam_parameters_t;  
 
 
