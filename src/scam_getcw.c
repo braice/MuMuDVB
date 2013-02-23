@@ -116,8 +116,6 @@ static void *getcwthread_func(void* arg)
   extern int Interrupted; 
   unsigned char buff[sizeof(int) + sizeof(ca_descr_t)];
   int cRead, *request;
-
-  static char got_pid_t[2^13];
   char got_pid=0;
 	
   //Loop
@@ -157,8 +155,8 @@ static void *getcwthread_func(void* arg)
 			memcpy((&(scam_params->ca_pid)), &buff[sizeof(int)], sizeof(ca_pid_t));
 			log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request index: %d pid: %d\n",scam_params->ca_pid.index, scam_params->ca_pid.pid);
 			got_pid=0;
-			if (!got_pid_t[scam_params->ca_pid.pid]) {
-				got_pid_t[scam_params->ca_pid.pid]=1;
+			if (!(scam_params->got_pid_t[scam_params->ca_pid.pid])) {
+				scam_params->got_pid_t[scam_params->ca_pid.pid]=1;
 				if(scam_params->ca_pid.index != -1) {
 					if (!(chan_and_pids.started_pid_get[scam_params->ca_pid.index])) {
 					  for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels  && !got_pid; curr_channel++) {
