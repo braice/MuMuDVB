@@ -93,7 +93,7 @@ int scam_send_capmt(mumudvb_channel_t *channel, int adapter)
     snprintf(serv_addr_un.sun_path, sizeof(serv_addr_un.sun_path), "/tmp/camd.socket");
     if (connect(channel->camd_socket, (const struct sockaddr *) &serv_addr_un, sizeof(serv_addr_un)) != 0)
     {
-	  log_message(log_module, MSG_ERROR,"Canot connect to /tmp/camd.socket for channel %s, Do you have OSCam running?\n", channel->name);
+	  log_message(log_module, MSG_ERROR,"cannot connect to /tmp/camd.socket for channel %s. Do you have OSCam running?\n", channel->name);
       channel->camd_socket = 0;
 	  return 1;
     }

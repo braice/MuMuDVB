@@ -926,6 +926,8 @@ int unicast_reply_write(struct unicast_reply *reply, const char* msg, ...)
 */
 int unicast_reply_send(struct unicast_reply *reply, int socket, int code, const char* content_type)
 {
+  int size=0;
+  int temp_size=0;
   //we add the header information
   reply->type = REPLY_HEADER;
   unicast_reply_write(reply, "HTTP/1.0 ");
@@ -949,8 +951,13 @@ int unicast_reply_send(struct unicast_reply *reply, int socket, int code, const 
   reply->buffer_header = realloc(reply->buffer_header, reply->used_header+reply->used_body);
   memcpy(&reply->buffer_header[reply->used_header],reply->buffer_body,sizeof(char)*reply->used_body);
   reply->used_header+=reply->used_body;
+	
   //now we write the data
-  int size = write(socket, reply->buffer_header, reply->used_header);
+  while (size<reply->used_header){
+	temp_size = write(socket, reply->buffer_header+size, reply->used_header-size);
+	size += temp_size!=-1 ? temp_size : 0 ;
+
+  }
   return size;
 }
 
@@ -1428,10 +1435,10 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 	if (scam_vars->scam_support) {
 		unicast_reply_write(reply, "\t\t<scam descrambled=\"%d\">\n",channels[curr_channel].scam_support);
 			if (channels[curr_channel].scam_support) {
-				unicast_reply_write(reply, "\t<ring_buffer_size>%u</ring_buffer_size>\n",channels[curr_channel].ring_buffer_size);
-				unicast_reply_write(reply, "\t<decsa_delay>%u</decsa_delay>\n",channels[curr_channel].decsa_delay);
-				unicast_reply_write(reply, "\t<send_delay>%u</send_delay>\n",channels[curr_channel].send_delay);
-				unicast_reply_write(reply, "\t<num_packets>%u</num_packets>\n",channels[curr_channel].ring_buffer_num_packets);
+				unicast_reply_write(reply, "\t\t\t<ring_buffer_size>%u</ring_buffer_size>\n",channels[curr_channel].ring_buffer_size);
+				unicast_reply_write(reply, "\t\t\t<decsa_delay>%u</decsa_delay>\n",channels[curr_channel].decsa_delay);
+				unicast_reply_write(reply, "\t\t\t<send_delay>%u</send_delay>\n",channels[curr_channel].send_delay);
+				unicast_reply_write(reply, "\t\t\t<num_packets>%u</num_packets>\n",channels[curr_channel].ring_buffer_num_packets);
 			}
 		unicast_reply_write(reply, "\t\t</scam>\n");
 	}
