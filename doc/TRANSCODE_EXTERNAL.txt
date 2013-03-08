@@ -204,11 +204,72 @@ This line have to be changed according to your configuration where the first par
 You need multiple FFmpeg instances, one per channel.
 
 To start ffmpeg in background please use nohup ffmpeg -i ...
-
+Note that you can auto start FFMpeg per feed by adding the following inside your feed definition:
+launch ffmpeg -i udp://@X.X.X.X:1234
+where X.X.X.X is your Multicast group.
  
 Now the channels can be accessed in unicast on URLs like http://192.168.100.100/almajd01.asf
 
- 
+ 	Example AAC/H.264 transcoded stream inside a FLV container:
+Port 8888
+BindAddress 0.0.0.0
+MaxHTTPConnections 20000
+MaxClients 10000
+MaxBandwidth 1000000
+CustomLog -
+<Feed al-quds.ffm>
+File /tmp/al-quds.ffm
+FileMaxSize 100M
+ACL allow 127.0.0.1
+launch ffmpeg -i udp://@239.100.1.13:1234
+</Feed>
+
+<Stream al-quds.flv>
+Feed al-quds.ffm
+Format flv 
+AudioBitRate 64 
+AudioChannels 2
+AudioSampleRate 44100 
+AVOptionAudio flags +global_header
+VideoBitRate 256 
+VideoBufferSize 400 
+VideoFrameRate 25 
+VideoBitRateTolerance 100
+VideoSize 704x480
+VideoGopSize 12
+AudioCodec aac 
+VideoCodec libx264 
+AVOptionVideo coder 0
+AVOptionVideo bf 0
+AVOptionVideo flags +loop
+AVOptionVideo partitions +parti8x8+parti4x4+partp8x8+partb8x8
+AVOptionVideo me_method hex
+AVOptionVideo subq 7
+AVOptionVideo me_range 16
+AVOptionVideo g 250
+AVOptionVideo keyint_min 10
+AVOptionVideo sc_threshold 40
+AVOptionVideo i_qfactor 0.71
+AVOptionVideo b_strategy 1
+AVOptionVideo qcomp 0.6
+AVOptionVideo qmin 10
+AVOptionVideo qmax 51
+AVOptionVideo qdiff 4
+AVOptionVideo refs 3
+AVOptionVideo directpred 1
+AVOptionVideo trellis 1
+AVOptionVideo wpredp 0
+AVOptionVideo flags +global_header
+Title 'Al-quds tv'
+comment 'Al-quds Islamic jihad tv channel'
+author 'Islamic Jihad'
+StartSendOnKey
+</Stream>
+<Stream stat.html>
+Format status
+
+ACL allow 192.168.0.0 192.168.255.255
+</Stream>
 
 Acknowledgements
 ----------------
@@ -220,3 +281,4 @@ thank to everyone that helped me getting my home brew IPTV up and running, i can
 thank to Georgeus roger for helping me with Oscam setup so now i have my channels descrambled.
 
 if you need any help please don't hesitate to contact me on the mailing list!
+

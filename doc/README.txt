@@ -66,6 +66,8 @@ Features overview
 - Ability to transcode the stream (only for multicast for the moment) see the <<transcoding,Transcoding>> section
 - CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.txt and CAM_menu_interface.png for screenshot)
 - Software descrambling through oscam dvbapi and libdvbcsa
+
+
 Detailled feature list
 ~~~~~~~~~~~~~~~~~~~~~~
 
