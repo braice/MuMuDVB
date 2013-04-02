@@ -1825,7 +1825,7 @@ int
 #ifdef ENABLE_SCAM_SUPPORT
 		if (scam_vars.scam_support &&(chan_and_pids.channels[curr_channel].need_scam_ask==CAM_NEED_ASK))
 		{ 
-				if (chan_and_pids.channels[curr_channel].scam_support) {								
+				if (chan_and_pids.channels[curr_channel].scam_support && chan_and_pids.channels[curr_channel].pmt_packet->len_full != 0 ) {								
 					  iRet=scam_send_capmt(&chan_and_pids.channels[curr_channel],tuneparams.card);
 					  if(iRet)
 					  {
