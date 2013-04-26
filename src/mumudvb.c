@@ -1886,7 +1886,7 @@ int
         if((send_packet==1) &&//no need to check paquets we don't send
            (pid == 18) && //This is a EIT PID
             (chan_and_pids.channels[curr_channel].service_id) && //we have the service_id
-            rewrite_vars.eit_sort ) //AND we asked for EIT sorting
+            rewrite_vars.eit_sort == OPTION_ON) //AND we asked for EIT sorting
         {
           send_packet=eit_sort_new_packet(actual_ts_packet, &chan_and_pids.channels[curr_channel]);
         }
