@@ -443,6 +443,7 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
       log_message( log_module,  MSG_WARN,
 		   "Error file_not_streamed_channels %s: %s\n",
 		   file_not_streamed_channels_filename, strerror (errno));
+      fclose (file_streamed_channels);  // the first fopen was successful!
       return;
     }
 
@@ -501,6 +502,7 @@ void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
       log_message( log_module,  MSG_WARN,
 		   "saving_filename %s: %s\n",
 		   saving_filename, strerror (errno));
+      fclose (orig_conf_file);  // the first fopen was successful!
       return;
     }
   
