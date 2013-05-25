@@ -1,7 +1,7 @@
 /* dvb.c
  * MuMuDVB - Stream a DVB transport stream.
  * 
- * (C) 2004-2011 Brice DUBOST
+ * (C) 2004-2013 Brice DUBOST
  * (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
  * The latest version can be found at http://mumudvb.braice.net
@@ -51,15 +51,20 @@ static char *log_module="DVB: ";
  * @param card the card number 
 */
 int
-open_fe (int *fd_frontend, char *base_path, int tuner)
+open_fe (int *fd_frontend, char *base_path, int tuner, int rw)
 {
 
   char *frontend_name=NULL;
   int asprintf_ret;
+  int rw_flag;
   asprintf_ret=asprintf(&frontend_name,"%s/%s%d",base_path,FRONTEND_DEV_NAME,tuner);
   if(asprintf_ret==-1)
     return -1;
-  if ((*fd_frontend = open (frontend_name, O_RDWR | O_NONBLOCK)) < 0)
+  if(rw)
+	  rw_flag=O_RDWR;
+  else
+	  rw_flag=O_RDONLY;
+  if ((*fd_frontend = open (frontend_name, rw_flag | O_NONBLOCK)) < 0)
     {
       log_message( log_module,  MSG_ERROR, "FRONTEND DEVICE: %s : %s\n", frontend_name, strerror(errno));
       free(frontend_name);
@@ -444,7 +449,7 @@ void show_card_capabilities( int card, int tuner )
   char card_dev_path[256];
   sprintf(card_dev_path,DVB_DEV_PATH,card);
   //Open the frontend
-  if(!open_fe (&frontend_fd, card_dev_path, tuner))
+  if(!open_fe (&frontend_fd, card_dev_path, tuner,0)) // we open the card readonly so we can get the capabilities event when used
     return;
 
   //if(ioctl(fd_frontend,FE_READ_STATUS,&festatus) >= 0)

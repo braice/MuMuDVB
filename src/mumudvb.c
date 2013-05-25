@@ -1097,7 +1097,7 @@ int
   // We tune the card
   iRet =-1;
 
-  if (open_fe (&fds.fd_frontend, tuneparams.card_dev_path, tuneparams.tuner))
+  if (open_fe (&fds.fd_frontend, tuneparams.card_dev_path, tuneparams.tuner,1))
   {
 
   /*****************************************************/
