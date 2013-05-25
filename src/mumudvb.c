@@ -33,7 +33,7 @@
 
 
 /** @file
- * @brief This file is the main file of mumudvb
+ * @brief This file is the main file of MuMuDVB
  */
 
 
@@ -85,6 +85,8 @@
 
 #define _GNU_SOURCE		//in order to use program_invocation_short_name (extension gnu)
 
+extern char *program_invocation_short_name;
+
 #include "config.h"
 
 // Linux includes:
@@ -133,8 +135,6 @@
 #include "transcode.h"
 #endif
 
-/** the table for crc32 claculations */
-extern uint32_t       crc32_table[256];
 
 static char *log_module="Main: ";
 
@@ -603,7 +603,7 @@ int
   while (fgets (current_line, CONF_LINELEN, conf_file))
   {
     //We suppress the end of line (this can disturb atoi if there is spaces at the end of the line)
-    //Thanks to pierre gronlier pierre.gronlier at gmail.com for finding that bug
+    //Thanks to Pierre Gronlier pierre.gronlier at gmail.com for finding that bug
     line_len=strlen(current_line);
     if(current_line[line_len-1]=='\r' ||current_line[line_len-1]=='\n')
       current_line[line_len-1]=0;
@@ -733,12 +733,9 @@ int
       if(card_buffer.dvr_buffer_size<=0)
       {
         log_message( log_module,  MSG_WARN,
-                     "Warning : the buffer size MUST be >0, forced to 1 packet\n");
+                     "The buffer size MUST be >0, forced to 1 packet\n");
         card_buffer.dvr_buffer_size = 1;
       }
-      if(card_buffer.dvr_buffer_size>1)
-        log_message( log_module,  MSG_WARN,
-                     "Warning : You set a buffer size > 1, this feature is experimental, please report bugs/problems or results\n");
       stats_infos.show_buffer_stats=1;
     }
     else if (!strcmp (substring, "dvr_thread"))
@@ -748,7 +745,7 @@ int
       if(card_buffer.threaded_read)
       {
         log_message( log_module,  MSG_WARN,
-                     "Warning : You want to use a thread for reading the card, this feature is experimental, please report bugs/problems or results\n");
+                     "You want to use a thread for reading the card, please report bugs/problems\n");
       }
     }
     else if (!strcmp (substring, "dvr_thread_buffer_size"))
@@ -759,7 +756,7 @@ int
     else if ((!strcmp (substring, "service_id")) || (!strcmp (substring, "ts_id")))
     {
       if(!strcmp (substring, "ts_id"))
-        log_message( log_module,  MSG_WARN, "Warning : the option ts_id is deprecated, use service_id instead.\n");
+        log_message( log_module,  MSG_WARN, "The option ts_id is depreciated, use service_id instead.\n");
       if ( channel_start == 0)
       {
         log_message( log_module,  MSG_ERROR,
@@ -1149,7 +1146,7 @@ int
   strengthparams.fds = &fds;
   strengthparams.tuneparams = &tuneparams;
   pthread_create(&(signalpowerthread), NULL, show_power_func, &strengthparams);
-  //Thread for reading from the DVB card initialisation
+  //Thread for reading from the DVB card initialization
   if(card_buffer.threaded_read)
   {
     cardthreadparams.thread_running=1;
