@@ -136,6 +136,9 @@ The `[configure options]` specific to MuMuDVB are:
   --enable-duma           Debbuging DUMA library (default disabled)
 ---------------------------------------------------------------------
 
+[NOTE]
+If you want to compile MuMuDVB with clang/llvm, you have to install llvm-gcc and add  `CC=llvm-gcc LD=llvm-ld` to your `[configure options]`.
+
 You can have a list of all the configure options by typing
 
 --------------------
