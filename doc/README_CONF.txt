@@ -218,8 +218,8 @@ Multicast parameters
 |multicast |Do we activate multicast, deprecated, use multicast_ipv4 instead | 1 | 0 or 1 |
 |multicast_ipv4 |Do we activate IPv4 multicast | 1 | 0 or 1 |
 |multicast_ipv6 |Do we activate IPv6 multicast | 0 | 0 or 1 |
-|multicast_iface4 |The network interface to send IPv4 multicast packets | empty (let the system choose) |  |
-|multicast_iface6 |The network interface to send IPv6 multicast packets | empty (let the system choose) |  |
+|multicast_iface4 |The network interface to send IPv4 multicast packets (eth1, eth2 etc...) | empty (let the system choose) |  |
+|multicast_iface6 |The network interface to send IPv6 multicast packets (eth1, eth2 etc...) | empty (let the system choose) |  |
 |common_port | Default port for the streaming | 1234 | | 
 |multicast_ttl |The multicast Time To Live | 2 | |
 |multicast_auto_join | Set to 1 if you want MuMuDVB to join automatically the multicast groups | 0 | 0 or 1 | See known problems in the README
