@@ -712,6 +712,9 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
             mumu_string_replace(tempstring,&len,0,"%tuner",number);
             sprintf(number,"%d",server_id);
             mumu_string_replace(tempstring,&len,0,"%server",number);
+            //SID
+            sprintf(number,"%d",actual_service->id);
+            mumu_string_replace(tempstring,&len,0,"%sid",number);
             channels[channel_number].portOut=string_comput(tempstring);
           }
           else
@@ -729,6 +732,11 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 	      mumu_string_replace(ip,&len,0,"%tuner",number);
 	      sprintf(number,"%d",server_id);
 	      mumu_string_replace(ip,&len,0,"%server",number);
+	      //SID
+	      sprintf(number,"%d",(actual_service->id&0xFF00)>>8);
+	      mumu_string_replace(ip,&len,0,"%sid_hi",number);
+	      sprintf(number,"%d",actual_service->id&0x00FF);
+	      mumu_string_replace(ip,&len,0,"%sid_lo",number);
 	      // Compute the string, ex: 239.255.130+0*10+2.1
 	      log_message( log_module, MSG_DEBUG,"Computing expressions in string \"%s\"\n",ip);
 	      //Splitting and computing. use of strtok_r because it's safer
@@ -752,6 +760,9 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 	      mumu_string_replace(ip,&len,0,"%tuner",number);
 	      sprintf(number,"%d",server_id);
 	      mumu_string_replace(ip,&len,0,"%server",number);
+	      //SID
+	      sprintf(number,"%04x",actual_service->id);
+	      mumu_string_replace(ip,&len,0,"%sid",number);
 	      strcpy(channels[channel_number].ip6Out,ip);
 	      log_message( log_module, MSG_DEBUG,"Channel IPv6 : \"%s\" port : %d\n",channels[channel_number].ip6Out,channels[channel_number].portOut);
 	    }	  
@@ -807,6 +818,9 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
           mumu_string_replace(tempstring,&len,0,"%tuner",number);
           sprintf(number,"%d",server_id);
           mumu_string_replace(tempstring,&len,0,"%server",number);
+          //SID
+          sprintf(number,"%d",actual_service->id);
+          mumu_string_replace(tempstring,&len,0,"%sid",number);
           channels[channel_number].unicast_port=string_comput(tempstring);
           log_message( log_module, MSG_DEBUG,"Channel (direct) unicast port  %d\n",channels[channel_number].unicast_port);
         }
@@ -886,7 +900,7 @@ int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parame
   for (curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
   {
 
-    /** open the unicast listening connections fo the channels */
+    /** open the unicast listening connections for the channels */
     if(chan_and_pids->channels[curr_channel].unicast_port && unicast_vars->unicast)
     {
       log_message( log_module, MSG_INFO,"Unicast : We open the channel %d http socket address %s:%d\n",
@@ -941,7 +955,7 @@ int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parame
   }
 
   log_message( log_module, MSG_DEBUG,"Step TWO, we get the video and audio PIDs\n");
-  //We free autoconf memort
+  //We free autoconf memory
   autoconf_freeing(autoconf_vars);
 
   autoconf_vars->autoconfiguration=AUTOCONF_MODE_PIDS; //Next step add video and audio pids

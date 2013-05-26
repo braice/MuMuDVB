@@ -310,6 +310,9 @@ There is different keywords available:
 |%server| The server number specified by server_id or the command line 
 |%lcn | The logical channel number (channel number given by the provider). Your provider have to stream the LCN. The LCN will be displayed with three digits including 0. Ex "002". If the LCN is not detected, %lcn will be replaced by an empty string.
 |%2lcn | Same as above but with a two digits format
+|%sid| The channel service id (decimal for the port, hexadecimal for ipv6)
+|%sid_hi| The channel service id. The two higher bits (between 0 and 255)
+|%sid_lo| The channel service id. The two lower bits (between 0 and 255)
 |==================================================================================================================
 
 Please refer to README_CONF to see which options accept which templates
