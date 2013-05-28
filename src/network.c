@@ -187,11 +187,7 @@ makesocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
 	  if(iface_index)
 	  {
 		  log_message( log_module,  MSG_DEBUG, "Setting IPv6 multicast iface to %s, index %d",iface,iface_index);
-		  struct ip_mreqn iface_struct;
-		  iface_struct.imr_multiaddr.s_addr=INADDR_ANY;
-		  iface_struct.imr_address.s_addr=INADDR_ANY;
-		  iface_struct.imr_ifindex=iface_index;
-		  iRet = setsockopt (iSocket, IPPROTO_IPV6, IPV6_MULTICAST_IF, &iface_struct, sizeof (struct ip_mreqn));
+		  iRet = setsockopt (iSocket, IPPROTO_IPV6, IPV6_MULTICAST_IF, &iface_index, sizeof (int));
 		  if (iRet < 0)
 		  {
 			  log_message( log_module,  MSG_ERROR,"setsockopt IPV6_MULTICAST_IF failed.  multicast in kernel? error : %s \n",strerror(errno));
