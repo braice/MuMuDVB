@@ -271,14 +271,15 @@ int scam_channel_start(mumudvb_channel_t *channel)
 	pthread_mutex_init(&channel->ring_buf->to_send_mutex, NULL);
 	pthread_mutex_init(&channel->ring_buf->to_descramble_mutex, NULL);
 
-	scam_send_start(channel);
 	scam_decsa_start(channel);
+	scam_send_start(channel);
+
 	return 0;
 }
 
 void scam_channel_stop(mumudvb_channel_t *channel)
 {
-	uint64_t i;
+	uint64_t i;	
 	scam_send_stop(channel);
 	scam_decsa_stop(channel);
     for ( i = 0; i< channel->ring_buffer_size; i++)
