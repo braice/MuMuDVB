@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.61])
-AC_INIT([MuMuDVB], [1.7.1_20121001_scam], [mumudvb@braice.net])
+AC_INIT([MuMuDVB], [1.7.2_20130525_master], [mumudvb@braice.net])
 AC_CONFIG_SRCDIR([src/mumudvb.c])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([src/config.h])
@@ -29,10 +29,10 @@ AM_ICONV
 
 AC_CHECK_LIB([dvbapi], [dvbdemux_set_section_filter])
 AC_CHECK_LIB([ucsi], [atsc_text_segment_decode],[atsc_long_names="yes"], [atsc_long_names="no"])
-#AC_CHECK_LIB([dvben50221], [en50221_stdcam_create],,,[ucsi,pthread])
 AC_CHECK_LIB([pthread], [pthread_create])
 AC_CHECK_LIB([rt], [clock_gettime])
 AC_CHECK_LIB([m], [log2l])
+
 
 dnl
 dnl cam support
@@ -54,7 +54,6 @@ else
   enable_cam_support="no"
 fi
 AM_CONDITIONAL(BUILD_CAMSUPPORT, [test "${enable_cam_support}" != "no"])
-
 
 dnl
 dnl scam support
@@ -171,11 +170,10 @@ else
 fi
 
 if test "${enable_scam_support}" != "no" ; then
-        echo "Build with SCAM support:                             yes"
+        echo "Build with SCAM support:                            yes"
 else
-        echo "Build with SCAM support:                              no"
+        echo "Build with SCAM support:                             no"
 fi
-
 
 if test "${enable_transcoding}" != "no" ; then
         echo "Build with transcoding support:                     yes"

@@ -1,7 +1,7 @@
 /* dvb.c
  * MuMuDVB - Stream a DVB transport stream.
  * 
- * (C) 2004-2011 Brice DUBOST
+ * (C) 2004-2013 Brice DUBOST
  * (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
  * The latest version can be found at http://mumudvb.braice.net
@@ -51,15 +51,20 @@ static char *log_module="DVB: ";
  * @param card the card number 
 */
 int
-open_fe (int *fd_frontend, char *base_path, int tuner)
+open_fe (int *fd_frontend, char *base_path, int tuner, int rw)
 {
 
   char *frontend_name=NULL;
   int asprintf_ret;
+  int rw_flag;
   asprintf_ret=asprintf(&frontend_name,"%s/%s%d",base_path,FRONTEND_DEV_NAME,tuner);
   if(asprintf_ret==-1)
     return -1;
-  if ((*fd_frontend = open (frontend_name, O_RDWR | O_NONBLOCK)) < 0)
+  if(rw)
+	  rw_flag=O_RDWR;
+  else
+	  rw_flag=O_RDONLY;
+  if ((*fd_frontend = open (frontend_name, rw_flag | O_NONBLOCK)) < 0)
     {
       log_message( log_module,  MSG_ERROR, "FRONTEND DEVICE: %s : %s\n", frontend_name, strerror(errno));
       free(frontend_name);
@@ -116,7 +121,7 @@ void *show_power_func(void* arg)
   strengthparams->ber = 0;
   strengthparams->snr = 0;
   strengthparams->ub = 0;
-  strengthparams->ts_discontinuities = 0; //could be initialised somewhere else but sounds fine here
+  strengthparams->ts_discontinuities = 0; //could be initialized somewhere else but sounds fine here
   memset(&festatus_old,0,sizeof(fe_status_t));
   lock_lost=0;
   while(!strengthparams->tuneparams->strengththreadshutdown)
@@ -183,16 +188,16 @@ void *show_power_func(void* arg)
         if((!(strengthparams->festatus & FE_HAS_LOCK) ) && (festatus_old != strengthparams->festatus))
         {
           if(!lock_lost)
-            log_message( log_module,  MSG_WARN, "The card has lost the lock (antenna unplugged ?). Detailled status\n");
+            log_message( log_module,  MSG_WARN, "The card has lost the lock (antenna unplugged ?). Detailed status");
           else
-            log_message( log_module,  MSG_INFO, "Card is still not locked but status changed. Detailled status\n");
+            log_message( log_module,  MSG_INFO, "Card is still not locked but status changed. Detailed status");
           print_status(strengthparams->festatus);
           festatus_old = strengthparams->festatus;
           lock_lost=1;
         }
         if((strengthparams->festatus & FE_HAS_LOCK)  && lock_lost)
         {
-          log_message( log_module,  MSG_INFO, "Card is locked again.\n");
+          log_message( log_module,  MSG_INFO, "Card is locked again.");
           lock_lost=0;
         }
       }
@@ -343,7 +348,6 @@ void *read_card_thread_func(void* arg)
 	threadparams->unicast_data=1;
 	if(threadparams->main_waiting)
         {
-        //log_message( log_module,  MSG_DEBUG, "Thread signalling -------\n");
         pthread_cond_signal(&threadparams->threadcond);
         }
 	//no DVB packet, we continue
@@ -354,12 +358,11 @@ void *read_card_thread_func(void* arg)
       /**@todo : use a dynamic buffer ?*/
       if(!throwing_packets)
       {
-	throwing_packets=1; /** @todo count them*/
-	log_message( log_module,  MSG_INFO, "Thread trowing dvb packets\n");
+    	  throwing_packets=1; /** @todo count them*/
+    	  log_message( log_module,  MSG_INFO, "Thread trowing dvb packets\n");
       }
       if(threadparams->main_waiting)
       {
-        //log_message( log_module,  MSG_DEBUG, "Thread signalling -------\n");
         pthread_cond_signal(&threadparams->threadcond);
       }
       continue;
@@ -372,11 +375,9 @@ void *read_card_thread_func(void* arg)
 
     if(threadparams->main_waiting)
     {
-      //log_message( log_module,  MSG_DEBUG, "Thread signalling -------\n");
       pthread_cond_signal(&threadparams->threadcond);
     }
     pthread_mutex_unlock(&threadparams->carddatamutex);
-    //usleep(2000000);
   }
   return NULL;
 }
@@ -417,13 +418,6 @@ int card_read(int fd_dvr, unsigned char *dest_buffer, card_buffer_t *card_buffer
 }
 
 
-/*
-int tune_dvr_buffer_size(int bytes_read, card_buffer_t *card_buffers)
-{
-  return 0;
-}
-*/
-
 typedef struct frontend_cap_t
 {
   long int flag;
@@ -444,11 +438,8 @@ void show_card_capabilities( int card, int tuner )
   char card_dev_path[256];
   sprintf(card_dev_path,DVB_DEV_PATH,card);
   //Open the frontend
-  if(!open_fe (&frontend_fd, card_dev_path, tuner))
+  if(!open_fe (&frontend_fd, card_dev_path, tuner,0)) // we open the card readonly so we can get the capabilities event when used
     return;
-
-  //if(ioctl(fd_frontend,FE_READ_STATUS,&festatus) >= 0)
-  //print_status(festatus);
 
   //get frontend info
   struct dvb_frontend_info fe_info;
@@ -521,7 +512,6 @@ void show_card_capabilities( int card, int tuner )
   };
   int numcaps=28;
   int i;
-  //todo : do a loop on a structure which contains the capabilities
   for(i=0;i<numcaps;i++)
     if(fe_info.caps & caps[i].flag)
       log_message( log_module,  MSG_DETAIL, "%s\n", caps[i].descr);

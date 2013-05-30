@@ -114,18 +114,26 @@ makesocket (char *szAddr, unsigned short port, int TTL, char *iface,
       Interrupted=ERROR_NETWORK<<8;
     }
   if(strlen(iface))
-    {
-      int iface_index;
-      iface_index = if_nametoindex(iface);
-      log_message( log_module,  MSG_FLOOD, "Setting Ipv4 multicast iface to %s, index %d",iface,iface_index);
-      iRet =
-	setsockopt (iSocket, IPPROTO_IP, IP_MULTICAST_IF, &iface_index, sizeof (int));
-      if (iRet < 0)
-	{
-	  log_message( log_module,  MSG_ERROR,"setsockopt IP_MULTICAST_IF failed.  multicast in kernel? error : %s \n",strerror(errno));
-	  Interrupted=ERROR_NETWORK<<8;
-	}
-    }
+  {
+	  int iface_index;
+	  iface_index = if_nametoindex(iface);
+	  if(iface_index)
+	  {
+		  log_message( log_module,  MSG_DEBUG, "Setting IPv4 multicast iface to %s, index %d",iface,iface_index);
+		  struct ip_mreqn iface_struct;
+		  iface_struct.imr_multiaddr.s_addr=INADDR_ANY;
+		  iface_struct.imr_address.s_addr=INADDR_ANY;
+		  iface_struct.imr_ifindex=iface_index;
+		  iRet = setsockopt (iSocket, IPPROTO_IP, IP_MULTICAST_IF, &iface_struct, sizeof (struct ip_mreqn));
+		  if (iRet < 0)
+		  {
+			  log_message( log_module,  MSG_ERROR,"setsockopt IP_MULTICAST_IF failed.  multicast in kernel? error : %s \n",strerror(errno));
+			  Interrupted=ERROR_NETWORK<<8;
+		  }
+	  }
+	  else
+		  log_message( log_module,  MSG_ERROR,"Setting IPV4 multicast interface: Interface %s does not exist",iface);
+  }
 
   return iSocket;
 }
@@ -173,18 +181,23 @@ makesocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
       Interrupted=ERROR_NETWORK<<8;
     }
   if(strlen(iface))
-    {
-      int iface_index;
-      iface_index = if_nametoindex(iface);
-      log_message( log_module,  MSG_FLOOD, "Setting Ipv6 multicast iface to %s, index %d",iface,iface_index);
-      iRet =
-	setsockopt (iSocket, IPPROTO_IPV6, IPV6_MULTICAST_IF, &iface_index, sizeof (int));
-      if (iRet < 0)
-	{
-	  log_message( log_module,  MSG_ERROR,"setsockopt IPV6_MULTICAST_IF failed.  multicast in kernel? error : %s \n",strerror(errno));
-	  Interrupted=ERROR_NETWORK<<8;
-	}
-    }
+  {
+	  int iface_index;
+	  iface_index = if_nametoindex(iface);
+	  if(iface_index)
+	  {
+		  log_message( log_module,  MSG_DEBUG, "Setting IPv6 multicast iface to %s, index %d",iface,iface_index);
+		  iRet = setsockopt (iSocket, IPPROTO_IPV6, IPV6_MULTICAST_IF, &iface_index, sizeof (int));
+		  if (iRet < 0)
+		  {
+			  log_message( log_module,  MSG_ERROR,"setsockopt IPV6_MULTICAST_IF failed.  multicast in kernel? error : %s \n",strerror(errno));
+			  Interrupted=ERROR_NETWORK<<8;
+		  }
+	  }
+	  else
+		  log_message( log_module,  MSG_ERROR,"Setting IPv6 multicast interface: Interface %s does not exist",iface);
+
+  }
 
   return iSocket;
 }
@@ -197,7 +210,7 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL, char *iface,
 		  struct sockaddr_in *sSockAddr)
 {
   int socket = makesocket (szAddr, port, TTL, iface, sSockAddr);
-  struct ip_mreq blub;
+  struct ip_mreqn blub;
   struct sockaddr_in sin;
   unsigned int tempaddr;
   sin.sin_family = AF_INET;
@@ -212,9 +225,11 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL, char *iface,
   if ((ntohl (tempaddr) >> 28) == 0xe)
     {
       blub.imr_multiaddr.s_addr = inet_addr (szAddr);
-      blub.imr_interface.s_addr = 0;
-      if (setsockopt
-	  (socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &blub, sizeof (blub)))
+      if(strlen(iface))
+    	  blub.imr_ifindex=if_nametoindex(iface);
+      else
+    	  blub.imr_ifindex = 0;
+      if (setsockopt (socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &blub, sizeof (blub)))
 	{
 	  log_message( log_module,  MSG_ERROR, "setsockopt IP_ADD_MEMBERSHIP ipv4 failed (multicast kernel?) : %s\n", strerror(errno));
           Interrupted=ERROR_NETWORK<<8;
@@ -235,7 +250,7 @@ makeclientsocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
   struct ipv6_mreq blub;
   struct sockaddr_in6 sin;
   int iRet;
-  sin.sin6_family = AF_INET;
+  sin.sin6_family = AF_INET6;
   sin.sin6_port = htons (port);
   iRet=inet_pton (AF_INET6, szAddr,&sin.sin6_addr); 
   if (iRet == 0)
@@ -253,7 +268,10 @@ makeclientsocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
 
   //join the group
   inet_pton (AF_INET6, szAddr,&blub.ipv6mr_multiaddr); 
-  blub.ipv6mr_interface = 0;
+  if(strlen(iface))
+	  blub.ipv6mr_interface=if_nametoindex(iface);
+  else
+	  blub.ipv6mr_interface = 0;
   if (setsockopt
       (socket, IPPROTO_IPV6, IPV6_JOIN_GROUP, &blub, sizeof (blub)))
     {

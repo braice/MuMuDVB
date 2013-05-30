@@ -212,16 +212,16 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
           unsigned char descriptor_tag;
           descriptor_tag = rewrite_vars->full_sdt->data_full[buffer_pos+SDT_DESCR_LEN+pos];
           unsigned char descriptor_len;
-          descriptor_len = rewrite_vars->full_sdt->data_full[buffer_pos+SDT_DESCR_LEN+pos]+2;
+          descriptor_len = rewrite_vars->full_sdt->data_full[buffer_pos+SDT_DESCR_LEN+pos+1]+2;
           if(sdt_rewrite_copy_descriptor(descriptor_tag))
           {
             //We keep the descriptor we copy it
-            log_message( log_module, MSG_FLOOD,"We copy this descriptor : descriptor_tag 0x%02x descriptor_len %d loop length %d pos %d\n",descriptor_tag,descriptor_len, loop_length, pos);
+            log_message( log_module, MSG_FLOOD,"We copy this descriptor : descriptor_tag 0x%02x descriptor_len %d (on %d) loop length %d pos %d\n",descriptor_tag,descriptor_len,descriptors_length, loop_length, pos);
             memcpy(t_buffer+SDT_DESCR_LEN+loop_length,rewrite_vars->full_sdt->data_full+buffer_pos+SDT_DESCR_LEN+pos,descriptor_len);
             loop_length += descriptor_len;
           }
           else
-            log_message( log_module, MSG_FLOOD," descriptor_tag 0x%02x descriptor_len %d\n",descriptor_tag,descriptor_len);
+            log_message( log_module, MSG_FLOOD,"descriptor_tag 0x%02x descriptor_len %d actual\n",descriptor_tag,descriptor_len);
           pos+=descriptor_len;
         }
         if(buf_dest_pos+SDT_DESCR_LEN+loop_length+4+1>TS_PACKET_SIZE) //The +4 is for CRC32 +1 is because indexing starts at 0

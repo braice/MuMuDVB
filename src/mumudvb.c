@@ -33,7 +33,7 @@
 
 
 /** @file
- * @brief This file is the main file of mumudvb
+ * @brief This file is the main file of MuMuDVB
  */
 
 
@@ -85,6 +85,8 @@
 
 #define _GNU_SOURCE		//in order to use program_invocation_short_name (extension gnu)
 
+extern char *program_invocation_short_name;
+
 #include "config.h"
 
 // Linux includes:
@@ -133,8 +135,6 @@
 #include "transcode.h"
 #endif
 
-/** the table for crc32 claculations */
-extern uint32_t       crc32_table[256];
 
 static char *log_module="Main: ";
 
@@ -557,7 +557,7 @@ int
   //paranoya we clear all the content of all the channels
   memset (&chan_and_pids.channels, 0, sizeof (mumudvb_channel_t)*MAX_CHANNELS);
 
-  
+
   /******************************************************/
   // config file displaying
   /******************************************************/
@@ -574,7 +574,7 @@ int
    while (fgets (current_line, CONF_LINELEN, conf_file))
   {
     int line_len;
-    //We suppress the end of line 
+    //We suppress the end of line
     line_len=strlen(current_line);
     if(current_line[line_len-1]=='\r' ||current_line[line_len-1]=='\n')
       current_line[line_len-1]=0;
@@ -603,7 +603,7 @@ int
   while (fgets (current_line, CONF_LINELEN, conf_file))
   {
     //We suppress the end of line (this can disturb atoi if there is spaces at the end of the line)
-    //Thanks to pierre gronlier pierre.gronlier at gmail.com for finding that bug
+    //Thanks to Pierre Gronlier pierre.gronlier at gmail.com for finding that bug
     line_len=strlen(current_line);
     if(current_line[line_len-1]=='\r' ||current_line[line_len-1]=='\n')
       current_line[line_len-1]=0;
@@ -733,12 +733,9 @@ int
       if(card_buffer.dvr_buffer_size<=0)
       {
         log_message( log_module,  MSG_WARN,
-                     "Warning : the buffer size MUST be >0, forced to 1 packet\n");
+                     "The buffer size MUST be >0, forced to 1 packet\n");
         card_buffer.dvr_buffer_size = 1;
       }
-      if(card_buffer.dvr_buffer_size>1)
-        log_message( log_module,  MSG_WARN,
-                     "Warning : You set a buffer size > 1, this feature is experimental, please report bugs/problems or results\n");
       stats_infos.show_buffer_stats=1;
     }
     else if (!strcmp (substring, "dvr_thread"))
@@ -748,7 +745,7 @@ int
       if(card_buffer.threaded_read)
       {
         log_message( log_module,  MSG_WARN,
-                     "Warning : You want to use a thread for reading the card, this feature is experimental, please report bugs/problems or results\n");
+                     "You want to use a thread for reading the card, please report bugs/problems\n");
       }
     }
     else if (!strcmp (substring, "dvr_thread_buffer_size"))
@@ -759,7 +756,7 @@ int
     else if ((!strcmp (substring, "service_id")) || (!strcmp (substring, "ts_id")))
     {
       if(!strcmp (substring, "ts_id"))
-        log_message( log_module,  MSG_WARN, "Warning : the option ts_id is deprecated, use service_id instead.\n");
+        log_message( log_module,  MSG_WARN, "The option ts_id is depreciated, use service_id instead.\n");
       if ( channel_start == 0)
       {
         log_message( log_module,  MSG_ERROR,
@@ -813,7 +810,7 @@ int
 	  // other substring extraction method in order to keep spaces
       substring = strtok (NULL, "=");
       if (!(strlen (substring) >= MAX_NAME_LEN - 1))
-        strcpy(chan_and_pids.channels[curr_channel].name,strtok(substring,"\n"));	
+        strcpy(chan_and_pids.channels[curr_channel].name,strtok(substring,"\n"));
       else
       {
         log_message( log_module,  MSG_WARN,"Channel name too long\n");
@@ -1097,7 +1094,7 @@ int
   // We tune the card
   iRet =-1;
 
-  if (open_fe (&fds.fd_frontend, tuneparams.card_dev_path, tuneparams.tuner))
+  if (open_fe (&fds.fd_frontend, tuneparams.card_dev_path, tuneparams.tuner,1))
   {
 
   /*****************************************************/
@@ -1149,7 +1146,7 @@ int
   strengthparams.fds = &fds;
   strengthparams.tuneparams = &tuneparams;
   pthread_create(&(signalpowerthread), NULL, show_power_func, &strengthparams);
-  //Thread for reading from the DVB card initialisation
+  //Thread for reading from the DVB card initialization
   if(card_buffer.threaded_read)
   {
     cardthreadparams.thread_running=1;
@@ -1217,7 +1214,7 @@ int
   };
 
   pthread_create(&(monitorthread), NULL, monitor_func, &monitor_thread_params);
-  
+
   /*****************************************************/
   //scam_support
   /*****************************************************/
@@ -1236,7 +1233,7 @@ int
     }
    }
 #endif
-  
+
   /*****************************************************/
   //cam_support
   /*****************************************************/
@@ -1272,7 +1269,7 @@ int
     }
   }
 #endif
-  
+
   /*****************************************************/
   //autoconfiguration
   //memory allocation for MPEG2-TS
@@ -1348,7 +1345,7 @@ int
 	multicast_vars.num_pack=(MAX_UDP_SIZE-TS_PACKET_SIZE)/TS_PACKET_SIZE;
   else
 	multicast_vars.num_pack=(MAX_UDP_SIZE)/TS_PACKET_SIZE;
-	
+
   //Initialisation of the channels for RTP
   if(multicast_vars.rtp_header)
     for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
@@ -1395,7 +1392,7 @@ int
   //PAT : Program Association Table
   mandatory_pid[0]=1;
   chan_and_pids.asked_pid[0]=PID_ASKED;
-  //CAT : Conditional Access Table 
+  //CAT : Conditional Access Table
   mandatory_pid[1]=1;
   chan_and_pids.asked_pid[1]=PID_ASKED;
   //NIT : Network Information Table
@@ -1470,7 +1467,7 @@ int
   //File descriptor for polling the DVB card
   fds.pfds[0].fd = fds.fd_dvr;
   //POLLIN : data available for read
-  fds.pfds[0].events = POLLIN | POLLPRI; 
+  fds.pfds[0].events = POLLIN | POLLPRI;
   fds.pfds[0].revents = 0;
   fds.pfds[1].fd = 0;
   fds.pfds[1].events = POLLIN | POLLPRI;
@@ -1631,7 +1628,7 @@ int
 	pthread_mutex_lock(&cardthreadparams.carddatamutex);
 	cardthreadparams.unicast_data=0;
 	pthread_mutex_unlock(&cardthreadparams.carddatamutex);
-	
+
       }
     }
     else
@@ -1645,7 +1642,7 @@ int
       }
       /**************************************************************/
       /* UNICAST HTTP                                               */
-      /**************************************************************/ 
+      /**************************************************************/
       if((!(fds.pfds[0].revents&POLLIN)) && (!(fds.pfds[0].revents&POLLPRI))) //Priority to the DVB packets so if there is dvb packets and something else, we look first to dvb packets
       {
 	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &strengthparams, &autoconf_vars, cam_vars_ptr, scam_vars_ptr);
@@ -1656,7 +1653,7 @@ int
       }
       /**************************************************************/
       /* END OF UNICAST HTTP                                        */
-      /**************************************************************/ 
+      /**************************************************************/
 
       if((card_buffer.bytes_read=card_read(fds.fd_dvr,  card_buffer.reading_buffer, &card_buffer))==0)
 	continue;
@@ -1667,7 +1664,7 @@ int
       stats_infos.stats_num_packets_received+=(int) card_buffer.bytes_read/TS_PACKET_SIZE;
       stats_infos.stats_num_reads++;
     }
- 
+
     for(card_buffer.read_buff_pos=0;
 	(card_buffer.read_buff_pos+TS_PACKET_SIZE)<=card_buffer.bytes_read;
 	card_buffer.read_buff_pos+=TS_PACKET_SIZE)//we loop on the subpackets
@@ -1792,7 +1789,7 @@ int
           if(chan_and_pids.dont_send_scrambled && (ScramblingControl>0)&& (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
             send_packet=0;
 #endif
-		  
+
           if ((ScramblingControl>0) && (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
             chan_and_pids.channels[curr_channel].num_scrambled_packets++;
 
@@ -1840,7 +1837,7 @@ int
         /******************************************************/
 	//PMT follow (ie we check if the pids announced in the PMT changed)
         /******************************************************/
-        if( (autoconf_vars.autoconf_pid_update) && 
+        if( (autoconf_vars.autoconf_pid_update) &&
              (send_packet==1) && //no need to check paquets we don't send
              (chan_and_pids.channels[curr_channel].autoconfigurated) && //only channels whose pids where detected by autoconfiguration (we don't erase "manual" channels)
              (chan_and_pids.channels[curr_channel].pmt_pid==pid) &&     //And we see the PMT
@@ -1886,7 +1883,7 @@ int
         if((send_packet==1) &&//no need to check paquets we don't send
            (pid == 18) && //This is a EIT PID
             (chan_and_pids.channels[curr_channel].service_id) && //we have the service_id
-            rewrite_vars.eit_sort ) //AND we asked for EIT sorting
+            rewrite_vars.eit_sort == OPTION_ON) //AND we asked for EIT sorting
         {
           send_packet=eit_sort_new_packet(actual_ts_packet, &chan_and_pids.channels[curr_channel]);
         }
@@ -1943,9 +1940,9 @@ int
 					if ((chan_and_pids.channels[curr_channel].ring_buf->write_idx&0x3) == 0) {
 					  now_time=get_time();
 					  chan_and_pids.channels[curr_channel].ring_buf->time_send[(chan_and_pids.channels[curr_channel].ring_buf->write_idx>>2)]=now_time + chan_and_pids.channels[curr_channel].send_delay;
-					  
+
 					  chan_and_pids.channels[curr_channel].ring_buf->time_decsa[(chan_and_pids.channels[curr_channel].ring_buf->write_idx>>2)]=now_time + chan_and_pids.channels[curr_channel].decsa_delay;
-					  
+
 					}
 
 					++chan_and_pids.channels[curr_channel].ring_buf->write_idx;
@@ -1977,11 +1974,11 @@ int
 		      }
 
 			}
-				  
+
 #endif
-			  
-			  
-		    
+
+
+
 		}
       }
     }
@@ -2047,7 +2044,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
     iRet=pthread_timedjoin_np(signalpowerthread, NULL, &ts);
     if(iRet)
       log_message(log_module,MSG_WARN,"Signal/power Thread badly closed: %s\n", strerror(iRet));
-      
+
   }
   if(cardthreadparams.thread_running)
   {
@@ -2078,19 +2075,19 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
     if(chan_and_pids.channels[curr_channel].socketOut6>0)
       close (chan_and_pids.channels[curr_channel].socketOut6);
     if(chan_and_pids.channels[curr_channel].socketIn>0)
-      close (chan_and_pids.channels[curr_channel].socketIn); 
+      close (chan_and_pids.channels[curr_channel].socketIn);
       //Free the channel structures
     if(chan_and_pids.channels[curr_channel].pmt_packet)
       free(chan_and_pids.channels[curr_channel].pmt_packet);
     chan_and_pids.channels[curr_channel].pmt_packet=NULL;
-	
+
 
 #ifdef ENABLE_SCAM_SUPPORT
 	if (chan_and_pids.channels[curr_channel].scam_support && scam_vars->scam_support && chan_and_pids.channels[curr_channel].got_cw_started) {
 		scam_channel_stop(&chan_and_pids.channels[curr_channel]);
 	}
 #endif
-	
+
 
 
   }
@@ -2130,7 +2127,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
   if(scam_vars->scam_support)
   {
 	scam_getcw_stop(scam_vars);
-  }  
+  }
 #endif
 
   //autoconf variables freeing
@@ -2193,12 +2190,12 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
   int ExitCode;
   if(Interrupted<(1<<8))
     ExitCode=0;
-  else 
+  else
     ExitCode=Interrupted>>8;
 
   // Show in log that we are stopping
   log_message( log_module,  MSG_INFO,"========== MuMuDVB version %s is stopping with ExitCode %d ==========",VERSION,ExitCode);
-  
+
   // Freeing log ressources
   if(log_params.log_file)
   {
@@ -2208,7 +2205,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
   if(log_params.log_header!=NULL)
       free(log_params.log_header);
   munlockall();
-  
+
   // End
   return(ExitCode);
 
@@ -2426,10 +2423,10 @@ void *monitor_func(void* arg)
 		  current->ratio_scrambled = (int)(current->num_scrambled_packets*100/(current->num_packet));
 		else
 		  current->ratio_scrambled = 0;
-	  }		
+	  }
 #endif
-		  
-		
+
+
 
       /* Test if we have only unscrambled packets (<2%) - scrambled_channel=FULLY_UNSCRAMBLED : fully unscrambled*/
       if ((current->ratio_scrambled < 2) && (current->scrambled_channel != FULLY_UNSCRAMBLED))
@@ -2498,7 +2495,7 @@ void *monitor_func(void* arg)
 		  	else
 		  		packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
   			#else
-				packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);		
+				packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
   	  		#endif
         else
           packets_per_sec=0;
@@ -2559,7 +2556,7 @@ void *monitor_func(void* arg)
     /*If we don't have active channels and this is the first time, we store the time*/
     else if(!time_no_diff)
       time_no_diff=(long)monitor_now;
-	  
+
 
 
     /*******************************************/
@@ -2574,9 +2571,9 @@ void *monitor_func(void* arg)
       Interrupted=ERROR_NO_DIFF<<8; //the <<8 is to make difference beetween signals and errors
     }
 
-		
+
 #ifdef ENABLE_SCAM_SUPPORT
-	if (scam_vars->scam_support) {	
+	if (scam_vars->scam_support) {
 		/*******************************************/
 		/* we check num of packets in ring buffer                */
 		/*******************************************/
@@ -2622,7 +2619,7 @@ void *monitor_func(void* arg)
 		  Interrupted=ERROR_NO_FIRST_CW<<8; //the <<8 is to make difference beetween signals and errors
 		}
 	}
-		
+
 #endif
 
 

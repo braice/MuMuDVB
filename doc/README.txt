@@ -66,6 +66,8 @@ Features overview
 - Ability to transcode the stream (only for multicast for the moment) see the <<transcoding,Transcoding>> section
 - CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.txt and CAM_menu_interface.png for screenshot)
 - Software descrambling through oscam dvbapi and libdvbcsa
+
+
 Detailled feature list
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -133,6 +135,9 @@ The `[configure options]` specific to MuMuDVB are:
   --enable-coverage       build for test coverage (default disabled)
   --enable-duma           Debbuging DUMA library (default disabled)
 ---------------------------------------------------------------------
+
+[NOTE]
+If you want to compile MuMuDVB with clang/llvm, you have to install llvm-gcc and add  `CC=llvm-gcc LD=llvm-ld` to your `[configure options]`.
 
 You can have a list of all the configure options by typing
 
@@ -305,6 +310,9 @@ There is different keywords available:
 |%server| The server number specified by server_id or the command line 
 |%lcn | The logical channel number (channel number given by the provider). Your provider have to stream the LCN. The LCN will be displayed with three digits including 0. Ex "002". If the LCN is not detected, %lcn will be replaced by an empty string.
 |%2lcn | Same as above but with a two digits format
+|%sid| The channel service id (decimal for the port, hexadecimal for ipv6)
+|%sid_hi| The channel service id. The two higher bits (between 0 and 255)
+|%sid_lo| The channel service id. The two lower bits (between 0 and 255)
 |==================================================================================================================
 
 Please refer to README_CONF to see which options accept which templates
