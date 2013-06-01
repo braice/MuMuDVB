@@ -284,6 +284,9 @@ By default, PAT rewriting is activated if you use this autoconfiguration mode. T
 By default, EIT sorting activated if you use this autoconfiguration mode. To deactivate it put `sort_eit=0` in your config file.
 
 [NOTE]
+If you want to select the services to stream, you can use the `autoconf_sid_list` option.
+
+[NOTE]
 A detailled, documented example configuration file can be found in `doc/configuration_examples/autoconf_full.conf`
 
 Name templates and autoconfiguration
