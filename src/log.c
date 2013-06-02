@@ -53,7 +53,6 @@
 #endif
 
 #define LOG_HEAD_LEN 6
-extern int no_daemon;
 extern int Interrupted;
 
 log_params_t log_params={
@@ -329,8 +328,9 @@ void log_message( char* log_module, int type,
 	    case MSG_FLOOD:
 	      priority|=LOG_DEBUG;
 	      break;
-            default:
-              priority=LOG_USER;
+        default:
+           priority=LOG_USER;
+           break;
 	    }
 	  syslog (priority,"%s",log_string.string);
 	}
@@ -477,14 +477,15 @@ typedef struct ca_sys_id_t
   char descr[128];
 }ca_sys_id_t;
 
-//updated 2010 06 12
+//updated 2013 06 02 from http://www.dvbservices.com/identifiers/ca_system_id
   ca_sys_id_t casysids[]={
   {0x01,0, "IPDC SPP (TS 102 474) Annex A "},
-  {0x02,0, "IPDC SPP (TS 102 474) Annex B"},
+  {0x02,0, "18Crypt (IPDC SPP (TS 102 474) Annex B)"},
   {0x04,0, "OMA DRM Content Format"},
   {0x05,0, "OMA BCAST 1.0"},
   {0x06,0, "OMA BCAST 1.0 (U)SIM"},
   {0x07,0, "Reserved for Open IPTV Forum"},
+  {0x08,0, "Open Mobile Alliance"},
   {0x00,0xFF, "Standardized systems"},
   {0x0100,0x01ff, "Canal Plus"},
   {0x0200,0x02ff, "CCETT"},
@@ -511,6 +512,9 @@ typedef struct ca_sys_id_t
   {0x1700,0x17ff, "BetaTechnik"},
   {0x1800,0x18ff, "Kudelski SA"},
   {0x1900,0x19ff, "Titan Information Systems"},
+  {0x1E00,0x1E07, "Alticast"},
+  {0x1EA0,0,      "Monacrypt"},
+  {0x1EB0,0,      "TELECAST TECHNOLOGY CO., LTD."},
   {0x2000,0x20ff, "Telefonica Servicios Audiovisuales"},
   {0x2100,0x21ff, "STENTOR (France Telecom, CNES and DGA)"},
   {0x2200,0x22ff, "Scopus Network Technologies"},
@@ -518,80 +522,95 @@ typedef struct ca_sys_id_t
   {0x2400,0x24ff, "StarGuide Digital Networks"},
   {0x2500,0x25ff, "Mentor Data System, Inc."},
   {0x2600,0x26ff, "European Broadcasting Union"},
-  {0x2700 ,0x270F , "PolyCipher (NGNA, LLC)"},
-  {0x4347 ,0 , "Crypton"},
-  {0x4700 ,0x47FF , "General Instrument (Motorola)"},
-  {0x4800 ,0x48FF , "Telemann"},
-  {0x4900 ,0x49FF , "CrytoWorks (China) (Irdeto)"},
-  {0x4A10 ,0x4A1F , "Easycas"},
-  {0x4A20 ,0x4A2F , "AlphaCrypt"},
-  {0x4A30 ,0x4A3F , "DVN Holdings"},
-  {0x4A40 ,0x4A4F , "Shanghai Advanced Digital Technology Co. Ltd. (ADT)"},
-  {0x4A50 ,0x4A5F , "Shenzhen Kingsky Company (China) Ltd."},
-  {0x4A60 ,0x4A6F , "@Sky"},
-  {0x4A70 ,0x4A7F , "Dreamcrypt"},
-  {0x4A80 ,0x4A8F , "THALESCrypt"},
-  {0x4A90 ,0x4A9F , "Runcom Technologies"},
-  {0x4AA0 ,0x4AAF , "SIDSA"},
-  {0x4AB0 ,0x4ABF , "Beijing Compunicate Technology Inc."},
-  {0x4AC0 ,0x4ACF , "Latens Systems Ltd"},
-  {0x4AD0 ,0x4AD1 , "XCrypt Inc."},
-  {0x4AD2 ,0x4AD3 , "Beijing Digital Video Technology Co., Ltd."},
-  {0x4AD4 ,0x4AD5 , "Widevine Technologies, Inc."},
-  {0x4AD6 ,0x4AD7 , "SK Telecom Co., Ltd."},
-  {0x4AD8 ,0x4AD9 , "Enigma Systems"},
-  {0x4ADA ,0 , "Wyplay SAS"},
-  {0x4ADB ,0 , "Jinan Taixin Electronics, Co., Ltd."},
-  {0x4ADC ,0 , "LogiWays"},
-  {0x4ADD ,0 , "ATSC System Renewability Message (SRM)"},
-  {0x4ADE ,0 , "CerberCrypt"},
-  {0x4ADF ,0 , "Caston Co., Ltd."},
-  {0x4AE0 ,0x4AE1 , "Digi Raum Electronics Co. Ltd."},
-  {0x4AE2 ,0x4AE3 , "Microsoft Corp."},
-  {0x4AE4 ,0 , "Coretrust, Inc."},
-  {0x4AE5 ,0 , "IK SATPROF"},
-  {0x4AE6 ,0 , "SypherMedia International"},
-  {0x4AE7 ,0 , "Guangzhou Ewider Technology Corporation Limited"},
-  {0x4AE8 ,0 , "FG DIGITAL Ltd."},
-  {0x4AE9 ,0 , "Dreamer-i Co., Ltd."},
-  {0x4AEA ,0 , "Cryptoguard AB"},
-  {0x4AEB ,0 , "Abel DRM Systems AS"},
-  {0x4AEC ,0 , "FTS DVL SRL"},
-  {0x4AED ,0 , "Unitend Technologies, Inc."},
-  {0x4AEE ,0 , "Deltacom Electronics OOD"},
-  {0x4AEF ,0 , "NetUP Inc."},
-  {0x4AF0 ,0 , "Beijing Alliance Broadcast Vision Technology Co., Ltd."},
-  {0x4AF1 ,0 , "China DTV Media Inc., Ltd. #1"},
-  {0x4AF2 ,0 , "China DTV Media Inc., Ltd. #2"},
-  {0x4AF3 ,0 , "Baustem Information Technologies, Ltd."},
-  {0x4AF4 ,0 , "Marlin Developer Community, LLC"},
-  {0x4AF5 ,0 , "SecureMedia"},
-  {0x4AF6 ,0 , "Tongfang CAS"},
-  {0x4AF7 ,0 , "MSA"},
-  {0x4AF8 ,0 , "Griffin CAS"},
-  {0x4AF9 ,0x4AFA , "Beijing Topreal Technologies Co., Ltd"},
-  {0x4AFB ,0 , "NST"},
-  {0x4AFC ,0 , "Panaccess Systems GmbH"},
-  {0x4B00 ,0x4B02 , "Tongfang CAS"},
-  {0x4B03 ,0 , "DuoCrypt"},
-  {0x4B04 ,0 , "Great Wall CAS"},
-  {0x4B05 ,0x4B06 , "DIGICAP"},
-  {0x4B07 ,0 , "Wuhan Reikost Technology Co., Ltd."},
-  {0x4B08 ,0 , "Philips"},
-  {0x4B09 ,0 , "Ambernetas"},
-  {0x4B0A ,0x4B0B , "Beijing Sumavision Technologies CO. LTD."},
-  {0x4B0C ,0x4B0F , "Sichuan changhong electric co.,ltd."},
-  {0x5347 ,0 , "GkWare e.K."},
-  {0x5601 ,0 , "Verimatrix, Inc. #1"},
-  {0x5602 ,0 , "Verimatrix, Inc. #2"},
-  {0x5603 ,0 , "Verimatrix, Inc. #3"},
-  {0x5604 ,0 , "Verimatrix, Inc. #4"},
-  {0x5605 ,0x5606 , "Sichuan Juizhou Electronic Co. Ltd"},
-  {0x5607 ,0x5608 , "Viewscenes"},
-  {0x7BE0 ,0x7BE1 , "OOO"},
-  {0xAA00 ,0 , "Best CAS Ltd"},
+  {0x2700,0x270F, "PolyCipher (NGNA, LLC)"},
+  {0x2710,0x2711, "Extended Secure Technologies B.V."},
+  {0x2712,0,      "Signal elektronic"},
+  {0x2713,0x2714, "Wuhan Tianyu Information Industry Co., Ltd"},
+  {0x2715,0,      "Network Broadcast"},
+  {0x2716,0,      "Bromteck"},
+  {0x2717,0x2718, "LOGIWAYS"},
+  {0x2800,0x2809, "LCS LLC"},
+  {0x2810,0,      "MULTIKOM DELTASAT GMBH KG"},
+  {0x4347,0,      "Crypton"},
+  {0x4700,0x47FF, "General Instrument (Motorola)"},
+  {0x4800,0x48FF, "Telemann"},
+  {0x4900,0x49FF, "CrytoWorks (China) (Irdeto)"},
+  {0x4A10,0x4A1F, "Easycas"},
+  {0x4A20,0x4A2F, "AlphaCrypt"},
+  {0x4A30,0x4A3F, "DVN Holdings"},
+  {0x4A40,0x4A4F, "Shanghai Advanced Digital Technology Co. Ltd. (ADT)"},
+  {0x4A50,0x4A5F, "Shenzhen Kingsky Company (China) Ltd."},
+  {0x4A60,0x4A6F, "@Sky"},
+  {0x4A70,0x4A7F, "Dreamcrypt"},
+  {0x4A80,0x4A8F, "THALESCrypt"},
+  {0x4A90,0x4A9F, "Runcom Technologies"},
+  {0x4AA0,0x4AAF, "SIDSA"},
+  {0x4AB0,0x4ABF, "Beijing Compunicate Technology Inc."},
+  {0x4AC0,0x4ACF, "Latens Systems Ltd"},
+  {0x4AD0,0x4AD1, "XCrypt Inc."},
+  {0x4AD2,0x4AD3, "Beijing Digital Video Technology Co., Ltd."},
+  {0x4AD4,0x4AD5, "Widevine Technologies, Inc."},
+  {0x4AD6,0x4AD7, "SK Telecom Co., Ltd."},
+  {0x4AD8,0x4AD9, "Enigma Systems"},
+  {0x4ADA,0,      "Wyplay SAS"},
+  {0x4ADB,0,      "Jinan Taixin Electronics, Co., Ltd."},
+  {0x4ADC,0,      "LogiWays"},
+  {0x4ADD,0,      "ATSC System Renewability Message (SRM)"},
+  {0x4ADE,0,      "CerberCrypt"},
+  {0x4ADF,0,      "Caston Co., Ltd."},
+  {0x4AE0,0x4AE1, "Digi Raum Electronics Co. Ltd."},
+  {0x4AE2,0x4AE3, "Microsoft Corp."},
+  {0x4AE4,0,      "Coretrust, Inc."},
+  {0x4AE5,0,      "IK SATPROF"},
+  {0x4AE6,0,      "SypherMedia International"},
+  {0x4AE7,0,      "Guangzhou Ewider Technology Corporation Limited"},
+  {0x4AE8,0,      "FG DIGITAL Ltd."},
+  {0x4AE9,0,      "Dreamer-i Co., Ltd."},
+  {0x4AEA,0,      "Cryptoguard AB"},
+  {0x4AEB,0,      "Abel DRM Systems AS"},
+  {0x4AEC,0,      "FTS DVL SRL"},
+  {0x4AED,0,      "Unitend Technologies, Inc."},
+  {0x4AEE,0,      "Deltacom Electronics OOD"},
+  {0x4AEF,0,      "NetUP Inc."},
+  {0x4AF0,0,      "Beijing Alliance Broadcast Vision Technology Co., Ltd."},
+  {0x4AF1,0,      "China DTV Media Inc., Ltd. #1"},
+  {0x4AF2,0,      "China DTV Media Inc., Ltd. #2"},
+  {0x4AF3,0,      "Baustem Information Technologies, Ltd."},
+  {0x4AF4,0,      "Marlin Developer Community, LLC"},
+  {0x4AF5,0,      "SecureMedia"},
+  {0x4AF6,0,      "Tongfang CAS"},
+  {0x4AF7,0,      "MSA"},
+  {0x4AF8,0,      "Griffin CAS"},
+  {0x4AF9,0x4AFA, "Beijing Topreal Technologies Co., Ltd"},
+  {0x4AFB,0,      "NST"},
+  {0x4AFC,0,      "Panaccess Systems GmbH"},
+  {0x4B00,0x4B02, "Tongfang CAS"},
+  {0x4B03,0,      "DuoCrypt"},
+  {0x4B04,0,      "Great Wall CAS"},
+  {0x4B05,0x4B06, "DIGICAP"},
+  {0x4B07,0,      "Wuhan Reikost Technology Co., Ltd."},
+  {0x4B08,0,      "Philips"},
+  {0x4B09,0,      "Ambernetas"},
+  {0x4B0A,0x4B0B, "Beijing Sumavision Technologies CO. LTD."},
+  {0x4B0C,0x4B0F, "Sichuan changhong electric co.,ltd."},
+  {0x4B10,0,      "Exterity Limited"},
+  {0x4B11,0x4B12, "Advanced Digital Platform Technologies"},
+  {0x4B13,0x4B14, "Microsoft Corporation"},
+  {0x4B20,0x4B22, "MULTIKOM DELTASAT GmbH Co KG"},
+  {0x4B23,0,      "SkyNLand Video Networks Pvt Ltd"},
+  {0x5347,0,      "GkWare e.K."},
+  {0x5601,0,      "Verimatrix, Inc. #1"},
+  {0x5602,0,      "Verimatrix, Inc. #2"},
+  {0x5603,0,      "Verimatrix, Inc. #3"},
+  {0x5604,0,      "Verimatrix, Inc. #4"},
+  {0x5605,0x5606, "Sichuan Juizhou Electronic Co. Ltd"},
+  {0x5607,0x5608, "Viewscenes"},
+  {0x5609,0,      "Power On  s.r.l"},
+  {0x7BE0,0x7BE1, "OOO"},
+  {0xAA00,0,      "Best CAS Ltd"},
+  {0xAA01,0,      "Best CAS Ltd"},
   };
-  int num_casysids=105;
+  int num_casysids=130;
 
 
 /** @brief Display the ca system id according to ETR 162 
@@ -603,8 +622,6 @@ char *ca_sys_id_to_str(int id)
 {
   //cf ETR 162 and http://www.dvbservices.com/identifiers/ca_system_id
 
-
-
   for(int i=0;i<num_casysids;i++)
   {
     if((casysids[i].end == 0 && casysids[i].beginning == id) || ( casysids[i].beginning <= id && casysids[i].end >= id))
@@ -615,7 +632,7 @@ char *ca_sys_id_to_str(int id)
 }
 
 
-/** @brief Convert the service type to str according to EN 300 468 v1.10.1 table 81
+/** @brief Convert the service type to str according to EN 300 468 v1.13.1 table 87
  *
  * @param type the type to display
  * @param dest : the destination string
@@ -639,6 +656,10 @@ char *service_type_to_str(int type)
       return "NVOD Time shifted service";
     case 0x06:
       return "Mosaic service";
+    case 0x07:
+      return "FM radio service";
+    case 0x08:
+      return "DVB SRM service";
     case 0x0a:
       return "Advanced codec Radio";
     case 0x0b:
@@ -667,12 +688,18 @@ char *service_type_to_str(int type)
       return "Advanced codec HD NVOD Time shifted service";
     case 0x1b:
       return "Advanced codec HD NVOD Reference service";
+    case 0x1c:
+      return "advanced codec frame compatible 3D HD digital television service";
+    case 0x1d:
+      return "advanced codec frame compatible 3D HD NVOD time-shifted service";
+    case 0x1e:
+      return "advanced codec frame compatible 3D HD NVOD reference service";
     default:
-      return "Please report : Unknown service type doc : EN 300 468 v1.10.1 table 81";
+      return "Please report : Unknown service type doc : EN 300 468 v1.13.1 table 87";
   }
 }
 
-/** @brief Convert the service type to str according to EN 300 468 v1.10.1 table 81
+/** @brief Convert the service type to str according to EN 300 468 v1.13.1 table 87
  *
  * @param type the type to display
  * @param dest : the destination string
@@ -688,8 +715,10 @@ char *simple_service_type_to_str(int type)
     case 0x11:
     case 0x16:
     case 0x19:
+    case 0x1c:
       return "Television";
     case 0x02:
+    case 0x07:
     case 0x0a:
       return "Radio";
     default:
@@ -697,7 +726,7 @@ char *simple_service_type_to_str(int type)
   }
 }
 
-/** @brief Display the service type according to EN 300 468 v1.10.1 table 81
+/** @brief Display the service type according to EN 300 468 v1.13.1 table 87
  *
  * @param type the type to display
  * @param loglevel : the loglevel for displaying it
