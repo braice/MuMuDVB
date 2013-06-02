@@ -375,7 +375,6 @@ int
   char filename_channels_not_streamed[DEFAULT_PATH_LEN];
   char filename_channels_streamed[DEFAULT_PATH_LEN];
   char filename_pid[DEFAULT_PATH_LEN]=PIDFILE_PATH;
-  char filename_gen_conf[DEFAULT_PATH_LEN];
 
   int server_id = 0; /** The server id for the template %server */
 
@@ -962,11 +961,6 @@ int
       log_message( "Autoconf: ", MSG_INFO,
                    "The autoconfiguration auto update is enabled. If you want to disable it put \"autoconf_pid_update=0\" in your config file.\n");
     }
-    //In case of autoconfiguration, we generate a config file with the channels discovered
-    //Here we generate the header, ie we take the actual config file and copy it removing the channels
-    sprintf (filename_gen_conf, GEN_CONF_PATH,
-             tuneparams.card, tuneparams.tuner);
-    gen_config_file_header(conf_filename, filename_gen_conf);
   }
   else
     autoconf_vars.autoconf_pid_update=0;

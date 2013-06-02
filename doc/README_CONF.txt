@@ -330,8 +330,6 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 Get the PID numbers
 -------------------
 
-The simplest way is to use autoconfiguration and modify the generated configuration file : `/var/run/mumudvb/mumudvb_generated_conf_card%d_tuner%d`
-
 You use autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -353,7 +351,7 @@ For each channel it is advised to specify at least :
 If you don't have access to the PIDs via a website like http://www.kingofsat.net[King Of Sat], the easiest way is to use linuxtv's dvb-apps or w_scan.
 
 
-You don't know on wich frequency to tune and the channels you can receive. In this case, you can use <<w_scan,w_scan>> or using <<scan_inital_tuning,scan>> from dvb-apps if you have an initial tuning config file.
+You don't know on which frequency to tune and the channels you can receive. In this case, you can use <<w_scan,w_scan>> or using <<scan_inital_tuning,scan>> from dvb-apps if you have an initial tuning config file.
 
 [[w_scan]]
 Using w_scan to get an initial tuning file

@@ -240,8 +240,6 @@ MuMuDVB is able to find the channels in the transponder and their PIDs (Program 
 
 Without autoconfiguration, you have to set the transponder parameters, and for each channel, the multicast ip, the name and the PIDs (PMT, audio, video, teletext etc...)
 
-At the end of autoconfiguration, MuMuDVB generates a config file with the discovered parameters. This file is: `/var/run/mumudvb/mumudvb_generated_conf_card%d_tuner%d`
-
 If the PIDs are changed, MuMuDVB will automatically update the channels except if you put `autoconf_pid_update=0` in your configuration file.
 
 MuMuDVB is able to do two kinds of autoconfiguration:
