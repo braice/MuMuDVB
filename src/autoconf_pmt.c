@@ -2,7 +2,7 @@
  * MuMuDVB - Stream a DVB transport stream.
  * File for Autoconfiguration
  * 
- * (C) 2008-2011 Brice DUBOST <mumudvb@braice.net>
+ * (C) 2008-2013 Brice DUBOST <mumudvb@braice.net>
  *
  * Parts of this code come from libdvb, modified for mumudvb
  * by Brice DUBOST 
@@ -33,7 +33,6 @@
  */
 
 
-extern int Interrupted;
 static char *log_module="Autoconf: ";
 
 #include <errno.h>
@@ -45,12 +44,8 @@ static char *log_module="Autoconf: ";
 #include "log.h"
 #include "dvb.h"
 
-mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int service_id);
-mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,int service_id);
 int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_len, int *pos);
 void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len);
-void autoconf_free_services(mumudvb_service_t *services);
-int autoconf_read_psip(autoconf_parameters_t *parameters);
 
 
 /****************************************************************************/
