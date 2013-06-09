@@ -316,7 +316,7 @@ There is different keywords available:
 |%sid_lo| The channel service id. The two lower bits (between 0 and 255)
 |==================================================================================================================
 
-Please refer to README_CONF to see which options accept which templates
+Please refer to `doc/README_CONF.txt` (link:README_CONF.html[HTML version]) to see which options accept which templates
 
 Other keywords can be easily added if necessary.
 
@@ -589,9 +589,80 @@ Just add `cam_support=1` to your config file
 You have an example of CAM support in doc/configuration_examples/autoconf_partial.conf
 
 
+Hardware CAM issues
+~~~~~~~~~~~~~~~~~~~
+
+Some hardware CAM are not directly connected to the tuner, one can choose the stream sent to the CAM. This can make the work slightly more complicated to run the CAM since you have to ensure the right stream is sent to the CAM.
+
+
+Digital Devices Cine CT V6
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We always use cards and hardware from Digital Devices(http://www.digitaldevices.de/).
+        - Octopus CI
+        - Cine S2 V6.5
+
+After a lot of problem with mumudvb and the ci card we found out, that the hardware wasn't detected by mumudvb.
+The folder /dev/dvb looked like :
+
+----------------------------------------
+        - Adapter0
+        - Adapter1
+        - Adapter2
+        - Adapter3
+----------------------------------------
+
+`/dev/dvb/Adapter0` and Adapter1 had the following content:
+
+
+----------------------------------------
+demux0  dvr0  frontend0  net0
+----------------------------------------
+
+`/dev/dvb/Adapter2` and Adapter3 had the following content:
+
+----------------------------------------
+sec0    ca0
+----------------------------------------
+
+So there was no connection between the tuner and the CI.
+
+So we tried to load the driver of the card with a different parameter to get everything into one single folder.
+
+-----------------------------------------
+sudo modprobe ddbridge adapter_alloc = 3
+-----------------------------------------
+
+Result:
+
+/dev/dvb/ includes only adapter0
+
+Content of adapter0:
+
+-----------------------------------------
+ca0  demux0  dvr0  frontend0  net0  sec0
+ca1  demux1  dvr1  frontend1  net1  sec1
+-----------------------------------------
+
+After that we had to pipe the stream from the frontend truth the CI modul.
+This part is still very buggy and we don't know exactly how that works.
+
+------------------------------------------------------------
+sudo echo "02 02" > /sys/class/ddbridge/ddbridge0/redirect
+sudo echo "03 03" > /sys/class/ddbridge/ddbridge0/redirect
+------------------------------------------------------------
+
+
+At the moment we have the problem that we can use only one tuner. :(
+
+Here you can see some more information about this problem
+
+http://www.spinics.net/lists/linux-media/msg39494.html
+
+
 
 Software descrambling v1
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Important note : this solution is not allowed by some provider contracts.
 
@@ -642,7 +713,7 @@ The scrambling status is stored together with the streamed channel list.
 
 
 Software descrambling v2
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Important note : this solution is not allowed by some provider contracts.
 
@@ -651,13 +722,15 @@ To enable you have to add to global options
 scam_support=1
 on program options add
 oscam=1
-Other setting are documented at README_CONF.txt, there is also example available at configuration_examples/oscam.conf
+Other setting are documented at `doc/README_CONF.txt` (link:README_CONF.html[HTML version]), there is also a configuration example available at `configuration_examples/oscam.conf`
 
 If channel has a lot of bandwidth it may be needed to extend ring buffer size. 
 
 If cw's don't get in time defined as decsa delay(default 500000us=0.5s), you may try to extend it (decsa_delay max is 10000000, and send_delay should be lower than decsa_delay, because we can't send descrambled packets befor they're being descrambled) for example:
+------------------------------
 	decsa_delay=3500000
 	send_delay=4500000
+------------------------------
 
 note that bigger delays in ring buffer may need also extending ring buffer size
 
@@ -668,8 +741,10 @@ In debug mode number of packets in the buffer is reported and buffer overflow is
 Use the latest version of oscam from trunk, older versions did not have support for pc dvbapi. Instructions how to compile are on http://streamboard.de.vu:8001/wiki/crosscompiling
 
 [NOTE] 
-When using oscam with more than 16 channels adjust macro definition MAX_DEMUX (line below) on oscam header module-dvbapi.h to number of your channels
-25 #define MAX_DEMUX 16
+When using oscam with more than 16 channels adjust macro definition `MAX_DEMUX` (line below) on oscam header `module-dvbapi.h` to number of your channels
+------------------------------
+#define MAX_DEMUX 16
+------------------------------
 
 [NOTE]
 When using multiple channels per card (more than (ecm_change_time)/(2*card_response_time)), you may get timeouts on oscam on mumudvb startup, it's because on startup oscam asks card for two cw's at the same time.
@@ -677,9 +752,10 @@ It should get right after a while.
 Currently there is no solution for that bug.
 
 Some information on how to configure oscam
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In the oscam.conf file add following options
+In the `oscam.conf` file add the following options
+------------------------------
         [dvbapi]
         enabled = 1
         au = 1
@@ -687,6 +763,7 @@ In the oscam.conf file add following options
         user = mumudvb
         pmt_mode = 4
         request_mode = 1
+------------------------------
 
 
 [[pat_rewrite]]
@@ -901,7 +978,7 @@ If you use sasc-ng + dvbloopback, MuMuDVB will eat more CPU than needed.
 
 A part of this CPU time is used to descramble the channels, another part is due to the way dvbloopback is implemented and the way MuMuDVB ask the card.
 
-To reduce the cpu usage, see <<reduce_cpu,reduce MuMuDVB CPU usage>> section. In the case of using MuMuDVB with sasc-ng this improvement can be quite large.
+To reduce the cpu usage, see <<reduce_cpu,reduce MuMuDVB CPU usage>> section. In the case of using MuMuDVB with sasc-ng this improvement can be quite large. Or you can use oscam.
 
 
 The reception is working but all the channels are down
@@ -1100,6 +1177,4 @@ udp://192.168.2.101:1239
 
 
 Thanks to Nick Graham for the tutorial
-
-
 
