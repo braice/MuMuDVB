@@ -296,7 +296,7 @@ int
   tuning_parameters_t tuneparams={
     .card = 0,
     .tuner = 0,
-    .card_dev_path="",
+    .card_dev_path=DVB_DEV_PATH,
     .card_tuned = 0,
     .tuning_timeout = ALARM_TIME_TIMEOUT,
     .freq = 0,
@@ -903,10 +903,12 @@ int
   //If we specified a card number on the command line, it overrides the config file
   if(cmdlinecard!=-1)
     tuneparams.card=cmdlinecard;
-  //if no specific path for the DVB device, we use the default one
-  if((!strlen(tuneparams.card_dev_path))||(cmdlinecard!=-1))
-    sprintf(tuneparams.card_dev_path,DVB_DEV_PATH,tuneparams.card);
 
+  //Template for the card dev path
+  char number[10];
+  sprintf(number,"%d",tuneparams.card);
+  int l=sizeof(tuneparams.card_dev_path);
+  mumu_string_replace(tuneparams.card_dev_path,&l,0,"%card",number);
 
   //If we specified a string for the unicast port out, we parse it
   if(unicast_vars.portOut_str!=NULL)

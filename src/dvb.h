@@ -49,7 +49,7 @@
 #include "mumudvb.h"
 #include "tune.h"
 
-#define DVB_DEV_PATH "/dev/dvb/adapter%d"
+#define DVB_DEV_PATH "/dev/dvb/adapter%card"
 #define FRONTEND_DEV_NAME "frontend"
 #define DEMUX_DEV_NAME    "demux"
 #define DVR_DEV_NAME      "dvr"
