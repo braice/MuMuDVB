@@ -290,7 +290,7 @@ HTTP unicast parameters
 |Parameter name |Description | Default value |Comments
 |unicast |Set this option to one to activate HTTP unicast | 0  |   see the README for more details
 |ip_http |the listening ip for http unicast, if you want to listen to all interfaces put 0.0.0.0 | 0.0.0.0  |  see the README for more details
-|port_http | The listening port for http unicast | 4242 |  You can use mathematical expressions containing integers, * and +. You can use the %card, `%tuner` and %server template. Ex `port_http=2000+%card*100`
+|port_http | The listening port for http unicast | 4242 |  You can use mathematical expressions containing integers, * and +. You can use the `%card`, `%tuner` and %server template. Ex `port_http=2000+%card*100`
 |unicast_consecutive_errors_timeout | The timeout for disconnecting a client wich is not responding | 5 | A client will be disconnected if no data have been sucessfully sent during this interval. A value of 0 deactivate the timeout (unadvised).
 |unicast_max_clients | The limit on the number of connected clients | 0 | 0 : no limit.
 |unicast_queue_size | The maximum size of the buffering when writting to a client fails | 512kBytes | in Bytes.
