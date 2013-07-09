@@ -98,6 +98,7 @@ typedef struct log_params_t{
 
 
 
+
 void print_info ();
 void usage (char *name);
 void log_message( char* log_module, int , const char *, ... );
@@ -114,6 +115,8 @@ char *liben50221_error_to_str_descr(int error);
 void log_pids(char *log_module, mumudvb_channel_t *channel, int curr_channel);
 int read_logging_configuration(stats_infos_t *stats_infos, char *substring);
 void sync_logs();
-
+char *running_status_to_str(int running_status);
+int convert_en300468_string(char *string, int max_len);
+void show_CA_identifier_descriptor(unsigned char *buf);
 
 #endif

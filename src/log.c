@@ -47,6 +47,9 @@
 #include "log.h"
 #include "tune.h"
 
+#ifdef HAVE_ICONV
+#include <iconv.h>
+#endif
 
 #ifdef ENABLE_CAM_SUPPORT
 #include <libdvben50221/en50221_errno.h>
@@ -628,7 +631,6 @@ char *ca_sys_id_to_str(int id)
       return casysids[i].descr;
   }
   return "UNKNOWN, please report";
-
 }
 
 
@@ -788,6 +790,7 @@ char *pid_type_to_str(int type)
       return "Unknown";
   }
 }
+
 
 #ifdef ENABLE_CAM_SUPPORT
 /** @brief Write the error from the libdvben50221  into a string
@@ -963,3 +966,155 @@ void show_traffic( char *log_module, double now, int show_traffic_interval, mumu
         }
     }
 }
+
+/**
+@brief The different encodings that can be used
+Cf EN 300 468 Annex A (I used v1.9.1)
+ */
+char *encodings_en300468[] ={
+  "ISO8859-1",
+  "ISO8859-2",
+  "ISO8859-3",
+  "ISO8859-4",
+  "ISO8859-5",
+  "ISO8859-6",
+  "ISO8859-7",
+  "ISO8859-8",
+  "ISO8859-9",
+  "ISO8859-10",
+  "ISO8859-11",
+  "ISO8859-12",
+  "ISO8859-13",
+  "ISO8859-14",
+  "ISO8859-15",
+  "ISO-10646", //control char 0x11
+  "GB2312",    //control char 0x13
+  "BIG5",      //control char 0x14
+  "ISO-10646/UTF8",      //control char 0x15
+};
+
+/**@brief Convert text according to EN 300 468 annex A
+ *
+ */
+int convert_en300468_string(char *string, int max_len)
+{
+
+  int encoding_control_char=8; //cf encodings_en300468
+  char *dest;
+  char *tempdest, *tempbuf;
+  unsigned char *src;
+  /* remove control characters and convert to UTF-8 the channel name */
+  //If no channel encoding is specified, it seems that most of the broadcasters
+  //uses ISO/IEC 8859-9. But the norm (EN 300 468) said that it should be Latin-1 (ISO/IEC 6937 + euro)
+
+  //temporary buffers allocation
+  tempdest=tempbuf=malloc(sizeof(char)*2*strlen(string));
+  if(tempdest==NULL)
+  {
+    log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    Interrupted=ERROR_MEMORY<<8;
+    return -1;
+  }
+
+  int len=0;
+  for (src = (unsigned char *) string; *src; src++)
+  {
+    if (*src >= 0x20 && (*src < 0x80 || *src > 0x9f))
+    {
+      //We copy non-control characters
+      *tempdest++ = *src;
+      len++;
+    }
+    else if(*src <= 0x20)
+    {
+      log_message( log_module, MSG_FLOOD, "Encoding number 0x%02x, see EN 300 468 Annex A",*src);
+      //control character recognition based on EN 300 468 v1.9.1 Annex A
+      if(*src<=0x0b){
+	encoding_control_char=(int) *src+4-1;
+      }
+      else if(*src==0x10)
+      { //ISO/IEC 8859 : See table A.4
+        src++;//we skip the current byte
+        src++;//This one is always set to 0
+        if(*src >= 0x01 && *src <=0x0f)
+          encoding_control_char=(int) *src-1;
+      }
+      else if(*src==0x11)//ISO/IEC 10646 : Basic Multilingual Plane
+	encoding_control_char=15;
+      else if(*src==0x12)//KSX1001-2004 : Korean Character Set
+	log_message( log_module, MSG_WARN, "\t\t Encoding KSX1001-2004 (korean character set) not implemented yet by iconv, we'll use the default encoding for service name\n");
+      else if(*src==0x13)//GB-2312-1980 : Simplified Chinese Character
+	encoding_control_char=16;
+      else if(*src==0x14)//Big5 subset of ISO/IEC 10646 : Traditional Chinese
+	encoding_control_char=17;
+      else if(*src==0x15)//UTF-8 encoding of ISO/IEC 10646 : Basic Multilingual Plane
+	encoding_control_char=18;
+      else
+	log_message( log_module, MSG_WARN, "\t\t Encoding not implemented yet (0x%02x), we'll use the default encoding for service name\n",*src);
+    }
+    else if (*src >= 0x80 && *src <= 0x9f)
+    {
+      //to encode in UTF-8 we add 0xc2 before this control character
+      //but wh have to put it after iconv, it's a bit boring just for bold
+      //we drop them
+      if(*src==0x86)
+        log_message( log_module, MSG_DETAIL, "Control character \"Bold\", we drop",*src);
+      else if(*src==0x87)
+        log_message( log_module, MSG_DETAIL, "Control character \"UnBold\", we drop",*src);
+      else if(*src==0x8a)
+        log_message( log_module, MSG_DETAIL, "Control character \"CR/LF\", we drop",*src);
+      else if(*src>=0x8b )
+        log_message( log_module, MSG_DETAIL, "Control character 0x%02x \"User defined\" at len %d. We drop",*src,len);
+      else
+	log_message( log_module, MSG_DEBUG, "\tUnimplemented name control_character : %x \n", *src);
+    }
+  }
+#ifdef HAVE_ICONV
+  //Conversion to utf8
+  iconv_t cd;
+  //we open the conversion table
+  cd = iconv_open( "UTF8", encodings_en300468[encoding_control_char] );
+
+  size_t inSize, outSize=max_len;
+  inSize=len;
+  //pointers initialisation because iconv change them, we store
+  dest=string;
+  tempdest=tempbuf;
+  //conversion
+  iconv(cd, &tempdest, &inSize, &dest, &outSize );
+  *dest = '\0';
+  free(tempbuf);
+  iconv_close( cd );
+#else
+  log_message( log_module, MSG_DETAIL, "Iconv not present, no name encoding conversion \n");
+#endif
+
+  log_message( log_module, MSG_FLOOD, "Converted text : \"%s\" (text encoding : %s)\n", string,encodings_en300468[encoding_control_char]);
+  return encoding_control_char;
+
+}
+
+
+
+/** @brief : show the contents of the CA identifier descriptor
+ *
+ * @param buf : the buffer containing the descriptor
+ */
+void show_CA_identifier_descriptor(unsigned char *buf)
+{
+
+  int length,i,ca_id;
+
+  log_message( log_module, MSG_DETAIL, "--- descriptor --- CA identifier descriptor\n");
+  log_message( log_module, MSG_DETAIL, "CA_system_ids : \n");
+
+  length=buf[1];
+  buf+=2;
+  for(i=0;i<length;i+=2)
+  {
+    ca_id=(buf[i]<<8)+buf[i+1];
+    log_message( log_module,  MSG_DETAIL,"Ca system id 0x%04x : %s\n",ca_id, ca_sys_id_to_str(ca_id));
+  }
+}
+
+

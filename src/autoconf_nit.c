@@ -217,7 +217,7 @@ void parse_multilingual_network_name_descriptor(unsigned char *buf)
     memcpy (dest, buf, name_len);
     dest[name_len] = '\0';
     buf += name_len;
-    convert_en399468_string(dest,name_len);
+    convert_en300468_string(dest,name_len);
     log_message( log_module, MSG_DEBUG, "lang code %s network name : \"%s\"\n",language_code, dest);
     descriptor_len -= (name_len+4);
     free(dest);
@@ -248,7 +248,7 @@ void parse_network_name_descriptor(unsigned char *buf)
   dest=malloc(sizeof(char)*(descriptor_len+1));
   memcpy (dest, buf, descriptor_len);
   dest[descriptor_len] = '\0';
-  convert_en399468_string(dest,descriptor_len);
+  convert_en300468_string(dest,descriptor_len);
   log_message( log_module, MSG_DEBUG, "network name : \"%s\"\n", dest);
   free(dest);
 
