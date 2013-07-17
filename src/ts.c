@@ -42,11 +42,6 @@ void ts_move_part_to_full(mumudvb_ts_packet_t *ts_packet);
 int  ts_check_crc32(mumudvb_ts_packet_t *ts_packet);
 int  ts_partial_full(mumudvb_ts_packet_t *ts_packet);
 
-
-int get_ts_packet_v2(unsigned char *buf, mumudvb_ts_packet_t *);
-int get_ts_packet_v3(unsigned char *buf, mumudvb_ts_packet_t *);
-void ts_move_part_to_full_v3(mumudvb_ts_packet_t *ts_packet);
-
 #define NO_START 0
 #define START_TS 1
 #define START_SECTION 2
@@ -54,13 +49,13 @@ void ts_move_part_to_full_v3(mumudvb_ts_packet_t *ts_packet);
 void add_ts_packet_data(unsigned char *buf, mumudvb_ts_packet_t *pkt, int data_left, int start_flag, int pid, int cc);
 
 
-/** @brief This function will join the 188 bytes packet until the PMT/PAT/SDT is full
+/** @brief This function will join the 188 bytes packet until the PMT/PAT/SDT/EIT/... is full
  * Once it's full we check the CRC32 and say if it's ok or not
  * There is two important mpeg2-ts fields to do that
- *  * the continuity counter wich is incremented for each packet
- *  * The payload_unit_start_indicator wich says if it's the first packet
+ *  * the continuity counter which is incremented for each packet
+ *  * The payload_unit_start_indicator which says if it's the first packet
  *
- * When a packet is cutted in 188 bytes packets, there must be no other pid between two sub packets
+ * When a packet is splitted in 188 bytes packets, there must be no other PID between two sub packets
  *
  * Return 1 when there is one packet full and OK
  *
@@ -104,8 +99,6 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *pkt)
   //delta used to remove TS HEADER
   offset = TS_HEADER_LEN-1;
 
-  //Is the buffer ok for parsing/adding
-  //int buf_ok=1;
 
   log_message(log_module, MSG_FLOOD, "General information PID %d adaptation_field_control %d payload_unit_start_indicator %d continuity_counter %d\n",
               buf_pid,
@@ -288,7 +281,7 @@ void add_ts_packet_data(unsigned char *buf, mumudvb_ts_packet_t *pkt, int data_l
     else
     {
       //packet started and continuing packet, we append the data
-      //we copy the minimumamount of data
+      //we copy the minimum amount of data
       if((pkt->len_partial+data_left)> pkt->expected_len_partial)
         copy_len=pkt->expected_len_partial - pkt->len_partial;
       else
@@ -358,7 +351,6 @@ void ts_move_part_to_full(mumudvb_ts_packet_t *pkt)
  */
 int ts_check_raw_crc32(unsigned char *data)
 {
-  /**@todo : use this function where CRC32 calculation is needed elsewhere */
   int i,len;
   uint32_t crc32;
   tbl_h_t *tbl_struct;
@@ -371,7 +363,7 @@ int ts_check_raw_crc32(unsigned char *data)
   //Test of the crc32
   crc32=0xffffffff;
   //we compute the CRC32
-  //we have two ways: either we compute untill the end and it should be 0
+  //we have two ways: either we compute until the end and it should be 0
   //either we exclude the 4 last bits and in should be equal to the 4 last bits
   for(i = 0; i < len; i++) {
     crc32 = (crc32 << 8) ^ crc32_table[((crc32 >> 24) ^ data[i])&0xff];
@@ -415,8 +407,6 @@ int ts_partial_full( mumudvb_ts_packet_t *packet)
   }
   return 0;
 }
-
-
 
 
 
@@ -540,6 +530,8 @@ int check_pmt_service_id(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 
 
 }
+
+
 
 
 

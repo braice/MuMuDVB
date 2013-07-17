@@ -878,13 +878,13 @@ int
     {
       rewrite_vars.rewrite_pat=OPTION_ON;
       log_message( log_module,  MSG_INFO,
-                   "Full autoconfiguration, we activate PAT rewritting. if you want to deactivate it see the README.\n");
+                   "Full autoconfiguration, we activate PAT rewriting. if you want to disable it see the README.\n");
     }
     if(rewrite_vars.rewrite_sdt == OPTION_UNDEFINED)
     {
       rewrite_vars.rewrite_sdt=OPTION_ON;
       log_message( log_module,  MSG_INFO,
-                   "Full autoconfiguration, we activate SDT rewritting. if you want to deactivate it see the README.\n");
+                   "Full autoconfiguration, we activate SDT rewriting. if you want to disable it see the README.\n");
     }
     if(rewrite_vars.eit_sort == OPTION_UNDEFINED)
     {
@@ -896,7 +896,7 @@ int
   if(card_buffer.max_thread_buffer_size<card_buffer.dvr_buffer_size)
   {
     log_message( log_module,  MSG_WARN,
-		 "Warning : You set a thread buffer size lower than your dvr buffer size, it's not possible to use such values. I increase your dvr_thread_buffer_size ...\n");
+		 "Warning : You set a thread buffer size lower than your DVR buffer size, it's not possible to use such values. I increase your dvr_thread_buffer_size ...\n");
 		 card_buffer.max_thread_buffer_size=card_buffer.dvr_buffer_size;
   }
 
@@ -981,7 +981,7 @@ int
   //We deactivate things depending on multicast if multicast is suppressed
   if(!multicast_vars.ttl)
   {
-    log_message( log_module,  MSG_INFO, "The multicast TTL is set to 0, multicast will be deactivated.\n");
+    log_message( log_module,  MSG_INFO, "The multicast TTL is set to 0, multicast will be disabled.\n");
     multicast_vars.multicast=0;
   }
   if(!multicast_vars.multicast)
@@ -991,7 +991,7 @@ int
     {
       if(chan_and_pids.channels[curr_channel].transcode_options.enable)
       {
-	log_message( log_module,  MSG_INFO, "NO Multicast, transcoding deactivated for channel \"%s\".\n", chan_and_pids.channels[curr_channel].name);
+	log_message( log_module,  MSG_INFO, "NO Multicast, transcoding disabled for channel \"%s\".\n", chan_and_pids.channels[curr_channel].name);
 	chan_and_pids.channels[curr_channel].transcode_options.enable=0;
       }
     }
@@ -999,11 +999,11 @@ int
       if(multicast_vars.rtp_header)
       {
 	multicast_vars.rtp_header=0;
-	log_message( log_module,  MSG_INFO, "NO Multicast, RTP Header is deactivated.\n");
+	log_message( log_module,  MSG_INFO, "NO Multicast, RTP Header is disabled.\n");
       }
       if(sap_vars.sap==OPTION_ON)
       {
-	log_message( log_module,  MSG_INFO, "NO Multicast, SAP announces are deactivated.\n");
+	log_message( log_module,  MSG_INFO, "NO Multicast, SAP announces are disabled.\n");
 	sap_vars.sap=OPTION_OFF;
       }
   }
@@ -1669,7 +1669,7 @@ int
 
       //If the user asked to dump the streams it's here tath it should be done
       if(dump_file)
-        if(fwrite(actual_ts_packet,TS_PACKET_SIZE,sizeof(unsigned char),dump_file)<TS_PACKET_SIZE)
+        if(fwrite(actual_ts_packet,sizeof(unsigned char),TS_PACKET_SIZE,dump_file)<TS_PACKET_SIZE)
           log_message( log_module,MSG_WARN,"Error while writing the dump : %s", strerror(errno));
 
       // Test if the error bit is set in the TS packet received
@@ -1857,7 +1857,7 @@ int
         }
 #endif
         /******************************************************/
-	//Rewrite PAT
+        //Rewrite PAT
         /******************************************************/
         if((send_packet==1) && //no need to check paquets we don't send
             (pid == 0) && //This is a PAT PID
@@ -1865,7 +1865,7 @@ int
           send_packet=pat_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_and_pids.channels[curr_channel], curr_channel);
 
         /******************************************************/
-	//Rewrite SDT
+        //Rewrite SDT
         /******************************************************/
         if((send_packet==1) && //no need to check paquets we don't send
             (pid == 17) && //This is a SDT PID
