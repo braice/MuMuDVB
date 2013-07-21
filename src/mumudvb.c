@@ -1905,29 +1905,13 @@ int
 #endif
 
         /******************************************************/
-	//Ok we must send this packet,
-	// we add it to the channel buffer
+        //Ok we must send this packet,
+        // we add it to the channel buffer
         /******************************************************/
         if(send_packet==1)
         {
-#ifndef ENABLE_SCAM_SUPPORT
-      // we fill the channel buffer
-		      memcpy(chan_and_pids.channels[curr_channel].buf + chan_and_pids.channels[curr_channel].nb_bytes, actual_ts_packet, TS_PACKET_SIZE);
-
-		      chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] =
-		          (chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] & 0xe0) | hi_mappids[pid];
-		      chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 2] = lo_mappids[pid];
-
-		      chan_and_pids.channels[curr_channel].nb_bytes += TS_PACKET_SIZE;
-		      //The buffer is full, we send it
-		      if ((!multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
-			||(multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
-		      {
-				now_time=get_time();
-				send_func(&chan_and_pids.channels[curr_channel], &now_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
-			  }
-#else
-		  	if (chan_and_pids.channels[curr_channel].scam_support && scam_vars.scam_support) {
+#ifdef ENABLE_SCAM_SUPPORT
+		      if (chan_and_pids.channels[curr_channel].scam_support && scam_vars.scam_support) {
 					memcpy(chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx], actual_ts_packet, TS_PACKET_SIZE);
 
 					chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx][1] =
@@ -1953,8 +1937,13 @@ int
 				    pthread_mutex_unlock(&chan_and_pids.channels[curr_channel].ring_buffer_num_packets_mutex);
 			  }
 			else {
-		      // we fill the channel buffer
+#else
+				{
+#endif
+
+				// we fill the channel buffer
 		      memcpy(chan_and_pids.channels[curr_channel].buf + chan_and_pids.channels[curr_channel].nb_bytes, actual_ts_packet, TS_PACKET_SIZE);
+
 
 		      chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] =
 		          (chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] & 0xe0) | hi_mappids[pid];
@@ -1970,9 +1959,6 @@ int
 		      }
 
 			}
-
-#endif
-
 
 
 		}
