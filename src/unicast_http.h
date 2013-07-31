@@ -169,7 +169,7 @@ typedef struct unicast_parameters_t{
   int consecutive_errors_timeout;
   /** The information on the file descriptors : ie the type of FD, the client associated if it's a client fd, the channel if it's a channel fd */
   unicast_fd_info_t *fd_info;
-  /** The maximim size of the queue */
+  /** The maximum size of the queue */
   int queue_max_size;
   /** The socket SO_SNDBUF size*/
   int socket_sendbuf_size;

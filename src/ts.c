@@ -1079,7 +1079,7 @@ void ts_display_lcn_descriptor(char *log_module, unsigned char* buf)
   nit_lcn_t *lcn;
   int descriptor_len = buf[1];
   buf += 2;
-  int service_id, i_lcn, curr_channel;
+  int service_id, i_lcn;
   log_message( log_module, MSG_DEBUG, "NIT  0x83 descriptor (probably LCN) \n");
   log_message( log_module, MSG_FLOOD, "NIT  0x83 descriptor (probably LCN) descriptor_len %d\n",descriptor_len);
 
