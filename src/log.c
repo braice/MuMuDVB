@@ -279,7 +279,7 @@ void log_message( char* log_module, int type,
   va_start( args, psz_format );
   message_size=vsnprintf(NULL, 0, psz_format, args);
   va_end( args );
-  tempchar=malloc((message_size+1)*sizeof(char));
+  tempchar=calloc((message_size+1),sizeof(char));
   if(tempchar==NULL)
   {
     if (log_params.log_type == LOGGING_FILE)
