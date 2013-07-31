@@ -71,17 +71,17 @@ int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substri
       rewrite_vars->rewrite_sdt = OPTION_OFF;
 
   }
-  else if (!strcmp (substring, "sort_eit"))
+  else if ( (!strcmp (substring, "sort_eit")) || (!strcmp (substring, "rewrite_eit")))
   {
-    substring = strtok (NULL, delimiteurs);
+      substring = strtok (NULL, delimiteurs);
     if(atoi (substring))
     {
-      rewrite_vars->eit_sort = OPTION_ON;
+      rewrite_vars->rewrite_eit = OPTION_ON;
       log_message( log_module, MSG_INFO,
-                   "You have enabled the sort of the EIT PID\n");
+                   "You have enabled the EIT rewriting\n");
     }
     else
-      rewrite_vars->eit_sort = OPTION_OFF;
+      rewrite_vars->rewrite_eit = OPTION_OFF;
   }
   else if (!strcmp (substring, "sdt_force_eit"))
   {

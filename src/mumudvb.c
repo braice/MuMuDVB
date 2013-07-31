@@ -234,8 +234,12 @@ rewrite_parameters_t rewrite_vars={
   .sdt_needs_update=1,
   .full_sdt_ok=0,
   .sdt_continuity_counter=0,
-  .eit_sort=OPTION_UNDEFINED,
+  .rewrite_eit=OPTION_UNDEFINED,
+  .eit_version=-1,
+  .full_eit=NULL,
+  .eit_needs_update=0,
   .sdt_force_eit=OPTION_UNDEFINED,
+  .eit_packets=NULL,
 };
 
 
@@ -886,11 +890,11 @@ int
       log_message( log_module,  MSG_INFO,
                    "Full autoconfiguration, we activate SDT rewriting. if you want to disable it see the README.\n");
     }
-    if(rewrite_vars.eit_sort == OPTION_UNDEFINED)
+    if(rewrite_vars.rewrite_eit == OPTION_UNDEFINED)
     {
-      rewrite_vars.eit_sort=OPTION_ON;
+      rewrite_vars.rewrite_eit=OPTION_ON;
       log_message( log_module,  MSG_INFO,
-                   "Full autoconfiguration, we activate sorting of the EIT PID. if you want to deactivate it see the README.\n");
+                   "Full autoconfiguration, we activate EIT rewriting. if you want to disable it see the README.\n");
     }
   }
   if(card_buffer.max_thread_buffer_size<card_buffer.dvr_buffer_size)
@@ -1335,6 +1339,25 @@ int
   }
 
   /*****************************************************/
+  //EIT rewriting
+  //memory allocation for MPEG2-TS
+  //packet structures
+  /*****************************************************/
+
+  if(rewrite_vars.rewrite_eit == OPTION_ON)
+  {
+    rewrite_vars.full_eit=malloc(sizeof(mumudvb_ts_packet_t));
+    if(rewrite_vars.full_eit==NULL)
+    {
+      log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      Interrupted=ERROR_MEMORY<<8;
+      goto mumudvb_close_goto;
+    }
+    memset (rewrite_vars.full_eit, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+    pthread_mutex_init(&rewrite_vars.full_eit->packetmutex,NULL);
+  }
+
+  /*****************************************************/
   //Some initialisations
   /*****************************************************/
   if(multicast_vars.rtp_header)
@@ -1754,6 +1777,14 @@ int
 	        chan_and_pids.channels[curr_channel].sdt_rewrite_skip=0;
 	     }
 	   }
+      /******************************************************/
+      //EIT rewrite
+      /******************************************************/
+      if( (pid == 18) && //This is an EIT PID
+           rewrite_vars.rewrite_eit == OPTION_ON ) //AND we asked for rewrite
+	   {
+	     eit_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars);
+	   }
 
 
       /******************************************************/
@@ -1874,14 +1905,16 @@ int
           send_packet=sdt_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_and_pids.channels[curr_channel], curr_channel);
 
         /******************************************************/
-        //EIT SORT
+        //Rewrite EIT
         /******************************************************/
         if((send_packet==1) &&//no need to check paquets we don't send
            (pid == 18) && //This is a EIT PID
             (chan_and_pids.channels[curr_channel].service_id) && //we have the service_id
-            rewrite_vars.eit_sort == OPTION_ON) //AND we asked for EIT sorting
+            rewrite_vars.rewrite_eit == OPTION_ON) //AND we asked for EIT sorting
         {
-          send_packet=eit_sort_new_packet(actual_ts_packet, &chan_and_pids.channels[curr_channel]);
+          eit_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_and_pids.channels[curr_channel],
+        		  &multicast_vars, &unicast_vars,&chan_and_pids,&fds);
+          send_packet=0; //for EIT it is sent by the rewrite function itself
         }
 
         /******************************************************/

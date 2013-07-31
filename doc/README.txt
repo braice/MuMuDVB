@@ -795,6 +795,8 @@ EIT PID (Event Information Table) Sorting
 
 This option will make MuMuDVB stream only the EIT packets corresponding to the streamed channel instead of all transponder channels. Some clients parse this table and can show/select ghost programs  (even if the PAT and the SDT are rewritten).
 
+The EIT PID contains the description of the current program and the future programs. It is used to build the Electronic Program Guide
+
 To enable EIT sorting, add `sort_eit=1` to your config file. 
 
 [NOTE]
