@@ -1,7 +1,7 @@
 /* 
  * mumudvb - UDP-ize a DVB transport stream.
  * 
- * (C) 2009 Brice DUBOST
+ * (C) 2009-2013 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -36,6 +36,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "mumudvb.h"
 #include "ts.h"
@@ -49,6 +50,8 @@
 typedef struct eit_packet_t{
 	  /**The service ID of the EIT*/
 	  int service_id;
+	  /** The table ID */
+	  uint8_t table_id;
 	  /**The actual version of the EIT PID*/
 	  int version;
 	  /**Do the actual full EIT needs to be updated ?*/

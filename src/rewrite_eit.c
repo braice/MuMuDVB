@@ -74,10 +74,11 @@ void eit_show_stored(rewrite_parameters_t *rewrite_vars)
 	int i;
 	while(actual_eit!=NULL)
 	{
-		log_message( log_module, MSG_FLOOD,"stored EIT sid %d version %d last section number %d",
+		log_message( log_module, MSG_FLOOD,"stored EIT SID %d table_id 0X%02x version %d last section number %d",
 				actual_eit->service_id,
+				actual_eit->table_id,
 				actual_eit->version,
-				actual_eit->last_section_number );
+				actual_eit->last_section_number);
 		for(i=0;i<=actual_eit->last_section_number;i++)
 			if(actual_eit->sections_stored[i])
 				log_message( log_module, MSG_FLOOD,"\t stored section %d",i);
@@ -86,6 +87,21 @@ void eit_show_stored(rewrite_parameters_t *rewrite_vars)
 
 
 }
+
+/**@brief increment the table_id
+ *
+ */
+uint8_t eit_next_table_id(uint8_t table_id)
+{
+	if(table_id==0)
+		return 0x4E;
+	if(table_id==0x4E)
+		return 0x50;
+	if(table_id==0x5F)
+		return 0x4E;
+	return table_id+1;
+}
+
 void eit_free_packet_contents(eit_packet_t *eit_packet)
 {
 	//free the different packets
@@ -106,19 +122,19 @@ void eit_free_packet_contents(eit_packet_t *eit_packet)
  * the service is found or run out of memory.
  *
  */
-eit_packet_t *eit_new_packet(rewrite_parameters_t *rewrite_vars, int sid)
+eit_packet_t *eit_new_packet(rewrite_parameters_t *rewrite_vars, int sid, uint8_t table_id)
 {
 	eit_packet_t *actual_eit=rewrite_vars->eit_packets;
 
 	//go to the last one or return the already found
 	while(actual_eit && actual_eit->next!=NULL)
 	{
-		if(actual_eit->service_id==sid)
+		if((actual_eit->service_id==sid)&&(actual_eit->table_id==table_id))
 			return actual_eit;
 		actual_eit=actual_eit->next;
 	}
 
-	log_message( log_module, MSG_FLOOD,"EIT Stored before allocation sid %d",sid);
+	log_message( log_module, MSG_FLOOD,"EIT Stored before allocation sid %d table id 0x%02x",sid,table_id);
 	eit_show_stored(rewrite_vars);
 
 	if(actual_eit==NULL)
@@ -145,14 +161,14 @@ eit_packet_t *eit_new_packet(rewrite_parameters_t *rewrite_vars, int sid)
 /** @brief, Search an EIT in the stored list
  *
  */
-eit_packet_t *eit_find_by_tsid(rewrite_parameters_t *rewrite_vars,int service_id)
+eit_packet_t *eit_find_by_tsid(rewrite_parameters_t *rewrite_vars,int service_id, uint8_t table_id) //and table id
 {
 	eit_packet_t *found=NULL;
 	eit_packet_t *actual_eit=rewrite_vars->eit_packets;
 
 	while(found==NULL && actual_eit!=NULL)
 	{
-		if(actual_eit->service_id==service_id)
+		if((actual_eit->service_id==service_id)&&(actual_eit->table_id==table_id))
 			found=actual_eit;
 		else
 			actual_eit=actual_eit->next;
@@ -188,43 +204,40 @@ int eit_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf, int 
 	eit_packet_t *eit_packet;
 	if(eit) //It's the beginning of a new packet
 	{
-		eit_packet=eit_find_by_tsid(rewrite_vars,HILO(eit->service_id));
+		// 0x4E event_information_section - actual_transport_stream, present/following
+		// 0x50 to 0x5F event_information_section - actual_transport_stream, schedule
+		//all these table id_ which could have different version number for the same service
+		if((eit->table_id!=0x4E)&&((eit->table_id&0xF0)!=0x50))
+			return 0;
+		/*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the table
+    	sent is currently applicable.*/
+		if(eit->current_next_indicator == 0)
+			return 0;
+
+		eit_packet=eit_find_by_tsid(rewrite_vars,HILO(eit->service_id),eit->table_id);
 		if(eit_packet==NULL)
 		{
-			log_message( log_module, MSG_DETAIL,"EIT sid %d not stored, need update.",
-											HILO(eit->service_id));
+			log_message( log_module, MSG_DETAIL,"EIT sid %d table id 0x%02x not stored, need update.",
+					HILO(eit->service_id),eit->table_id);
 			return 1;
 		}
-		//		if((eit->table_id==0x4E)||((eit->table_id&0xF0)==0x50))
-		//if((eit->table_id&0xF0)==0x50)
-		//	log_message( log_module, MSG_DETAIL,"EIT table id 0x%x schedule not supported yet.",eit->table_id);
-		if(eit->table_id==0x4E)
-			// 0x4E event_information_section - actual_transport_stream, present/following
-			// 0x50 to 0x5F event_information_section - actual_transport_stream, schedule
-			//TODO : deal with all these table id_ which could have different version number for the same service
-		{
-			/*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the table
-        sent is currently applicable.*/
-			if(eit->current_next_indicator == 0)
-				return 0;
 
-			if(eit->version_number!=eit_packet->version)
-			{
-				log_message( log_module, MSG_DETAIL,"EIT sid %d need update. stored version : %d, new: %d",
-						HILO(eit->service_id),
-						eit_packet->version,
-						eit->version_number);
-				return 1;
-			}
-			if(!eit_packet->sections_stored[eit->section_number] )
-			{
-				log_message( log_module, MSG_DETAIL,"EIT sid %d new section %d version : %d",
-										HILO(eit->service_id),
-										eit->section_number,
-										eit_packet->version,
-										eit->version_number);
-				return 1;
-			}
+		if(eit->version_number!=eit_packet->version)
+		{
+			log_message( log_module, MSG_DETAIL,"EIT sid %d need update. stored version : %d, new: %d",
+					HILO(eit->service_id),
+					eit_packet->version,
+					eit->version_number);
+			return 1;
+		}
+		if(!eit_packet->sections_stored[eit->section_number] )
+		{
+			log_message( log_module, MSG_DETAIL,"EIT sid %d new section %d version : %d",
+					HILO(eit->service_id),
+					eit->section_number,
+					eit_packet->version,
+					eit->version_number);
+			return 1;
 		}
 	}
 	return 0;
@@ -259,7 +272,7 @@ int eit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
 			eit_display_header(eit);
 
 			eit_packet_t *eit_packet;
-			eit_packet=eit_new_packet(rewrite_vars,HILO(eit->service_id));
+			eit_packet=eit_new_packet(rewrite_vars,HILO(eit->service_id), eit->table_id);
 			if(NULL==eit_packet)
 				return 0;
 
@@ -276,6 +289,7 @@ int eit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
 			eit_packet->last_section_number = eit->last_section_number;
 			eit_packet->version=eit->version_number;
 			eit_packet->service_id = HILO(eit->service_id);
+			eit_packet->table_id = eit->table_id;
 			eit_packet->full_eit_ok=1;
 			/*We've got the FULL EIT packet*/
 			//we copy the data to the right section
@@ -331,10 +345,28 @@ void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters
 
 	//If there is an EIT PID sorted for this channel
 	eit_packet_t *eit_pkt;
-	eit_pkt=eit_find_by_tsid(rewrite_vars,channel->service_id);
-	if((eit_pkt==NULL)||(!eit_pkt->full_eit_ok))
-		return;
+	uint8_t section_start;
+	//we check we start with a valid section
+	if((channel->eit_table_id_to_send!=0x4E)&&((channel->eit_table_id_to_send&0xF0)!=0x50))
+		channel->eit_table_id_to_send=0x4E;
 
+	//We search for the EIT packet to send, if not found we loop on the sections
+	section_start=channel->eit_table_id_to_send;
+	do
+	{
+		eit_pkt=eit_find_by_tsid(rewrite_vars,channel->service_id,channel->eit_table_id_to_send);
+		//loop over the table id
+		if((eit_pkt==NULL)||(!eit_pkt->full_eit_ok))
+		{
+			channel->eit_table_id_to_send=eit_next_table_id(channel->eit_table_id_to_send);
+			eit_pkt=NULL;
+		}
+	}
+	while((eit_pkt==NULL)&&(channel->eit_table_id_to_send!=section_start));
+
+	//we go away if there is no EIT packet to send
+	if(eit_pkt==NULL)
+		return;
 	//search for the next section we can send
 	//just in case we have a new version with less sections
 	channel->eit_section_to_send=channel->eit_section_to_send % (eit_pkt->last_section_number+1);
@@ -347,7 +379,11 @@ void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters
 	}
 	//if nothing found
 	if(!eit_pkt->sections_stored[channel->eit_section_to_send])
-		return; //bye
+	{
+		//bye (we should be here BTW) but we avoid to stay on invalid packet by going to next section
+		channel->eit_table_id_to_send=eit_next_table_id(channel->eit_table_id_to_send);
+		return;
+	}
 
 	//ok we send this!
 	mumudvb_ts_packet_t *pkt_to_send;
@@ -357,10 +393,11 @@ void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters
 	pkt_to_send=eit_pkt->full_eit_sections[channel->eit_section_to_send];
 	data_left_to_send=pkt_to_send->full_buffer_len;
 	sent=0;
-	//log_message(log_module,MSG_FLOOD,"Sending EIT to channel %s (sid %d) section %d data_len %d",
+	//log_message(log_module,MSG_FLOOD,"Sending EIT to channel %s (sid %d) section %d table_id 0x%02x data_len %d",
 	//		channel->name,
 	//		channel->service_id,
 	//		channel->eit_section_to_send,
+	//		channel->eit_table_id_to_send,
 	//		data_left_to_send);
 	while(data_left_to_send>0)
 	{
@@ -416,7 +453,10 @@ void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters
 	//We update which section we want to send
 	channel->eit_section_to_send++;
 	channel->eit_section_to_send=channel->eit_section_to_send % (eit_pkt->last_section_number+1);
-	//TODO increase table id if we reached the end
+	//if we reached the end, we go to the next table_id
+	if(channel->eit_section_to_send==0)
+		channel->eit_table_id_to_send=eit_next_table_id(channel->eit_table_id_to_send);
+
 
 }
 

@@ -402,6 +402,8 @@ typedef struct mumudvb_channel_t{
   int sdt_rewrite_skip;
   /** The version of the generated EIT */
   int eit_section_to_send;
+  /** The table we are currently sending */
+  uint8_t eit_table_id_to_send;
   /** the continuity counter for the EIT */
   int eit_cc;
 
