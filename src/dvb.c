@@ -436,7 +436,11 @@ void show_card_capabilities( int card, int tuner )
   int frequency_factor;
   /** The path of the card */
   char card_dev_path[256];
-  sprintf(card_dev_path,DVB_DEV_PATH,card);
+  strncpy(card_dev_path,DVB_DEV_PATH,256);
+  char number[10];
+  sprintf(number,"%d",card);
+  int l=sizeof(card_dev_path);
+  mumu_string_replace(card_dev_path,&l,0,"%card",number);
   //Open the frontend
   if(!open_fe (&frontend_fd, card_dev_path, tuner,0)) // we open the card readonly so we can get the capabilities event when used
     return;
@@ -577,11 +581,15 @@ void list_dvb_cards ()
 	  card_number=cards[j];
 	old_card=card_number;
 
-    sprintf(card_dev_path,DVB_DEV_PATH,card_number);
+    strncpy(card_dev_path,DVB_DEV_PATH,256);
+    char number[10];
+    sprintf(number,"%d",card_number);
+    int l=sizeof(card_dev_path);
+    mumu_string_replace(card_dev_path,&l,0,"%card",number);
     adapter_dir = opendir (card_dev_path);
     if (adapter_dir == NULL)
     {
-      log_message( log_module,  MSG_ERROR, "Cannot open %s : %s\n", adapter_dir, strerror (errno));
+      log_message( log_module,  MSG_ERROR, "Cannot open %s : %s\n", card_dev_path, strerror (errno));
       return;
     }
     while ((d_tuner=readdir(adapter_dir))!=NULL)

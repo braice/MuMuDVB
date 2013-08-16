@@ -852,7 +852,7 @@ int change_delivery_system(fe_delivery_system_t delivery_system,int fd_frontend)
     }
     return 0;
 #else
-  return 0
+    return 0;
 #endif
 
 }

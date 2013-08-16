@@ -768,5 +768,16 @@ unsigned char *get_ts_begin(unsigned char *buf);
 struct mumudvb_channel_t;
 int check_pmt_service_id(mumudvb_ts_packet_t *pmt, struct mumudvb_channel_t *channel);
 void ts_display_pat(char* log_module,unsigned char *buf);
+void ts_display_country_avaibility_descriptor(char* log_module,unsigned char *buf);
+
+void ts_display_nit_network_descriptors(char *log_module, unsigned char *buf,int descriptors_loop_len);
+void ts_display_network_name_descriptor(char* log_module, unsigned char *buf);
+void ts_display_multilingual_network_name_descriptor(char* log_module, unsigned char *buf);
+void ts_display_service_list_descriptor(char* log_module, unsigned char *buf);
+void ts_display_lcn_descriptor(char* log_module, unsigned char *buf);
+void ts_display_satellite_delivery_system_descriptor(char* log_module, unsigned char *buf);
+void ts_display_terrestrial_delivery_system_descriptor(char* log_module, unsigned char *buf);
+void ts_display_frequency_list_descriptor(char* log_module, unsigned char* buf);
+
 
 #endif

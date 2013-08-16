@@ -1,7 +1,7 @@
 /* 
  * mumudvb - UDP-ize a DVB transport stream.
  * 
- * (C) 2009 Brice DUBOST
+ * (C) 2009-2013 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -30,12 +30,47 @@
  * Some set top boxes need it
  */
 
+#ifndef _REWRITE_H
+#define _REWRITE_H
+
+
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "mumudvb.h"
 #include "ts.h"
+#include "unicast_http.h"
 #include <stdint.h>
+
+
+/** @brief the structure for storing an EIT PID for a particular SID
+ * This structure contains the packet and several flags around
+ */
+typedef struct eit_packet_t{
+	  /**The service ID of the EIT*/
+	  int service_id;
+	  /** The table ID */
+	  uint8_t table_id;
+	  /**The actual version of the EIT PID*/
+	  int version;
+	  /**Do the actual full EIT needs to be updated ?*/
+	  int needs_update;
+	  /** Do we need to see other EIT ?*/
+	  int need_others;
+	  /** The last_section_number of the current version */
+	  int last_section_number;
+	  /** Array storing the section numbers we saw */
+	  int sections_stored[256];
+	  /**Do the full EIT is ok ?*/
+	  int full_eit_ok;
+	  /** The Complete EIT PID  for each section*/
+	  mumudvb_ts_packet_t* full_eit_sections[256];
+	  /** The continuity counter of the sent EIT*/
+	  int continuity_counter;
+	  /** Pointer to the next one */
+	  struct eit_packet_t *next;
+}eit_packet_t;
 
 
 /** @brief the parameters for the rewriting
@@ -77,9 +112,19 @@ typedef struct rewrite_parameters_t{
   int sdt_force_eit;
 
   /** Do we sort the EIT PID ?*/
-  option_status_t eit_sort;
+  option_status_t rewrite_eit;
+  /**The actual version of the EIT pid*/
+  int eit_version;
+  /**Do the actual full EIT needs to be updated ?*/
+  int eit_needs_update;
+  /** The Complete EIT PID  which we are storing*/
+  mumudvb_ts_packet_t *full_eit;
+
+  eit_packet_t *eit_packets;
 
 }rewrite_parameters_t;
+
+
 
 int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substring);
 
@@ -92,4 +137,9 @@ int sdt_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_
 
 void set_continuity_counter(unsigned char *buf,int continuity_counter);
 
-int eit_sort_new_packet(unsigned char *ts_packet, mumudvb_channel_t *channel);
+
+int eit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars);
+void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel,
+		multicast_parameters_t *multicast_vars, unicast_parameters_t *unicast_vars, mumudvb_chan_and_pids_t *chan_and_pids,fds_t *fds);
+
+#endif

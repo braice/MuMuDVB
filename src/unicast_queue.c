@@ -95,7 +95,7 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *cha
       while(packets_left>0)
       {
 	//we send the data
-	written_len=write(actual_client->Socket,buffer, buffer_len);
+	written_len=send(actual_client->Socket,buffer, buffer_len,MSG_NOSIGNAL);
 	//We check if all the data was successfully written
 	if(written_len<buffer_len)
 	{

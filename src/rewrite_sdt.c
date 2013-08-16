@@ -43,6 +43,9 @@ extern uint32_t       crc32_table[256];
 
 static char *log_module="SDT rewrite: ";
 
+/** @brief @TODO : document
+ *
+ */
 int sdt_rewrite_all_sections_seen(rewrite_parameters_t *rewrite_vars)
 {
   int all_seen,i;
@@ -182,7 +185,7 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
   if(sdt->table_id!=0x42)
   {
     rewrite_vars->sdt_needs_update=1;
-    log_message( log_module, MSG_DETAIL,"We didn't got the good SDT (wrong table id) we search for a new one\n");
+    log_message( log_module, MSG_DETAIL,"We didn't got the good SDT (wrong table id 0x%x) we search for a new one",sdt->table_id);
     return 0;
   }
 
@@ -412,7 +415,7 @@ int sdt_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_
     }
     if(channel->generated_sdt_version==rewrite_vars->sdt_version)
     {
-      /*We send the rewrited SDT from channel->generated_sdt*/
+      /*We send the rewritten SDT from channel->generated_sdt*/
       memcpy(ts_packet,channel->generated_sdt,TS_PACKET_SIZE);
       //To avoid the duplicates, we have to update the continuity counter
       set_continuity_counter(ts_packet,rewrite_vars->sdt_continuity_counter);

@@ -2,7 +2,7 @@
  * mumudvb - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * (C) 2004-2010 Brice DUBOST
+ * (C) 2004-2013 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -47,13 +47,15 @@
 #include "log.h"
 #include "tune.h"
 
+#ifdef HAVE_ICONV
+#include <iconv.h>
+#endif
 
 #ifdef ENABLE_CAM_SUPPORT
 #include <libdvben50221/en50221_errno.h>
 #endif
 
 #define LOG_HEAD_LEN 6
-extern int no_daemon;
 extern int Interrupted;
 
 log_params_t log_params={
@@ -277,7 +279,7 @@ void log_message( char* log_module, int type,
   va_start( args, psz_format );
   message_size=vsnprintf(NULL, 0, psz_format, args);
   va_end( args );
-  tempchar=malloc((message_size+1)*sizeof(char));
+  tempchar=calloc((message_size+1),sizeof(char));
   if(tempchar==NULL)
   {
     if (log_params.log_type == LOGGING_FILE)
@@ -329,8 +331,9 @@ void log_message( char* log_module, int type,
 	    case MSG_FLOOD:
 	      priority|=LOG_DEBUG;
 	      break;
-            default:
-              priority=LOG_USER;
+        default:
+           priority=LOG_USER;
+           break;
 	    }
 	  syslog (priority,"%s",log_string.string);
 	}
@@ -468,162 +471,6 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
 
 
 
-/**
- * @brief Write a config file with the current parameters
- * in a form understandable by mumudvb
- * This is useful if you want to do fine tuning after autoconf
- * This part generate the header ie take the actual config file and remove useless thing (ie channels, autoconf ...)
- *
- * @param orig_conf_filename The name of the config file used actually by mumudvb
- * @param saving_filename the path of the generated config file
- */
-void gen_config_file_header(char *orig_conf_filename, char *saving_filename)
-{
-  FILE *orig_conf_file;
-  FILE *config_file;
-  char current_line[CONF_LINELEN];
-  char current_line_temp[CONF_LINELEN];
-  char *substring=NULL;
-  char delimiteurs[] = " =";
-
-
-  orig_conf_file = fopen (orig_conf_filename, "r");
-  if (orig_conf_file == NULL)
-    {
-      log_message( log_module,  MSG_WARN, "Strange error %s: %s\n",
-		   orig_conf_filename, strerror (errno));
-      return;
-    }
-
-
-  config_file = fopen (saving_filename, "w");
-  if (config_file == NULL)
-    {
-      log_message( log_module,  MSG_WARN,
-		   "saving_filename %s: %s\n",
-		   saving_filename, strerror (errno));
-      fclose (orig_conf_file);  // the first fopen was successful!
-      return;
-    }
-  
-
-  fprintf ( config_file, "# !!!!!!! This is a generated configuration file for MuMuDVB !!!!!!!!!!!\n");
-  fprintf ( config_file, "#\n");
-
-
-  while (fgets (current_line, CONF_LINELEN, orig_conf_file))
-    {
-      strcpy(current_line_temp,current_line);
-      substring = strtok (current_line_temp, delimiteurs);
-
-      //We remove the channels and parameters concerning autoconfiguration
-      if (!strcmp (substring, "autoconfiguration"))
-	continue;
-      else if (!strncmp (substring, "autoconf_", strlen("autoconf_")))
-        continue;
-      else if (!strcmp (substring, "channel_next"))
-        continue;
-      else if (!strcmp (substring, "ip"))
-	continue;
-      else if (!strcmp (substring, "port"))
-        continue;
-      else if (!strcmp (substring, "unicast_port"))
-        continue;
-      else if (!strcmp (substring, "ts_id"))
-        continue;
-      else if (!strcmp (substring, "service_id"))
-        continue;
-      else if (!strcmp (substring, "cam_pmt_pid"))
-	continue;
-      else if (!strcmp (substring, "pids"))
-	continue;
-      else if (!strcmp (substring, "oscam"))
-	continue;
-      else if (!strcmp (substring, "ring_buffer_size"))
-	continue;
-      else if (!strcmp (substring, "decsa_delay"))
-	continue;
-      else if (!strcmp (substring, "send_delay"))
-	continue;
-      else if (!strcmp (substring, "sap_group"))
-	continue;
-      else if (!strcmp (substring, "name"))
-	continue;
-      //we write the parts we didn't dropped
-      fprintf(config_file,"%s",current_line);
-
-    }
-  fprintf ( config_file, "\n#End of global part\n#\n");
-
-  fclose(config_file);
-  fclose(orig_conf_file);
-}
-
-
-/**
- * @brief Write a config file with the current parameters
- * in a form understandable by mumudvb
- * This is useful if you want to do fine tuning after autoconf
- * this part generates the channels
- *
- * @param number_of_channels the number of channels
- * @param channels the channels array
- * @param saving_filename the path of the generated config file
- */
-void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *saving_filename)
-{
-  FILE *config_file;
-
-  int curr_channel;
-  int curr_pid;
-
-  //Append mode to avoid erasing the header
-  config_file = fopen (saving_filename, "a");
-  if (config_file == NULL)
-    {
-      log_message( log_module,  MSG_WARN,
-		   "Error config_file %s: %s\n",
-		   saving_filename, strerror (errno));
-      return;
-    }
-
-  fprintf ( config_file, "#Configuration for %d channel%s\n", number_of_channels,
-	       (number_of_channels <= 1 ? "" : "s"));
-  for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-    {
-      fprintf ( config_file, "#Channel number : %3d\nip=%s\nport=%d\nname=%s\n",
-		curr_channel,
-		channels[curr_channel].ip4Out,
-		channels[curr_channel].portOut,
-		channels[curr_channel].name);
-
-      if (channels[curr_channel].sap_group[0])
-	fprintf ( config_file, "sap_group=%s\n", channels[curr_channel].sap_group);
-      if (channels[curr_channel].need_cam_ask)
-        fprintf ( config_file, "cam_pmt_pid=%d\n", channels[curr_channel].pmt_pid);
-      if (channels[curr_channel].service_id)
-        fprintf ( config_file, "service_id=%d\n", channels[curr_channel].service_id);
-      if (channels[curr_channel].unicast_port)
-        fprintf ( config_file, "unicast_port=%d\n", channels[curr_channel].unicast_port);
-      fprintf ( config_file, "pids=");
-      for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
-	fprintf ( config_file, "%d ", channels[curr_channel].pids[curr_pid]);
-      fprintf ( config_file, "\n");
-  #ifdef ENABLE_SCAM_SUPPORT
-	  fprintf ( config_file, "oscam=%d\n", channels[curr_channel].scam_support);
-	  if (channels[curr_channel].scam_support) {
-	    fprintf ( config_file, "ring_buffer_size=%" PRIu64 "\n", channels[curr_channel].ring_buffer_size);
-		fprintf ( config_file, "decsa_delay=%" PRIu64 "\n", channels[curr_channel].decsa_delay);  
-		fprintf ( config_file, "send_delay=%" PRIu64 "\n", channels[curr_channel].send_delay);
-	  }
-  #endif
-      fprintf ( config_file, "#End of config file\n");
-	}
-
-
-  fclose (config_file);
-
-}
 
 
 typedef struct ca_sys_id_t
@@ -633,14 +480,15 @@ typedef struct ca_sys_id_t
   char descr[128];
 }ca_sys_id_t;
 
-//updated 2010 06 12
+//updated 2013 06 02 from http://www.dvbservices.com/identifiers/ca_system_id
   ca_sys_id_t casysids[]={
   {0x01,0, "IPDC SPP (TS 102 474) Annex A "},
-  {0x02,0, "IPDC SPP (TS 102 474) Annex B"},
+  {0x02,0, "18Crypt (IPDC SPP (TS 102 474) Annex B)"},
   {0x04,0, "OMA DRM Content Format"},
   {0x05,0, "OMA BCAST 1.0"},
   {0x06,0, "OMA BCAST 1.0 (U)SIM"},
   {0x07,0, "Reserved for Open IPTV Forum"},
+  {0x08,0, "Open Mobile Alliance"},
   {0x00,0xFF, "Standardized systems"},
   {0x0100,0x01ff, "Canal Plus"},
   {0x0200,0x02ff, "CCETT"},
@@ -667,6 +515,9 @@ typedef struct ca_sys_id_t
   {0x1700,0x17ff, "BetaTechnik"},
   {0x1800,0x18ff, "Kudelski SA"},
   {0x1900,0x19ff, "Titan Information Systems"},
+  {0x1E00,0x1E07, "Alticast"},
+  {0x1EA0,0,      "Monacrypt"},
+  {0x1EB0,0,      "TELECAST TECHNOLOGY CO., LTD."},
   {0x2000,0x20ff, "Telefonica Servicios Audiovisuales"},
   {0x2100,0x21ff, "STENTOR (France Telecom, CNES and DGA)"},
   {0x2200,0x22ff, "Scopus Network Technologies"},
@@ -674,80 +525,95 @@ typedef struct ca_sys_id_t
   {0x2400,0x24ff, "StarGuide Digital Networks"},
   {0x2500,0x25ff, "Mentor Data System, Inc."},
   {0x2600,0x26ff, "European Broadcasting Union"},
-  {0x2700 ,0x270F , "PolyCipher (NGNA, LLC)"},
-  {0x4347 ,0 , "Crypton"},
-  {0x4700 ,0x47FF , "General Instrument (Motorola)"},
-  {0x4800 ,0x48FF , "Telemann"},
-  {0x4900 ,0x49FF , "CrytoWorks (China) (Irdeto)"},
-  {0x4A10 ,0x4A1F , "Easycas"},
-  {0x4A20 ,0x4A2F , "AlphaCrypt"},
-  {0x4A30 ,0x4A3F , "DVN Holdings"},
-  {0x4A40 ,0x4A4F , "Shanghai Advanced Digital Technology Co. Ltd. (ADT)"},
-  {0x4A50 ,0x4A5F , "Shenzhen Kingsky Company (China) Ltd."},
-  {0x4A60 ,0x4A6F , "@Sky"},
-  {0x4A70 ,0x4A7F , "Dreamcrypt"},
-  {0x4A80 ,0x4A8F , "THALESCrypt"},
-  {0x4A90 ,0x4A9F , "Runcom Technologies"},
-  {0x4AA0 ,0x4AAF , "SIDSA"},
-  {0x4AB0 ,0x4ABF , "Beijing Compunicate Technology Inc."},
-  {0x4AC0 ,0x4ACF , "Latens Systems Ltd"},
-  {0x4AD0 ,0x4AD1 , "XCrypt Inc."},
-  {0x4AD2 ,0x4AD3 , "Beijing Digital Video Technology Co., Ltd."},
-  {0x4AD4 ,0x4AD5 , "Widevine Technologies, Inc."},
-  {0x4AD6 ,0x4AD7 , "SK Telecom Co., Ltd."},
-  {0x4AD8 ,0x4AD9 , "Enigma Systems"},
-  {0x4ADA ,0 , "Wyplay SAS"},
-  {0x4ADB ,0 , "Jinan Taixin Electronics, Co., Ltd."},
-  {0x4ADC ,0 , "LogiWays"},
-  {0x4ADD ,0 , "ATSC System Renewability Message (SRM)"},
-  {0x4ADE ,0 , "CerberCrypt"},
-  {0x4ADF ,0 , "Caston Co., Ltd."},
-  {0x4AE0 ,0x4AE1 , "Digi Raum Electronics Co. Ltd."},
-  {0x4AE2 ,0x4AE3 , "Microsoft Corp."},
-  {0x4AE4 ,0 , "Coretrust, Inc."},
-  {0x4AE5 ,0 , "IK SATPROF"},
-  {0x4AE6 ,0 , "SypherMedia International"},
-  {0x4AE7 ,0 , "Guangzhou Ewider Technology Corporation Limited"},
-  {0x4AE8 ,0 , "FG DIGITAL Ltd."},
-  {0x4AE9 ,0 , "Dreamer-i Co., Ltd."},
-  {0x4AEA ,0 , "Cryptoguard AB"},
-  {0x4AEB ,0 , "Abel DRM Systems AS"},
-  {0x4AEC ,0 , "FTS DVL SRL"},
-  {0x4AED ,0 , "Unitend Technologies, Inc."},
-  {0x4AEE ,0 , "Deltacom Electronics OOD"},
-  {0x4AEF ,0 , "NetUP Inc."},
-  {0x4AF0 ,0 , "Beijing Alliance Broadcast Vision Technology Co., Ltd."},
-  {0x4AF1 ,0 , "China DTV Media Inc., Ltd. #1"},
-  {0x4AF2 ,0 , "China DTV Media Inc., Ltd. #2"},
-  {0x4AF3 ,0 , "Baustem Information Technologies, Ltd."},
-  {0x4AF4 ,0 , "Marlin Developer Community, LLC"},
-  {0x4AF5 ,0 , "SecureMedia"},
-  {0x4AF6 ,0 , "Tongfang CAS"},
-  {0x4AF7 ,0 , "MSA"},
-  {0x4AF8 ,0 , "Griffin CAS"},
-  {0x4AF9 ,0x4AFA , "Beijing Topreal Technologies Co., Ltd"},
-  {0x4AFB ,0 , "NST"},
-  {0x4AFC ,0 , "Panaccess Systems GmbH"},
-  {0x4B00 ,0x4B02 , "Tongfang CAS"},
-  {0x4B03 ,0 , "DuoCrypt"},
-  {0x4B04 ,0 , "Great Wall CAS"},
-  {0x4B05 ,0x4B06 , "DIGICAP"},
-  {0x4B07 ,0 , "Wuhan Reikost Technology Co., Ltd."},
-  {0x4B08 ,0 , "Philips"},
-  {0x4B09 ,0 , "Ambernetas"},
-  {0x4B0A ,0x4B0B , "Beijing Sumavision Technologies CO. LTD."},
-  {0x4B0C ,0x4B0F , "Sichuan changhong electric co.,ltd."},
-  {0x5347 ,0 , "GkWare e.K."},
-  {0x5601 ,0 , "Verimatrix, Inc. #1"},
-  {0x5602 ,0 , "Verimatrix, Inc. #2"},
-  {0x5603 ,0 , "Verimatrix, Inc. #3"},
-  {0x5604 ,0 , "Verimatrix, Inc. #4"},
-  {0x5605 ,0x5606 , "Sichuan Juizhou Electronic Co. Ltd"},
-  {0x5607 ,0x5608 , "Viewscenes"},
-  {0x7BE0 ,0x7BE1 , "OOO"},
-  {0xAA00 ,0 , "Best CAS Ltd"},
+  {0x2700,0x270F, "PolyCipher (NGNA, LLC)"},
+  {0x2710,0x2711, "Extended Secure Technologies B.V."},
+  {0x2712,0,      "Signal elektronic"},
+  {0x2713,0x2714, "Wuhan Tianyu Information Industry Co., Ltd"},
+  {0x2715,0,      "Network Broadcast"},
+  {0x2716,0,      "Bromteck"},
+  {0x2717,0x2718, "LOGIWAYS"},
+  {0x2800,0x2809, "LCS LLC"},
+  {0x2810,0,      "MULTIKOM DELTASAT GMBH KG"},
+  {0x4347,0,      "Crypton"},
+  {0x4700,0x47FF, "General Instrument (Motorola)"},
+  {0x4800,0x48FF, "Telemann"},
+  {0x4900,0x49FF, "CrytoWorks (China) (Irdeto)"},
+  {0x4A10,0x4A1F, "Easycas"},
+  {0x4A20,0x4A2F, "AlphaCrypt"},
+  {0x4A30,0x4A3F, "DVN Holdings"},
+  {0x4A40,0x4A4F, "Shanghai Advanced Digital Technology Co. Ltd. (ADT)"},
+  {0x4A50,0x4A5F, "Shenzhen Kingsky Company (China) Ltd."},
+  {0x4A60,0x4A6F, "@Sky"},
+  {0x4A70,0x4A7F, "Dreamcrypt"},
+  {0x4A80,0x4A8F, "THALESCrypt"},
+  {0x4A90,0x4A9F, "Runcom Technologies"},
+  {0x4AA0,0x4AAF, "SIDSA"},
+  {0x4AB0,0x4ABF, "Beijing Compunicate Technology Inc."},
+  {0x4AC0,0x4ACF, "Latens Systems Ltd"},
+  {0x4AD0,0x4AD1, "XCrypt Inc."},
+  {0x4AD2,0x4AD3, "Beijing Digital Video Technology Co., Ltd."},
+  {0x4AD4,0x4AD5, "Widevine Technologies, Inc."},
+  {0x4AD6,0x4AD7, "SK Telecom Co., Ltd."},
+  {0x4AD8,0x4AD9, "Enigma Systems"},
+  {0x4ADA,0,      "Wyplay SAS"},
+  {0x4ADB,0,      "Jinan Taixin Electronics, Co., Ltd."},
+  {0x4ADC,0,      "LogiWays"},
+  {0x4ADD,0,      "ATSC System Renewability Message (SRM)"},
+  {0x4ADE,0,      "CerberCrypt"},
+  {0x4ADF,0,      "Caston Co., Ltd."},
+  {0x4AE0,0x4AE1, "Digi Raum Electronics Co. Ltd."},
+  {0x4AE2,0x4AE3, "Microsoft Corp."},
+  {0x4AE4,0,      "Coretrust, Inc."},
+  {0x4AE5,0,      "IK SATPROF"},
+  {0x4AE6,0,      "SypherMedia International"},
+  {0x4AE7,0,      "Guangzhou Ewider Technology Corporation Limited"},
+  {0x4AE8,0,      "FG DIGITAL Ltd."},
+  {0x4AE9,0,      "Dreamer-i Co., Ltd."},
+  {0x4AEA,0,      "Cryptoguard AB"},
+  {0x4AEB,0,      "Abel DRM Systems AS"},
+  {0x4AEC,0,      "FTS DVL SRL"},
+  {0x4AED,0,      "Unitend Technologies, Inc."},
+  {0x4AEE,0,      "Deltacom Electronics OOD"},
+  {0x4AEF,0,      "NetUP Inc."},
+  {0x4AF0,0,      "Beijing Alliance Broadcast Vision Technology Co., Ltd."},
+  {0x4AF1,0,      "China DTV Media Inc., Ltd. #1"},
+  {0x4AF2,0,      "China DTV Media Inc., Ltd. #2"},
+  {0x4AF3,0,      "Baustem Information Technologies, Ltd."},
+  {0x4AF4,0,      "Marlin Developer Community, LLC"},
+  {0x4AF5,0,      "SecureMedia"},
+  {0x4AF6,0,      "Tongfang CAS"},
+  {0x4AF7,0,      "MSA"},
+  {0x4AF8,0,      "Griffin CAS"},
+  {0x4AF9,0x4AFA, "Beijing Topreal Technologies Co., Ltd"},
+  {0x4AFB,0,      "NST"},
+  {0x4AFC,0,      "Panaccess Systems GmbH"},
+  {0x4B00,0x4B02, "Tongfang CAS"},
+  {0x4B03,0,      "DuoCrypt"},
+  {0x4B04,0,      "Great Wall CAS"},
+  {0x4B05,0x4B06, "DIGICAP"},
+  {0x4B07,0,      "Wuhan Reikost Technology Co., Ltd."},
+  {0x4B08,0,      "Philips"},
+  {0x4B09,0,      "Ambernetas"},
+  {0x4B0A,0x4B0B, "Beijing Sumavision Technologies CO. LTD."},
+  {0x4B0C,0x4B0F, "Sichuan changhong electric co.,ltd."},
+  {0x4B10,0,      "Exterity Limited"},
+  {0x4B11,0x4B12, "Advanced Digital Platform Technologies"},
+  {0x4B13,0x4B14, "Microsoft Corporation"},
+  {0x4B20,0x4B22, "MULTIKOM DELTASAT GmbH Co KG"},
+  {0x4B23,0,      "SkyNLand Video Networks Pvt Ltd"},
+  {0x5347,0,      "GkWare e.K."},
+  {0x5601,0,      "Verimatrix, Inc. #1"},
+  {0x5602,0,      "Verimatrix, Inc. #2"},
+  {0x5603,0,      "Verimatrix, Inc. #3"},
+  {0x5604,0,      "Verimatrix, Inc. #4"},
+  {0x5605,0x5606, "Sichuan Juizhou Electronic Co. Ltd"},
+  {0x5607,0x5608, "Viewscenes"},
+  {0x5609,0,      "Power On  s.r.l"},
+  {0x7BE0,0x7BE1, "OOO"},
+  {0xAA00,0,      "Best CAS Ltd"},
+  {0xAA01,0,      "Best CAS Ltd"},
   };
-  int num_casysids=105;
+  int num_casysids=130;
 
 
 /** @brief Display the ca system id according to ETR 162 
@@ -759,19 +625,16 @@ char *ca_sys_id_to_str(int id)
 {
   //cf ETR 162 and http://www.dvbservices.com/identifiers/ca_system_id
 
-
-
   for(int i=0;i<num_casysids;i++)
   {
     if((casysids[i].end == 0 && casysids[i].beginning == id) || ( casysids[i].beginning <= id && casysids[i].end >= id))
       return casysids[i].descr;
   }
   return "UNKNOWN, please report";
-
 }
 
 
-/** @brief Convert the service type to str according to EN 300 468 v1.10.1 table 81
+/** @brief Convert the service type to str according to EN 300 468 v1.13.1 table 87
  *
  * @param type the type to display
  * @param dest : the destination string
@@ -795,6 +658,10 @@ char *service_type_to_str(int type)
       return "NVOD Time shifted service";
     case 0x06:
       return "Mosaic service";
+    case 0x07:
+      return "FM radio service";
+    case 0x08:
+      return "DVB SRM service";
     case 0x0a:
       return "Advanced codec Radio";
     case 0x0b:
@@ -823,12 +690,18 @@ char *service_type_to_str(int type)
       return "Advanced codec HD NVOD Time shifted service";
     case 0x1b:
       return "Advanced codec HD NVOD Reference service";
+    case 0x1c:
+      return "advanced codec frame compatible 3D HD digital television service";
+    case 0x1d:
+      return "advanced codec frame compatible 3D HD NVOD time-shifted service";
+    case 0x1e:
+      return "advanced codec frame compatible 3D HD NVOD reference service";
     default:
-      return "Please report : Unknown service type doc : EN 300 468 v1.10.1 table 81";
+      return "Please report : Unknown service type doc : EN 300 468 v1.13.1 table 87";
   }
 }
 
-/** @brief Convert the service type to str according to EN 300 468 v1.10.1 table 81
+/** @brief Convert the service type to str according to EN 300 468 v1.13.1 table 87
  *
  * @param type the type to display
  * @param dest : the destination string
@@ -844,8 +717,10 @@ char *simple_service_type_to_str(int type)
     case 0x11:
     case 0x16:
     case 0x19:
+    case 0x1c:
       return "Television";
     case 0x02:
+    case 0x07:
     case 0x0a:
       return "Radio";
     default:
@@ -853,7 +728,7 @@ char *simple_service_type_to_str(int type)
   }
 }
 
-/** @brief Display the service type according to EN 300 468 v1.10.1 table 81
+/** @brief Display the service type according to EN 300 468 v1.13.1 table 87
  *
  * @param type the type to display
  * @param loglevel : the loglevel for displaying it
@@ -915,6 +790,7 @@ char *pid_type_to_str(int type)
       return "Unknown";
   }
 }
+
 
 #ifdef ENABLE_CAM_SUPPORT
 /** @brief Write the error from the libdvben50221  into a string
@@ -1090,3 +966,155 @@ void show_traffic( char *log_module, double now, int show_traffic_interval, mumu
         }
     }
 }
+
+/**
+@brief The different encodings that can be used
+Cf EN 300 468 Annex A (I used v1.9.1)
+ */
+char *encodings_en300468[] ={
+  "ISO8859-1",
+  "ISO8859-2",
+  "ISO8859-3",
+  "ISO8859-4",
+  "ISO8859-5",
+  "ISO8859-6",
+  "ISO8859-7",
+  "ISO8859-8",
+  "ISO8859-9",
+  "ISO8859-10",
+  "ISO8859-11",
+  "ISO8859-12",
+  "ISO8859-13",
+  "ISO8859-14",
+  "ISO8859-15",
+  "ISO-10646", //control char 0x11
+  "GB2312",    //control char 0x13
+  "BIG5",      //control char 0x14
+  "ISO-10646/UTF8",      //control char 0x15
+};
+
+/**@brief Convert text according to EN 300 468 annex A
+ *
+ */
+int convert_en300468_string(char *string, int max_len)
+{
+
+  int encoding_control_char=8; //cf encodings_en300468
+  char *dest;
+  char *tempdest, *tempbuf;
+  unsigned char *src;
+  /* remove control characters and convert to UTF-8 the channel name */
+  //If no channel encoding is specified, it seems that most of the broadcasters
+  //uses ISO/IEC 8859-9. But the norm (EN 300 468) said that it should be Latin-1 (ISO/IEC 6937 + euro)
+
+  //temporary buffers allocation
+  tempdest=tempbuf=malloc(sizeof(char)*2*strlen(string));
+  if(tempdest==NULL)
+  {
+    log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+    Interrupted=ERROR_MEMORY<<8;
+    return -1;
+  }
+
+  int len=0;
+  for (src = (unsigned char *) string; *src; src++)
+  {
+    if (*src >= 0x20 && (*src < 0x80 || *src > 0x9f))
+    {
+      //We copy non-control characters
+      *tempdest++ = *src;
+      len++;
+    }
+    else if(*src <= 0x20)
+    {
+      log_message( log_module, MSG_FLOOD, "Encoding number 0x%02x, see EN 300 468 Annex A",*src);
+      //control character recognition based on EN 300 468 v1.9.1 Annex A
+      if(*src<=0x0b){
+	encoding_control_char=(int) *src+4-1;
+      }
+      else if(*src==0x10)
+      { //ISO/IEC 8859 : See table A.4
+        src++;//we skip the current byte
+        src++;//This one is always set to 0
+        if(*src >= 0x01 && *src <=0x0f)
+          encoding_control_char=(int) *src-1;
+      }
+      else if(*src==0x11)//ISO/IEC 10646 : Basic Multilingual Plane
+	encoding_control_char=15;
+      else if(*src==0x12)//KSX1001-2004 : Korean Character Set
+	log_message( log_module, MSG_WARN, "\t\t Encoding KSX1001-2004 (korean character set) not implemented yet by iconv, we'll use the default encoding for service name\n");
+      else if(*src==0x13)//GB-2312-1980 : Simplified Chinese Character
+	encoding_control_char=16;
+      else if(*src==0x14)//Big5 subset of ISO/IEC 10646 : Traditional Chinese
+	encoding_control_char=17;
+      else if(*src==0x15)//UTF-8 encoding of ISO/IEC 10646 : Basic Multilingual Plane
+	encoding_control_char=18;
+      else
+	log_message( log_module, MSG_WARN, "\t\t Encoding not implemented yet (0x%02x), we'll use the default encoding for service name\n",*src);
+    }
+    else if (*src >= 0x80 && *src <= 0x9f)
+    {
+      //to encode in UTF-8 we add 0xc2 before this control character
+      //but wh have to put it after iconv, it's a bit boring just for bold
+      //we drop them
+      if(*src==0x86)
+        log_message( log_module, MSG_DETAIL, "Control character \"Bold\", we drop",*src);
+      else if(*src==0x87)
+        log_message( log_module, MSG_DETAIL, "Control character \"UnBold\", we drop",*src);
+      else if(*src==0x8a)
+        log_message( log_module, MSG_DETAIL, "Control character \"CR/LF\", we drop",*src);
+      else if(*src>=0x8b )
+        log_message( log_module, MSG_DETAIL, "Control character 0x%02x \"User defined\" at len %d. We drop",*src,len);
+      else
+	log_message( log_module, MSG_DEBUG, "\tUnimplemented name control_character : %x \n", *src);
+    }
+  }
+#ifdef HAVE_ICONV
+  //Conversion to utf8
+  iconv_t cd;
+  //we open the conversion table
+  cd = iconv_open( "UTF8", encodings_en300468[encoding_control_char] );
+
+  size_t inSize, outSize=max_len;
+  inSize=len;
+  //pointers initialisation because iconv change them, we store
+  dest=string;
+  tempdest=tempbuf;
+  //conversion
+  iconv(cd, &tempdest, &inSize, &dest, &outSize );
+  *dest = '\0';
+  free(tempbuf);
+  iconv_close( cd );
+#else
+  log_message( log_module, MSG_DETAIL, "Iconv not present, no name encoding conversion \n");
+#endif
+
+  log_message( log_module, MSG_FLOOD, "Converted text : \"%s\" (text encoding : %s)\n", string,encodings_en300468[encoding_control_char]);
+  return encoding_control_char;
+
+}
+
+
+
+/** @brief : show the contents of the CA identifier descriptor
+ *
+ * @param buf : the buffer containing the descriptor
+ */
+void show_CA_identifier_descriptor(unsigned char *buf)
+{
+
+  int length,i,ca_id;
+
+  log_message( log_module, MSG_DETAIL, "--- descriptor --- CA identifier descriptor\n");
+  log_message( log_module, MSG_DETAIL, "CA_system_ids : \n");
+
+  length=buf[1];
+  buf+=2;
+  for(i=0;i<length;i+=2)
+  {
+    ca_id=(buf[i]<<8)+buf[i+1];
+    log_message( log_module,  MSG_DETAIL,"Ca system id 0x%04x : %s\n",ca_id, ca_sys_id_to_str(ca_id));
+  }
+}
+
+

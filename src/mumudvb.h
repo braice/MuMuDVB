@@ -100,7 +100,7 @@ We cannot discover easily the MTU with unconnected UDP
 #define MAX_MANDATORY_PID_NUMBER   32
 /**config line length*/
 #define CONF_LINELEN 	        512
-#define MAX_NAME_LEN		256
+#define MAX_NAME_LEN			512
 #define CONFIG_FILE_SEPARATOR   " ="
 
 /**Maximum number of polling tries (excepted EINTR)*/
@@ -186,6 +186,7 @@ typedef struct {
   struct pollfd *pfds;	//  DVR device + unicast http clients
   int pfdsnum;
 }fds_t;
+
 #ifdef ENABLE_SCAM_SUPPORT
 /**@brief Structure containing ring buffer*/
 typedef struct {
@@ -397,16 +398,18 @@ typedef struct mumudvb_channel_t{
   unsigned char generated_sdt[TS_PACKET_SIZE]; /**@todo: allocate dynamically*/
   /** The version of the generated sdt */
   int generated_sdt_version;
-  /** If there is no channel found, we skip sdt rewrite */
+  /** If there is no service id for the channel found, we skip sdt rewrite */
   int sdt_rewrite_skip;
+  /** The version of the generated EIT */
+  int eit_section_to_send;
+  /** The table we are currently sending */
+  uint8_t eit_table_id_to_send;
+  /** the continuity counter for the EIT */
+  int eit_cc;
+
 
   /** The occupied traffic (in kB/s) */
   float traffic;
-
-  /** Are we dropping the current EIT packet for this channel*/ 
-  int eit_dropping;
-  /**The continuity counter for the EIT*/
-  int eit_continuity_counter;
 
 
 #ifdef ENABLE_TRANSCODING

@@ -234,8 +234,12 @@ rewrite_parameters_t rewrite_vars={
   .sdt_needs_update=1,
   .full_sdt_ok=0,
   .sdt_continuity_counter=0,
-  .eit_sort=OPTION_UNDEFINED,
+  .rewrite_eit=OPTION_UNDEFINED,
+  .eit_version=-1,
+  .full_eit=NULL,
+  .eit_needs_update=0,
   .sdt_force_eit=OPTION_UNDEFINED,
+  .eit_packets=NULL,
 };
 
 
@@ -296,7 +300,7 @@ int
   tuning_parameters_t tuneparams={
     .card = 0,
     .tuner = 0,
-    .card_dev_path="",
+    .card_dev_path=DVB_DEV_PATH,
     .card_tuned = 0,
     .tuning_timeout = ALARM_TIME_TIMEOUT,
     .freq = 0,
@@ -375,7 +379,6 @@ int
   char filename_channels_not_streamed[DEFAULT_PATH_LEN];
   char filename_channels_streamed[DEFAULT_PATH_LEN];
   char filename_pid[DEFAULT_PATH_LEN]=PIDFILE_PATH;
-  char filename_gen_conf[DEFAULT_PATH_LEN];
 
   int server_id = 0; /** The server id for the template %server */
 
@@ -879,35 +882,37 @@ int
     {
       rewrite_vars.rewrite_pat=OPTION_ON;
       log_message( log_module,  MSG_INFO,
-                   "Full autoconfiguration, we activate PAT rewritting. if you want to deactivate it see the README.\n");
+                   "Full autoconfiguration, we activate PAT rewriting. if you want to disable it see the README.\n");
     }
     if(rewrite_vars.rewrite_sdt == OPTION_UNDEFINED)
     {
       rewrite_vars.rewrite_sdt=OPTION_ON;
       log_message( log_module,  MSG_INFO,
-                   "Full autoconfiguration, we activate SDT rewritting. if you want to deactivate it see the README.\n");
+                   "Full autoconfiguration, we activate SDT rewriting. if you want to disable it see the README.\n");
     }
-    if(rewrite_vars.eit_sort == OPTION_UNDEFINED)
+    if(rewrite_vars.rewrite_eit == OPTION_UNDEFINED)
     {
-      rewrite_vars.eit_sort=OPTION_ON;
+      rewrite_vars.rewrite_eit=OPTION_ON;
       log_message( log_module,  MSG_INFO,
-                   "Full autoconfiguration, we activate sorting of the EIT PID. if you want to deactivate it see the README.\n");
+                   "Full autoconfiguration, we activate EIT rewriting. if you want to disable it see the README.\n");
     }
   }
   if(card_buffer.max_thread_buffer_size<card_buffer.dvr_buffer_size)
   {
     log_message( log_module,  MSG_WARN,
-		 "Warning : You set a thread buffer size lower than your dvr buffer size, it's not possible to use such values. I increase your dvr_thread_buffer_size ...\n");
+		 "Warning : You set a thread buffer size lower than your DVR buffer size, it's not possible to use such values. I increase your dvr_thread_buffer_size ...\n");
 		 card_buffer.max_thread_buffer_size=card_buffer.dvr_buffer_size;
   }
 
   //If we specified a card number on the command line, it overrides the config file
   if(cmdlinecard!=-1)
     tuneparams.card=cmdlinecard;
-  //if no specific path for the DVB device, we use the default one
-  if((!strlen(tuneparams.card_dev_path))||(cmdlinecard!=-1))
-    sprintf(tuneparams.card_dev_path,DVB_DEV_PATH,tuneparams.card);
 
+  //Template for the card dev path
+  char number[10];
+  sprintf(number,"%d",tuneparams.card);
+  int l=sizeof(tuneparams.card_dev_path);
+  mumu_string_replace(tuneparams.card_dev_path,&l,0,"%card",number);
 
   //If we specified a string for the unicast port out, we parse it
   if(unicast_vars.portOut_str!=NULL)
@@ -962,11 +967,6 @@ int
       log_message( "Autoconf: ", MSG_INFO,
                    "The autoconfiguration auto update is enabled. If you want to disable it put \"autoconf_pid_update=0\" in your config file.\n");
     }
-    //In case of autoconfiguration, we generate a config file with the channels discovered
-    //Here we generate the header, ie we take the actual config file and copy it removing the channels
-    sprintf (filename_gen_conf, GEN_CONF_PATH,
-             tuneparams.card, tuneparams.tuner);
-    gen_config_file_header(conf_filename, filename_gen_conf);
   }
   else
     autoconf_vars.autoconf_pid_update=0;
@@ -985,7 +985,7 @@ int
   //We deactivate things depending on multicast if multicast is suppressed
   if(!multicast_vars.ttl)
   {
-    log_message( log_module,  MSG_INFO, "The multicast TTL is set to 0, multicast will be deactivated.\n");
+    log_message( log_module,  MSG_INFO, "The multicast TTL is set to 0, multicast will be disabled.\n");
     multicast_vars.multicast=0;
   }
   if(!multicast_vars.multicast)
@@ -995,7 +995,7 @@ int
     {
       if(chan_and_pids.channels[curr_channel].transcode_options.enable)
       {
-	log_message( log_module,  MSG_INFO, "NO Multicast, transcoding deactivated for channel \"%s\".\n", chan_and_pids.channels[curr_channel].name);
+	log_message( log_module,  MSG_INFO, "NO Multicast, transcoding disabled for channel \"%s\".\n", chan_and_pids.channels[curr_channel].name);
 	chan_and_pids.channels[curr_channel].transcode_options.enable=0;
       }
     }
@@ -1003,11 +1003,11 @@ int
       if(multicast_vars.rtp_header)
       {
 	multicast_vars.rtp_header=0;
-	log_message( log_module,  MSG_INFO, "NO Multicast, RTP Header is deactivated.\n");
+	log_message( log_module,  MSG_INFO, "NO Multicast, RTP Header is disabled.\n");
       }
       if(sap_vars.sap==OPTION_ON)
       {
-	log_message( log_module,  MSG_INFO, "NO Multicast, SAP announces are deactivated.\n");
+	log_message( log_module,  MSG_INFO, "NO Multicast, SAP announces are disabled.\n");
 	sap_vars.sap=OPTION_OFF;
       }
   }
@@ -1336,6 +1336,25 @@ int
     }
     memset (rewrite_vars.full_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
     pthread_mutex_init(&rewrite_vars.full_sdt->packetmutex,NULL);
+  }
+
+  /*****************************************************/
+  //EIT rewriting
+  //memory allocation for MPEG2-TS
+  //packet structures
+  /*****************************************************/
+
+  if(rewrite_vars.rewrite_eit == OPTION_ON)
+  {
+    rewrite_vars.full_eit=malloc(sizeof(mumudvb_ts_packet_t));
+    if(rewrite_vars.full_eit==NULL)
+    {
+      log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      Interrupted=ERROR_MEMORY<<8;
+      goto mumudvb_close_goto;
+    }
+    memset (rewrite_vars.full_eit, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+    pthread_mutex_init(&rewrite_vars.full_eit->packetmutex,NULL);
   }
 
   /*****************************************************/
@@ -1673,7 +1692,7 @@ int
 
       //If the user asked to dump the streams it's here tath it should be done
       if(dump_file)
-        if(fwrite(actual_ts_packet,TS_PACKET_SIZE,sizeof(unsigned char),dump_file)<TS_PACKET_SIZE)
+        if(fwrite(actual_ts_packet,sizeof(unsigned char),TS_PACKET_SIZE,dump_file)<TS_PACKET_SIZE)
           log_message( log_module,MSG_WARN,"Error while writing the dump : %s", strerror(errno));
 
       // Test if the error bit is set in the TS packet received
@@ -1757,6 +1776,14 @@ int
 	       for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
 	        chan_and_pids.channels[curr_channel].sdt_rewrite_skip=0;
 	     }
+	   }
+      /******************************************************/
+      //EIT rewrite
+      /******************************************************/
+      if( (pid == 18) && //This is an EIT PID
+           rewrite_vars.rewrite_eit == OPTION_ON ) //AND we asked for rewrite
+	   {
+	     eit_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars);
 	   }
 
 
@@ -1861,7 +1888,7 @@ int
         }
 #endif
         /******************************************************/
-	//Rewrite PAT
+        //Rewrite PAT
         /******************************************************/
         if((send_packet==1) && //no need to check paquets we don't send
             (pid == 0) && //This is a PAT PID
@@ -1869,7 +1896,7 @@ int
           send_packet=pat_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_and_pids.channels[curr_channel], curr_channel);
 
         /******************************************************/
-	//Rewrite SDT
+        //Rewrite SDT
         /******************************************************/
         if((send_packet==1) && //no need to check paquets we don't send
             (pid == 17) && //This is a SDT PID
@@ -1878,14 +1905,16 @@ int
           send_packet=sdt_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_and_pids.channels[curr_channel], curr_channel);
 
         /******************************************************/
-        //EIT SORT
+        //Rewrite EIT
         /******************************************************/
         if((send_packet==1) &&//no need to check paquets we don't send
            (pid == 18) && //This is a EIT PID
             (chan_and_pids.channels[curr_channel].service_id) && //we have the service_id
-            rewrite_vars.eit_sort == OPTION_ON) //AND we asked for EIT sorting
+            rewrite_vars.rewrite_eit == OPTION_ON) //AND we asked for EIT sorting
         {
-          send_packet=eit_sort_new_packet(actual_ts_packet, &chan_and_pids.channels[curr_channel]);
+          eit_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_and_pids.channels[curr_channel],
+        		  &multicast_vars, &unicast_vars,&chan_and_pids,&fds);
+          send_packet=0; //for EIT it is sent by the rewrite function itself
         }
 
         /******************************************************/
@@ -1909,29 +1938,13 @@ int
 #endif
 
         /******************************************************/
-	//Ok we must send this packet,
-	// we add it to the channel buffer
+        //Ok we must send this packet,
+        // we add it to the channel buffer
         /******************************************************/
         if(send_packet==1)
         {
-#ifndef ENABLE_SCAM_SUPPORT
-      // we fill the channel buffer
-		      memcpy(chan_and_pids.channels[curr_channel].buf + chan_and_pids.channels[curr_channel].nb_bytes, actual_ts_packet, TS_PACKET_SIZE);
-
-		      chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] =
-		          (chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] & 0xe0) | hi_mappids[pid];
-		      chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 2] = lo_mappids[pid];
-
-		      chan_and_pids.channels[curr_channel].nb_bytes += TS_PACKET_SIZE;
-		      //The buffer is full, we send it
-		      if ((!multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
-			||(multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
-		      {
-				now_time=get_time();
-				send_func(&chan_and_pids.channels[curr_channel], &now_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
-			  }
-#else
-		  	if (chan_and_pids.channels[curr_channel].scam_support && scam_vars.scam_support) {
+#ifdef ENABLE_SCAM_SUPPORT
+		      if (chan_and_pids.channels[curr_channel].scam_support && scam_vars.scam_support) {
 					memcpy(chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx], actual_ts_packet, TS_PACKET_SIZE);
 
 					chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx][1] =
@@ -1957,8 +1970,13 @@ int
 				    pthread_mutex_unlock(&chan_and_pids.channels[curr_channel].ring_buffer_num_packets_mutex);
 			  }
 			else {
-		      // we fill the channel buffer
+#else
+				{
+#endif
+
+				// we fill the channel buffer
 		      memcpy(chan_and_pids.channels[curr_channel].buf + chan_and_pids.channels[curr_channel].nb_bytes, actual_ts_packet, TS_PACKET_SIZE);
+
 
 		      chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] =
 		          (chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] & 0xe0) | hi_mappids[pid];
@@ -1974,9 +1992,6 @@ int
 		      }
 
 			}
-
-#endif
-
 
 
 		}

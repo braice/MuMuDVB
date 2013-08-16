@@ -1,7 +1,7 @@
 MuMuDVB - README for the configuration file
 ===========================================
 Brice Dubost <mumudvb@braice.net>
-Version 1.7.1
+Version 1.7.2
 
 General behavior
 ----------------
@@ -81,8 +81,8 @@ In the following list, only the parameter `freq` is mandatory
 |modulation | The kind of modulation used (can be : QPSK QAM16 QAM32 QAM64 QAM128 QAM256 QAMAUTO VSB8 VSB16 8PSK 16APSK 32APSK DQPSK)  | ATSC: VSB_8, cable/terrestrial: QAM_AUTO, satellite: QPSK | Optionnal most of the times
 |delivery_system | the delivery system used (can be DVBT DVBT2 DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC) | Undefined | Set it if you want to use the new tuning API (DVB API 5/S2API). Mandatory for DVB-S2 and DVB-T2
 |card | The DVB/ATSC card number | 0 | only limited by your OS
-|tuner | The tuner number | 0 | If you have a card with multiple tuners (ie there is several frontend* in /dev/dvb/adapter%d)
-|card_dev_path | The path of the DVB card devices. Use it if you have a personalised path like /dev/dvb/card_astra | /dev/dvb/adapter%d | 
+|tuner | The tuner number | 0 | If you have a card with multiple tuners (ie there is several frontend* in /dev/dvb/adapter%card)
+|card_dev_path | The path of the DVB card devices. Use it if you have a personalised path like /dev/dvb/astra%card | /dev/dvb/adapter%card |  The template %card can be used
 |tuning_timeout |tuning timeout in seconds. | 300 | 0 = no timeout
 |timeout_no_diff |If no channels are streamed, MuMuDVB will kill himself after this time (specified in seconds) | 600 |  0 = infinite timeout
 |check_status | Do we check the card status and display a message if lock is lost | 1 |  0 = no check.
@@ -192,7 +192,7 @@ Packets sending parameters
 |psi_tables_filtering | If set to 'pat', TS packets with PID from 0x01 to 0x1F are discarded. If set to 'pat_cat', TS packets with PID from 0x02 to 0x1F are discarded. | 'none' | Option to keep only mandatory PSI PID | 
 |rewrite_pat | Do we rewrite the PAT PID | 0 | 0 or 1 | See README 
 |rewrite_sdt | Do we rewrite the SDT PID | 0 | 0 or 1 | See README 
-|sort_eit | Do we sort the EIT PID | 0 | 0 or 1 | See README 
+|rewrite_eit sort_eit | Do we rewrite/sort the EIT PID | 0 | 0 or 1 | See README 
 |sdt_force_eit | Do we force the EIT_schedule_flag and EIT_present_following_flag in SDT | 0 | 0 or 1 | Let to 0 if you don't understand
 |rtp_header | Send the stream with the rtp headers (execpt for HTTP unicast) | 0 | 0 or 1 | 
 |==================================================================================================================
@@ -256,7 +256,7 @@ Autoconfiguration parameters
 |Parameter name |Description | Default value | Possible values | Comments
 |autoconfiguration |autoconfiguration 1, partial: find audio and video PIDs, 2, full: full autoconfiguration | 0 | 0, 1, 2, partial or full | see the README for more details
 |autoconf_ip_header |For full autoconfiguration, the first part of the ip for streamed channel |  | |  obsolete, use `autoconf_ip4` instead
-|autoconf_ip4 |For full autoconfiguration, the template for the ipv4 for streamed channel | 239.100.150+%server*10+%card.%number  | |  You can use expressions with `+`, `*` , `%card`, `%tuner`, `%server`, `%sid_hi`, `%sid_lo` and `%number`
+|autoconf_ip4 |For full autoconfiguration, the template for the ipv4 for streamed channel | 239.100.%card.%number  | |  You can use expressions with `+`, `*` , `%card`, `%tuner`, `%server`, `%sid_hi`, `%sid_lo` and `%number`. Ex:  `239.100.150+%server*10+%card.%number`
 |autoconf_ip6 |For full autoconfiguration, the template for the ipv6 for streamed channel | FF15:4242::%server:%card:%number  | |  You can use the keywords `%card`, `%tuner`, `%server`, `%sid` (the SID will be in hexadecimal) and `%number`
 |autoconf_radios |Do we consider radios as valid channels during full autoconfiguration ? | 0 | 0 or 1 | 
 |autoconf_scrambled |Do we consider scrambled channels valid channels during full autoconfiguration ? | 0 | 0 or 1 | Automatic when cam_support=1 or scam_support=1. Sometimes a clear channel can be marked as scrambled. This option allows you to bypass the ckecking.
@@ -290,7 +290,7 @@ HTTP unicast parameters
 |Parameter name |Description | Default value |Comments
 |unicast |Set this option to one to activate HTTP unicast | 0  |   see the README for more details
 |ip_http |the listening ip for http unicast, if you want to listen to all interfaces put 0.0.0.0 | 0.0.0.0  |  see the README for more details
-|port_http | The listening port for http unicast | 4242 |  You can use mathematical expressions containing integers, * and +. You can use the %card, `%tuner` and %server template. Ex `port_http=2000+%card*100`
+|port_http | The listening port for http unicast | 4242 |  You can use mathematical expressions containing integers, * and +. You can use the `%card`, `%tuner` and %server template. Ex `port_http=2000+%card*100`
 |unicast_consecutive_errors_timeout | The timeout for disconnecting a client wich is not responding | 5 | A client will be disconnected if no data have been sucessfully sent during this interval. A value of 0 deactivate the timeout (unadvised).
 |unicast_max_clients | The limit on the number of connected clients | 0 | 0 : no limit.
 |unicast_queue_size | The maximum size of the buffering when writting to a client fails | 512kBytes | in Bytes.
@@ -330,8 +330,6 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 Get the PID numbers
 -------------------
 
-The simplest way is to use autoconfiguration and modify the generated configuration file : `/var/run/mumudvb/mumudvb_generated_conf_card%d_tuner%d`
-
 You use autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -353,7 +351,7 @@ For each channel it is advised to specify at least :
 If you don't have access to the PIDs via a website like http://www.kingofsat.net[King Of Sat], the easiest way is to use linuxtv's dvb-apps or w_scan.
 
 
-You don't know on wich frequency to tune and the channels you can receive. In this case, you can use <<w_scan,w_scan>> or using <<scan_inital_tuning,scan>> from dvb-apps if you have an initial tuning config file.
+You don't know on which frequency to tune and the channels you can receive. In this case, you can use <<w_scan,w_scan>> or using <<scan_inital_tuning,scan>> from dvb-apps if you have an initial tuning config file.
 
 [[w_scan]]
 Using w_scan to get an initial tuning file

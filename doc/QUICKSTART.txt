@@ -94,3 +94,6 @@ contact (see the README for getting the e-mail addresses)
 
 [NOTE]
 When contacting about an issue, please join the config file used and the output of MuMuDVB in verbose mode ( -vvv on the command line) and any other information that could be useful.
+
+[NOTE]
+You can easily select a part of a transponder using autoconf_sid_list
