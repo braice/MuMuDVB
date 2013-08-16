@@ -1792,8 +1792,8 @@ int
       /******************************************************/
       //EIT rewrite
       /******************************************************/
-      if( (pid == 18) && //This is an EIT PID
-           rewrite_vars.rewrite_eit == OPTION_ON ) //AND we asked for rewrite
+		if( (pid == 18) && //This is an EIT PID
+			 rewrite_vars.rewrite_eit == OPTION_ON ) //AND we asked for rewrite
 	   {
 	     eit_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars);
 	   }
@@ -1926,7 +1926,7 @@ int
             rewrite_vars.rewrite_eit == OPTION_ON) //AND we asked for EIT sorting
         {
           eit_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_and_pids.channels[curr_channel],
-        		  &multicast_vars, &unicast_vars,&chan_and_pids,&fds);
+        		  &multicast_vars, &unicast_vars, scam_vars_ptr ,&chan_and_pids,&fds);
           send_packet=0; //for EIT it is sent by the rewrite function itself
         }
 
