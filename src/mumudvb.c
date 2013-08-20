@@ -256,7 +256,7 @@ extern log_params_t log_params;
 static void SignalHandler (int signum);//below
 int read_multicast_configuration(multicast_parameters_t *, mumudvb_channel_t *, int, int *, char *); //in multicast.c
 void *monitor_func(void* arg);
-int mumudvb_close(monitor_parameters_t* monitor_thread_params, unicast_parameters_t* unicast_vars, int* strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char* filename_channels_not_streamed,char *filename_channels_streamed, char *filename_pid, int Interrupted);
+int mumudvb_close(monitor_parameters_t* monitor_thread_params, unicast_parameters_t* unicast_vars, int* strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char* filename_channels_not_streamed,char *filename_channels_streamed, char *filename_pid, card_buffer_t *card_buffer, int Interrupted);
 
 
 
@@ -1780,8 +1780,8 @@ int
       /******************************************************/
       //EIT rewrite
       /******************************************************/
-      if( (pid == 18) && //This is an EIT PID
-           rewrite_vars.rewrite_eit == OPTION_ON ) //AND we asked for rewrite
+		if( (pid == 18) && //This is an EIT PID
+			 rewrite_vars.rewrite_eit == OPTION_ON ) //AND we asked for rewrite
 	   {
 	     eit_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars);
 	   }
@@ -1848,8 +1848,8 @@ int
         /******************************************************/
 #ifdef ENABLE_SCAM_SUPPORT
 		if (scam_vars.scam_support &&(chan_and_pids.channels[curr_channel].need_scam_ask==CAM_NEED_ASK))
-		{
-				if (chan_and_pids.channels[curr_channel].scam_support) {
+		{ 
+				if (chan_and_pids.channels[curr_channel].scam_support && chan_and_pids.channels[curr_channel].pmt_packet->len_full != 0 ) {								
 					  iRet=scam_send_capmt(&chan_and_pids.channels[curr_channel],tuneparams.card);
 					  if(iRet)
 					  {
@@ -1913,7 +1913,7 @@ int
             rewrite_vars.rewrite_eit == OPTION_ON) //AND we asked for EIT sorting
         {
           eit_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_and_pids.channels[curr_channel],
-        		  &multicast_vars, &unicast_vars,&chan_and_pids,&fds);
+        		  &multicast_vars, &unicast_vars, scam_vars_ptr ,&chan_and_pids,&fds);
           send_packet=0; //for EIT it is sent by the rewrite function itself
         }
 
@@ -2015,7 +2015,7 @@ int
                  "We have got %d overflow errors\n",card_buffer.overflow_number );
 mumudvb_close_goto:
   //If the thread is not started, we don't send the unexisting address of monitor_thread_params
-  return mumudvb_close(monitorthread == 0 ? NULL:&monitor_thread_params , &unicast_vars, &tuneparams.strengththreadshutdown, cam_vars_ptr, scam_vars_ptr, filename_channels_not_streamed, filename_channels_streamed, filename_pid, Interrupted);
+  return mumudvb_close(monitorthread == 0 ? NULL:&monitor_thread_params , &unicast_vars, &tuneparams.strengththreadshutdown, cam_vars_ptr, scam_vars_ptr, filename_channels_not_streamed, filename_channels_streamed, filename_pid, &card_buffer, Interrupted);
 
 }
 
@@ -2023,11 +2023,14 @@ mumudvb_close_goto:
  *
  *
  */
-int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char *filename_channels_not_streamed, char *filename_channels_streamed, char *filename_pid, int Interrupted)
+int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char *filename_channels_not_streamed, char *filename_channels_streamed, char *filename_pid, card_buffer_t *card_buffer, int Interrupted)
 {
 
   int curr_channel;
   int iRet;
+
+  if(!card_buffer->threaded_read)
+    free(card_buffer->reading_buffer);
 
   #ifndef ENABLE_CAM_SUPPORT
    (void) cam_vars_v; //to make compiler happy
@@ -2135,8 +2138,8 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
                    cam_vars->filename_cam_info, strerror (errno));
     }
     mumu_free_string(&cam_vars->cam_menulist_str);
-    mumu_free_string(&cam_vars->cam_menu_string);
   }
+  mumu_free_string(&cam_vars->cam_menu_string);
 #endif
 #ifdef ENABLE_SCAM_SUPPORT
   if(scam_vars->scam_support)
