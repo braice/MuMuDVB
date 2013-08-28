@@ -83,7 +83,7 @@
  * unicast_http.c unicast_http.h : HTTP unicast
  */
 
-#define _GNU_SOURCE		//in order to use program_invocation_short_name (extension gnu)
+#define _GNU_SOURCE		//in order to use program_invocation_short_name and recursive mutexes (GNU extensions)
 
 extern char *program_invocation_short_name;
 
@@ -109,6 +109,7 @@ extern char *program_invocation_short_name;
 #include <time.h>
 #include <linux/dvb/version.h>
 #include <sys/mman.h>
+#include <pthread.h>
 
 #include "mumudvb.h"
 #include "tune.h"
@@ -199,6 +200,7 @@ unicast_parameters_t unicast_vars={
 
 //autoconfiguration
 autoconf_parameters_t autoconf_vars={
+  .lock=PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP,
   .autoconfiguration=0,
   .autoconf_radios=0,
   .autoconf_scrambled=0,
@@ -2282,6 +2284,7 @@ void *monitor_func(void* arg)
   double time_no_diff=0;
   double time_no_diff_cw=0;
   int num_big_buffer_show=0;
+  int autoconf;
 
   gettimeofday (&tv, (struct timezone *) NULL);
   monitor_start = tv.tv_sec + tv.tv_usec/1000000;
@@ -2321,6 +2324,7 @@ void *monitor_func(void* arg)
     }
 
     /*autoconfiguration*/
+    pthread_mutex_lock(&params->autoconf_vars->lock);
     /*We check if we reached the autoconfiguration timeout*/
     if(params->autoconf_vars->autoconfiguration)
     {
@@ -2330,8 +2334,12 @@ void *monitor_func(void* arg)
       if(iRet)
         Interrupted = iRet;
     }
+    autoconf=params->autoconf_vars->autoconfiguration;//to reduce the lock range
+    //this value is not going from null values to non zero values due to the sequencial implementation of autoconfiguration
 
-    if(!params->autoconf_vars->autoconfiguration)
+    pthread_mutex_unlock(&params->autoconf_vars->lock);
+
+    if(!autoconf)
     {
       /*we are not doing autoconfiguration we can do something else*/
       /*sap announces*/

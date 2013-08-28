@@ -872,6 +872,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
  */
 int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parameters_t *autoconf_vars, multicast_parameters_t *multicast_vars, tuning_parameters_t *tuneparams, fds_t *fds, unicast_parameters_t *unicast_vars, int server_id, void *scam_vars)
 {
+	pthread_mutex_lock(&autoconf_vars->lock);
 	int curr_channel,curr_pid;
 	//We sort the services
 	autoconf_sort_services(autoconf_vars->services);
@@ -959,6 +960,7 @@ int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parame
 	autoconf_freeing(autoconf_vars);
 
 	autoconf_vars->autoconfiguration=AUTOCONF_MODE_PIDS; //Next step add video and audio pids
+	pthread_mutex_unlock(&autoconf_vars->lock);
 
 	return 0;
 }
@@ -1017,6 +1019,7 @@ void autoconf_definite_end(mumudvb_chan_and_pids_t *chan_and_pids, multicast_par
 /** @brief This function is called when a new packet is there and the autoconf is not finished*/
 int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, fds_t *fds, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars,  unicast_parameters_t *unicast_vars, int server_id, void *scam_vars)
 {
+	pthread_mutex_lock(&autoconf_vars->lock);
 	if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL) //Full autoconfiguration, we search the channels and their names
 	{
 		if(pid==0) //PAT : contains the services identifiers and the PMT PID for each service
@@ -1119,6 +1122,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
 			}
 		}
 	}
+	pthread_mutex_unlock(&autoconf_vars->lock);
 	return Interrupted;
 }
 
@@ -1129,6 +1133,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
  */
 int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars, fds_t *fds, unicast_parameters_t *unicast_vars, int server_id, void *scam_vars)
 {
+	pthread_mutex_lock(&autoconf_vars->lock);
 	int iRet=0;
 	if(!autoconf_vars->time_start_autoconfiguration)
 		autoconf_vars->time_start_autoconfiguration=now;
@@ -1137,7 +1142,6 @@ int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_a
 		if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_PIDS)
 		{
 			log_message( log_module, MSG_WARN,"Not all the channels were configured before timeout\n");
-			autoconf_vars->autoconfiguration=0;
 			autoconf_set_channel_filt(tuneparams->card_dev_path, tuneparams->tuner, chan_and_pids, fds);
 			//We free autoconf memory
 			autoconf_freeing(autoconf_vars);
@@ -1164,6 +1168,7 @@ int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_a
 			autoconf_vars->autoconfiguration=0;
 		}
 	}
+	pthread_mutex_unlock(&autoconf_vars->lock);
 	return iRet;
 }
 
