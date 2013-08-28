@@ -2054,9 +2054,13 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
   {
     log_message(log_module,MSG_DEBUG,"Signal/power Thread closing\n");
     *strengththreadshutdown=1;
+#ifndef __UCLIBC__
     clock_gettime(CLOCK_REALTIME, &ts);
     ts.tv_sec += 5;
     iRet=pthread_timedjoin_np(signalpowerthread, NULL, &ts);
+#else
+    iRet=pthread_join(signalpowerthread, NULL);
+#endif
     if(iRet)
       log_message(log_module,MSG_WARN,"Signal/power Thread badly closed: %s\n", strerror(iRet));
 
@@ -2073,9 +2077,13 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
   {
     log_message(log_module,MSG_DEBUG,"Monitor Thread closing\n");
     monitor_thread_params->threadshutdown=1;
+#ifndef __UCLIBC__
     clock_gettime(CLOCK_REALTIME, &ts);
     ts.tv_sec += 5;
     iRet=pthread_timedjoin_np(monitorthread, NULL, &ts);
+#else
+    iRet=pthread_join(monitorthread, NULL);
+#endif
     if(iRet)
       log_message(log_module,MSG_WARN,"Monitor Thread badly closed: %s\n", strerror(iRet));
   }
