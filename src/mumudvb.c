@@ -85,7 +85,6 @@
 
 #define _GNU_SOURCE		//in order to use program_invocation_short_name and recursive mutexes (GNU extensions)
 
-extern char *program_invocation_short_name;
 
 #include "config.h"
 
@@ -136,6 +135,11 @@ extern char *program_invocation_short_name;
 #include "transcode.h"
 #endif
 
+#ifdef __UCLIBC__
+#define program_invocation_short_name "mumudvb"
+#else
+extern char *program_invocation_short_name;
+#endif
 
 static char *log_module="Main: ";
 
