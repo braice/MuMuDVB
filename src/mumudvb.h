@@ -478,7 +478,7 @@ typedef struct mumudvb_chan_and_pids_t{
 
 
 typedef struct monitor_parameters_t{
-  int threadshutdown;
+  volatile int threadshutdown;
   int wait_time;
   struct autoconf_parameters_t *autoconf_vars;
   struct sap_parameters_t *sap_vars;

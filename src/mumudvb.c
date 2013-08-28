@@ -256,7 +256,7 @@ extern log_params_t log_params;
 static void SignalHandler (int signum);//below
 int read_multicast_configuration(multicast_parameters_t *, mumudvb_channel_t *, int, int *, char *); //in multicast.c
 void *monitor_func(void* arg);
-int mumudvb_close(monitor_parameters_t* monitor_thread_params, unicast_parameters_t* unicast_vars, int* strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char* filename_channels_not_streamed,char *filename_channels_streamed, char *filename_pid, int Interrupted);
+int mumudvb_close(monitor_parameters_t* monitor_thread_params, unicast_parameters_t* unicast_vars, volatile int* strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char* filename_channels_not_streamed,char *filename_channels_streamed, char *filename_pid, int Interrupted);
 
 
 
@@ -2023,7 +2023,7 @@ mumudvb_close_goto:
  *
  *
  */
-int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char *filename_channels_not_streamed, char *filename_channels_streamed, char *filename_pid, int Interrupted)
+int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, volatile int *strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char *filename_channels_not_streamed, char *filename_channels_streamed, char *filename_pid, int Interrupted)
 {
 
   int curr_channel;
