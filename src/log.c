@@ -220,6 +220,10 @@ void log_message( char* log_module, int type,
   char *tempchar;
   int message_size;
   mumu_string_t log_string;
+
+  if(type>=log_params.verbosity)
+    return;
+
   log_string.string=NULL;
   log_string.length=0;
 
