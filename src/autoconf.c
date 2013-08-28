@@ -1003,7 +1003,7 @@ void autoconf_set_channel_filt(char *card_base_path, int tuner, mumudvb_chan_and
 	set_filters(chan_and_pids->asked_pid, fds);
 }
 
-void autoconf_definite_end(int card, int tuner, mumudvb_chan_and_pids_t *chan_and_pids, multicast_parameters_t *multicast_vars, unicast_parameters_t *unicast_vars)
+void autoconf_definite_end(mumudvb_chan_and_pids_t *chan_and_pids, multicast_parameters_t *multicast_vars, unicast_parameters_t *unicast_vars)
 {
 	log_message( log_module, MSG_INFO,"Autoconfiguration done\n");
 
@@ -1077,7 +1077,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
 							if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_NIT)
 								log_message( log_module, MSG_DETAIL,"We search for the NIT\n");
 							else
-								autoconf_definite_end(tuneparams->card, tuneparams->tuner, chan_and_pids, multicast_vars, unicast_vars);
+								autoconf_definite_end(chan_and_pids, multicast_vars, unicast_vars);
 						}
 					}
 				}
@@ -1114,7 +1114,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
 					}
 					free(autoconf_vars->autoconf_temp_nit);
 					autoconf_vars->autoconf_temp_nit=NULL;
-					autoconf_definite_end(tuneparams->card, tuneparams->tuner, chan_and_pids, multicast_vars, unicast_vars);
+					autoconf_definite_end(chan_and_pids, multicast_vars, unicast_vars);
 				}
 			}
 		}
@@ -1155,7 +1155,7 @@ int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_a
 		else if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_NIT)
 		{
 			log_message( log_module, MSG_WARN,"Warning : No NIT found before timeout\n");
-			autoconf_definite_end(tuneparams->card, tuneparams->tuner, chan_and_pids, multicast_vars, unicast_vars);
+			autoconf_definite_end(chan_and_pids, multicast_vars, unicast_vars);
 			if(autoconf_vars->autoconf_temp_nit)
 			{
 				free(autoconf_vars->autoconf_temp_nit);
