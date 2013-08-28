@@ -121,7 +121,7 @@ static void *getcwthread_func(void* arg)
   //Loop
   while(!scam_params->getcwthread_shutdown) {
 	if(scam_params->bint){
-		cRead = read(scam_params->net_socket_fd, &buff, sizeof(buff));
+		cRead = recv(scam_params->net_socket_fd, &buff, sizeof(buff), 0);
 		if (cRead <= 0)
 		  break;
 		request = (int *) &buff;
