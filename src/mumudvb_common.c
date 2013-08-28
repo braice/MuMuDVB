@@ -300,7 +300,7 @@ uint64_t get_time(void) {
 
 /** @brief function for sending demultiplexed data.
  */
-void send_func (mumudvb_channel_t *channel, uint64_t *now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
+void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
 {
 	//For bandwith measurement (traffic)
 	channel->sent_data+=channel->nb_bytes+20+8; // IP=20 bytes header and UDP=8 bytes header
@@ -342,7 +342,7 @@ void send_func (mumudvb_channel_t *channel, uint64_t *now_time, struct unicast_p
 			if(multicast_vars->rtp_header)
 			{
 				/****** RTP *******/
-				rtp_update_sequence_number(channel,*now_time);
+				rtp_update_sequence_number(channel,now_time);
 				data=channel->buf_with_rtp_header;
 				data_len=channel->nb_bytes+RTP_HEADER_LEN;
 			}

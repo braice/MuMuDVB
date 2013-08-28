@@ -153,7 +153,6 @@ fds_t fds; /** File descriptors associated with the card */
 int no_daemon = 0;
 int Interrupted = 0;
 int  write_streamed_channels=1;
-uint64_t now_time;
 pthread_t signalpowerthread;
 pthread_t cardthread;
 pthread_t monitorthread;
@@ -264,6 +263,7 @@ int
     main (int argc, char **argv)
 {
 
+	uint64_t now_time;
   //sap announces
   sap_parameters_t sap_vars={
     .sap_messages4=NULL,
@@ -1988,7 +1988,7 @@ int
 			||(multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
 		      {
 				now_time=get_time();
-				send_func(&chan_and_pids.channels[curr_channel], &now_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
+				send_func(&chan_and_pids.channels[curr_channel], now_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
 		      }
 
 			}

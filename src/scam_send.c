@@ -61,7 +61,6 @@ static char *log_module="SCAM_SEND: ";
 
 void *sendthread_func(void* arg)
 {
-  extern uint64_t now_time;
   extern unicast_parameters_t unicast_vars;
   extern multicast_parameters_t multicast_vars;
   extern mumudvb_chan_and_pids_t chan_and_pids;
@@ -75,6 +74,7 @@ void *sendthread_func(void* arg)
 	usleep(50000);
 	
   while(!channel->sendthread_shutdown) {
+	  uint64_t now_time=get_time();
 	  if (now_time<channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)]) {
 	  	now_time=get_time();
 		if (now_time<channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)]) {
@@ -82,7 +82,6 @@ void *sendthread_func(void* arg)
 			r_time.tv_sec=res_time/(1000000ull);
 			r_time.tv_nsec=1000*(res_time%(1000000ull));
 			while(nanosleep(&r_time, &r_time));
-			now_time=get_time();
 		}
 	  }
 	  else if (channel->ring_buf->to_send) {
@@ -108,7 +107,7 @@ void *sendthread_func(void* arg)
           if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
 	    ||(multicast_vars.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
           {
-			  send_func(channel, &channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)], &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
+			  send_func(channel, channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)], &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
           }
   		}
 	  else {

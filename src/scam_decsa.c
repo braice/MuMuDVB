@@ -137,9 +137,8 @@ static void *decsathread_func(void* arg)
   odd_key=dvbcsa_bs_key_alloc();
   even_key=dvbcsa_bs_key_alloc();
 
-  extern uint64_t now_time;
-  
   while (!channel->decsathread_shutdown) {
+	uint64_t now_time=get_time();
 	if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>2)] )&& channel->got_cw_started && channel->ring_buf->to_descramble) {
 	  
 		scrambling_control=((channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3] & 0xc0) >> 6);
@@ -161,7 +160,7 @@ static void *decsathread_func(void* arg)
 }
 	
   while(!channel->decsathread_shutdown) {
-	now_time=get_time();
+	  uint64_t now_time=get_time();
 	  if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>2)] )) {
 		if (channel->ring_buf->to_descramble!=0) {		 
 		  scrambling_control_packet = ((channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3] & 0xc0) >> 6);

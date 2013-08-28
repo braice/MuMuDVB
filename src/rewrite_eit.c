@@ -445,7 +445,7 @@ void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters
 		{
 			uint64_t now_time;
 			now_time=get_time();
-			send_func(channel, &now_time, unicast_vars, multicast_vars, chan_and_pids, fds);
+			send_func(channel, now_time, unicast_vars, multicast_vars, chan_and_pids, fds);
 		}
 
 	}
