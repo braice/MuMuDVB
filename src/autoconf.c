@@ -614,7 +614,7 @@ void autoconf_sort_services(mumudvb_service_t *services)
  * @param unicast_vars The unicast parameters
  * @param fds The file descriptors (for filters and unicast)
  */
-int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card, int tuner, unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, int server_id, void *scam_vars_v)
+int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumudvb_channel_t *channels, int port, int card, int tuner, unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, int server_id, void *scam_vars_v)
 {
 
 	mumudvb_service_t *actual_service;
@@ -622,8 +622,8 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 	int found_in_service_id_list;
 	int unicast_port_per_channel;
 	char tempstring[256];
-	actual_service=parameters.services;
-	unicast_port_per_channel=strlen(parameters.autoconf_unicast_port)?1:0;
+	actual_service=parameters->services;
+	unicast_port_per_channel=strlen(parameters->autoconf_unicast_port)?1:0;
 
 #ifndef ENABLE_SCAM_SUPPORT
 	(void) scam_vars_v; //to make compiler happy
@@ -633,17 +633,17 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 
 	do
 	{
-		if(parameters.autoconf_scrambled && actual_service->free_ca_mode)
+		if(parameters->autoconf_scrambled && actual_service->free_ca_mode)
 			log_message( log_module, MSG_DETAIL,"Service scrambled. Name \"%s\"\n", actual_service->name);
 
 		//If there is a service_id list we look if we find it (option autoconf_sid_list)
-		if(parameters.num_service_id)
+		if(parameters->num_service_id)
 		{
 			int actual_service_id;
 			found_in_service_id_list=0;
-			for(actual_service_id=0;actual_service_id<parameters.num_service_id && !found_in_service_id_list;actual_service_id++)
+			for(actual_service_id=0;actual_service_id<parameters->num_service_id && !found_in_service_id_list;actual_service_id++)
 			{
-				if(parameters.service_id_list[actual_service_id]==actual_service->id)
+				if(parameters->service_id_list[actual_service_id]==actual_service->id)
 				{
 					found_in_service_id_list=1;
 					log_message( log_module, MSG_DEBUG,"Service found in the service_id list. Name \"%s\"\n", actual_service->name);
@@ -653,7 +653,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 		else //No ts id list so it is found
 			found_in_service_id_list=1;
 
-		if(!parameters.autoconf_scrambled && actual_service->free_ca_mode)
+		if(!parameters->autoconf_scrambled && actual_service->free_ca_mode)
 			log_message( log_module, MSG_DETAIL,"Service scrambled, no CAM support and no autoconf_scrambled, we skip. Name \"%s\"\n", actual_service->name);
 		else if(!actual_service->pmt_pid)
 			log_message( log_module, MSG_DETAIL,"Service without a PMT pid, we skip. Name \"%s\"\n", actual_service->name);
@@ -667,7 +667,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 					actual_service->type==0x16||
 					actual_service->type==0x19)||
 					((actual_service->type==0x02||
-							actual_service->type==0x0a)&&parameters.autoconf_radios))
+							actual_service->type==0x0a)&&parameters->autoconf_radios))
 			{
 				log_message( log_module, MSG_DETAIL,"We convert a new service into a channel, sid %d pmt_pid %d name \"%s\" \n",
 						actual_service->id, actual_service->pmt_pid, actual_service->name);
@@ -683,9 +683,9 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 				channels[channel_number].pids_type[0]=PID_PMT;
 				channels[channel_number].num_pids=1;
 				snprintf(channels[channel_number].pids_language[0],4,"%s","---");
-				if(strlen(parameters.name_template))
+				if(strlen(parameters->name_template))
 				{
-					strcpy(channels[channel_number].name,parameters.name_template);
+					strcpy(channels[channel_number].name,parameters->name_template);
 					int len=MAX_NAME_LEN;
 					char number[10];
 					mumu_string_replace(channels[channel_number].name,&len,0,"%name",actual_service->name);
@@ -701,9 +701,9 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 					char ip[80];
 					int len=80;
 
-					if(strlen(parameters.autoconf_multicast_port))
+					if(strlen(parameters->autoconf_multicast_port))
 					{
-						strcpy(tempstring,parameters.autoconf_multicast_port);
+						strcpy(tempstring,parameters->autoconf_multicast_port);
 						sprintf(number,"%d",channel_number);
 						mumu_string_replace(tempstring,&len,0,"%number",number);
 						sprintf(number,"%d",card);
@@ -723,7 +723,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 					}
 					if(multicast_vars->multicast_ipv4)
 					{
-						strcpy(ip,parameters.autoconf_ip4);
+						strcpy(ip,parameters->autoconf_ip4);
 						sprintf(number,"%d",channel_number);
 						mumu_string_replace(ip,&len,0,"%number",number);
 						sprintf(number,"%d",card);
@@ -751,7 +751,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 					}
 					if(multicast_vars->multicast_ipv6)
 					{
-						strcpy(ip,parameters.autoconf_ip6);
+						strcpy(ip,parameters->autoconf_ip6);
 						sprintf(number,"%d",channel_number);
 						mumu_string_replace(ip,&len,0,"%number",number);
 						sprintf(number,"%d",card);
@@ -769,7 +769,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 				}
 
 				//This is a scrambled channel, we will have to ask the cam for descrambling it
-				if(parameters.autoconf_scrambled && actual_service->free_ca_mode)
+				if(parameters->autoconf_scrambled && actual_service->free_ca_mode)
 					channels[channel_number].need_cam_ask=CAM_NEED_ASK;
 
 				//We store the PMT and the service id in the channel
@@ -807,7 +807,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 				//We update the unicast port, the connection will be created in autoconf_finish_full
 				if(unicast_port_per_channel && unicast_vars->unicast)
 				{
-					strcpy(tempstring,parameters.autoconf_unicast_port);
+					strcpy(tempstring,parameters->autoconf_unicast_port);
 					int len;len=256;
 					char number[10];
 					sprintf(number,"%d",channel_number);
@@ -876,7 +876,7 @@ int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parame
 	int curr_channel,curr_pid;
 	//We sort the services
 	autoconf_sort_services(autoconf_vars->services);
-	chan_and_pids->number_of_channels=autoconf_services_to_channels(*autoconf_vars, chan_and_pids->channels, multicast_vars->common_port, tuneparams->card, tuneparams->tuner, unicast_vars, multicast_vars, server_id, scam_vars); //Convert the list of services into channels
+	chan_and_pids->number_of_channels=autoconf_services_to_channels(autoconf_vars, chan_and_pids->channels, multicast_vars->common_port, tuneparams->card, tuneparams->tuner, unicast_vars, multicast_vars, server_id, scam_vars); //Convert the list of services into channels
 	//we got the pmt pids for the channels, we open the filters
 	for (curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
 	{
