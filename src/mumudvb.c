@@ -1942,7 +1942,7 @@ int
            send_packet=0;
 		}
 #endif
-
+        mumudvb_channel_t *channel = &chan_and_pids.channels[curr_channel];
         /******************************************************/
         //Ok we must send this packet,
         // we add it to the channel buffer
@@ -1950,30 +1950,30 @@ int
         if(send_packet==1)
         {
 #ifdef ENABLE_SCAM_SUPPORT
-		      if (chan_and_pids.channels[curr_channel].scam_support && scam_vars.scam_support) {
-					memcpy(chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx], actual_ts_packet, TS_PACKET_SIZE);
+		      if (channel->scam_support && scam_vars.scam_support) {
+					memcpy(channel->ring_buf->data[channel->ring_buf->write_idx], actual_ts_packet, TS_PACKET_SIZE);
 
-					chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx][1] =
-					  (chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx][1] & 0xe0) | hi_mappids[pid];
-					chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx][2] = lo_mappids[pid];
-					if ((chan_and_pids.channels[curr_channel].ring_buf->write_idx&0x3) == 0) {
+					channel->ring_buf->data[channel->ring_buf->write_idx][1] =
+					  (channel->ring_buf->data[channel->ring_buf->write_idx][1] & 0xe0) | hi_mappids[pid];
+					channel->ring_buf->data[channel->ring_buf->write_idx][2] = lo_mappids[pid];
+					if ((channel->ring_buf->write_idx&0x3) == 0) {
 					  now_time=get_time();
-					  chan_and_pids.channels[curr_channel].ring_buf->time_send[(chan_and_pids.channels[curr_channel].ring_buf->write_idx>>2)]=now_time + chan_and_pids.channels[curr_channel].send_delay;
+					  channel->ring_buf->time_send[(channel->ring_buf->write_idx>>2)]=now_time + channel->send_delay;
 
-					  chan_and_pids.channels[curr_channel].ring_buf->time_decsa[(chan_and_pids.channels[curr_channel].ring_buf->write_idx>>2)]=now_time + chan_and_pids.channels[curr_channel].decsa_delay;
+					  channel->ring_buf->time_decsa[(channel->ring_buf->write_idx>>2)]=now_time + channel->decsa_delay;
 
 					}
 
-					++chan_and_pids.channels[curr_channel].ring_buf->write_idx;
-					chan_and_pids.channels[curr_channel].ring_buf->write_idx&=(chan_and_pids.channels[curr_channel].ring_buffer_size -1);
+					++channel->ring_buf->write_idx;
+					channel->ring_buf->write_idx&=(channel->ring_buffer_size -1);
 
-				    pthread_mutex_lock(&chan_and_pids.channels[curr_channel].ring_buf->to_descramble_mutex);
-				    ++chan_and_pids.channels[curr_channel].ring_buf->to_descramble;
-				    pthread_mutex_unlock(&chan_and_pids.channels[curr_channel].ring_buf->to_descramble_mutex);
+				    pthread_mutex_lock(&channel->ring_buf->to_descramble_mutex);
+				    ++channel->ring_buf->to_descramble;
+				    pthread_mutex_unlock(&channel->ring_buf->to_descramble_mutex);
 
-				    pthread_mutex_lock(&chan_and_pids.channels[curr_channel].ring_buffer_num_packets_mutex);
-				    ++chan_and_pids.channels[curr_channel].ring_buffer_num_packets;
-				    pthread_mutex_unlock(&chan_and_pids.channels[curr_channel].ring_buffer_num_packets_mutex);
+				    pthread_mutex_lock(&channel->ring_buffer_num_packets_mutex);
+				    ++channel->ring_buffer_num_packets;
+				    pthread_mutex_unlock(&channel->ring_buffer_num_packets_mutex);
 			  }
 			else {
 #else
@@ -1981,17 +1981,17 @@ int
 #endif
 
 				// we fill the channel buffer
-		      memcpy(chan_and_pids.channels[curr_channel].buf + chan_and_pids.channels[curr_channel].nb_bytes, actual_ts_packet, TS_PACKET_SIZE);
+		      memcpy(channel->buf + channel->nb_bytes, actual_ts_packet, TS_PACKET_SIZE);
 
 
-		      chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] =
-		          (chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] & 0xe0) | hi_mappids[pid];
-		      chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 2] = lo_mappids[pid];
+		      channel->buf[channel->nb_bytes + 1] =
+		          (channel->buf[channel->nb_bytes + 1] & 0xe0) | hi_mappids[pid];
+		      channel->buf[channel->nb_bytes + 2] = lo_mappids[pid];
 
-		      chan_and_pids.channels[curr_channel].nb_bytes += TS_PACKET_SIZE;
+		      channel->nb_bytes += TS_PACKET_SIZE;
 		      //The buffer is full, we send it
-		      if ((!multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
-			||(multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
+		      if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
+			||(multicast_vars.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
 		      {
 				now_time=get_time();
 				send_func(&chan_and_pids.channels[curr_channel], now_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
@@ -2605,15 +2605,16 @@ void *monitor_func(void* arg)
 		/* we check num of packets in ring buffer                */
 		/*******************************************/
 		for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++) {
-		  if (params->chan_and_pids->channels[curr_channel].scam_support) {
-			  if (chan_and_pids.channels[curr_channel].got_cw_started) {
-				if (params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets>=params->chan_and_pids->channels[curr_channel].ring_buffer_size)
-			  		log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %u\n",params->chan_and_pids->channels[curr_channel].name, params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets, params->chan_and_pids->channels[curr_channel].ring_buffer_size);
+		  mumudvb_channel_t *channel = &params->chan_and_pids->channels[curr_channel];
+		  if (channel->scam_support) {
+			  if (channel->got_cw_started) {
+				if (channel->ring_buffer_num_packets>=channel->ring_buffer_size)
+			  		log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %u\n",channel->name, channel->ring_buffer_num_packets, channel->ring_buffer_size);
 				else
-					log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %u, to descramble %u, to send %u\n",params->chan_and_pids->channels[curr_channel].name, params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets, params->chan_and_pids->channels[curr_channel].ring_buffer_size,params->chan_and_pids->channels[curr_channel].ring_buf->to_descramble,params->chan_and_pids->channels[curr_channel].ring_buf->to_send);
+					log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %u, to descramble %u, to send %u\n",channel->name, channel->ring_buffer_num_packets, channel->ring_buffer_size,channel->ring_buf->to_descramble,channel->ring_buf->to_send);
 			  }
 			  else
-				log_message( log_module,  MSG_DEBUG, "%s: didn't get first cw\n",params->chan_and_pids->channels[curr_channel].name);
+				log_message( log_module,  MSG_DEBUG, "%s: didn't get first cw\n",channel->name);
 		  }
 		}
 
