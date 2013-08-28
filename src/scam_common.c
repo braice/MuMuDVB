@@ -62,6 +62,19 @@
 
 static char *log_module="SCAM_COMMON: ";
 
+/* See http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2. */
+int round_up(int x)
+{
+  x--;
+  x |= x >> 1;
+  x |= x >> 2;
+  x |= x >> 4;
+  x |= x >> 8;
+  x |= x >> 16;
+  x++;
+  return x;
+}
+
 /** @brief Read a line of the configuration file to check if there is a scam parameter
  *
  * @param scam_vars the scam parameters
@@ -86,7 +99,7 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
   else if (!strcmp (substring, "ring_buffer_default_size"))
   {
     substring = strtok (NULL, delimiteurs);
-    scam_vars->ring_buffer_default_size = 1<<((uint64_t)ceil(log2((long double)atoi (substring))));
+    scam_vars->ring_buffer_default_size = round_up(atoi(substring));
     log_message( log_module,  MSG_DEBUG, "Ring buffer default size set to %u\n",scam_vars->ring_buffer_default_size);
 
   }
@@ -129,7 +142,7 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
       return -1;
     }
     substring = strtok (NULL, delimiteurs);
-    current_channel->ring_buffer_size = 1<<((uint64_t)ceil(log2((long double)atoi (substring))));
+    current_channel->ring_buffer_size = round_up(atoi (substring));
   }
   else if (!strcmp (substring, "decsa_delay"))
   {
