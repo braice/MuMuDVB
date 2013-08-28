@@ -406,12 +406,12 @@ int card_read(int fd_dvr, unsigned char *dest_buffer, card_buffer_t *card_buffer
   }
   if(bytes_read<0)
   {
-    if(errno!=EAGAIN)
-      log_message( log_module,  MSG_WARN,"Error : DVR Read error : %s \n",strerror(errno));
     if(errno==EOVERFLOW)
     {
+      log_message( log_module,  MSG_WARN,"Error : DVR buffer overrun \n");
       card_buffer->overflow_number++;
-    }
+    } else if(errno!=EAGAIN)
+      log_message( log_module,  MSG_WARN,"Error : DVR Read error : %s \n",strerror(errno));
     return 0;
   }
   return bytes_read;
