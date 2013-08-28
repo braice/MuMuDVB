@@ -2246,15 +2246,7 @@ static void SignalHandler (int signum)
       exit(ERROR_TUNE);
     }
   }
-  else if (signum == SIGUSR1)
-  {
-    received_signal=SIGUSR1;
-  }
-  else if (signum == SIGUSR2)
-  {
-    received_signal=SIGUSR2;
-  }
-  else if (signum == SIGHUP)
+  else if (signum == SIGUSR1 || signum == SIGUSR2 || signum == SIGHUP)
   {
     received_signal=signum;
   }
