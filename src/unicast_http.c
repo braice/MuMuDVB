@@ -1286,9 +1286,6 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
     return -1;
   }
 
-  // UTF-8 Byte Order Mark (BOM)
-  unicast_reply_write(reply, "\xef\xbb\xbf");
-
   // Date time formatting
   time_t rawtime;
   time (&rawtime);
@@ -1468,15 +1465,6 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
   // Ending XML content
   unicast_reply_write(reply, "</mumudvb>\n");
 
-  // Cleaning all non acceptable characters for pseudo UTF-8 (in fact, US-ASCII) - Skipping BOM and last zero character
-  unsigned char c;
-  int j;
-  for (j=3; j<reply->used_body; j++)
-  {
-    c=reply->buffer_body[j];
-    if ((c<32 || c>127) && c!=9 && c!=10 && c!=13)
-      reply->buffer_body[j]=32;
-  }
   unicast_reply_send(reply, Socket, 200, "application/xml; charset=UTF-8");  
 
   // End of HTTP reply
