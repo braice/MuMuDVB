@@ -129,6 +129,8 @@ static void *getcwthread_func(void* arg)
 			log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request index: %d, parity %d\n", scam_params->ca_descr.index, scam_params->ca_descr.parity);
 			if(scam_params->ca_descr.index != (unsigned) -1) {
 				mumudvb_channel_t *channel = chan_and_pids.scam_idx[scam_params->ca_descr.index];
+				pthread_mutex_lock(&chan_and_pids.lock);
+
 				if (chan_and_pids.started_pid_get[scam_params->ca_descr.index]) {
 				  log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request for channel %s : index %d, parity %d, key %02x %02x %02x %02x  %02x %02x %02x %02x\n", channel->name, scam_params->ca_descr.index, scam_params->ca_descr.parity, scam_params->ca_descr.cw[0], scam_params->ca_descr.cw[1], scam_params->ca_descr.cw[2], scam_params->ca_descr.cw[3], scam_params->ca_descr.cw[4], scam_params->ca_descr.cw[5], scam_params->ca_descr.cw[6], scam_params->ca_descr.cw[7]);
 				  pthread_mutex_lock(&channel->cw_lock);
@@ -152,6 +154,7 @@ static void *getcwthread_func(void* arg)
 				}
 				else
 					log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR with index %d, but didn't get first pid", scam_params->ca_descr.index);					
+				pthread_mutex_unlock(&chan_and_pids.lock);
 			}
 		    else {
 			  log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR removal request, ignoring");
@@ -161,6 +164,7 @@ static void *getcwthread_func(void* arg)
 		{
 			memcpy((&(scam_params->ca_pid)), &buff[sizeof(int)], sizeof(ca_pid_t));
 			log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request index: %d pid: %d\n",scam_params->ca_pid.index, scam_params->ca_pid.pid);
+			pthread_mutex_lock(&chan_and_pids.lock);
 			got_pid=0;
 			if (!(scam_params->got_pid_t[scam_params->ca_pid.pid])) {
 				scam_params->got_pid_t[scam_params->ca_pid.pid]=1;
@@ -191,7 +195,7 @@ static void *getcwthread_func(void* arg)
 			else {
 			  log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID with pid: %d that has been already seen\n", scam_params->ca_pid.pid);
 			}
-			  
+			pthread_mutex_unlock(&chan_and_pids.lock);
 		}
 	}
   }

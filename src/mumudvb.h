@@ -245,6 +245,17 @@ typedef struct card_buffer_t{
 struct unicast_client_t;
 /** @brief Structure for storing channels
  *
+ * All members are protected by the global lock in chan_and_pids, with the
+ * following exceptions:
+ *
+ *  - The EIT variables, since they are only ever accessed from the main thread. 
+ *  - buf/nb_bytes, since they are only ever accessed from one thread: SCAM_SEND
+ *    if we are using scam, or the main thread otherwise.
+ *    (XXX: autoconf is the exception, we should look into whether that can happen
+ *    without the thread being shut down first)
+ *  - got_cw_started, because it is only ever written from the main thread, and
+ *    we can deal with the other threads having an inconsistent view of it.
+ *  - the odd/even keys, since they have their own locking.
  */
 typedef struct mumudvb_channel_t{
   /** The logical channel number*/
@@ -449,6 +460,10 @@ typedef struct multicast_parameters_t{
 
 /** structure containing the channels and the asked pids information*/
 typedef struct mumudvb_chan_and_pids_t{
+  /** Protects all the members, including most of the channels (see the documentation
+    * for mumudvb_channel_t for details).
+    */
+  pthread_mutex_t lock;
   /** The number of channels ... */
   int number_of_channels;
   /** Do we send scrambled packets ? */

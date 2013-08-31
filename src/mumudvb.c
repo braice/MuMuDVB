@@ -164,6 +164,7 @@ card_thread_parameters_t cardthreadparams;
 
 
 mumudvb_chan_and_pids_t chan_and_pids={
+  .lock=PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP,
   .number_of_channels=0,
   .dont_send_scrambled=0,
   .filter_transport_error=0,
@@ -1782,8 +1783,10 @@ int
 	     if(sdt_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars)==1)
 	     {
 	       log_message( log_module, MSG_DETAIL,"The SDT version changed, we force the update of all the channels.\n");
+	       pthread_mutex_lock(&chan_and_pids.lock);
 	       for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
-	        chan_and_pids.channels[curr_channel].sdt_rewrite_skip=0;
+	         chan_and_pids.channels[curr_channel].sdt_rewrite_skip=0;
+	       pthread_mutex_unlock(&chan_and_pids.lock);
 	     }
 	   }
       /******************************************************/
@@ -1799,6 +1802,7 @@ int
       /******************************************************/
       //for each channel we'll look if we must send this PID
       /******************************************************/
+      pthread_mutex_lock(&chan_and_pids.lock);
       for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
       {
 	//we'll see if we must send this pid for this channel
@@ -2001,6 +2005,7 @@ int
 
 		}
       }
+      pthread_mutex_unlock(&chan_and_pids.lock);
     }
   }
   /******************************************************/
@@ -2328,6 +2333,8 @@ void *monitor_func(void* arg)
 
     /*autoconfiguration*/
     pthread_mutex_lock(&params->autoconf_vars->lock);
+    pthread_mutex_lock(&params->chan_and_pids->lock);
+
     /*We check if we reached the autoconfiguration timeout*/
     if(params->autoconf_vars->autoconfiguration)
     {
@@ -2552,6 +2559,7 @@ void *monitor_func(void* arg)
       }
     }
     /* reinit */
+    pthread_mutex_lock(&chan_and_pids.lock);
     for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++)
     {
       params->chan_and_pids->channels[curr_channel].num_packet = 0;
@@ -2561,6 +2569,7 @@ void *monitor_func(void* arg)
 	  	params->chan_and_pids->channels[curr_channel].num_packet_descrambled_sent = 0;
   	  #endif
     }
+    pthread_mutex_unlock(&chan_and_pids.lock);
     last_updown_check=monitor_now;
 
 
@@ -2667,6 +2676,8 @@ void *monitor_func(void* arg)
 
 
     }
+    pthread_mutex_unlock(&params->chan_and_pids->lock);
+
     for(i=0;i<params->wait_time && !params->threadshutdown;i++)
       usleep(100000);
   }

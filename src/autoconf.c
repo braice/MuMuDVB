@@ -615,7 +615,7 @@ void autoconf_sort_services(mumudvb_service_t *services)
  */
 int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumudvb_channel_t *channels, int port, int card, int tuner, unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, int server_id, void *scam_vars_v)
 {
-
+	extern mumudvb_chan_and_pids_t chan_and_pids;
 	mumudvb_service_t *actual_service;
 	int channel_number=0;
 	int found_in_service_id_list;
@@ -672,6 +672,7 @@ int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumud
 						actual_service->id, actual_service->pmt_pid, actual_service->name);
 				display_service_type(actual_service->type, MSG_DETAIL, log_module);
 
+				pthread_mutex_lock(&chan_and_pids.lock);
 				channels[channel_number].channel_type=actual_service->type;
 				channels[channel_number].num_packet = 0;
 				channels[channel_number].num_scrambled_packets = 0;
@@ -837,6 +838,7 @@ int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumud
 					channels[channel_number].send_delay=scam_vars->send_default_delay;
 				}
 #endif
+				pthread_mutex_unlock(&chan_and_pids.lock);
 				channel_number++;
 			}
 			else if(actual_service->type==0x02||actual_service->type==0x0a) //service_type digital radio sound service
@@ -872,6 +874,7 @@ int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumud
 int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parameters_t *autoconf_vars, multicast_parameters_t *multicast_vars, tuning_parameters_t *tuneparams, fds_t *fds, unicast_parameters_t *unicast_vars, int server_id, void *scam_vars)
 {
 	pthread_mutex_lock(&autoconf_vars->lock);
+	pthread_mutex_lock(&chan_and_pids->lock);
 	int curr_channel,curr_pid;
 	//We sort the services
 	autoconf_sort_services(autoconf_vars->services);
@@ -959,6 +962,7 @@ int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parame
 	autoconf_freeing(autoconf_vars);
 
 	autoconf_vars->autoconfiguration=AUTOCONF_MODE_PIDS; //Next step add video and audio pids
+	pthread_mutex_unlock(&chan_and_pids->lock);
 	pthread_mutex_unlock(&autoconf_vars->lock);
 
 	return 0;

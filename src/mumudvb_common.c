@@ -303,8 +303,10 @@ uint64_t get_time(void) {
 void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
 {
 	//For bandwith measurement (traffic)
+	pthread_mutex_lock(&chan_and_pids->lock);
 	channel->sent_data+=channel->nb_bytes+20+8; // IP=20 bytes header and UDP=8 bytes header
 	if (multicast_vars->rtp_header) channel->sent_data+=RTP_HEADER_LEN;
+	pthread_mutex_unlock(&chan_and_pids->lock);
 
 	/********* TRANSCODE **********/
 #ifdef ENABLE_TRANSCODING
