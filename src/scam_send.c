@@ -75,10 +75,10 @@ void *sendthread_func(void* arg)
 	
   while(!channel->sendthread_shutdown) {
 	  uint64_t now_time=get_time();
-	  if (now_time<channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)]) {
+	  if (now_time<channel->ring_buf->time_send[channel->ring_buf->read_send_idx]) {
 	  	now_time=get_time();
-		if (now_time<channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)]) {
-			res_time=channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)] - now_time;
+		if (now_time<channel->ring_buf->time_send[channel->ring_buf->read_send_idx]) {
+			res_time=channel->ring_buf->time_send[channel->ring_buf->read_send_idx] - now_time;
 			r_time.tv_sec=res_time/(1000000ull);
 			r_time.tv_nsec=1000*(res_time%(1000000ull));
 			while(nanosleep(&r_time, &r_time));
@@ -107,7 +107,7 @@ void *sendthread_func(void* arg)
           if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
 	    ||(multicast_vars.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
           {
-			  send_func(channel, channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)], &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
+			  send_func(channel, channel->ring_buf->time_send[channel->ring_buf->read_send_idx], &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
           }
   		}
 	  else {

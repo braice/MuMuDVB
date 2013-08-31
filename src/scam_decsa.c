@@ -139,7 +139,7 @@ static void *decsathread_func(void* arg)
 
   while (!channel->decsathread_shutdown) {
 	uint64_t now_time=get_time();
-	if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>2)] )&& channel->got_cw_started && channel->ring_buf->to_descramble) {
+	if ((now_time >=channel->ring_buf->time_decsa[channel->ring_buf->read_decsa_idx] )&& channel->got_cw_started && channel->ring_buf->to_descramble) {
 	  
 		scrambling_control=((channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3] & 0xc0) >> 6);
 		if (channel->got_key_even) {	  
@@ -161,7 +161,7 @@ static void *decsathread_func(void* arg)
 	
   while(!channel->decsathread_shutdown) {
 	  uint64_t now_time=get_time();
-	  if ((now_time >=channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>2)] )) {
+	  if ((now_time >=channel->ring_buf->time_decsa[channel->ring_buf->read_decsa_idx] )) {
 		if (channel->ring_buf->to_descramble!=0) {		 
 		  scrambling_control_packet = ((channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3] & 0xc0) >> 6);
 	      offset = ts_packet_get_payload_offset(channel->ring_buf->data[channel->ring_buf->read_decsa_idx]);
@@ -248,7 +248,7 @@ static void *decsathread_func(void* arg)
 
 	}
 	else {
-	 usleep(((channel->ring_buf->time_decsa[(channel->ring_buf->read_decsa_idx>>2)])-now_time));
+	 usleep(((channel->ring_buf->time_decsa[channel->ring_buf->read_decsa_idx])-now_time));
 	}
 		
 

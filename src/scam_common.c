@@ -265,18 +265,18 @@ int scam_channel_start(mumudvb_channel_t *channel)
 		  return ERROR_MEMORY<<8;
 	 	} 
 	}
-	channel->ring_buf->time_send=malloc(channel->ring_buffer_size/4 * sizeof(uint64_t));
+	channel->ring_buf->time_send=malloc(channel->ring_buffer_size * sizeof(uint64_t));
   	if (channel->ring_buf->time_send == NULL) {
 	  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 	  return ERROR_MEMORY<<8;
  	} 
-	channel->ring_buf->time_decsa=malloc(channel->ring_buffer_size/4 * sizeof(uint64_t));
+	channel->ring_buf->time_decsa=malloc(channel->ring_buffer_size * sizeof(uint64_t));
   	if (channel->ring_buf->time_decsa == NULL) {
 	  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 	  return ERROR_MEMORY<<8;
  	} 
-	memset (channel->ring_buf->time_send, 0, channel->ring_buffer_size/4 * sizeof(uint64_t));//we clear it	 
-	memset (channel->ring_buf->time_decsa, 0, channel->ring_buffer_size/4 * sizeof(uint64_t));//we clear it
+	memset (channel->ring_buf->time_send, 0, channel->ring_buffer_size * sizeof(uint64_t));//we clear it
+	memset (channel->ring_buf->time_decsa, 0, channel->ring_buffer_size * sizeof(uint64_t));//we clear it
 
 	pthread_mutex_init(&channel->ring_buffer_num_packets_mutex, NULL);
 
