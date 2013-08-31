@@ -134,11 +134,17 @@ static void *getcwthread_func(void* arg)
 				  pthread_mutex_lock(&channel->cw_lock);
 				  if (scam_params->ca_descr.parity) {
 					memcpy(channel->odd_cw,scam_params->ca_descr.cw,8);
+				        if (channel->got_key_odd) {
+					  log_message( log_module, MSG_WARN, "Channel %s did not consume its previous odd key\n", channel->name);
+				        }
 					channel->got_key_odd=1;
 
 				  }
 				  else {
 					memcpy(channel->even_cw,scam_params->ca_descr.cw,8);
+				        if (channel->got_key_even) {
+					  log_message( log_module, MSG_WARN, "Channel %s did not consume its previous even key\n", channel->name);
+				        }
 		      		channel->got_key_even=1;
 		  		  }
 				  pthread_mutex_unlock(&channel->cw_lock);

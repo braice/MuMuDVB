@@ -146,15 +146,15 @@ static void *decsathread_func(void* arg)
 	  
 		scrambling_control=((channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3] & 0xc0) >> 6);
 		pthread_mutex_lock(&channel->cw_lock);
-		if (channel->got_key_even) {	  
+		if (channel->got_key_even) {
 			dvbcsa_bs_key_set(channel->even_cw, even_key);
-			--channel->got_key_even;
-			log_message( log_module, MSG_DEBUG, "set first even key, channel %s, got %d, scr_cont %d\n",channel->name,channel->got_key_even, scrambling_control);
+			log_message( log_module, MSG_DEBUG, "set first even key, channel %s, scr_cont %d\n",channel->name, scrambling_control);
+			channel->got_key_even = 0;
 		}
-	    if (channel->got_key_odd) {
+		if (channel->got_key_odd) {
 			dvbcsa_bs_key_set(channel->odd_cw, odd_key);
-			--channel->got_key_odd;
-			log_message( log_module, MSG_DEBUG, "set first odd key, channel %s, got %d, scr_cont %d\n",channel->name,channel->got_key_even, scrambling_control);
+			log_message( log_module, MSG_DEBUG, "set first odd key, channel %s, scr_cont %d\n",channel->name, scrambling_control);
+			channel->got_key_odd = 0;
 		}
 		pthread_mutex_unlock(&channel->cw_lock);
 		break;
@@ -204,31 +204,25 @@ static void *decsathread_func(void* arg)
 		  if ((scrambled==batch_size) || (nscrambled==batch_size)) {
 			even_batch[even_batch_idx].data=0;
 			odd_batch[odd_batch_idx].data=0;
-			if (scrambling_control==3) {
-				 if (even_batch_idx) {
-						scrambling_control=2;
-						pthread_mutex_lock(&channel->cw_lock);
-						if (channel->got_key_even) {
-						  dvbcsa_bs_key_set(channel->even_cw, even_key);
-						  log_message( log_module, MSG_DEBUG, "even key %016llx, channel %s, got %d, scr_cont %d\n",now_time,channel->name,channel->got_key_even, scrambling_control);
-						  --channel->got_key_even;
-						}
-						pthread_mutex_unlock(&channel->cw_lock);
-				 }
+
+			/* Load new keys if they are ready and we no longer use the old one. */
+			if (odd_batch_idx != 0 && even_batch_idx == 0) {
+			  pthread_mutex_lock(&channel->cw_lock);
+			  if (channel->got_key_even) {
+			    dvbcsa_bs_key_set(channel->even_cw, even_key);
+			    log_message( log_module, MSG_DEBUG, "even key %016llx, channel %s\n",now_time,channel->name);
+			    channel->got_key_even = 0;
+			  }
+			  pthread_mutex_unlock(&channel->cw_lock);
 			}
-
-			else {
-				if (odd_batch_idx) {		  
-						scrambling_control=3;
-						pthread_mutex_lock(&channel->cw_lock);
-						if (channel->got_key_odd) {
-						  dvbcsa_bs_key_set(channel->odd_cw, odd_key);
-						  log_message( log_module, MSG_DEBUG, "odd key %016llx, channel %s, got %d, scr_cont %d\n",now_time,channel->name,channel->got_key_odd, scrambling_control);
-						  --channel->got_key_odd;
-						}
-						pthread_mutex_unlock(&channel->cw_lock);
-				}
-
+			if (even_batch_idx != 0 && odd_batch_idx == 0) {
+			  pthread_mutex_lock(&channel->cw_lock);
+			  if (channel->got_key_odd) {
+			    dvbcsa_bs_key_set(channel->odd_cw, odd_key);
+			    log_message( log_module, MSG_DEBUG, "odd key %016llx, channel %s\n",now_time,channel->name);
+			    channel->got_key_odd = 0;
+			  }
+			  pthread_mutex_unlock(&channel->cw_lock);
 			}
 			pthread_mutex_unlock(&channel->ring_buf->lock);
 			if (even_batch_idx) {
