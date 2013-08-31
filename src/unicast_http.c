@@ -1437,10 +1437,18 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 	if (scam_vars->scam_support) {
 		unicast_reply_write(reply, "\t\t<scam descrambled=\"%d\">\n",channels[curr_channel].scam_support);
 			if (channels[curr_channel].scam_support) {
+				unsigned int ring_buffer_num_packets = 0;
+
+				if (channels[curr_channel].ring_buf) {
+					pthread_mutex_lock(&channels[curr_channel].ring_buf->lock);
+					ring_buffer_num_packets = channels[curr_channel].ring_buf->to_descramble + channels[curr_channel].ring_buf->to_send;
+					pthread_mutex_unlock(&channels[curr_channel].ring_buf->lock);
+				}
+
 				unicast_reply_write(reply, "\t\t\t<ring_buffer_size>%u</ring_buffer_size>\n",channels[curr_channel].ring_buffer_size);
 				unicast_reply_write(reply, "\t\t\t<decsa_delay>%u</decsa_delay>\n",channels[curr_channel].decsa_delay);
 				unicast_reply_write(reply, "\t\t\t<send_delay>%u</send_delay>\n",channels[curr_channel].send_delay);
-				unicast_reply_write(reply, "\t\t\t<num_packets>%u</num_packets>\n",channels[curr_channel].ring_buffer_num_packets);
+				unicast_reply_write(reply, "\t\t\t<num_packets>%u</num_packets>\n",ring_buffer_num_packets);
 			}
 		unicast_reply_write(reply, "\t\t</scam>\n");
 	}

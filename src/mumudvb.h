@@ -190,6 +190,8 @@ typedef struct {
 #ifdef ENABLE_SCAM_SUPPORT
 /**@brief Structure containing ring buffer*/
 typedef struct {
+  /** A mutex protecting all the other members. */
+  pthread_mutex_t lock;
   /** Buffer with dvb packets*/
   unsigned char ** data;
   /** Write index of buffer */
@@ -206,9 +208,6 @@ typedef struct {
   unsigned int to_send;
   /** Read index of buffer for sending thread */
   unsigned int read_send_idx;
-
-  pthread_mutex_t    to_descramble_mutex;
-  pthread_mutex_t    to_send_mutex;
 }ring_buffer_t;  
 #endif
 
@@ -309,14 +308,16 @@ typedef struct mumudvb_channel_t{
   int need_scam_ask;
   /** Say if this channel should be descrambled using scam*/
   int scam_support;
+  /** Mutex for odd_cw and even_cw. */
+  pthread_mutex_t cw_lock;
   /** Odd control word for descrambling */
   unsigned char odd_cw[8];
   /** Even control word for descrambling */
   unsigned char even_cw[8];
   /** Indicating if we have another odd cw for descrambling */
-  unsigned char got_key_odd;
+  unsigned int got_key_odd;
   /** Indicating if we have another even cw for descrambling */
-  unsigned char got_key_even;
+  unsigned int got_key_even;
   /** Thread for software descrambling */
   pthread_t decsathread;
   /** Descrambling thread shutdown control */
@@ -335,14 +336,10 @@ typedef struct mumudvb_channel_t{
   uint64_t decsa_delay;	
   /** Delay of sending in us*/
   uint64_t send_delay;
-  /** Number of packets in the ring buffer*/	
-  unsigned int ring_buffer_num_packets;  
   /** Says if we need to get pmt for this channel on scam own*/	
   int need_pmt_get;
   /** Says if we've got first cw for channel*/	
   int got_cw_started;
-
-  pthread_mutex_t    ring_buffer_num_packets_mutex;
 #endif
   
 

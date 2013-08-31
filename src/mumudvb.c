@@ -564,6 +564,10 @@ int
 
   //paranoya we clear all the content of all the channels
   memset (&chan_and_pids.channels, 0, sizeof (mumudvb_channel_t)*MAX_CHANNELS);
+#ifdef ENABLE_SCAM_SUPPORT
+  for (int i = 0; i < MAX_CHANNELS; ++i)
+    pthread_mutex_init(&chan_and_pids.channels[i].cw_lock, NULL);
+#endif
 
 
   /******************************************************/
@@ -1950,6 +1954,7 @@ int
         {
 #ifdef ENABLE_SCAM_SUPPORT
 		      if (channel->scam_support && scam_vars.scam_support) {
+					pthread_mutex_lock(&channel->ring_buf->lock);
 					memcpy(channel->ring_buf->data[channel->ring_buf->write_idx], actual_ts_packet, TS_PACKET_SIZE);
 
 					channel->ring_buf->data[channel->ring_buf->write_idx][1] =
@@ -1965,13 +1970,9 @@ int
 					++channel->ring_buf->write_idx;
 					channel->ring_buf->write_idx&=(channel->ring_buffer_size -1);
 
-				    pthread_mutex_lock(&channel->ring_buf->to_descramble_mutex);
 				    ++channel->ring_buf->to_descramble;
-				    pthread_mutex_unlock(&channel->ring_buf->to_descramble_mutex);
 
-				    pthread_mutex_lock(&channel->ring_buffer_num_packets_mutex);
-				    ++channel->ring_buffer_num_packets;
-				    pthread_mutex_unlock(&channel->ring_buffer_num_packets_mutex);
+				    pthread_mutex_unlock(&channel->ring_buf->lock);
 			  }
 			else {
 #else
@@ -2605,11 +2606,18 @@ void *monitor_func(void* arg)
 		for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++) {
 		  mumudvb_channel_t *channel = &params->chan_and_pids->channels[curr_channel];
 		  if (channel->scam_support) {
+			  unsigned int ring_buffer_num_packets = 0;
+
+			  if (channel->ring_buf) {
+				pthread_mutex_lock(&channel->ring_buf->lock);
+				ring_buffer_num_packets = channel->ring_buf->to_descramble + channel->ring_buf->to_send;
+				pthread_mutex_unlock(&channel->ring_buf->lock);
+			  }
 			  if (channel->got_cw_started) {
-				if (channel->ring_buffer_num_packets>=channel->ring_buffer_size)
-			  		log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %u\n",channel->name, channel->ring_buffer_num_packets, channel->ring_buffer_size);
+				if (ring_buffer_num_packets>=channel->ring_buffer_size)
+			  		log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %u\n",channel->name, ring_buffer_num_packets, channel->ring_buffer_size);
 				else
-					log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %u, to descramble %u, to send %u\n",channel->name, channel->ring_buffer_num_packets, channel->ring_buffer_size,channel->ring_buf->to_descramble,channel->ring_buf->to_send);
+					log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %u, to descramble %u, to send %u\n",channel->name, ring_buffer_num_packets, channel->ring_buffer_size,channel->ring_buf->to_descramble,channel->ring_buf->to_send);
 			  }
 			  else
 				log_message( log_module,  MSG_DEBUG, "%s: didn't get first cw\n",channel->name);

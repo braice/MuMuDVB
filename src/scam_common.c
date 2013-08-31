@@ -278,12 +278,7 @@ int scam_channel_start(mumudvb_channel_t *channel)
 	memset (channel->ring_buf->time_send, 0, channel->ring_buffer_size * sizeof(uint64_t));//we clear it
 	memset (channel->ring_buf->time_decsa, 0, channel->ring_buffer_size * sizeof(uint64_t));//we clear it
 
-	pthread_mutex_init(&channel->ring_buffer_num_packets_mutex, NULL);
-
-
-	pthread_mutex_init(&channel->ring_buf->to_send_mutex, NULL);
-	pthread_mutex_init(&channel->ring_buf->to_descramble_mutex, NULL);
-
+	pthread_mutex_init(&channel->ring_buf->lock, NULL);
 	scam_send_start(channel);
 	scam_decsa_start(channel);
 	return 0;
@@ -302,9 +297,7 @@ void scam_channel_stop(mumudvb_channel_t *channel)
     free(channel->ring_buf->time_send);
     free(channel->ring_buf->time_decsa);
 					
-	pthread_mutex_destroy(&channel->ring_buf->to_send_mutex);
-	pthread_mutex_destroy(&channel->ring_buf->to_descramble_mutex);
-	pthread_mutex_destroy(&channel->ring_buffer_num_packets_mutex);
+	pthread_mutex_destroy(&channel->ring_buf->lock);
     free(channel->ring_buf);
 }
 

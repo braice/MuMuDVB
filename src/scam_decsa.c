@@ -137,11 +137,15 @@ static void *decsathread_func(void* arg)
   odd_key=dvbcsa_bs_key_alloc();
   even_key=dvbcsa_bs_key_alloc();
 
+  /* For simplicity, and to avoid taking the lock anew for every packet,
+   * we only release the lock when sleeping or doing CPU-intensive work. */
+  pthread_mutex_lock(&channel->ring_buf->lock);
   while (!channel->decsathread_shutdown) {
 	uint64_t now_time=get_time();
 	if ((now_time >=channel->ring_buf->time_decsa[channel->ring_buf->read_decsa_idx] )&& channel->got_cw_started && channel->ring_buf->to_descramble) {
 	  
 		scrambling_control=((channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3] & 0xc0) >> 6);
+		pthread_mutex_lock(&channel->cw_lock);
 		if (channel->got_key_even) {	  
 			dvbcsa_bs_key_set(channel->even_cw, even_key);
 			--channel->got_key_even;
@@ -152,12 +156,14 @@ static void *decsathread_func(void* arg)
 			--channel->got_key_odd;
 			log_message( log_module, MSG_DEBUG, "set first odd key, channel %s, got %d, scr_cont %d\n",channel->name,channel->got_key_even, scrambling_control);
 		}
-    	break;
-	}
-   else
+		pthread_mutex_unlock(&channel->cw_lock);
+		break;
+	} else {
+	  pthread_mutex_unlock(&channel->ring_buf->lock);
 	  usleep(50000);
-
-}
+	  pthread_mutex_lock(&channel->ring_buf->lock);
+    }
+  }
 	
   while(!channel->decsathread_shutdown) {
 	  uint64_t now_time=get_time();
@@ -193,9 +199,7 @@ static void *decsathread_func(void* arg)
 		  ++channel->ring_buf->read_decsa_idx;
 		  channel->ring_buf->read_decsa_idx&=(channel->ring_buffer_size -1);	
 
-		  pthread_mutex_lock(&channel->ring_buf->to_descramble_mutex);	
 		  --channel->ring_buf->to_descramble;
-		  pthread_mutex_unlock(&channel->ring_buf->to_descramble_mutex);
 			
 		  if ((scrambled==batch_size) || (nscrambled==batch_size)) {
 			even_batch[even_batch_idx].data=0;
@@ -203,25 +207,30 @@ static void *decsathread_func(void* arg)
 			if (scrambling_control==3) {
 				 if (even_batch_idx) {
 						scrambling_control=2;
+						pthread_mutex_lock(&channel->cw_lock);
 						if (channel->got_key_even) {
 						  dvbcsa_bs_key_set(channel->even_cw, even_key);
 						  log_message( log_module, MSG_DEBUG, "even key %016llx, channel %s, got %d, scr_cont %d\n",now_time,channel->name,channel->got_key_even, scrambling_control);
 						  --channel->got_key_even;
 						}
+						pthread_mutex_unlock(&channel->cw_lock);
 				 }
 			}
 
 			else {
 				if (odd_batch_idx) {		  
 						scrambling_control=3;
+						pthread_mutex_lock(&channel->cw_lock);
 						if (channel->got_key_odd) {
 						  dvbcsa_bs_key_set(channel->odd_cw, odd_key);
 						  log_message( log_module, MSG_DEBUG, "odd key %016llx, channel %s, got %d, scr_cont %d\n",now_time,channel->name,channel->got_key_odd, scrambling_control);
 						  --channel->got_key_odd;
 						}
+						pthread_mutex_unlock(&channel->cw_lock);
 				}
 
 			}
+			pthread_mutex_unlock(&channel->ring_buf->lock);
 			if (even_batch_idx) {
 
 			  dvbcsa_bs_decrypt(even_key, even_batch, 184);
@@ -230,12 +239,11 @@ static void *decsathread_func(void* arg)
 
 			  dvbcsa_bs_decrypt(odd_key, odd_batch, 184);
 			}
+			pthread_mutex_lock(&channel->ring_buf->lock);
 			even_batch_idx = 0;
 			odd_batch_idx = 0;
 
-			pthread_mutex_lock(&channel->ring_buf->to_send_mutex);
 			channel->ring_buf->to_send+= (scrambled  + nscrambled);
-			pthread_mutex_unlock(&channel->ring_buf->to_send_mutex);  
 			  
 			nscrambled=0;
 			scrambled=0;
@@ -243,16 +251,21 @@ static void *decsathread_func(void* arg)
 	  }
 	  else {
 	    log_message( log_module, MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,channel->ring_buf->to_descramble,channel->ring_buf->to_send); 
+	    pthread_mutex_unlock(&channel->ring_buf->lock);
 	    usleep(50000);
+	    pthread_mutex_lock(&channel->ring_buf->lock);
 	  }
 
 	}
 	else {
+	 pthread_mutex_unlock(&channel->ring_buf->lock);
 	 usleep(((channel->ring_buf->time_decsa[channel->ring_buf->read_decsa_idx])-now_time));
+	 pthread_mutex_lock(&channel->ring_buf->lock);
 	}
 		
 
   }
+  pthread_mutex_unlock(&channel->ring_buf->lock);
 	if(odd_key)
       dvbcsa_bs_key_free(odd_key);
 	if(even_key)

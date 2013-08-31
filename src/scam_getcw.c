@@ -131,6 +131,7 @@ static void *getcwthread_func(void* arg)
 				mumudvb_channel_t *channel = chan_and_pids.scam_idx[scam_params->ca_descr.index];
 				if (chan_and_pids.started_pid_get[scam_params->ca_descr.index]) {
 				  log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request for channel %s : index %d, parity %d, key %02x %02x %02x %02x  %02x %02x %02x %02x\n", channel->name, scam_params->ca_descr.index, scam_params->ca_descr.parity, scam_params->ca_descr.cw[0], scam_params->ca_descr.cw[1], scam_params->ca_descr.cw[2], scam_params->ca_descr.cw[3], scam_params->ca_descr.cw[4], scam_params->ca_descr.cw[5], scam_params->ca_descr.cw[6], scam_params->ca_descr.cw[7]);
+				  pthread_mutex_lock(&channel->cw_lock);
 				  if (scam_params->ca_descr.parity) {
 					memcpy(channel->odd_cw,scam_params->ca_descr.cw,8);
 					channel->got_key_odd=1;
@@ -140,6 +141,7 @@ static void *getcwthread_func(void* arg)
 					memcpy(channel->even_cw,scam_params->ca_descr.cw,8);
 		      		channel->got_key_even=1;
 		  		  }
+				  pthread_mutex_unlock(&channel->cw_lock);
 			  	  channel->got_cw_started=1;
 				}
 				else
