@@ -517,9 +517,11 @@ void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_par
 
 long int mumu_timing();
 
+/** Sets the interrupted flag if value != 0 and it is not already set.
+ * In any case, returns the given value back. Thread- and signal-safe. */
+int set_interrupted(int value);
+
+/** Gets the interrupted flag; 0 if we have not been interrupted. */
+int get_interrupted();
+
 #endif
-
-
-
-
-

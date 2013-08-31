@@ -368,3 +368,27 @@ void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_pa
 	channel->nb_bytes = 0;
 
 }
+
+static int interrupted = 0;
+static pthread_mutex_t interrupted_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+int set_interrupted(int value)
+{
+	if (value != 0) {
+		pthread_mutex_lock(&interrupted_mutex);
+		if (interrupted == 0) {
+			interrupted = value;
+		}
+		pthread_mutex_unlock(&interrupted_mutex);
+	}
+	return value;
+}
+
+int get_interrupted()
+{
+	int ret;
+	pthread_mutex_lock(&interrupted_mutex);
+	ret = interrupted;
+	pthread_mutex_unlock(&interrupted_mutex);
+	return ret;
+}

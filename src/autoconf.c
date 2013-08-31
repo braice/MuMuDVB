@@ -86,7 +86,6 @@
 #include "scam_decsa.h"
 #endif
 
-extern int Interrupted;
 static char *log_module="Autoconf: ";
 #ifdef ENABLE_TRANSCODING
 extern transcode_options_t global_transcode_opt;
@@ -276,7 +275,7 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
 		if(autoconf_vars->autoconf_temp_pat==NULL)
 		{
 			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			Interrupted=ERROR_MEMORY<<8;
+			set_interrupted(ERROR_MEMORY<<8);
 			return -1;
 		}
 		memset (autoconf_vars->autoconf_temp_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -285,7 +284,7 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
 		if(autoconf_vars->autoconf_temp_sdt==NULL)
 		{
 			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			Interrupted=ERROR_MEMORY<<8;
+			set_interrupted(ERROR_MEMORY<<8);
 			return -1;
 		}
 		memset (autoconf_vars->autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -295,7 +294,7 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
 		if(autoconf_vars->autoconf_temp_psip==NULL)
 		{
 			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			Interrupted=ERROR_MEMORY<<8;
+			set_interrupted(ERROR_MEMORY<<8);
 			return -1;
 		}
 		memset (autoconf_vars->autoconf_temp_psip, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -305,7 +304,7 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
 		if(autoconf_vars->services==NULL)
 		{
 			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			Interrupted=ERROR_MEMORY<<8;
+			set_interrupted(ERROR_MEMORY<<8);
 			return -1;
 		}
 		memset (autoconf_vars->services, 0, sizeof( mumudvb_service_t));//we clear it
@@ -336,7 +335,7 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
 		if(autoconf_vars->autoconf_temp_nit==NULL)
 		{
 			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			Interrupted=ERROR_MEMORY<<8;
+			set_interrupted(ERROR_MEMORY<<8);
 			return -1;
 		}
 		memset (autoconf_vars->autoconf_temp_nit, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -783,7 +782,7 @@ int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumud
 					if(channels[channel_number].pmt_packet==NULL)
 					{
 						log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-						Interrupted=ERROR_MEMORY<<8;
+						set_interrupted(ERROR_MEMORY<<8);
 						return -1;
 					}
 					memset (channels[channel_number].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -797,7 +796,7 @@ int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumud
 					if(channels[channel_number].cam_pmt_packet==NULL)
 					{
 						log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-						Interrupted=ERROR_MEMORY<<8;
+						set_interrupted(ERROR_MEMORY<<8);
 						return -1;
 					}
 					memset (channels[channel_number].cam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1123,7 +1122,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
 		}
 	}
 	pthread_mutex_unlock(&autoconf_vars->lock);
-	return Interrupted;
+	return get_interrupted();
 }
 
 

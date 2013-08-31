@@ -73,7 +73,6 @@ Todo list
 #include "scam_decsa.h"
 #endif
 
-extern int Interrupted;
 static char *log_module="Unicast : ";
 
 //from unicast_client.c
@@ -319,7 +318,7 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
           if (fds->pfds==NULL)
           {
             log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-            Interrupted=ERROR_MEMORY<<8;
+            set_interrupted(ERROR_MEMORY<<8);
             return -1;
           }
           //We poll the new socket
@@ -335,7 +334,7 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
           if (unicast_vars->fd_info==NULL)
           {
             log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-            Interrupted=ERROR_MEMORY<<8;
+            set_interrupted(ERROR_MEMORY<<8);
             return -1;
           }
           //client connection
@@ -490,13 +489,13 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
   if (fds->pfds==NULL)
   {
     log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    Interrupted=ERROR_MEMORY<<8;
+    set_interrupted(ERROR_MEMORY<<8);
   }
   unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
   if (unicast_vars->fd_info==NULL)
   {
     log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    Interrupted=ERROR_MEMORY<<8;
+    set_interrupted(ERROR_MEMORY<<8);
   }
   log_message( log_module, MSG_FLOOD,"Number of clients : %d\n", unicast_vars->client_number);
 

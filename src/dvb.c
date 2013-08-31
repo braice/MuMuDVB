@@ -40,7 +40,6 @@
 #include "log.h"
 #include <unistd.h>
 
-extern int Interrupted;
 static char *log_module="DVB: ";
 
 /**
@@ -330,7 +329,7 @@ void *read_card_thread_func(void* arg)
 
   usleep(100000); //some waiting to be sure the main program is waiting //it is probably useless
   threadparams->unicast_data=0;
-  while(!threadparams->threadshutdown&& !Interrupted)
+  while(!threadparams->threadshutdown&& !get_interrupted())
   {
     //If we know that there is unicast data waiting, we don't poll the unicast file descriptors
     if(threadparams->unicast_data)
@@ -339,7 +338,7 @@ void *read_card_thread_func(void* arg)
       poll_ret=mumudvb_poll(threadparams->fds);
     if(poll_ret)
     {
-      Interrupted=poll_ret;
+      set_interrupted(poll_ret);
       log_message( log_module,  MSG_WARN, "Thread polling issue\n");
       return NULL;
     }

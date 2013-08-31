@@ -113,7 +113,6 @@ static void *getcwthread_func(void* arg)
   extern mumudvb_chan_and_pids_t chan_and_pids; /** @todo ugly way to access channel data */
   int curr_channel = 0;
   int curr_pid = 0;
-  extern int Interrupted; 
   unsigned char buff[sizeof(int) + sizeof(ca_descr_t)];
   int cRead, *request;
   char got_pid=0;
@@ -166,7 +165,7 @@ static void *getcwthread_func(void* arg)
 				  				chan_and_pids.started_pid_get[scam_params->ca_pid.index] = 1;
 				  				chan_and_pids.scam_idx[scam_params->ca_pid.index] = channel;
 								log_message( log_module,  MSG_DEBUG, "Got first CA_SET_PID request for channel: %s pid: %d\n",chan_and_pids.scam_idx[scam_params->ca_pid.index]->name, scam_params->ca_pid.pid);  
-								Interrupted=scam_channel_start(channel);
+								set_interrupted(scam_channel_start(channel));
 								got_pid=1;
 								break;
 							}

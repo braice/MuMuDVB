@@ -156,7 +156,6 @@ int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
 // file descriptors
 fds_t fds; /** File descriptors associated with the card */
 int no_daemon = 0;
-int Interrupted = 0;
 int  write_streamed_channels=1;
 pthread_t signalpowerthread;
 pthread_t cardthread;
@@ -1021,7 +1020,7 @@ int
   if(!multicast_vars.multicast && !unicast_vars.unicast)
   {
     log_message( log_module,  MSG_ERROR, "NO Multicast AND NO unicast. No data can be send :(, Exciting ....\n");
-    Interrupted=ERROR_CONF<<8;
+    set_interrupted(ERROR_CONF<<8);
     goto mumudvb_close_goto;
   }
 
@@ -1141,7 +1140,7 @@ int
     log_message( log_module,  MSG_INFO, "Tunning issue, card %d\n", tuneparams.card);
     // we close the file descriptors
     close_card_fd (fds);
-    Interrupted=ERROR_TUNE<<8;
+    set_interrupted(ERROR_TUNE<<8);
     goto mumudvb_close_goto;
   }
   log_message( log_module,  MSG_INFO, "Card %d, tuner %d tuned\n", tuneparams.card, tuneparams.tuner);
@@ -1266,7 +1265,7 @@ int
         if(chan_and_pids.channels[curr_channel].cam_pmt_packet==NULL)
         {
           log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-          Interrupted=ERROR_MEMORY<<8;
+          set_interrupted(ERROR_MEMORY<<8);
           goto mumudvb_close_goto;
         }
         memset (chan_and_pids.channels[curr_channel].cam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1284,7 +1283,7 @@ int
   iRet=autoconf_init(&autoconf_vars, chan_and_pids.channels,chan_and_pids.number_of_channels);
   if(iRet)
   {
-    Interrupted=ERROR_GENERIC<<8;
+    set_interrupted(ERROR_GENERIC<<8);
     goto mumudvb_close_goto;
   }
 
@@ -1295,7 +1294,7 @@ int
   iRet=scam_init_no_autoconf(&autoconf_vars, scam_vars_ptr, chan_and_pids.channels,chan_and_pids.number_of_channels);
   if(iRet)
   {
-    Interrupted=ERROR_GENERIC<<8;
+    set_interrupted(ERROR_GENERIC<<8);
     goto mumudvb_close_goto;
   }
 
@@ -1315,7 +1314,7 @@ int
     if(rewrite_vars.full_pat==NULL)
     {
       log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      Interrupted=ERROR_MEMORY<<8;
+      set_interrupted(ERROR_MEMORY<<8);
       goto mumudvb_close_goto;
     }
     memset (rewrite_vars.full_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1337,7 +1336,7 @@ int
     if(rewrite_vars.full_sdt==NULL)
     {
       log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      Interrupted=ERROR_MEMORY<<8;
+      set_interrupted(ERROR_MEMORY<<8);
       goto mumudvb_close_goto;
     }
     memset (rewrite_vars.full_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1356,7 +1355,7 @@ int
     if(rewrite_vars.full_eit==NULL)
     {
       log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      Interrupted=ERROR_MEMORY<<8;
+      set_interrupted(ERROR_MEMORY<<8);
       goto mumudvb_close_goto;
     }
     memset (rewrite_vars.full_eit, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1392,7 +1391,7 @@ int
       if(chan_and_pids.channels[curr_channel].pmt_packet==NULL)
       {
         log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      Interrupted=ERROR_MEMORY<<8;
+      set_interrupted(ERROR_MEMORY<<8);
       goto mumudvb_close_goto;
       }
       memset (chan_and_pids.channels[curr_channel].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1462,7 +1461,7 @@ int
   // we open the file descriptors
   if (create_card_fd (tuneparams.card_dev_path, tuneparams.tuner, chan_and_pids.asked_pid, &fds) < 0)
   {
-    Interrupted=ERROR_GENERIC<<8;
+    set_interrupted(ERROR_GENERIC<<8);
     goto mumudvb_close_goto;
   }
 
@@ -1474,7 +1473,7 @@ int
   if (fds.pfds==NULL)
   {
     log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    Interrupted=ERROR_MEMORY<<8;
+    set_interrupted(ERROR_MEMORY<<8);
     goto mumudvb_close_goto;
   }
 
@@ -1485,7 +1484,7 @@ int
   if (unicast_vars.fd_info==NULL)
   {
     log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    Interrupted=ERROR_MEMORY<<8;
+    set_interrupted(ERROR_MEMORY<<8);
     goto mumudvb_close_goto;
   }
 
@@ -1547,7 +1546,7 @@ int
   iRet=init_sap(&sap_vars, multicast_vars);
   if(iRet)
   {
-    Interrupted=ERROR_GENERIC<<8;
+    set_interrupted(ERROR_GENERIC<<8);
     goto mumudvb_close_goto;
   }
 
@@ -1609,7 +1608,7 @@ int
   int poll_ret;
   /**Buffer containing one packet*/
   unsigned char *actual_ts_packet;
-  while (!Interrupted)
+  while (!get_interrupted())
   {
     if(card_buffer.threaded_read)
     {
@@ -1647,7 +1646,7 @@ int
 	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &strengthparams, &autoconf_vars, cam_vars_ptr, scam_vars_ptr);
 	if(iRet)
 	{
-	  Interrupted=iRet;
+	  set_interrupted(iRet);
 	  continue;
 	}
 	pthread_mutex_lock(&cardthreadparams.carddatamutex);
@@ -1662,7 +1661,7 @@ int
       poll_ret=mumudvb_poll(&fds);
       if(poll_ret)
       {
-	Interrupted=poll_ret;
+	set_interrupted(poll_ret);
 	continue;
       }
       /**************************************************************/
@@ -1672,7 +1671,7 @@ int
       {
 	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &strengthparams, &autoconf_vars, cam_vars_ptr, scam_vars_ptr);
 	if(iRet)
-	  Interrupted=iRet;
+	  set_interrupted(iRet);
 	//no DVB packet, we continue
 	continue;
       }
@@ -1738,7 +1737,7 @@ int
       {
         iRet = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tuneparams, &multicast_vars, &unicast_vars, server_id, scam_vars_ptr);
         if(iRet)
-          Interrupted = iRet;
+          set_interrupted(iRet);
       }
       if(autoconf_vars.autoconfiguration)
         continue;
@@ -1859,7 +1858,7 @@ int
 					  iRet=scam_send_capmt(&chan_and_pids.channels[curr_channel],tuneparams.card);
 					  if(iRet)
 					  {
-						Interrupted=ERROR_GENERIC<<8;
+						set_interrupted(ERROR_GENERIC<<8);
 						goto mumudvb_close_goto;
 					  }
 				}
@@ -2021,7 +2020,7 @@ int
                  "We have got %d overflow errors\n",card_buffer.overflow_number );
 mumudvb_close_goto:
   //If the thread is not started, we don't send the unexisting address of monitor_thread_params
-  return mumudvb_close(monitorthread == 0 ? NULL:&monitor_thread_params , &unicast_vars, &tuneparams.strengththreadshutdown, cam_vars_ptr, scam_vars_ptr, filename_channels_not_streamed, filename_channels_streamed, filename_pid, Interrupted);
+  return mumudvb_close(monitorthread == 0 ? NULL:&monitor_thread_params , &unicast_vars, &tuneparams.strengththreadshutdown, cam_vars_ptr, scam_vars_ptr, filename_channels_not_streamed, filename_channels_streamed, filename_pid, get_interrupted());
 
 }
 
@@ -2251,7 +2250,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
  ******************************************************/
 static void SignalHandler (int signum)
 {
-  if (signum == SIGALRM && !Interrupted)
+  if (signum == SIGALRM && !get_interrupted())
   {
     if (card_tuned && !*card_tuned)
     {
@@ -2266,7 +2265,7 @@ static void SignalHandler (int signum)
   }
   else if (signum != SIGPIPE)
   {
-    Interrupted = signum;
+    set_interrupted(signum);
   }
   signal (signum, SignalHandler);
 }
@@ -2336,7 +2335,7 @@ void *monitor_func(void* arg)
       iRet = autoconf_poll(now, params->autoconf_vars, params->chan_and_pids, params->tuneparams, params->multicast_vars, &fds, params->unicast_vars, params->server_id, params->scam_vars_v);
 
       if(iRet)
-        Interrupted = iRet;
+        set_interrupted(iRet);
     }
     autoconf=params->autoconf_vars->autoconfiguration;//to reduce the lock range
     //this value is not going from null values to non zero values due to the sequencial implementation of autoconfiguration
@@ -2595,7 +2594,7 @@ void *monitor_func(void* arg)
       log_message( log_module,  MSG_ERROR,
                   "No data from card %d in %ds, exiting.\n",
                   params->tuneparams->card, timeout_no_diff);
-      Interrupted=ERROR_NO_DIFF<<8; //the <<8 is to make difference beetween signals and errors
+      set_interrupted(ERROR_NO_DIFF<<8); //the <<8 is to make difference beetween signals and errors
     }
 
 
@@ -2644,7 +2643,7 @@ void *monitor_func(void* arg)
 		  log_message( log_module,  MSG_ERROR,
 		              "Haven't got first cw for %ds, exiting.\n",
 		              timeout_no_diff);
-		  Interrupted=ERROR_NO_FIRST_CW<<8; //the <<8 is to make difference beetween signals and errors
+		  set_interrupted(ERROR_NO_FIRST_CW<<8); //the <<8 is to make difference beetween signals and errors
 		}
 	}
 

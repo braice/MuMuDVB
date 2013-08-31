@@ -56,7 +56,6 @@
 #endif
 
 #define LOG_HEAD_LEN 6
-extern int Interrupted;
 
 log_params_t log_params={
   .verbosity = MSG_INFO+1,
@@ -244,7 +243,7 @@ void log_message( char* log_module, int type,
       else
         fprintf( stderr,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
       va_end( args );
-      Interrupted=ERROR_MEMORY<<8;
+      set_interrupted(ERROR_MEMORY<<8);
       return;
     }
     sprintf(log_params.log_header,"%s",DEFAULT_LOG_HEADER);
@@ -293,7 +292,7 @@ void log_message( char* log_module, int type,
     else
       fprintf( stderr,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     va_end( args );
-    Interrupted=ERROR_MEMORY<<8;
+    set_interrupted(ERROR_MEMORY<<8);
     return;
   }
 
@@ -382,12 +381,12 @@ void log_streamed_channels(char *log_module,int number_of_channels, mumudvb_chan
     }
     mumu_string_t string=EMPTY_STRING;
     char lang[5];
-    if((Interrupted=mumu_string_append(&string, "        pids : ")))return;
+    if(set_interrupted(mumu_string_append(&string, "        pids : ")))return;
     for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
     {
       strncpy(lang+1,channels[curr_channel].pids_language[curr_pid],4);
       lang[0]=(lang[1]=='-') ? '\0': ' ';
-      if((Interrupted=mumu_string_append(&string, "%d (%s%s), ", channels[curr_channel].pids[curr_pid], pid_type_to_str(channels[curr_channel].pids_type[curr_pid]), lang)))
+      if(set_interrupted(mumu_string_append(&string, "%d (%s%s), ", channels[curr_channel].pids[curr_pid], pid_type_to_str(channels[curr_channel].pids_type[curr_pid]), lang)))
         return;
     }
     log_message( log_module, MSG_DETAIL,"%s\n",string.string);
@@ -404,10 +403,10 @@ void log_pids(char *log_module, mumudvb_channel_t *channel, int curr_channel)
   /******** display the pids **********/
 
   mumu_string_t string=EMPTY_STRING;
-  if((Interrupted=mumu_string_append(&string, "PIDs for channel %d \"%s\" : ",curr_channel, channel->name)))return;
+  if(set_interrupted(mumu_string_append(&string, "PIDs for channel %d \"%s\" : ",curr_channel, channel->name)))return;
   for (int curr_pid = 0; curr_pid < channel->num_pids; curr_pid++)
   {
-    if((Interrupted=mumu_string_append(&string, " %d",channel->pids[curr_pid])))return;
+    if(set_interrupted(mumu_string_append(&string, " %d",channel->pids[curr_pid])))return;
   }
   log_message( log_module, MSG_DETAIL,"%s\n",string.string);
   mumu_free_string(&string);
@@ -1016,7 +1015,7 @@ int convert_en300468_string(char *string, int max_len)
   if(tempdest==NULL)
   {
     log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    Interrupted=ERROR_MEMORY<<8;
+    set_interrupted(ERROR_MEMORY<<8);
     return -1;
   }
 

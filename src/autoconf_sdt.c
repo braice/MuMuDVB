@@ -44,7 +44,6 @@
 
 
 
-extern int Interrupted;
 static char *log_module="Autoconf: ";
 
 void parse_sdt_descriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_service_t *services);
