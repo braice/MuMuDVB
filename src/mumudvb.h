@@ -351,6 +351,8 @@ typedef struct mumudvb_channel_t{
   int need_pmt_get;
   /** Says if we've got first cw for channel*/	
   int got_cw_started;
+  /** Whether we have started the decoding threads or not. */
+  int scam_started;
 #endif
   
 
@@ -484,7 +486,6 @@ typedef struct mumudvb_chan_and_pids_t{
   uint8_t check_cc;
 #ifdef ENABLE_SCAM_SUPPORT
   mumudvb_channel_t* scam_idx[MAX_CHANNELS]; 
-  uint8_t started_pid_get[MAX_CHANNELS]; 
 #endif
 }mumudvb_chan_and_pids_t;
 

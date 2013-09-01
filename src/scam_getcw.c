@@ -127,11 +127,11 @@ static void *getcwthread_func(void* arg)
 		if (*request == CA_SET_DESCR) {
 			memcpy((&(scam_params->ca_descr)), &buff[sizeof(int)], sizeof(ca_descr_t));
 			log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request index: %d, parity %d\n", scam_params->ca_descr.index, scam_params->ca_descr.parity);
-			if(scam_params->ca_descr.index != (unsigned) -1) {
+			if(scam_params->ca_descr.index != (unsigned) -1 && chan_and_pids.scam_idx[scam_params->ca_descr.index] != NULL) {
 				mumudvb_channel_t *channel = chan_and_pids.scam_idx[scam_params->ca_descr.index];
 				pthread_mutex_lock(&chan_and_pids.lock);
 
-				if (chan_and_pids.started_pid_get[scam_params->ca_descr.index]) {
+				if (channel->scam_started) {
 				  log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request for channel %s : index %d, parity %d, key %02x %02x %02x %02x  %02x %02x %02x %02x\n", channel->name, scam_params->ca_descr.index, scam_params->ca_descr.parity, scam_params->ca_descr.cw[0], scam_params->ca_descr.cw[1], scam_params->ca_descr.cw[2], scam_params->ca_descr.cw[3], scam_params->ca_descr.cw[4], scam_params->ca_descr.cw[5], scam_params->ca_descr.cw[6], scam_params->ca_descr.cw[7]);
 				  pthread_mutex_lock(&channel->cw_lock);
 				  if (scam_params->ca_descr.parity) {
@@ -164,36 +164,34 @@ static void *getcwthread_func(void* arg)
 		{
 			memcpy((&(scam_params->ca_pid)), &buff[sizeof(int)], sizeof(ca_pid_t));
 			log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request index: %d pid: %d\n",scam_params->ca_pid.index, scam_params->ca_pid.pid);
-			pthread_mutex_lock(&chan_and_pids.lock);
+			if(scam_params->ca_pid.index == -1) {
+				log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID removal request, ignoring, pid: %d\n", scam_params->ca_pid.pid);
+				continue;
+			}
+			if (scam_params->got_pid_t[scam_params->ca_pid.pid]) {
+				log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID with pid: %d that has been already seen\n", scam_params->ca_pid.pid);
+				continue;
+			}
+			scam_params->got_pid_t[scam_params->ca_pid.pid]=1;
 			got_pid=0;
-			if (!(scam_params->got_pid_t[scam_params->ca_pid.pid])) {
-				scam_params->got_pid_t[scam_params->ca_pid.pid]=1;
-				if(scam_params->ca_pid.index != -1) {
-					if (!(chan_and_pids.started_pid_get[scam_params->ca_pid.index])) {
-					  for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels  && !got_pid; curr_channel++) {
-						  mumudvb_channel_t *channel = &chan_and_pids.channels[curr_channel];
-						for (curr_pid = 1; curr_pid < channel->num_pids && !got_pid; curr_pid++) {
-				  			if (scam_params->ca_pid.pid == (unsigned int)channel->pids[curr_pid]) {
-				  				chan_and_pids.started_pid_get[scam_params->ca_pid.index] = 1;
-				  				chan_and_pids.scam_idx[scam_params->ca_pid.index] = channel;
-								log_message( log_module,  MSG_DEBUG, "Got first CA_SET_PID request for channel: %s pid: %d\n",chan_and_pids.scam_idx[scam_params->ca_pid.index]->name, scam_params->ca_pid.pid);  
-								set_interrupted(scam_channel_start(channel));
-								got_pid=1;
-								break;
-							}
-						}
-					  }
-
+			pthread_mutex_lock(&chan_and_pids.lock);
+			for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels  && !got_pid; curr_channel++) {
+				mumudvb_channel_t *channel = &chan_and_pids.channels[curr_channel];
+				for (curr_pid = 1; curr_pid < channel->num_pids; curr_pid++) {
+					if (scam_params->ca_pid.pid != (unsigned int)channel->pids[curr_pid]) {
+						continue;
 					}
-					else
-			    		log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request for channel: %s pid: %d\n",chan_and_pids.scam_idx[scam_params->ca_pid.index]->name, scam_params->ca_pid.pid);
+					if (channel->scam_started) {
+						log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID with pid: %d that has been already seen\n", scam_params->ca_pid.pid);
+					} else {
+						log_message( log_module,  MSG_DEBUG, "Got first CA_SET_PID request for channel: %s pid: %d\n", channel->name, scam_params->ca_pid.pid);  
+						chan_and_pids.scam_idx[scam_params->ca_pid.index] = channel;
+						channel->scam_started = 1;
+						set_interrupted(scam_channel_start(channel));
+					}
+					got_pid=1;
+					break;
 				}
-				else {
-				  log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID removal request, ignoring, pid: %d\n", scam_params->ca_pid.pid);
-				}
-		    }
-			else {
-			  log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID with pid: %d that has been already seen\n", scam_params->ca_pid.pid);
 			}
 			pthread_mutex_unlock(&chan_and_pids.lock);
 		}
