@@ -1061,11 +1061,11 @@ int convert_en300468_string(char *string, int max_len)
       //but wh have to put it after iconv, it's a bit boring just for bold
       //we drop them
       if(*src==0x86)
-        log_message( log_module, MSG_DETAIL, "Control character \"Bold\", we drop",*src);
+        log_message( log_module, MSG_DETAIL, "Control character \"Bold\", we drop");
       else if(*src==0x87)
-        log_message( log_module, MSG_DETAIL, "Control character \"UnBold\", we drop",*src);
+        log_message( log_module, MSG_DETAIL, "Control character \"UnBold\", we drop");
       else if(*src==0x8a)
-        log_message( log_module, MSG_DETAIL, "Control character \"CR/LF\", we drop",*src);
+        log_message( log_module, MSG_DETAIL, "Control character \"CR/LF\", we drop");
       else if(*src>=0x8b )
         log_message( log_module, MSG_DETAIL, "Control character 0x%02x \"User defined\" at len %d. We drop",*src,len);
       else

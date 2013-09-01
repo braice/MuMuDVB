@@ -2015,7 +2015,7 @@ int
     fclose(dump_file);
   gettimeofday (&tv, (struct timezone *) NULL);
   log_message( log_module,  MSG_INFO,
-               "End of streaming. We streamed during %dd %d:%02d:%02d\n",(tv.tv_sec - real_start_time )/86400,((tv.tv_sec - real_start_time) % 86400 )/3600,((tv.tv_sec - real_start_time) % 3600)/60,(tv.tv_sec - real_start_time) %60 );
+               "End of streaming. We streamed during %ldd %ld:%02ld:%02ld\n",(tv.tv_sec - real_start_time )/86400,((tv.tv_sec - real_start_time) % 86400 )/3600,((tv.tv_sec - real_start_time) % 3600)/60,(tv.tv_sec - real_start_time) %60 );
 
   if(card_buffer.partial_packet_number)
     log_message( log_module,  MSG_INFO,
@@ -2624,9 +2624,9 @@ void *monitor_func(void* arg)
 			  }
 			  if (channel->got_cw_started) {
 				if (ring_buffer_num_packets>=channel->ring_buffer_size)
-			  		log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %u\n",channel->name, ring_buffer_num_packets, channel->ring_buffer_size);
+			  		log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %llu\n",channel->name, ring_buffer_num_packets, channel->ring_buffer_size);
 				else
-					log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %u, to descramble %u, to send %u\n",channel->name, ring_buffer_num_packets, channel->ring_buffer_size,channel->ring_buf->to_descramble,channel->ring_buf->to_send);
+					log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %llu, to descramble %u, to send %u\n",channel->name, ring_buffer_num_packets, channel->ring_buffer_size,channel->ring_buf->to_descramble,channel->ring_buf->to_send);
 			  }
 			  else
 				log_message( log_module,  MSG_DEBUG, "%s: didn't get first cw\n",channel->name);

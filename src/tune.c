@@ -582,7 +582,7 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
   //1.x compatible equipment
   while (*cmd) {
     (*cmd)->cmd.msg_len=4;
-    log_message( log_module,  MSG_DETAIL ,"Sending first Diseqc message %02x %02x %02x %02x %02x len %d\n",
+    log_message( log_module,  MSG_DETAIL ,"Sending first Diseqc message %02x %02x %02x %02x %02x %02x len %d\n",
                  (*cmd)->cmd.msg[0],(*cmd)->cmd.msg[1],(*cmd)->cmd.msg[2],(*cmd)->cmd.msg[3],(*cmd)->cmd.msg[4],(*cmd)->cmd.msg[5],
                  (*cmd)->cmd.msg_len);
     if((err = ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &(*cmd)->cmd)))
@@ -594,7 +594,7 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
     //Framing byte : Command from master, no reply required, repeated transmission : 0xe1
     cmd[0]->cmd.msg[0] = 0xe1;
     //cmd.msg[0] = 0xe1; /* framing: master, no reply, repeated TX */
-    log_message( log_module,  MSG_DETAIL ,"Sending repeated Diseqc message %02x %02x %02x %02x %02x len %d\n",
+    log_message( log_module,  MSG_DETAIL ,"Sending repeated Diseqc message %02x %02x %02x %02x %02x %02x len %d\n",
                  (*cmd)->cmd.msg[0],(*cmd)->cmd.msg[1],(*cmd)->cmd.msg[2],(*cmd)->cmd.msg[3],(*cmd)->cmd.msg[4],(*cmd)->cmd.msg[5],
                  (*cmd)->cmd.msg_len);
     if((err = ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &(*cmd)->cmd)))
@@ -690,7 +690,7 @@ static int do_diseqc(int fd, unsigned char sat_no, char switch_type, int pol_v_r
     cmd[0]->cmd.msg[4] = 0x00;
     cmd[0]->cmd.msg[5] = 0x00;
     cmd[0]->cmd.msg_len=4;
-    log_message( log_module,  MSG_DETAIL ,"Test Diseqc message %02x %02x %02x %02x %02x len %d\n",
+    log_message( log_module,  MSG_DETAIL ,"Test Diseqc message %02x %02x %02x %02x %02x %02x len %d\n",
                  cmd[0]->cmd.msg[0],cmd[0]->cmd.msg[1],cmd[0]->cmd.msg[2],cmd[0]->cmd.msg[3],cmd[0]->cmd.msg[4],cmd[0]->cmd.msg[5],
                  cmd[0]->cmd.msg_len);
     ret = diseqc_send_msg(fd,
@@ -745,7 +745,7 @@ int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_str
         log_message( log_module,  MSG_DETAIL, "Getting frontend event\n");
         if ((status = ioctl(fd_frontend, FE_GET_EVENT, &event)) < 0){
 	  if (errno != EOVERFLOW) {
-	    log_message( log_module,  MSG_ERROR, "FE_GET_EVENT %s. status = %s\n", strerror(errno), status);
+	    log_message( log_module,  MSG_ERROR, "FE_GET_EVENT %s. status = %d\n", strerror(errno), status);
 	    return -1;
 	  }
 	  else log_message( log_module,  MSG_WARN, "Overflow error, trying again (status = %d, errno = %d)\n", status, errno);

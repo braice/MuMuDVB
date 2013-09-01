@@ -207,12 +207,12 @@ int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parame
     case 0x03://ATSC_audio — The virtual channel carries audio programming (audio service and optional
       //associated data) conforming to ATSC standards.
       mpeg2_service_type=0x02;//service_type digital radio sound service  (0x02)
-      log_message( log_module, MSG_DEBUG,"vct_channel->service_type ATSC_audio\n",vct_channel->service_type);
+      log_message( log_module, MSG_DEBUG,"vct_channel->service_type ATSC_audio\n");
       break;
     case 0x04://ATSC_data_only_service — The virtual channel carries a data service conforming to ATSC
       //standards, but no video of stream_type 0x02 or audio of stream_type 0x81.
       mpeg2_service_type=0x0c;//service_type data broadcast service
-      log_message( log_module, MSG_DEBUG,"vct_channel->service_type ATSC_data_only_service\n",vct_channel->service_type);
+      log_message( log_module, MSG_DEBUG,"vct_channel->service_type ATSC_data_only_service\n");
       break;
     default:
       log_message( log_module, MSG_DEBUG,"Unknown vct_channel->service_type 0x%02x\n",vct_channel->service_type);

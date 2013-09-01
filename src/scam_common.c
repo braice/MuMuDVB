@@ -100,7 +100,7 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
   {
     substring = strtok (NULL, delimiteurs);
     scam_vars->ring_buffer_default_size = round_up(atoi(substring));
-    log_message( log_module,  MSG_DEBUG, "Ring buffer default size set to %u\n",scam_vars->ring_buffer_default_size);
+    log_message( log_module,  MSG_DEBUG, "Ring buffer default size set to %llu\n",scam_vars->ring_buffer_default_size);
 
   }
   else if (!strcmp (substring, "decsa_default_delay"))

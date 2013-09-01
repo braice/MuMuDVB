@@ -235,7 +235,6 @@ int eit_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf, int 
 			log_message( log_module, MSG_DETAIL,"EIT sid %d new section %d version : %d",
 					HILO(eit->service_id),
 					eit->section_number,
-					eit_packet->version,
 					eit->version_number);
 			return 1;
 		}
