@@ -166,9 +166,23 @@ static void *decsathread_func(void* arg)
   }
 	
   while(!channel->decsathread_shutdown) {
-	  uint64_t now_time=get_time();
-	  if ((now_time >=channel->ring_buf->time_decsa[channel->ring_buf->read_decsa_idx] )) {
-		if (channel->ring_buf->to_descramble!=0) {		 
+	uint64_t now_time=get_time();
+	uint64_t decsa_time = channel->ring_buf->time_decsa[channel->ring_buf->read_decsa_idx];
+
+	if (channel->ring_buf->to_descramble == 0) {
+	  log_message( log_module, MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,channel->ring_buf->to_descramble,channel->ring_buf->to_send);
+	  pthread_mutex_unlock(&channel->ring_buf->lock);
+	  usleep(50000);
+	  pthread_mutex_lock(&channel->ring_buf->lock);
+	  continue;
+	}
+
+	if (now_time < decsa_time) {
+	  pthread_mutex_unlock(&channel->ring_buf->lock);
+	  usleep(decsa_time - now_time);
+	  pthread_mutex_lock(&channel->ring_buf->lock);
+	}
+
 		  scrambling_control_packet = ((channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3] & 0xc0) >> 6);
 	      offset = ts_packet_get_payload_offset(channel->ring_buf->data[channel->ring_buf->read_decsa_idx]);
 		  len=188-offset;
@@ -241,23 +255,7 @@ static void *decsathread_func(void* arg)
 			  
 			nscrambled=0;
 			scrambled=0;
-		 }	
-	  }
-	  else {
-	    log_message( log_module, MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,channel->ring_buf->to_descramble,channel->ring_buf->to_send); 
-	    pthread_mutex_unlock(&channel->ring_buf->lock);
-	    usleep(50000);
-	    pthread_mutex_lock(&channel->ring_buf->lock);
-	  }
-
-	}
-	else {
-	 pthread_mutex_unlock(&channel->ring_buf->lock);
-	 usleep(((channel->ring_buf->time_decsa[channel->ring_buf->read_decsa_idx])-now_time));
-	 pthread_mutex_lock(&channel->ring_buf->lock);
-	}
-		
-
+		 }
   }
   pthread_mutex_unlock(&channel->ring_buf->lock);
 	if(odd_key)

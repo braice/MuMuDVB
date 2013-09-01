@@ -88,39 +88,38 @@ void *sendthread_func(void* arg)
 	  int to_descramble = channel->ring_buf->to_descramble;
 	  int to_send = channel->ring_buf->to_send;
 	  pthread_mutex_unlock(&channel->ring_buf->lock);
+
+	  if (to_send == 0) {
+	    log_message( log_module, MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,to_descramble,to_send); 
+	    usleep(50000);
+	    continue;
+	  }
+
 	  if (now_time < send_time) {
 		  res_time=send_time - now_time;
 		  r_time.tv_sec=res_time/(1000000ull);
 		  r_time.tv_nsec=1000*(res_time%(1000000ull));
 		  while(nanosleep(&r_time, &r_time));
 	  }
-	  else if (to_send) {
-		  pthread_mutex_lock(&channel->ring_buf->lock);
-		  memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data[channel->ring_buf->read_send_idx], TS_PACKET_SIZE);
 
-		  ++channel->ring_buf->read_send_idx;
-		
-		  channel->ring_buf->read_send_idx&=(channel->ring_buffer_size -1);
+	  pthread_mutex_lock(&channel->ring_buf->lock);
+	  memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data[channel->ring_buf->read_send_idx], TS_PACKET_SIZE);
 
-          channel->nb_bytes += TS_PACKET_SIZE;
-		  
-		  --channel->ring_buf->to_send;
+	  ++channel->ring_buf->read_send_idx;
+	  channel->ring_buf->read_send_idx&=(channel->ring_buffer_size -1);
 
-		  ++channel->num_packet_descrambled_sent;
-		  pthread_mutex_unlock(&channel->ring_buf->lock);
-		
+	  channel->nb_bytes += TS_PACKET_SIZE;
+
+	  --channel->ring_buf->to_send;
+	  ++channel->num_packet_descrambled_sent;
+	  pthread_mutex_unlock(&channel->ring_buf->lock);
+
           //The buffer is full, we send it
-          if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
+	  if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
 	    ||(multicast_vars.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
           {
 			  send_func(channel, send_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
           }
-  		}
-	  else {
-	    log_message( log_module, MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,to_descramble,to_send); 
-	    usleep(50000);
-	  }
-
   }
   return 0;
 }
