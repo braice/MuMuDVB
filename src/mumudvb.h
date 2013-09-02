@@ -253,8 +253,6 @@ struct unicast_client_t;
  *    if we are using scam, or the main thread otherwise.
  *    (XXX: autoconf is the exception, we should look into whether that can happen
  *    without the thread being shut down first)
- *  - got_cw_started, because it is only ever written from the main thread, and
- *    we can deal with the other threads having an inconsistent view of it.
  *  - the odd/even keys, since they have their own locking.
  */
 typedef struct mumudvb_channel_t{
@@ -349,10 +347,9 @@ typedef struct mumudvb_channel_t{
   uint64_t send_delay;
   /** Says if we need to get pmt for this channel on scam own*/	
   int need_pmt_get;
-  /** Says if we've got first cw for channel*/	
+  /** Says if we've got first cw for channel.
+    * NOTE: This is _not_ under cw_lock, but under the regular chan_and_pids lock. */
   int got_cw_started;
-  /** Whether we have started the decoding threads or not. */
-  int scam_started;
 #endif
   
 

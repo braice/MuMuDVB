@@ -378,6 +378,7 @@ int
 	  .getcwthread_shutdown=0,
   };
   scam_parameters_t *scam_vars_ptr=&scam_vars;
+  int scam_threads_started=0;
   #else
   void *scam_vars_ptr=NULL;
   #endif
@@ -1764,6 +1765,13 @@ int
       /******************************************************/
       //   SCAM PMT GET PART FINISHED
       /******************************************************/
+      if(!scam_threads_started) {
+        for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++) {
+          if (chan_and_pids.channels[curr_channel].scam_support && scam_vars.scam_support)
+            set_interrupted(scam_channel_start(&chan_and_pids.channels[curr_channel]));
+        }
+        scam_threads_started=1;
+      }
 #endif
       /******************************************************/
       //Pat rewrite
@@ -1830,8 +1838,11 @@ int
             send_packet=0;
 #endif
 
-          if ((ScramblingControl>0) && (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
-            chan_and_pids.channels[curr_channel].num_scrambled_packets++;
+#ifdef ENABLE_SCAM_SUPPORT
+          if(!chan_and_pids.channels[curr_channel].scam_support || !scam_vars.scam_support || !chan_and_pids.channels[curr_channel].got_cw_started)
+#endif
+            if ((ScramblingControl>0) && (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
+              chan_and_pids.channels[curr_channel].num_scrambled_packets++;
 
           //check if the PID is scrambled for determining its state
           if (ScramblingControl>0) chan_and_pids.channels[curr_channel].pids_num_scrambled_packets[curr_pid]++;
@@ -1940,15 +1951,6 @@ int
            // Keep only PAT
            if (chan_and_pids.psi_tables_filtering==2 && pid>0) send_packet=0;
         }
-#ifdef ENABLE_SCAM_SUPPORT
-        /******************************************************/
-        // Test if we've got first cw
-		/******************************************************/
-        if (send_packet==1 && chan_and_pids.channels[curr_channel].scam_support && !chan_and_pids.channels[curr_channel].got_cw_started && scam_vars.scam_support)
-        {
-           send_packet=0;
-		}
-#endif
         mumudvb_channel_t *channel = &chan_and_pids.channels[curr_channel];
         /******************************************************/
         //Ok we must send this packet,
@@ -1974,10 +1976,9 @@ int
 
 				    pthread_mutex_unlock(&channel->ring_buf->lock);
 			  }
-			else {
-#else
-				{
+			else
 #endif
+				{
 
 				// we fill the channel buffer
 		      memcpy(channel->buf + channel->nb_bytes, actual_ts_packet, TS_PACKET_SIZE);
@@ -2112,7 +2113,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
 
 
 #ifdef ENABLE_SCAM_SUPPORT
-	if (chan_and_pids.channels[curr_channel].scam_support && scam_vars->scam_support && chan_and_pids.channels[curr_channel].got_cw_started) {
+	if (chan_and_pids.channels[curr_channel].scam_support && scam_vars->scam_support) {
 		scam_channel_stop(&chan_and_pids.channels[curr_channel]);
 	}
 #endif
@@ -2286,7 +2287,6 @@ void *monitor_func(void* arg)
   double last_updown_check=0;
   double last_flush_time = 0;
   double time_no_diff=0;
-  double time_no_diff_cw=0;
   int num_big_buffer_show=0;
   int autoconf;
 
@@ -2437,25 +2437,10 @@ void *monitor_func(void* arg)
       mumudvb_channel_t *current;
       current=&params->chan_and_pids->channels[curr_channel];
       /* Calcultation of the ratio (percentage) of scrambled packets received*/
-#ifndef ENABLE_SCAM_SUPPORT
       if (current->num_packet >0 && current->num_scrambled_packets>10)
         current->ratio_scrambled = (int)(current->num_scrambled_packets*100/(current->num_packet));
       else
         current->ratio_scrambled = 0;
-#else
-
-	  if (current->scam_support && scam_vars->scam_support) {
-	      current->ratio_scrambled = 0;
-	  }
-	  else {
-		if (current->num_packet >0 && current->num_scrambled_packets>10)
-		  current->ratio_scrambled = (int)(current->num_scrambled_packets*100/(current->num_packet));
-		else
-		  current->ratio_scrambled = 0;
-	  }
-#endif
-
-
 
       /* Test if we have only unscrambled packets (<2%) - scrambled_channel=FULLY_UNSCRAMBLED : fully unscrambled*/
       if ((current->ratio_scrambled < 2) && (current->scrambled_channel != FULLY_UNSCRAMBLED))
@@ -2612,50 +2597,21 @@ void *monitor_func(void* arg)
 		  mumudvb_channel_t *channel = &params->chan_and_pids->channels[curr_channel];
 		  if (channel->scam_support) {
 			  unsigned int ring_buffer_num_packets = 0;
+			  unsigned int to_descramble = 0;
+			  unsigned int to_send = 0;
 
 			  if (channel->ring_buf) {
 				pthread_mutex_lock(&channel->ring_buf->lock);
-				ring_buffer_num_packets = channel->ring_buf->to_descramble + channel->ring_buf->to_send;
+				to_descramble = channel->ring_buf->to_descramble;
+				to_send = channel->ring_buf->to_send;
+				ring_buffer_num_packets = to_descramble + to_send;
 				pthread_mutex_unlock(&channel->ring_buf->lock);
 			  }
-			  if (channel->got_cw_started) {
-				if (ring_buffer_num_packets>=channel->ring_buffer_size)
-			  		log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %llu\n",channel->name, ring_buffer_num_packets, channel->ring_buffer_size);
-				else
-					log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %llu, to descramble %u, to send %u\n",channel->name, ring_buffer_num_packets, channel->ring_buffer_size,channel->ring_buf->to_descramble,channel->ring_buf->to_send);
-			  }
+			  if (ring_buffer_num_packets>=channel->ring_buffer_size)
+				log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %llu\n",channel->name, ring_buffer_num_packets, channel->ring_buffer_size);
 			  else
-				log_message( log_module,  MSG_DEBUG, "%s: didn't get first cw\n",channel->name);
+				log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %llu, to descramble %u, to send %u\n",channel->name, ring_buffer_num_packets, channel->ring_buffer_size, to_descramble, to_send);
 		  }
-		}
-
-
-		/*******************************************/
-		/* we count oscam channels which got first cw*/
-		/*******************************************/
-		int count_of_channels_cw=0;
-		for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++)
-		  if (params->chan_and_pids->channels[curr_channel].got_cw_started && params->chan_and_pids->channels[curr_channel].scam_support)
-		    count_of_channels_cw++;
-
-		/*Time no diff is the time when we got 0 channels with first cw*/
-		/*if we have channels with first cw, we reinit this counter*/
-		if(count_of_channels_cw)
-		  time_no_diff_cw=0;
-		/*If we don't have channels with first cw and this is the first time, we store the time*/
-		else if(!time_no_diff_cw)
-		  time_no_diff_cw=(long)monitor_now;
-
-		/*******************************************/
-		/* If we don't have first cw for           */
-		/* a too long time, we exit                */
-		/*******************************************/
-		if((timeout_no_diff)&& (time_no_diff&&((monitor_now-time_no_diff_cw)>timeout_no_diff)))
-		{
-		  log_message( log_module,  MSG_ERROR,
-		              "Haven't got first cw for %ds, exiting.\n",
-		              timeout_no_diff);
-		  set_interrupted(ERROR_NO_FIRST_CW<<8); //the <<8 is to make difference beetween signals and errors
 		}
 	}
 

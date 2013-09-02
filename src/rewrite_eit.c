@@ -444,19 +444,16 @@ void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters
 		// we fill the channel buffer
 #ifdef ENABLE_SCAM_SUPPORT
 		if (channel->scam_support && scam_vars->scam_support) {
-			if (channel->got_cw_started) {
-				uint64_t now_time = get_time();
-				pthread_mutex_lock(&channel->ring_buf->lock);
-				memcpy(channel->ring_buf->data[channel->ring_buf->write_idx], send_buf, TS_PACKET_SIZE);
-				channel->ring_buf->time_send[channel->ring_buf->write_idx]=now_time + channel->send_delay;
-				channel->ring_buf->time_decsa[channel->ring_buf->write_idx]=now_time + channel->decsa_delay;
+			uint64_t now_time = get_time();
+			pthread_mutex_lock(&channel->ring_buf->lock);
+			memcpy(channel->ring_buf->data[channel->ring_buf->write_idx], send_buf, TS_PACKET_SIZE);
+			channel->ring_buf->time_send[channel->ring_buf->write_idx]=now_time + channel->send_delay;
+			channel->ring_buf->time_decsa[channel->ring_buf->write_idx]=now_time + channel->decsa_delay;
+			++channel->ring_buf->write_idx;
+			channel->ring_buf->write_idx&=(channel->ring_buffer_size -1);
 
-				++channel->ring_buf->write_idx;
-				channel->ring_buf->write_idx&=(channel->ring_buffer_size -1);
-
-				++channel->ring_buf->to_descramble;
-				pthread_mutex_unlock(&channel->ring_buf->lock);
-			}
+			++channel->ring_buf->to_descramble;
+			pthread_mutex_unlock(&channel->ring_buf->lock);
 		}
 		else {
 #else

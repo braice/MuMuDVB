@@ -128,32 +128,28 @@ static void *getcwthread_func(void* arg)
 			memcpy((&(scam_params->ca_descr)), &buff[sizeof(int)], sizeof(ca_descr_t));
 			log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request index: %d, parity %d\n", scam_params->ca_descr.index, scam_params->ca_descr.parity);
 			if(scam_params->ca_descr.index != (unsigned) -1 && chan_and_pids.scam_idx[scam_params->ca_descr.index] != NULL) {
-				mumudvb_channel_t *channel = chan_and_pids.scam_idx[scam_params->ca_descr.index];
 				pthread_mutex_lock(&chan_and_pids.lock);
-
-				if (channel->scam_started) {
-				  log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request for channel %s : index %d, parity %d, key %02x %02x %02x %02x  %02x %02x %02x %02x\n", channel->name, scam_params->ca_descr.index, scam_params->ca_descr.parity, scam_params->ca_descr.cw[0], scam_params->ca_descr.cw[1], scam_params->ca_descr.cw[2], scam_params->ca_descr.cw[3], scam_params->ca_descr.cw[4], scam_params->ca_descr.cw[5], scam_params->ca_descr.cw[6], scam_params->ca_descr.cw[7]);
-				  pthread_mutex_lock(&channel->cw_lock);
-				  if (scam_params->ca_descr.parity) {
-					memcpy(channel->odd_cw,scam_params->ca_descr.cw,8);
-				        if (channel->got_key_odd) {
-					  log_message( log_module, MSG_WARN, "Channel %s did not consume its previous odd key\n", channel->name);
-				        }
-					channel->got_key_odd=1;
-
+				mumudvb_channel_t *channel = chan_and_pids.scam_idx[scam_params->ca_descr.index];
+				log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request for channel %s : index %d, parity %d, key %02x %02x %02x %02x  %02x %02x %02x %02x\n", channel->name, scam_params->ca_descr.index, scam_params->ca_descr.parity, scam_params->ca_descr.cw[0], scam_params->ca_descr.cw[1], scam_params->ca_descr.cw[2], scam_params->ca_descr.cw[3], scam_params->ca_descr.cw[4], scam_params->ca_descr.cw[5], scam_params->ca_descr.cw[6], scam_params->ca_descr.cw[7]);
+				pthread_mutex_lock(&channel->cw_lock);
+				if (scam_params->ca_descr.parity) {
+				  memcpy(channel->odd_cw,scam_params->ca_descr.cw,8);
+				  if (channel->got_key_odd) {
+				    log_message( log_module, MSG_WARN, "Channel %s did not consume its previous odd key\n", channel->name);
 				  }
-				  else {
-					memcpy(channel->even_cw,scam_params->ca_descr.cw,8);
-				        if (channel->got_key_even) {
-					  log_message( log_module, MSG_WARN, "Channel %s did not consume its previous even key\n", channel->name);
-				        }
-		      		channel->got_key_even=1;
-		  		  }
-				  pthread_mutex_unlock(&channel->cw_lock);
-			  	  channel->got_cw_started=1;
+				  channel->got_key_odd=1;
+				  channel->got_cw_started=1;
+
 				}
-				else
-					log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR with index %d, but didn't get first pid", scam_params->ca_descr.index);					
+				else {
+				  memcpy(channel->even_cw,scam_params->ca_descr.cw,8);
+				  if (channel->got_key_even) {
+				    log_message( log_module, MSG_WARN, "Channel %s did not consume its previous even key\n", channel->name);
+				  }
+		      		  channel->got_key_even=1;
+				  channel->got_cw_started=1;
+		  		}
+				pthread_mutex_unlock(&channel->cw_lock);
 				pthread_mutex_unlock(&chan_and_pids.lock);
 			}
 		    else {
@@ -181,14 +177,7 @@ static void *getcwthread_func(void* arg)
 					if (scam_params->ca_pid.pid != (unsigned int)channel->pids[curr_pid]) {
 						continue;
 					}
-					if (channel->scam_started) {
-						log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID with pid: %d that has been already seen\n", scam_params->ca_pid.pid);
-					} else {
-						log_message( log_module,  MSG_DEBUG, "Got first CA_SET_PID request for channel: %s pid: %d\n", channel->name, scam_params->ca_pid.pid);  
-						chan_and_pids.scam_idx[scam_params->ca_pid.index] = channel;
-						channel->scam_started = 1;
-						set_interrupted(scam_channel_start(channel));
-					}
+					chan_and_pids.scam_idx[scam_params->ca_pid.index] = channel;
 					got_pid=1;
 					break;
 				}
