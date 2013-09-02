@@ -141,7 +141,7 @@ void scam_send_start(mumudvb_channel_t *channel)
   pthread_attr_setschedparam(&attr, &param);
   pthread_attr_setstacksize (&attr, stacksize);
 
-  pthread_create(&(channel->decsathread), &attr, sendthread_func, channel);
+  pthread_create(&(channel->sendthread), &attr, sendthread_func, channel);
   log_message(log_module, MSG_DEBUG,"Send thread started, channel %s\n",channel->name);
   pthread_attr_destroy(&attr);
 }
