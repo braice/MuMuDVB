@@ -1964,13 +1964,9 @@ int
 					channel->ring_buf->data[channel->ring_buf->write_idx][1] =
 					  (channel->ring_buf->data[channel->ring_buf->write_idx][1] & 0xe0) | hi_mappids[pid];
 					channel->ring_buf->data[channel->ring_buf->write_idx][2] = lo_mappids[pid];
-					if ((channel->ring_buf->write_idx&0x3) == 0) {
-					  now_time=get_time();
-					  channel->ring_buf->time_send[channel->ring_buf->write_idx]=now_time + channel->send_delay;
-
-					  channel->ring_buf->time_decsa[channel->ring_buf->write_idx]=now_time + channel->decsa_delay;
-
-					}
+					now_time=get_time();
+					channel->ring_buf->time_send[channel->ring_buf->write_idx]=now_time + channel->send_delay;
+					channel->ring_buf->time_decsa[channel->ring_buf->write_idx]=now_time + channel->decsa_delay;
 					++channel->ring_buf->write_idx;
 					channel->ring_buf->write_idx&=(channel->ring_buffer_size -1);
 
