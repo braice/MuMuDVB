@@ -59,6 +59,9 @@ adresses
 [NOTE]
 The SAP (session announcement protocol) announces will be sent automatically.
 
+[NOTE]
+If you want to stream a subset of the transponder you can use autoconf_sid_list
+
 DVB-T
 -----
 
