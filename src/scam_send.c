@@ -61,7 +61,6 @@ static char *log_module="SCAM_SEND: ";
 
 void *sendthread_func(void* arg)
 {
-  extern uint64_t now_time;
   extern unicast_parameters_t unicast_vars;
   extern multicast_parameters_t multicast_vars;
   extern mumudvb_chan_and_pids_t chan_and_pids;
@@ -71,51 +70,56 @@ void *sendthread_func(void* arg)
   uint64_t res_time;
   struct timespec r_time;
   channel->num_packet_descrambled_sent=0;
-  while(!channel->ring_buf->to_send && !channel->sendthread_shutdown)
-	usleep(50000);
+  while(!channel->sendthread_shutdown) {
+	int to_send;
+	pthread_mutex_lock(&channel->ring_buf->lock);
+	to_send = channel->ring_buf->to_send;
+	pthread_mutex_unlock(&channel->ring_buf->lock);
+	if (to_send)
+		break;
+	else
+		usleep(50000);
+  }
 	
   while(!channel->sendthread_shutdown) {
-	  if (now_time<channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)]) {
-	  	now_time=get_time();
-		if (now_time<channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)]) {
-			res_time=channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)] - now_time;
-			r_time.tv_sec=res_time/(1000000ull);
-			r_time.tv_nsec=1000*(res_time%(1000000ull));
-			while(nanosleep(&r_time, &r_time));
-			now_time=get_time();
-		}
+	  pthread_mutex_lock(&channel->ring_buf->lock);
+	  uint64_t now_time=get_time();
+	  uint64_t send_time = channel->ring_buf->time_send[channel->ring_buf->read_send_idx];
+	  int to_descramble = channel->ring_buf->to_descramble;
+	  int to_send = channel->ring_buf->to_send;
+	  pthread_mutex_unlock(&channel->ring_buf->lock);
+
+	  if (to_send == 0) {
+	    log_message( log_module, MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,to_descramble,to_send); 
+	    usleep(50000);
+	    continue;
 	  }
-	  else if (channel->ring_buf->to_send) {
-		  memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data[channel->ring_buf->read_send_idx], TS_PACKET_SIZE);
 
-		  ++channel->ring_buf->read_send_idx;
-		
-		  channel->ring_buf->read_send_idx&=(channel->ring_buffer_size -1);
+	  if (now_time < send_time) {
+		  res_time=send_time - now_time;
+		  r_time.tv_sec=res_time/(1000000ull);
+		  r_time.tv_nsec=1000*(res_time%(1000000ull));
+		  while(nanosleep(&r_time, &r_time));
+	  }
 
-          channel->nb_bytes += TS_PACKET_SIZE;
-		  
-		  pthread_mutex_lock(&channel->ring_buf->to_send_mutex);
-		  --channel->ring_buf->to_send;
-		  pthread_mutex_unlock(&channel->ring_buf->to_send_mutex);
+	  pthread_mutex_lock(&channel->ring_buf->lock);
+	  memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data[channel->ring_buf->read_send_idx], TS_PACKET_SIZE);
 
-		  pthread_mutex_lock(&channel->ring_buffer_num_packets_mutex);
-		  --channel->ring_buffer_num_packets;
-		  pthread_mutex_unlock(&channel->ring_buffer_num_packets_mutex);
-		  
-		  ++channel->num_packet_descrambled_sent;
-		
+	  ++channel->ring_buf->read_send_idx;
+	  channel->ring_buf->read_send_idx&=(channel->ring_buffer_size -1);
+
+	  channel->nb_bytes += TS_PACKET_SIZE;
+
+	  --channel->ring_buf->to_send;
+	  ++channel->num_packet_descrambled_sent;
+	  pthread_mutex_unlock(&channel->ring_buf->lock);
+
           //The buffer is full, we send it
-          if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
+	  if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
 	    ||(multicast_vars.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
           {
-			  send_func(channel, &channel->ring_buf->time_send[(channel->ring_buf->read_send_idx>>2)], &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
+			  send_func(channel, send_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
           }
-  		}
-	  else {
-	    log_message( log_module, MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,channel->ring_buf->to_descramble,channel->ring_buf->to_send); 
-	    usleep(50000);
-	  }
-
   }
   return 0;
 }
@@ -137,7 +141,7 @@ void scam_send_start(mumudvb_channel_t *channel)
   pthread_attr_setschedparam(&attr, &param);
   pthread_attr_setstacksize (&attr, stacksize);
 
-  pthread_create(&(channel->decsathread), &attr, sendthread_func, channel);
+  pthread_create(&(channel->sendthread), &attr, sendthread_func, channel);
   log_message(log_module, MSG_DEBUG,"Send thread started, channel %s\n",channel->name);
   pthread_attr_destroy(&attr);
 }

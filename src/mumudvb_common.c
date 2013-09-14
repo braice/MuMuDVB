@@ -300,11 +300,13 @@ uint64_t get_time(void) {
 
 /** @brief function for sending demultiplexed data.
  */
-void send_func (mumudvb_channel_t *channel, uint64_t *now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
+void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
 {
 	//For bandwith measurement (traffic)
+	pthread_mutex_lock(&chan_and_pids->lock);
 	channel->sent_data+=channel->nb_bytes+20+8; // IP=20 bytes header and UDP=8 bytes header
 	if (multicast_vars->rtp_header) channel->sent_data+=RTP_HEADER_LEN;
+	pthread_mutex_unlock(&chan_and_pids->lock);
 
 	/********* TRANSCODE **********/
 #ifdef ENABLE_TRANSCODING
@@ -342,7 +344,7 @@ void send_func (mumudvb_channel_t *channel, uint64_t *now_time, struct unicast_p
 			if(multicast_vars->rtp_header)
 			{
 				/****** RTP *******/
-				rtp_update_sequence_number(channel,*now_time);
+				rtp_update_sequence_number(channel,now_time);
 				data=channel->buf_with_rtp_header;
 				data_len=channel->nb_bytes+RTP_HEADER_LEN;
 			}
@@ -367,4 +369,28 @@ void send_func (mumudvb_channel_t *channel, uint64_t *now_time, struct unicast_p
 	/********* END of UNICAST **********/
 	channel->nb_bytes = 0;
 
+}
+
+static int interrupted = 0;
+static pthread_mutex_t interrupted_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+int set_interrupted(int value)
+{
+	if (value != 0) {
+		pthread_mutex_lock(&interrupted_mutex);
+		if (interrupted == 0) {
+			interrupted = value;
+		}
+		pthread_mutex_unlock(&interrupted_mutex);
+	}
+	return value;
+}
+
+int get_interrupted()
+{
+	int ret;
+	pthread_mutex_lock(&interrupted_mutex);
+	ret = interrupted;
+	pthread_mutex_unlock(&interrupted_mutex);
+	return ret;
 }

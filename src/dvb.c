@@ -40,7 +40,6 @@
 #include "log.h"
 #include <unistd.h>
 
-extern int Interrupted;
 static char *log_module="DVB: ";
 
 /**
@@ -330,7 +329,7 @@ void *read_card_thread_func(void* arg)
 
   usleep(100000); //some waiting to be sure the main program is waiting //it is probably useless
   threadparams->unicast_data=0;
-  while(!threadparams->threadshutdown&& !Interrupted)
+  while(!threadparams->threadshutdown&& !get_interrupted())
   {
     //If we know that there is unicast data waiting, we don't poll the unicast file descriptors
     if(threadparams->unicast_data)
@@ -339,7 +338,7 @@ void *read_card_thread_func(void* arg)
       poll_ret=mumudvb_poll(threadparams->fds);
     if(poll_ret)
     {
-      Interrupted=poll_ret;
+      set_interrupted(poll_ret);
       log_message( log_module,  MSG_WARN, "Thread polling issue\n");
       return NULL;
     }
@@ -406,12 +405,12 @@ int card_read(int fd_dvr, unsigned char *dest_buffer, card_buffer_t *card_buffer
   }
   if(bytes_read<0)
   {
-    if(errno!=EAGAIN)
-      log_message( log_module,  MSG_WARN,"Error : DVR Read error : %s \n",strerror(errno));
     if(errno==EOVERFLOW)
     {
+      log_message( log_module,  MSG_WARN,"Error : DVR buffer overrun \n");
       card_buffer->overflow_number++;
-    }
+    } else if(errno!=EAGAIN)
+      log_message( log_module,  MSG_WARN,"Error : DVR Read error : %s \n",strerror(errno));
     return 0;
   }
   return bytes_read;

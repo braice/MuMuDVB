@@ -190,6 +190,8 @@ typedef struct {
 #ifdef ENABLE_SCAM_SUPPORT
 /**@brief Structure containing ring buffer*/
 typedef struct {
+  /** A mutex protecting all the other members. */
+  pthread_mutex_t lock;
   /** Buffer with dvb packets*/
   unsigned char ** data;
   /** Write index of buffer */
@@ -206,9 +208,6 @@ typedef struct {
   unsigned int to_send;
   /** Read index of buffer for sending thread */
   unsigned int read_send_idx;
-
-  pthread_mutex_t    to_descramble_mutex;
-  pthread_mutex_t    to_send_mutex;
 }ring_buffer_t;  
 #endif
 
@@ -246,6 +245,15 @@ typedef struct card_buffer_t{
 struct unicast_client_t;
 /** @brief Structure for storing channels
  *
+ * All members are protected by the global lock in chan_and_pids, with the
+ * following exceptions:
+ *
+ *  - The EIT variables, since they are only ever accessed from the main thread. 
+ *  - buf/nb_bytes, since they are only ever accessed from one thread: SCAM_SEND
+ *    if we are using scam, or the main thread otherwise.
+ *    (XXX: autoconf is the exception, we should look into whether that can happen
+ *    without the thread being shut down first)
+ *  - the odd/even keys, since they have their own locking.
  */
 typedef struct mumudvb_channel_t{
   /** The logical channel number*/
@@ -309,14 +317,16 @@ typedef struct mumudvb_channel_t{
   int need_scam_ask;
   /** Say if this channel should be descrambled using scam*/
   int scam_support;
+  /** Mutex for odd_cw and even_cw. */
+  pthread_mutex_t cw_lock;
   /** Odd control word for descrambling */
   unsigned char odd_cw[8];
   /** Even control word for descrambling */
   unsigned char even_cw[8];
   /** Indicating if we have another odd cw for descrambling */
-  unsigned char got_key_odd;
+  unsigned int got_key_odd;
   /** Indicating if we have another even cw for descrambling */
-  unsigned char got_key_even;
+  unsigned int got_key_even;
   /** Thread for software descrambling */
   pthread_t decsathread;
   /** Descrambling thread shutdown control */
@@ -335,14 +345,11 @@ typedef struct mumudvb_channel_t{
   uint64_t decsa_delay;	
   /** Delay of sending in us*/
   uint64_t send_delay;
-  /** Number of packets in the ring buffer*/	
-  unsigned int ring_buffer_num_packets;  
   /** Says if we need to get pmt for this channel on scam own*/	
   int need_pmt_get;
-  /** Says if we've got first cw for channel*/	
+  /** Says if we've got first cw for channel.
+    * NOTE: This is _not_ under cw_lock, but under the regular chan_and_pids lock. */
   int got_cw_started;
-
-  pthread_mutex_t    ring_buffer_num_packets_mutex;
 #endif
   
 
@@ -452,6 +459,10 @@ typedef struct multicast_parameters_t{
 
 /** structure containing the channels and the asked pids information*/
 typedef struct mumudvb_chan_and_pids_t{
+  /** Protects all the members, including most of the channels (see the documentation
+    * for mumudvb_channel_t for details).
+    */
+  pthread_mutex_t lock;
   /** The number of channels ... */
   int number_of_channels;
   /** Do we send scrambled packets ? */
@@ -472,13 +483,12 @@ typedef struct mumudvb_chan_and_pids_t{
   uint8_t check_cc;
 #ifdef ENABLE_SCAM_SUPPORT
   mumudvb_channel_t* scam_idx[MAX_CHANNELS]; 
-  uint8_t started_pid_get[MAX_CHANNELS]; 
 #endif
 }mumudvb_chan_and_pids_t;
 
 
 typedef struct monitor_parameters_t{
-  int threadshutdown;
+  volatile int threadshutdown;
   int wait_time;
   struct autoconf_parameters_t *autoconf_vars;
   struct sap_parameters_t *sap_vars;
@@ -512,14 +522,16 @@ int mumudvb_poll(fds_t *fds);
 char *mumu_string_replace(char *source, int *length, int can_realloc, char *toreplace, char *replacement);
 int string_comput(char *string);
 uint64_t get_time(void);
-void send_func(mumudvb_channel_t *channel, uint64_t *now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds);
+void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds);
 
 
 long int mumu_timing();
 
+/** Sets the interrupted flag if value != 0 and it is not already set.
+ * In any case, returns the given value back. Thread- and signal-safe. */
+int set_interrupted(int value);
+
+/** Gets the interrupted flag; 0 if we have not been interrupted. */
+int get_interrupted();
+
 #endif
-
-
-
-
-

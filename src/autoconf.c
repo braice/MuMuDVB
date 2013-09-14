@@ -86,7 +86,6 @@
 #include "scam_decsa.h"
 #endif
 
-extern int Interrupted;
 static char *log_module="Autoconf: ";
 #ifdef ENABLE_TRANSCODING
 extern transcode_options_t global_transcode_opt;
@@ -276,7 +275,7 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
 		if(autoconf_vars->autoconf_temp_pat==NULL)
 		{
 			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			Interrupted=ERROR_MEMORY<<8;
+			set_interrupted(ERROR_MEMORY<<8);
 			return -1;
 		}
 		memset (autoconf_vars->autoconf_temp_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -285,7 +284,7 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
 		if(autoconf_vars->autoconf_temp_sdt==NULL)
 		{
 			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			Interrupted=ERROR_MEMORY<<8;
+			set_interrupted(ERROR_MEMORY<<8);
 			return -1;
 		}
 		memset (autoconf_vars->autoconf_temp_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -295,7 +294,7 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
 		if(autoconf_vars->autoconf_temp_psip==NULL)
 		{
 			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			Interrupted=ERROR_MEMORY<<8;
+			set_interrupted(ERROR_MEMORY<<8);
 			return -1;
 		}
 		memset (autoconf_vars->autoconf_temp_psip, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -305,7 +304,7 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
 		if(autoconf_vars->services==NULL)
 		{
 			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			Interrupted=ERROR_MEMORY<<8;
+			set_interrupted(ERROR_MEMORY<<8);
 			return -1;
 		}
 		memset (autoconf_vars->services, 0, sizeof( mumudvb_service_t));//we clear it
@@ -336,7 +335,7 @@ int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *chann
 		if(autoconf_vars->autoconf_temp_nit==NULL)
 		{
 			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			Interrupted=ERROR_MEMORY<<8;
+			set_interrupted(ERROR_MEMORY<<8);
 			return -1;
 		}
 		memset (autoconf_vars->autoconf_temp_nit, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -614,16 +613,16 @@ void autoconf_sort_services(mumudvb_service_t *services)
  * @param unicast_vars The unicast parameters
  * @param fds The file descriptors (for filters and unicast)
  */
-int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_channel_t *channels, int port, int card, int tuner, unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, int server_id, void *scam_vars_v)
+int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumudvb_channel_t *channels, int port, int card, int tuner, unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, int server_id, void *scam_vars_v)
 {
-
+	extern mumudvb_chan_and_pids_t chan_and_pids;
 	mumudvb_service_t *actual_service;
 	int channel_number=0;
 	int found_in_service_id_list;
 	int unicast_port_per_channel;
 	char tempstring[256];
-	actual_service=parameters.services;
-	unicast_port_per_channel=strlen(parameters.autoconf_unicast_port)?1:0;
+	actual_service=parameters->services;
+	unicast_port_per_channel=strlen(parameters->autoconf_unicast_port)?1:0;
 
 #ifndef ENABLE_SCAM_SUPPORT
 	(void) scam_vars_v; //to make compiler happy
@@ -633,17 +632,17 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 
 	do
 	{
-		if(parameters.autoconf_scrambled && actual_service->free_ca_mode)
+		if(parameters->autoconf_scrambled && actual_service->free_ca_mode)
 			log_message( log_module, MSG_DETAIL,"Service scrambled. Name \"%s\"\n", actual_service->name);
 
 		//If there is a service_id list we look if we find it (option autoconf_sid_list)
-		if(parameters.num_service_id)
+		if(parameters->num_service_id)
 		{
 			int actual_service_id;
 			found_in_service_id_list=0;
-			for(actual_service_id=0;actual_service_id<parameters.num_service_id && !found_in_service_id_list;actual_service_id++)
+			for(actual_service_id=0;actual_service_id<parameters->num_service_id && !found_in_service_id_list;actual_service_id++)
 			{
-				if(parameters.service_id_list[actual_service_id]==actual_service->id)
+				if(parameters->service_id_list[actual_service_id]==actual_service->id)
 				{
 					found_in_service_id_list=1;
 					log_message( log_module, MSG_DEBUG,"Service found in the service_id list. Name \"%s\"\n", actual_service->name);
@@ -653,7 +652,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 		else //No ts id list so it is found
 			found_in_service_id_list=1;
 
-		if(!parameters.autoconf_scrambled && actual_service->free_ca_mode)
+		if(!parameters->autoconf_scrambled && actual_service->free_ca_mode)
 			log_message( log_module, MSG_DETAIL,"Service scrambled, no CAM support and no autoconf_scrambled, we skip. Name \"%s\"\n", actual_service->name);
 		else if(!actual_service->pmt_pid)
 			log_message( log_module, MSG_DETAIL,"Service without a PMT pid, we skip. Name \"%s\"\n", actual_service->name);
@@ -667,12 +666,13 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 					actual_service->type==0x16||
 					actual_service->type==0x19)||
 					((actual_service->type==0x02||
-							actual_service->type==0x0a)&&parameters.autoconf_radios))
+							actual_service->type==0x0a)&&parameters->autoconf_radios))
 			{
 				log_message( log_module, MSG_DETAIL,"We convert a new service into a channel, sid %d pmt_pid %d name \"%s\" \n",
 						actual_service->id, actual_service->pmt_pid, actual_service->name);
 				display_service_type(actual_service->type, MSG_DETAIL, log_module);
 
+				pthread_mutex_lock(&chan_and_pids.lock);
 				channels[channel_number].channel_type=actual_service->type;
 				channels[channel_number].num_packet = 0;
 				channels[channel_number].num_scrambled_packets = 0;
@@ -683,9 +683,9 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 				channels[channel_number].pids_type[0]=PID_PMT;
 				channels[channel_number].num_pids=1;
 				snprintf(channels[channel_number].pids_language[0],4,"%s","---");
-				if(strlen(parameters.name_template))
+				if(strlen(parameters->name_template))
 				{
-					strcpy(channels[channel_number].name,parameters.name_template);
+					strcpy(channels[channel_number].name,parameters->name_template);
 					int len=MAX_NAME_LEN;
 					char number[10];
 					mumu_string_replace(channels[channel_number].name,&len,0,"%name",actual_service->name);
@@ -701,9 +701,9 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 					char ip[80];
 					int len=80;
 
-					if(strlen(parameters.autoconf_multicast_port))
+					if(strlen(parameters->autoconf_multicast_port))
 					{
-						strcpy(tempstring,parameters.autoconf_multicast_port);
+						strcpy(tempstring,parameters->autoconf_multicast_port);
 						sprintf(number,"%d",channel_number);
 						mumu_string_replace(tempstring,&len,0,"%number",number);
 						sprintf(number,"%d",card);
@@ -723,7 +723,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 					}
 					if(multicast_vars->multicast_ipv4)
 					{
-						strcpy(ip,parameters.autoconf_ip4);
+						strcpy(ip,parameters->autoconf_ip4);
 						sprintf(number,"%d",channel_number);
 						mumu_string_replace(ip,&len,0,"%number",number);
 						sprintf(number,"%d",card);
@@ -751,7 +751,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 					}
 					if(multicast_vars->multicast_ipv6)
 					{
-						strcpy(ip,parameters.autoconf_ip6);
+						strcpy(ip,parameters->autoconf_ip6);
 						sprintf(number,"%d",channel_number);
 						mumu_string_replace(ip,&len,0,"%number",number);
 						sprintf(number,"%d",card);
@@ -769,7 +769,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 				}
 
 				//This is a scrambled channel, we will have to ask the cam for descrambling it
-				if(parameters.autoconf_scrambled && actual_service->free_ca_mode)
+				if(parameters->autoconf_scrambled && actual_service->free_ca_mode)
 					channels[channel_number].need_cam_ask=CAM_NEED_ASK;
 
 				//We store the PMT and the service id in the channel
@@ -783,7 +783,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 					if(channels[channel_number].pmt_packet==NULL)
 					{
 						log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-						Interrupted=ERROR_MEMORY<<8;
+						set_interrupted(ERROR_MEMORY<<8);
 						return -1;
 					}
 					memset (channels[channel_number].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -797,7 +797,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 					if(channels[channel_number].cam_pmt_packet==NULL)
 					{
 						log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-						Interrupted=ERROR_MEMORY<<8;
+						set_interrupted(ERROR_MEMORY<<8);
 						return -1;
 					}
 					memset (channels[channel_number].cam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -807,7 +807,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 				//We update the unicast port, the connection will be created in autoconf_finish_full
 				if(unicast_port_per_channel && unicast_vars->unicast)
 				{
-					strcpy(tempstring,parameters.autoconf_unicast_port);
+					strcpy(tempstring,parameters->autoconf_unicast_port);
 					int len;len=256;
 					char number[10];
 					sprintf(number,"%d",channel_number);
@@ -838,6 +838,7 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
 					channels[channel_number].send_delay=scam_vars->send_default_delay;
 				}
 #endif
+				pthread_mutex_unlock(&chan_and_pids.lock);
 				channel_number++;
 			}
 			else if(actual_service->type==0x02||actual_service->type==0x0a) //service_type digital radio sound service
@@ -872,10 +873,12 @@ int autoconf_services_to_channels(autoconf_parameters_t parameters, mumudvb_chan
  */
 int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parameters_t *autoconf_vars, multicast_parameters_t *multicast_vars, tuning_parameters_t *tuneparams, fds_t *fds, unicast_parameters_t *unicast_vars, int server_id, void *scam_vars)
 {
+	pthread_mutex_lock(&autoconf_vars->lock);
+	pthread_mutex_lock(&chan_and_pids->lock);
 	int curr_channel,curr_pid;
 	//We sort the services
 	autoconf_sort_services(autoconf_vars->services);
-	chan_and_pids->number_of_channels=autoconf_services_to_channels(*autoconf_vars, chan_and_pids->channels, multicast_vars->common_port, tuneparams->card, tuneparams->tuner, unicast_vars, multicast_vars, server_id, scam_vars); //Convert the list of services into channels
+	chan_and_pids->number_of_channels=autoconf_services_to_channels(autoconf_vars, chan_and_pids->channels, multicast_vars->common_port, tuneparams->card, tuneparams->tuner, unicast_vars, multicast_vars, server_id, scam_vars); //Convert the list of services into channels
 	//we got the pmt pids for the channels, we open the filters
 	for (curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
 	{
@@ -959,6 +962,8 @@ int autoconf_finish_full(mumudvb_chan_and_pids_t *chan_and_pids, autoconf_parame
 	autoconf_freeing(autoconf_vars);
 
 	autoconf_vars->autoconfiguration=AUTOCONF_MODE_PIDS; //Next step add video and audio pids
+	pthread_mutex_unlock(&chan_and_pids->lock);
+	pthread_mutex_unlock(&autoconf_vars->lock);
 
 	return 0;
 }
@@ -1003,7 +1008,7 @@ void autoconf_set_channel_filt(char *card_base_path, int tuner, mumudvb_chan_and
 	set_filters(chan_and_pids->asked_pid, fds);
 }
 
-void autoconf_definite_end(int card, int tuner, mumudvb_chan_and_pids_t *chan_and_pids, multicast_parameters_t *multicast_vars, unicast_parameters_t *unicast_vars)
+void autoconf_definite_end(mumudvb_chan_and_pids_t *chan_and_pids, multicast_parameters_t *multicast_vars, unicast_parameters_t *unicast_vars)
 {
 	log_message( log_module, MSG_INFO,"Autoconfiguration done\n");
 
@@ -1017,6 +1022,7 @@ void autoconf_definite_end(int card, int tuner, mumudvb_chan_and_pids_t *chan_an
 /** @brief This function is called when a new packet is there and the autoconf is not finished*/
 int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, fds_t *fds, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars,  unicast_parameters_t *unicast_vars, int server_id, void *scam_vars)
 {
+	pthread_mutex_lock(&autoconf_vars->lock);
 	if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL) //Full autoconfiguration, we search the channels and their names
 	{
 		if(pid==0) //PAT : contains the services identifiers and the PMT PID for each service
@@ -1077,7 +1083,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
 							if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_NIT)
 								log_message( log_module, MSG_DETAIL,"We search for the NIT\n");
 							else
-								autoconf_definite_end(tuneparams->card, tuneparams->tuner, chan_and_pids, multicast_vars, unicast_vars);
+								autoconf_definite_end(chan_and_pids, multicast_vars, unicast_vars);
 						}
 					}
 				}
@@ -1114,12 +1120,13 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
 					}
 					free(autoconf_vars->autoconf_temp_nit);
 					autoconf_vars->autoconf_temp_nit=NULL;
-					autoconf_definite_end(tuneparams->card, tuneparams->tuner, chan_and_pids, multicast_vars, unicast_vars);
+					autoconf_definite_end(chan_and_pids, multicast_vars, unicast_vars);
 				}
 			}
 		}
 	}
-	return Interrupted;
+	pthread_mutex_unlock(&autoconf_vars->lock);
+	return get_interrupted();
 }
 
 
@@ -1129,6 +1136,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
  */
 int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars, fds_t *fds, unicast_parameters_t *unicast_vars, int server_id, void *scam_vars)
 {
+	pthread_mutex_lock(&autoconf_vars->lock);
 	int iRet=0;
 	if(!autoconf_vars->time_start_autoconfiguration)
 		autoconf_vars->time_start_autoconfiguration=now;
@@ -1137,7 +1145,6 @@ int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_a
 		if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_PIDS)
 		{
 			log_message( log_module, MSG_WARN,"Not all the channels were configured before timeout\n");
-			autoconf_vars->autoconfiguration=0;
 			autoconf_set_channel_filt(tuneparams->card_dev_path, tuneparams->tuner, chan_and_pids, fds);
 			//We free autoconf memory
 			autoconf_freeing(autoconf_vars);
@@ -1155,7 +1162,7 @@ int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_a
 		else if(autoconf_vars->autoconfiguration==AUTOCONF_MODE_NIT)
 		{
 			log_message( log_module, MSG_WARN,"Warning : No NIT found before timeout\n");
-			autoconf_definite_end(tuneparams->card, tuneparams->tuner, chan_and_pids, multicast_vars, unicast_vars);
+			autoconf_definite_end(chan_and_pids, multicast_vars, unicast_vars);
 			if(autoconf_vars->autoconf_temp_nit)
 			{
 				free(autoconf_vars->autoconf_temp_nit);
@@ -1164,6 +1171,7 @@ int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_a
 			autoconf_vars->autoconfiguration=0;
 		}
 	}
+	pthread_mutex_unlock(&autoconf_vars->lock);
 	return iRet;
 }
 

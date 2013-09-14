@@ -101,7 +101,7 @@ typedef struct log_params_t{
 
 void print_info ();
 void usage (char *name);
-void log_message( char* log_module, int , const char *, ... );
+void log_message( char* log_module, int , const char *, ... ) __attribute__ ((format (printf, 3, 4)));
 void gen_file_streamed_channels (char *nom_fich_chaines_diff, char *nom_fich_chaines_non_diff, int nb_flux, mumudvb_channel_t *channels);
 void log_streamed_channels(char *log_module,int number_of_channels, mumudvb_channel_t *channels, int multicast_ipv4, int multicast_ipv6, int unicast, int unicast_master_port, char *unicastipOut);
 char *ca_sys_id_to_str(int id);

@@ -130,7 +130,7 @@ typedef struct tuning_parameters_t{
   /** do we periodically check the status of the card ?*/
   int check_status;
   /**shutdown the thread for display strength */
-  int strengththreadshutdown;
+  volatile int strengththreadshutdown;
   /**The frontend type*/
   fe_type_t fe_type;
   /** The frontend name */

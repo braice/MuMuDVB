@@ -83,9 +83,8 @@
  * unicast_http.c unicast_http.h : HTTP unicast
  */
 
-#define _GNU_SOURCE		//in order to use program_invocation_short_name (extension gnu)
+#define _GNU_SOURCE		//in order to use program_invocation_short_name and recursive mutexes (GNU extensions)
 
-extern char *program_invocation_short_name;
 
 #include "config.h"
 
@@ -109,6 +108,7 @@ extern char *program_invocation_short_name;
 #include <time.h>
 #include <linux/dvb/version.h>
 #include <sys/mman.h>
+#include <pthread.h>
 
 #include "mumudvb.h"
 #include "tune.h"
@@ -135,6 +135,11 @@ extern char *program_invocation_short_name;
 #include "transcode.h"
 #endif
 
+#ifdef __UCLIBC__
+#define program_invocation_short_name "mumudvb"
+#else
+extern char *program_invocation_short_name;
+#endif
 
 static char *log_module="Main: ";
 
@@ -151,9 +156,7 @@ int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
 // file descriptors
 fds_t fds; /** File descriptors associated with the card */
 int no_daemon = 0;
-int Interrupted = 0;
 int  write_streamed_channels=1;
-uint64_t now_time;
 pthread_t signalpowerthread;
 pthread_t cardthread;
 pthread_t monitorthread;
@@ -161,6 +164,7 @@ card_thread_parameters_t cardthreadparams;
 
 
 mumudvb_chan_and_pids_t chan_and_pids={
+  .lock=PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP,
   .number_of_channels=0,
   .dont_send_scrambled=0,
   .filter_transport_error=0,
@@ -200,6 +204,7 @@ unicast_parameters_t unicast_vars={
 
 //autoconfiguration
 autoconf_parameters_t autoconf_vars={
+  .lock=PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP,
   .autoconfiguration=0,
   .autoconf_radios=0,
   .autoconf_scrambled=0,
@@ -256,7 +261,7 @@ extern log_params_t log_params;
 static void SignalHandler (int signum);//below
 int read_multicast_configuration(multicast_parameters_t *, mumudvb_channel_t *, int, int *, char *); //in multicast.c
 void *monitor_func(void* arg);
-int mumudvb_close(monitor_parameters_t* monitor_thread_params, unicast_parameters_t* unicast_vars, int* strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char* filename_channels_not_streamed,char *filename_channels_streamed, char *filename_pid, card_buffer_t *card_buffer, int Interrupted);
+int mumudvb_close(monitor_parameters_t* monitor_thread_params, unicast_parameters_t* unicast_vars, volatile int* strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char* filename_channels_not_streamed,char *filename_channels_streamed, char *filename_pid, int Interrupted);
 
 
 
@@ -264,6 +269,7 @@ int
     main (int argc, char **argv)
 {
 
+	uint64_t now_time;
   //sap announces
   sap_parameters_t sap_vars={
     .sap_messages4=NULL,
@@ -372,6 +378,7 @@ int
 	  .getcwthread_shutdown=0,
   };
   scam_parameters_t *scam_vars_ptr=&scam_vars;
+  int scam_threads_started=0;
   #else
   void *scam_vars_ptr=NULL;
   #endif
@@ -559,6 +566,10 @@ int
 
   //paranoya we clear all the content of all the channels
   memset (&chan_and_pids.channels, 0, sizeof (mumudvb_channel_t)*MAX_CHANNELS);
+#ifdef ENABLE_SCAM_SUPPORT
+  for (int i = 0; i < MAX_CHANNELS; ++i)
+    pthread_mutex_init(&chan_and_pids.channels[i].cw_lock, NULL);
+#endif
 
 
   /******************************************************/
@@ -1015,7 +1026,7 @@ int
   if(!multicast_vars.multicast && !unicast_vars.unicast)
   {
     log_message( log_module,  MSG_ERROR, "NO Multicast AND NO unicast. No data can be send :(, Exciting ....\n");
-    Interrupted=ERROR_CONF<<8;
+    set_interrupted(ERROR_CONF<<8);
     goto mumudvb_close_goto;
   }
 
@@ -1135,7 +1146,7 @@ int
     log_message( log_module,  MSG_INFO, "Tunning issue, card %d\n", tuneparams.card);
     // we close the file descriptors
     close_card_fd (fds);
-    Interrupted=ERROR_TUNE<<8;
+    set_interrupted(ERROR_TUNE<<8);
     goto mumudvb_close_goto;
   }
   log_message( log_module,  MSG_INFO, "Card %d, tuner %d tuned\n", tuneparams.card, tuneparams.tuner);
@@ -1260,7 +1271,7 @@ int
         if(chan_and_pids.channels[curr_channel].cam_pmt_packet==NULL)
         {
           log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-          Interrupted=ERROR_MEMORY<<8;
+          set_interrupted(ERROR_MEMORY<<8);
           goto mumudvb_close_goto;
         }
         memset (chan_and_pids.channels[curr_channel].cam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1278,7 +1289,7 @@ int
   iRet=autoconf_init(&autoconf_vars, chan_and_pids.channels,chan_and_pids.number_of_channels);
   if(iRet)
   {
-    Interrupted=ERROR_GENERIC<<8;
+    set_interrupted(ERROR_GENERIC<<8);
     goto mumudvb_close_goto;
   }
 
@@ -1289,7 +1300,7 @@ int
   iRet=scam_init_no_autoconf(&autoconf_vars, scam_vars_ptr, chan_and_pids.channels,chan_and_pids.number_of_channels);
   if(iRet)
   {
-    Interrupted=ERROR_GENERIC<<8;
+    set_interrupted(ERROR_GENERIC<<8);
     goto mumudvb_close_goto;
   }
 
@@ -1309,7 +1320,7 @@ int
     if(rewrite_vars.full_pat==NULL)
     {
       log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      Interrupted=ERROR_MEMORY<<8;
+      set_interrupted(ERROR_MEMORY<<8);
       goto mumudvb_close_goto;
     }
     memset (rewrite_vars.full_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1331,7 +1342,7 @@ int
     if(rewrite_vars.full_sdt==NULL)
     {
       log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      Interrupted=ERROR_MEMORY<<8;
+      set_interrupted(ERROR_MEMORY<<8);
       goto mumudvb_close_goto;
     }
     memset (rewrite_vars.full_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1350,7 +1361,7 @@ int
     if(rewrite_vars.full_eit==NULL)
     {
       log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      Interrupted=ERROR_MEMORY<<8;
+      set_interrupted(ERROR_MEMORY<<8);
       goto mumudvb_close_goto;
     }
     memset (rewrite_vars.full_eit, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1386,7 +1397,7 @@ int
       if(chan_and_pids.channels[curr_channel].pmt_packet==NULL)
       {
         log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      Interrupted=ERROR_MEMORY<<8;
+      set_interrupted(ERROR_MEMORY<<8);
       goto mumudvb_close_goto;
       }
       memset (chan_and_pids.channels[curr_channel].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
@@ -1456,7 +1467,7 @@ int
   // we open the file descriptors
   if (create_card_fd (tuneparams.card_dev_path, tuneparams.tuner, chan_and_pids.asked_pid, &fds) < 0)
   {
-    Interrupted=ERROR_GENERIC<<8;
+    set_interrupted(ERROR_GENERIC<<8);
     goto mumudvb_close_goto;
   }
 
@@ -1468,7 +1479,7 @@ int
   if (fds.pfds==NULL)
   {
     log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    Interrupted=ERROR_MEMORY<<8;
+    set_interrupted(ERROR_MEMORY<<8);
     goto mumudvb_close_goto;
   }
 
@@ -1479,7 +1490,7 @@ int
   if (unicast_vars.fd_info==NULL)
   {
     log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    Interrupted=ERROR_MEMORY<<8;
+    set_interrupted(ERROR_MEMORY<<8);
     goto mumudvb_close_goto;
   }
 
@@ -1541,7 +1552,7 @@ int
   iRet=init_sap(&sap_vars, multicast_vars);
   if(iRet)
   {
-    Interrupted=ERROR_GENERIC<<8;
+    set_interrupted(ERROR_GENERIC<<8);
     goto mumudvb_close_goto;
   }
 
@@ -1603,7 +1614,7 @@ int
   int poll_ret;
   /**Buffer containing one packet*/
   unsigned char *actual_ts_packet;
-  while (!Interrupted)
+  while (!get_interrupted())
   {
     if(card_buffer.threaded_read)
     {
@@ -1641,7 +1652,7 @@ int
 	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &strengthparams, &autoconf_vars, cam_vars_ptr, scam_vars_ptr);
 	if(iRet)
 	{
-	  Interrupted=iRet;
+	  set_interrupted(iRet);
 	  continue;
 	}
 	pthread_mutex_lock(&cardthreadparams.carddatamutex);
@@ -1656,7 +1667,7 @@ int
       poll_ret=mumudvb_poll(&fds);
       if(poll_ret)
       {
-	Interrupted=poll_ret;
+	set_interrupted(poll_ret);
 	continue;
       }
       /**************************************************************/
@@ -1666,7 +1677,7 @@ int
       {
 	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &strengthparams, &autoconf_vars, cam_vars_ptr, scam_vars_ptr);
 	if(iRet)
-	  Interrupted=iRet;
+	  set_interrupted(iRet);
 	//no DVB packet, we continue
 	continue;
       }
@@ -1732,7 +1743,7 @@ int
       {
         iRet = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tuneparams, &multicast_vars, &unicast_vars, server_id, scam_vars_ptr);
         if(iRet)
-          Interrupted = iRet;
+          set_interrupted(iRet);
       }
       if(autoconf_vars.autoconfiguration)
         continue;
@@ -1754,6 +1765,13 @@ int
       /******************************************************/
       //   SCAM PMT GET PART FINISHED
       /******************************************************/
+      if(!scam_threads_started) {
+        for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++) {
+          if (chan_and_pids.channels[curr_channel].scam_support && scam_vars.scam_support)
+            set_interrupted(scam_channel_start(&chan_and_pids.channels[curr_channel]));
+        }
+        scam_threads_started=1;
+      }
 #endif
       /******************************************************/
       //Pat rewrite
@@ -1773,15 +1791,17 @@ int
 	     if(sdt_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars)==1)
 	     {
 	       log_message( log_module, MSG_DETAIL,"The SDT version changed, we force the update of all the channels.\n");
+	       pthread_mutex_lock(&chan_and_pids.lock);
 	       for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
-	        chan_and_pids.channels[curr_channel].sdt_rewrite_skip=0;
+	         chan_and_pids.channels[curr_channel].sdt_rewrite_skip=0;
+	       pthread_mutex_unlock(&chan_and_pids.lock);
 	     }
 	   }
       /******************************************************/
       //EIT rewrite
       /******************************************************/
-      if( (pid == 18) && //This is an EIT PID
-           rewrite_vars.rewrite_eit == OPTION_ON ) //AND we asked for rewrite
+		if( (pid == 18) && //This is an EIT PID
+			 rewrite_vars.rewrite_eit == OPTION_ON ) //AND we asked for rewrite
 	   {
 	     eit_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars);
 	   }
@@ -1790,6 +1810,7 @@ int
       /******************************************************/
       //for each channel we'll look if we must send this PID
       /******************************************************/
+      pthread_mutex_lock(&chan_and_pids.lock);
       for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
       {
 	//we'll see if we must send this pid for this channel
@@ -1817,8 +1838,11 @@ int
             send_packet=0;
 #endif
 
-          if ((ScramblingControl>0) && (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
-            chan_and_pids.channels[curr_channel].num_scrambled_packets++;
+#ifdef ENABLE_SCAM_SUPPORT
+          if(!chan_and_pids.channels[curr_channel].scam_support || !scam_vars.scam_support || !chan_and_pids.channels[curr_channel].got_cw_started)
+#endif
+            if ((ScramblingControl>0) && (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
+              chan_and_pids.channels[curr_channel].num_scrambled_packets++;
 
           //check if the PID is scrambled for determining its state
           if (ScramblingControl>0) chan_and_pids.channels[curr_channel].pids_num_scrambled_packets[curr_pid]++;
@@ -1853,7 +1877,7 @@ int
 					  iRet=scam_send_capmt(&chan_and_pids.channels[curr_channel],tuneparams.card);
 					  if(iRet)
 					  {
-						Interrupted=ERROR_GENERIC<<8;
+						set_interrupted(ERROR_GENERIC<<8);
 						goto mumudvb_close_goto;
 					  }
 				}
@@ -1913,7 +1937,7 @@ int
             rewrite_vars.rewrite_eit == OPTION_ON) //AND we asked for EIT sorting
         {
           eit_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_and_pids.channels[curr_channel],
-        		  &multicast_vars, &unicast_vars,&chan_and_pids,&fds);
+        		  &multicast_vars, &unicast_vars, scam_vars_ptr ,&chan_and_pids,&fds);
           send_packet=0; //for EIT it is sent by the rewrite function itself
         }
 
@@ -1927,16 +1951,7 @@ int
            // Keep only PAT
            if (chan_and_pids.psi_tables_filtering==2 && pid>0) send_packet=0;
         }
-#ifdef ENABLE_SCAM_SUPPORT
-        /******************************************************/
-        // Test if we've got first cw
-		/******************************************************/
-        if (send_packet==1 && chan_and_pids.channels[curr_channel].scam_support && !chan_and_pids.channels[curr_channel].got_cw_started && scam_vars.scam_support)
-        {
-           send_packet=0;
-		}
-#endif
-
+        mumudvb_channel_t *channel = &chan_and_pids.channels[curr_channel];
         /******************************************************/
         //Ok we must send this packet,
         // we add it to the channel buffer
@@ -1944,51 +1959,42 @@ int
         if(send_packet==1)
         {
 #ifdef ENABLE_SCAM_SUPPORT
-		      if (chan_and_pids.channels[curr_channel].scam_support && scam_vars.scam_support) {
-					memcpy(chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx], actual_ts_packet, TS_PACKET_SIZE);
+		      if (channel->scam_support && scam_vars.scam_support) {
+					pthread_mutex_lock(&channel->ring_buf->lock);
+					memcpy(channel->ring_buf->data[channel->ring_buf->write_idx], actual_ts_packet, TS_PACKET_SIZE);
 
-					chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx][1] =
-					  (chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx][1] & 0xe0) | hi_mappids[pid];
-					chan_and_pids.channels[curr_channel].ring_buf->data[chan_and_pids.channels[curr_channel].ring_buf->write_idx][2] = lo_mappids[pid];
-					if ((chan_and_pids.channels[curr_channel].ring_buf->write_idx&0x3) == 0) {
-					  now_time=get_time();
-					  chan_and_pids.channels[curr_channel].ring_buf->time_send[(chan_and_pids.channels[curr_channel].ring_buf->write_idx>>2)]=now_time + chan_and_pids.channels[curr_channel].send_delay;
+					channel->ring_buf->data[channel->ring_buf->write_idx][1] =
+					  (channel->ring_buf->data[channel->ring_buf->write_idx][1] & 0xe0) | hi_mappids[pid];
+					channel->ring_buf->data[channel->ring_buf->write_idx][2] = lo_mappids[pid];
+					now_time=get_time();
+					channel->ring_buf->time_send[channel->ring_buf->write_idx]=now_time + channel->send_delay;
+					channel->ring_buf->time_decsa[channel->ring_buf->write_idx]=now_time + channel->decsa_delay;
+					++channel->ring_buf->write_idx;
+					channel->ring_buf->write_idx&=(channel->ring_buffer_size -1);
 
-					  chan_and_pids.channels[curr_channel].ring_buf->time_decsa[(chan_and_pids.channels[curr_channel].ring_buf->write_idx>>2)]=now_time + chan_and_pids.channels[curr_channel].decsa_delay;
+				    ++channel->ring_buf->to_descramble;
 
-					}
-
-					++chan_and_pids.channels[curr_channel].ring_buf->write_idx;
-					chan_and_pids.channels[curr_channel].ring_buf->write_idx&=(chan_and_pids.channels[curr_channel].ring_buffer_size -1);
-
-				    pthread_mutex_lock(&chan_and_pids.channels[curr_channel].ring_buf->to_descramble_mutex);
-				    ++chan_and_pids.channels[curr_channel].ring_buf->to_descramble;
-				    pthread_mutex_unlock(&chan_and_pids.channels[curr_channel].ring_buf->to_descramble_mutex);
-
-				    pthread_mutex_lock(&chan_and_pids.channels[curr_channel].ring_buffer_num_packets_mutex);
-				    ++chan_and_pids.channels[curr_channel].ring_buffer_num_packets;
-				    pthread_mutex_unlock(&chan_and_pids.channels[curr_channel].ring_buffer_num_packets_mutex);
+				    pthread_mutex_unlock(&channel->ring_buf->lock);
 			  }
-			else {
-#else
-				{
+			else
 #endif
+				{
 
 				// we fill the channel buffer
-		      memcpy(chan_and_pids.channels[curr_channel].buf + chan_and_pids.channels[curr_channel].nb_bytes, actual_ts_packet, TS_PACKET_SIZE);
+		      memcpy(channel->buf + channel->nb_bytes, actual_ts_packet, TS_PACKET_SIZE);
 
 
-		      chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] =
-		          (chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 1] & 0xe0) | hi_mappids[pid];
-		      chan_and_pids.channels[curr_channel].buf[chan_and_pids.channels[curr_channel].nb_bytes + 2] = lo_mappids[pid];
+		      channel->buf[channel->nb_bytes + 1] =
+		          (channel->buf[channel->nb_bytes + 1] & 0xe0) | hi_mappids[pid];
+		      channel->buf[channel->nb_bytes + 2] = lo_mappids[pid];
 
-		      chan_and_pids.channels[curr_channel].nb_bytes += TS_PACKET_SIZE;
+		      channel->nb_bytes += TS_PACKET_SIZE;
 		      //The buffer is full, we send it
-		      if ((!multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
-			||(multicast_vars.rtp_header && ((chan_and_pids.channels[curr_channel].nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
+		      if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
+			||(multicast_vars.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
 		      {
 				now_time=get_time();
-				send_func(&chan_and_pids.channels[curr_channel], &now_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
+				send_func(&chan_and_pids.channels[curr_channel], now_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
 		      }
 
 			}
@@ -1996,6 +2002,7 @@ int
 
 		}
       }
+      pthread_mutex_unlock(&chan_and_pids.lock);
     }
   }
   /******************************************************/
@@ -2005,7 +2012,7 @@ int
     fclose(dump_file);
   gettimeofday (&tv, (struct timezone *) NULL);
   log_message( log_module,  MSG_INFO,
-               "End of streaming. We streamed during %dd %d:%02d:%02d\n",(tv.tv_sec - real_start_time )/86400,((tv.tv_sec - real_start_time) % 86400 )/3600,((tv.tv_sec - real_start_time) % 3600)/60,(tv.tv_sec - real_start_time) %60 );
+               "End of streaming. We streamed during %ldd %ld:%02ld:%02ld\n",(tv.tv_sec - real_start_time )/86400,((tv.tv_sec - real_start_time) % 86400 )/3600,((tv.tv_sec - real_start_time) % 3600)/60,(tv.tv_sec - real_start_time) %60 );
 
   if(card_buffer.partial_packet_number)
     log_message( log_module,  MSG_INFO,
@@ -2015,7 +2022,7 @@ int
                  "We have got %d overflow errors\n",card_buffer.overflow_number );
 mumudvb_close_goto:
   //If the thread is not started, we don't send the unexisting address of monitor_thread_params
-  return mumudvb_close(monitorthread == 0 ? NULL:&monitor_thread_params , &unicast_vars, &tuneparams.strengththreadshutdown, cam_vars_ptr, scam_vars_ptr, filename_channels_not_streamed, filename_channels_streamed, filename_pid, &card_buffer, Interrupted);
+  return mumudvb_close(monitorthread == 0 ? NULL:&monitor_thread_params , &unicast_vars, &tuneparams.strengththreadshutdown, cam_vars_ptr, scam_vars_ptr, filename_channels_not_streamed, filename_channels_streamed, filename_pid, get_interrupted());
 
 }
 
@@ -2023,14 +2030,11 @@ mumudvb_close_goto:
  *
  *
  */
-int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, int *strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char *filename_channels_not_streamed, char *filename_channels_streamed, char *filename_pid, card_buffer_t *card_buffer, int Interrupted)
+int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, volatile int *strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char *filename_channels_not_streamed, char *filename_channels_streamed, char *filename_pid, int Interrupted)
 {
 
   int curr_channel;
   int iRet;
-
-  if(!card_buffer->threaded_read)
-    free(card_buffer->reading_buffer);
 
   #ifndef ENABLE_CAM_SUPPORT
    (void) cam_vars_v; //to make compiler happy
@@ -2057,9 +2061,13 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
   {
     log_message(log_module,MSG_DEBUG,"Signal/power Thread closing\n");
     *strengththreadshutdown=1;
+#ifndef __UCLIBC__
     clock_gettime(CLOCK_REALTIME, &ts);
     ts.tv_sec += 5;
     iRet=pthread_timedjoin_np(signalpowerthread, NULL, &ts);
+#else
+    iRet=pthread_join(signalpowerthread, NULL);
+#endif
     if(iRet)
       log_message(log_module,MSG_WARN,"Signal/power Thread badly closed: %s\n", strerror(iRet));
 
@@ -2076,9 +2084,13 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
   {
     log_message(log_module,MSG_DEBUG,"Monitor Thread closing\n");
     monitor_thread_params->threadshutdown=1;
+#ifndef __UCLIBC__
     clock_gettime(CLOCK_REALTIME, &ts);
     ts.tv_sec += 5;
     iRet=pthread_timedjoin_np(monitorthread, NULL, &ts);
+#else
+    iRet=pthread_join(monitorthread, NULL);
+#endif
     if(iRet)
       log_message(log_module,MSG_WARN,"Monitor Thread badly closed: %s\n", strerror(iRet));
   }
@@ -2101,7 +2113,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
 
 
 #ifdef ENABLE_SCAM_SUPPORT
-	if (chan_and_pids.channels[curr_channel].scam_support && scam_vars->scam_support && chan_and_pids.channels[curr_channel].got_cw_started) {
+	if (chan_and_pids.channels[curr_channel].scam_support && scam_vars->scam_support) {
 		scam_channel_stop(&chan_and_pids.channels[curr_channel]);
 	}
 #endif
@@ -2138,8 +2150,8 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
                    cam_vars->filename_cam_info, strerror (errno));
     }
     mumu_free_string(&cam_vars->cam_menulist_str);
+    mumu_free_string(&cam_vars->cam_menu_string);
   }
-  mumu_free_string(&cam_vars->cam_menu_string);
 #endif
 #ifdef ENABLE_SCAM_SUPPORT
   if(scam_vars->scam_support)
@@ -2240,7 +2252,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
  ******************************************************/
 static void SignalHandler (int signum)
 {
-  if (signum == SIGALRM && !Interrupted)
+  if (signum == SIGALRM && !get_interrupted())
   {
     if (card_tuned && !*card_tuned)
     {
@@ -2249,21 +2261,13 @@ static void SignalHandler (int signum)
       exit(ERROR_TUNE);
     }
   }
-  else if (signum == SIGUSR1)
-  {
-    received_signal=SIGUSR1;
-  }
-  else if (signum == SIGUSR2)
-  {
-    received_signal=SIGUSR2;
-  }
-  else if (signum == SIGHUP)
+  else if (signum == SIGUSR1 || signum == SIGUSR2 || signum == SIGHUP)
   {
     received_signal=signum;
   }
   else if (signum != SIGPIPE)
   {
-    Interrupted = signum;
+    set_interrupted(signum);
   }
   signal (signum, SignalHandler);
 }
@@ -2283,8 +2287,8 @@ void *monitor_func(void* arg)
   double last_updown_check=0;
   double last_flush_time = 0;
   double time_no_diff=0;
-  double time_no_diff_cw=0;
   int num_big_buffer_show=0;
+  int autoconf;
 
   gettimeofday (&tv, (struct timezone *) NULL);
   monitor_start = tv.tv_sec + tv.tv_usec/1000000;
@@ -2324,6 +2328,9 @@ void *monitor_func(void* arg)
     }
 
     /*autoconfiguration*/
+    pthread_mutex_lock(&params->autoconf_vars->lock);
+    pthread_mutex_lock(&params->chan_and_pids->lock);
+
     /*We check if we reached the autoconfiguration timeout*/
     if(params->autoconf_vars->autoconfiguration)
     {
@@ -2331,10 +2338,14 @@ void *monitor_func(void* arg)
       iRet = autoconf_poll(now, params->autoconf_vars, params->chan_and_pids, params->tuneparams, params->multicast_vars, &fds, params->unicast_vars, params->server_id, params->scam_vars_v);
 
       if(iRet)
-        Interrupted = iRet;
+        set_interrupted(iRet);
     }
+    autoconf=params->autoconf_vars->autoconfiguration;//to reduce the lock range
+    //this value is not going from null values to non zero values due to the sequencial implementation of autoconfiguration
 
-    if(!params->autoconf_vars->autoconfiguration)
+    pthread_mutex_unlock(&params->autoconf_vars->lock);
+
+    if(!autoconf)
     {
       /*we are not doing autoconfiguration we can do something else*/
       /*sap announces*/
@@ -2426,25 +2437,10 @@ void *monitor_func(void* arg)
       mumudvb_channel_t *current;
       current=&params->chan_and_pids->channels[curr_channel];
       /* Calcultation of the ratio (percentage) of scrambled packets received*/
-#ifndef ENABLE_SCAM_SUPPORT
       if (current->num_packet >0 && current->num_scrambled_packets>10)
         current->ratio_scrambled = (int)(current->num_scrambled_packets*100/(current->num_packet));
       else
         current->ratio_scrambled = 0;
-#else
-
-	  if (current->scam_support && scam_vars->scam_support) {
-	      current->ratio_scrambled = 0;
-	  }
-	  else {
-		if (current->num_packet >0 && current->num_scrambled_packets>10)
-		  current->ratio_scrambled = (int)(current->num_scrambled_packets*100/(current->num_packet));
-		else
-		  current->ratio_scrambled = 0;
-	  }
-#endif
-
-
 
       /* Test if we have only unscrambled packets (<2%) - scrambled_channel=FULLY_UNSCRAMBLED : fully unscrambled*/
       if ((current->ratio_scrambled < 2) && (current->scrambled_channel != FULLY_UNSCRAMBLED))
@@ -2544,6 +2540,7 @@ void *monitor_func(void* arg)
       }
     }
     /* reinit */
+    pthread_mutex_lock(&chan_and_pids.lock);
     for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++)
     {
       params->chan_and_pids->channels[curr_channel].num_packet = 0;
@@ -2553,6 +2550,7 @@ void *monitor_func(void* arg)
 	  	params->chan_and_pids->channels[curr_channel].num_packet_descrambled_sent = 0;
   	  #endif
     }
+    pthread_mutex_unlock(&chan_and_pids.lock);
     last_updown_check=monitor_now;
 
 
@@ -2586,7 +2584,7 @@ void *monitor_func(void* arg)
       log_message( log_module,  MSG_ERROR,
                   "No data from card %d in %ds, exiting.\n",
                   params->tuneparams->card, timeout_no_diff);
-      Interrupted=ERROR_NO_DIFF<<8; //the <<8 is to make difference beetween signals and errors
+      set_interrupted(ERROR_NO_DIFF<<8); //the <<8 is to make difference beetween signals and errors
     }
 
 
@@ -2596,45 +2594,24 @@ void *monitor_func(void* arg)
 		/* we check num of packets in ring buffer                */
 		/*******************************************/
 		for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++) {
-		  if (params->chan_and_pids->channels[curr_channel].scam_support) {
-			  if (chan_and_pids.channels[curr_channel].got_cw_started) {
-				if (params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets>=params->chan_and_pids->channels[curr_channel].ring_buffer_size)
-			  		log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %u\n",params->chan_and_pids->channels[curr_channel].name, params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets, params->chan_and_pids->channels[curr_channel].ring_buffer_size);
-				else
-					log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %u, to descramble %u, to send %u\n",params->chan_and_pids->channels[curr_channel].name, params->chan_and_pids->channels[curr_channel].ring_buffer_num_packets, params->chan_and_pids->channels[curr_channel].ring_buffer_size,params->chan_and_pids->channels[curr_channel].ring_buf->to_descramble,params->chan_and_pids->channels[curr_channel].ring_buf->to_send);
+		  mumudvb_channel_t *channel = &params->chan_and_pids->channels[curr_channel];
+		  if (channel->scam_support) {
+			  unsigned int ring_buffer_num_packets = 0;
+			  unsigned int to_descramble = 0;
+			  unsigned int to_send = 0;
+
+			  if (channel->ring_buf) {
+				pthread_mutex_lock(&channel->ring_buf->lock);
+				to_descramble = channel->ring_buf->to_descramble;
+				to_send = channel->ring_buf->to_send;
+				ring_buffer_num_packets = to_descramble + to_send;
+				pthread_mutex_unlock(&channel->ring_buf->lock);
 			  }
+			  if (ring_buffer_num_packets>=channel->ring_buffer_size)
+				log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %llu\n",channel->name, ring_buffer_num_packets, channel->ring_buffer_size);
 			  else
-				log_message( log_module,  MSG_DEBUG, "%s: didn't get first cw\n",params->chan_and_pids->channels[curr_channel].name);
+				log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %llu, to descramble %u, to send %u\n",channel->name, ring_buffer_num_packets, channel->ring_buffer_size, to_descramble, to_send);
 		  }
-		}
-
-
-		/*******************************************/
-		/* we count oscam channels which got first cw*/
-		/*******************************************/
-		int count_of_channels_cw=0;
-		for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++)
-		  if (params->chan_and_pids->channels[curr_channel].got_cw_started && params->chan_and_pids->channels[curr_channel].scam_support)
-		    count_of_channels_cw++;
-
-		/*Time no diff is the time when we got 0 channels with first cw*/
-		/*if we have channels with first cw, we reinit this counter*/
-		if(count_of_channels_cw)
-		  time_no_diff_cw=0;
-		/*If we don't have channels with first cw and this is the first time, we store the time*/
-		else if(!time_no_diff_cw)
-		  time_no_diff_cw=(long)monitor_now;
-
-		/*******************************************/
-		/* If we don't have first cw for           */
-		/* a too long time, we exit                */
-		/*******************************************/
-		if((timeout_no_diff)&& (time_no_diff&&((monitor_now-time_no_diff_cw)>timeout_no_diff)))
-		{
-		  log_message( log_module,  MSG_ERROR,
-		              "Haven't got first cw for %ds, exiting.\n",
-		              timeout_no_diff);
-		  Interrupted=ERROR_NO_FIRST_CW<<8; //the <<8 is to make difference beetween signals and errors
 		}
 	}
 
@@ -2651,6 +2628,8 @@ void *monitor_func(void* arg)
 
 
     }
+    pthread_mutex_unlock(&params->chan_and_pids->lock);
+
     for(i=0;i<params->wait_time && !params->threadshutdown;i++)
       usleep(100000);
   }

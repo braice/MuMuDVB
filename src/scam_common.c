@@ -62,6 +62,19 @@
 
 static char *log_module="SCAM_COMMON: ";
 
+/* See http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2. */
+int round_up(int x)
+{
+  x--;
+  x |= x >> 1;
+  x |= x >> 2;
+  x |= x >> 4;
+  x |= x >> 8;
+  x |= x >> 16;
+  x++;
+  return x;
+}
+
 /** @brief Read a line of the configuration file to check if there is a scam parameter
  *
  * @param scam_vars the scam parameters
@@ -86,8 +99,8 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
   else if (!strcmp (substring, "ring_buffer_default_size"))
   {
     substring = strtok (NULL, delimiteurs);
-    scam_vars->ring_buffer_default_size = 1<<((uint64_t)ceil(log2((long double)atoi (substring))));
-    log_message( log_module,  MSG_DEBUG, "Ring buffer default size set to %u\n",scam_vars->ring_buffer_default_size);
+    scam_vars->ring_buffer_default_size = round_up(atoi(substring));
+    log_message( log_module,  MSG_DEBUG, "Ring buffer default size set to %llu\n",scam_vars->ring_buffer_default_size);
 
   }
   else if (!strcmp (substring, "decsa_default_delay"))
@@ -129,7 +142,7 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
       return -1;
     }
     substring = strtok (NULL, delimiteurs);
-    current_channel->ring_buffer_size = 1<<((uint64_t)ceil(log2((long double)atoi (substring))));
+    current_channel->ring_buffer_size = round_up(atoi (substring));
   }
   else if (!strcmp (substring, "decsa_delay"))
   {
@@ -252,34 +265,28 @@ int scam_channel_start(mumudvb_channel_t *channel)
 		  return ERROR_MEMORY<<8;
 	 	} 
 	}
-	channel->ring_buf->time_send=malloc(channel->ring_buffer_size/4 * sizeof(uint64_t));
+	channel->ring_buf->time_send=malloc(channel->ring_buffer_size * sizeof(uint64_t));
   	if (channel->ring_buf->time_send == NULL) {
 	  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 	  return ERROR_MEMORY<<8;
  	} 
-	channel->ring_buf->time_decsa=malloc(channel->ring_buffer_size/4 * sizeof(uint64_t));
+	channel->ring_buf->time_decsa=malloc(channel->ring_buffer_size * sizeof(uint64_t));
   	if (channel->ring_buf->time_decsa == NULL) {
 	  log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 	  return ERROR_MEMORY<<8;
  	} 
-	memset (channel->ring_buf->time_send, 0, channel->ring_buffer_size/4 * sizeof(uint64_t));//we clear it	 
-	memset (channel->ring_buf->time_decsa, 0, channel->ring_buffer_size/4 * sizeof(uint64_t));//we clear it
+	memset (channel->ring_buf->time_send, 0, channel->ring_buffer_size * sizeof(uint64_t));//we clear it
+	memset (channel->ring_buf->time_decsa, 0, channel->ring_buffer_size * sizeof(uint64_t));//we clear it
 
-	pthread_mutex_init(&channel->ring_buffer_num_packets_mutex, NULL);
-
-
-	pthread_mutex_init(&channel->ring_buf->to_send_mutex, NULL);
-	pthread_mutex_init(&channel->ring_buf->to_descramble_mutex, NULL);
-
-	scam_decsa_start(channel);
+	pthread_mutex_init(&channel->ring_buf->lock, NULL);
 	scam_send_start(channel);
-
+	scam_decsa_start(channel);
 	return 0;
 }
 
 void scam_channel_stop(mumudvb_channel_t *channel)
 {
-	uint64_t i;	
+	uint64_t i;
 	scam_send_stop(channel);
 	scam_decsa_stop(channel);
     for ( i = 0; i< channel->ring_buffer_size; i++)
@@ -290,9 +297,7 @@ void scam_channel_stop(mumudvb_channel_t *channel)
     free(channel->ring_buf->time_send);
     free(channel->ring_buf->time_decsa);
 					
-	pthread_mutex_destroy(&channel->ring_buf->to_send_mutex);
-	pthread_mutex_destroy(&channel->ring_buf->to_descramble_mutex);
-	pthread_mutex_destroy(&channel->ring_buffer_num_packets_mutex);
+	pthread_mutex_destroy(&channel->ring_buf->lock);
     free(channel->ring_buf);
 }
 

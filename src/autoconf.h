@@ -29,6 +29,8 @@
 #ifndef _AUTOCONF_H
 #define _AUTOCONF_H
 
+#include <pthread.h>
+
 #include "mumudvb.h"
 #include "unicast_http.h"
 #include "ts.h"
@@ -68,7 +70,8 @@ typedef struct mumudvb_service_t{
 
 /**@brief The different parameters used for autoconfiguration*/
 typedef struct autoconf_parameters_t{
-  /**Do we use autoconfiguration ?
+	pthread_mutex_t lock;
+	/**Do we use autoconfiguration ?
 
 Possible values for this variable
 

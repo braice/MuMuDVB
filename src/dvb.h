@@ -80,7 +80,7 @@ typedef struct card_thread_parameters_t{
   //file descriptors
   fds_t *fds;
   //The shutdown for the thread
-  int threadshutdown;
+  volatile int threadshutdown;
   //The buffer for the card
   card_buffer_t *card_buffer;
   //

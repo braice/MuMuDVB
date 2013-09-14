@@ -51,7 +51,6 @@
 #include "log.h"
 
 
-extern int Interrupted;
 static char *log_module="Tune: ";
 
 /** @brief Read a line of the configuration file to check if there is a tuning parameter
@@ -583,7 +582,7 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
   //1.x compatible equipment
   while (*cmd) {
     (*cmd)->cmd.msg_len=4;
-    log_message( log_module,  MSG_DETAIL ,"Sending first Diseqc message %02x %02x %02x %02x %02x len %d\n",
+    log_message( log_module,  MSG_DETAIL ,"Sending first Diseqc message %02x %02x %02x %02x %02x %02x len %d\n",
                  (*cmd)->cmd.msg[0],(*cmd)->cmd.msg[1],(*cmd)->cmd.msg[2],(*cmd)->cmd.msg[3],(*cmd)->cmd.msg[4],(*cmd)->cmd.msg[5],
                  (*cmd)->cmd.msg_len);
     if((err = ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &(*cmd)->cmd)))
@@ -595,7 +594,7 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
     //Framing byte : Command from master, no reply required, repeated transmission : 0xe1
     cmd[0]->cmd.msg[0] = 0xe1;
     //cmd.msg[0] = 0xe1; /* framing: master, no reply, repeated TX */
-    log_message( log_module,  MSG_DETAIL ,"Sending repeated Diseqc message %02x %02x %02x %02x %02x len %d\n",
+    log_message( log_module,  MSG_DETAIL ,"Sending repeated Diseqc message %02x %02x %02x %02x %02x %02x len %d\n",
                  (*cmd)->cmd.msg[0],(*cmd)->cmd.msg[1],(*cmd)->cmd.msg[2],(*cmd)->cmd.msg[3],(*cmd)->cmd.msg[4],(*cmd)->cmd.msg[5],
                  (*cmd)->cmd.msg_len);
     if((err = ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &(*cmd)->cmd)))
@@ -669,7 +668,7 @@ static int do_diseqc(int fd, unsigned char sat_no, char switch_type, int pol_v_r
     if(cmd[0]==NULL)
     {
       log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      Interrupted=ERROR_MEMORY<<8;
+      set_interrupted(ERROR_MEMORY<<8);
       return -1;
     }
     cmd[0]->wait=0;
@@ -691,7 +690,7 @@ static int do_diseqc(int fd, unsigned char sat_no, char switch_type, int pol_v_r
     cmd[0]->cmd.msg[4] = 0x00;
     cmd[0]->cmd.msg[5] = 0x00;
     cmd[0]->cmd.msg_len=4;
-    log_message( log_module,  MSG_DETAIL ,"Test Diseqc message %02x %02x %02x %02x %02x len %d\n",
+    log_message( log_module,  MSG_DETAIL ,"Test Diseqc message %02x %02x %02x %02x %02x %02x len %d\n",
                  cmd[0]->cmd.msg[0],cmd[0]->cmd.msg[1],cmd[0]->cmd.msg[2],cmd[0]->cmd.msg[3],cmd[0]->cmd.msg[4],cmd[0]->cmd.msg[5],
                  cmd[0]->cmd.msg_len);
     ret = diseqc_send_msg(fd,
@@ -746,7 +745,7 @@ int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_str
         log_message( log_module,  MSG_DETAIL, "Getting frontend event\n");
         if ((status = ioctl(fd_frontend, FE_GET_EVENT, &event)) < 0){
 	  if (errno != EOVERFLOW) {
-	    log_message( log_module,  MSG_ERROR, "FE_GET_EVENT %s. status = %s\n", strerror(errno), status);
+	    log_message( log_module,  MSG_ERROR, "FE_GET_EVENT %s. status = %d\n", strerror(errno), status);
 	    return -1;
 	  }
 	  else log_message( log_module,  MSG_WARN, "Overflow error, trying again (status = %d, errno = %d)\n", status, errno);
@@ -841,13 +840,13 @@ int change_delivery_system(fe_delivery_system_t delivery_system,int fd_frontend)
  
     if ((ioctl(fd_frontend, FE_SET_PROPERTY, &cmdclear)) == -1) {
       log_message( log_module,  MSG_ERROR,"FE_SET_PROPERTY clear failed : %s\n", strerror(errno));
-      Interrupted=ERROR_TUNE<<8;
+      set_interrupted(ERROR_TUNE<<8);
       return -1;
     }
 
     if ((ioctl(fd_frontend, FE_SET_PROPERTY, &cmddeliv)) == -1) {
       log_message( log_module,  MSG_ERROR,"FE_SET_PROPERTY failed : %s\n", strerror(errno));
-      Interrupted=ERROR_TUNE<<8;
+      set_interrupted(ERROR_TUNE<<8);
       return -1;
     }
     return 0;
@@ -1047,7 +1046,7 @@ if(change_deliv) //delivery system needs to be changed
 #endif
   default:
     log_message( log_module,  MSG_ERROR, "Unknown FE type : %x. Aborting\n", fe_info.type);
-    Interrupted=ERROR_TUNE<<8;
+    set_interrupted(ERROR_TUNE<<8);
     return -1;
   }
   usleep(100000);
@@ -1068,7 +1067,7 @@ if(change_deliv) //delivery system needs to be changed
   {
     if (ioctl(fd_frontend,FE_SET_FRONTEND,&feparams) < 0) {
       log_message( log_module,  MSG_ERROR, "ERROR tuning channel : %s \n", strerror(errno));
-      Interrupted=ERROR_TUNE<<8;
+      set_interrupted(ERROR_TUNE<<8);
       return -1;
     }
   }
@@ -1188,7 +1187,7 @@ if(change_deliv) //delivery system needs to be changed
     else
     {
       log_message( log_module,  MSG_ERROR, "Unsupported delivery system. Try tuning using DVB API 3 (do not set delivery_system). And please contact so it can be implemented.\n");
-      Interrupted=ERROR_TUNE<<8;
+      set_interrupted(ERROR_TUNE<<8);
       free(cmdseq);
       return -1;
     }
@@ -1196,14 +1195,14 @@ if(change_deliv) //delivery system needs to be changed
     cmdseq->num = commandnum;
     if ((ioctl(fd_frontend, FE_SET_PROPERTY, &cmdclear)) == -1) {
       log_message( log_module,  MSG_ERROR,"FE_SET_PROPERTY clear failed : %s\n", strerror(errno));
-      Interrupted=ERROR_TUNE<<8;
+      set_interrupted(ERROR_TUNE<<8);
       free(cmdseq);
       return -1;
     }
 
     if ((ioctl(fd_frontend, FE_SET_PROPERTY, cmdseq)) == -1) {
       log_message( log_module,  MSG_ERROR,"FE_SET_PROPERTY failed : %s\n", strerror(errno));
-      Interrupted=ERROR_TUNE<<8;
+      set_interrupted(ERROR_TUNE<<8);
       free(cmdseq);
       return -1;
     }

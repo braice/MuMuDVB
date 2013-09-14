@@ -60,7 +60,6 @@
 #include "mumudvb.h"
 #include "log.h"
 
-extern int Interrupted;
 static char *log_module="CAM: ";
 
 /*****************************************************************************
@@ -478,7 +477,7 @@ static void *camthread_func(void* arg)
 	  {
 		// This is probably a CAM crash, as after initialization, a Transport Layer error isn't good...
 	    log_message( log_module,  MSG_ERROR,"Transport Layer error after CAM initialization: CAM may have crash, it's better to exit and restart...\n");
-        Interrupted= ERROR_CAM<<8; //the <<8 is to make difference beetween signals and errors
+        set_interrupted(ERROR_CAM<<8); //the <<8 is to make difference beetween signals and errors
 	  }
     }
 
@@ -503,7 +502,7 @@ static void *camthread_func(void* arg)
           log_message( log_module,  MSG_INFO,
                        "No CAM initialization  in %ds,  the %d resets didn't worked. Exiting.\n",
                        cam_params->timeout_no_cam_init,cam_params->max_reset_number);
-          Interrupted= ERROR_NO_CAM_INIT<<8; //the <<8 is to make difference beetween signals and errors
+          set_interrupted(ERROR_NO_CAM_INIT<<8); //the <<8 is to make difference beetween signals and errors
         }
       }
       else
@@ -511,7 +510,7 @@ static void *camthread_func(void* arg)
         log_message( log_module,  MSG_INFO,
                      "No CAM initialization on in %ds and HLCI CAM, exiting.\n",
                      cam_params->timeout_no_cam_init);
-        Interrupted= ERROR_NO_CAM_INIT<<8; //the <<8 is to make difference beetween signals and errors
+        set_interrupted(ERROR_NO_CAM_INIT<<8); //the <<8 is to make difference beetween signals and errors
       }
     }
     //We do the reset if needed

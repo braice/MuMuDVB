@@ -901,7 +901,7 @@ void ts_display_terrestrial_delivery_system_descriptor(char *log_module, unsigne
 
   log_message( log_module, MSG_DETAIL, "--- NIT descriptor --- terrestrial delivery system descriptor\n");
 
-  log_message( log_module, MSG_DETAIL, "Frequency: %ld Hz", ((descr->frequency_4<<24)+(descr->frequency_3<<16)+(descr->frequency_2<<8)+descr->frequency_1) *10 );
+  log_message( log_module, MSG_DETAIL, "Frequency: %d Hz", ((descr->frequency_4<<24)+(descr->frequency_3<<16)+(descr->frequency_2<<8)+descr->frequency_1) *10 );
   if(descr->bandwidth<=3)
     log_message( log_module, MSG_DETAIL, "Bandwidth: %d MHz",8-descr->bandwidth);
   else
@@ -1136,7 +1136,7 @@ void ts_display_frequency_list_descriptor(char* log_module,unsigned char *buf)
   {
 	  uint32_t frequency;
 	  frequency=((buf[0]<<24)+(buf[1]<<16)+(buf[2]<<8)+buf[3]);
-	  log_message( log_module, MSG_DETAIL, "Frequency: %ld (Hz or *10Hz)", frequency );
+	  log_message( log_module, MSG_DETAIL, "Frequency: %u (Hz or *10Hz)", frequency );
 	  buf+=4;
   }
   log_message( log_module, MSG_DETAIL, "--- descriptor done ---\n");
