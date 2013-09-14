@@ -102,7 +102,6 @@ void scam_getcw_stop(scam_parameters_t *scam_params)
   // shutdown the getcw thread
   scam_params->getcwthread_shutdown = 1;
   pthread_cancel(scam_params->getcwthread);
-  pthread_join(scam_params->getcwthread,NULL);
   log_message( log_module,  MSG_DEBUG,  "Getcw thread stopped\n");
 }
 
