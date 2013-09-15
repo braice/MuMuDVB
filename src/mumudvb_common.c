@@ -300,8 +300,11 @@ uint64_t get_time(void) {
 }
 /** @brief function for buffering demultiplexed data.
  */
-void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, int pid, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
+void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
 {
+    int pid;			/** pid of the current mpeg2 packet */
+    int ScramblingControl;
+    int curr_pid = 0;
 #ifndef ENABLE_SCAM_SUPPORT
 	(void) scam_vars_v; //to make compiler happy
 #else
@@ -324,10 +327,26 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, int pid,
     } else
 #endif
     {
+	pthread_mutex_lock(&chan_and_pids->lock);
+        pid = ((ts_packet[1] & 0x1f) << 8) | (ts_packet[2]);
+        ScramblingControl = (ts_packet[3] & 0xc0) >> 6;
+	for (curr_pid = 0; (curr_pid < channel->num_pids); curr_pid++)
+           if ((channel->pids[curr_pid] == pid) || (channel->pids[curr_pid] == 8192)) //We can stream whole transponder using 8192
+           {
+               if ((ScramblingControl>0) && (pid != channel->pmt_pid) )
+                   channel->num_scrambled_packets++;
 
+		   //check if the PID is scrambled for determining its state
+		   if (ScramblingControl>0) channel->pids_num_scrambled_packets[curr_pid]++;
+
+		     //we don't count the PMT pid for up channels
+		   if (pid != channel->pmt_pid)
+		       channel->num_packet++;
+    	   break;
+           }
+	pthread_mutex_unlock(&chan_and_pids->lock);
 	// we fill the channel buffer
 	memcpy(channel->buf + channel->nb_bytes, ts_packet, TS_PACKET_SIZE);
-
 
 	channel->nb_bytes += TS_PACKET_SIZE;
 	//The buffer is full, we send it

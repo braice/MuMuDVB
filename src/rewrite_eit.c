@@ -435,7 +435,7 @@ void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters
 			data_left_to_send=0;
 		}
 		//NOW we fill the channel buffer for sending
-	        buffer_func(channel, send_buf, 18, unicast_vars, multicast_vars, scam_vars_v, chan_and_pids, fds);
+	        buffer_func(channel, send_buf, unicast_vars, multicast_vars, scam_vars_v, chan_and_pids, fds);
 	}
 
 	//We update which section we want to send

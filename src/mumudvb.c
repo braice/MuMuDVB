@@ -1823,19 +1823,7 @@ int
           if(chan_and_pids.dont_send_scrambled && (ScramblingControl>0)&& (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
             send_packet=0;
 #endif
-
-#ifdef ENABLE_SCAM_SUPPORT
-          if(!chan_and_pids.channels[curr_channel].scam_support || !scam_vars.scam_support || !chan_and_pids.channels[curr_channel].got_cw_started)
-#endif
-            if ((ScramblingControl>0) && (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
-              chan_and_pids.channels[curr_channel].num_scrambled_packets++;
-
-          //check if the PID is scrambled for determining its state
-          if (ScramblingControl>0) chan_and_pids.channels[curr_channel].pids_num_scrambled_packets[curr_pid]++;
-
-          //we don't count the PMT pid for up channels
-          if (pid != chan_and_pids.channels[curr_channel].pmt_pid)
-            chan_and_pids.channels[curr_channel].num_packet++;
+          break;
         }
 
         /******************************************************/
@@ -1944,7 +1932,7 @@ int
         /******************************************************/
         if(send_packet==1)
         {
-           buffer_func(channel, actual_ts_packet, pid, &unicast_vars, &multicast_vars, scam_vars_ptr, &chan_and_pids, &fds);
+           buffer_func(channel, actual_ts_packet, &unicast_vars, &multicast_vars, scam_vars_ptr, &chan_and_pids, &fds);
         }
 
       }
@@ -2446,17 +2434,9 @@ void *monitor_func(void* arg)
         if(params->chan_and_pids->dont_send_scrambled)
           num_scrambled=current->num_scrambled_packets;
         else
-			  num_scrambled=0;
+            num_scrambled=0;
         if (monitor_now>last_updown_check)
-
-	  		#ifdef ENABLE_SCAM_SUPPORT
-	  		if (current->scam_support && scam_vars->scam_support)
-		  		packets_per_sec=((double)current->num_packet_descrambled_sent)/(monitor_now-last_updown_check);
-		  	else
-		  		packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
-  			#else
-				packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
-  	  		#endif
+            packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
         else
           packets_per_sec=0;
         if( params->stats_infos->debug_updown)
@@ -2491,10 +2471,6 @@ void *monitor_func(void* arg)
     {
       params->chan_and_pids->channels[curr_channel].num_packet = 0;
       params->chan_and_pids->channels[curr_channel].num_scrambled_packets = 0;
-	  #ifdef ENABLE_SCAM_SUPPORT
-	  if (params->chan_and_pids->channels[curr_channel].scam_support && scam_vars->scam_support)
-	  	params->chan_and_pids->channels[curr_channel].num_packet_descrambled_sent = 0;
-  	  #endif
     }
     pthread_mutex_unlock(&chan_and_pids.lock);
     last_updown_check=monitor_now;

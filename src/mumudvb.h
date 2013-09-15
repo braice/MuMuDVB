@@ -309,8 +309,6 @@ typedef struct mumudvb_channel_t{
   mumudvb_ts_packet_t *cam_pmt_packet;
 #endif
 #ifdef ENABLE_SCAM_SUPPORT
-  /**Tell the total packet number (without pmt) for the scrambling ratio and up/down detection*/
-  int num_packet_descrambled_sent;
   /** The camd socket for SCAM*/
   int camd_socket;
   /** Say if we need to ask this channel to the oscam*/
@@ -522,7 +520,7 @@ int mumudvb_poll(fds_t *fds);
 char *mumu_string_replace(char *source, int *length, int can_realloc, char *toreplace, char *replacement);
 int string_comput(char *string);
 uint64_t get_time(void);
-void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, int pid, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds);
+void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds);
 void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds);
 
 
