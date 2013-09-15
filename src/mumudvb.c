@@ -268,8 +268,6 @@ int mumudvb_close(monitor_parameters_t* monitor_thread_params, unicast_parameter
 int
     main (int argc, char **argv)
 {
-
-	uint64_t now_time;
   //sap announces
   sap_parameters_t sap_vars={
     .sap_messages4=NULL,
@@ -1958,49 +1956,9 @@ int
         /******************************************************/
         if(send_packet==1)
         {
-#ifdef ENABLE_SCAM_SUPPORT
-		      if (channel->scam_support && scam_vars.scam_support) {
-					pthread_mutex_lock(&channel->ring_buf->lock);
-					memcpy(channel->ring_buf->data[channel->ring_buf->write_idx], actual_ts_packet, TS_PACKET_SIZE);
+           buffer_func(channel, actual_ts_packet, hi_mappids, lo_mappids, pid, &unicast_vars, &multicast_vars, scam_vars_ptr, &chan_and_pids, &fds);
+        }
 
-					channel->ring_buf->data[channel->ring_buf->write_idx][1] =
-					  (channel->ring_buf->data[channel->ring_buf->write_idx][1] & 0xe0) | hi_mappids[pid];
-					channel->ring_buf->data[channel->ring_buf->write_idx][2] = lo_mappids[pid];
-					now_time=get_time();
-					channel->ring_buf->time_send[channel->ring_buf->write_idx]=now_time + channel->send_delay;
-					channel->ring_buf->time_decsa[channel->ring_buf->write_idx]=now_time + channel->decsa_delay;
-					++channel->ring_buf->write_idx;
-					channel->ring_buf->write_idx&=(channel->ring_buffer_size -1);
-
-				    ++channel->ring_buf->to_descramble;
-
-				    pthread_mutex_unlock(&channel->ring_buf->lock);
-			  }
-			else
-#endif
-				{
-
-				// we fill the channel buffer
-		      memcpy(channel->buf + channel->nb_bytes, actual_ts_packet, TS_PACKET_SIZE);
-
-
-		      channel->buf[channel->nb_bytes + 1] =
-		          (channel->buf[channel->nb_bytes + 1] & 0xe0) | hi_mappids[pid];
-		      channel->buf[channel->nb_bytes + 2] = lo_mappids[pid];
-
-		      channel->nb_bytes += TS_PACKET_SIZE;
-		      //The buffer is full, we send it
-		      if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
-			||(multicast_vars.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
-		      {
-				now_time=get_time();
-				send_func(&chan_and_pids.channels[curr_channel], now_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
-		      }
-
-			}
-
-
-		}
       }
       pthread_mutex_unlock(&chan_and_pids.lock);
     }
