@@ -141,6 +141,8 @@ typedef struct tuning_parameters_t{
   fe_delivery_system_t delivery_system;
   /** Rolloff (For DVB-S and DVB-S2)*/
   fe_rolloff_t rolloff;
+  /** The substream id */
+  int stream_id;
 #endif
 }tuning_parameters_t;
 

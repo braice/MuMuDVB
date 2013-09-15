@@ -334,6 +334,7 @@ int
   #if DVB_API_VERSION >= 5
     .delivery_system=SYS_UNDEFINED,
     .rolloff=ROLLOFF_35,
+    .stream_id=0,
   #endif
   };
   card_tuned=&tuneparams.card_tuned;

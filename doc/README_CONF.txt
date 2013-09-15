@@ -109,6 +109,7 @@ Parameters specific to satellite
 |lnb_voltage_off |Force the LNB voltage to be 0V (instead of 13V or 18V). This is useful when your LNB have it's own power supply. | 0 | 0 or 1 | 
 |coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto |
 |rolloff  |rolloff important only for DVB-S2 | 35 | 35, 20, 25, auto | The default value should work most of the times
+|stream_id | the id of the substream for DVB-S2 | 0 | 0 to 255 |
 |==================================================================================================================
 
 Local oscillator frequencies : 
@@ -132,6 +133,7 @@ Parameters specific to terrestrial (DVB-T)
 |trans_mode |transmission mode | auto | 2k, 8k, auto (DVB-T2: 4k, 16k, 32k) 
 |guardinterval |guard interval | auto |  1/32, 1/16, 1/8, 1/4, auto (DVB-T2 : 1/128, 19/128, 19/256) 
 |coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto 
+|stream_id | the id of the substream for DVB-T2 | 0 | 0 to 255 |
 |==================================================================================================================
 
 Parameters specific to cable (DVB-C)
