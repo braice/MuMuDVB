@@ -73,6 +73,19 @@
 #define MAX_CMDSEQ_PROPS_NUM 12
 #endif
 
+
+/*Do we support stream_id ?*/
+#undef STREAM_ID
+#if defined(DVB_API_VERSION_MINOR)
+#if DVB_API_VERSION == 5 && DVB_API_VERSION_MINOR >= 8
+#define STREAM_ID 1
+#endif
+#endif
+#if DVB_API_VERSION >= 6
+#define STREAM_ID 1
+#endif
+
+
 /** @brief Parameters for tuning the card*/
 typedef struct tuning_parameters_t{
   /**The card number*/
@@ -141,6 +154,8 @@ typedef struct tuning_parameters_t{
   fe_delivery_system_t delivery_system;
   /** Rolloff (For DVB-S and DVB-S2)*/
   fe_rolloff_t rolloff;
+#endif
+#if STREAM_ID
   /** The substream id */
   int stream_id;
 #endif

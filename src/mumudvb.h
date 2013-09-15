@@ -62,7 +62,7 @@
 #define DVBT2 1
 #endif
 #endif
-#if DVB_API_VERSION > 6
+#if DVB_API_VERSION >= 6
 #define DVBT2 1
 #endif
 

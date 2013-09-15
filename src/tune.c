@@ -518,7 +518,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
   }
   else if (!strcmp (substring, "stream_id"))
   {
-#if DVB_API_VERSION >= 5
+#ifdef STREAM_ID
     substring = strtok (NULL, delimiteurs);
     tuneparams->stream_id = atoi (substring);
     if ((tuneparams->stream_id<0)||(tuneparams->stream_id>255))
@@ -529,7 +529,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
     }
 #else
     log_message( log_module,  MSG_ERROR,
-                 "Config issue : delivery_system. You are trying to set the stream_id but your MuMuDVB have not been built with DVB-S2/DVB API 5 support.\n");
+                 "Config issue : delivery_system. You are trying to set the stream_id but your MuMuDVB have not been built with DVB-S2/DVB API > 5.8 support.\n");
     return -1;
 #endif
   }
@@ -1146,11 +1146,13 @@ if(change_deliv) //delivery system needs to be changed
       cmdseq->props[commandnum++].u.data = tuneparams->rolloff;
       cmdseq->props[commandnum].cmd      = DTV_PILOT;
       cmdseq->props[commandnum++].u.data = PILOT_AUTO;
+#ifdef STREAM_ID
       if(tuneparams->stream_id)
       {
           cmdseq->props[commandnum].cmd      = DTV_STREAM_ID;
           cmdseq->props[commandnum++].u.data = tuneparams->stream_id;
       }
+#endif
       cmdseq->props[commandnum++].cmd    = DTV_TUNE;
     }
     else if((tuneparams->delivery_system==SYS_DVBT)
@@ -1178,11 +1180,13 @@ if(change_deliv) //delivery system needs to be changed
       cmdseq->props[commandnum++].u.data = tuneparams->TransmissionMode;
       cmdseq->props[commandnum].cmd      = DTV_HIERARCHY;
       cmdseq->props[commandnum++].u.data = tuneparams->hier;
+#ifdef STREAM_ID
       if(tuneparams->stream_id)
       {
           cmdseq->props[commandnum].cmd      = DTV_STREAM_ID;
           cmdseq->props[commandnum++].u.data = tuneparams->stream_id;
       }
+#endif
       cmdseq->props[commandnum++].cmd    = DTV_TUNE;
     }
     else if((tuneparams->delivery_system==SYS_DVBC_ANNEX_AC)||(tuneparams->delivery_system==SYS_DVBC_ANNEX_B))
