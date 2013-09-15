@@ -205,12 +205,13 @@ You need multiple FFmpeg instances, one per channel.
 
 To start ffmpeg in background please use nohup ffmpeg -i ...
 Note that you can auto start FFMpeg per feed by adding the following inside your feed definition:
-launch ffmpeg -i udp://@X.X.X.X:1234
+launch `ffmpeg -i udp://@X.X.X.X:1234`
 where X.X.X.X is your Multicast group.
  
-Now the channels can be accessed in unicast on URLs like http://192.168.100.100/almajd01.asf
+Now the channels can be accessed in unicast on URLs like `http://192.168.100.100/almajd01.asf`
 
- 	Example AAC/H.264 transcoded stream inside a FLV container:
+Example AAC/H.264 transcoded stream inside a FLV container:
+------------------------------------------------------------------------------------
 Port 8888
 BindAddress 0.0.0.0
 MaxHTTPConnections 20000
@@ -270,6 +271,7 @@ Format status
 
 ACL allow 192.168.0.0 192.168.255.255
 </Stream>
+------------------------------------------------------------------------------------
 
 Acknowledgements
 ----------------
