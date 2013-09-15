@@ -387,7 +387,7 @@ int
 
   int server_id = 0; /** The server id for the template %server */
 
-  int k,iRet,cmdlinecard;
+  int iRet,cmdlinecard;
   cmdlinecard=-1;
 
   //MPEG2-TS reception and sort
@@ -425,18 +425,6 @@ int
   char current_line[CONF_LINELEN];
   char *substring=NULL;
   char delimiteurs[] = CONFIG_FILE_SEPARATOR;
-
-
-  uint8_t hi_mappids[8193];
-  uint8_t lo_mappids[8193];
-
-
-  // Initialise PID map
-  for (k = 0; k < 8193; k++)
-  {
-    hi_mappids[k] = (k >> 8);
-    lo_mappids[k] = (k & 0xff);
-  }
 
   /******************************************************/
   //Getopt
@@ -1956,7 +1944,7 @@ int
         /******************************************************/
         if(send_packet==1)
         {
-           buffer_func(channel, actual_ts_packet, hi_mappids, lo_mappids, pid, &unicast_vars, &multicast_vars, scam_vars_ptr, &chan_and_pids, &fds);
+           buffer_func(channel, actual_ts_packet, pid, &unicast_vars, &multicast_vars, scam_vars_ptr, &chan_and_pids, &fds);
         }
 
       }

@@ -300,7 +300,7 @@ uint64_t get_time(void) {
 }
 /** @brief function for buffering demultiplexed data.
  */
-void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, uint8_t *hi_mappids, uint8_t *lo_mappids, int pid, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
+void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, int pid, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
 {
 #ifndef ENABLE_SCAM_SUPPORT
 	(void) scam_vars_v; //to make compiler happy
@@ -312,11 +312,6 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, uint8_t 
     if (channel->scam_support && scam_vars->scam_support) {
 	pthread_mutex_lock(&channel->ring_buf->lock);
 	memcpy(channel->ring_buf->data[channel->ring_buf->write_idx], ts_packet, TS_PACKET_SIZE);
-	if (hi_mappids && lo_mappids) {
-	    channel->ring_buf->data[channel->ring_buf->write_idx][1] =
-		    (channel->ring_buf->data[channel->ring_buf->write_idx][1] & 0xe0) | hi_mappids[pid];
-	    channel->ring_buf->data[channel->ring_buf->write_idx][2] = lo_mappids[pid];
-	}
 	now_time=get_time();
 	channel->ring_buf->time_send[channel->ring_buf->write_idx]=now_time + channel->send_delay;
 	channel->ring_buf->time_decsa[channel->ring_buf->write_idx]=now_time + channel->decsa_delay;
@@ -333,11 +328,6 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, uint8_t 
 	// we fill the channel buffer
 	memcpy(channel->buf + channel->nb_bytes, ts_packet, TS_PACKET_SIZE);
 
-	if (hi_mappids && lo_mappids) {
-	    channel->buf[channel->nb_bytes + 1] =
-	    (channel->buf[channel->nb_bytes + 1] & 0xe0) | hi_mappids[pid];
-	    channel->buf[channel->nb_bytes + 2] = lo_mappids[pid];
-	}
 
 	channel->nb_bytes += TS_PACKET_SIZE;
 	//The buffer is full, we send it
