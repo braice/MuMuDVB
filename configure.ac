@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.61])
-AC_INIT([MuMuDVB], [1.7.2_20130731_master], [mumudvb@braice.net])
+AC_INIT([MuMuDVB], [1.7.2_20130915_master], [mumudvb@braice.net])
 AC_CONFIG_SRCDIR([src/mumudvb.c])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([src/config.h])
@@ -95,7 +95,7 @@ then
   then
     AC_DEFINE(ENABLE_TRANSCODING, 1, Define if you want the transcoding support)
   else
-    AC_MSG_WARN([libavcodev, libavformat and libswscale are needed for transcoding support])
+    AC_MSG_WARN([libavcodec, libavformat and libswscale are needed for transcoding support])
   fi
 else
   enable_transcoding="no"
