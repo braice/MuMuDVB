@@ -42,6 +42,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include "scam_common.h"
 
 
 static char *log_module="Common: ";
@@ -297,6 +298,69 @@ uint64_t get_time(void) {
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	return (ts.tv_sec * 1000000ll + ts.tv_nsec / 1000);
 }
+/** @brief function for buffering demultiplexed data.
+ */
+void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
+{
+    int pid;			/** pid of the current mpeg2 packet */
+    int ScramblingControl;
+    int curr_pid = 0;
+#ifndef ENABLE_SCAM_SUPPORT
+	(void) scam_vars_v; //to make compiler happy
+#else
+ 	scam_parameters_t *scam_vars=(scam_parameters_t *)scam_vars_v;
+#endif
+    uint64_t now_time;
+#ifdef ENABLE_SCAM_SUPPORT
+    if (channel->scam_support && scam_vars->scam_support) {
+	pthread_mutex_lock(&channel->ring_buf->lock);
+	memcpy(channel->ring_buf->data[channel->ring_buf->write_idx], ts_packet, TS_PACKET_SIZE);
+	now_time=get_time();
+	channel->ring_buf->time_send[channel->ring_buf->write_idx]=now_time + channel->send_delay;
+	channel->ring_buf->time_decsa[channel->ring_buf->write_idx]=now_time + channel->decsa_delay;
+	++channel->ring_buf->write_idx;
+	channel->ring_buf->write_idx&=(channel->ring_buffer_size -1);
+
+	++channel->ring_buf->to_descramble;
+
+	pthread_mutex_unlock(&channel->ring_buf->lock);
+    } else
+#endif
+    {
+	pthread_mutex_lock(&chan_and_pids->lock);
+        pid = ((ts_packet[1] & 0x1f) << 8) | (ts_packet[2]);
+        ScramblingControl = (ts_packet[3] & 0xc0) >> 6;
+	for (curr_pid = 0; (curr_pid < channel->num_pids); curr_pid++)
+           if ((channel->pids[curr_pid] == pid) || (channel->pids[curr_pid] == 8192)) //We can stream whole transponder using 8192
+           {
+               if ((ScramblingControl>0) && (pid != channel->pmt_pid) )
+                   channel->num_scrambled_packets++;
+
+		   //check if the PID is scrambled for determining its state
+		   if (ScramblingControl>0) channel->pids_num_scrambled_packets[curr_pid]++;
+
+		     //we don't count the PMT pid for up channels
+		   if (pid != channel->pmt_pid)
+		       channel->num_packet++;
+    	   break;
+           }
+	pthread_mutex_unlock(&chan_and_pids->lock);
+	// we fill the channel buffer
+	memcpy(channel->buf + channel->nb_bytes, ts_packet, TS_PACKET_SIZE);
+
+	channel->nb_bytes += TS_PACKET_SIZE;
+	//The buffer is full, we send it
+	if ((!multicast_vars->rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
+             ||(multicast_vars->rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE))) {
+	    now_time=get_time();
+	    send_func(channel, now_time, unicast_vars, multicast_vars, chan_and_pids, fds);
+	}
+
+    }
+
+
+}
+
 
 /** @brief function for sending demultiplexed data.
  */

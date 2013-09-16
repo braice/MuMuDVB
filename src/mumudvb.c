@@ -268,8 +268,6 @@ int mumudvb_close(monitor_parameters_t* monitor_thread_params, unicast_parameter
 int
     main (int argc, char **argv)
 {
-
-	uint64_t now_time;
   //sap announces
   sap_parameters_t sap_vars={
     .sap_messages4=NULL,
@@ -392,7 +390,7 @@ int
 
   int server_id = 0; /** The server id for the template %server */
 
-  int k,iRet,cmdlinecard;
+  int iRet,cmdlinecard;
   cmdlinecard=-1;
 
   //MPEG2-TS reception and sort
@@ -430,18 +428,6 @@ int
   char current_line[CONF_LINELEN];
   char *substring=NULL;
   char delimiteurs[] = CONFIG_FILE_SEPARATOR;
-
-
-  uint8_t hi_mappids[8193];
-  uint8_t lo_mappids[8193];
-
-
-  // Initialise PID map
-  for (k = 0; k < 8193; k++)
-  {
-    hi_mappids[k] = (k >> 8);
-    lo_mappids[k] = (k & 0xff);
-  }
 
   /******************************************************/
   //Getopt
@@ -1840,19 +1826,7 @@ int
           if(chan_and_pids.dont_send_scrambled && (ScramblingControl>0)&& (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
             send_packet=0;
 #endif
-
-#ifdef ENABLE_SCAM_SUPPORT
-          if(!chan_and_pids.channels[curr_channel].scam_support || !scam_vars.scam_support || !chan_and_pids.channels[curr_channel].got_cw_started)
-#endif
-            if ((ScramblingControl>0) && (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
-              chan_and_pids.channels[curr_channel].num_scrambled_packets++;
-
-          //check if the PID is scrambled for determining its state
-          if (ScramblingControl>0) chan_and_pids.channels[curr_channel].pids_num_scrambled_packets[curr_pid]++;
-
-          //we don't count the PMT pid for up channels
-          if (pid != chan_and_pids.channels[curr_channel].pmt_pid)
-            chan_and_pids.channels[curr_channel].num_packet++;
+          break;
         }
 
         /******************************************************/
@@ -1875,8 +1849,8 @@ int
         /******************************************************/
 #ifdef ENABLE_SCAM_SUPPORT
 		if (scam_vars.scam_support &&(chan_and_pids.channels[curr_channel].need_scam_ask==CAM_NEED_ASK))
-		{
-				if (chan_and_pids.channels[curr_channel].scam_support) {
+		{ 
+				if (chan_and_pids.channels[curr_channel].scam_support && chan_and_pids.channels[curr_channel].pmt_packet->len_full != 0 ) {								
 					  iRet=scam_send_capmt(&chan_and_pids.channels[curr_channel],tuneparams.card);
 					  if(iRet)
 					  {
@@ -1961,49 +1935,9 @@ int
         /******************************************************/
         if(send_packet==1)
         {
-#ifdef ENABLE_SCAM_SUPPORT
-		      if (channel->scam_support && scam_vars.scam_support) {
-					pthread_mutex_lock(&channel->ring_buf->lock);
-					memcpy(channel->ring_buf->data[channel->ring_buf->write_idx], actual_ts_packet, TS_PACKET_SIZE);
+           buffer_func(channel, actual_ts_packet, &unicast_vars, &multicast_vars, scam_vars_ptr, &chan_and_pids, &fds);
+        }
 
-					channel->ring_buf->data[channel->ring_buf->write_idx][1] =
-					  (channel->ring_buf->data[channel->ring_buf->write_idx][1] & 0xe0) | hi_mappids[pid];
-					channel->ring_buf->data[channel->ring_buf->write_idx][2] = lo_mappids[pid];
-					now_time=get_time();
-					channel->ring_buf->time_send[channel->ring_buf->write_idx]=now_time + channel->send_delay;
-					channel->ring_buf->time_decsa[channel->ring_buf->write_idx]=now_time + channel->decsa_delay;
-					++channel->ring_buf->write_idx;
-					channel->ring_buf->write_idx&=(channel->ring_buffer_size -1);
-
-				    ++channel->ring_buf->to_descramble;
-
-				    pthread_mutex_unlock(&channel->ring_buf->lock);
-			  }
-			else
-#endif
-				{
-
-				// we fill the channel buffer
-		      memcpy(channel->buf + channel->nb_bytes, actual_ts_packet, TS_PACKET_SIZE);
-
-
-		      channel->buf[channel->nb_bytes + 1] =
-		          (channel->buf[channel->nb_bytes + 1] & 0xe0) | hi_mappids[pid];
-		      channel->buf[channel->nb_bytes + 2] = lo_mappids[pid];
-
-		      channel->nb_bytes += TS_PACKET_SIZE;
-		      //The buffer is full, we send it
-		      if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
-			||(multicast_vars.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
-		      {
-				now_time=get_time();
-				send_func(&chan_and_pids.channels[curr_channel], now_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
-		      }
-
-			}
-
-
-		}
       }
       pthread_mutex_unlock(&chan_and_pids.lock);
     }
@@ -2503,17 +2437,9 @@ void *monitor_func(void* arg)
         if(params->chan_and_pids->dont_send_scrambled)
           num_scrambled=current->num_scrambled_packets;
         else
-			  num_scrambled=0;
+            num_scrambled=0;
         if (monitor_now>last_updown_check)
-
-	  		#ifdef ENABLE_SCAM_SUPPORT
-	  		if (current->scam_support && scam_vars->scam_support)
-		  		packets_per_sec=((double)current->num_packet_descrambled_sent)/(monitor_now-last_updown_check);
-		  	else
-		  		packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
-  			#else
-				packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
-  	  		#endif
+            packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
         else
           packets_per_sec=0;
         if( params->stats_infos->debug_updown)
@@ -2548,10 +2474,6 @@ void *monitor_func(void* arg)
     {
       params->chan_and_pids->channels[curr_channel].num_packet = 0;
       params->chan_and_pids->channels[curr_channel].num_scrambled_packets = 0;
-	  #ifdef ENABLE_SCAM_SUPPORT
-	  if (params->chan_and_pids->channels[curr_channel].scam_support && scam_vars->scam_support)
-	  	params->chan_and_pids->channels[curr_channel].num_packet_descrambled_sent = 0;
-  	  #endif
     }
     pthread_mutex_unlock(&chan_and_pids.lock);
     last_updown_check=monitor_now;
