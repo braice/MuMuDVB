@@ -305,6 +305,8 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
     int pid;			/** pid of the current mpeg2 packet */
     int ScramblingControl;
     int curr_pid = 0;
+    int send_packet = 0;
+
 #ifndef ENABLE_SCAM_SUPPORT
 	(void) scam_vars_v; //to make compiler happy
 #else
@@ -344,11 +346,17 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 		       channel->num_packet++;
     	   break;
            }
+        //avoid sending of scrambled channels if we asked to
+	send_packet=1;
+        if(chan_and_pids->dont_send_scrambled && (ScramblingControl>0)&& (channel->pmt_pid) )
+          send_packet=0;
 	pthread_mutex_unlock(&chan_and_pids->lock);
-	// we fill the channel buffer
-	memcpy(channel->buf + channel->nb_bytes, ts_packet, TS_PACKET_SIZE);
 
-	channel->nb_bytes += TS_PACKET_SIZE;
+	if (send_packet) {
+	    // we fill the channel buffer
+	    memcpy(channel->buf + channel->nb_bytes, ts_packet, TS_PACKET_SIZE);
+	    channel->nb_bytes += TS_PACKET_SIZE;
+	}
 	//The buffer is full, we send it
 	if ((!multicast_vars->rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
              ||(multicast_vars->rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE))) {

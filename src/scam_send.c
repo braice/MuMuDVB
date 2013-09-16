@@ -64,6 +64,7 @@ void *sendthread_func(void* arg)
   int pid;			/** pid of the current mpeg2 packet */
   int ScramblingControl;
   int curr_pid = 0;
+  int send_packet = 0;
   extern unicast_parameters_t unicast_vars;
   extern multicast_parameters_t multicast_vars;
   extern mumudvb_chan_and_pids_t chan_and_pids;
@@ -121,14 +122,19 @@ void *sendthread_func(void* arg)
 			   channel->num_packet++;
 	       break;
 	       }
+          //avoid sending of scrambled channels if we asked to
+	  send_packet=1;
+          if(chan_and_pids.dont_send_scrambled && (ScramblingControl>0)&& (channel->pmt_pid) )
+            send_packet=0;
 	  pthread_mutex_unlock(&chan_and_pids.lock);
 
-	  memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data[channel->ring_buf->read_send_idx], TS_PACKET_SIZE);
-
+	  if (send_packet) {
+              // we fill the channel buffer
+	      memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data[channel->ring_buf->read_send_idx], TS_PACKET_SIZE);
+	      channel->nb_bytes += TS_PACKET_SIZE;
+	  }
 	  ++channel->ring_buf->read_send_idx;
 	  channel->ring_buf->read_send_idx&=(channel->ring_buffer_size -1);
-
-	  channel->nb_bytes += TS_PACKET_SIZE;
 
 	  --channel->ring_buf->to_send;
 	  pthread_mutex_unlock(&channel->ring_buf->lock);

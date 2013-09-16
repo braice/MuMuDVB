@@ -1815,14 +1815,6 @@ int
             if ((chan_and_pids.channels[curr_channel].pids[curr_pid] == pid) || (chan_and_pids.channels[curr_channel].pids[curr_pid] == 8192)) //We can stream whole transponder using 8192
         {
           send_packet=1;
-          //avoid sending of scrambled channels if we asked to
-#ifdef ENABLE_SCAM_SUPPORT
-          if(chan_and_pids.dont_send_scrambled && (ScramblingControl>0)&& (pid != chan_and_pids.channels[curr_channel].pmt_pid)&& (!chan_and_pids.channels[curr_channel].scam_support) && (!scam_vars.scam_support))
-            send_packet=0;
-#else
-          if(chan_and_pids.dont_send_scrambled && (ScramblingControl>0)&& (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
-            send_packet=0;
-#endif
           break;
         }
 
