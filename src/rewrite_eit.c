@@ -38,7 +38,6 @@
 #include "ts.h"
 #include "rewrite.h"
 #include "log.h"
-#include "scam_common.h"
 #include <stdint.h>
 
 
@@ -329,11 +328,6 @@ int eit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
 void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel,
 		multicast_parameters_t *multicast_vars, unicast_parameters_t *unicast_vars, void *scam_vars_v, mumudvb_chan_and_pids_t *chan_and_pids,fds_t *fds)
 {
-#ifndef ENABLE_SCAM_SUPPORT
-	(void) scam_vars_v; //to make compiler happy
-#else
- 	scam_parameters_t *scam_vars=(scam_parameters_t *)scam_vars_v;
-#endif
 	int i=0;
 	//If payload unit start indicator , we will send all the present EIT for this service, otherwise nothing
 	//We generate the TS packets on by one, and for each one, we check if we have to send
@@ -439,36 +433,8 @@ void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters
 						(TS_PACKET_SIZE-(header_len+data_left_to_send))*sizeof(unsigned char));
 			data_left_to_send=0;
 		}
-		//NOW we really send the data over the network
-		// we fill the channel buffer
-#ifdef ENABLE_SCAM_SUPPORT
-		if (channel->scam_support && scam_vars->scam_support) {
-			uint64_t now_time = get_time();
-			pthread_mutex_lock(&channel->ring_buf->lock);
-			memcpy(channel->ring_buf->data[channel->ring_buf->write_idx], send_buf, TS_PACKET_SIZE);
-			channel->ring_buf->time_send[channel->ring_buf->write_idx]=now_time + channel->send_delay;
-			channel->ring_buf->time_decsa[channel->ring_buf->write_idx]=now_time + channel->decsa_delay;
-			++channel->ring_buf->write_idx;
-			channel->ring_buf->write_idx&=(channel->ring_buffer_size -1);
-
-			++channel->ring_buf->to_descramble;
-			pthread_mutex_unlock(&channel->ring_buf->lock);
-		}
-		else {
-#else
-		{
-#endif
-			memcpy(channel->buf + channel->nb_bytes, send_buf, TS_PACKET_SIZE*sizeof(unsigned char));
-			channel->nb_bytes += TS_PACKET_SIZE;
-			//The buffer is full, we send it
-			if ((!multicast_vars->rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
-					||(multicast_vars->rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
-			{
-				uint64_t now_time=get_time();
-				send_func(channel, now_time, unicast_vars, multicast_vars, chan_and_pids, fds);
-			}
-		}
-
+		//NOW we fill the channel buffer for sending
+	        buffer_func(channel, send_buf, unicast_vars, multicast_vars, scam_vars_v, chan_and_pids, fds);
 	}
 
 	//We update which section we want to send

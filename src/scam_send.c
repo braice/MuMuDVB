@@ -61,6 +61,9 @@ static char *log_module="SCAM_SEND: ";
 
 void *sendthread_func(void* arg)
 {
+  int pid;			/** pid of the current mpeg2 packet */
+  int ScramblingControl;
+  int curr_pid = 0;
   extern unicast_parameters_t unicast_vars;
   extern multicast_parameters_t multicast_vars;
   extern mumudvb_chan_and_pids_t chan_and_pids;
@@ -69,7 +72,6 @@ void *sendthread_func(void* arg)
   channel = ((mumudvb_channel_t *) arg);
   uint64_t res_time;
   struct timespec r_time;
-  channel->num_packet_descrambled_sent=0;
   while(!channel->sendthread_shutdown) {
 	int to_send;
 	pthread_mutex_lock(&channel->ring_buf->lock);
@@ -103,6 +105,24 @@ void *sendthread_func(void* arg)
 	  }
 
 	  pthread_mutex_lock(&channel->ring_buf->lock);
+	  pid = ((channel->ring_buf->data[channel->ring_buf->read_send_idx][1] & 0x1f) << 8) | (channel->ring_buf->data[channel->ring_buf->read_send_idx][2]);
+	  ScramblingControl = (channel->ring_buf->data[channel->ring_buf->read_send_idx][3] & 0xc0) >> 6;
+	  for (curr_pid = 0; (curr_pid < channel->num_pids); curr_pid++)
+	       if ((channel->pids[curr_pid] == pid) || (channel->pids[curr_pid] == 8192)) //We can stream whole transponder using 8192
+	       {
+		   if ((ScramblingControl>0) && (pid != channel->pmt_pid) )
+		       channel->num_scrambled_packets++;
+
+		       //check if the PID is scrambled for determining its state
+		       if (ScramblingControl>0) channel->pids_num_scrambled_packets[curr_pid]++;
+
+			 //we don't count the PMT pid for up channels
+		       if (pid != channel->pmt_pid)
+			   channel->num_packet++;
+	       break;
+	       }
+	  pthread_mutex_unlock(&chan_and_pids.lock);
+
 	  memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data[channel->ring_buf->read_send_idx], TS_PACKET_SIZE);
 
 	  ++channel->ring_buf->read_send_idx;
@@ -111,14 +131,13 @@ void *sendthread_func(void* arg)
 	  channel->nb_bytes += TS_PACKET_SIZE;
 
 	  --channel->ring_buf->to_send;
-	  ++channel->num_packet_descrambled_sent;
 	  pthread_mutex_unlock(&channel->ring_buf->lock);
 
           //The buffer is full, we send it
 	  if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
 	    ||(multicast_vars.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
           {
-			  send_func(channel, send_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
+	      send_func(channel, send_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
           }
   }
   return 0;
