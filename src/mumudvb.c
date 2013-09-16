@@ -1820,12 +1820,31 @@ int
           send_packet=1;
           //avoid sending of scrambled channels if we asked to
 #ifdef ENABLE_SCAM_SUPPORT
-          if(chan_and_pids.dont_send_scrambled && (ScramblingControl>0)&& (pid != chan_and_pids.channels[curr_channel].pmt_pid)&& (!chan_and_pids.channels[curr_channel].scam_support) && (!scam_vars.scam_support))
+          if(chan_and_pids.dont_send_scrambled && (ScramblingControl>0)&& (pid != chan_and_pids.channels[curr_channel].pmt_pid)&& ((!chan_and_pids.channels[curr_channel].scam_support) || (!scam_vars.scam_support)))
             send_packet=0;
 #else
           if(chan_and_pids.dont_send_scrambled && (ScramblingControl>0)&& (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
             send_packet=0;
 #endif
+#ifdef ENABLE_SCAM_SUPPORT
+          if( (!chan_and_pids.channels[curr_channel].scam_support) || (!scam_vars.scam_support))
+          {
+#else
+          if(1)
+          {
+#endif
+
+        		  if ((ScramblingControl>0) && (pid != chan_and_pids.channels[curr_channel].pmt_pid) )
+        			  chan_and_pids.channels[curr_channel].num_scrambled_packets++;
+
+        		  //check if the PID is scrambled for determining its state
+        		  if (ScramblingControl>0) chan_and_pids.channels[curr_channel].pids_num_scrambled_packets[curr_pid]++;
+
+        		  //we don't count the PMT pid for up channels
+        		  if (pid != chan_and_pids.channels[curr_channel].pmt_pid)
+        			  chan_and_pids.channels[curr_channel].num_packet++;
+
+          }
           break;
         }
 
