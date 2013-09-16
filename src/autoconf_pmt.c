@@ -72,9 +72,9 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
   int channel_update;
 
   //For channel update
-  int temp_pids[MAX_PIDS_PAR_CHAINE];
-  int temp_pids_type[MAX_PIDS_PAR_CHAINE];
-  char temp_pids_language[MAX_PIDS_PAR_CHAINE][4];
+  int temp_pids[MAX_PIDS];
+  int temp_pids_type[MAX_PIDS];
+  char temp_pids_language[MAX_PIDS][4];
   //For channel update
   int temp_num_pids=0;
 
@@ -333,6 +333,13 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
       temp_pids_type[temp_num_pids]=pid_type;
       snprintf(temp_pids_language[temp_num_pids],4,"%s",language);
       temp_num_pids++;
+      if (temp_num_pids >= MAX_PIDS)
+      {
+        log_message( log_module,  MSG_ERROR,
+                     "Too many PIDs : %d\n",
+                     temp_num_pids);
+        temp_num_pids--;
+      }
     }
     else
     {

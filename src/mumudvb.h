@@ -68,7 +68,7 @@
 
 
 /**the number of pids by channel*/
-#define MAX_PIDS_PAR_CHAINE     18
+#define MAX_PIDS     128
 
 /**the maximum channel number*/
 #define MAX_CHANNELS		128
@@ -274,15 +274,15 @@ typedef struct mumudvb_channel_t{
   char name[MAX_NAME_LEN];
 
   /**the channel pids*/
-  int pids[MAX_PIDS_PAR_CHAINE];
+  int pids[MAX_PIDS];
   /**the channel pids type (PMT, audio, video etc)*/
-  int pids_type[MAX_PIDS_PAR_CHAINE];
+  int pids_type[MAX_PIDS];
   /**the channel pids language (ISO639 - 3 characters)*/
-  char pids_language[MAX_PIDS_PAR_CHAINE][4];
+  char pids_language[MAX_PIDS][4];
   /**count the number of scrambled packets for the PID*/
-  int pids_num_scrambled_packets[MAX_PIDS_PAR_CHAINE];
+  int pids_num_scrambled_packets[MAX_PIDS];
   /**tell if the PID is scrambled (1) or not (0)*/
-  char pids_scrambled[MAX_PIDS_PAR_CHAINE];
+  char pids_scrambled[MAX_PIDS];
   /**number of channel pids*/
   int num_pids;
 

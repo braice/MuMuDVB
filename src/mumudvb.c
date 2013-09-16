@@ -792,7 +792,7 @@ int
           exit(ERROR_CONF);
         }
         curr_pid++;
-        if (curr_pid >= MAX_PIDS_PAR_CHAINE)
+        if (curr_pid >= MAX_PIDS)
         {
           log_message( log_module,  MSG_ERROR,
                        "Too many pids : %d channel : %d\n",
