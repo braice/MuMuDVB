@@ -292,6 +292,8 @@ typedef struct mumudvb_channel_t{
   int service_id;
   /**pmt pid number*/
   int pmt_pid;
+  /**PCR PID number*/
+  int pcr_pid;
   /**Say if we need to ask this channel to the cam*/
   int need_cam_ask;
   /** When did we asked the channel to the CAM */

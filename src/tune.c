@@ -73,6 +73,20 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
       return -1;
     }
   }
+  if (!strcmp (substring, "switch_input"))
+  {
+    substring = strtok (NULL, delimiteurs);
+    tuneparams->switch_no = atoi (substring);
+    if (tuneparams->switch_no > 15)
+    {
+      log_message( log_module,  MSG_ERROR,
+                   "Configuration issue : switch_input. The diseqc switch input number must be between 0 and 15.\n");
+      return -1;
+    }
+  }
+
+
+
 #ifdef ATSC
   else if (!strcmp (substring, "atsc_modulation"))
   {
@@ -653,7 +667,7 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
  * @param hi_lo : the band for a dual band lnb
  * @param lnb_voltage_off : if one, force the 13/18V voltage to be 0 independantly of polarization
  */
-static int do_diseqc(int fd, unsigned char sat_no, char switch_type, int pol_v_r, int hi_lo, int lnb_voltage_off)
+static int do_diseqc(int fd, unsigned char sat_no,  unsigned char switch_no, char switch_type, int pol_v_r, int hi_lo, int lnb_voltage_off)
 {
 
   fe_sec_voltage_t lnb_voltage;
@@ -703,6 +717,12 @@ static int do_diseqc(int fd, unsigned char sat_no, char switch_type, int pol_v_r
     * bits are: option, position, polarization, band */
     cmd[0]->cmd.msg[3] =
 	0xf0 | ((((sat_no-1) * 4) & 0x0f) | (pol_v_r ? 0 : 2) | (hi_lo ? 1 : 0));
+    if(switch_no)
+    {
+    	log_message( log_module,  MSG_INFO ,"Diseqc switch position specified, we force switch input to %d\n",switch_no);
+        cmd[0]->cmd.msg[3] = 0xf0 | (switch_no& 0x0f);
+    }
+
     //
     cmd[0]->cmd.msg[4] = 0x00;
     cmd[0]->cmd.msg[5] = 0x00;
@@ -1032,6 +1052,7 @@ if(change_deliv) //delivery system needs to be changed
     //For diseqc vertical==circular right and horizontal == circular left
     if(do_diseqc( dfd, 
                   tuneparams->sat_number,
+                  tuneparams->switch_no,
                   tuneparams->switch_type,
                   (tuneparams->pol == 'V' ? 1 : 0) + (tuneparams->pol == 'R' ? 1 : 0),
                   hi_lo,
