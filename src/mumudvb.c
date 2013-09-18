@@ -2294,11 +2294,15 @@ void *monitor_func(void* arg)
       params->stats_infos->compute_traffic_time=monitor_now;
       for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++)
       {
+        mumudvb_channel_t *current;
+        current=&params->chan_and_pids->channels[curr_channel];
+        pthread_mutex_lock(&current->lock);
         if (time_interval!=0)
           params->chan_and_pids->channels[curr_channel].traffic=((float)params->chan_and_pids->channels[curr_channel].sent_data)/time_interval*1/1000;
         else
           params->chan_and_pids->channels[curr_channel].traffic=0;
         params->chan_and_pids->channels[curr_channel].sent_data=0;
+        pthread_mutex_unlock(&current->lock);
       }
     }
 

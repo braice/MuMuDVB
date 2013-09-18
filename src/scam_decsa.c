@@ -163,10 +163,6 @@ static void *decsathread_func(void* arg)
 
     scrambling_control_packet = ((channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3] & 0xc0) >> 6);
 
-    pthread_mutex_lock(&channel->cw_lock);
-    ca_idx = channel->ca_idx;
-    pthread_mutex_unlock(&channel->cw_lock);
-
     offset = ts_packet_get_payload_offset(channel->ring_buf->data[channel->ring_buf->read_decsa_idx]);
     len=188-offset;
 
@@ -245,6 +241,10 @@ static void *decsathread_func(void* arg)
       channel->ring_buf->to_send+= scrambled  + nscrambled;
       nscrambled=0;
       scrambled=0;
+
+      pthread_mutex_lock(&channel->cw_lock);
+      ca_idx = channel->ca_idx;
+      pthread_mutex_unlock(&channel->cw_lock);
     }
   }
   pthread_mutex_unlock(&channel->ring_buf->lock);
