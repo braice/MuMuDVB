@@ -296,7 +296,7 @@ void scam_channel_stop(mumudvb_channel_t *channel)
     free(channel->ring_buf->data);
     free(channel->ring_buf->time_send);
     free(channel->ring_buf->time_decsa);
-					
+
 	pthread_mutex_destroy(&channel->ring_buf->lock);
     free(channel->ring_buf);
 }
