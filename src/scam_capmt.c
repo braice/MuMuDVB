@@ -81,7 +81,7 @@ int scam_send_capmt(mumudvb_channel_t *channel, int adapter)
   memcpy(caPMT + 17, (*(channel->pmt_packet)).data_full + 12, (*(channel->pmt_packet)).len_full -12 - 4);
   length_field = 17 + ((*(channel->pmt_packet)).len_full - 11 - 4) - 6;
   caPMT[4] = length_field >> 8;
-  caPMT[5] = length_field & 0xff;	
+  caPMT[5] = length_field & 0xff;
   toWrite = length_field + 6;
 
   if (channel->camd_socket == 0)
@@ -93,22 +93,18 @@ int scam_send_capmt(mumudvb_channel_t *channel, int adapter)
     snprintf(serv_addr_un.sun_path, sizeof(serv_addr_un.sun_path), "/tmp/camd.socket");
     if (connect(channel->camd_socket, (const struct sockaddr *) &serv_addr_un, sizeof(serv_addr_un)) != 0)
     {
-	  log_message(log_module, MSG_ERROR,"cannot connect to /tmp/camd.socket for channel %s. Do you have OSCam running?\n", channel->name);
-	  channel->camd_socket = 0;
-	  free(caPMT);
-	  return 1;
-    }
-    else
-	  log_message(log_module,  MSG_DEBUG, "created socket for channel %s\n", channel->name);
-	  
+      log_message(log_module, MSG_ERROR,"cannot connect to /tmp/camd.socket for channel %s. Do you have OSCam running?\n", channel->name);
+      channel->camd_socket = 0;
+      free(caPMT);
+      return 1;
+    } else log_message(log_module,  MSG_DEBUG, "created socket for channel %s\n", channel->name);
   }
-  if (channel->camd_socket != 0)
-  {
+  if (channel->camd_socket != 0) {
     int wrote = write(channel->camd_socket, caPMT, toWrite);
-	log_message( log_module,  MSG_DEBUG, "sent CAPMT message to socket for channel %s, toWrite=%d wrote=%d\n", channel->name, toWrite, wrote);
+    log_message( log_module,  MSG_DEBUG, "sent CAPMT message to socket for channel %s, toWrite=%d wrote=%d\n", channel->name, toWrite, wrote);
     if (wrote != toWrite)
     {
-	  log_message(log_module, MSG_ERROR,"channel %s:wrote != toWrite\n", channel->name);
+      log_message(log_module, MSG_ERROR,"channel %s:wrote != toWrite\n", channel->name);
       close(channel->camd_socket);
       channel->camd_socket = 0;
     }

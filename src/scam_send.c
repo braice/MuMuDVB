@@ -74,77 +74,77 @@ void *sendthread_func(void* arg)
   uint64_t res_time;
   struct timespec r_time;
   while(!channel->sendthread_shutdown) {
-	int to_send;
-	pthread_mutex_lock(&channel->ring_buf->lock);
-	to_send = channel->ring_buf->to_send;
-	pthread_mutex_unlock(&channel->ring_buf->lock);
-	if (to_send)
-		break;
-	else
-		usleep(50000);
+    int to_send;
+    pthread_mutex_lock(&channel->ring_buf->lock);
+    to_send = channel->ring_buf->to_send;
+    pthread_mutex_unlock(&channel->ring_buf->lock);
+    if (to_send)
+      break;
+    else
+      usleep(50000);
   }
-	
+
   while(!channel->sendthread_shutdown) {
-	  pthread_mutex_lock(&channel->ring_buf->lock);
-	  uint64_t now_time=get_time();
-	  uint64_t send_time = channel->ring_buf->time_send[channel->ring_buf->read_send_idx];
-	  int to_descramble = channel->ring_buf->to_descramble;
-	  int to_send = channel->ring_buf->to_send;
-	  pthread_mutex_unlock(&channel->ring_buf->lock);
+    pthread_mutex_lock(&channel->ring_buf->lock);
+    uint64_t now_time=get_time();
+    uint64_t send_time = channel->ring_buf->time_send[channel->ring_buf->read_send_idx];
+    int to_descramble = channel->ring_buf->to_descramble;
+    int to_send = channel->ring_buf->to_send;
+    pthread_mutex_unlock(&channel->ring_buf->lock);
 
-	  if (to_send == 0) {
-	    log_message( log_module, MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,to_descramble,to_send); 
-	    usleep(50000);
-	    continue;
-	  }
+    if (to_send == 0) {
+      log_message( log_module, MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,to_descramble,to_send);
+      usleep(50000);
+      continue;
+    }
 
-	  if (now_time < send_time) {
-		  res_time=send_time - now_time;
-		  r_time.tv_sec=res_time/(1000000ull);
-		  r_time.tv_nsec=1000*(res_time%(1000000ull));
-		  while(nanosleep(&r_time, &r_time));
-	  }
+    if (now_time < send_time) {
+      res_time=send_time - now_time;
+      r_time.tv_sec=res_time/(1000000ull);
+      r_time.tv_nsec=1000*(res_time%(1000000ull));
+      while(nanosleep(&r_time, &r_time));
+    }
 
-	  pthread_mutex_lock(&channel->ring_buf->lock);
-	  pid = ((channel->ring_buf->data[channel->ring_buf->read_send_idx][1] & 0x1f) << 8) | (channel->ring_buf->data[channel->ring_buf->read_send_idx][2]);
-	  ScramblingControl = (channel->ring_buf->data[channel->ring_buf->read_send_idx][3] & 0xc0) >> 6;
-	  for (curr_pid = 0; (curr_pid < channel->num_pids); curr_pid++)
-	       if ((channel->pids[curr_pid] == pid) || (channel->pids[curr_pid] == 8192)) //We can stream whole transponder using 8192
-	       {
-		   if ((ScramblingControl>0) && (pid != channel->pmt_pid) )
-		       channel->num_scrambled_packets++;
+    pthread_mutex_lock(&channel->ring_buf->lock);
+    pid = ((channel->ring_buf->data[channel->ring_buf->read_send_idx][1] & 0x1f) << 8) | (channel->ring_buf->data[channel->ring_buf->read_send_idx][2]);
+    ScramblingControl = (channel->ring_buf->data[channel->ring_buf->read_send_idx][3] & 0xc0) >> 6;
+    for (curr_pid = 0; (curr_pid < channel->num_pids); curr_pid++)
+      if ((channel->pids[curr_pid] == pid) || (channel->pids[curr_pid] == 8192)) //We can stream whole transponder using 8192
+      {
+        if ((ScramblingControl>0) && (pid != channel->pmt_pid) )
+           channel->num_scrambled_packets++;
 
-		       //check if the PID is scrambled for determining its state
-		       if (ScramblingControl>0) channel->pids_num_scrambled_packets[curr_pid]++;
+         //check if the PID is scrambled for determining its state
+         if (ScramblingControl>0) channel->pids_num_scrambled_packets[curr_pid]++;
 
-			 //we don't count the PMT pid for up channels
-		       if (pid != channel->pmt_pid)
-			   channel->num_packet++;
-	       break;
-	       }
-          //avoid sending of scrambled channels if we asked to
-	  send_packet=1;
-          if(chan_and_pids.dont_send_scrambled && (ScramblingControl>0)&& (channel->pmt_pid) )
-            send_packet=0;
-	  pthread_mutex_unlock(&chan_and_pids.lock);
+           //we don't count the PMT pid for up channels
+         if (pid != channel->pmt_pid)
+             channel->num_packet++;
+         break;
+      }
+    //avoid sending of scrambled channels if we asked to
+    send_packet=1;
+    if(chan_and_pids.dont_send_scrambled && (ScramblingControl>0)&& (channel->pmt_pid) )
+      send_packet=0;
+    pthread_mutex_unlock(&chan_and_pids.lock);
 
-	  if (send_packet) {
-              // we fill the channel buffer
-	      memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data[channel->ring_buf->read_send_idx], TS_PACKET_SIZE);
-	      channel->nb_bytes += TS_PACKET_SIZE;
-	  }
-	  ++channel->ring_buf->read_send_idx;
-	  channel->ring_buf->read_send_idx&=(channel->ring_buffer_size -1);
+    if (send_packet) {
+      // we fill the channel buffer
+      memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data[channel->ring_buf->read_send_idx], TS_PACKET_SIZE);
+      channel->nb_bytes += TS_PACKET_SIZE;
+    }
+    ++channel->ring_buf->read_send_idx;
+    channel->ring_buf->read_send_idx&=(channel->ring_buffer_size -1);
 
-	  --channel->ring_buf->to_send;
-	  pthread_mutex_unlock(&channel->ring_buf->lock);
+    --channel->ring_buf->to_send;
+    pthread_mutex_unlock(&channel->ring_buf->lock);
 
-          //The buffer is full, we send it
-	  if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
-	    ||(multicast_vars.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
-          {
-	      send_func(channel, send_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
-          }
+    //The buffer is full, we send it
+    if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
+      ||(multicast_vars.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
+    {
+      send_func(channel, send_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
+    }
   }
   return 0;
 }
@@ -173,8 +173,8 @@ void scam_send_start(mumudvb_channel_t *channel)
 
 void scam_send_stop(mumudvb_channel_t *channel)
 {
-    log_message(log_module,MSG_DEBUG,"Send Thread closing, channel %s\n", channel->name);
-	channel->sendthread_shutdown=1;
-	pthread_join(channel->sendthread,NULL);
-	log_message(log_module,MSG_DEBUG,"Send Thread closed, channel %s\n", channel->name);
+  log_message(log_module,MSG_DEBUG,"Send Thread closing, channel %s\n", channel->name);
+  channel->sendthread_shutdown=1;
+  pthread_join(channel->sendthread,NULL);
+  log_message(log_module,MSG_DEBUG,"Send Thread closed, channel %s\n", channel->name);
 }
