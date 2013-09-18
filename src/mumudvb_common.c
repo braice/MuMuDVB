@@ -329,9 +329,10 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
     } else
 #endif
     {
-	pthread_mutex_lock(&chan_and_pids->lock);
+
         pid = ((ts_packet[1] & 0x1f) << 8) | (ts_packet[2]);
         ScramblingControl = (ts_packet[3] & 0xc0) >> 6;
+        pthread_mutex_lock(&channel->lock);
 	for (curr_pid = 0; (curr_pid < channel->num_pids); curr_pid++)
            if ((channel->pids[curr_pid] == pid) || (channel->pids[curr_pid] == 8192)) //We can stream whole transponder using 8192
            {
@@ -346,11 +347,11 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 		       channel->num_packet++;
     	   break;
            }
+        pthread_mutex_unlock(&channel->lock);
         //avoid sending of scrambled channels if we asked to
 	send_packet=1;
         if(chan_and_pids->dont_send_scrambled && (ScramblingControl>0)&& (channel->pmt_pid) )
           send_packet=0;
-	pthread_mutex_unlock(&chan_and_pids->lock);
 
 	if (send_packet) {
 	    // we fill the channel buffer

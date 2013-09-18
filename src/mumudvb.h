@@ -256,6 +256,8 @@ struct unicast_client_t;
  *  - the odd/even keys, since they have their own locking.
  */
 typedef struct mumudvb_channel_t{
+  /** Mutex for odd_cw and even_cw. */
+  pthread_mutex_t lock;
   /** The logical channel number*/
   int logical_channel_number;
   /**Tell the total packet number (without pmt) for the scrambling ratio and up/down detection*/

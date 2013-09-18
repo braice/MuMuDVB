@@ -106,8 +106,11 @@ void *sendthread_func(void* arg)
     }
 
     pthread_mutex_lock(&channel->ring_buf->lock);
+
     pid = ((channel->ring_buf->data[channel->ring_buf->read_send_idx][1] & 0x1f) << 8) | (channel->ring_buf->data[channel->ring_buf->read_send_idx][2]);
     ScramblingControl = (channel->ring_buf->data[channel->ring_buf->read_send_idx][3] & 0xc0) >> 6;
+
+    pthread_mutex_lock(&channel->lock);
     for (curr_pid = 0; (curr_pid < channel->num_pids); curr_pid++)
       if ((channel->pids[curr_pid] == pid) || (channel->pids[curr_pid] == 8192)) //We can stream whole transponder using 8192
       {
@@ -122,11 +125,11 @@ void *sendthread_func(void* arg)
              channel->num_packet++;
          break;
       }
+    pthread_mutex_unlock(&channel->lock);
     //avoid sending of scrambled channels if we asked to
     send_packet=1;
     if(chan_and_pids.dont_send_scrambled && (ScramblingControl>0)&& (channel->pmt_pid) )
       send_packet=0;
-    pthread_mutex_unlock(&chan_and_pids.lock);
 
     if (send_packet) {
       // we fill the channel buffer

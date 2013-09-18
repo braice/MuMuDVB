@@ -553,8 +553,10 @@ int
   //paranoya we clear all the content of all the channels
   memset (&chan_and_pids.channels, 0, sizeof (mumudvb_channel_t)*MAX_CHANNELS);
 #ifdef ENABLE_SCAM_SUPPORT
-  for (int i = 0; i < MAX_CHANNELS; ++i)
+  for (int i = 0; i < MAX_CHANNELS; ++i) {
+    pthread_mutex_init(&chan_and_pids.channels[i].lock, NULL);
     pthread_mutex_init(&chan_and_pids.channels[i].cw_lock, NULL);
+  }
 #endif
 
 
@@ -2362,11 +2364,13 @@ void *monitor_func(void* arg)
     {
       mumudvb_channel_t *current;
       current=&params->chan_and_pids->channels[curr_channel];
+      pthread_mutex_lock(&current->lock);
       /* Calcultation of the ratio (percentage) of scrambled packets received*/
       if (current->num_packet >0 && current->num_scrambled_packets>10)
         current->ratio_scrambled = (int)(current->num_scrambled_packets*100/(current->num_packet));
       else
         current->ratio_scrambled = 0;
+      pthread_mutex_unlock(&current->lock);
 
       /* Test if we have only unscrambled packets (<2%) - scrambled_channel=FULLY_UNSCRAMBLED : fully unscrambled*/
       if ((current->ratio_scrambled < 2) && (current->scrambled_channel != FULLY_UNSCRAMBLED))
@@ -2423,14 +2427,17 @@ void *monitor_func(void* arg)
         current=&params->chan_and_pids->channels[curr_channel];
         double packets_per_sec;
         int num_scrambled;
-        if(params->chan_and_pids->dont_send_scrambled)
+        pthread_mutex_lock(&current->lock);
+        if(params->chan_and_pids->dont_send_scrambled) {
           num_scrambled=current->num_scrambled_packets;
+        }
         else
             num_scrambled=0;
         if (monitor_now>last_updown_check)
             packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
         else
           packets_per_sec=0;
+        pthread_mutex_unlock(&current->lock);
         if( params->stats_infos->debug_updown)
         {
           log_message( log_module,  MSG_FLOOD,
@@ -2461,8 +2468,12 @@ void *monitor_func(void* arg)
     pthread_mutex_lock(&chan_and_pids.lock);
     for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++)
     {
+      mumudvb_channel_t *current;
+      current=&params->chan_and_pids->channels[curr_channel];
+      pthread_mutex_lock(&current->lock);
       params->chan_and_pids->channels[curr_channel].num_packet = 0;
       params->chan_and_pids->channels[curr_channel].num_scrambled_packets = 0;
+      pthread_mutex_unlock(&current->lock);
     }
     pthread_mutex_unlock(&chan_and_pids.lock);
     last_updown_check=monitor_now;
