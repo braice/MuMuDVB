@@ -310,7 +310,7 @@ int eit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
 
 			rewrite_vars->eit_needs_update = 0;
 
-			log_message( log_module, MSG_WARN,"!!Stored after update");
+			log_message( log_module, MSG_DETAIL,"!!Stored after update");
 			eit_show_stored(rewrite_vars);
 
 		}
