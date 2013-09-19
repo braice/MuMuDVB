@@ -73,7 +73,7 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
       return -1;
     }
   }
-  if (!strcmp (substring, "switch_input"))
+  else if (!strcmp (substring, "switch_input"))
   {
     substring = strtok (NULL, delimiteurs);
     tuneparams->switch_no = atoi (substring);
@@ -693,7 +693,7 @@ static int do_diseqc(int fd, unsigned char sat_no,  unsigned char switch_no, cha
   }
 
   //Diseqc compliant hardware
-  if(sat_no != 0)
+  if((sat_no != 0)||(switch_no!=0))
   {
     cmd[0]=malloc(sizeof(struct diseqc_cmd));
     if(cmd[0]==NULL)
