@@ -2374,7 +2374,6 @@ void *monitor_func(void* arg)
         current->ratio_scrambled = (int)(current->num_scrambled_packets*100/(current->num_packet));
       else
         current->ratio_scrambled = 0;
-      pthread_mutex_unlock(&current->lock);
 
       /* Test if we have only unscrambled packets (<2%) - scrambled_channel=FULLY_UNSCRAMBLED : fully unscrambled*/
       if ((current->ratio_scrambled < 2) && (current->scrambled_channel != FULLY_UNSCRAMBLED))
@@ -2410,6 +2409,7 @@ void *monitor_func(void* arg)
             current->pids_scrambled[curr_pid]=0;
         current->pids_num_scrambled_packets[curr_pid]=0;
       }
+      pthread_mutex_unlock(&current->lock);
     }
 
 
