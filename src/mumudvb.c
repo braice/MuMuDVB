@@ -1614,7 +1614,6 @@ int
 	pthread_mutex_lock(&cardthreadparams.carddatamutex);
         cardthreadparams.main_waiting=1;
         pthread_cond_wait(&cardthreadparams.threadcond,&cardthreadparams.carddatamutex);
-	//pthread_mutex_lock(&cardthreadparams.carddatamutex);
         cardthreadparams.main_waiting=0;
       }
       else
@@ -2472,7 +2471,6 @@ void *monitor_func(void* arg)
       }
     }
     /* reinit */
-    pthread_mutex_lock(&chan_and_pids.lock);
     for (curr_channel = 0; curr_channel < params->chan_and_pids->number_of_channels; curr_channel++)
     {
       mumudvb_channel_t *current;
@@ -2482,7 +2480,6 @@ void *monitor_func(void* arg)
       params->chan_and_pids->channels[curr_channel].num_scrambled_packets = 0;
       pthread_mutex_unlock(&current->stats_lock);
     }
-    pthread_mutex_unlock(&chan_and_pids.lock);
     last_updown_check=monitor_now;
 
 
