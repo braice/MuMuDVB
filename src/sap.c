@@ -562,7 +562,7 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
       }
       memcpy(sap_message4->buf + sap_message4->len, payload4.string, payload4.length);
       log_message( log_module, MSG_DEBUG,"SAP payload v4");
-      log_message( log_module, MSG_DEBUG, (char *) &sap_message4->buf[sap_message4->len]);
+      log_message( log_module, MSG_DEBUG, "%s", (char *) &sap_message4->buf[sap_message4->len]);
       log_message( log_module, MSG_DEBUG,"end of SAP payload v4");
       sap_message4->len+=payload4.length;
       sap_message4->to_be_sent=1;
@@ -577,7 +577,7 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
       }
       memcpy(sap_message6->buf + sap_message6->len, payload6.string, payload6.length);
       log_message( log_module, MSG_DEBUG,"SAP payload v6");
-      log_message( log_module, MSG_DEBUG, (char *) &sap_message6->buf[sap_message6->len]);
+      log_message( log_module, MSG_DEBUG, "%s", (char *) &sap_message6->buf[sap_message6->len]);
       log_message( log_module, MSG_DEBUG,"end of SAP payload v6");
       sap_message6->len+=payload6.length;
       sap_message6->to_be_sent=1;
