@@ -256,6 +256,8 @@ struct unicast_client_t;
  *  - the odd/even keys, since they have their own locking.
  */
 typedef struct mumudvb_channel_t{
+  /** Mutex for odd_cw and even_cw. */
+  pthread_mutex_t lock;
   /** The logical channel number*/
   int logical_channel_number;
   /**Tell the total packet number (without pmt) for the scrambling ratio and up/down detection*/
@@ -323,10 +325,17 @@ typedef struct mumudvb_channel_t{
   unsigned char odd_cw[8];
   /** Even control word for descrambling */
   unsigned char even_cw[8];
+
   /** Indicating if we have another odd cw for descrambling */
-  unsigned int got_key_odd;
+  unsigned char got_key_odd;
   /** Indicating if we have another even cw for descrambling */
-  unsigned int got_key_even;
+  unsigned char got_key_even;
+
+  unsigned int ca_idx;
+  unsigned int ca_idx_refcnt;
+
+
+
   /** Thread for software descrambling */
   pthread_t decsathread;
   /** Descrambling thread shutdown control */
@@ -481,9 +490,6 @@ typedef struct mumudvb_chan_and_pids_t{
   /** The number of TS discontinuities per PID **/
   int16_t continuity_counter_pid[8193]; //on 16 bits for storing the initial -1
   uint8_t check_cc;
-#ifdef ENABLE_SCAM_SUPPORT
-  mumudvb_channel_t* scam_idx[MAX_CHANNELS]; 
-#endif
 }mumudvb_chan_and_pids_t;
 
 
