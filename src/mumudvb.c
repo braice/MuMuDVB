@@ -1611,43 +1611,43 @@ int
     {
       if(!card_buffer.bytes_in_write_buffer && !cardthreadparams.unicast_data)
       {
-	pthread_mutex_lock(&cardthreadparams.carddatamutex);
+    	pthread_mutex_lock(&cardthreadparams.carddatamutex);
         cardthreadparams.main_waiting=1;
         pthread_cond_wait(&cardthreadparams.threadcond,&cardthreadparams.carddatamutex);
         cardthreadparams.main_waiting=0;
       }
       else
-	pthread_mutex_lock(&cardthreadparams.carddatamutex);
+    	pthread_mutex_lock(&cardthreadparams.carddatamutex);
 
       if(card_buffer.bytes_in_write_buffer)
       {
-	if(card_buffer.actual_read_buffer==1)
-	{
-	  card_buffer.reading_buffer=card_buffer.buffer2;
-	  card_buffer.writing_buffer=card_buffer.buffer1;
-	  card_buffer.actual_read_buffer=2;
-	}
-	else
-	{
-	  card_buffer.reading_buffer=card_buffer.buffer1;
-	  card_buffer.writing_buffer=card_buffer.buffer2;
-	  card_buffer.actual_read_buffer=1;
-	}
-	card_buffer.bytes_read=card_buffer.bytes_in_write_buffer;
-	card_buffer.bytes_in_write_buffer=0;
+    	  if(card_buffer.actual_read_buffer==1)
+    	  {
+    		  card_buffer.reading_buffer=card_buffer.buffer2;
+    		  card_buffer.writing_buffer=card_buffer.buffer1;
+    		  card_buffer.actual_read_buffer=2;
+    	  }
+    	  else
+    	  {
+    		  card_buffer.reading_buffer=card_buffer.buffer1;
+    		  card_buffer.writing_buffer=card_buffer.buffer2;
+    		  card_buffer.actual_read_buffer=1;
+    	  }
+    	  card_buffer.bytes_read=card_buffer.bytes_in_write_buffer;
+    	  card_buffer.bytes_in_write_buffer=0;
       }
       pthread_mutex_unlock(&cardthreadparams.carddatamutex);
       if(cardthreadparams.unicast_data)
       {
-	iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &strengthparams, &autoconf_vars, cam_vars_ptr, scam_vars_ptr);
-	if(iRet)
-	{
-	  set_interrupted(iRet);
-	  continue;
-	}
-	pthread_mutex_lock(&cardthreadparams.carddatamutex);
-	cardthreadparams.unicast_data=0;
-	pthread_mutex_unlock(&cardthreadparams.carddatamutex);
+    	  iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &strengthparams, &autoconf_vars, cam_vars_ptr, scam_vars_ptr);
+    	  if(iRet)
+    	  {
+    		  set_interrupted(iRet);
+    		  continue;
+    	  }
+    	  pthread_mutex_lock(&cardthreadparams.carddatamutex);
+    	  cardthreadparams.unicast_data=0;
+    	  pthread_mutex_unlock(&cardthreadparams.carddatamutex);
 
       }
     }
