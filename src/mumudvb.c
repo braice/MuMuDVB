@@ -557,7 +557,7 @@ int
   memset (&chan_and_pids.channels, 0, sizeof (mumudvb_channel_t)*MAX_CHANNELS);
 #ifdef ENABLE_SCAM_SUPPORT
   for (int i = 0; i < MAX_CHANNELS; ++i) {
-    pthread_mutex_init(&chan_and_pids.channels[i].lock, NULL);
+    pthread_mutex_init(&chan_and_pids.channels[i].stats_lock, NULL);
     pthread_mutex_init(&chan_and_pids.channels[i].cw_lock, NULL);
   }
 #endif
@@ -2299,13 +2299,13 @@ void *monitor_func(void* arg)
       {
         mumudvb_channel_t *current;
         current=&params->chan_and_pids->channels[curr_channel];
-        pthread_mutex_lock(&current->lock);
+        pthread_mutex_lock(&current->stats_lock);
         if (time_interval!=0)
           params->chan_and_pids->channels[curr_channel].traffic=((float)params->chan_and_pids->channels[curr_channel].sent_data)/time_interval*1/1000;
         else
           params->chan_and_pids->channels[curr_channel].traffic=0;
         params->chan_and_pids->channels[curr_channel].sent_data=0;
-        pthread_mutex_unlock(&current->lock);
+        pthread_mutex_unlock(&current->stats_lock);
       }
     }
 
@@ -2371,8 +2371,8 @@ void *monitor_func(void* arg)
     {
       mumudvb_channel_t *current;
       current=&params->chan_and_pids->channels[curr_channel];
-      pthread_mutex_lock(&current->lock);
-      /* Calcultation of the ratio (percentage) of scrambled packets received*/
+      pthread_mutex_lock(&current->stats_lock);
+      /* Calculation of the ratio (percentage) of scrambled packets received*/
       if (current->num_packet >0 && current->num_scrambled_packets>10)
         current->ratio_scrambled = (int)(current->num_scrambled_packets*100/(current->num_packet));
       else
@@ -2386,7 +2386,7 @@ void *monitor_func(void* arg)
                       current->name, current->ratio_scrambled, params->tuneparams->card);
         current->scrambled_channel = FULLY_UNSCRAMBLED;// update
       }
-      /* Test if we have partiallay unscrambled packets (5%<=ratio<=75%) - scrambled_channel=PARTIALLY_UNSCRAMBLED : partially unscrambled*/
+      /* Test if we have partially unscrambled packets (5%<=ratio<=75%) - scrambled_channel=PARTIALLY_UNSCRAMBLED : partially unscrambled*/
       if ((current->ratio_scrambled >= 5) && (current->ratio_scrambled <= 75) && (current->scrambled_channel != PARTIALLY_UNSCRAMBLED))
       {
         log_message( log_module,  MSG_INFO,
@@ -2398,7 +2398,7 @@ void *monitor_func(void* arg)
       if ((current->ratio_scrambled > 80) && current->scrambled_channel != HIGHLY_SCRAMBLED)
       {
         log_message( log_module,  MSG_INFO,
-                      "Channel \"%s\" is now higly scrambled (%d%% of scrambled packets). Card %d\n",
+                      "Channel \"%s\" is now highly scrambled (%d%% of scrambled packets). Card %d\n",
                       current->name, current->ratio_scrambled, params->tuneparams->card);
         current->scrambled_channel = HIGHLY_SCRAMBLED;// update
       }
@@ -2412,7 +2412,7 @@ void *monitor_func(void* arg)
             current->pids_scrambled[curr_pid]=0;
         current->pids_num_scrambled_packets[curr_pid]=0;
       }
-      pthread_mutex_unlock(&current->lock);
+      pthread_mutex_unlock(&current->stats_lock);
     }
 
 
@@ -2434,7 +2434,7 @@ void *monitor_func(void* arg)
         current=&params->chan_and_pids->channels[curr_channel];
         double packets_per_sec;
         int num_scrambled;
-        pthread_mutex_lock(&current->lock);
+        pthread_mutex_lock(&current->stats_lock);
         if(params->chan_and_pids->dont_send_scrambled) {
           num_scrambled=current->num_scrambled_packets;
         }
@@ -2444,7 +2444,7 @@ void *monitor_func(void* arg)
             packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
         else
           packets_per_sec=0;
-        pthread_mutex_unlock(&current->lock);
+        pthread_mutex_unlock(&current->stats_lock);
         if( params->stats_infos->debug_updown)
         {
           log_message( log_module,  MSG_FLOOD,
@@ -2477,10 +2477,10 @@ void *monitor_func(void* arg)
     {
       mumudvb_channel_t *current;
       current=&params->chan_and_pids->channels[curr_channel];
-      pthread_mutex_lock(&current->lock);
+      pthread_mutex_lock(&current->stats_lock);
       params->chan_and_pids->channels[curr_channel].num_packet = 0;
       params->chan_and_pids->channels[curr_channel].num_scrambled_packets = 0;
-      pthread_mutex_unlock(&current->lock);
+      pthread_mutex_unlock(&current->stats_lock);
     }
     pthread_mutex_unlock(&chan_and_pids.lock);
     last_updown_check=monitor_now;
@@ -2540,9 +2540,9 @@ void *monitor_func(void* arg)
 				pthread_mutex_unlock(&channel->ring_buf->lock);
 			  }
 			  if (ring_buffer_num_packets>=channel->ring_buffer_size)
-				log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %llu\n",channel->name, ring_buffer_num_packets, channel->ring_buffer_size);
+				log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %llu\n",channel->name, ring_buffer_num_packets, (long long unsigned int)channel->ring_buffer_size);
 			  else
-				log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %llu, to descramble %u, to send %u\n",channel->name, ring_buffer_num_packets, channel->ring_buffer_size, to_descramble, to_send);
+				log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %llu, to descramble %u, to send %u\n",channel->name, ring_buffer_num_packets, (long long unsigned int)channel->ring_buffer_size, to_descramble, to_send);
 		  }
 		}
 	}

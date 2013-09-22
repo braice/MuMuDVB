@@ -332,7 +332,7 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 
         pid = ((ts_packet[1] & 0x1f) << 8) | (ts_packet[2]);
         ScramblingControl = (ts_packet[3] & 0xc0) >> 6;
-        pthread_mutex_lock(&channel->lock);
+        pthread_mutex_lock(&channel->stats_lock);
 	for (curr_pid = 0; (curr_pid < channel->num_pids); curr_pid++)
            if ((channel->pids[curr_pid] == pid) || (channel->pids[curr_pid] == 8192)) //We can stream whole transponder using 8192
            {
@@ -347,7 +347,7 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 		       channel->num_packet++;
     	   break;
            }
-        pthread_mutex_unlock(&channel->lock);
+        pthread_mutex_unlock(&channel->stats_lock);
         //avoid sending of scrambled channels if we asked to
 	send_packet=1;
         if(chan_and_pids->dont_send_scrambled && (ScramblingControl>0)&& (channel->pmt_pid) )
@@ -376,10 +376,10 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
 {
 	//For bandwith measurement (traffic)
-	pthread_mutex_lock(&channel->lock);
+	pthread_mutex_lock(&channel->stats_lock);
 	channel->sent_data+=channel->nb_bytes+20+8; // IP=20 bytes header and UDP=8 bytes header
 	if (multicast_vars->rtp_header) channel->sent_data+=RTP_HEADER_LEN;
-	pthread_mutex_unlock(&channel->lock);
+	pthread_mutex_unlock(&channel->stats_lock);
 
 	/********* TRANSCODE **********/
 #ifdef ENABLE_TRANSCODING
