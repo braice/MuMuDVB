@@ -56,6 +56,8 @@ Example of response with comments:
 		<ratio_scrambled>99</ratio_scrambled>                            => Percentage of scrambled packets received
 		<service_id>8201</service_id>                                    => Service ID of channel
 		<pmt_pid>1280</pmt_pid>                                          => PMT PID of channel
+		<pmt_version>1</pmt_version>                                     => The version of the PMT PID in the TS stream
+		<pcr_pid>160</pcr_pid>                                           => PCR PID of channel
 		<unicast_port>0</unicast_port>                                   => Unicast port associated with the channle if unicast is setup by port
 		<ca_sys>                                                         => Loop over all the CA systems listed in the PMT for the channel
 			<ca num="256"><![CDATA[Canal Plus]]></ca>                    => CA identifier and description if avaliable

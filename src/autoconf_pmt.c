@@ -62,7 +62,7 @@ void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len);
 int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char *card_base_path, int tuner, uint8_t *asked_pid, uint8_t *number_chan_asked_pid,fds_t *fds)
 {
   int section_len, descr_section_len, i,j;
-  int pid,pcr_pid;
+  int pid;
   int pid_type;
   int found=0;
   pmt_t *header;
@@ -354,32 +354,32 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
   * PCR PID
   **************************/
 
-  pcr_pid=HILO(header->PCR_PID); //The PCR pid.
+  channel->pcr_pid=HILO(header->PCR_PID); //The PCR pid.
   //we check if it's not already included (ie the pcr is carried with the video)
   found=0;
   for(i=0;i<channel->num_pids;i++)
   {
-    if((channel_update && temp_pids[i]==pcr_pid) || (!channel_update && channel->pids[i]==pcr_pid))
+    if((channel_update && temp_pids[i]==channel->pcr_pid) || (!channel_update && channel->pids[i]==channel->pcr_pid))
       found=1;
   }
   if(!found)
   {
     if(channel_update)
     {
-      temp_pids[temp_num_pids]=pcr_pid;
+      temp_pids[temp_num_pids]=channel->pcr_pid;
       temp_pids_type[temp_num_pids]=PID_PCR;
       snprintf(temp_pids_language[temp_num_pids],4,"%s","---");
       temp_num_pids++;
     }
     else
     {
-      channel->pids[channel->num_pids]=pcr_pid;
+      channel->pids[channel->num_pids]=channel->pcr_pid;
       channel->pids_type[channel->num_pids]=PID_PCR;
       snprintf(channel->pids_language[channel->num_pids],4,"%s","---");
       channel->num_pids++;
     }
-    log_message( log_module,  MSG_DEBUG, "Added PCR pid %d\n",pcr_pid);
   }
+  log_message( log_module,  MSG_DEBUG, "PCR pid %d\n",channel->pcr_pid);
 
   /**************************
   * PCR PID - END
