@@ -171,7 +171,6 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 */
 int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels)
 {
-  extern mumudvb_chan_and_pids_t chan_and_pids;
   unicast_client_t *prev_client,*next_client;
 
   log_message( log_module, MSG_FLOOD,"We delete the client %s:%d, socket %d\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port, client->Socket);
@@ -201,11 +200,9 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *cli
 
     if(client->chan_prev==NULL)
     {
-      pthread_mutex_lock(&chan_and_pids.lock);
       channels[client->channel].clients=client->chan_next;
       if(channels[client->channel].clients)
         channels[client->channel].clients->chan_prev=NULL;
-      pthread_mutex_unlock(&chan_and_pids.lock);
     }
     else
     {
