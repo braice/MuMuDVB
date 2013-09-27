@@ -1154,7 +1154,7 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
 			unicast_client=unicast_client->chan_next;
 			clients++;
 		}
-		unicast_reply_write(reply, "{\"number\":%d, \"lcn\":%d, \"name\":\"%s\", \"sap_group\":\"%s\", \"ip_multicast\":\"%s\", \"port_multicast\":%d, \"num_clients\":%d, \"scrambling_ratio\":%d, \"is_up\":%d,",
+		unicast_reply_write(reply, "{\"number\":%d, \"lcn\":%d, \"name\":\"%s\", \"sap_group\":\"%s\", \"ip_multicast\":\"%s\", \"port_multicast\":%d, \"num_clients\":%d, \"scrambling_ratio\":%d, \"is_up\":%d, \"pcr_pid\":%d, \"pmt_version\":%d, ",
 				curr_channel+1,
 				channels[curr_channel].logical_channel_number,
 				channels[curr_channel].name,
@@ -1163,7 +1163,9 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
 				channels[curr_channel].portOut,
 				clients,
 				channels[curr_channel].ratio_scrambled,
-				channels[curr_channel].streamed_channel);
+				channels[curr_channel].streamed_channel,
+				channels[curr_channel].pcr_pid,
+				channels[curr_channel].pmt_version );
 
 		unicast_reply_write(reply, "\"unicast_port\":%d, \"service_id\":%d, \"service_type\":\"%s\", \"pids_num\":%d, \n",
 				channels[curr_channel].unicast_port,
