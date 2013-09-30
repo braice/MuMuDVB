@@ -83,7 +83,7 @@
  * unicast_http.c unicast_http.h : HTTP unicast
  */
 
-#define _GNU_SOURCE		//in order to use program_invocation_short_name and recursive mutexes (GNU extensions)
+#define _GNU_SOURCE		//in order to use program_invocation_short_name (GNU extension)
 
 
 #include "config.h"
@@ -164,7 +164,7 @@ card_thread_parameters_t cardthreadparams;
 
 
 mumudvb_chan_and_pids_t chan_and_pids={
-  .lock=PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP,
+  .lock=PTHREAD_MUTEX_INITIALIZER,
   .number_of_channels=0,
   .dont_send_scrambled=0,
   .filter_transport_error=0,
@@ -204,7 +204,7 @@ unicast_parameters_t unicast_vars={
 
 //autoconfiguration
 autoconf_parameters_t autoconf_vars={
-  .lock=PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP,
+  .lock=PTHREAD_MUTEX_INITIALIZER,
   .autoconfiguration=0,
   .autoconf_radios=0,
   .autoconf_scrambled=0,
@@ -1781,10 +1781,8 @@ int
 	     if(sdt_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars)==1)
 	     {
 	       log_message( log_module, MSG_DETAIL,"The SDT version changed, we force the update of all the channels.\n");
-	       pthread_mutex_lock(&chan_and_pids.lock);
 	       for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
-	         chan_and_pids.channels[curr_channel].sdt_rewrite_skip=0;
-	       pthread_mutex_unlock(&chan_and_pids.lock);
+	         chan_and_pids.channels[curr_channel].sdt_rewrite_skip=0; //no lock needed, accessed only by main thread
 	     }
 	   }
       /******************************************************/
@@ -2258,23 +2256,21 @@ void *monitor_func(void* arg)
     }
 
     /*autoconfiguration*/
-    pthread_mutex_lock(&params->autoconf_vars->lock);
-    pthread_mutex_lock(&params->chan_and_pids->lock);
-
     /*We check if we reached the autoconfiguration timeout*/
+    pthread_mutex_lock(&params->autoconf_vars->lock);
     if(params->autoconf_vars->autoconfiguration)
     {
       int iRet;
+      //autoconf_poll deals with the locks
       iRet = autoconf_poll(now, params->autoconf_vars, params->chan_and_pids, params->tuneparams, params->multicast_vars, &fds, params->unicast_vars, params->server_id, params->scam_vars_v);
 
       if(iRet)
         set_interrupted(iRet);
     }
-    autoconf=params->autoconf_vars->autoconfiguration;//to reduce the lock range
+    autoconf=params->autoconf_vars->autoconfiguration;//to reduce the lock range we store the status
     //this value is not going from null values to non zero values due to the sequencial implementation of autoconfiguration
-
     pthread_mutex_unlock(&params->autoconf_vars->lock);
-
+    pthread_mutex_lock(&params->chan_and_pids->lock);
     if(!autoconf)
     {
       /*we are not doing autoconfiguration we can do something else*/
@@ -2284,7 +2280,7 @@ void *monitor_func(void* arg)
 
 
     /*******************************************/
-    /* compute the bandwith occupied by        */
+    /* compute the bandwidth occupied by        */
     /* each channel                            */
     /*******************************************/
     float time_interval;
