@@ -138,6 +138,7 @@ static void *decsathread_func(void* arg)
   struct dvbcsa_bs_key_s *even_key;
   odd_key=dvbcsa_bs_key_alloc();
   even_key=dvbcsa_bs_key_alloc();
+  int first_run = 1;
 
 
   /* For simplicity, and to avoid taking the lock anew for every packet,
@@ -148,7 +149,11 @@ static void *decsathread_func(void* arg)
     uint64_t decsa_time = channel->ring_buf->time_decsa[channel->ring_buf->read_decsa_idx];
 
     if (channel->ring_buf->to_descramble == 0) {
-      log_message( log_module, MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,channel->ring_buf->to_descramble,channel->ring_buf->to_send);
+      if (first_run) {
+        first_run = 0;
+        log_message( log_module, MSG_DEBUG, "first run waiting");
+      } else
+        log_message( log_module, MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,channel->ring_buf->to_descramble,channel->ring_buf->to_send);
       pthread_mutex_unlock(&channel->ring_buf->lock);
       usleep(50000);
       pthread_mutex_lock(&channel->ring_buf->lock);
