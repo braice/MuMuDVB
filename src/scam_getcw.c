@@ -157,7 +157,7 @@ static void *getcwthread_func(void* arg)
           for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++) {
             mumudvb_channel_t *channel = &chan_and_pids.channels[curr_channel];
             for (curr_pid = 1; curr_pid < channel->num_pids; curr_pid++) {
-              if ((channel->pids_type[curr_pid] != PID_EXTRA_VBIDATA) && (channel->pids_type[curr_pid] != PID_EXTRA_VBITELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_TELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_SUBTITLE) && (channel->pids_type[curr_pid] != PID_UNKNOW) && (channel->pids[curr_pid] == (int) scam_params->ca_pid.pid)) {
+              if ((channel->pids_type[curr_pid] != PID_EXTRA_VBIDATA) && (channel->pids_type[curr_pid] != PID_EXTRA_VBITELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_TELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_SUBTITLE) && (channel->pids[curr_pid] == (int) scam_params->ca_pid.pid)) {
                 pthread_mutex_lock(&channel->cw_lock);
                 --channel->ca_idx_refcnt;
                 if (!channel->ca_idx_refcnt) {
@@ -175,7 +175,7 @@ static void *getcwthread_func(void* arg)
           for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++) {
             mumudvb_channel_t *channel = &chan_and_pids.channels[curr_channel];
             for (curr_pid = 1; curr_pid < channel->num_pids; curr_pid++) {
-              if ((channel->pids_type[curr_pid] != PID_EXTRA_VBIDATA) && (channel->pids_type[curr_pid] != PID_EXTRA_VBITELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_TELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_SUBTITLE) && (channel->pids_type[curr_pid] != PID_UNKNOW) && (channel->pids[curr_pid] == (int) scam_params->ca_pid.pid)) {
+              if ((channel->pids_type[curr_pid] != PID_EXTRA_VBIDATA) && (channel->pids_type[curr_pid] != PID_EXTRA_VBITELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_TELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_SUBTITLE) && (channel->pids[curr_pid] == (int) scam_params->ca_pid.pid)) {
                 pthread_mutex_lock(&channel->cw_lock);
                 if(!channel->ca_idx_refcnt) {
                   channel->ca_idx = scam_params->ca_pid.index+1;
