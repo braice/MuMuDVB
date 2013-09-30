@@ -73,6 +73,7 @@ void *sendthread_func(void* arg)
   channel = ((mumudvb_channel_t *) arg);
   uint64_t res_time;
   struct timespec r_time;
+  int first_run = 1;
   while(!channel->sendthread_shutdown) {
     int to_send;
     pthread_mutex_lock(&channel->ring_buf->lock);
@@ -93,7 +94,12 @@ void *sendthread_func(void* arg)
     pthread_mutex_unlock(&channel->ring_buf->lock);
 
     if (to_send == 0) {
-      log_message( log_module, MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,to_descramble,to_send);
+      if (first_run) {
+        first_run = 0;
+        log_message( log_module, MSG_DEBUG, "first run waiting");
+      } else
+        log_message( log_module, MSG_ERROR, "thread starved, channel %s %u %u\n",channel->name,to_descramble,to_send);
+
       usleep(50000);
       continue;
     }
