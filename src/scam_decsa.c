@@ -139,6 +139,7 @@ static void *decsathread_func(void* arg)
   odd_key=dvbcsa_bs_key_alloc();
   even_key=dvbcsa_bs_key_alloc();
   int first_run = 1;
+  int got_first_even_key = 0, got_first_odd_key = 0;
 
 
   /* For simplicity, and to avoid taking the lock anew for every packet,
@@ -204,21 +205,23 @@ static void *decsathread_func(void* arg)
       odd_batch[odd_batch_idx].data=0;
 
       /* Load new keys if they are ready and we no longer use the old one. */
-      if (odd_batch_idx != 0 && even_batch_idx == 0) {
+      if ((odd_batch_idx != 0 && even_batch_idx == 0) || !got_first_even_key) {
         pthread_mutex_lock(&channel->cw_lock);
         if (channel->got_key_even) {
           dvbcsa_bs_key_set(channel->even_cw, even_key);
           log_message( log_module, MSG_DEBUG, "%016llx even key %02x %02x %02x %02x %02x %02x %02x %02x, channel %s\n", now_time, channel->even_cw[0], channel->even_cw[1], channel->even_cw[2], channel->even_cw[3], channel->even_cw[4], channel->even_cw[5], channel->even_cw[6], channel->even_cw[7],channel->name);
           channel->got_key_even = 0;
+          got_first_even_key = 1;
         }
         pthread_mutex_unlock(&channel->cw_lock);
       }
-      if (even_batch_idx != 0 && odd_batch_idx == 0) {
+      if ((even_batch_idx != 0 && odd_batch_idx == 0) || !got_first_odd_key) {
         pthread_mutex_lock(&channel->cw_lock);
         if (channel->got_key_odd) {
           dvbcsa_bs_key_set(channel->odd_cw, odd_key);
           log_message( log_module, MSG_DEBUG, " %016llx odd key %02x %02x %02x %02x %02x %02x %02x %02x, channel %s\n",now_time, channel->odd_cw[0], channel->odd_cw[1], channel->odd_cw[2], channel->odd_cw[3], channel->odd_cw[4], channel->odd_cw[5], channel->odd_cw[6], channel->odd_cw[7], channel->name);
           channel->got_key_odd = 0;
+          got_first_odd_key = 1;
         }
         pthread_mutex_unlock(&channel->cw_lock);
       }

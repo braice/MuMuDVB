@@ -68,7 +68,6 @@ typedef struct scam_parameters_t{
   pthread_t getcwthread;
   int getcwthread_shutdown;
   int net_socket_fd;
-  int bint;
   ca_descr_t ca_descr;
   ca_pid_t ca_pid;
   uint64_t ring_buffer_default_size,decsa_default_delay,send_default_delay;
