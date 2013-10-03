@@ -76,11 +76,10 @@ int scam_getcw_start(scam_parameters_t *scam_params, int adapter_id)
       scam_params->net_socket_fd = socket(PF_INET, SOCK_DGRAM, ptrp->p_proto);
       if (scam_params->net_socket_fd > 0)
       {
-        scam_params->bint = (bind(scam_params->net_socket_fd, (struct sockaddr *) &socketAddr, sizeof(socketAddr)) >= 0);
-        if (scam_params->bint >= 0)
-          log_message( log_module,  MSG_DEBUG, "network socket bint\n");
+        if (bind(scam_params->net_socket_fd, (struct sockaddr *) &socketAddr, sizeof(socketAddr)) >= 0)
+          log_message( log_module,  MSG_DEBUG, "network socket bind\n");
         else {
-          log_message( log_module,  MSG_ERROR, "cannot bint network socket\n");
+          log_message( log_module,  MSG_ERROR, "cannot bind network socket\n");
           return 1;
         }
       }
@@ -117,78 +116,76 @@ static void *getcwthread_func(void* arg)
 
   //Loop
   while(!scam_params->getcwthread_shutdown) {
-    if(scam_params->bint){
-      cRead = recv(scam_params->net_socket_fd, &buff, sizeof(buff), 0);
-      if (cRead <= 0)
-        break;
-      request = (int *) &buff;
-      if (*request == CA_SET_DESCR) {
-        memcpy((&(scam_params->ca_descr)), &buff[sizeof(int)], sizeof(ca_descr_t));
-        log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request index: %d, parity %d, key %02x %02x %02x %02x %02x %02x %02x %02x\n", scam_params->ca_descr.index, scam_params->ca_descr.parity, scam_params->ca_descr.cw[0], scam_params->ca_descr.cw[1], scam_params->ca_descr.cw[2], scam_params->ca_descr.cw[3], scam_params->ca_descr.cw[4], scam_params->ca_descr.cw[5], scam_params->ca_descr.cw[6], scam_params->ca_descr.cw[7]);
-        if(scam_params->ca_descr.index != (unsigned) -1) {
-          pthread_mutex_lock(&chan_and_pids.lock);
-          for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++) {
-            mumudvb_channel_t *channel = &chan_and_pids.channels[curr_channel];
-            pthread_mutex_lock(&channel->cw_lock);
-            if (channel->ca_idx == scam_params->ca_descr.index + 1) {
-              if (scam_params->ca_descr.parity) {
-                memcpy(channel->odd_cw,scam_params->ca_descr.cw,8);
-                channel->got_key_odd=1;
-              }
-              else {
-                memcpy(channel->even_cw,scam_params->ca_descr.cw,8);
-                channel->got_key_even=1;
-              }
+    cRead = recv(scam_params->net_socket_fd, &buff, sizeof(buff), 0);
+    if (cRead <= 0)
+      break;
+    request = (int *) &buff;
+    if (*request == CA_SET_DESCR) {
+      memcpy((&(scam_params->ca_descr)), &buff[sizeof(int)], sizeof(ca_descr_t));
+      log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request index: %d, parity %d, key %02x %02x %02x %02x %02x %02x %02x %02x\n", scam_params->ca_descr.index, scam_params->ca_descr.parity, scam_params->ca_descr.cw[0], scam_params->ca_descr.cw[1], scam_params->ca_descr.cw[2], scam_params->ca_descr.cw[3], scam_params->ca_descr.cw[4], scam_params->ca_descr.cw[5], scam_params->ca_descr.cw[6], scam_params->ca_descr.cw[7]);
+      if(scam_params->ca_descr.index != (unsigned) -1) {
+        pthread_mutex_lock(&chan_and_pids.lock);
+        for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++) {
+          mumudvb_channel_t *channel = &chan_and_pids.channels[curr_channel];
+          pthread_mutex_lock(&channel->cw_lock);
+          if (channel->ca_idx == scam_params->ca_descr.index + 1) {
+            if (scam_params->ca_descr.parity) {
+              memcpy(channel->odd_cw,scam_params->ca_descr.cw,8);
+              channel->got_key_odd=1;
             }
-            pthread_mutex_unlock(&channel->cw_lock);
+            else {
+              memcpy(channel->even_cw,scam_params->ca_descr.cw,8);
+              channel->got_key_even=1;
+            }
           }
-          pthread_mutex_unlock(&chan_and_pids.lock);
-        } else {
-          log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR removal request, ignoring");
+          pthread_mutex_unlock(&channel->cw_lock);
         }
+        pthread_mutex_unlock(&chan_and_pids.lock);
+      } else {
+        log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR removal request, ignoring");
       }
-      if (*request == CA_SET_PID)
-      {
-        memcpy((&(scam_params->ca_pid)), &buff[sizeof(int)], sizeof(ca_pid_t));
-        log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request index: %d pid: %d\n",scam_params->ca_pid.index, scam_params->ca_pid.pid);
-        if(scam_params->ca_pid.index == -1) {
-          log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID removal request, removing pid: %d\n", scam_params->ca_pid.pid);
-          pthread_mutex_lock(&chan_and_pids.lock);
-          for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++) {
-            mumudvb_channel_t *channel = &chan_and_pids.channels[curr_channel];
-            for (curr_pid = 1; curr_pid < channel->num_pids; curr_pid++) {
-              if ((channel->pids_type[curr_pid] != PID_EXTRA_VBIDATA) && (channel->pids_type[curr_pid] != PID_EXTRA_VBITELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_TELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_SUBTITLE) && (channel->pids[curr_pid] == (int) scam_params->ca_pid.pid)) {
-                pthread_mutex_lock(&channel->cw_lock);
-                --channel->ca_idx_refcnt;
-                if (!channel->ca_idx_refcnt) {
-                    channel->ca_idx = 0;
-                    log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID removal request: %d setting channel %s with ca_idx to 0 %d\n", scam_params->ca_pid.pid, channel->name, scam_params->ca_pid.index+1);
-                }
-                pthread_mutex_unlock(&channel->cw_lock);
-                break;
+    }
+    if (*request == CA_SET_PID)
+    {
+      memcpy((&(scam_params->ca_pid)), &buff[sizeof(int)], sizeof(ca_pid_t));
+      log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request index: %d pid: %d\n",scam_params->ca_pid.index, scam_params->ca_pid.pid);
+      if(scam_params->ca_pid.index == -1) {
+        log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID removal request, removing pid: %d\n", scam_params->ca_pid.pid);
+        pthread_mutex_lock(&chan_and_pids.lock);
+        for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++) {
+          mumudvb_channel_t *channel = &chan_and_pids.channels[curr_channel];
+          for (curr_pid = 1; curr_pid < channel->num_pids; curr_pid++) {
+            if ((channel->pids_type[curr_pid] != PID_EXTRA_VBIDATA) && (channel->pids_type[curr_pid] != PID_EXTRA_VBITELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_TELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_SUBTITLE) && (channel->pids[curr_pid] == (int) scam_params->ca_pid.pid)) {
+              pthread_mutex_lock(&channel->cw_lock);
+              --channel->ca_idx_refcnt;
+              if (!channel->ca_idx_refcnt) {
+                  channel->ca_idx = 0;
+                  log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID removal request: %d setting channel %s with ca_idx to 0 %d\n", scam_params->ca_pid.pid, channel->name, scam_params->ca_pid.index+1);
               }
+              pthread_mutex_unlock(&channel->cw_lock);
+              break;
             }
           }
-          pthread_mutex_unlock(&chan_and_pids.lock);
-        } else {
-          pthread_mutex_lock(&chan_and_pids.lock);
-          for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++) {
-            mumudvb_channel_t *channel = &chan_and_pids.channels[curr_channel];
-            for (curr_pid = 1; curr_pid < channel->num_pids; curr_pid++) {
-              if ((channel->pids_type[curr_pid] != PID_EXTRA_VBIDATA) && (channel->pids_type[curr_pid] != PID_EXTRA_VBITELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_TELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_SUBTITLE) && (channel->pids[curr_pid] == (int) scam_params->ca_pid.pid)) {
-                pthread_mutex_lock(&channel->cw_lock);
-                if(!channel->ca_idx_refcnt) {
-                  channel->ca_idx = scam_params->ca_pid.index+1;
-                  log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID with pid: %d setting channel %s ca_idx %d\n", scam_params->ca_pid.pid, channel->name, scam_params->ca_pid.index+1);
-                }
-                ++channel->ca_idx_refcnt;
-                pthread_mutex_unlock(&channel->cw_lock);
-                break;
-              }
-            }
-          }
-          pthread_mutex_unlock(&chan_and_pids.lock);
         }
+        pthread_mutex_unlock(&chan_and_pids.lock);
+      } else {
+        pthread_mutex_lock(&chan_and_pids.lock);
+        for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++) {
+          mumudvb_channel_t *channel = &chan_and_pids.channels[curr_channel];
+          for (curr_pid = 1; curr_pid < channel->num_pids; curr_pid++) {
+            if ((channel->pids_type[curr_pid] != PID_EXTRA_VBIDATA) && (channel->pids_type[curr_pid] != PID_EXTRA_VBITELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_TELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_SUBTITLE) && (channel->pids[curr_pid] == (int) scam_params->ca_pid.pid)) {
+              pthread_mutex_lock(&channel->cw_lock);
+              if(!channel->ca_idx_refcnt) {
+                channel->ca_idx = scam_params->ca_pid.index+1;
+                log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID with pid: %d setting channel %s ca_idx %d\n", scam_params->ca_pid.pid, channel->name, scam_params->ca_pid.index+1);
+              }
+              ++channel->ca_idx_refcnt;
+              pthread_mutex_unlock(&channel->cw_lock);
+              break;
+            }
+          }
+        }
+        pthread_mutex_unlock(&chan_and_pids.lock);
       }
     }
   }
