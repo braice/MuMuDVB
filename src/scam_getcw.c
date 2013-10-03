@@ -76,11 +76,10 @@ int scam_getcw_start(scam_parameters_t *scam_params, int adapter_id)
       scam_params->net_socket_fd = socket(PF_INET, SOCK_DGRAM, ptrp->p_proto);
       if (scam_params->net_socket_fd > 0)
       {
-        scam_params->bint = (bind(scam_params->net_socket_fd, (struct sockaddr *) &socketAddr, sizeof(socketAddr)) >= 0);
-        if (scam_params->bint >= 0)
-          log_message( log_module,  MSG_DEBUG, "network socket bint\n");
+        if (bind(scam_params->net_socket_fd, (struct sockaddr *) &socketAddr, sizeof(socketAddr)) >= 0)
+          log_message( log_module,  MSG_DEBUG, "network socket bind\n");
         else {
-          log_message( log_module,  MSG_ERROR, "cannot bint network socket\n");
+          log_message( log_module,  MSG_ERROR, "cannot bind network socket\n");
           return 1;
         }
       }
@@ -117,7 +116,6 @@ static void *getcwthread_func(void* arg)
 
   //Loop
   while(!scam_params->getcwthread_shutdown) {
-    if(scam_params->bint){
       cRead = recv(scam_params->net_socket_fd, &buff, sizeof(buff), 0);
       if (cRead <= 0)
         break;
@@ -190,7 +188,6 @@ static void *getcwthread_func(void* arg)
           pthread_mutex_unlock(&chan_and_pids.lock);
         }
       }
-    }
   }
   return 0;
 }
