@@ -48,28 +48,28 @@
  * This structure contains the packet and several flags around
  */
 typedef struct eit_packet_t{
-	  /**The service ID of the EIT*/
-	  int service_id;
-	  /** The table ID */
-	  uint8_t table_id;
-	  /**The actual version of the EIT PID*/
-	  int version;
-	  /**Do the actual full EIT needs to be updated ?*/
-	  int needs_update;
-	  /** Do we need to see other EIT ?*/
-	  int need_others;
-	  /** The last_section_number of the current version */
-	  int last_section_number;
-	  /** Array storing the section numbers we saw */
-	  int sections_stored[256];
-	  /**Do the full EIT is ok ?*/
-	  int full_eit_ok;
-	  /** The Complete EIT PID  for each section*/
-	  mumudvb_ts_packet_t* full_eit_sections[256];
-	  /** The continuity counter of the sent EIT*/
-	  int continuity_counter;
-	  /** Pointer to the next one */
-	  struct eit_packet_t *next;
+	/**The service ID of the EIT*/
+	int service_id;
+	/** The table ID */
+	uint8_t table_id;
+	/**The actual version of the EIT PID*/
+	int version;
+	/**Do the actual full EIT needs to be updated ?*/
+	int needs_update;
+	/** Do we need to see other EIT ?*/
+	int need_others;
+	/** The last_section_number of the current version */
+	int last_section_number;
+	/** Array storing the section numbers we saw */
+	int sections_stored[256];
+	/**Do the full EIT is ok ?*/
+	int full_eit_ok;
+	/** The Complete EIT PID  for each section*/
+	mumudvb_ts_packet_t* full_eit_sections[256];
+	/** The continuity counter of the sent EIT*/
+	int continuity_counter;
+	/** Pointer to the next one */
+	struct eit_packet_t *next;
 }eit_packet_t;
 
 
@@ -77,50 +77,50 @@ typedef struct eit_packet_t{
  * This structure contain the parameters needed for rewriting
  */
 typedef struct rewrite_parameters_t{
-  /**Do we rewrite the PAT pid ?*/
-  option_status_t rewrite_pat;
-  /**The actual version of the PAT pid*/
-  int pat_version;
-  /**Do the actual full PAT needs to be updated ?*/
-  int pat_needs_update;
-  /**Do the full PAT is ok ?*/
-  int full_pat_ok;
-  /** The Complete PAT PID */
-  mumudvb_ts_packet_t *full_pat;
-  /** The continuity counter of the sent PAT*/
-  int pat_continuity_counter;
+	/**Do we rewrite the PAT pid ?*/
+	option_status_t rewrite_pat;
+	/**The actual version of the PAT pid*/
+	int pat_version;
+	/**Do the actual full PAT needs to be updated ?*/
+	int pat_needs_update;
+	/**Do the full PAT is ok ?*/
+	int full_pat_ok;
+	/** The Complete PAT PID */
+	mumudvb_ts_packet_t *full_pat;
+	/** The continuity counter of the sent PAT*/
+	int pat_continuity_counter;
 
-  /**Do we rewrite the SDT pid ?*/
-  option_status_t rewrite_sdt;
-  /**The actual version of the SDT pid*/
-  int sdt_version;
-  /**Do the actual full SDT needs to be updated ?*/
-  int sdt_needs_update;
-  /** Do we need to see other SDT ?*/
-  int sdt_need_others;
-  /** The last_section_number of the current version */
-  int sdt_last_section_number;
-  /** Array storing the section numbers we saw */
-  int sdt_section_numbers_seen[256];
-  /**Do the full SDT is ok ?*/
-  int full_sdt_ok;
-  /** The Complete SDT PID */
-  mumudvb_ts_packet_t *full_sdt;
-  /** The continuity counter of the sent SDT*/
-  int sdt_continuity_counter;
-  /** Do we force the EIT presence ? */
-  int sdt_force_eit;
+	/**Do we rewrite the SDT pid ?*/
+	option_status_t rewrite_sdt;
+	/**The actual version of the SDT pid*/
+	int sdt_version;
+	/**Do the actual full SDT needs to be updated ?*/
+	int sdt_needs_update;
+	/** Do we need to see other SDT ?*/
+	int sdt_need_others;
+	/** The last_section_number of the current version */
+	int sdt_last_section_number;
+	/** Array storing the section numbers we saw */
+	int sdt_section_numbers_seen[256];
+	/**Do the full SDT is ok ?*/
+	int full_sdt_ok;
+	/** The Complete SDT PID */
+	mumudvb_ts_packet_t *full_sdt;
+	/** The continuity counter of the sent SDT*/
+	int sdt_continuity_counter;
+	/** Do we force the EIT presence ? */
+	int sdt_force_eit;
 
-  /** Do we sort the EIT PID ?*/
-  option_status_t rewrite_eit;
-  /**The actual version of the EIT pid*/
-  int eit_version;
-  /**Do the actual full EIT needs to be updated ?*/
-  int eit_needs_update;
-  /** The Complete EIT PID  which we are storing*/
-  mumudvb_ts_packet_t *full_eit;
+	/** Do we sort the EIT PID ?*/
+	option_status_t rewrite_eit;
+	/**The actual version of the EIT pid*/
+	int eit_version;
+	/**Do the actual full EIT needs to be updated ?*/
+	int eit_needs_update;
+	/** The Complete EIT PID  which we are storing*/
+	mumudvb_ts_packet_t *full_eit;
 
-  eit_packet_t *eit_packets;
+	eit_packet_t *eit_packets;
 
 }rewrite_parameters_t;
 

@@ -56,38 +56,38 @@
 
 enum
 {
-  PID_NOT_ASKED=0,
-  PID_ASKED,
-  PID_FILTERED,
+	PID_NOT_ASKED=0,
+	PID_ASKED,
+	PID_FILTERED,
 };
 
 
 /** The parameters for the thread for showing the strength */
 typedef struct strength_parameters_t{
-  tuning_parameters_t *tuneparams;
-  fds_t *fds;
-  fe_status_t festatus;
-  int strength, ber, snr, ub;
-  int ts_discontinuities;
+	tuning_parameters_t *tuneparams;
+	fds_t *fds;
+	fe_status_t festatus;
+	int strength, ber, snr, ub;
+	int ts_discontinuities;
 }strength_parameters_t;
 
 /** The parameters for the thread for reading the data from the card */
 typedef struct card_thread_parameters_t{
-  //mutex for the data buffer
-  pthread_mutex_t carddatamutex;
-  //Condition variable for locking the main program in order to wait for new data
-  pthread_cond_t threadcond;
-  //file descriptors
-  fds_t *fds;
-  //The shutdown for the thread
-  volatile int threadshutdown;
-  //The buffer for the card
-  card_buffer_t *card_buffer;
-  //
-  int thread_running;
-  /** Is main waiting ?*/
-  int main_waiting;
-  int unicast_data;
+	//mutex for the data buffer
+	pthread_mutex_t carddatamutex;
+	//Condition variable for locking the main program in order to wait for new data
+	pthread_cond_t threadcond;
+	//file descriptors
+	fds_t *fds;
+	//The shutdown for the thread
+	volatile int threadshutdown;
+	//The buffer for the card
+	card_buffer_t *card_buffer;
+	//
+	int thread_running;
+	/** Is main waiting ?*/
+	int main_waiting;
+	int unicast_data;
 }card_thread_parameters_t;
 
 void *read_card_thread_func(void* arg);

@@ -51,20 +51,20 @@ static char *log_module="EIT rewrite: ";
 void eit_display_header(eit_t *eit)
 {
 
-        log_message( log_module, MSG_DEBUG,"--- EIT TABLE ---");
+	log_message( log_module, MSG_DEBUG,"--- EIT TABLE ---");
 
-        log_message( log_module, MSG_DEBUG,"table_id\t\t\t 0x%x",eit->table_id);
-        log_message( log_module, MSG_DEBUG,"section_length\t\t %d",HILO(eit->section_length));
-        log_message( log_module, MSG_DEBUG,"section_syntax_indicator\t 0x%x",eit->section_syntax_indicator);
-        log_message( log_module, MSG_DEBUG,"service_id\t\t\t 0x%x",HILO(eit->service_id));
-        log_message( log_module, MSG_DEBUG,"current_next_indicator\t 0x%x",eit->current_next_indicator);
-        log_message( log_module, MSG_DEBUG,"version_number\t\t 0x%x",eit->version_number);
-        log_message( log_module, MSG_DEBUG,"section_number\t\t 0x%x",eit->section_number);
-        log_message( log_module, MSG_DEBUG,"last_section_number\t 0x%x",eit->last_section_number);
-        log_message( log_module, MSG_DEBUG,"transport_stream_id\t 0x%x",HILO(eit->transport_stream_id));
-        log_message( log_module, MSG_DEBUG,"original_network_id\t 0x%x",HILO(eit->original_network_id));
-        log_message( log_module, MSG_DEBUG,"segment_last_section_number\t 0x%x",eit->segment_last_section_number);
-        log_message( log_module, MSG_DEBUG,"segment_last_table_id\t\t 0x%x",eit->segment_last_table_id);
+	log_message( log_module, MSG_DEBUG,"table_id\t\t\t 0x%x",eit->table_id);
+	log_message( log_module, MSG_DEBUG,"section_length\t\t %d",HILO(eit->section_length));
+	log_message( log_module, MSG_DEBUG,"section_syntax_indicator\t 0x%x",eit->section_syntax_indicator);
+	log_message( log_module, MSG_DEBUG,"service_id\t\t\t 0x%x",HILO(eit->service_id));
+	log_message( log_module, MSG_DEBUG,"current_next_indicator\t 0x%x",eit->current_next_indicator);
+	log_message( log_module, MSG_DEBUG,"version_number\t\t 0x%x",eit->version_number);
+	log_message( log_module, MSG_DEBUG,"section_number\t\t 0x%x",eit->section_number);
+	log_message( log_module, MSG_DEBUG,"last_section_number\t 0x%x",eit->last_section_number);
+	log_message( log_module, MSG_DEBUG,"transport_stream_id\t 0x%x",HILO(eit->transport_stream_id));
+	log_message( log_module, MSG_DEBUG,"original_network_id\t 0x%x",HILO(eit->original_network_id));
+	log_message( log_module, MSG_DEBUG,"segment_last_section_number\t 0x%x",eit->segment_last_section_number);
+	log_message( log_module, MSG_DEBUG,"segment_last_table_id\t\t 0x%x",eit->segment_last_table_id);
 
 }
 
@@ -314,7 +314,7 @@ int eit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
 
 		}
 	}
-  return 0;
+	return 0;
 }
 
 
@@ -429,12 +429,12 @@ void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters
 			sent+=data_left_to_send;
 			//Padding with OxFF
 			memset(send_buf+header_len+data_left_to_send,
-						0xFF,
-						(TS_PACKET_SIZE-(header_len+data_left_to_send))*sizeof(unsigned char));
+					0xFF,
+					(TS_PACKET_SIZE-(header_len+data_left_to_send))*sizeof(unsigned char));
 			data_left_to_send=0;
 		}
 		//NOW we fill the channel buffer for sending
-	        buffer_func(channel, send_buf, unicast_vars, multicast_vars, scam_vars_v, chan_and_pids, fds);
+		buffer_func(channel, send_buf, unicast_vars, multicast_vars, scam_vars_v, chan_and_pids, fds);
 	}
 
 	//We update which section we want to send
