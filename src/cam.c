@@ -211,7 +211,11 @@ void cam_reset_cam(cam_parameters_t *cam_params)
   log_message( log_module,  MSG_DEBUG,"CAM Reset\n");
   struct en50221_stdcam *stdcam=cam_params->stdcam;
   struct en50221_stdcam_llci *llci = (struct en50221_stdcam_llci *) stdcam;
-  ioctl(llci->cafd, CA_RESET, (1 << llci->slotnum));
+  if(ioctl(llci->cafd, CA_RESET, (1 << llci->slotnum))<0)
+  {
+    log_message( log_module,  MSG_WARN, "Reset IOCTL failed : %s", strerror (errno));
+    return;
+  }
   //This variable only exist for low level CAMs so we check the type
   if(cam_params->cam_type==DVBCA_INTERFACE_LINK)
     llci->state = EN50221_STDCAM_CAM_NONE;

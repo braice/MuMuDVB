@@ -98,7 +98,7 @@ int open_fe (int *fd_frontend, char *base_path, int tuner, int rw);
 void set_ts_filt (int fd,uint16_t pid);
 int create_card_fd(char *base_path, int tuner, uint8_t *asked_pid, fds_t *fds);
 void set_filters(uint8_t *asked_pid, fds_t *fds);
-void close_card_fd(fds_t fds);
+void close_card_fd(fds_t *fds);
 
 void *show_power_func(void* arg);
 int card_read(int fd_dvr, unsigned char *dest_buffer, card_buffer_t *card_buffer);

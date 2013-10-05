@@ -80,6 +80,7 @@ makesocket (char *szAddr, unsigned short port, int TTL, char *iface,
     {
       log_message( log_module,  MSG_WARN, "socket() failed : %s\n",strerror(errno));
       set_interrupted(ERROR_NETWORK<<8);
+      return -1;
     }
 
   sSockAddr->sin_family = sin.sin_family = AF_INET;
@@ -89,6 +90,8 @@ makesocket (char *szAddr, unsigned short port, int TTL, char *iface,
     {
       log_message( log_module,  MSG_ERROR,"inet_aton failed : %s\n", strerror(errno));
       set_interrupted(ERROR_NETWORK<<8);
+      close(iSocket);
+      return -1;
     }
 
   iRet = setsockopt (iSocket, SOL_SOCKET, SO_REUSEADDR, &iReuse, sizeof (int));
@@ -96,6 +99,8 @@ makesocket (char *szAddr, unsigned short port, int TTL, char *iface,
     {
       log_message( log_module,  MSG_ERROR,"setsockopt SO_REUSEADDR failed : %s\n",strerror(errno));
       set_interrupted(ERROR_NETWORK<<8);
+      close(iSocket);
+      return -1;
     }
 
   iRet =
@@ -104,6 +109,8 @@ makesocket (char *szAddr, unsigned short port, int TTL, char *iface,
     {
       log_message( log_module,  MSG_ERROR,"setsockopt IP_MULTICAST_TTL failed.  multicast in kernel? error : %s \n",strerror(errno));
       set_interrupted(ERROR_NETWORK<<8);
+      close(iSocket);
+      return -1;
     }
 
   iRet = setsockopt (iSocket, IPPROTO_IP, IP_MULTICAST_LOOP,
@@ -112,6 +119,8 @@ makesocket (char *szAddr, unsigned short port, int TTL, char *iface,
     {
       log_message( log_module,  MSG_ERROR,"setsockopt IP_MULTICAST_LOOP failed.  multicast in kernel? error : %s\n",strerror(errno));
       set_interrupted(ERROR_NETWORK<<8);
+      close(iSocket);
+      return -1;
     }
   if(strlen(iface))
   {
@@ -129,6 +138,8 @@ makesocket (char *szAddr, unsigned short port, int TTL, char *iface,
 		  {
 			  log_message( log_module,  MSG_ERROR,"setsockopt IP_MULTICAST_IF failed.  multicast in kernel? error : %s \n",strerror(errno));
 			  set_interrupted(ERROR_NETWORK<<8);
+			  close(iSocket);
+		      return -1;
 		  }
 	  }
 	  else

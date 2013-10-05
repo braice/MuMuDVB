@@ -288,17 +288,17 @@ void set_filters(uint8_t *asked_pid, fds_t *fds)
  * @param fds the structure with the file descriptors
  */
 void
-close_card_fd(fds_t fds)
+close_card_fd(fds_t *fds)
 {
   int curr_pid = 0;
 
   for(curr_pid=0;curr_pid<8193;curr_pid++)
     {
-	close(fds.fd_demuxer[curr_pid]);
+	close(fds->fd_demuxer[curr_pid]);
     }
 
-  close (fds.fd_dvr);
-  close (fds.fd_frontend);
+  close (fds->fd_dvr);
+  close (fds->fd_frontend);
 
 }
 
@@ -315,7 +315,9 @@ void *read_card_thread_func(void* arg)
   struct pollfd pfds[2];	// Local poll file descriptors containing DVR device
   int poll_ret;
   fds_t fds;
+  pthread_mutex_lock(&threadparams->carddatamutex);
   threadparams->card_buffer->bytes_in_write_buffer=0;
+  pthread_mutex_unlock(&threadparams->carddatamutex);
   int throwing_packets=0;
   //File descriptor for polling the DVB card
   pfds[0].fd = threadparams->fds->fd_dvr;
@@ -556,7 +558,8 @@ void list_dvb_cards ()
     num_cards++;
     if(num_cards==256)
     {
-      log_message( log_module, MSG_ERROR, "Wow You have a system with more than 256 DVB cards, Please Contact me :D\n");
+      log_message( log_module, MSG_ERROR, "Wow ! You have a system with more than 256 DVB cards, Please Contact me :D");
+      closedir(dvb_dir);
       return;
     }
   }

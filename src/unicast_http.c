@@ -145,13 +145,12 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
                    exit(ERROR_CONF);
     }
     sscanf (substring, "%s\n", unicast_vars->ipOut);
-    if(unicast_vars->ipOut)
+    if(unicast_vars->ipOut[0]!='\0')
     {
       if(unicast_vars->unicast==0)
       {
-        log_message( log_module,  MSG_WARN,"You should use the option \"unicast\" to activate unicast instead of ip_http\n");
+        log_message( log_module,  MSG_WARN,"You should use the option \"unicast=1\" before to activate unicast instead of ip_http\n");
         unicast_vars->unicast=1;
-        log_message( log_module,  MSG_WARN,"You have enabled the support for HTTP Unicast. This feature is quite youg, please report any bug/comment\n");
       }
     }
   }
@@ -159,11 +158,6 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
   {
     substring = strtok (NULL, delimiteurs);
     unicast_vars->unicast = atoi (substring);
-    if(unicast_vars->unicast)
-    {
-      log_message( log_module,  MSG_WARN,
-                   "You have enabled the support for HTTP Unicast. This feature is quite youg, please report any bug/comment\n");
-    }
   }
   else if (!strcmp (substring, "unicast_consecutive_errors_timeout"))
   {
@@ -414,6 +408,7 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
   if (fcntl(tempSocket, F_SETFL, flags) < 0)
   {
     log_message( log_module, MSG_ERROR,"Set non blocking failed : %s\n",strerror(errno));
+    close(tempSocket);
     return NULL;
   }
 
@@ -901,6 +896,7 @@ int unicast_reply_write(struct unicast_reply *reply, const char* msg, ...)
     if(temp_buffer == NULL)
     {
       log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      va_end(args);
       return -1;
     }
     *buffer=temp_buffer;

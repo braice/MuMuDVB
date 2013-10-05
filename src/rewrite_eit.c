@@ -417,7 +417,7 @@ void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters
 		channel->eit_cc= channel->eit_cc % 16;
 		//We send the data
 		//plus one because of pointer field
-		if(data_left_to_send>(TS_PACKET_SIZE-header_len))
+		if(data_left_to_send>=(TS_PACKET_SIZE-header_len))
 		{
 			memcpy(send_buf+header_len,pkt_to_send->data_full+sent,(TS_PACKET_SIZE-header_len)*sizeof(unsigned char));
 			sent+=(TS_PACKET_SIZE-header_len);

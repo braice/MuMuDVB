@@ -76,13 +76,10 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
   {
 	  // other substring extraction method in order to keep spaces
     substring = strtok (NULL, "=");
-    if (!(strlen (substring) >= 255 - 1))
-      strcpy(sap_vars->sap_organisation,strtok(substring,"\n"));	
-    else
-    {
-      log_message( log_module,  MSG_WARN,"Sap Organisation name too long\n");
-      strncpy(sap_vars->sap_organisation,strtok(substring,"\n"),255 - 1);
-    }
+    strncpy(sap_vars->sap_organisation,strtok(substring,"\n"),255 - 1);
+    sap_vars->sap_organisation[255]='\0';
+    if ((strlen (substring) >= 255 - 1))
+      log_message( log_module,  MSG_WARN,"SAP organization name too long\n");
   }
   else if (!strcmp (substring, "sap_uri"))
   {

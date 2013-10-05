@@ -566,6 +566,11 @@ int
   /******************************************************/
   // config file displaying
   /******************************************************/
+  if (conf_filename == NULL)
+  {
+	  log_message( log_module,  MSG_ERROR, "No configuration file specified");
+	  exit(ERROR_CONF_FILE);
+  }
   conf_file = fopen (conf_filename, "r");
   if (conf_file == NULL)
   {
@@ -1136,7 +1141,7 @@ int
   {
     log_message( log_module,  MSG_INFO, "Tunning issue, card %d\n", tuneparams.card);
     // we close the file descriptors
-    close_card_fd (fds);
+    close_card_fd(&fds);
     set_interrupted(ERROR_TUNE<<8);
     goto mumudvb_close_goto;
   }
@@ -2060,7 +2065,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
     free_transcode_options(&global_transcode_opt);
 #endif
   // we close the file descriptors
-  close_card_fd (fds);
+  close_card_fd(&fds);
 
   //We close the unicast connections and free the clients
   unicast_freeing(unicast_vars, chan_and_pids.channels);
