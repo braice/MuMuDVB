@@ -363,7 +363,7 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
 	mumudvb_ts_packet_t *pat_mumu;
 	mumudvb_service_t *services;
 	unsigned char *buf=NULL;
-	mumudvb_service_t *actual_service=NULL;
+	mumudvb_service_t *a_service=NULL;
 	pat_mumu=autoconf_vars->autoconf_temp_pat;
 	services=autoconf_vars->services;
 	buf=pat_mumu->data_full;
@@ -402,18 +402,18 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
 		{
 			//Do we have already this program in the service list ?
 			//Ie : do we already know the channel name/type ?
-			actual_service=autoconf_find_service_for_modify(services,HILO(prog->program_number));
-			if(actual_service)
+			a_service=autoconf_find_service_for_modify(services,HILO(prog->program_number));
+			if(a_service)
 			{
-				if(!actual_service->pmt_pid)
+				if(!a_service->pmt_pid)
 				{
 					//We found a new service without the PMT, pid, we update this service
 					new_services=1;
-					actual_service->pmt_pid=HILO(prog->network_pid);
+					a_service->pmt_pid=HILO(prog->network_pid);
 					log_message( log_module, MSG_DETAIL,"service updated  PMT PID : %d\t id 0x%x\t name \"%s\"\n",
-							actual_service->pmt_pid,
-							actual_service->id,
-							actual_service->name);
+							a_service->pmt_pid,
+							a_service->id,
+							a_service->name);
 				}
 			}
 			else
@@ -450,31 +450,31 @@ int autoconf_read_pat(autoconf_parameters_t *autoconf_vars)
 mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int service_id)
 {
 	int found=0;
-	mumudvb_service_t *actual_service;
+	mumudvb_service_t *a_service;
 
-	actual_service=services;
+	a_service=services;
 
-	if(actual_service->id==service_id)
+	if(a_service->id==service_id)
 		found=1;
 
-	while(found==0 && actual_service->next!=NULL)
+	while(found==0 && a_service->next!=NULL)
 	{
-		actual_service=actual_service->next;
-		if(actual_service->id==service_id)
+		a_service=a_service->next;
+		if(a_service->id==service_id)
 			found=1;
 	}
 
 	if(found)
 		return NULL;
 
-	actual_service->next=malloc(sizeof(mumudvb_service_t));
-	if(actual_service->next==NULL)
+	a_service->next=malloc(sizeof(mumudvb_service_t));
+	if(a_service->next==NULL)
 	{
 		log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 		return NULL;
 	}
-	memset (actual_service->next, 0, sizeof( mumudvb_service_t));//we clear it
-	return actual_service->next;
+	memset (a_service->next, 0, sizeof( mumudvb_service_t));//we clear it
+	return a_service->next;
 
 }
 
@@ -487,15 +487,15 @@ mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int
 mumudvb_service_t *autoconf_find_service_for_modify(mumudvb_service_t *services,int service_id)
 {
 	mumudvb_service_t *found=NULL;
-	mumudvb_service_t *actual_service;
+	mumudvb_service_t *a_service;
 
-	actual_service=services;
+	a_service=services;
 
-	while(found==NULL && actual_service!=NULL)
+	while(found==NULL && a_service!=NULL)
 	{
-		if(actual_service->id==service_id)
-			found=actual_service;
-		actual_service=actual_service->next;
+		if(a_service->id==service_id)
+			found=a_service;
+		a_service=a_service->next;
 	}
 
 	if(found)
@@ -541,13 +541,13 @@ void autoconf_freeing(autoconf_parameters_t *autoconf_vars)
 void autoconf_free_services(mumudvb_service_t *services)
 {
 
-	mumudvb_service_t *actual_service;
-	mumudvb_service_t *next_service;
+	mumudvb_service_t *a_service;
+	mumudvb_service_t *n_service;
 
-	for(actual_service=services;actual_service != NULL; actual_service=next_service)
+	for(a_service=services;a_service != NULL; a_service=n_service)
 	{
-		next_service= actual_service->next;
-		free(actual_service);
+		n_service= a_service->next;
+		free(a_service);
 	}
 }
 
@@ -560,45 +560,45 @@ void autoconf_free_services(mumudvb_service_t *services)
 void autoconf_sort_services(mumudvb_service_t *services)
 {
 
-	mumudvb_service_t *actual_service;
-	mumudvb_service_t *next_service;
-	mumudvb_service_t *actual_service_int;
-	mumudvb_service_t *next_service_int;
-	mumudvb_service_t *prev_service_int;
+	mumudvb_service_t *a_service;
+	mumudvb_service_t *n_service;
+	mumudvb_service_t *a_service_int;
+	mumudvb_service_t *n_service_int;
+	mumudvb_service_t *p_service_int;
 	mumudvb_service_t *temp_service_int;
-	prev_service_int=NULL;
+	p_service_int=NULL;
 	log_message( log_module, MSG_DEBUG,"Service sorting\n");
 	log_message( log_module, MSG_FLOOD,"Service sorting BEFORE\n");
-	for(actual_service=services;actual_service != NULL; actual_service=next_service)
+	for(a_service=services;a_service != NULL; a_service=n_service)
 	{
-		log_message( log_module, MSG_FLOOD,"Service sorting, id %d\t service : %s \n", actual_service->id, actual_service->name);
-		next_service= actual_service->next;
+		log_message( log_module, MSG_FLOOD,"Service sorting, id %d\t service : %s \n", a_service->id, a_service->name);
+		n_service= a_service->next;
 	}
-	for(actual_service=services;actual_service != NULL; actual_service=next_service)
+	for(a_service=services;a_service != NULL; a_service=n_service)
 	{
-		for(actual_service_int=services;actual_service_int != NULL; actual_service_int=next_service_int)
+		for(a_service_int=services;a_service_int != NULL; a_service_int=n_service_int)
 		{
-			next_service_int= actual_service_int->next;
-			if((prev_service_int != NULL) &&(next_service_int != NULL) &&(next_service_int->id)&&(actual_service_int->id) && next_service_int->id < actual_service_int->id)
+			n_service_int= a_service_int->next;
+			if((p_service_int != NULL) &&(n_service_int != NULL) &&(n_service_int->id)&&(a_service_int->id) && n_service_int->id < a_service_int->id)
 			{
-				prev_service_int->next=next_service_int;
-				actual_service_int->next=next_service_int->next;
-				next_service_int->next=actual_service_int;
-				if(actual_service_int==actual_service)
-					actual_service=next_service_int;
-				temp_service_int=next_service_int;
-				next_service_int=actual_service_int;
-				actual_service_int=temp_service_int;
+				p_service_int->next=n_service_int;
+				a_service_int->next=n_service_int->next;
+				n_service_int->next=a_service_int;
+				if(a_service_int==a_service)
+					a_service=n_service_int;
+				temp_service_int=n_service_int;
+				n_service_int=a_service_int;
+				a_service_int=temp_service_int;
 			}
-			prev_service_int=actual_service_int;
+			p_service_int=a_service_int;
 		}
-		next_service= actual_service->next;
+		n_service= a_service->next;
 	}
 	log_message( log_module, MSG_FLOOD,"Service sorting AFTER\n");
-	for(actual_service=services;actual_service != NULL; actual_service=next_service)
+	for(a_service=services;a_service != NULL; a_service=n_service)
 	{
-		log_message( log_module, MSG_FLOOD,"Service sorting, id %d\t service : %s \n", actual_service->id, actual_service->name);
-		next_service= actual_service->next;
+		log_message( log_module, MSG_FLOOD,"Service sorting, id %d\t service : %s \n", a_service->id, a_service->name);
+		n_service= a_service->next;
 	}
 }
 
@@ -615,12 +615,12 @@ void autoconf_sort_services(mumudvb_service_t *services)
  */
 int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumudvb_channel_t *channels, int port, int card, int tuner, unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, int server_id, void *scam_vars_v)
 {
-	mumudvb_service_t *actual_service;
-	int channel_number=0;
+	mumudvb_service_t *service;
+	int iChan=0;
 	int found_in_service_id_list;
 	int unicast_port_per_channel;
 	char tempstring[256];
-	actual_service=parameters->services;
+	service=parameters->services;
 	unicast_port_per_channel=strlen(parameters->autoconf_unicast_port)?1:0;
 
 #ifndef ENABLE_SCAM_SUPPORT
@@ -631,67 +631,67 @@ int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumud
 
 	do
 	{
-		if(parameters->autoconf_scrambled && actual_service->free_ca_mode)
-			log_message( log_module, MSG_DETAIL,"Service scrambled. Name \"%s\"\n", actual_service->name);
+		if(parameters->autoconf_scrambled && service->free_ca_mode)
+			log_message( log_module, MSG_DETAIL,"Service scrambled. Name \"%s\"\n", service->name);
 
 		//If there is a service_id list we look if we find it (option autoconf_sid_list)
 		if(parameters->num_service_id)
 		{
-			int actual_service_id;
+			int service_id;
 			found_in_service_id_list=0;
-			for(actual_service_id=0;actual_service_id<parameters->num_service_id && !found_in_service_id_list;actual_service_id++)
+			for(service_id=0;service_id<parameters->num_service_id && !found_in_service_id_list;service_id++)
 			{
-				if(parameters->service_id_list[actual_service_id]==actual_service->id)
+				if(parameters->service_id_list[service_id]==service->id)
 				{
 					found_in_service_id_list=1;
-					log_message( log_module, MSG_DEBUG,"Service found in the service_id list. Name \"%s\"\n", actual_service->name);
+					log_message( log_module, MSG_DEBUG,"Service found in the service_id list. Name \"%s\"\n", service->name);
 				}
 			}
 		}
 		else //No ts id list so it is found
 			found_in_service_id_list=1;
 
-		if(!parameters->autoconf_scrambled && actual_service->free_ca_mode)
-			log_message( log_module, MSG_DETAIL,"Service scrambled, no CAM support and no autoconf_scrambled, we skip. Name \"%s\"\n", actual_service->name);
-		else if(!actual_service->pmt_pid)
-			log_message( log_module, MSG_DETAIL,"Service without a PMT pid, we skip. Name \"%s\"\n", actual_service->name);
+		if(!parameters->autoconf_scrambled && service->free_ca_mode)
+			log_message( log_module, MSG_DETAIL,"Service scrambled, no CAM support and no autoconf_scrambled, we skip. Name \"%s\"\n", service->name);
+		else if(!service->pmt_pid)
+			log_message( log_module, MSG_DETAIL,"Service without a PMT pid, we skip. Name \"%s\"\n", service->name);
 		else if(!found_in_service_id_list)
-			log_message( log_module, MSG_DETAIL,"Service NOT in the service_id list, we skip. Name \"%s\", id %d\n", actual_service->name, actual_service->id);
+			log_message( log_module, MSG_DETAIL,"Service NOT in the service_id list, we skip. Name \"%s\", id %d\n", service->name, service->id);
 		else //service is ok, we make it a channel
 		{
 			//Cf EN 300 468 v1.9.1 Table 81
-			if((actual_service->type==0x01||
-					actual_service->type==0x11||
-					actual_service->type==0x16||
-					actual_service->type==0x19)||
-					((actual_service->type==0x02||
-							actual_service->type==0x0a)&&parameters->autoconf_radios))
+			if((service->type==0x01||
+					service->type==0x11||
+					service->type==0x16||
+					service->type==0x19)||
+					((service->type==0x02||
+							service->type==0x0a)&&parameters->autoconf_radios))
 			{
 				log_message( log_module, MSG_DETAIL,"We convert a new service into a channel, sid %d pmt_pid %d name \"%s\" \n",
-						actual_service->id, actual_service->pmt_pid, actual_service->name);
-				display_service_type(actual_service->type, MSG_DETAIL, log_module);
-				channels[channel_number].channel_type=actual_service->type;
-				channels[channel_number].num_packet = 0;
-				channels[channel_number].num_scrambled_packets = 0;
-				channels[channel_number].scrambled_channel = 0;
-				channels[channel_number].streamed_channel = 1;
-				channels[channel_number].nb_bytes=0;
-				channels[channel_number].pids[0]=actual_service->pmt_pid;
-				channels[channel_number].pids_type[0]=PID_PMT;
-				channels[channel_number].num_pids=1;
-				snprintf(channels[channel_number].pids_language[0],4,"%s","---");
+						service->id, service->pmt_pid, service->name);
+				display_service_type(service->type, MSG_DETAIL, log_module);
+				channels[iChan].channel_type=service->type;
+				channels[iChan].num_packet = 0;
+				channels[iChan].num_scrambled_packets = 0;
+				channels[iChan].scrambled_channel = 0;
+				channels[iChan].streamed_channel = 1;
+				channels[iChan].nb_bytes=0;
+				channels[iChan].pids[0]=service->pmt_pid;
+				channels[iChan].pids_type[0]=PID_PMT;
+				channels[iChan].num_pids=1;
+				snprintf(channels[iChan].pids_language[0],4,"%s","---");
 				if(strlen(parameters->name_template))
 				{
-					strcpy(channels[channel_number].name,parameters->name_template);
+					strcpy(channels[iChan].name,parameters->name_template);
 					int len=MAX_NAME_LEN;
 					char number[10];
-					mumu_string_replace(channels[channel_number].name,&len,0,"%name",actual_service->name);
-					sprintf(number,"%d",channel_number+1);
-					mumu_string_replace(channels[channel_number].name,&len,0,"%number",number);
+					mumu_string_replace(channels[iChan].name,&len,0,"%name",service->name);
+					sprintf(number,"%d",iChan+1);
+					mumu_string_replace(channels[iChan].name,&len,0,"%number",number);
 					//put LCN here
 				}
 				else
-					strcpy(channels[channel_number].name,actual_service->name);
+					strcpy(channels[iChan].name,service->name);
 				if(multicast_vars->multicast)
 				{
 					char number[10];
@@ -701,7 +701,7 @@ int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumud
 					if(strlen(parameters->autoconf_multicast_port))
 					{
 						strcpy(tempstring,parameters->autoconf_multicast_port);
-						sprintf(number,"%d",channel_number);
+						sprintf(number,"%d",iChan);
 						mumu_string_replace(tempstring,&len,0,"%number",number);
 						sprintf(number,"%d",card);
 						mumu_string_replace(tempstring,&len,0,"%card",number);
@@ -710,18 +710,18 @@ int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumud
 						sprintf(number,"%d",server_id);
 						mumu_string_replace(tempstring,&len,0,"%server",number);
 						//SID
-						sprintf(number,"%d",actual_service->id);
+						sprintf(number,"%d",service->id);
 						mumu_string_replace(tempstring,&len,0,"%sid",number);
-						channels[channel_number].portOut=string_comput(tempstring);
+						channels[iChan].portOut=string_comput(tempstring);
 					}
 					else
 					{
-						channels[channel_number].portOut=port;//do here the job for evaluating the string
+						channels[iChan].portOut=port;//do here the job for evaluating the string
 					}
 					if(multicast_vars->multicast_ipv4)
 					{
 						strcpy(ip,parameters->autoconf_ip4);
-						sprintf(number,"%d",channel_number);
+						sprintf(number,"%d",iChan);
 						mumu_string_replace(ip,&len,0,"%number",number);
 						sprintf(number,"%d",card);
 						mumu_string_replace(ip,&len,0,"%card",number);
@@ -730,9 +730,9 @@ int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumud
 						sprintf(number,"%d",server_id);
 						mumu_string_replace(ip,&len,0,"%server",number);
 						//SID
-						sprintf(number,"%d",(actual_service->id&0xFF00)>>8);
+						sprintf(number,"%d",(service->id&0xFF00)>>8);
 						mumu_string_replace(ip,&len,0,"%sid_hi",number);
-						sprintf(number,"%d",actual_service->id&0x00FF);
+						sprintf(number,"%d",service->id&0x00FF);
 						mumu_string_replace(ip,&len,0,"%sid_lo",number);
 						// Compute the string, ex: 239.255.130+0*10+2.1
 						log_message( log_module, MSG_DEBUG,"Computing expressions in string \"%s\"\n",ip);
@@ -743,13 +743,13 @@ int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumud
 						tn[1]=string_comput(strtok_r (NULL,".",&sptr));
 						tn[2]=string_comput(strtok_r (NULL,".",&sptr));
 						tn[3]=string_comput(strtok_r (NULL,".",&sptr));
-						sprintf(channels[channel_number].ip4Out,"%d.%d.%d.%d",tn[0],tn[1],tn[2],tn[3]); // In C the evalutation order of arguments in a fct  is undefined, no more easy factoring
-						log_message( log_module, MSG_DEBUG,"Channel IPv4 : \"%s\" port : %d\n",channels[channel_number].ip4Out,channels[channel_number].portOut);
+						sprintf(channels[iChan].ip4Out,"%d.%d.%d.%d",tn[0],tn[1],tn[2],tn[3]); // In C the evalutation order of arguments in a fct  is undefined, no more easy factoring
+						log_message( log_module, MSG_DEBUG,"Channel IPv4 : \"%s\" port : %d\n",channels[iChan].ip4Out,channels[iChan].portOut);
 					}
 					if(multicast_vars->multicast_ipv6)
 					{
 						strcpy(ip,parameters->autoconf_ip6);
-						sprintf(number,"%d",channel_number);
+						sprintf(number,"%d",iChan);
 						mumu_string_replace(ip,&len,0,"%number",number);
 						sprintf(number,"%d",card);
 						mumu_string_replace(ip,&len,0,"%card",number);
@@ -758,48 +758,48 @@ int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumud
 						sprintf(number,"%d",server_id);
 						mumu_string_replace(ip,&len,0,"%server",number);
 						//SID
-						sprintf(number,"%04x",actual_service->id);
+						sprintf(number,"%04x",service->id);
 						mumu_string_replace(ip,&len,0,"%sid",number);
-						strncpy(channels[channel_number].ip6Out,ip,IPV6_CHAR_LEN);
-						channels[channel_number].ip6Out[IPV6_CHAR_LEN-1]='\0';
-						log_message( log_module, MSG_DEBUG,"Channel IPv6 : \"%s\" port : %d\n",channels[channel_number].ip6Out,channels[channel_number].portOut);
+						strncpy(channels[iChan].ip6Out,ip,IPV6_CHAR_LEN);
+						channels[iChan].ip6Out[IPV6_CHAR_LEN-1]='\0';
+						log_message( log_module, MSG_DEBUG,"Channel IPv6 : \"%s\" port : %d\n",channels[iChan].ip6Out,channels[iChan].portOut);
 					}
 				}
 
 				//This is a scrambled channel, we will have to ask the cam for descrambling it
-				if(parameters->autoconf_scrambled && actual_service->free_ca_mode)
-					channels[channel_number].need_cam_ask=CAM_NEED_ASK;
+				if(parameters->autoconf_scrambled && service->free_ca_mode)
+					channels[iChan].need_cam_ask=CAM_NEED_ASK;
 
 				//We store the PMT and the service id in the channel
-				channels[channel_number].pmt_pid=actual_service->pmt_pid;
-				channels[channel_number].service_id=actual_service->id;
-				init_rtp_header(&channels[channel_number]); //We init the rtp header in all cases
+				channels[iChan].pmt_pid=service->pmt_pid;
+				channels[iChan].service_id=service->id;
+				init_rtp_header(&channels[iChan]); //We init the rtp header in all cases
 
-				if(channels[channel_number].pmt_packet==NULL)
+				if(channels[iChan].pmt_packet==NULL)
 				{
-					channels[channel_number].pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
-					if(channels[channel_number].pmt_packet==NULL)
+					channels[iChan].pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
+					if(channels[iChan].pmt_packet==NULL)
 					{
 						log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 						set_interrupted(ERROR_MEMORY<<8);
 						return -1;
 					}
-					memset (channels[channel_number].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-					pthread_mutex_init(&channels[channel_number].pmt_packet->packetmutex,NULL);
+					memset (channels[iChan].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+					pthread_mutex_init(&channels[iChan].pmt_packet->packetmutex,NULL);
 				}
 #ifdef ENABLE_CAM_SUPPORT
 				//We allocate the packet for storing the PMT for CAM purposes
-				if(channels[channel_number].cam_pmt_packet==NULL)
+				if(channels[iChan].cam_pmt_packet==NULL)
 				{
-					channels[channel_number].cam_pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
-					if(channels[channel_number].cam_pmt_packet==NULL)
+					channels[iChan].cam_pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
+					if(channels[iChan].cam_pmt_packet==NULL)
 					{
 						log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 						set_interrupted(ERROR_MEMORY<<8);
 						return -1;
 					}
-					memset (channels[channel_number].cam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-					pthread_mutex_init(&channels[channel_number].cam_pmt_packet->packetmutex,NULL);
+					memset (channels[iChan].cam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+					pthread_mutex_init(&channels[iChan].cam_pmt_packet->packetmutex,NULL);
 				}
 #endif
 				//We update the unicast port, the connection will be created in autoconf_finish_full
@@ -808,7 +808,7 @@ int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumud
 					strcpy(tempstring,parameters->autoconf_unicast_port);
 					int len;len=256;
 					char number[10];
-					sprintf(number,"%d",channel_number);
+					sprintf(number,"%d",iChan);
 					mumu_string_replace(tempstring,&len,0,"%number",number);
 					sprintf(number,"%d",card);
 					mumu_string_replace(tempstring,&len,0,"%card",number);
@@ -817,43 +817,43 @@ int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumud
 					sprintf(number,"%d",server_id);
 					mumu_string_replace(tempstring,&len,0,"%server",number);
 					//SID
-					sprintf(number,"%d",actual_service->id);
+					sprintf(number,"%d",service->id);
 					mumu_string_replace(tempstring,&len,0,"%sid",number);
-					channels[channel_number].unicast_port=string_comput(tempstring);
-					log_message( log_module, MSG_DEBUG,"Channel (direct) unicast port  %d\n",channels[channel_number].unicast_port);
+					channels[iChan].unicast_port=string_comput(tempstring);
+					log_message( log_module, MSG_DEBUG,"Channel (direct) unicast port  %d\n",channels[iChan].unicast_port);
 				}
 #ifdef ENABLE_TRANSCODING
 				//We copy the common transcode options to the new channel
-				transcode_copy_options(&global_transcode_opt,&channels[channel_number].transcode_options);
-				transcode_options_apply_templates(&channels[channel_number].transcode_options,card,tuner,server_id,channel_number);
+				transcode_copy_options(&global_transcode_opt,&channels[iChan].transcode_options);
+				transcode_options_apply_templates(&channels[iChan].transcode_options,card,tuner,server_id,iChan);
 #endif
 #ifdef ENABLE_SCAM_SUPPORT
-				if (actual_service->free_ca_mode && scam_vars->scam_support) {
-					channels[channel_number].scam_support=1;
-					channels[channel_number].need_scam_ask=CAM_NEED_ASK;
-					channels[channel_number].ring_buffer_size=scam_vars->ring_buffer_default_size;
-					channels[channel_number].decsa_delay=scam_vars->decsa_default_delay;
-					channels[channel_number].send_delay=scam_vars->send_default_delay;
+				if (service->free_ca_mode && scam_vars->scam_support) {
+					channels[iChan].scam_support=1;
+					channels[iChan].need_scam_ask=CAM_NEED_ASK;
+					channels[iChan].ring_buffer_size=scam_vars->ring_buffer_default_size;
+					channels[iChan].decsa_delay=scam_vars->decsa_default_delay;
+					channels[iChan].send_delay=scam_vars->send_default_delay;
 				}
 #endif
-				channel_number++;
+				iChan++;
 			}
-			else if(actual_service->type==0x02||actual_service->type==0x0a) //service_type digital radio sound service
-				log_message( log_module, MSG_DETAIL,"Service type digital radio sound service, no autoconfigure. (if you want add autoconf_radios=1 to your configuration file) Name \"%s\"\n",actual_service->name);
-			else if(actual_service->type!=0) //0 is an empty service
+			else if(service->type==0x02||service->type==0x0a) //service_type digital radio sound service
+				log_message( log_module, MSG_DETAIL,"Service type digital radio sound service, no autoconfigure. (if you want add autoconf_radios=1 to your configuration file) Name \"%s\"\n",service->name);
+			else if(service->type!=0) //0 is an empty service
 			{
 				//We show the service type
-				log_message( log_module, MSG_DETAIL,"No autoconfigure due to service type : %s. Name \"%s\"\n",service_type_to_str(actual_service->type),actual_service->name);
+				log_message( log_module, MSG_DETAIL,"No autoconfigure due to service type : %s. Name \"%s\"\n",service_type_to_str(service->type),service->name);
 			}
 		}
-		actual_service=actual_service->next;
+		service=service->next;
 	}
-	while(actual_service && channel_number<MAX_CHANNELS);
+	while(service && iChan<MAX_CHANNELS);
 
-	if(channel_number==MAX_CHANNELS)
+	if(iChan==MAX_CHANNELS)
 		log_message( log_module, MSG_WARN,"Warning : We reached the maximum channel number, we drop other possible channels !\n");
 
-	return channel_number;
+	return iChan;
 }
 
 /** @brief Finish full autoconfiguration (set everything needed to go to partial autoconf)
