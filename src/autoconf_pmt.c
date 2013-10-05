@@ -316,13 +316,15 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
         descr_ca_t *ca_descriptor;
         ca_descriptor=(descr_ca_t *)(pmt->data_full+i+PMT_INFO_LEN+pos);
         casysid=0;
-        while(channel->ca_sys_id[casysid] && channel->ca_sys_id[casysid]!=HILO(ca_descriptor->CA_type)&& casysid<32 )
+        while(casysid<32 && channel->ca_sys_id[casysid] && channel->ca_sys_id[casysid]!=HILO(ca_descriptor->CA_type) )
           casysid++;
-        if(!channel->ca_sys_id[casysid])
+        if(casysid<32 && !channel->ca_sys_id[casysid])
         {
           channel->ca_sys_id[casysid]=HILO(ca_descriptor->CA_type);
-	  log_message( log_module,  MSG_DETAIL,"Ca system id 0x%04x : %s\n", HILO(ca_descriptor->CA_type), ca_sys_id_to_str(HILO(ca_descriptor->CA_type)));//we display it with the description
+          log_message( log_module,  MSG_DETAIL,"Ca system id 0x%04x : %s\n", HILO(ca_descriptor->CA_type), ca_sys_id_to_str(HILO(ca_descriptor->CA_type)));//we display it with the description
         }
+        if(casysid==32)
+        	log_message( log_module,  MSG_WARN,"Too much Ca system id line %d file %s\n", __LINE__,__FILE__);
         pos+=ca_descriptor->descriptor_length+2;
       }
     }

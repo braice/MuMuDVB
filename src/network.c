@@ -36,6 +36,7 @@
 #include <fcntl.h>
 #include "log.h"
 #include <net/if.h>
+#include <unistd.h>
 
 
 static char *log_module="Network: ";
@@ -208,10 +209,14 @@ int
 makeclientsocket (char *szAddr, unsigned short port, int TTL, char *iface,
 		  struct sockaddr_in *sSockAddr)
 {
-  int socket = makesocket (szAddr, port, TTL, iface, sSockAddr);
+  int socket;
   struct ip_mreqn blub;
   struct sockaddr_in sin;
+  memset(&sin, 0, sizeof sin);
   unsigned int tempaddr;
+  socket = makesocket (szAddr, port, TTL, iface, sSockAddr);
+  if(socket<0)
+	  return 0;
   sin.sin_family = AF_INET;
   sin.sin_port = htons (port);
   sin.sin_addr.s_addr = inet_addr (szAddr);
@@ -248,6 +253,7 @@ makeclientsocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
   int socket = makesocket6 (szAddr, port, TTL, iface, sSockAddr);
   struct ipv6_mreq blub;
   struct sockaddr_in6 sin;
+  memset(&sin, 0, sizeof sin);
   int iRet;
   sin.sin6_family = AF_INET6;
   sin.sin6_port = htons (port);
@@ -255,6 +261,7 @@ makeclientsocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
   if (iRet == 0)
     {
       log_message( log_module,  MSG_ERROR,"inet_pton failed : %s\n", strerror(errno));
+      close(socket);
       set_interrupted(ERROR_NETWORK<<8);
       return 0;
     }
@@ -262,7 +269,9 @@ makeclientsocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
   if (bind (socket, (struct sockaddr *) &sin, sizeof (sin)))
     {
       log_message( log_module,  MSG_ERROR, "bind failed : %s\n", strerror(errno));
+      close(socket);
       set_interrupted(ERROR_NETWORK<<8);
+      return 0;
     }
 
   //join the group
@@ -305,6 +314,7 @@ makeTCPclientsocket (char *szAddr, unsigned short port,
   if (iRet == 0)
     {
       log_message( log_module,  MSG_ERROR,"inet_aton failed : %s\n", strerror(errno));
+      close(iSocket);
       return -1;
     }
 
@@ -312,6 +322,7 @@ makeTCPclientsocket (char *szAddr, unsigned short port,
   if (iRet < 0)
     {
       log_message( log_module,  MSG_ERROR,"setsockopt SO_REUSEADDR failed : %s\n", strerror(errno));
+      close(iSocket);
       return -1;
     }
 
@@ -319,6 +330,7 @@ makeTCPclientsocket (char *szAddr, unsigned short port,
   if (bind (iSocket, (struct sockaddr *) sSockAddr, sizeof (*sSockAddr)))
     {
       log_message( log_module,  MSG_ERROR, "bind failed : %s\n", strerror(errno));
+      close(iSocket);
       return -1;
     }
 
@@ -326,6 +338,7 @@ makeTCPclientsocket (char *szAddr, unsigned short port,
   if (iRet < 0)
     {
       log_message( log_module,  MSG_ERROR,"listen failed : %s\n",strerror(errno));
+      close(iSocket);
       return -1;
     }
 
@@ -336,6 +349,7 @@ makeTCPclientsocket (char *szAddr, unsigned short port,
   if (fcntl(iSocket, F_SETFL, flags) < 0)
     {
       log_message( log_module, MSG_ERROR,"Set non blocking failed : %s\n",strerror(errno));
+      close(iSocket);
       return -1;
     }
 

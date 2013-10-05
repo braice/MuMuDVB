@@ -430,12 +430,6 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
   }
 
   tempClient=unicast_add_client(unicast_vars, tempSocketAddrIn, tempSocket);
-  if( tempClient == NULL)
-  {
-    //We cannot create the client, we close the socket cleanly
-    close(tempSocket);
-    return NULL;
-  }
 
   return tempClient;
 

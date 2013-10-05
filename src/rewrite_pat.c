@@ -299,8 +299,8 @@ int pat_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_
   }
   else
   {
+	log_message( log_module, MSG_DEBUG,"We need a global pat update, we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channel->name);
     return 0;
-    log_message( log_module, MSG_DEBUG,"We need a global pat update, we don't send the pat for the channel %d : \"%s\"\n", curr_channel, channel->name);
   }
   return 1;
   

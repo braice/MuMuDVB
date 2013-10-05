@@ -1044,7 +1044,7 @@ int
     fclose (channels_diff);
 
   channels_not_streamed = fopen (filename_channels_not_streamed, "w");
-  if (channels_diff == NULL)
+  if (channels_not_streamed == NULL)
   {
     write_streamed_channels=0;
     log_message( log_module,  MSG_WARN,
@@ -1945,7 +1945,7 @@ int
   if(card_buffer.partial_packet_number)
     log_message( log_module,  MSG_INFO,
                  "We received %d partial packets :-( \n",card_buffer.partial_packet_number );
-  if(card_buffer.partial_packet_number)
+  if(card_buffer.overflow_number)
     log_message( log_module,  MSG_INFO,
                  "We have got %d overflow errors\n",card_buffer.overflow_number );
 mumudvb_close_goto:

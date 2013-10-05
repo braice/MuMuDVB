@@ -760,7 +760,8 @@ int autoconf_services_to_channels(const autoconf_parameters_t *parameters, mumud
 						//SID
 						sprintf(number,"%04x",actual_service->id);
 						mumu_string_replace(ip,&len,0,"%sid",number);
-						strcpy(channels[channel_number].ip6Out,ip);
+						strncpy(channels[channel_number].ip6Out,ip,IPV6_CHAR_LEN);
+						channels[channel_number].ip6Out[IPV6_CHAR_LEN-1]='\0';
 						log_message( log_module, MSG_DEBUG,"Channel IPv6 : \"%s\" port : %d\n",channels[channel_number].ip6Out,channels[channel_number].portOut);
 					}
 				}

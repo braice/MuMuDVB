@@ -474,10 +474,8 @@ void show_card_capabilities( int card, int tuner )
     frequency_factor=1000;
   else
     frequency_factor=1;
-  if (frequency_factor!=0)
-    log_message( log_module,  MSG_INFO, " Frequency: %d kHz to %d kHz\n",(int) fe_info.frequency_min/1000*frequency_factor,(int) fe_info.frequency_max/1000*frequency_factor);
-  else
-    log_message( log_module,  MSG_WARN, " frequency_factor=0\n");
+
+  log_message( log_module,  MSG_INFO, " Frequency: %d kHz to %d kHz\n",(int) fe_info.frequency_min/1000*frequency_factor,(int) fe_info.frequency_max/1000*frequency_factor);
   if(display_sr)
     log_message( log_module,  MSG_INFO, " Symbol rate: %d k symbols/s to %d k symbols/s \n", (int)fe_info.symbol_rate_min/1000, (int)fe_info.symbol_rate_max/1000);
 
