@@ -62,11 +62,6 @@ int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb
     substring = strtok (NULL, delimiteurs);
     multicast_vars->ttl = atoi (substring);
   }
-  else if (!strcmp (substring, "multicast"))
-  {
-    substring = strtok (NULL, delimiteurs);
-    multicast_vars->multicast = atoi (substring);
-  }
   else if (!strcmp (substring, "multicast_ipv4"))
   {
     substring = strtok (NULL, delimiteurs);

@@ -152,22 +152,6 @@ int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, c
 					"You have to set autoconfiguration in full mode to use autoconf of the radios\n");
 		}
 	}
-	else if( (!strcmp (substring, "autoconf_ip_header")) || (!strcmp (substring, "autoconf_ip4_header")))
-	{
-		if(!strcmp (substring, "autoconf_ip_header"))
-		{
-			log_message( log_module,  MSG_WARN,
-					"autoconf_ip_header is deprecated, please use autoconf_ip4_header instead");
-		}
-		substring = strtok (NULL, delimiteurs);
-		if(strlen(substring)>8)
-		{
-			log_message( log_module,  MSG_ERROR,
-					"The autoconf ip header is too long\n");
-			return -1;
-		}
-		snprintf(autoconf_vars->autoconf_ip4,79,"%s.%%card.%%number",substring);
-	}
 	else if ((!strcmp (substring, "autoconf_ip"))||(!strcmp (substring, "autoconf_ip4")))
 	{
 		if(!strcmp (substring, "autoconf_ip"))

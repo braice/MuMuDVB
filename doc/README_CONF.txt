@@ -106,7 +106,7 @@ Parameters specific to satellite
 |lnb_lof_high |The frequency of the LNB's local oscillator for the high band. Valid when lnb_type=universal | 10600 |  | In MHz, see below.
 |sat_number |The satellite number in case you have multiples lnb, no effect if 0 (only 22kHz tone and 13/18V), send a diseqc message if non 0 | 0 | 1 to 4 | If you have equipment which support more, please contact
 |switch_input |The switch input number in case you have multiples lnb, overrides sat_number, send a diseqc message if non 0 | 0 | 0 to 15| If you have equipment which support more, please contact
-|switch_type | The DiSEqC switch type: Committed or Uncommitted | C | C, c, U or U | 
+|switch_type | The DiSEqC switch type: Committed or Uncommitted | C | C, c, U or u | 
 |lnb_voltage_off |Force the LNB voltage to be 0V (instead of 13V or 18V). This is useful when your LNB have it's own power supply. | 0 | 0 or 1 | 
 |coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto |
 |rolloff  |rolloff important only for DVB-S2 | 35 | 35, 20, 25, auto | The default value should work most of the times
@@ -178,8 +178,8 @@ Various parameters
 |show_traffic_interval | the interval in second between two displays of the traffic | 10 |  | 
 |compute_traffic_interval | the interval in second between two computations of the traffic | 10 |  | 
 |dvr_buffer_size | The size of the "DVR buffer" in packets | 20 | >=1 | see README 
-|dvr_thread | Are the packets retrieved from the card in a thread | 0 | 0 or 1 | Experimental, see README 
-|dvr_thread_buffer_size | The size of the "DVR thread buffer" in packets | 5000 | >=1 | see README 
+|dvr_thread | Are the packets retrieved from the card in a thread | 0 | 0 or 1 | See README 
+|dvr_thread_buffer_size | The size of the "DVR thread buffer" in packets | 5000 | >=1 | See README 
 |server_id | The server number for the `%server` template | 0 | | Useful only if you use the %server template
 |filename_pid | Specify where MuMuDVB will write it's PID (Processus IDentifier) | /var/run/mumudvb/mumudvb_adapter%card_tuner%tuner.pid | | the templates %card %tuner and %server are allowed
 |check_cc | Do MuMuDVB check the discontibuities in the stream ? | 0 | | Displayed via the XML status pages or the signal display
@@ -193,9 +193,9 @@ Packets sending parameters
 |dont_send_scrambled | If set to 1 don't send the packets detected as scrambled. this will also remove indirectly the sap announces for the scrambled channels |0 | |
 |filter_transport_error | If set to 1 don't send the packets tagged with errors by the demodulator. |0 | |
 |psi_tables_filtering | If set to 'pat', TS packets with PID from 0x01 to 0x1F are discarded. If set to 'pat_cat', TS packets with PID from 0x02 to 0x1F are discarded. | 'none' | Option to keep only mandatory PSI PID | 
-|rewrite_pat | Do we rewrite the PAT PID | 0 | 0 or 1 | See README 
-|rewrite_sdt | Do we rewrite the SDT PID | 0 | 0 or 1 | See README 
-|rewrite_eit sort_eit | Do we rewrite/sort the EIT PID | 0 | 0 or 1 | See README 
+|rewrite_pat | Do we rewrite the PAT PID | 0, 1 in full autoconf | 0 or 1 | See README, important for some set top boxes 
+|rewrite_sdt | Do we rewrite the SDT PID | 0, 1 in full autoconf | 0 or 1 | See README 
+|rewrite_eit sort_eit | Do we rewrite/sort the EIT PID | 0, 1 in full autoconf | 0 or 1 | See README 
 |sdt_force_eit | Do we force the EIT_schedule_flag and EIT_present_following_flag in SDT | 0 | 0 or 1 | Let to 0 if you don't understand
 |rtp_header | Send the stream with the rtp headers (execpt for HTTP unicast) | 0 | 0 or 1 | 
 |==================================================================================================================
@@ -208,7 +208,7 @@ Logs parameters
 |Parameter name |Description | Default value | Possible values | Comments
 |log_header | specify the logging header | %priority:  %module  | | The implemented templates are %priority %module %timeepoch %date %pid
 |log_flush_interval | LogFile flushing interval (in seconds) | -1 : no periodic flushing  | |  
-|log_type | Where the log information will go | If neither this option and logfile are specified syslog if deamon, console otherwise  | syslog, console | The first time you specify a logging way, it replaces the default one. Then, each time you sepcify a logging channel, it is added to the previous
+|log_type | Where the log information will go | If neither this option and logfile are specified the log destination will be syslog if MuMuDVB run as a deamon, console otherwise  | syslog, console | The first time you specify a logging way, it replaces the default one. Then, each time you sepcify a logging channel, it is added to the previous
 |log_file | The file in wich the logs will be written to | no file log  |  | The following templates are allowed %card %tuner %server 
 |==================================================================================================================
 
@@ -218,12 +218,11 @@ Multicast parameters
 [width="80%",cols="2,8,1,2,3",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
-|multicast |Do we activate multicast, deprecated, use multicast_ipv4 instead | 1 | 0 or 1 |
-|multicast_ipv4 |Do we activate IPv4 multicast | 1 | 0 or 1 |
+|multicast_ipv4 |Do we activate IPv4 multicast | 1 | 0 or 1 | Put this option to 0 to disable multicast streaming
 |multicast_ipv6 |Do we activate IPv6 multicast | 0 | 0 or 1 |
 |multicast_iface4 |The network interface to send IPv4 multicast packets (eth1, eth2 etc...) | empty (let the system choose) |  |
 |multicast_iface6 |The network interface to send IPv6 multicast packets (eth1, eth2 etc...) | empty (let the system choose) |  |
-|common_port | Default port for the streaming | 1234 | | 
+|common_port | Default port for the streaming | 1234 | |  For autoconf, and avoiding typing port= for each channel.
 |multicast_ttl |The multicast Time To Live | 2 | |
 |multicast_auto_join | Set to 1 if you want MuMuDVB to join automatically the multicast groups | 0 | 0 or 1 | See known problems in the README
 |==================================================================================================================
@@ -235,8 +234,8 @@ CAM support parameters
 |Parameter name |Description | Default value | Possible values | Comments
 |cam_support |Specify if we wants the support for scrambled channels | 0 | 0 or 1 |
 |cam_number |the number of the CAM we want to use | 0 | | In case you have multiple CAMs on one DVB card
-|cam_reset_interval |The time (in seconds) we wait for the CAM to be initialised before resetting it. | 30 | | If the reset is not successful, MuMuDVB will reset the CAM again after this interval. The maximum number of resets before exiting is 5
-|cam_delay_pmt_send |The time (in seconds) we wait between the initialization of the CAM and the sending of the first PMT This behavior is made for some "cray" CAMs like powercam v4 which doesn't accept the PMT just after the ca_info\
+|cam_reset_interval |The time (in seconds) we wait for the CAM to be initialized before resetting it. | 30 | | If the reset is not successful, MuMuDVB will reset the CAM again after this interval. The maximum number of resets before exiting is 5
+|cam_delay_pmt_send |The time (in seconds) we wait between the initialization of the CAM and the sending of the first PMT This behavior is made for some "crazy" CAMs like powercam v4 which doesn't accept the PMT just after the ca_info\
 _callback |  0 | | Normally this time doesn't have to be changed.
 |cam_interval_pmt_send |The time (in seconds) we wait between possible updates to the PMT sent to the CAM |  3 | | Normally this time doesn't have to be changed.
 |==================================================================================================================
@@ -258,7 +257,6 @@ Autoconfiguration parameters
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |autoconfiguration |autoconfiguration 1, partial: find audio and video PIDs, 2, full: full autoconfiguration | 0 | 0, 1, 2, partial or full | see the README for more details
-|autoconf_ip_header |For full autoconfiguration, the first part of the ip for streamed channel |  | |  obsolete, use `autoconf_ip4` instead
 |autoconf_ip4 |For full autoconfiguration, the template for the ipv4 for streamed channel | 239.100.%card.%number  | |  You can use expressions with `+`, `*` , `%card`, `%tuner`, `%server`, `%sid_hi`, `%sid_lo` and `%number`. Ex:  `239.100.150+%server*10+%card.%number`
 |autoconf_ip6 |For full autoconfiguration, the template for the ipv6 for streamed channel | FF15:4242::%server:%card:%number  | |  You can use the keywords `%card`, `%tuner`, `%server`, `%sid` (the SID will be in hexadecimal) and `%number`
 |autoconf_radios |Do we consider radios as valid channels during full autoconfiguration ? | 0 | 0 or 1 | 
@@ -266,7 +264,7 @@ Autoconfiguration parameters
 |autoconf_pid_update |Do we follow the changes in the PIDs when the PMT is updated ? | 1 | 0 or 1 | 
 |autoconf_unicast_start_port |The unicast port for the first discovered channel |  |  | `autoconf_unicast_start_port=value` is equivalent to `autoconf_unicast_port=value + %number`
 |autoconf_unicast_port |The unicast port for each discovered channel (autoconf full). Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%tuner` `%server`, `%sid` and `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
-|autoconf_multicast_port |The multicast port for each discovered channel (autoconf full). Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%tuner` `%server`, `%sid` and `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
+|autoconf_multicast_port |The multicast port for each discovered channel (autoconf full). Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%tuner` `%server`, `%sid` and `%number`. Ex : `autoconf_multicast_port=2000+100*%card+%number`
 |autoconf_sid_list | If you don't want to configure all the channels of the transponder in full autoconfiguration mode, specify with this option the list of the service ids of the channels you want to autoconfigure. | empty |  | 
 |autoconf_name_template | The template for the channel name, ex `%number-%name` | empty | | See README for more details
 |==================================================================================================================
@@ -305,6 +303,7 @@ Channel parameters
 ------------------
 
 Each channel start with an `ip=` or `channel_next` line. The only other mandatory parameter is the `name` of the channel.
+All these options have no effect in full autoconfiguration where all parameters are detected from the stream and the autoconf options.
 
 Concerning the PIDs see the <<getpids,getting the PIDs>> section
 
@@ -317,14 +316,14 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 |port | The port | 1234 or common_port | | Ports below 1024 needs root rights.
 |unicast_port | The HTTP unicast port for this channel | | | Ports below 1024 needs root rights. You need to activate HTTP unicast with `ip_http`
 |sap_group |The playlist group for SAP announces | | string | optionnal
-|cam_pmt_pid |Only for scrambled channels. The PMT PID for CAM support | | | 
+|cam_pmt_pid |Only for scrambled channels. The PMT PID for CAM support | | | This option needs to be specified for descrambling the channel.
 |service_id |The service id (program number), olny for autoconfiguration, or rewrite (PAT or SDT) see README for more details | | | 
 |name | The name of the channel. Will be used for /var/run/mumudvb/channels_streamed_adapter%d_tuner%d, logging and SAP announces | | | Mandatory
 |pids | The PIDs list, separated by spaces | | | some pids are always sent (PAT CAT EIT SDT TDT NIT), see README for more details
 |oscam |Do we activate software descrambling for this channel| 0 | 0 or 1 |
-|ring_buffer_size | number of ts packets in ring buffer (when not specified by channel specific config) | 131072 |it gets rounded to the value that is power of 2 not lower than it|
-|decsa_delay | delay time in us between getting packet and descrambling (when not specified by channel specific config) | 4500000 | max is 10000000 |
-|send_delay | delay time in us between getting packet and sending (when not specified by channel specific config) | 7000000 |  mustn't be lower than decsa delay |
+|ring_buffer_size | number of ts packets in ring buffer (for software CAM) | 131072 |it gets rounded to the value that is power of 2 not lower than it|
+|decsa_delay | delay time in us between getting packet and descrambling (for software CAM) | 4500000 | max is 10000000 |
+|send_delay | delay time in us between getting packet and sending (for software CAM) | 7000000 |  mustn't be lower than decsa delay |
 |==================================================================================================================
 
 
