@@ -90,12 +90,8 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
 		if ((strlen (substring) >= 255 - 1))
 			log_message( log_module,  MSG_WARN,"Sap URI too long\n");
 	}
-	else if ((!strcmp (substring, "sap_sending_ip"))||(!strcmp (substring, "sap_sending_ip4")))
+	else if (!strcmp (substring, "sap_sending_ip4"))
 	{
-		if(!strcmp (substring, "sap_sending_ip"))
-			log_message( log_module,  MSG_WARN,
-					"sap_sending_ip is Deprecated use sap_sending_ip4 instead");
-
 		substring = strtok (NULL, delimiteurs);
 		if(strlen(substring)>19)
 		{

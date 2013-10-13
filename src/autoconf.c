@@ -152,13 +152,8 @@ int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, c
 					"You have to set autoconfiguration in full mode to use autoconf of the radios\n");
 		}
 	}
-	else if ((!strcmp (substring, "autoconf_ip"))||(!strcmp (substring, "autoconf_ip4")))
+	else if ((!strcmp (substring, "autoconf_ip4")))
 	{
-		if(!strcmp (substring, "autoconf_ip"))
-		{
-			log_message( log_module,  MSG_WARN,
-					"autoconf_ip is deprecated, please use autoconf_ip4 instead");
-		}
 		substring = strtok (NULL, delimiteurs);
 		if(strlen(substring)>79)
 		{
@@ -209,10 +204,8 @@ int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, c
 		}
 		strcpy(autoconf_vars->autoconf_multicast_port,substring);
 	}
-	else if ((!strcmp (substring, "autoconf_tsid_list"))||(!strcmp (substring, "autoconf_sid_list")))
+	else if (!strcmp (substring, "autoconf_sid_list"))
 	{
-		if(!strcmp (substring, "autoconf_tsid_list"))
-			log_message( log_module,  MSG_WARN, "Warning: The option autoconf_tsid_list is deprecated, use autoconf_sid_list instead\n");
 		while ((substring = strtok (NULL, delimiteurs)) != NULL)
 		{
 			if (autoconf_vars->num_service_id >= MAX_CHANNELS)

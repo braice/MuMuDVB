@@ -84,33 +84,6 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
 			return -1;
 		}
 	}
-
-
-
-#ifdef ATSC
-	else if (!strcmp (substring, "atsc_modulation"))
-	{
-		tuneparams->modulation_set = 1;
-		log_message( log_module,  MSG_WARN, "The option atsc_modulation is deprecated, use the option modulation instead\n");
-		substring = strtok (NULL, delimiteurs);
-		if (!strcmp (substring, "vsb8"))
-			tuneparams->modulation = VSB_8;
-		else if (!strcmp (substring, "vsb16"))
-			tuneparams->modulation = VSB_16;
-		else if (!strcmp (substring, "qam256"))
-			tuneparams->modulation = QAM_256;
-		else if (!strcmp (substring, "qam64"))
-			tuneparams->modulation = QAM_64;
-		else if (!strcmp (substring, "qamauto"))
-			tuneparams->modulation = QAM_AUTO;
-		else
-		{
-			log_message( log_module,  MSG_WARN,
-					"Bad value for atsc_modulation, will try VSB_8 (usual modulation for terrestrial)\n");
-			tuneparams->modulation_set = 0;
-		}
-	}
-#endif
 	else if (!strcmp (substring, "freq"))
 	{
 		double temp_freq;
@@ -214,35 +187,6 @@ int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
 			return -1;
 		}
 		strcpy (tuneparams->card_dev_path, substring);
-	}
-	else if (!strcmp (substring, "qam"))
-	{
-		// DVB-T
-		log_message( log_module,  MSG_WARN, " The option qam is deprecated, use the option modulation instead\n");
-		tuneparams->modulation_set = 1;
-		substring = strtok (NULL, delimiteurs);
-		sscanf (substring, "%s\n", substring);
-		if (!strcmp (substring, "qpsk"))
-			tuneparams->modulation=QPSK;
-		else if (!strcmp (substring, "16"))
-			tuneparams->modulation=QAM_16;
-		else if (!strcmp (substring, "32"))
-			tuneparams->modulation=QAM_32;
-		else if (!strcmp (substring, "64"))
-			tuneparams->modulation=QAM_64;
-		else if (!strcmp (substring, "128"))
-			tuneparams->modulation=QAM_128;
-		else if (!strcmp (substring, "256"))
-			tuneparams->modulation=QAM_256;
-		else if (!strcmp (substring, "auto"))
-			tuneparams->modulation=QAM_AUTO;
-		else
-		{
-			log_message( log_module,  MSG_ERROR,
-					"Config issue : QAM\n");
-			tuneparams->modulation_set = 0;
-			return -1;
-		}
 	}
 	else if (!strcmp (substring, "trans_mode"))
 	{

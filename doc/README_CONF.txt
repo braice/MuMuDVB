@@ -144,7 +144,6 @@ Parameters specific to cable (DVB-C)
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |srate  |transponder's symbol rate | | | Mandatory
-|qam |quadrature amplitude modulation | auto | qpsk, 16, 32, 64, 128, 256, auto | This option is obsolete, use modulation instead
 |coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto  |
 |==================================================================================================================
 
@@ -155,10 +154,11 @@ The http://www.rfcafe.com/references/electrical/spectral-inv.htm[spectral invers
 Parameters specific to ATSC (Cable or Terrestrial)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+If needed, specify the modulation using the option `modulation`.
+
 [width="80%",cols="1,3,1,2,2",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
-|atsc_modulation | the modulation for ATSC | vsb8 | vsb8, vsb16, qam256, qam64, qamauto | This option is obsolete, use modulation instead
 |==================================================================================================================
 
 [NOTE]

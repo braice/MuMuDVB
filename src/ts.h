@@ -646,7 +646,7 @@ typedef struct {
 
    u_char modulation_mode                        :8;
 
-  u_int8_t carrier_frequency[4]; //deprecated
+  u_int8_t carrier_frequency[4];
 
    u_char channel_tsid_hi                        :8;
 
