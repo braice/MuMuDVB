@@ -44,21 +44,27 @@ static char *log_module="Network: ";
 /**@brief Send data
  * just send the data over the socket fd
  */
-int
+void
 sendudp (int fd, struct sockaddr_in *sSockAddr, unsigned char *data, int len)
 {
-	return sendto (fd, data, len, 0, (struct sockaddr *) sSockAddr,
+	int ret;
+	ret=sendto (fd, data, len, 0, (struct sockaddr *) sSockAddr,
 			sizeof (*sSockAddr));
+	if(ret<0)
+		log_message( log_module,  MSG_WARN,"sendto failed : %s\n", strerror(errno));
 }
 
 /**@brief Send data
  * just send the data over the socket fd
  */
-int
+void
 sendudp6 (int fd, struct sockaddr_in6 *sSockAddr, unsigned char *data, int len)
 {
-	return sendto (fd, data, len, 0, (struct sockaddr *) sSockAddr,
+	int ret;
+	ret=sendto (fd, data, len, 0, (struct sockaddr *) sSockAddr,
 			sizeof (*sSockAddr));
+	if(ret<0)
+		log_message( log_module,  MSG_WARN,"sendto failed : %s\n", strerror(errno));
 }
 
 
@@ -167,15 +173,18 @@ makesocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
 	{
 		log_message( log_module,  MSG_WARN, "socket() failed : %s\n",strerror(errno));
 		set_interrupted(ERROR_NETWORK<<8);
+		return -1;
 	}
 
 	sSockAddr->sin6_family = sin.sin6_family = AF_INET6;
 	sSockAddr->sin6_port = sin.sin6_port = htons (port);
 	iRet=inet_pton (AF_INET6, szAddr,&sSockAddr->sin6_addr);
-	if (iRet == 0)
+	if (iRet != 1)
 	{
 		log_message( log_module,  MSG_ERROR,"inet_pton failed : %s\n", strerror(errno));
 		set_interrupted(ERROR_NETWORK<<8);
+		close(iSocket);
+		return -1;
 	}
 
 	iRet = setsockopt (iSocket, SOL_SOCKET, SO_REUSEADDR, &iReuse, sizeof (int));
@@ -183,6 +192,8 @@ makesocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
 	{
 		log_message( log_module,  MSG_ERROR,"setsockopt SO_REUSEADDR failed : %s\n",strerror(errno));
 		set_interrupted(ERROR_NETWORK<<8);
+		close(iSocket);
+		return -1;
 	}
 	iRet =
 			setsockopt (iSocket, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &TTL, sizeof (int));
@@ -190,6 +201,8 @@ makesocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
 	{
 		log_message( log_module,  MSG_ERROR,"setsockopt IPV6_MULTICAST_HOPS failed.  multicast in kernel? error : %s \n",strerror(errno));
 		set_interrupted(ERROR_NETWORK<<8);
+		close(iSocket);
+		return -1;
 	}
 	if(strlen(iface))
 	{
@@ -203,6 +216,8 @@ makesocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
 			{
 				log_message( log_module,  MSG_ERROR,"setsockopt IPV6_MULTICAST_IF failed.  multicast in kernel? error : %s \n",strerror(errno));
 				set_interrupted(ERROR_NETWORK<<8);
+				close(iSocket);
+				return -1;
 			}
 		}
 		else
@@ -262,6 +277,8 @@ makeclientsocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
 		struct sockaddr_in6 *sSockAddr)
 {
 	int socket = makesocket6 (szAddr, port, TTL, iface, sSockAddr);
+	if (socket < 0)
+		return -1;
 	struct ipv6_mreq blub;
 	struct sockaddr_in6 sin;
 	memset(&sin, 0, sizeof sin);
@@ -269,7 +286,7 @@ makeclientsocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
 	sin.sin6_family = AF_INET6;
 	sin.sin6_port = htons (port);
 	iRet=inet_pton (AF_INET6, szAddr,&sin.sin6_addr);
-	if (iRet == 0)
+	if (iRet != 1)
 	{
 		log_message( log_module,  MSG_ERROR,"inet_pton failed : %s\n", strerror(errno));
 		close(socket);
@@ -286,7 +303,15 @@ makeclientsocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
 	}
 
 	//join the group
-	inet_pton (AF_INET6, szAddr,&blub.ipv6mr_multiaddr);
+	iRet=inet_pton (AF_INET6, szAddr,&blub.ipv6mr_multiaddr);
+	if (iRet != 1)
+	{
+		log_message( log_module,  MSG_ERROR,"inet_pton failed : %s\n", strerror(errno));
+		set_interrupted(ERROR_NETWORK<<8);
+		close(socket);
+		return -1;
+	}
+
 	if(strlen(iface))
 		blub.ipv6mr_interface=if_nametoindex(iface);
 	else

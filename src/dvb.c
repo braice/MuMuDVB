@@ -450,6 +450,7 @@ void show_card_capabilities( int card, int tuner )
 	struct dvb_frontend_info fe_info;
 	if ( (i_ret = ioctl(frontend_fd,FE_GET_INFO, &fe_info) < 0)){
 		log_message( log_module,  MSG_ERROR, "FE_GET_INFO: %s \n", strerror(errno));
+		close (frontend_fd);
 		return;
 	}
 	log_message( log_module,  MSG_INFO, "=========== Card %d - Tuner %d ===========\n", card, tuner);

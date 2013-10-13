@@ -230,14 +230,10 @@ int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, c
 	{
 		// other substring extraction method in order to keep spaces
 		substring = strtok (NULL, "=");
-		if (!(strlen (substring) >= MAX_NAME_LEN - 1))
-			strcpy(autoconf_vars->name_template,strtok(substring,"\n"));
-		else
-		{
+		strncpy(autoconf_vars->name_template,strtok(substring,"\n"),MAX_NAME_LEN-1);
+		autoconf_vars->name_template[MAX_NAME_LEN-1]='\0';
+		if (strlen (substring) >= MAX_NAME_LEN - 1)
 			log_message( log_module,  MSG_WARN,"Autoconfiguration: Channel name template too long\n");
-			strncpy(autoconf_vars->name_template,strtok(substring,"\n"),MAX_NAME_LEN-1);
-			autoconf_vars->name_template[MAX_NAME_LEN-1]='\0';
-		}
 	}
 	else
 		return 0; //Nothing concerning autoconfiguration, we return 0 to explore the other possibilities

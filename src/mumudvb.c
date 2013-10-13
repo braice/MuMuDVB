@@ -819,14 +819,10 @@ main (int argc, char **argv)
 			}
 			// other substring extraction method in order to keep spaces
 			substring = strtok (NULL, "=");
-			if (!(strlen (substring) >= MAX_NAME_LEN - 1))
-				strcpy(chan_and_pids.channels[curr_channel].name,strtok(substring,"\n"));
-			else
-			{
+			strncpy(chan_and_pids.channels[curr_channel].name,strtok(substring,"\n"),MAX_NAME_LEN-1);
+			chan_and_pids.channels[curr_channel].name[MAX_NAME_LEN-1]='\0';
+			if (strlen (substring) >= MAX_NAME_LEN - 1)
 				log_message( log_module,  MSG_WARN,"Channel name too long\n");
-				strncpy(chan_and_pids.channels[curr_channel].name,strtok(substring,"\n"),MAX_NAME_LEN-1);
-				chan_and_pids.channels[curr_channel].name[MAX_NAME_LEN-1]='\0';
-			}
 		}
 		else if (!strcmp (substring, "server_id"))
 		{
@@ -962,7 +958,9 @@ main (int argc, char **argv)
 	log_message( log_module,  MSG_INFO,"========== End of configuration, MuMuDVB version %s is starting ==========",VERSION);
 
 	// + 1 Because of the new syntax
+	pthread_mutex_lock(&chan_and_pids.lock);
 	chan_and_pids.number_of_channels = curr_channel+1;
+	pthread_mutex_unlock(&chan_and_pids.lock);
 	/*****************************************************/
 	//Autoconfiguration init
 	/*****************************************************/

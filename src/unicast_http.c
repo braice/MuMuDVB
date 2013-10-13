@@ -378,7 +378,7 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
 {
 
 	unsigned int l;
-	int tempSocket;
+	int tempSocket,iRet;
 	unicast_client_t *tempClient;
 	struct sockaddr_in tempSocketAddrIn;
 
@@ -391,7 +391,12 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
 	}
 	struct sockaddr_in tempSocketAddr;
 	l = sizeof(struct sockaddr);
-	getsockname(tempSocket, (struct sockaddr *) &tempSocketAddr, &l);
+	iRet=getsockname(tempSocket, (struct sockaddr *) &tempSocketAddr, &l);
+	if (iRet < 0)
+	{
+		log_message( log_module,  MSG_ERROR,"getsockname failed : %s while accepting incoming connection", strerror(errno));
+		return NULL;
+	}
 	log_message( log_module, MSG_FLOOD,"New connection from %s:%d to %s:%d \n",inet_ntoa(tempSocketAddrIn.sin_addr), tempSocketAddrIn.sin_port,inet_ntoa(tempSocketAddr.sin_addr), tempSocketAddr.sin_port);
 
 	//Now we set this socket to be non blocking because we poll it
@@ -1005,7 +1010,7 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
 int
 unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int perport)
 {
-	int curr_channel;
+	int curr_channel,iRet;
 
 	struct unicast_reply* reply = unicast_reply_init();
 	if (NULL == reply) {
@@ -1017,7 +1022,12 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
 	struct sockaddr_in tempSocketAddr;
 	unsigned int l;
 	l = sizeof(struct sockaddr);
-	getsockname(Socket, (struct sockaddr *) &tempSocketAddr, &l);
+	iRet=getsockname(Socket, (struct sockaddr *) &tempSocketAddr, &l);
+	if (iRet < 0)
+	{
+		log_message( log_module,  MSG_ERROR,"getsockname failed : %s while making HTTP reply", strerror(errno));
+		return -1;
+	}
 	//we write the playlist
 	unicast_reply_write(reply, "#EXTM3U\r\n");
 

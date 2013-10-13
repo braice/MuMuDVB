@@ -25,7 +25,7 @@
 /** @file
  * @brief File for Session Announcement Protocol Announces
  * @author Brice DUBOST
- * @date 2008-2010
+ * @date 2008-2013
  */
 
 #include "sap.h"
@@ -85,13 +85,10 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
 	{
 		// other substring extraction method in order to keep spaces
 		substring = strtok (NULL, "=");
-		if (!(strlen (substring) >= 255 - 1))
-			strcpy(sap_vars->sap_uri,strtok(substring,"\n"));
-		else
-		{
+		strncpy(sap_vars->sap_uri,strtok(substring,"\n"),255 - 1);
+		sap_vars->sap_uri[255]='\0';
+		if ((strlen (substring) >= 255 - 1))
 			log_message( log_module,  MSG_WARN,"Sap URI too long\n");
-			strncpy(sap_vars->sap_uri,strtok(substring,"\n"),255 - 1);
-		}
 	}
 	else if ((!strcmp (substring, "sap_sending_ip"))||(!strcmp (substring, "sap_sending_ip4")))
 	{
@@ -373,9 +370,9 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
 	payload6.string=NULL;
 	payload6.length=0;
 
-	if(sap_message4)
+	if(channel->socketOut4)
 		sap_message4->to_be_sent=0;
-	if(sap_message6)
+	if(channel->socketOut6)
 		sap_message6->to_be_sent=0;
 	//we check if it's an alive channel
 	if(!channel->streamed_channel)
