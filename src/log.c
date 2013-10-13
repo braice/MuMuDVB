@@ -644,65 +644,45 @@ char *ca_sys_id_to_str(int id)
  */
 char *service_type_to_str(int type)
 {
+	flag_descr_t service_type_descr[]={
+			{0x01, "Television"},
+			{0x02, "Radio"},
+			{0x03, "Teletext"},
+			{0x04, "NVOD Reference service"},
+			{0x05, "NVOD Time shifted service"},
+			{0x06, "Mosaic service"},
+			{0x07, "FM radio service"},
+			{0x08, "DVB SRM service"},
+			{0x0a, "Advanced codec Radio"},
+			{0x0b, "Advanced codec mosaic"},
+			{0x0c, "Data broadcast service"},
+			{0x0d, "Reserved for common interface usage"},
+			{0x0e, "RCS Map"},
+			{0x0f, "RCS FLS"},
+			{0x10, "DVB MHP (multimedia home platform)"},
+			{0x11, "Television MPEG2-HD"},
+			{0x16, "Advanced codec SD Television"},
+			{0x17, "Advanced codec SD NVOD Time shifted service"},
+			{0x18, "Advanced codec SD NVOD Reference service"},
+			{0x19, "Advanced codec HD Television"},
+			{0x1a, "Advanced codec HD NVOD Time shifted service"},
+			{0x1b, "Advanced codec HD NVOD Reference service"},
+			{0x1c, "advanced codec frame compatible 3D HD digital television service"},
+			{0x1d, "advanced codec frame compatible 3D HD NVOD time-shifted service"},
+			{0x1e, "advanced codec frame compatible 3D HD NVOD reference service"},
+	};
+
 	if(type>=0x80 && type<=0xFE)
 		return "User defined";
 
-	switch(type)
+	for(int i=0;i<sizeof(service_type_descr)/sizeof(flag_descr_t);i++)
 	{
-	case 0x01:
-		return "Television";
-	case 0x02:
-		return "Radio";
-	case 0x03:
-		return "Teletext";
-	case 0x04:
-		return "NVOD Reference service";
-	case 0x05:
-		return "NVOD Time shifted service";
-	case 0x06:
-		return "Mosaic service";
-	case 0x07:
-		return "FM radio service";
-	case 0x08:
-		return "DVB SRM service";
-	case 0x0a:
-		return "Advanced codec Radio";
-	case 0x0b:
-		return "Advanced codec mosaic";
-	case 0x0c:
-		return "Data broadcast service";
-	case 0x0d:
-		return "Reserved for common interface usage";
-	case 0x0e:
-		return "RCS Map";
-	case 0x0f:
-		return "RCS FLS";
-	case 0x10:
-		return "DVB MHP (multimedia home platform)";
-	case 0x11:
-		return "Television MPEG2-HD";
-	case 0x16:
-		return "Advanced codec SD Television";
-	case 0x17:
-		return "Advanced codec SD NVOD Time shifted service";
-	case 0x18:
-		return "Advanced codec SD NVOD Reference service";
-	case 0x19:
-		return "Advanced codec HD Television";
-	case 0x1a:
-		return "Advanced codec HD NVOD Time shifted service";
-	case 0x1b:
-		return "Advanced codec HD NVOD Reference service";
-	case 0x1c:
-		return "advanced codec frame compatible 3D HD digital television service";
-	case 0x1d:
-		return "advanced codec frame compatible 3D HD NVOD time-shifted service";
-	case 0x1e:
-		return "advanced codec frame compatible 3D HD NVOD reference service";
-	default:
-		return "Please report : Unknown service type doc : EN 300 468 v1.13.1 table 87";
+		if(service_type_descr[i].num == type)
+			return service_type_descr[i].descr;
 	}
+	return "Please report : Unknown service type doc : EN 300 468 v1.13.1 table 87";
 }
+
 
 /** @brief Convert the service type to str according to EN 300 468 v1.13.1 table 87
  *
