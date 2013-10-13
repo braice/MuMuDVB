@@ -96,6 +96,12 @@ typedef struct log_params_t{
   float log_flush_interval;
 }log_params_t;
 
+typedef struct flag_descr_t
+{
+	int num;
+	char descr[128];
+}flag_descr_t;
+
 
 
 
