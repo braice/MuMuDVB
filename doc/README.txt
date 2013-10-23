@@ -146,7 +146,8 @@ $ ./configure --help
 --------------------
 
 [NOTE]
-The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of these libraries and deactivate the CAM support if one of them is not present. 
+The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of these libraries and deactivate the CAM support if one of them is not present.
+In the case of fedora, the dvb-apps package does not contains the headers, you have to install it manually follwing the instructions here : http://www.linuxtv.org/wiki/index.php/LinuxTV_dvb-apps 
 
 [NOTE]
 The SCAM support depends on libdvbcsa from videolan. The configure script will detect automatically the presence of these libraries and deactivate the SCAM support if one of them is not present. It needs also trunk version of oscam to get control words. Oscam configuration is described below in section concerning software descrambling v2 inside mumudvb. 
