@@ -121,7 +121,7 @@ void scam_decsa_stop(mumudvb_channel_t *channel)
 static void *decsathread_func(void* arg)
 {
   unsigned char scrambling_control_packet=0;
-  unsigned int ca_idx;
+  unsigned int ca_idx = 0;
   mumudvb_channel_t *channel;
   channel = ((mumudvb_channel_t *) arg);
   unsigned int batch_size = dvbcsa_bs_batch_size();
