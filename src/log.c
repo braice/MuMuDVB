@@ -637,6 +637,34 @@ char *ca_sys_id_to_str(int id)
 }
 
 
+
+flag_descr_t service_type_descr[]={
+		{0x01, "Television"},
+		{0x02, "Radio"},
+		{0x03, "Teletext"},
+		{0x04, "NVOD Reference service"},
+		{0x05, "NVOD Time shifted service"},
+		{0x06, "Mosaic service"},
+		{0x07, "FM radio service"},
+		{0x08, "DVB SRM service"},
+		{0x0a, "Advanced codec Radio"},
+		{0x0b, "Advanced codec mosaic"},
+		{0x0c, "Data broadcast service"},
+		{0x0d, "Reserved for common interface usage"},
+		{0x0e, "RCS Map"},
+		{0x0f, "RCS FLS"},
+		{0x10, "DVB MHP (multimedia home platform)"},
+		{0x11, "Television MPEG2-HD"},
+		{0x16, "Advanced codec SD Television"},
+		{0x17, "Advanced codec SD NVOD Time shifted service"},
+		{0x18, "Advanced codec SD NVOD Reference service"},
+		{0x19, "Advanced codec HD Television"},
+		{0x1a, "Advanced codec HD NVOD Time shifted service"},
+		{0x1b, "Advanced codec HD NVOD Reference service"},
+		{0x1c, "advanced codec frame compatible 3D HD digital television service"},
+		{0x1d, "advanced codec frame compatible 3D HD NVOD time-shifted service"},
+		{0x1e, "advanced codec frame compatible 3D HD NVOD reference service"},
+};
 /** @brief Convert the service type to str according to EN 300 468 v1.13.1 table 87
  *
  * @param type the type to display
@@ -644,38 +672,10 @@ char *ca_sys_id_to_str(int id)
  */
 char *service_type_to_str(int type)
 {
-	flag_descr_t service_type_descr[]={
-			{0x01, "Television"},
-			{0x02, "Radio"},
-			{0x03, "Teletext"},
-			{0x04, "NVOD Reference service"},
-			{0x05, "NVOD Time shifted service"},
-			{0x06, "Mosaic service"},
-			{0x07, "FM radio service"},
-			{0x08, "DVB SRM service"},
-			{0x0a, "Advanced codec Radio"},
-			{0x0b, "Advanced codec mosaic"},
-			{0x0c, "Data broadcast service"},
-			{0x0d, "Reserved for common interface usage"},
-			{0x0e, "RCS Map"},
-			{0x0f, "RCS FLS"},
-			{0x10, "DVB MHP (multimedia home platform)"},
-			{0x11, "Television MPEG2-HD"},
-			{0x16, "Advanced codec SD Television"},
-			{0x17, "Advanced codec SD NVOD Time shifted service"},
-			{0x18, "Advanced codec SD NVOD Reference service"},
-			{0x19, "Advanced codec HD Television"},
-			{0x1a, "Advanced codec HD NVOD Time shifted service"},
-			{0x1b, "Advanced codec HD NVOD Reference service"},
-			{0x1c, "advanced codec frame compatible 3D HD digital television service"},
-			{0x1d, "advanced codec frame compatible 3D HD NVOD time-shifted service"},
-			{0x1e, "advanced codec frame compatible 3D HD NVOD reference service"},
-	};
-
 	if(type>=0x80 && type<=0xFE)
 		return "User defined";
 
-	for(int i=0;i<sizeof(service_type_descr)/sizeof(flag_descr_t);i++)
+	for(size_t i=0;i<sizeof(service_type_descr)/sizeof(flag_descr_t);i++)
 	{
 		if(service_type_descr[i].num == type)
 			return service_type_descr[i].descr;
