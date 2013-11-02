@@ -64,28 +64,41 @@ void add_ts_packet_data(unsigned char *buf, mumudvb_ts_packet_t *pkt, int data_l
  */
 int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *pkt)
 {
+	int packet_avail=0;
 	//see doc/diagrams/TS_packet_getting_all_cases.pdf for documentation
 	pthread_mutex_lock(&pkt->packetmutex);
 	//We check if there is already a full packet, in this case we remove one
+	//and give it to the client
 	if(pkt->full_number > 0)
 	{
-		log_message( log_module,  MSG_FLOOD, "Full packet left: %d, we remove one\n",pkt->full_number);
+		log_message( log_module,  MSG_FLOOD, "Full packet left: %d, we copy length %d\n",
+					pkt->full_number,
+					pkt->full_lengths[0]);
+		//we copy the length
+		pkt->len_full= pkt->full_lengths[0];
+		//we copy the data
+		memcpy(pkt->data_full,pkt->buffer_full,pkt->len_full);
 		pkt->full_number--;
 		//We update the size of the buffer
 		pkt->full_buffer_len-=pkt->len_full;
-		//if there is one packet left, we put it in the full data and remove one packet
+		//if there is one packet left, shift the packets left
 		if(pkt->full_number > 0)
 		{
-			log_message( log_module,  MSG_FLOOD, "Remove one packet size %d, but another size: %d\n",pkt->len_full, pkt->full_lengths[1]);
+			log_message( log_module,  MSG_FLOOD, "Removed size %d, next size: %d\n",pkt->len_full, pkt->full_lengths[1]);
 			//We move the data inside the buffer full
 			memmove(pkt->buffer_full,pkt->buffer_full+pkt->len_full,pkt->full_buffer_len);
 			//we update the lengths of the full packets
 			memmove(pkt->full_lengths,pkt->full_lengths+1,(MAX_FULL_PACKETS-1)*sizeof(int));
-			//we update the length
-			pkt->len_full= pkt->full_lengths[0];
-			//we update the data
-			memcpy(pkt->data_full,pkt->buffer_full,pkt->len_full);
+
 		}
+		packet_avail=1;
+	}
+
+	//This function can be called with a NULL buffer in order to POP the packets from the stack
+	if(buf==NULL)
+	{
+		pthread_mutex_unlock(&pkt->packetmutex);
+		return packet_avail;
 	}
 
 	ts_header_t *header;
@@ -180,7 +193,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *pkt)
 	}
 
 	pthread_mutex_unlock(&pkt->packetmutex);
-	return (pkt->full_number > 0);
+	return packet_avail;
 }
 
 
@@ -326,18 +339,24 @@ void add_ts_packet_data(unsigned char *buf, mumudvb_ts_packet_t *pkt, int data_l
 void ts_move_part_to_full(mumudvb_ts_packet_t *pkt)
 {
 	//append the data
+	if(pkt->full_number>=MAX_FULL_PACKETS)
+	{
+		log_message(log_module, MSG_WARN, "Too many full packets, we skip one size %d",pkt->len_partial);
+		return;
+	}
+	if((pkt->full_buffer_len+pkt->len_partial)>=FULL_BUFFER_SIZE)
+	{
+		log_message(log_module, MSG_WARN, "Too much data, in full packets (%d), we skip one size %d",pkt->full_buffer_len,pkt->len_partial);
+		return;
+	}
 	memcpy(pkt->buffer_full+pkt->full_buffer_len,pkt->data_partial,pkt->len_partial);
 	pkt->full_buffer_len+=pkt->len_partial;
 	pkt->full_lengths[pkt->full_number]=pkt->len_partial;
 	pkt->full_number++;
 	log_message(log_module, MSG_FLOOD, "New full packet len %d. There's now %d full packet%c\n",pkt->len_partial,pkt->full_number,pkt->full_number>1?'s':' ');
-	//if it's the first we copy it to the full
-	if(pkt->full_number==1)
-	{
-		pkt->len_full=pkt->full_lengths[0];
-		log_message(log_module, MSG_FLOOD, "First full packet. len %d\n",pkt->len_full);
-		memcpy(pkt->data_full,pkt->buffer_full,pkt->len_full);
-	}
+	//we don't copy it to the full, it will be popped at the next call of get_ts_packet
+	//This delays of one TS packet the moment this one will be available to the client but
+	//makes the code simpler
 	pkt->len_partial=0;
 	pkt->status_partial=EMPTY;
 }

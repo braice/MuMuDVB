@@ -347,8 +347,9 @@ int sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
 	/*We need to update the full packet, we download it*/
 	if(rewrite_vars->sdt_needs_update || rewrite_vars->sdt_need_others)
 	{
-		if(get_ts_packet(ts_packet,rewrite_vars->full_sdt))
+		while(get_ts_packet(ts_packet,rewrite_vars->full_sdt))
 		{
+			ts_packet=NULL; // next call we only POP packets from the stack
 			sdt=(sdt_t*)(rewrite_vars->full_sdt->data_full);
 			/*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
       sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable

@@ -621,8 +621,9 @@ void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t
 	/*We need to update the full packet, we get it*/
 	if(channel->pmt_needs_update)
 	{
-		if(get_ts_packet(ts_packet,channel->pmt_packet))
+		while(get_ts_packet(ts_packet,channel->pmt_packet))
 		{
+			ts_packet=NULL; // next call we only POP packets from the stack
 			if(pmt_need_update(channel,channel->pmt_packet->data_full))
 			{
 				log_message( log_module, MSG_DETAIL,"PMT packet updated, we have now to check if there is new things\n");

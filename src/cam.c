@@ -1056,13 +1056,15 @@ static char *cam_status[] ={
  int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, cam_parameters_t *cam_vars, mumudvb_channel_t *actual_channel)
  {
 	 int iRet;
+	 int ret=0;
 	 struct timeval tv;
 	 gettimeofday (&tv, (struct timezone *) NULL);
 
 	 if (((actual_channel->need_cam_ask==CAM_NEED_ASK)||(actual_channel->need_cam_ask==CAM_NEED_UPDATE))&& (actual_channel->pmt_pid == pid))
 	 {
-		 if(get_ts_packet(ts_packet,actual_channel->cam_pmt_packet))
+		 while(get_ts_packet(ts_packet,actual_channel->cam_pmt_packet))
 		 {
+			 ts_packet=NULL; // next call we only POP packets from the stack
 			 //We check the transport stream id of the packet
 			 if(check_pmt_service_id(actual_channel->cam_pmt_packet, actual_channel))
 			 {
@@ -1077,7 +1079,7 @@ static char *cam_status[] ={
 
 					 //For the feature of reasking we initalise the time
 					 actual_channel->cam_asking_time = tv.tv_sec;
-					 return 1;
+					 ret=1;
 				 }
 				 else if(iRet==-1)
 				 {
@@ -1087,7 +1089,7 @@ static char *cam_status[] ={
 			 //else //The service_id is bad, we will try to get another PMT packet
 		 }
 	 }
-	 return 0;
+	 return ret;
  }
 
 
@@ -1119,8 +1121,9 @@ static char *cam_status[] ={
 	 /*We need to update the full packet, we download it*/
 	 if(actual_channel->pmt_needs_update)
 	 {
-		 if(get_ts_packet(ts_packet,actual_channel->pmt_packet))
+		 while(get_ts_packet(ts_packet,actual_channel->pmt_packet))
 		 {
+			 ts_packet=NULL; // next call we only POP packets from the stack
 			 if(pmt_need_update(actual_channel,actual_channel->pmt_packet->data_full))
 			 {
 				 log_message( log_module, MSG_DETAIL,"PMT packet updated, we now ask the CAM to update it\n");

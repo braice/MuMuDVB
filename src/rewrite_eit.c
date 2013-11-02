@@ -256,9 +256,10 @@ int eit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
 	/*We need to update the full packet, we download it*/
 	if(rewrite_vars->eit_needs_update )
 	{
-		if(get_ts_packet(ts_packet,rewrite_vars->full_eit))
+		//We pop all packets available
+		while(get_ts_packet(ts_packet,rewrite_vars->full_eit))
 		{
-
+			ts_packet=NULL; //next call we just pop packets if available
 			//We check if we have to store this new EIT packet (CRC32 can make false alarms)
 			if(!eit_need_update(rewrite_vars,rewrite_vars->full_eit->data_full,0))
 			{

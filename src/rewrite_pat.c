@@ -231,8 +231,9 @@ void pat_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_
 	/*We need to update the full packet, we download it*/
 	if(rewrite_vars->pat_needs_update)
 	{
-		if(get_ts_packet(ts_packet,rewrite_vars->full_pat))
+		while(get_ts_packet(ts_packet,rewrite_vars->full_pat))
 		{
+			ts_packet=NULL; // next call we only POP packets from the stack
 			pat_t       *pat=(pat_t*)(rewrite_vars->full_pat->data_full);
 			/*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
       	  	  sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable

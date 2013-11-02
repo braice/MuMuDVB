@@ -995,8 +995,9 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
 	{
 		if(pid==0) //PAT : contains the services identifiers and the PMT PID for each service
 		{
-			if(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_pat))
+			while((autoconf_vars->autoconfiguration==AUTOCONF_MODE_FULL)&&(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_pat)))
 			{
+				ts_packet=NULL; // next call we only POP packets from the stack
 				if(autoconf_read_pat(autoconf_vars))
 				{
 					log_message( log_module, MSG_DEBUG,"It seems that we have finished to get the services list\n");
@@ -1007,15 +1008,17 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
 		}
 		else if(pid==17) //SDT : contains the names of the services
 		{
-			if(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_sdt))
+			while(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_sdt))
 			{
+				ts_packet=NULL; // next call we only POP packets from the stack
 				autoconf_read_sdt(autoconf_vars->autoconf_temp_sdt->data_full,autoconf_vars->autoconf_temp_sdt->len_full,autoconf_vars->services);
 			}
 		}
 		else if(pid==PSIP_PID && tune_p->fe_type==FE_ATSC) //PSIP : contains the names of the services
 		{
-			if(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_psip))
+			while(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_psip))
 			{
+				ts_packet=NULL; // next call we only POP packets from the stack
 				autoconf_read_psip(autoconf_vars);
 			}
 		}
@@ -1027,8 +1030,9 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
 		{
 			if((!chan_and_pids->channels[curr_channel].autoconfigurated) &&(chan_and_pids->channels[curr_channel].pmt_pid==pid)&& pid)
 			{
-				if(get_ts_packet(ts_packet,chan_and_pids->channels[curr_channel].pmt_packet))
+				while((autoconf_vars->autoconfiguration==AUTOCONF_MODE_PIDS)&&(chan_and_pids->channels[curr_channel].pmt_packet)&&(get_ts_packet(ts_packet,chan_and_pids->channels[curr_channel].pmt_packet)))
 				{
+					ts_packet=NULL; // next call we only POP packets from the stack
 					//Now we have the PMT, we parse it
 					if(autoconf_read_pmt(chan_and_pids->channels[curr_channel].pmt_packet, &chan_and_pids->channels[curr_channel], tune_p->card_dev_path, tune_p->tuner, chan_and_pids->asked_pid, chan_and_pids->number_chan_asked_pid, fds)==0)
 					{
@@ -1062,8 +1066,9 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t
 	{
 		if(pid==16) //NIT : Network Information Table
 		{
-			if(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_nit))
+			while((autoconf_vars->autoconfiguration==AUTOCONF_MODE_NIT)&&(get_ts_packet(ts_packet,autoconf_vars->autoconf_temp_nit)))
 			{
+				ts_packet=NULL; // next call we only POP packets from the stack
 				log_message( log_module, MSG_FLOOD,"New NIT\n");
 				if(autoconf_read_nit(autoconf_vars, chan_and_pids->channels, chan_and_pids->number_of_channels)==0)
 				{
