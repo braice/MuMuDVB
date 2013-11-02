@@ -395,6 +395,7 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
 	if (iRet < 0)
 	{
 		log_message( log_module,  MSG_ERROR,"getsockname failed : %s while accepting incoming connection", strerror(errno));
+		close(tempSocket);
 		return NULL;
 	}
 	log_message( log_module, MSG_FLOOD,"New connection from %s:%d to %s:%d \n",inet_ntoa(tempSocketAddrIn.sin_addr), tempSocketAddrIn.sin_port,inet_ntoa(tempSocketAddr.sin_addr), tempSocketAddr.sin_port);
@@ -1026,6 +1027,7 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
 	if (iRet < 0)
 	{
 		log_message( log_module,  MSG_ERROR,"getsockname failed : %s while making HTTP reply", strerror(errno));
+		unicast_reply_free(reply);
 		return -1;
 	}
 	//we write the playlist
