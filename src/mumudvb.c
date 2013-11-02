@@ -557,8 +557,9 @@ main (int argc, char **argv)
 	memset (&chan_and_pids.channels, 0, sizeof (mumudvb_channel_t)*MAX_CHANNELS);
 #ifdef ENABLE_SCAM_SUPPORT
 	for (int i = 0; i < MAX_CHANNELS; ++i) {
-		pthread_mutex_init(&chan_and_pids.channels[i].stats_lock, NULL);
-		pthread_mutex_init(&chan_and_pids.channels[i].cw_lock, NULL);
+          pthread_mutex_init(&chan_and_pids.channels[i].stats_lock, NULL);
+          pthread_mutex_init(&chan_and_pids.channels[i].cw_lock, NULL);
+          chan_and_pids.channels[i].camd_socket = -1;
 	}
 #endif
 
