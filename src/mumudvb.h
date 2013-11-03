@@ -497,11 +497,11 @@ typedef struct monitor_parameters_t{
 	volatile int threadshutdown;
 	int wait_time;
 	struct autoconf_parameters_t *autoconf_vars;
-	struct sap_parameters_t *sap_vars;
+	struct sap_p_t *sap_p;
 	mumudvb_chan_and_pids_t *chan_and_pids;
 	multicast_parameters_t *multicast_vars;
 	struct unicast_parameters_t *unicast_vars;
-	struct tuning_parameters_t *tuneparams;
+	struct tune_p_t *tune_p;
 	struct stats_infos_t *stats_infos;
 	void *scam_vars_v;
 	int server_id;

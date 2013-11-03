@@ -65,7 +65,7 @@ struct ca_info {
 /** @brief the parameters for the cam
  * This structure contain the parameters needed for the CAM
  */
-typedef struct cam_parameters_t{
+typedef struct cam_p_t{
   /**Do we activate the support for CAMs*/
   int cam_support;
   /**The came number (in case of multiple cams)*/
@@ -103,7 +103,7 @@ typedef struct cam_parameters_t{
   int cam_mmi_autoresponse;
   /** Do we follow the version of the PMT for the CAM ?*/
   int cam_pmt_follow;
-}cam_parameters_t;
+}cam_p_t;
 
 /*****************************************************************************
  * Code for dealing with libdvben50221
@@ -135,14 +135,14 @@ typedef struct cam_parameters_t{
 #define DVBCA_INTERFACE_LINK 0
 #define DVBCA_INTERFACE_HLCI 1
 
-void init_cam_v(cam_parameters_t *cam_vars);
+void init_cam_v(cam_p_t *cam_p);
 int cam_send_ca_pmt( mumudvb_ts_packet_t *pmt, struct ca_info *cai);
 int convert_desc(struct ca_info *cai, uint8_t *out, uint8_t *buf, int dslen, uint8_t cmd, int quiet);
 int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt, uint8_t list, uint8_t cmd,int quiet);
-int cam_start(cam_parameters_t *, int);
-void cam_stop(cam_parameters_t *);
-int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
-int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, cam_parameters_t *cam_vars, mumudvb_channel_t *actual_channel);
+int cam_start(cam_p_t *, int);
+void cam_stop(cam_p_t *);
+int read_cam_configuration(cam_p_t *cam_p, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
+int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, cam_p_t *cam_p, mumudvb_channel_t *actual_channel);
 
 void cam_pmt_follow(unsigned char *ts_packet,  mumudvb_channel_t *actual_channel);
 #endif

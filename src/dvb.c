@@ -123,11 +123,11 @@ void *show_power_func(void* arg)
 	strengthparams->ts_discontinuities = 0; //could be initialized somewhere else but sounds fine here
 	memset(&festatus_old,0,sizeof(fe_status_t));
 	lock_lost=0;
-	while(!strengthparams->tuneparams->strengththreadshutdown)
+	while(!strengthparams->tune_p->strengththreadshutdown)
 	{
-		if(strengthparams->tuneparams->card_tuned)
+		if(strengthparams->tune_p->card_tuned)
 		{
-			if(strengthparams->tuneparams->display_strenght )
+			if(strengthparams->tune_p->display_strenght )
 				mumu_timing();
 
 			if (ioctl (strengthparams->fds->fd_frontend, FE_READ_BER, &strengthparams->ber) < 0)
@@ -173,14 +173,14 @@ void *show_power_func(void* arg)
 				meas_ub_ok=1;
 
 		}
-		if(strengthparams->tuneparams->display_strenght && strengthparams->tuneparams->card_tuned)
+		if(strengthparams->tune_p->display_strenght && strengthparams->tune_p->card_tuned)
 		{
 			log_message( log_module,  MSG_INFO, "Bit error rate: %10d Signal strength: %10d SNR: %10d Uncorrected blocks: %10d\n", strengthparams->ber,strengthparams->strength,strengthparams->snr,strengthparams->ub);
 			log_message( log_module,  MSG_INFO, "ts_discontinuities %10d",strengthparams->ts_discontinuities);
 
 			log_message( log_module,  MSG_FLOOD, "Timing: ioctls took %ld micro seconds\n",mumu_timing());
 		}
-		if((strengthparams->tuneparams->check_status ||strengthparams->tuneparams->display_strenght) && strengthparams->tuneparams->card_tuned)
+		if((strengthparams->tune_p->check_status ||strengthparams->tune_p->display_strenght) && strengthparams->tune_p->card_tuned)
 		{
 			if (ioctl (strengthparams->fds->fd_frontend, FE_READ_STATUS, &strengthparams->festatus) != -1)
 			{
@@ -201,7 +201,7 @@ void *show_power_func(void* arg)
 				}
 			}
 		}
-		for(i=0;i<wait_time && !strengthparams->tuneparams->strengththreadshutdown;i++)
+		for(i=0;i<wait_time && !strengthparams->tune_p->strengththreadshutdown;i++)
 			usleep(100000);
 	}
 	return 0;

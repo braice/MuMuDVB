@@ -64,7 +64,7 @@ enum
 
 /** The parameters for the thread for showing the strength */
 typedef struct strength_parameters_t{
-	tuning_parameters_t *tuneparams;
+	tune_p_t *tune_p;
 	fds_t *fds;
 	fe_status_t festatus;
 	int strength, ber, snr, ub;

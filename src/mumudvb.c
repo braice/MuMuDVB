@@ -222,8 +222,8 @@ int
 main (int argc, char **argv)
 {
 	//sap announces variables
-	sap_parameters_t sap_vars;
-	init_sap_v(&sap_vars);
+	sap_p_t sap_p;
+	init_sap_v(&sap_p);
 
 
 	//Statistics
@@ -232,18 +232,18 @@ main (int argc, char **argv)
 
 
 	//tuning parameters
-	tuning_parameters_t tuneparams;
-	init_tune_v(&tuneparams);
-	card_tuned=&tuneparams.card_tuned;
+	tune_p_t tune_p;
+	init_tune_v(&tune_p);
+	card_tuned=&tune_p.card_tuned;
 
 
 #ifdef ENABLE_CAM_SUPPORT
 	//CAM (Conditionnal Access Modules : for scrambled channels)
-	cam_parameters_t cam_vars;
-	init_cam_v(&cam_vars);
-	cam_parameters_t *cam_vars_ptr=&cam_vars;
+	cam_p_t cam_p;
+	init_cam_v(&cam_p);
+	cam_p_t *cam_p_ptr=&cam_p;
 #else
-	void *cam_vars_ptr=NULL;
+	void *cam_p_ptr=NULL;
 #endif
 
 
@@ -362,7 +362,7 @@ main (int argc, char **argv)
 			cmdlinecard=atoi(optarg);
 			break;
 		case 's':
-			tuneparams.display_strenght = 1;
+			tune_p.display_strenght = 1;
 			break;
 		case 'i':
 			server_id = atoi(optarg);
@@ -532,7 +532,7 @@ main (int argc, char **argv)
 			channel_start=0;
 		else
 			channel_start=1;
-		if((iRet=read_tuning_configuration(&tuneparams, substring))) //Read the line concerning the tuning parameters
+		if((iRet=read_tuning_configuration(&tune_p, substring))) //Read the line concerning the tuning parameters
 		{
 			if(iRet==-1)
 				exit(ERROR_CONF);
@@ -542,13 +542,13 @@ main (int argc, char **argv)
 			if(iRet==-1)
 				exit(ERROR_CONF);
 		}
-		else if((iRet=read_sap_configuration(&sap_vars, &chan_and_pids.channels[curr_channel], channel_start, substring))) //Read the line concerning the sap parameters
+		else if((iRet=read_sap_configuration(&sap_p, &chan_and_pids.channels[curr_channel], channel_start, substring))) //Read the line concerning the sap parameters
 		{
 			if(iRet==-1)
 				exit(ERROR_CONF);
 		}
 #ifdef ENABLE_CAM_SUPPORT
-		else if((iRet=read_cam_configuration(cam_vars_ptr, &chan_and_pids.channels[curr_channel], channel_start, substring))) //Read the line concerning the cam parameters
+		else if((iRet=read_cam_configuration(&cam_p, &chan_and_pids.channels[curr_channel], channel_start, substring))) //Read the line concerning the cam parameters
 		{
 			if(iRet==-1)
 				exit(ERROR_CONF);
@@ -760,11 +760,11 @@ main (int argc, char **argv)
 	//Autoconfiguration full is the simple mode for autoconfiguration, we set other option by default
 	if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)
 	{
-		if((sap_vars.sap == OPTION_UNDEFINED) && (multicast_vars.multicast))
+		if((sap_p.sap == OPTION_UNDEFINED) && (multicast_vars.multicast))
 		{
 			log_message( log_module,  MSG_INFO,
 					"Full autoconfiguration, we activate SAP announces. if you want to deactivate them see the README.\n");
-			sap_vars.sap=OPTION_ON;
+			sap_p.sap=OPTION_ON;
 		}
 		if(rewrite_vars.rewrite_pat == OPTION_UNDEFINED)
 		{
@@ -794,13 +794,13 @@ main (int argc, char **argv)
 
 	//If we specified a card number on the command line, it overrides the config file
 	if(cmdlinecard!=-1)
-		tuneparams.card=cmdlinecard;
+		tune_p.card=cmdlinecard;
 
 	//Template for the card dev path
 	char number[10];
-	sprintf(number,"%d",tuneparams.card);
-	int l=sizeof(tuneparams.card_dev_path);
-	mumu_string_replace(tuneparams.card_dev_path,&l,0,"%card",number);
+	sprintf(number,"%d",tune_p.card);
+	int l=sizeof(tune_p.card_dev_path);
+	mumu_string_replace(tune_p.card_dev_path,&l,0,"%card",number);
 
 	//If we specified a string for the unicast port out, we parse it
 	if(unicast_vars.portOut_str!=NULL)
@@ -808,9 +808,9 @@ main (int argc, char **argv)
 		int len;
 		len=strlen(unicast_vars.portOut_str)+1;
 		char number[10];
-		sprintf(number,"%d",tuneparams.card);
+		sprintf(number,"%d",tune_p.card);
 		unicast_vars.portOut_str=mumu_string_replace(unicast_vars.portOut_str,&len,1,"%card",number);
-		sprintf(number,"%d",tuneparams.tuner);
+		sprintf(number,"%d",tune_p.tuner);
 		unicast_vars.portOut_str=mumu_string_replace(unicast_vars.portOut_str,&len,1,"%tuner",number);
 		sprintf(number,"%d",server_id);
 		unicast_vars.portOut_str=mumu_string_replace(unicast_vars.portOut_str,&len,1,"%server",number);
@@ -823,9 +823,9 @@ main (int argc, char **argv)
 		int len;
 		len=strlen(log_params.log_file_path)+1;
 		char number[10];
-		sprintf(number,"%d",tuneparams.card);
+		sprintf(number,"%d",tune_p.card);
 		log_params.log_file_path=mumu_string_replace(log_params.log_file_path,&len,1,"%card",number);
-		sprintf(number,"%d",tuneparams.tuner);
+		sprintf(number,"%d",tune_p.tuner);
 		log_params.log_file_path=mumu_string_replace(log_params.log_file_path,&len,1,"%tuner",number);
 		sprintf(number,"%d",server_id);
 		log_params.log_file_path=mumu_string_replace(log_params.log_file_path,&len,1,"%server",number);
@@ -868,7 +868,7 @@ main (int argc, char **argv)
 #ifdef ENABLE_TRANSCODING
 	for (curr_channel = 0; curr_channel < MAX_CHANNELS; curr_channel++)
 	{
-		transcode_options_apply_templates(&chan_and_pids.channels[curr_channel].transcode_options,tuneparams.card,tuneparams.tuner,server_id,curr_channel);
+		transcode_options_apply_templates(&chan_and_pids.channels[curr_channel].transcode_options,tune_p.card,tune_p.tuner,server_id,curr_channel);
 	}
 #endif
 
@@ -895,10 +895,10 @@ main (int argc, char **argv)
 			multicast_vars.rtp_header=0;
 			log_message( log_module,  MSG_INFO, "NO Multicast, RTP Header is disabled.\n");
 		}
-		if(sap_vars.sap==OPTION_ON)
+		if(sap_p.sap==OPTION_ON)
 		{
 			log_message( log_module,  MSG_INFO, "NO Multicast, SAP announces are disabled.\n");
-			sap_vars.sap=OPTION_OFF;
+			sap_p.sap=OPTION_OFF;
 		}
 	}
 	free(conf_filename);
@@ -913,12 +913,12 @@ main (int argc, char **argv)
 
 	// we clear them by paranoia
 	sprintf (filename_channels_streamed, STREAMED_LIST_PATH,
-			tuneparams.card, tuneparams.tuner);
+			tune_p.card, tune_p.tuner);
 	sprintf (filename_channels_not_streamed, NOT_STREAMED_LIST_PATH,
-			tuneparams.card, tuneparams.tuner);
+			tune_p.card, tune_p.tuner);
 #ifdef ENABLE_CAM_SUPPORT
-	sprintf (cam_vars.filename_cam_info, CAM_INFO_LIST_PATH,
-			tuneparams.card, tuneparams.tuner);
+	sprintf (cam_p.filename_cam_info, CAM_INFO_LIST_PATH,
+			tune_p.card, tune_p.tuner);
 #endif
 	channels_diff = fopen (filename_channels_streamed, "w");
 	if (channels_diff == NULL)
@@ -944,14 +944,14 @@ main (int argc, char **argv)
 
 
 #ifdef ENABLE_CAM_SUPPORT
-	if(cam_vars.cam_support)
+	if(cam_p.cam_support)
 	{
-		cam_info = fopen (cam_vars.filename_cam_info, "w");
+		cam_info = fopen (cam_p.filename_cam_info, "w");
 		if (cam_info == NULL)
 		{
 			log_message( log_module,  MSG_WARN,
 					"Can't create %s: %s\n",
-					cam_vars.filename_cam_info, strerror (errno));
+					cam_p.filename_cam_info, strerror (errno));
 		}
 		else
 			fclose (cam_info);
@@ -960,7 +960,7 @@ main (int argc, char **argv)
 
 
 	log_message( log_module,  MSG_INFO, "Streaming. Freq %d\n",
-			tuneparams.freq);
+			tune_p.freq);
 
 
 	/******************************************************/
@@ -975,16 +975,16 @@ main (int argc, char **argv)
 	if (signal (SIGHUP, SignalHandler) == SIG_IGN)
 		signal (SIGHUP, SIG_IGN);
 	// alarm for tuning timeout
-	if(tuneparams.tuning_timeout)
+	if(tune_p.tuning_timeout)
 	{
-		alarm (tuneparams.tuning_timeout);
+		alarm (tune_p.tuning_timeout);
 	}
 
 
 	// We tune the card
 	iRet =-1;
 
-	if (open_fe (&fds.fd_frontend, tuneparams.card_dev_path, tuneparams.tuner,1))
+	if (open_fe (&fds.fd_frontend, tune_p.card_dev_path, tune_p.tuner,1))
 	{
 
 		/*****************************************************/
@@ -997,9 +997,9 @@ main (int argc, char **argv)
 			int len;
 			len=DEFAULT_PATH_LEN;
 			char number[10];
-			sprintf(number,"%d",tuneparams.card);
+			sprintf(number,"%d",tune_p.card);
 			mumu_string_replace(filename_pid,&len,0,"%card",number);
-			sprintf(number,"%d",tuneparams.tuner);
+			sprintf(number,"%d",tune_p.tuner);
 			mumu_string_replace(filename_pid,&len,0,"%tuner",number);
 			sprintf(number,"%d",server_id);
 			mumu_string_replace(filename_pid,&len,0,"%server",number);;
@@ -1017,24 +1017,24 @@ main (int argc, char **argv)
 
 
 		iRet =
-				tune_it (fds.fd_frontend, &tuneparams);
+				tune_it (fds.fd_frontend, &tune_p);
 	}
 
 	if (iRet < 0)
 	{
-		log_message( log_module,  MSG_INFO, "Tunning issue, card %d\n", tuneparams.card);
+		log_message( log_module,  MSG_INFO, "Tunning issue, card %d\n", tune_p.card);
 		// we close the file descriptors
 		close_card_fd(&fds);
 		set_interrupted(ERROR_TUNE<<8);
 		goto mumudvb_close_goto;
 	}
-	log_message( log_module,  MSG_INFO, "Card %d, tuner %d tuned\n", tuneparams.card, tuneparams.tuner);
-	tuneparams.card_tuned = 1;
+	log_message( log_module,  MSG_INFO, "Card %d, tuner %d tuned\n", tune_p.card, tune_p.tuner);
+	tune_p.card_tuned = 1;
 
 	//Thread for showing the strength
 	strength_parameters_t strengthparams;
 	strengthparams.fds = &fds;
-	strengthparams.tuneparams = &tuneparams;
+	strengthparams.tune_p = &tune_p;
 	pthread_create(&(signalpowerthread), NULL, show_power_func, &strengthparams);
 	//Thread for reading from the DVB card initialization
 	if(card_buffer.threaded_read)
@@ -1089,11 +1089,11 @@ main (int argc, char **argv)
 			.threadshutdown=0,
 			.wait_time=10,
 			.autoconf_vars=&autoconf_vars,
-			.sap_vars=&sap_vars,
+			.sap_p=&sap_p,
 			.chan_and_pids=&chan_and_pids,
 			.multicast_vars=&multicast_vars,
 			.unicast_vars=&unicast_vars,
-			.tuneparams=&tuneparams,
+			.tune_p=&tune_p,
 			.stats_infos=&stats_infos,
 #ifdef ENABLE_SCAM_SUPPORT
 			.scam_vars_v=scam_vars_ptr,
@@ -1111,7 +1111,7 @@ main (int argc, char **argv)
 
 #ifdef ENABLE_SCAM_SUPPORT
 	if(scam_vars.scam_support){
-		if(scam_getcw_start(scam_vars_ptr,tuneparams.card))
+		if(scam_getcw_start(scam_vars_ptr,tune_p.card))
 		{
 			log_message("SCAM_GETCW: ", MSG_ERROR,"Cannot initalise scam\n");
 			scam_vars.scam_support=0;
@@ -1129,12 +1129,12 @@ main (int argc, char **argv)
 	/*****************************************************/
 
 #ifdef ENABLE_CAM_SUPPORT
-	if(cam_vars.cam_support){
+	if(cam_p.cam_support){
 		//We initialise the cam. If fail, we remove cam support
-		if(cam_start(cam_vars_ptr,tuneparams.card))
+		if(cam_start(&cam_p,tune_p.card))
 		{
 			log_message("CAM: ", MSG_ERROR,"Cannot initalise cam\n");
-			cam_vars.cam_support=0;
+			cam_p.cam_support=0;
 		}
 		else
 		{
@@ -1324,7 +1324,7 @@ main (int argc, char **argv)
 
 	//PSIP : Program and System Information Protocol
 	//Specific to ATSC, this is more or less the equivalent of sdt plus other stuff
-	if(tuneparams.fe_type==FE_ATSC)
+	if(tune_p.fe_type==FE_ATSC)
 		chan_and_pids.asked_pid[PSIP_PID]=PID_ASKED;
 
 	/*****************************************************/
@@ -1344,7 +1344,7 @@ main (int argc, char **argv)
 	}
 
 	// we open the file descriptors
-	if (create_card_fd (tuneparams.card_dev_path, tuneparams.tuner, chan_and_pids.asked_pid, &fds) < 0)
+	if (create_card_fd (tune_p.card_dev_path, tune_p.tuner, chan_and_pids.asked_pid, &fds) < 0)
 	{
 		set_interrupted(ERROR_GENERIC<<8);
 		goto mumudvb_close_goto;
@@ -1428,7 +1428,7 @@ main (int argc, char **argv)
 	// init sap
 	/*****************************************************/
 
-	iRet=init_sap(&sap_vars, multicast_vars);
+	iRet=init_sap(&sap_p, multicast_vars);
 	if(iRet)
 	{
 		set_interrupted(ERROR_GENERIC<<8);
@@ -1527,7 +1527,7 @@ main (int argc, char **argv)
 			pthread_mutex_unlock(&cardthreadparams.carddatamutex);
 			if(cardthreadparams.unicast_data)
 			{
-				iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &strengthparams, &autoconf_vars, cam_vars_ptr, scam_vars_ptr);
+				iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &strengthparams, &autoconf_vars, cam_p_ptr, scam_vars_ptr);
 				if(iRet)
 				{
 					set_interrupted(iRet);
@@ -1553,7 +1553,7 @@ main (int argc, char **argv)
 			/**************************************************************/
 			if((!(fds.pfds[0].revents&POLLIN)) && (!(fds.pfds[0].revents&POLLPRI))) //Priority to the DVB packets so if there is dvb packets and something else, we look first to dvb packets
 			{
-				iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &strengthparams, &autoconf_vars, cam_vars_ptr, scam_vars_ptr);
+				iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_and_pids.channels, chan_and_pids.number_of_channels, &strengthparams, &autoconf_vars, cam_p_ptr, scam_vars_ptr);
 				if(iRet)
 					set_interrupted(iRet);
 				//no DVB packet, we continue
@@ -1619,7 +1619,7 @@ main (int argc, char **argv)
 			/******************************************************/
 			if(!ScramblingControl &&  autoconf_vars.autoconfiguration)
 			{
-				iRet = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tuneparams, &multicast_vars, &unicast_vars, server_id, scam_vars_ptr);
+				iRet = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_and_pids, &tune_p, &multicast_vars, &unicast_vars, server_id, scam_vars_ptr);
 				if(iRet)
 					set_interrupted(iRet);
 			}
@@ -1695,7 +1695,7 @@ main (int argc, char **argv)
 				//If it's a mandatory pid we send it
 				if((pid<MAX_MANDATORY_PID_NUMBER) && (mandatory_pid[pid]==1))
 					send_packet=1;
-				if ((pid == PSIP_PID) && (tuneparams.fe_type==FE_ATSC))
+				if ((pid == PSIP_PID) && (tune_p.fe_type==FE_ATSC))
 					send_packet=1;
 
 
@@ -1713,12 +1713,12 @@ main (int argc, char **argv)
 				// If we send the packet, we look if it's a cam pmt pid
 				/******************************************************/
 #ifdef ENABLE_CAM_SUPPORT
-				if((cam_vars.cam_support && send_packet==1) &&  //no need to check paquets we don't send
-						cam_vars.ca_resource_connected &&
-						((now-cam_vars.cam_pmt_send_time)>=cam_vars.cam_interval_pmt_send ))
+				if((cam_p.cam_support && send_packet==1) &&  //no need to check paquets we don't send
+						cam_p.ca_resource_connected &&
+						((now-cam_p.cam_pmt_send_time)>=cam_p.cam_interval_pmt_send ))
 				{
-					if(cam_new_packet(pid, curr_channel, actual_ts_packet, cam_vars_ptr, &chan_and_pids.channels[curr_channel]))
-						cam_vars.cam_pmt_send_time=now; //A packet was sent to the CAM
+					if(cam_new_packet(pid, curr_channel, actual_ts_packet, &cam_p, &chan_and_pids.channels[curr_channel]))
+						cam_p.cam_pmt_send_time=now; //A packet was sent to the CAM
 				}
 #endif
 
@@ -1730,7 +1730,7 @@ main (int argc, char **argv)
 				if (scam_vars.scam_support &&(chan_and_pids.channels[curr_channel].need_scam_ask==CAM_NEED_ASK))
 				{
 					if (chan_and_pids.channels[curr_channel].scam_support && chan_and_pids.channels[curr_channel].pmt_packet->len_full != 0 ) {
-						iRet=scam_send_capmt(&chan_and_pids.channels[curr_channel],tuneparams.card);
+						iRet=scam_send_capmt(&chan_and_pids.channels[curr_channel],tune_p.card);
 						if(iRet)
 						{
 							set_interrupted(ERROR_GENERIC<<8);
@@ -1750,14 +1750,14 @@ main (int argc, char **argv)
 						(chan_and_pids.channels[curr_channel].pmt_pid==pid) &&     //And we see the PMT
 						pid)
 				{
-					autoconf_pmt_follow( actual_ts_packet, &fds, &chan_and_pids.channels[curr_channel], tuneparams.card_dev_path, tuneparams.tuner, &chan_and_pids );
+					autoconf_pmt_follow( actual_ts_packet, &fds, &chan_and_pids.channels[curr_channel], tune_p.card_dev_path, tune_p.tuner, &chan_and_pids );
 				}
 				/******************************************************/
 				//PMT follow for the cam for  non autoconfigurated channels.
 				// This is a PMT update forced for the CAM in case of no autoconfiguration
 				/******************************************************/
 #ifdef ENABLE_CAM_SUPPORT
-				if((cam_vars.cam_pmt_follow) &&
+				if((cam_p.cam_pmt_follow) &&
 						(chan_and_pids.channels[curr_channel].need_cam_ask==CAM_ASKED) &&
 						(send_packet==1) && //no need to check paquets we don't send
 						(!chan_and_pids.channels[curr_channel].autoconfigurated) && //the check is for the non autoconfigurated channels
@@ -1838,7 +1838,7 @@ main (int argc, char **argv)
 				"We have got %d overflow errors\n",card_buffer.overflow_number );
 	mumudvb_close_goto:
 	//If the thread is not started, we don't send the unexisting address of monitor_thread_params
-	return mumudvb_close(no_daemon, monitorthread == 0 ? NULL:&monitor_thread_params , &rewrite_vars, &autoconf_vars, &unicast_vars, &tuneparams.strengththreadshutdown, cam_vars_ptr, scam_vars_ptr, filename_channels_not_streamed, filename_channels_streamed, filename_pid, get_interrupted());
+	return mumudvb_close(no_daemon, monitorthread == 0 ? NULL:&monitor_thread_params , &rewrite_vars, &autoconf_vars, &unicast_vars, &tune_p.strengththreadshutdown, cam_p_ptr, scam_vars_ptr, filename_channels_not_streamed, filename_channels_streamed, filename_pid, get_interrupted());
 
 }
 
@@ -1846,16 +1846,16 @@ main (int argc, char **argv)
  *
  *
  */
-int mumudvb_close(int no_daemon, monitor_parameters_t *monitor_thread_params,rewrite_parameters_t *rewrite_vars, autoconf_parameters_t *autoconf_vars, unicast_parameters_t *unicast_vars, volatile int *strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char *filename_channels_not_streamed, char *filename_channels_streamed, char *filename_pid, int Interrupted)
+int mumudvb_close(int no_daemon, monitor_parameters_t *monitor_thread_params,rewrite_parameters_t *rewrite_vars, autoconf_parameters_t *autoconf_vars, unicast_parameters_t *unicast_vars, volatile int *strengththreadshutdown, void *cam_p_v, void *scam_vars_v, char *filename_channels_not_streamed, char *filename_channels_streamed, char *filename_pid, int Interrupted)
 {
 
 	int curr_channel;
 	int iRet;
 
 #ifndef ENABLE_CAM_SUPPORT
-	(void) cam_vars_v; //to make compiler happy
+	(void) cam_p; //to make compiler happy
 #else
-	cam_parameters_t *cam_vars=(cam_parameters_t *)cam_vars_v;
+	cam_p_t *cam_p=(cam_p_t *)cam_p_v;
 #endif
 
 #ifndef ENABLE_SCAM_SUPPORT
@@ -1954,19 +1954,19 @@ int mumudvb_close(int no_daemon, monitor_parameters_t *monitor_thread_params,rew
 	unicast_freeing(unicast_vars, chan_and_pids.channels);
 
 #ifdef ENABLE_CAM_SUPPORT
-	if(cam_vars->cam_support)
+	if(cam_p->cam_support)
 	{
 		// stop CAM operation
-		cam_stop(cam_vars);
+		cam_stop(cam_p);
 		// delete cam_info file
-		if (remove (cam_vars->filename_cam_info))
+		if (remove (cam_p->filename_cam_info))
 		{
 			log_message( log_module,  MSG_WARN,
 					"%s: %s\n",
-					cam_vars->filename_cam_info, strerror (errno));
+					cam_p->filename_cam_info, strerror (errno));
 		}
-		mumu_free_string(&cam_vars->cam_menulist_str);
-		mumu_free_string(&cam_vars->cam_menu_string);
+		mumu_free_string(&cam_p->cam_menulist_str);
+		mumu_free_string(&cam_p->cam_menu_string);
 	}
 #endif
 #ifdef ENABLE_SCAM_SUPPORT
@@ -1980,10 +1980,10 @@ int mumudvb_close(int no_daemon, monitor_parameters_t *monitor_thread_params,rew
 	autoconf_freeing(autoconf_vars);
 
 	//sap variables freeing
-	if(monitor_thread_params && monitor_thread_params->sap_vars->sap_messages4)
-		free(monitor_thread_params->sap_vars->sap_messages4);
-	if(monitor_thread_params && monitor_thread_params->sap_vars->sap_messages6)
-		free(monitor_thread_params->sap_vars->sap_messages6);
+	if(monitor_thread_params && monitor_thread_params->sap_p->sap_messages4)
+		free(monitor_thread_params->sap_p->sap_messages4);
+	if(monitor_thread_params && monitor_thread_params->sap_p->sap_messages6)
+		free(monitor_thread_params->sap_p->sap_messages6);
 
 	//Pat rewrite freeing
 	if(rewrite_vars->full_pat)
@@ -2124,7 +2124,7 @@ void *monitor_func(void* arg)
 		/*******************************************/
 		if (received_signal == SIGUSR1) //Display signal strength
 		{
-			params->tuneparams->display_strenght = params->tuneparams->display_strenght ? 0 : 1;
+			params->tune_p->display_strenght = params->tune_p->display_strenght ? 0 : 1;
 			received_signal = 0;
 		}
 		else if (received_signal == SIGUSR2) //Display traffic
@@ -2150,7 +2150,7 @@ void *monitor_func(void* arg)
 		{
 			int iRet;
 			//autoconf_poll deals with the locks
-			iRet = autoconf_poll(now, params->autoconf_vars, params->chan_and_pids, params->tuneparams, params->multicast_vars, &fds, params->unicast_vars, params->server_id, params->scam_vars_v);
+			iRet = autoconf_poll(now, params->autoconf_vars, params->chan_and_pids, params->tune_p, params->multicast_vars, &fds, params->unicast_vars, params->server_id, params->scam_vars_v);
 
 			if(iRet)
 				set_interrupted(iRet);
@@ -2163,7 +2163,7 @@ void *monitor_func(void* arg)
 		{
 			/*we are not doing autoconfiguration we can do something else*/
 			/*sap announces*/
-			sap_poll(params->sap_vars,params->chan_and_pids->number_of_channels,params->chan_and_pids->channels,*params->multicast_vars, (long)monitor_now);
+			sap_poll(params->sap_p,params->chan_and_pids->number_of_channels,params->chan_and_pids->channels,*params->multicast_vars, (long)monitor_now);
 
 
 
@@ -2266,7 +2266,7 @@ void *monitor_func(void* arg)
 				{
 					log_message( log_module,  MSG_INFO,
 							"Channel \"%s\" is now fully unscrambled (%d%% of scrambled packets). Card %d\n",
-							current->name, current->ratio_scrambled, params->tuneparams->card);
+							current->name, current->ratio_scrambled, params->tune_p->card);
 					current->scrambled_channel = FULLY_UNSCRAMBLED;// update
 				}
 				/* Test if we have partially unscrambled packets (5%<=ratio<=75%) - scrambled_channel=PARTIALLY_UNSCRAMBLED : partially unscrambled*/
@@ -2274,7 +2274,7 @@ void *monitor_func(void* arg)
 				{
 					log_message( log_module,  MSG_INFO,
 							"Channel \"%s\" is now partially unscrambled (%d%% of scrambled packets). Card %d\n",
-							current->name, current->ratio_scrambled, params->tuneparams->card);
+							current->name, current->ratio_scrambled, params->tune_p->card);
 					current->scrambled_channel = PARTIALLY_UNSCRAMBLED;// update
 				}
 				/* Test if we have nearly only scrambled packets (>80%) - scrambled_channel=HIGHLY_SCRAMBLED : highly scrambled*/
@@ -2282,7 +2282,7 @@ void *monitor_func(void* arg)
 				{
 					log_message( log_module,  MSG_INFO,
 							"Channel \"%s\" is now highly scrambled (%d%% of scrambled packets). Card %d\n",
-							current->name, current->ratio_scrambled, params->tuneparams->card);
+							current->name, current->ratio_scrambled, params->tune_p->card);
 					current->scrambled_channel = HIGHLY_SCRAMBLED;// update
 				}
 				/* Check the PID scrambling state */
@@ -2338,19 +2338,19 @@ void *monitor_func(void* arg)
 					{
 						log_message( log_module,  MSG_INFO,
 								"Channel \"%s\" back.Card %d\n",
-								current->name, params->tuneparams->card);
+								current->name, params->tune_p->card);
 						current->streamed_channel = 1;  // update
-						if(params->sap_vars->sap == OPTION_ON)
-							sap_update(&params->chan_and_pids->channels[curr_channel], params->sap_vars, curr_channel, *params->multicast_vars); //Channel status changed, we update the sap announces
+						if(params->sap_p->sap == OPTION_ON)
+							sap_update(&params->chan_and_pids->channels[curr_channel], params->sap_p, curr_channel, *params->multicast_vars); //Channel status changed, we update the sap announces
 					}
 					else if ((current->streamed_channel) && (packets_per_sec < params->stats_infos->down_threshold))
 					{
 						log_message( log_module,  MSG_INFO,
 								"Channel \"%s\" down.Card %d\n",
-								current->name, params->tuneparams->card);
+								current->name, params->tune_p->card);
 						current->streamed_channel = 0;  // update
-						if(params->sap_vars->sap == OPTION_ON)
-							sap_update(&params->chan_and_pids->channels[curr_channel], params->sap_vars, curr_channel, *params->multicast_vars); //Channel status changed, we update the sap announces
+						if(params->sap_p->sap == OPTION_ON)
+							sap_update(&params->chan_and_pids->channels[curr_channel], params->sap_p, curr_channel, *params->multicast_vars); //Channel status changed, we update the sap announces
 					}
 				}
 			}
@@ -2396,7 +2396,7 @@ void *monitor_func(void* arg)
 			{
 				log_message( log_module,  MSG_ERROR,
 						"No data from card %d in %ds, exiting.\n",
-						params->tuneparams->card, timeout_no_diff);
+						params->tune_p->card, timeout_no_diff);
 				set_interrupted(ERROR_NO_DIFF<<8); //the <<8 is to make difference beetween signals and errors
 			}
 

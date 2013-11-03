@@ -55,9 +55,9 @@
 static char *log_module="Tune: ";
 
 /** Initialize tune variables*/
-void init_tune_v(tuning_parameters_t *tune_p)
+void init_tune_v(tune_p_t *tune_p)
 {
-	 * tune_p=(tuning_parameters_t){
+	 * tune_p=(tune_p_t){
 				.card = 0,
 				.tuner = 0,
 				.card_dev_path=DVB_DEV_PATH,
@@ -101,7 +101,7 @@ void init_tune_v(tuning_parameters_t *tune_p)
  * @param tuneparams the tuning parameters
  * @param substring The currrent line
  */
-int read_tuning_configuration(tuning_parameters_t *tuneparams, char *substring)
+int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 {
 
 	char delimiteurs[] = CONFIG_FILE_SEPARATOR;
@@ -883,7 +883,7 @@ int change_delivery_system(fe_delivery_system_t delivery_system,int fd_frontend)
 /** @brief Tune the card
  *
  */
-int tune_it(int fd_frontend, tuning_parameters_t *tuneparams)
+int tune_it(int fd_frontend, tune_p_t *tuneparams)
 {
 	int res, hi_lo, dfd;
 	struct dvb_frontend_parameters feparams;

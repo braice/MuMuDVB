@@ -70,7 +70,7 @@ typedef struct{
 
 
 /**@brief General parameter for sap announces*/
-typedef struct sap_parameters_t{
+typedef struct sap_p_t{
   /**the sap messages array*/
   mumudvb_sap_message_t *sap_messages4; 
   /**the sap messages array*/
@@ -104,13 +104,13 @@ typedef struct sap_parameters_t{
   long sap_last_time_sent;
   /** The sap ttl (the norm ask it to be 255)*/
   int sap_ttl;
-}sap_parameters_t;
+}sap_p_t;
 
-void init_sap_v(sap_parameters_t *sap_vars);
-int init_sap(sap_parameters_t *sap_vars, multicast_parameters_t multicast_vars);
-void sap_send(sap_parameters_t *sap_vars, int num_messages);
-int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_channel, multicast_parameters_t multicast_vars);
-int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
-void sap_poll(sap_parameters_t *sap_vars,int number_of_channels,mumudvb_channel_t  *channels, multicast_parameters_t multicast_vars, long now);
+void init_sap_v(sap_p_t *sap_vars);
+int init_sap(sap_p_t *sap_vars, multicast_parameters_t multicast_vars);
+void sap_send(sap_p_t *sap_vars, int num_messages);
+int sap_update(mumudvb_channel_t *channel, sap_p_t *sap_vars, int curr_channel, multicast_parameters_t multicast_vars);
+int read_sap_configuration(sap_p_t *sap_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
+void sap_poll(sap_p_t *sap_vars,int number_of_channels,mumudvb_channel_t  *channels, multicast_parameters_t multicast_vars, long now);
 
 #endif

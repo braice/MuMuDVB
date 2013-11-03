@@ -38,13 +38,13 @@
 extern uint32_t       crc32_table[256];
 static char *log_module="SAP: ";
 
-int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumudvb_sap_message_t *sap_message4, mumudvb_sap_message_t *sap_message6, multicast_parameters_t multicast_vars);
+int sap_add_program(mumudvb_channel_t *channel, sap_p_t *sap_p, mumudvb_sap_message_t *sap_message4, mumudvb_sap_message_t *sap_message6, multicast_parameters_t multicast_vars);
 
 
 /** Initialize sap variables*/
-void init_sap_v(sap_parameters_t *sap_p)
+void init_sap_v(sap_p_t *sap_p)
 {
-	 *sap_p=(sap_parameters_t){
+	 *sap_p=(sap_p_t){
 			.sap_messages4=NULL,
 			.sap_messages6=NULL,
 			.sap=OPTION_UNDEFINED, //No sap by default
@@ -61,20 +61,20 @@ void init_sap_v(sap_parameters_t *sap_p)
 
 /** @brief Read a line of the configuration file to check if there is a sap parameter
  *
- * @param sap_vars the sap parameters
+ * @param sap_p the sap parameters
  * @param substring The currrent line
  */
-int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring)
+int read_sap_configuration(sap_p_t *sap_p, mumudvb_channel_t *current_channel, int ip_ok, char *substring)
 {
 	char delimiteurs[] = CONFIG_FILE_SEPARATOR;
 	if (!strcmp (substring, "sap"))
 	{
 		substring = strtok (NULL, delimiteurs);
 		if(atoi (substring) != 0)
-			sap_vars->sap = OPTION_ON;
+			sap_p->sap = OPTION_ON;
 		else
-			sap_vars->sap = OPTION_OFF;
-		if(sap_vars->sap == OPTION_ON)
+			sap_p->sap = OPTION_OFF;
+		if(sap_p->sap == OPTION_ON)
 		{
 			log_message( log_module,  MSG_INFO,
 					"Sap announces will be sent\n");
@@ -83,19 +83,19 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
 	else if (!strcmp (substring, "sap_interval"))
 	{
 		substring = strtok (NULL, delimiteurs);
-		sap_vars->sap_interval = atoi (substring);
+		sap_p->sap_interval = atoi (substring);
 	}
 	else if (!strcmp (substring, "sap_ttl"))
 	{
 		substring = strtok (NULL, delimiteurs);
-		sap_vars->sap_ttl = atoi (substring);
+		sap_p->sap_ttl = atoi (substring);
 	}
 	else if (!strcmp (substring, "sap_organisation"))
 	{
 		// other substring extraction method in order to keep spaces
 		substring = strtok (NULL, "=");
-		strncpy(sap_vars->sap_organisation,strtok(substring,"\n"),255 - 1);
-		sap_vars->sap_organisation[255]='\0';
+		strncpy(sap_p->sap_organisation,strtok(substring,"\n"),255 - 1);
+		sap_p->sap_organisation[255]='\0';
 		if ((strlen (substring) >= 255 - 1))
 			log_message( log_module,  MSG_WARN,"SAP organization name too long\n");
 	}
@@ -103,8 +103,8 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
 	{
 		// other substring extraction method in order to keep spaces
 		substring = strtok (NULL, "=");
-		strncpy(sap_vars->sap_uri,strtok(substring,"\n"),255 - 1);
-		sap_vars->sap_uri[255]='\0';
+		strncpy(sap_p->sap_uri,strtok(substring,"\n"),255 - 1);
+		sap_p->sap_uri[255]='\0';
 		if ((strlen (substring) >= 255 - 1))
 			log_message( log_module,  MSG_WARN,"Sap URI too long\n");
 	}
@@ -117,7 +117,7 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
 					"The sap sending ip is too long\n");
 			return -1;
 		}
-		sscanf (substring, "%s\n", sap_vars->sap_sending_ip4);
+		sscanf (substring, "%s\n", sap_p->sap_sending_ip4);
 	}
 	else if (!strcmp (substring, "sap_sending_ip6"))
 	{
@@ -128,7 +128,7 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
 					"The sap sending ipv6 is too long\n");
 			return -1;
 		}
-		sscanf (substring, "%s\n", sap_vars->sap_sending_ip6);
+		sscanf (substring, "%s\n", sap_p->sap_sending_ip6);
 	}
 	else if (!strcmp (substring, "sap_group"))
 	{
@@ -157,7 +157,7 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
 					"The sap default group is too long\n");
 			return -1;
 		}
-		strcpy (sap_vars->sap_default_group, substring);
+		strcpy (sap_p->sap_default_group, substring);
 	}
 	else
 		return 0; //Nothing concerning sap, we return 0 to explore the other possibilities
@@ -170,46 +170,46 @@ int read_sap_configuration(sap_parameters_t *sap_vars, mumudvb_channel_t *curren
 /** @brief init the sap
  * Alloc the memory for the messages, open the socket
  */
-int init_sap(sap_parameters_t *sap_vars, multicast_parameters_t multicast_vars)
+int init_sap(sap_p_t *sap_p, multicast_parameters_t multicast_vars)
 {
-	if(sap_vars->sap == OPTION_ON)
+	if(sap_p->sap == OPTION_ON)
 	{
 		if(multicast_vars.multicast_ipv4)
 		{
 			log_message( log_module,  MSG_DETAIL,  "init sap v4\n");
-			sap_vars->sap_messages4=malloc(sizeof(mumudvb_sap_message_t)*MAX_CHANNELS);
-			if(sap_vars->sap_messages4==NULL)
+			sap_p->sap_messages4=malloc(sizeof(mumudvb_sap_message_t)*MAX_CHANNELS);
+			if(sap_p->sap_messages4==NULL)
 			{
 				log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 				return -1;
 			}
-			memset (sap_vars->sap_messages4, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
+			memset (sap_p->sap_messages4, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
 			//For sap announces, we open the socket
 			//See the README about multicast_auto_join
 			if(multicast_vars.auto_join)
-				sap_vars->sap_socketOut4 =  makeclientsocket (SAP_IP4, SAP_PORT, sap_vars->sap_ttl, multicast_vars.iface4, &sap_vars->sap_sOut4);
+				sap_p->sap_socketOut4 =  makeclientsocket (SAP_IP4, SAP_PORT, sap_p->sap_ttl, multicast_vars.iface4, &sap_p->sap_sOut4);
 			else
-				sap_vars->sap_socketOut4 =  makesocket (SAP_IP4, SAP_PORT, sap_vars->sap_ttl, multicast_vars.iface4, &sap_vars->sap_sOut4);
+				sap_p->sap_socketOut4 =  makesocket (SAP_IP4, SAP_PORT, sap_p->sap_ttl, multicast_vars.iface4, &sap_p->sap_sOut4);
 		}
 		if(multicast_vars.multicast_ipv6)
 		{
 			log_message( log_module,  MSG_DETAIL,  "init sap v6\n");
-			sap_vars->sap_messages6=malloc(sizeof(mumudvb_sap_message_t)*MAX_CHANNELS);
-			if(sap_vars->sap_messages6==NULL)
+			sap_p->sap_messages6=malloc(sizeof(mumudvb_sap_message_t)*MAX_CHANNELS);
+			if(sap_p->sap_messages6==NULL)
 			{
 				log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 				return -1;
 			}
-			memset (sap_vars->sap_messages6, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
+			memset (sap_p->sap_messages6, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
 			//For sap announces, we open the socket
 			//See the README about multicast_auto_join
 			if(multicast_vars.auto_join)
-				sap_vars->sap_socketOut6 =  makeclientsocket6 (SAP_IP6, SAP_PORT, sap_vars->sap_ttl, multicast_vars.iface6, &sap_vars->sap_sOut6);
+				sap_p->sap_socketOut6 =  makeclientsocket6 (SAP_IP6, SAP_PORT, sap_p->sap_ttl, multicast_vars.iface6, &sap_p->sap_sOut6);
 			else
-				sap_vars->sap_socketOut6 =  makesocket6 (SAP_IP6, SAP_PORT, sap_vars->sap_ttl, multicast_vars.iface6, &sap_vars->sap_sOut6);
+				sap_p->sap_socketOut6 =  makesocket6 (SAP_IP6, SAP_PORT, sap_p->sap_ttl, multicast_vars.iface6, &sap_p->sap_sOut6);
 		}
-		sap_vars->sap_serial= 1 + (int) (424242.0 * (rand() / (RAND_MAX + 1.0)));
-		sap_vars->sap_last_time_sent = 0;
+		sap_p->sap_serial= 1 + (int) (424242.0 * (rand() / (RAND_MAX + 1.0)));
+		sap_p->sap_last_time_sent = 0;
 		/** @todo : loop to create the version*/
 	}
 	return 0;
@@ -218,23 +218,23 @@ int init_sap(sap_parameters_t *sap_vars, multicast_parameters_t multicast_vars)
 
 /** @brief Send the sap message
  * 
- * @param sap_vars the sap variables
+ * @param sap_p the sap variables
  * @param num_messages the number of sap messages
  */
-void sap_send(sap_parameters_t *sap_vars, int num_messages)
+void sap_send(sap_p_t *sap_p, int num_messages)
 {
 	int curr_message;
 	mumudvb_sap_message_t *sap_messages4;
 	mumudvb_sap_message_t *sap_messages6;
-	sap_messages4=sap_vars->sap_messages4;
-	sap_messages6=sap_vars->sap_messages6;
+	sap_messages4=sap_p->sap_messages4;
+	sap_messages6=sap_p->sap_messages6;
 
 	for( curr_message=0; curr_message<num_messages;curr_message++)
 	{
 		if(sap_messages4 && sap_messages4[curr_message].to_be_sent)
-			sendudp (sap_vars->sap_socketOut4, &sap_vars->sap_sOut4, sap_messages4[curr_message].buf, sap_messages4[curr_message].len);
+			sendudp (sap_p->sap_socketOut4, &sap_p->sap_sOut4, sap_messages4[curr_message].buf, sap_messages4[curr_message].len);
 		if(sap_messages6 && sap_messages6[curr_message].to_be_sent)
-			sendudp6 (sap_vars->sap_socketOut6, &sap_vars->sap_sOut6, sap_messages6[curr_message].buf, sap_messages6[curr_message].len);
+			sendudp6 (sap_p->sap_socketOut6, &sap_p->sap_sOut6, sap_messages6[curr_message].buf, sap_messages6[curr_message].len);
 	}
 	return;
 }
@@ -243,10 +243,10 @@ void sap_send(sap_parameters_t *sap_vars, int num_messages)
 /** @brief update the contents of the sap message
  * This function read the informations of the channel and update the sap message
  * @param channel : the channel to be updated
- * @param sap_vars the sap variables
+ * @param sap_p the sap variables
  * @param curr_channel the number of the updated channel
  */
-int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_channel, multicast_parameters_t multicast_vars)
+int sap_update(mumudvb_channel_t *channel, sap_p_t *sap_p, int curr_channel, multicast_parameters_t multicast_vars)
 {
 	/** @todo check PACKET Size < MTU*/
 	//This function is called when the channel changes so it increases the version and update the packet
@@ -260,7 +260,7 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
 	mumudvb_sap_message_t *sap_message6=NULL;
 	if(channel->socketOut4)
 	{
-		sap_message4=&(sap_vars->sap_messages4[curr_channel]);
+		sap_message4=&(sap_p->sap_messages4[curr_channel]);
 		//paranoia
 		memset(sap_message4->buf,0, MAX_UDP_SIZE * sizeof (unsigned char));
 		sap_message4->version=(sap_message4->version+1)&0x000f;
@@ -272,7 +272,7 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
 	}
 	if(channel->socketOut6)
 	{
-		sap_message6=&(sap_vars->sap_messages6[curr_channel]);
+		sap_message6=&(sap_p->sap_messages6[curr_channel]);
 		//paranoia
 		memset(sap_message6->buf,0, MAX_UDP_SIZE * sizeof (unsigned char));
 		sap_message6->version=(sap_message6->version+1)&0x000f;
@@ -287,11 +287,11 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
 
 	if(channel->socketOut4)
 	{
-		if( inet_aton(sap_vars->sap_sending_ip4, &ip_struct4))
+		if( inet_aton(sap_p->sap_sending_ip4, &ip_struct4))
 		{
 			ip4=ip_struct4.s_addr;
 			/* Bytes 4-7 (or 4-19) byte: Originating source */
-			log_message( log_module, MSG_DEBUG,"sap sending ipv4  address : %s (binary : 0x%x)\n",sap_vars->sap_sending_ip4, ip4);
+			log_message( log_module, MSG_DEBUG,"sap sending ipv4  address : %s (binary : 0x%x)\n",sap_p->sap_sending_ip4, ip4);
 			memcpy (sap_message4->buf + 4, &ip4, 4);
 		}
 		else
@@ -305,10 +305,10 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
 	}
 	if(channel->socketOut6)
 	{
-		if( inet_pton(AF_INET6, sap_vars->sap_sending_ip6, &ip_struct6))
+		if( inet_pton(AF_INET6, sap_p->sap_sending_ip6, &ip_struct6))
 		{
 			ip6=ip_struct6.sin6_addr;
-			log_message( log_module, MSG_DEBUG,"sap sending ipv6  address : %s\n",sap_vars->sap_sending_ip6);
+			log_message( log_module, MSG_DEBUG,"sap sending ipv6  address : %s\n",sap_p->sap_sending_ip6);
 			/* Bytes 4-7 (or 4-19) byte: Originating source */
 			memcpy (sap_message6->buf + 4, &ip6.s6_addr, 16);
 		}
@@ -336,7 +336,7 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
 		sap_message6->len++;
 	}
 	// one program per message
-	sap_add_program(channel, sap_vars, sap_message4, sap_message6, multicast_vars);
+	sap_add_program(channel, sap_p, sap_message4, sap_message6, multicast_vars);
 
 
 	//we compute the CRC32 of the message in order to generate a hash
@@ -370,10 +370,10 @@ int sap_update(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, int curr_
  * When this function is called the header of the sap message is already done
  * it adds the payload (sdp). For mare information refer to RFC 2327 and RFC 1890
  * @param channel the channel
- * @param sap_vars the sap variables
+ * @param sap_p the sap variables
  * @param sap_message the sap message
  */
-int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumudvb_sap_message_t *sap_message4, mumudvb_sap_message_t *sap_message6, multicast_parameters_t multicast_vars)
+int sap_add_program(mumudvb_channel_t *channel, sap_p_t *sap_p, mumudvb_sap_message_t *sap_message4, mumudvb_sap_message_t *sap_message6, multicast_parameters_t multicast_vars)
 {
 
 	//See RFC 2327
@@ -407,12 +407,12 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
 	if(channel->socketOut4)
 		mumu_string_append(&payload4,
 				"v=0\r\no=%s %d %d IN IP4 %s\r\ns=%s\r\n",
-				sap_vars->sap_organisation, sap_vars->sap_serial, sap_message4->version, channel->ip4Out,
+				sap_p->sap_organisation, sap_p->sap_serial, sap_message4->version, channel->ip4Out,
 				channel->name);
 	if(channel->socketOut6)
 		mumu_string_append(&payload6,
 				"v=0\r\no=%s %d %d IN IP6 %s\r\ns=%s\r\n",
-				sap_vars->sap_organisation, sap_vars->sap_serial, sap_message6->version, channel->ip6Out,
+				sap_p->sap_organisation, sap_p->sap_serial, sap_message6->version, channel->ip6Out,
 				channel->name);
 
 
@@ -431,17 +431,17 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
 
   o No more than one URI field is allowed per session description
 	 */
-	if(strlen(sap_vars->sap_uri))
+	if(strlen(sap_p->sap_uri))
 	{
 
 		if(channel->socketOut4)
 			mumu_string_append(&payload4,
 					"u=%s\r\n",
-					sap_vars->sap_uri);
+					sap_p->sap_uri);
 		if(channel->socketOut6)
 			mumu_string_append(&payload6,
 					"u=%s\r\n",
-					sap_vars->sap_uri);
+					sap_p->sap_uri);
 
 	}
 
@@ -492,21 +492,21 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
 	if(channel->socketOut4)
 	{
 		struct in_addr ip_struct4;
-		if( inet_aton(sap_vars->sap_sending_ip4, &ip_struct4) && ip_struct4.s_addr)
+		if( inet_aton(sap_p->sap_sending_ip4, &ip_struct4) && ip_struct4.s_addr)
 			mumu_string_append(&payload4,
-					"a=source-filter: incl IN IP4 %s %s\r\n", channel->ip4Out, sap_vars->sap_sending_ip4);
+					"a=source-filter: incl IN IP4 %s %s\r\n", channel->ip4Out, sap_p->sap_sending_ip4);
 	}
 	if(channel->socketOut6)
 	{
 		struct sockaddr_in6 ip_struct6;
-		if( inet_pton(AF_INET6, sap_vars->sap_sending_ip6, &ip_struct6))
+		if( inet_pton(AF_INET6, sap_p->sap_sending_ip6, &ip_struct6))
 		{
 			//ugly way to test non zero ipv6 addr but I didn found a better one
 			u_int8_t  *s6;
 			s6=ip_struct6.sin6_addr.s6_addr;
 			if(s6[0]||s6[1]||s6[2]||s6[3]||s6[4]||s6[5]||s6[6]||s6[7]||s6[8]||s6[9]||s6[10]||s6[11]||s6[12]||s6[13]||s6[14]||s6[15])
 				mumu_string_append(&payload6,
-						"a=source-filter: incl IP6 %s %s\r\n", channel->ip6Out, sap_vars->sap_sending_ip6);
+						"a=source-filter: incl IP6 %s %s\r\n", channel->ip6Out, sap_p->sap_sending_ip6);
 		}
 	}
 
@@ -514,12 +514,12 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
     a=cat channel's group
     a=x-plgroup backward compatibility
 	 */
-	if(strlen(channel->sap_group)||strlen(sap_vars->sap_default_group))
+	if(strlen(channel->sap_group)||strlen(sap_p->sap_default_group))
 	{
 		if(!strlen(channel->sap_group))
 		{
 			int len=SAP_GROUP_LENGTH;
-			strcpy(channel->sap_group,sap_vars->sap_default_group);
+			strcpy(channel->sap_group,sap_p->sap_default_group);
 			mumu_string_replace(channel->sap_group,&len,0,"%type",simple_service_type_to_str(channel->channel_type) );
 		}
 		if(channel->socketOut4)
@@ -609,29 +609,29 @@ int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumu
  * This function checks if there is sap messages to send
  * @param number_of_channels the number of channels
  * @param channels the channels
- * @param sap_vars the sap variables
+ * @param sap_p the sap variables
  * @param multicast_vars the multicast variables
  * @param now the time
  */
-void sap_poll(sap_parameters_t *sap_vars,int number_of_channels,mumudvb_channel_t  *channels, multicast_parameters_t multicast_vars, long now)
+void sap_poll(sap_p_t *sap_p,int number_of_channels,mumudvb_channel_t  *channels, multicast_parameters_t multicast_vars, long now)
 {
 	int curr_channel;
 	//we check if SAP is initialised
-	if(sap_vars->sap_messages4==NULL && sap_vars->sap_messages6==NULL)
+	if(sap_p->sap_messages4==NULL && sap_p->sap_messages6==NULL)
 		return;
-	if(sap_vars->sap == OPTION_ON)
+	if(sap_p->sap == OPTION_ON)
 	{
-		if(!sap_vars->sap_last_time_sent)
+		if(!sap_p->sap_last_time_sent)
 		{
 			// it's the first time we are here, we initialize all the channels
 			for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-				sap_update(&channels[curr_channel], sap_vars, curr_channel, multicast_vars);
-			sap_vars->sap_last_time_sent=now-sap_vars->sap_interval-1;
+				sap_update(&channels[curr_channel], sap_p, curr_channel, multicast_vars);
+			sap_p->sap_last_time_sent=now-sap_p->sap_interval-1;
 		}
-		if((now-sap_vars->sap_last_time_sent)>=sap_vars->sap_interval)
+		if((now-sap_p->sap_last_time_sent)>=sap_p->sap_interval)
 		{
-			sap_send(sap_vars, number_of_channels);
-			sap_vars->sap_last_time_sent=now;
+			sap_send(sap_p, number_of_channels);
+			sap_p->sap_last_time_sent=now;
 		}
 	}
 }

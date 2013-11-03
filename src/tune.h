@@ -87,7 +87,7 @@
 
 
 /** @brief Parameters for tuning the card*/
-typedef struct tuning_parameters_t{
+typedef struct tune_p_t{
   /**The card number*/
   int card;
   /**The tuner number*/
@@ -161,12 +161,12 @@ typedef struct tuning_parameters_t{
   /** The substream id */
   int stream_id;
 #endif
-}tuning_parameters_t;
+}tune_p_t;
 
 
-void init_tune_v(tuning_parameters_t *);
-int tune_it(int, tuning_parameters_t *);
-int read_tuning_configuration(tuning_parameters_t *, char *);
+void init_tune_v(tune_p_t *);
+int tune_it(int, tune_p_t *);
+int read_tuning_configuration(tune_p_t *, char *);
 void print_status(fe_status_t festatus);
 
 #endif

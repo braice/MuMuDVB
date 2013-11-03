@@ -88,13 +88,13 @@ unicast_send_signal_power_js (int Socket, strength_parameters_t *strengthparams)
 int
 unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *channels, int Socket);
 int
-unicast_send_xml_state (int number_of_channels, mumudvb_channel_t* channels, int Socket, strength_parameters_t* strengthparams, autoconf_parameters_t* autoconf_vars, void* cam_vars_v, void* scam_vars_v);
+unicast_send_xml_state (int number_of_channels, mumudvb_channel_t* channels, int Socket, strength_parameters_t* strengthparams, autoconf_parameters_t* autoconf_vars, void* cam_p_v, void* scam_vars_v);
 int
-unicast_send_cam_menu (int Socket, void *cam_vars);
+unicast_send_cam_menu (int Socket, void *cam_p);
 int
-unicast_send_cam_action (int Socket, char *Key, void *cam_vars);
+unicast_send_cam_action (int Socket, char *Key, void *cam_p);
 
-int unicast_handle_message(unicast_parameters_t* unicast_vars, unicast_client_t* client, mumudvb_channel_t* channels, int number_of_channels, strength_parameters_t* strengthparams, autoconf_parameters_t* autoconf_vars, void* cam_vars, void* scam_vars);
+int unicast_handle_message(unicast_parameters_t* unicast_vars, unicast_client_t* client, mumudvb_channel_t* channels, int number_of_channels, strength_parameters_t* strengthparams, autoconf_parameters_t* autoconf_vars, void* cam_p, void* scam_vars);
 
 #define REPLY_HEADER 0
 #define REPLY_BODY 1
@@ -266,7 +266,7 @@ int unicast_create_listening_socket(int socket_type, int socket_channel, char *i
  * If the event is on a channel specific socket, it accepts the new connection and starts streaming
  *
  */
-int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels, strength_parameters_t *strengthparams, autoconf_parameters_t *autoconf_vars, void *cam_vars, void *scam_vars)
+int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels, strength_parameters_t *strengthparams, autoconf_parameters_t *autoconf_vars, void *cam_p, void *scam_vars)
 {
 	int iRet;
 	//We look what happened for which connection
@@ -345,7 +345,7 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
 			{
 				//Event on a client connectio i.e. the client asked something
 				log_message( log_module, MSG_FLOOD,"New message for socket %d\n", fds->pfds[actual_fd].fd);
-				iRet=unicast_handle_message(unicast_vars,unicast_vars->fd_info[actual_fd].client, channels, number_of_channels, strengthparams, autoconf_vars, cam_vars, scam_vars);
+				iRet=unicast_handle_message(unicast_vars,unicast_vars->fd_info[actual_fd].client, channels, number_of_channels, strengthparams, autoconf_vars, cam_p, scam_vars);
 				if (iRet==-2 ) //iRet==-2 --> 0 received data or error, we close the connection
 				{
 					unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels);
@@ -501,7 +501,7 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
  * @param channels the channel array
  * @param number_of_channels quite explicit ...
  */
-int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels, strength_parameters_t *strengthparams, autoconf_parameters_t *autoconf_vars, void *cam_vars, void *scam_vars)
+int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels, strength_parameters_t *strengthparams, autoconf_parameters_t *autoconf_vars, void *cam_p, void *scam_vars)
 {
 	int received_len;
 	(void) unicast_vars;
@@ -722,20 +722,20 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 			else if(strstr(client->buffer +pos ,"/monitor/state.xml ")==(client->buffer +pos))
 			{
 				log_message( log_module, MSG_DETAIL,"HTTP request for XML State\n");
-				unicast_send_xml_state(number_of_channels, channels, client->Socket, strengthparams, autoconf_vars, cam_vars, scam_vars);
+				unicast_send_xml_state(number_of_channels, channels, client->Socket, strengthparams, autoconf_vars, cam_p, scam_vars);
 				return -2; //We close the connection afterwards
 			}
 			else if(strstr(client->buffer +pos ,"/cam/menu.xml ")==(client->buffer +pos))
 			{
 				log_message( log_module, MSG_DETAIL,"HTTP request for CAM menu display \n");
-				unicast_send_cam_menu(client->Socket, cam_vars);
+				unicast_send_cam_menu(client->Socket, cam_p);
 				return -2; //We close the connection afterwards
 			}
 			else if(strstr(client->buffer +pos ,"/cam/action.xml?key=")==(client->buffer +pos))
 			{
 				log_message( log_module, MSG_DETAIL,"HTTP request for CAM menu action\n");
 				pos+=strlen("/cam/action.xml?key=");
-				unicast_send_cam_action(client->Socket,client->buffer+pos, cam_vars);
+				unicast_send_cam_action(client->Socket,client->buffer+pos, cam_p);
 				return -2; //We close the connection afterwards
 			}
 
@@ -1263,18 +1263,18 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
  * @param fds the frontend device structure
  */
 int
-unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int Socket, strength_parameters_t *strengthparams, autoconf_parameters_t *autoconf_vars, void *cam_vars_v, void *scam_vars_v)
+unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int Socket, strength_parameters_t *strengthparams, autoconf_parameters_t *autoconf_vars, void *cam_p_v, void *scam_vars_v)
 {
 #ifndef ENABLE_CAM_SUPPORT
-	(void) cam_vars_v; //to make compiler happy
+	(void) cam_p_v; //to make compiler happy
 #else
-	cam_parameters_t *cam_vars=(cam_parameters_t *)cam_vars_v;
+	cam_p_t *cam_p=(cam_p_t *)cam_p_v;
 #endif
 
 #ifndef ENABLE_SCAM_SUPPORT
 	(void) scam_vars_v; //to make compiler happy
 #else
-	scam_parameters_t *scam_vars=(scam_parameters_t *)scam_vars_v;
+	scam_p_t *scam_vars=(scam_p_t *)scam_vars_v;
 #endif
 	// Prepare the HTTP reply
 	struct unicast_reply* reply = unicast_reply_init();
@@ -1293,7 +1293,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 	unicast_reply_write(reply, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n");
 
 	// Starting XML content
-	unicast_reply_write(reply, "<mumudvb card=\"%d\" frontend=\"%d\">\n",strengthparams->tuneparams->card,strengthparams->tuneparams->tuner);
+	unicast_reply_write(reply, "<mumudvb card=\"%d\" frontend=\"%d\">\n",strengthparams->tune_p->card,strengthparams->tune_p->tuner);
 
 	// Mumudvb information
 	unicast_reply_write(reply, "\t<global_version><![CDATA[%s]]></global_version>\n",VERSION);
@@ -1306,41 +1306,41 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 	unicast_reply_write(reply, "\t<global_uptime>%d</global_uptime>\n",(tv.tv_sec - real_start_time));
 
 	// Frontend setup
-	unicast_reply_write(reply, "\t<frontend_name><![CDATA[%s]]></frontend_name>\n",strengthparams->tuneparams->fe_name);
-	unicast_reply_write(reply, "\t<frontend_tuned>%d</frontend_tuned>\n",strengthparams->tuneparams->card_tuned);
-	if (strengthparams->tuneparams->fe_type==FE_QPSK) // Do some test for always showing frequency in kHz
+	unicast_reply_write(reply, "\t<frontend_name><![CDATA[%s]]></frontend_name>\n",strengthparams->tune_p->fe_name);
+	unicast_reply_write(reply, "\t<frontend_tuned>%d</frontend_tuned>\n",strengthparams->tune_p->card_tuned);
+	if (strengthparams->tune_p->fe_type==FE_QPSK) // Do some test for always showing frequency in kHz
 	{
-		unicast_reply_write(reply, "\t<frontend_frequency>%d</frontend_frequency>\n",strengthparams->tuneparams->freq);
-		unicast_reply_write(reply, "\t<frontend_satnumber>%d</frontend_satnumber>\n",strengthparams->tuneparams->sat_number);
+		unicast_reply_write(reply, "\t<frontend_frequency>%d</frontend_frequency>\n",strengthparams->tune_p->freq);
+		unicast_reply_write(reply, "\t<frontend_satnumber>%d</frontend_satnumber>\n",strengthparams->tune_p->sat_number);
 	}
 	else
-		unicast_reply_write(reply, "\t<frontend_frequency>%d</frontend_frequency>\n",(strengthparams->tuneparams->freq)/1000);
-	if (strengthparams->tuneparams->pol==0)
+		unicast_reply_write(reply, "\t<frontend_frequency>%d</frontend_frequency>\n",(strengthparams->tune_p->freq)/1000);
+	if (strengthparams->tune_p->pol==0)
 		unicast_reply_write(reply, "\t<frontend_polarization><![CDATA[-]]></frontend_polarization>\n");
 	else
-		unicast_reply_write(reply, "\t<frontend_polarization><![CDATA[%c]]></frontend_polarization>\n",strengthparams->tuneparams->pol);
-	unicast_reply_write(reply, "\t<frontend_symbolrate>%d</frontend_symbolrate>\n",strengthparams->tuneparams->srate);
+		unicast_reply_write(reply, "\t<frontend_polarization><![CDATA[%c]]></frontend_polarization>\n",strengthparams->tune_p->pol);
+	unicast_reply_write(reply, "\t<frontend_symbolrate>%d</frontend_symbolrate>\n",strengthparams->tune_p->srate);
 
 	// Frontend type
 	char fetype[10]="Unkonwn";
-	if (strengthparams->tuneparams->fe_type==FE_OFDM)
+	if (strengthparams->tune_p->fe_type==FE_OFDM)
 #ifdef DVBT2
-		if (strengthparams->tuneparams->delivery_system==SYS_DVBT2)
+		if (strengthparams->tune_p->delivery_system==SYS_DVBT2)
 			snprintf(fetype,10,"DVB-T2");
 		else
 			snprintf(fetype,10,"DVB-T");
 #else
 	snprintf(fetype,10,"DVB-T");
 #endif
-	if (strengthparams->tuneparams->fe_type==FE_QAM)  snprintf(fetype,10,"DVB-C");
-	if (strengthparams->tuneparams->fe_type==FE_ATSC) snprintf(fetype,10,"ATSC");
-	if (strengthparams->tuneparams->fe_type==FE_QPSK)
+	if (strengthparams->tune_p->fe_type==FE_QAM)  snprintf(fetype,10,"DVB-C");
+	if (strengthparams->tune_p->fe_type==FE_ATSC) snprintf(fetype,10,"ATSC");
+	if (strengthparams->tune_p->fe_type==FE_QPSK)
 	{
 #if DVB_API_VERSION >= 5
-		if (strengthparams->tuneparams->delivery_system==SYS_DVBS2)
+		if (strengthparams->tune_p->delivery_system==SYS_DVBS2)
 			snprintf(fetype,10,"DVB-S2");
 #ifdef DVBT2
-		else if (strengthparams->tuneparams->delivery_system==SYS_DVBT2)
+		else if (strengthparams->tune_p->delivery_system==SYS_DVBT2)
 			snprintf(fetype,10,"DVB-T2");
 #endif
 		else
@@ -1377,10 +1377,10 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 
 	// CAM information
 #ifdef ENABLE_CAM_SUPPORT
-	unicast_reply_write(reply, "\t<cam_support>%d</cam_support>\n",cam_vars->cam_support);
-	unicast_reply_write(reply, "\t<cam_number>%d</cam_number>\n",cam_vars->cam_number);
-	unicast_reply_write(reply, "\t<cam_menustring><![CDATA[%s]]></cam_menustring>\n",cam_vars->cam_menu_string.string);
-	unicast_reply_write(reply, "\t<cam_initialized>%d</cam_initialized>\n",cam_vars->ca_resource_connected);
+	unicast_reply_write(reply, "\t<cam_support>%d</cam_support>\n",cam_p->cam_support);
+	unicast_reply_write(reply, "\t<cam_number>%d</cam_number>\n",cam_p->cam_number);
+	unicast_reply_write(reply, "\t<cam_menustring><![CDATA[%s]]></cam_menustring>\n",cam_p->cam_menu_string.string);
+	unicast_reply_write(reply, "\t<cam_initialized>%d</cam_initialized>\n",cam_p->ca_resource_connected);
 #else
 	unicast_reply_write(reply, "\t<cam_support>%d</cam_support>\n",0);
 	unicast_reply_write(reply, "\t<cam_number>%d</cam_number>\n",0);
@@ -1479,12 +1479,12 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
  * @param Socket the socket on wich the information have to be sent
  */
 int
-unicast_send_cam_menu (int Socket, void *cam_vars_v)
+unicast_send_cam_menu (int Socket, void *cam_p_v)
 {
 #ifndef ENABLE_CAM_SUPPORT
-	(void) cam_vars_v; //to make compiler happy
+	(void) cam_p_v; //to make compiler happy
 #else
-	cam_parameters_t *cam_vars=(cam_parameters_t *)cam_vars_v;
+	cam_p_t *cam_p=(cam_p_t *)cam_p_v;
 #endif
 	struct unicast_reply* reply = unicast_reply_init();
 	if (NULL == reply)
@@ -1510,16 +1510,16 @@ unicast_send_cam_menu (int Socket, void *cam_vars_v)
 
 #ifdef ENABLE_CAM_SUPPORT
 	// Sending the last menu if existing
-	if (cam_vars->ca_resource_connected!=0)
+	if (cam_p->ca_resource_connected!=0)
 	{
-		if (cam_vars->cam_menulist_str.length>0)
+		if (cam_p->cam_menulist_str.length>0)
 		{
-			unicast_reply_write(reply, "%s",cam_vars->cam_menulist_str.string);
+			unicast_reply_write(reply, "%s",cam_p->cam_menulist_str.string);
 		}
 		else
 		{
 			unicast_reply_write(reply, "\t<datetime><![CDATA[%s]]></datetime>\n",sdatetime);
-			unicast_reply_write(reply, "\t<cammenustring><![CDATA[%s]]></cammenustring>\n",cam_vars->cam_menu_string.string);
+			unicast_reply_write(reply, "\t<cammenustring><![CDATA[%s]]></cammenustring>\n",cam_p->cam_menu_string.string);
 			unicast_reply_write(reply, "\t<object><![CDATA[NONE]]></object>\n");
 			unicast_reply_write(reply, "\t<title><![CDATA[No menu to display]]></title>\n");
 		}
@@ -1563,12 +1563,12 @@ unicast_send_cam_menu (int Socket, void *cam_vars_v)
  * @param Socket the socket on wich the information have to be sent
  */
 int
-unicast_send_cam_action (int Socket, char *Key, void *cam_vars_v)
+unicast_send_cam_action (int Socket, char *Key, void *cam_p_v)
 {
 #ifndef ENABLE_CAM_SUPPORT
-	(void) cam_vars_v; //to make compiler happy
+	(void) cam_p_v; //to make compiler happy
 #else
-	cam_parameters_t *cam_vars=(cam_parameters_t *)cam_vars_v;
+	cam_p_t *cam_p=(cam_p_t *)cam_p_v;
 #endif
 	struct unicast_reply* reply = unicast_reply_init();
 	if (NULL == reply)
@@ -1600,46 +1600,46 @@ unicast_send_cam_action (int Socket, char *Key, void *cam_vars_v)
 	if ((iKey>=48 && iKey<=57) || iKey==77 || iKey==67 || iKey==79)
 	{
 		// Check if CAM is initialized
-		if (cam_vars->ca_resource_connected!=0)
+		if (cam_p->ca_resource_connected!=0)
 		{
 			// Disable auto response from now (as a manual action is asked)
-			cam_vars->cam_mmi_autoresponse=0;
+			cam_p->cam_mmi_autoresponse=0;
 			// Numbers for MENU/LIST answer
-			if (cam_vars->mmi_state==MMI_STATE_MENU && iKey>=48 && iKey<=57)
+			if (cam_p->mmi_state==MMI_STATE_MENU && iKey>=48 && iKey<=57)
 			{
 				log_message( log_module,  MSG_INFO, "Send CAM MENU key number %d\n",iKey-48);
-				en50221_app_mmi_menu_answ(cam_vars->stdcam->mmi_resource, cam_vars->stdcam->mmi_session_number, iKey-48);
-				cam_vars->mmi_state=MMI_STATE_OPEN;
+				en50221_app_mmi_menu_answ(cam_p->stdcam->mmi_resource, cam_p->stdcam->mmi_session_number, iKey-48);
+				cam_p->mmi_state=MMI_STATE_OPEN;
 			}
 			// 'M' = ask the menu - Always possible
 			if (iKey==77)
 			{
 				log_message( log_module,  MSG_INFO, "Ask CAM to enter MENU\n");
-				en50221_app_ai_entermenu(cam_vars->stdcam->ai_resource, cam_vars->stdcam->ai_session_number);
-				cam_vars->mmi_state=MMI_STATE_OPEN;
+				en50221_app_ai_entermenu(cam_p->stdcam->ai_resource, cam_p->stdcam->ai_session_number);
+				cam_p->mmi_state=MMI_STATE_OPEN;
 			}
 			// Numbers for ENQUIRY answer
-			if (cam_vars->mmi_state==MMI_STATE_ENQ && iKey>=48 && iKey<=57)
+			if (cam_p->mmi_state==MMI_STATE_ENQ && iKey>=48 && iKey<=57)
 			{
 				// We store the new key
-				cam_vars->mmi_enq_answer[cam_vars->mmi_enq_entered]=iKey;
-				cam_vars->mmi_enq_entered++;
-				log_message( log_module,  MSG_INFO, "Received CAM ENQUIRY key number %d (%d of %d expected)\n", iKey-48, cam_vars->mmi_enq_entered, cam_vars->mmi_enq_length);
+				cam_p->mmi_enq_answer[cam_p->mmi_enq_entered]=iKey;
+				cam_p->mmi_enq_entered++;
+				log_message( log_module,  MSG_INFO, "Received CAM ENQUIRY key number %d (%d of %d expected)\n", iKey-48, cam_p->mmi_enq_entered, cam_p->mmi_enq_length);
 				// Test if the expected length is received
-				if (cam_vars->mmi_enq_entered == cam_vars->mmi_enq_length)
+				if (cam_p->mmi_enq_entered == cam_p->mmi_enq_length)
 				{
 					// We send the anwser
-					log_message( log_module,  MSG_INFO, "Sending ENQUIRY answer to CAM (answer has the expected length of %d)\n",cam_vars->mmi_enq_entered);
-					en50221_app_mmi_answ(cam_vars->stdcam->mmi_resource, cam_vars->stdcam->mmi_session_number, MMI_ANSW_ID_ANSWER, (uint8_t*)cam_vars->mmi_enq_answer, cam_vars->mmi_enq_entered);
-					cam_vars->mmi_state=MMI_STATE_OPEN;
+					log_message( log_module,  MSG_INFO, "Sending ENQUIRY answer to CAM (answer has the expected length of %d)\n",cam_p->mmi_enq_entered);
+					en50221_app_mmi_answ(cam_p->stdcam->mmi_resource, cam_p->stdcam->mmi_session_number, MMI_ANSW_ID_ANSWER, (uint8_t*)cam_p->mmi_enq_answer, cam_p->mmi_enq_entered);
+					cam_p->mmi_state=MMI_STATE_OPEN;
 				}
 			}
 			// 'C' = send CANCEL as an ENQUIRY answer
-			if (cam_vars->mmi_state==MMI_STATE_ENQ && iKey==67)
+			if (cam_p->mmi_state==MMI_STATE_ENQ && iKey==67)
 			{
 				log_message( log_module,  MSG_INFO, "Send CAM ENQUIRY key CANCEL\n");
-				en50221_app_mmi_answ(cam_vars->stdcam->mmi_resource, cam_vars->stdcam->mmi_session_number, MMI_ANSW_ID_CANCEL, NULL, 0);
-				cam_vars->mmi_state=MMI_STATE_OPEN;
+				en50221_app_mmi_answ(cam_p->stdcam->mmi_resource, cam_p->stdcam->mmi_session_number, MMI_ANSW_ID_CANCEL, NULL, 0);
+				cam_p->mmi_state=MMI_STATE_OPEN;
 			}
 			// OK
 			unicast_reply_write(reply, "\t<result><![CDATA[OK]]></result>\n");
