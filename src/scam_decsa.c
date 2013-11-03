@@ -69,17 +69,15 @@ unsigned char ts_packet_get_payload_offset(unsigned char *ts_packet) {
   unsigned char adapt_field   = (ts_packet[3] &~ 0xDF) >> 5; // 11x11111
   unsigned char payload_field = (ts_packet[3] &~ 0xEF) >> 4; // 111x1111
 
-  if (!adapt_field && !payload_field) // Not allowed
-  return 0;
+  if (!payload_field) // No payload
+    return 0;
 
   if (adapt_field) {
     unsigned char adapt_len = ts_packet[4];
-    if (payload_field && adapt_len > 182) // Validity checks
+
+    if (adapt_len > 182) //validity check
       return 0;
-    if (!payload_field && adapt_len > 183)
-      return 0;
-    if (adapt_len + 4 > 188) // adaptation field takes the whole packet
-      return 0;
+
     return 4 + 1 + adapt_len; // ts header + adapt_field_len_byte + adapt_field_len
   } else {
     return 4; // No adaptation, data starts directly after TS header
@@ -121,7 +119,7 @@ void scam_decsa_stop(mumudvb_channel_t *channel)
 static void *decsathread_func(void* arg)
 {
   unsigned char scrambling_control_packet=0;
-  unsigned int ca_idx;
+  unsigned int ca_idx = 0;
   mumudvb_channel_t *channel;
   channel = ((mumudvb_channel_t *) arg);
   unsigned int batch_size = dvbcsa_bs_batch_size();
@@ -169,8 +167,12 @@ static void *decsathread_func(void* arg)
 
     scrambling_control_packet = ((channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3] & 0xc0) >> 6);
 
-    offset = ts_packet_get_payload_offset(channel->ring_buf->data[channel->ring_buf->read_decsa_idx]);
-    len=188-offset;
+    if (scrambling_control_packet) {
+      offset = ts_packet_get_payload_offset(channel->ring_buf->data[channel->ring_buf->read_decsa_idx]);
+      if (!offset)
+        scrambling_control_packet = 0;
+      len=188-offset;
+    }
 
     switch (scrambling_control_packet) {
           case 2:
