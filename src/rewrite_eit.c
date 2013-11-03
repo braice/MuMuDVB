@@ -246,7 +246,7 @@ int eit_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf, int 
  * this function save the full EIT for each service.
  * @return return 1 when the packet is updated
  */
-int eit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars)
+void eit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars)
 {
 	eit_t       *eit=NULL;
 	/*Check the version before getting the full packet*/
@@ -263,7 +263,7 @@ int eit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
 			//We check if we have to store this new EIT packet (CRC32 can make false alarms)
 			if(!eit_need_update(rewrite_vars,rewrite_vars->full_eit->data_full,0))
 			{
-				return 0;
+				break;
 			}
 
 			log_message( log_module, MSG_DETAIL,"New full EIT for update");
@@ -274,7 +274,7 @@ int eit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
 			eit_packet_t *eit_packet;
 			eit_packet=eit_new_packet(rewrite_vars,HILO(eit->service_id), eit->table_id);
 			if(NULL==eit_packet)
-				return 0;
+				break;
 
 			if(eit->version_number!=eit_packet->version)
 			{
@@ -298,7 +298,7 @@ int eit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
 			if(eit_packet->full_eit_sections[eit->section_number]==NULL)
 			{
 				log_message( log_module, MSG_ERROR,"Problem with calloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-				return 0;
+				break;
 			}
 			memcpy(eit_packet->full_eit_sections[eit->section_number], rewrite_vars->full_eit,sizeof( mumudvb_ts_packet_t));
 			//We store that we saw this section number
@@ -315,7 +315,6 @@ int eit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
 
 		}
 	}
-	return 0;
 }
 
 

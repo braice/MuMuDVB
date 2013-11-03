@@ -362,7 +362,7 @@ int sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
 			{
 				rewrite_vars->sdt_needs_update=1;
 				log_message( log_module, MSG_DEBUG,"We didn't got the good SDT (wrong table id) we search for a new one\n");
-				return 0;
+				break;
 			}
 			else
 			{
@@ -381,7 +381,7 @@ int sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
 				else
 				{
 					rewrite_vars->sdt_need_others = 0;
-					return 0;
+					break;
 				}
 			}
 		}
