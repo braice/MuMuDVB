@@ -125,7 +125,7 @@ typedef struct rewrite_parameters_t{
 }rewrite_parameters_t;
 
 
-
+void init_rewr_v(rewrite_parameters_t *rewr_p);
 int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substring);
 
 void pat_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars);

@@ -117,7 +117,7 @@ Possible values for this variable
 }autoconf_parameters_t;
 
 
-
+void init_aconf_v(autoconf_parameters_t *aconf_p);
 int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *channels,int number_of_channels);
 void autoconf_freeing(autoconf_parameters_t *);
 int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, char *substring);

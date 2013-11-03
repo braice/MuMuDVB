@@ -38,6 +38,32 @@
 
 static char *log_module="Rewrite: ";
 
+
+/** Initialize Rewrite variables*/
+void init_rewr_v(rewrite_parameters_t *rewr_p)
+{
+	*rewr_p=(rewrite_parameters_t){
+				.rewrite_pat = OPTION_UNDEFINED,
+				.pat_version=-1,
+				.full_pat=NULL,
+				.pat_needs_update=1,
+				.full_pat_ok=0,
+				.pat_continuity_counter=0,
+				.rewrite_sdt = OPTION_UNDEFINED,
+				.sdt_version=-1,
+				.full_sdt=NULL,
+				.sdt_needs_update=1,
+				.full_sdt_ok=0,
+				.sdt_continuity_counter=0,
+				.rewrite_eit=OPTION_UNDEFINED,
+				.eit_version=-1,
+				.full_eit=NULL,
+				.eit_needs_update=0,
+				.sdt_force_eit=OPTION_UNDEFINED,
+				.eit_packets=NULL,
+		};
+}
+
 /** @brief Read a line of the configuration file to check if there is a rewrite parameter
  *
  * @param rewrite_vars the autoconfiguration parameters

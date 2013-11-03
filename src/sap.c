@@ -41,6 +41,24 @@ static char *log_module="SAP: ";
 int sap_add_program(mumudvb_channel_t *channel, sap_parameters_t *sap_vars, mumudvb_sap_message_t *sap_message4, mumudvb_sap_message_t *sap_message6, multicast_parameters_t multicast_vars);
 
 
+/** Initialize sap variables*/
+void init_sap_v(sap_parameters_t *sap_p)
+{
+	 *sap_p=(sap_parameters_t){
+			.sap_messages4=NULL,
+			.sap_messages6=NULL,
+			.sap=OPTION_UNDEFINED, //No sap by default
+			.sap_interval=SAP_DEFAULT_INTERVAL,
+			.sap_sending_ip4="0.0.0.0",
+			.sap_sending_ip6="::",
+			.sap_default_group="",
+			.sap_organisation="MuMuDVB",
+			.sap_uri="\0",
+			.sap_ttl=SAP_DEFAULT_TTL,
+	};
+
+}
+
 /** @brief Read a line of the configuration file to check if there is a sap parameter
  *
  * @param sap_vars the sap parameters

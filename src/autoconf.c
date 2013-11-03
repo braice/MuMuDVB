@@ -101,6 +101,34 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
 void autoconf_sort_services(mumudvb_service_t *services);
 int autoconf_read_nit(autoconf_parameters_t *parameters, mumudvb_channel_t *channels, int number_of_channels);
 
+
+
+/** Initialize Autoconf variables*/
+void init_aconf_v(autoconf_parameters_t *aconf_p)
+{
+	*aconf_p=(autoconf_parameters_t){
+		.lock=PTHREAD_MUTEX_INITIALIZER,
+		.autoconfiguration=0,
+		.autoconf_radios=0,
+		.autoconf_scrambled=0,
+		.autoconf_pid_update=1,
+		.autoconf_ip4="239.100.%card.%number",
+		.autoconf_ip6="FF15:4242::%server:%card:%number",
+		.time_start_autoconfiguration=0,
+		.transport_stream_id=-1,
+		.autoconf_temp_pat=NULL,
+		.autoconf_temp_sdt=NULL,
+		.autoconf_temp_psip=NULL,
+		.services=NULL,
+		.autoconf_unicast_port="\0",
+		.autoconf_multicast_port="\0",
+		.num_service_id=0,
+		.name_template="\0",
+	};
+}
+
+
+
 /** @brief Read a line of the configuration file to check if there is a autoconf parameter
  *
  * @param autoconf_vars the autoconfiguration parameters

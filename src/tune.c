@@ -49,9 +49,52 @@
 #include "mumudvb.h"
 #include "errors.h"
 #include "log.h"
+#include "dvb.h"
 
 
 static char *log_module="Tune: ";
+
+/** Initialize tune variables*/
+void init_tune_v(tuning_parameters_t *tune_p)
+{
+	 * tune_p=(tuning_parameters_t){
+				.card = 0,
+				.tuner = 0,
+				.card_dev_path=DVB_DEV_PATH,
+				.card_tuned = 0,
+				.tuning_timeout = ALARM_TIME_TIMEOUT,
+				.freq = 0,
+				.srate = 0,
+				.pol = 0,
+				.lnb_voltage_off=0,
+				.lnb_type=LNB_UNIVERSAL,
+				.lnb_lof_standard=DEFAULT_LOF_STANDARD,
+				.lnb_slof=DEFAULT_SLOF,
+				.lnb_lof_low=DEFAULT_LOF1_UNIVERSAL,
+				.lnb_lof_high=DEFAULT_LOF2_UNIVERSAL,
+				.sat_number = 0,
+				.switch_type = 'C',
+				.modulation_set = 0,
+				.display_strenght = 0,
+				.check_status = 1,
+				.strengththreadshutdown = 0,
+				.HP_CodeRate = HP_CODERATE_DEFAULT,//cf tune.h
+				.LP_CodeRate = LP_CODERATE_DEFAULT,
+				.TransmissionMode = TRANSMISSION_MODE_DEFAULT,
+				.guardInterval = GUARD_INTERVAL_DEFAULT,
+				.bandwidth = BANDWIDTH_DEFAULT,
+				.hier = HIERARCHY_DEFAULT,
+				.fe_type=FE_QPSK, //sat by default
+	#if DVB_API_VERSION >= 5
+				.delivery_system=SYS_UNDEFINED,
+				.rolloff=ROLLOFF_35,
+	#endif
+	#if STREAM_ID
+				.stream_id=0,
+	#endif
+		};
+
+}
 
 /** @brief Read a line of the configuration file to check if there is a tuning parameter
  *

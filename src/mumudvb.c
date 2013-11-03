@@ -155,7 +155,7 @@ int received_signal = 0;
 int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
 // file descriptors
 fds_t fds; /** File descriptors associated with the card */
-int no_daemon = 0;
+
 int  write_streamed_channels=1;
 pthread_t signalpowerthread;
 pthread_t cardthread;
@@ -202,53 +202,6 @@ unicast_parameters_t unicast_vars={
 
 
 
-//autoconfiguration
-autoconf_parameters_t autoconf_vars={
-		.lock=PTHREAD_MUTEX_INITIALIZER,
-		.autoconfiguration=0,
-		.autoconf_radios=0,
-		.autoconf_scrambled=0,
-		.autoconf_pid_update=1,
-		.autoconf_ip4="239.100.%card.%number",
-		.autoconf_ip6="FF15:4242::%server:%card:%number",
-		.time_start_autoconfiguration=0,
-		.transport_stream_id=-1,
-		.autoconf_temp_pat=NULL,
-		.autoconf_temp_sdt=NULL,
-		.autoconf_temp_psip=NULL,
-		.services=NULL,
-		.autoconf_unicast_port="\0",
-		.autoconf_multicast_port="\0",
-		.num_service_id=0,
-		.name_template="\0",
-};
-
-
-
-//Parameters for rewriting
-rewrite_parameters_t rewrite_vars={
-		.rewrite_pat = OPTION_UNDEFINED,
-		.pat_version=-1,
-		.full_pat=NULL,
-		.pat_needs_update=1,
-		.full_pat_ok=0,
-		.pat_continuity_counter=0,
-		.rewrite_sdt = OPTION_UNDEFINED,
-		.sdt_version=-1,
-		.full_sdt=NULL,
-		.sdt_needs_update=1,
-		.full_sdt_ok=0,
-		.sdt_continuity_counter=0,
-		.rewrite_eit=OPTION_UNDEFINED,
-		.eit_version=-1,
-		.full_eit=NULL,
-		.eit_needs_update=0,
-		.sdt_force_eit=OPTION_UNDEFINED,
-		.eit_packets=NULL,
-};
-
-
-
 #ifdef ENABLE_TRANSCODING
 /** The transcode options defined for all the channels */
 transcode_options_t global_transcode_opt;
@@ -261,111 +214,33 @@ extern log_params_t log_params;
 static void SignalHandler (int signum);//below
 int read_multicast_configuration(multicast_parameters_t *, mumudvb_channel_t *, int, int *, char *); //in multicast.c
 void *monitor_func(void* arg);
-int mumudvb_close(monitor_parameters_t* monitor_thread_params, unicast_parameters_t* unicast_vars, volatile int* strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char* filename_channels_not_streamed,char *filename_channels_streamed, char *filename_pid, int Interrupted);
+int mumudvb_close(int no_daemon, monitor_parameters_t* monitor_thread_params, rewrite_parameters_t *rewrite_vars, autoconf_parameters_t *autoconf_vars, unicast_parameters_t* unicast_vars, volatile int* strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char* filename_channels_not_streamed,char *filename_channels_streamed, char *filename_pid, int Interrupted);
 
 
 
 int
 main (int argc, char **argv)
 {
-	//sap announces
-	sap_parameters_t sap_vars={
-			.sap_messages4=NULL,
-			.sap_messages6=NULL,
-			.sap=OPTION_UNDEFINED, //No sap by default
-			.sap_interval=SAP_DEFAULT_INTERVAL,
-			.sap_sending_ip4="0.0.0.0",
-			.sap_sending_ip6="::",
-			.sap_default_group="",
-			.sap_organisation="MuMuDVB",
-			.sap_uri="\0",
-			.sap_ttl=SAP_DEFAULT_TTL,
-	};
+	//sap announces variables
+	sap_parameters_t sap_vars;
+	init_sap_v(&sap_vars);
+
 
 	//Statistics
-	stats_infos_t stats_infos={
-			.stats_num_packets_received=0,
-			.stats_num_reads=0,
-			.show_buffer_stats=0,
-			.show_buffer_stats_time = 0,
-			.show_buffer_stats_interval = 120,
-			.show_traffic = 0,
-			.show_traffic_time = 0,
-			.compute_traffic_time = 0,
-			.show_traffic_interval = 10,
-			.compute_traffic_interval = 10,
-			.up_threshold = 80,
-			.down_threshold = 30,
-			.debug_updown = 0,
-	};
+	stats_infos_t stats_infos;
+	init_stats_v(&stats_infos);
 
 
 	//tuning parameters
-	tuning_parameters_t tuneparams={
-			.card = 0,
-			.tuner = 0,
-			.card_dev_path=DVB_DEV_PATH,
-			.card_tuned = 0,
-			.tuning_timeout = ALARM_TIME_TIMEOUT,
-			.freq = 0,
-			.srate = 0,
-			.pol = 0,
-			.lnb_voltage_off=0,
-			.lnb_type=LNB_UNIVERSAL,
-			.lnb_lof_standard=DEFAULT_LOF_STANDARD,
-			.lnb_slof=DEFAULT_SLOF,
-			.lnb_lof_low=DEFAULT_LOF1_UNIVERSAL,
-			.lnb_lof_high=DEFAULT_LOF2_UNIVERSAL,
-			.sat_number = 0,
-			.switch_type = 'C',
-			.modulation_set = 0,
-			.display_strenght = 0,
-			.check_status = 1,
-			.strengththreadshutdown = 0,
-			.HP_CodeRate = HP_CODERATE_DEFAULT,//cf tune.h
-			.LP_CodeRate = LP_CODERATE_DEFAULT,
-			.TransmissionMode = TRANSMISSION_MODE_DEFAULT,
-			.guardInterval = GUARD_INTERVAL_DEFAULT,
-			.bandwidth = BANDWIDTH_DEFAULT,
-			.hier = HIERARCHY_DEFAULT,
-			.fe_type=FE_QPSK, //sat by default
-#if DVB_API_VERSION >= 5
-			.delivery_system=SYS_UNDEFINED,
-			.rolloff=ROLLOFF_35,
-#endif
-#if STREAM_ID
-			.stream_id=0,
-#endif
-	};
+	tuning_parameters_t tuneparams;
+	init_tune_v(&tuneparams);
 	card_tuned=&tuneparams.card_tuned;
 
 
 #ifdef ENABLE_CAM_SUPPORT
 	//CAM (Conditionnal Access Modules : for scrambled channels)
-	cam_parameters_t cam_vars={
-			.cam_support = 0,
-			.cam_number=0,
-			.cam_reask_interval=0,
-			.need_reset=0,
-			.reset_counts=0,
-			.reset_interval=CAM_DEFAULT_RESET_INTERVAL,
-			.timeout_no_cam_init=CAM_DEFAULT_RESET_INTERVAL,
-			.max_reset_number=CAM_DEFAULT_MAX_RESET_NUM,
-			.tl=NULL,
-			.sl=NULL,
-			.stdcam=NULL,
-			.ca_resource_connected=0,
-			.mmi_state = MMI_STATE_CLOSED,
-			.ca_info_ok_time=0,
-			.cam_delay_pmt_send=0,
-			.cam_interval_pmt_send=3,
-			.cam_pmt_send_time=0,
-			.cam_mmi_autoresponse=1,
-			.cam_pmt_follow=1,
-			.cam_menulist_str = EMPTY_STRING,
-			.cam_menu_string = EMPTY_STRING,
-	};
-	mumu_string_append(&cam_vars.cam_menu_string,"Not retrieved");
+	cam_parameters_t cam_vars;
+	init_cam_v(&cam_vars);
 	cam_parameters_t *cam_vars_ptr=&cam_vars;
 #else
 	void *cam_vars_ptr=NULL;
@@ -383,6 +258,16 @@ main (int argc, char **argv)
 #else
 	void *scam_vars_ptr=NULL;
 #endif
+
+	//autoconfiguration
+	autoconf_parameters_t autoconf_vars;
+	init_aconf_v(&autoconf_vars);
+
+	//Parameters for rewriting
+	rewrite_parameters_t rewrite_vars;
+	init_rewr_v(&rewrite_vars);
+
+	int no_daemon = 0;
 
 	char filename_channels_not_streamed[DEFAULT_PATH_LEN];
 	char filename_channels_streamed[DEFAULT_PATH_LEN];
@@ -1953,7 +1838,7 @@ main (int argc, char **argv)
 				"We have got %d overflow errors\n",card_buffer.overflow_number );
 	mumudvb_close_goto:
 	//If the thread is not started, we don't send the unexisting address of monitor_thread_params
-	return mumudvb_close(monitorthread == 0 ? NULL:&monitor_thread_params , &unicast_vars, &tuneparams.strengththreadshutdown, cam_vars_ptr, scam_vars_ptr, filename_channels_not_streamed, filename_channels_streamed, filename_pid, get_interrupted());
+	return mumudvb_close(no_daemon, monitorthread == 0 ? NULL:&monitor_thread_params , &rewrite_vars, &autoconf_vars, &unicast_vars, &tuneparams.strengththreadshutdown, cam_vars_ptr, scam_vars_ptr, filename_channels_not_streamed, filename_channels_streamed, filename_pid, get_interrupted());
 
 }
 
@@ -1961,7 +1846,7 @@ main (int argc, char **argv)
  *
  *
  */
-int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameters_t *unicast_vars, volatile int *strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char *filename_channels_not_streamed, char *filename_channels_streamed, char *filename_pid, int Interrupted)
+int mumudvb_close(int no_daemon, monitor_parameters_t *monitor_thread_params,rewrite_parameters_t *rewrite_vars, autoconf_parameters_t *autoconf_vars, unicast_parameters_t *unicast_vars, volatile int *strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char *filename_channels_not_streamed, char *filename_channels_streamed, char *filename_pid, int Interrupted)
 {
 
 	int curr_channel;
@@ -2092,7 +1977,7 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
 #endif
 
 	//autoconf variables freeing
-	autoconf_freeing(&autoconf_vars);
+	autoconf_freeing(autoconf_vars);
 
 	//sap variables freeing
 	if(monitor_thread_params && monitor_thread_params->sap_vars->sap_messages4)
@@ -2101,12 +1986,12 @@ int mumudvb_close(monitor_parameters_t *monitor_thread_params, unicast_parameter
 		free(monitor_thread_params->sap_vars->sap_messages6);
 
 	//Pat rewrite freeing
-	if(rewrite_vars.full_pat)
-		free(rewrite_vars.full_pat);
+	if(rewrite_vars->full_pat)
+		free(rewrite_vars->full_pat);
 
 	//SDT rewrite freeing
-	if(rewrite_vars.full_sdt)
-		free(rewrite_vars.full_sdt);
+	if(rewrite_vars->full_sdt)
+		free(rewrite_vars->full_sdt);
 
 	if (strlen(filename_channels_streamed) && (write_streamed_channels)&&remove (filename_channels_streamed))
 	{

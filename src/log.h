@@ -104,7 +104,7 @@ typedef struct flag_descr_t
 
 
 
-
+void init_stats_v(stats_infos_t *stats_p);
 void print_info ();
 void usage (char *name);
 void log_message( char* log_module, int , const char *, ... ) __attribute__ ((format (printf, 3, 4)));

@@ -69,6 +69,25 @@ log_params_t log_params={
 
 static char *log_module="Logs: ";
 
+/** Initialize Rewrite variables*/
+void init_stats_v(stats_infos_t *stats_p)
+{
+	*stats_p=(stats_infos_t){
+			.stats_num_packets_received=0,
+			.stats_num_reads=0,
+			.show_buffer_stats=0,
+			.show_buffer_stats_time = 0,
+			.show_buffer_stats_interval = 120,
+			.show_traffic = 0,
+			.show_traffic_time = 0,
+			.compute_traffic_time = 0,
+			.show_traffic_interval = 10,
+			.compute_traffic_interval = 10,
+			.up_threshold = 80,
+			.down_threshold = 30,
+			.debug_updown = 0,
+	};
+}
 
 /** @brief Read a line of the configuration file to check if there is a logging parameter
  *

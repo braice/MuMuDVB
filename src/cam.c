@@ -122,6 +122,37 @@ static char *cam_status[] ={
 };
 
 
+
+/** Initialize CAM variables*/
+void init_cam_v(cam_parameters_t *cam_p)
+{
+	*cam_p=(cam_parameters_t){
+				.cam_support = 0,
+				.cam_number=0,
+				.cam_reask_interval=0,
+				.need_reset=0,
+				.reset_counts=0,
+				.reset_interval=CAM_DEFAULT_RESET_INTERVAL,
+				.timeout_no_cam_init=CAM_DEFAULT_RESET_INTERVAL,
+				.max_reset_number=CAM_DEFAULT_MAX_RESET_NUM,
+				.tl=NULL,
+				.sl=NULL,
+				.stdcam=NULL,
+				.ca_resource_connected=0,
+				.mmi_state = MMI_STATE_CLOSED,
+				.ca_info_ok_time=0,
+				.cam_delay_pmt_send=0,
+				.cam_interval_pmt_send=3,
+				.cam_pmt_send_time=0,
+				.cam_mmi_autoresponse=1,
+				.cam_pmt_follow=1,
+				.cam_menulist_str = EMPTY_STRING,
+				.cam_menu_string = EMPTY_STRING,
+		};
+		mumu_string_append(&cam_p->cam_menu_string,"Not retrieved");
+}
+
+
 /** @brief Read a line of the configuration file to check if there is a cam parameter
  *
  * @param cam_vars the cam parameters

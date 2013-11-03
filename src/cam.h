@@ -58,12 +58,6 @@ struct ca_info {
   char app_name[256];
 };
 
-
-
-int cam_send_ca_pmt( mumudvb_ts_packet_t *pmt, struct ca_info *cai);
-int convert_desc(struct ca_info *cai, uint8_t *out, uint8_t *buf, int dslen, uint8_t cmd, int quiet);
-int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt, uint8_t list, uint8_t cmd,int quiet);
-
 #define MAX_ENQUIRY_ANSWER_LENGTH 20
 #define DISPLAY_TYPE_LIST 1
 #define DISPLAY_TYPE_MENU 2
@@ -141,6 +135,10 @@ typedef struct cam_parameters_t{
 #define DVBCA_INTERFACE_LINK 0
 #define DVBCA_INTERFACE_HLCI 1
 
+void init_cam_v(cam_parameters_t *cam_vars);
+int cam_send_ca_pmt( mumudvb_ts_packet_t *pmt, struct ca_info *cai);
+int convert_desc(struct ca_info *cai, uint8_t *out, uint8_t *buf, int dslen, uint8_t cmd, int quiet);
+int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt, uint8_t list, uint8_t cmd,int quiet);
 int cam_start(cam_parameters_t *, int);
 void cam_stop(cam_parameters_t *);
 int read_cam_configuration(cam_parameters_t *cam_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
