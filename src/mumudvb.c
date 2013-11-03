@@ -1854,7 +1854,7 @@ int mumudvb_close(int no_daemon, monitor_parameters_t *monitor_thread_params,rew
 	int iRet;
 
 #ifndef ENABLE_CAM_SUPPORT
-	(void) cam_p; //to make compiler happy
+	(void) cam_p_v; //to make compiler happy
 #else
 	cam_p_t *cam_p=(cam_p_t *)cam_p_v;
 #endif
