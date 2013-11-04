@@ -1274,7 +1274,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 #ifndef ENABLE_SCAM_SUPPORT
 	(void) scam_vars_v; //to make compiler happy
 #else
-	scam_p_t *scam_vars=(scam_p_t *)scam_vars_v;
+	scam_parameters_t *scam_vars=(scam_parameters_t *)scam_vars_v;
 #endif
 	// Prepare the HTTP reply
 	struct unicast_reply* reply = unicast_reply_init();
