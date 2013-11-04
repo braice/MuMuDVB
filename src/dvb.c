@@ -271,10 +271,8 @@ create_card_fd(char *base_path, int tuner, uint8_t *asked_pid, fds_t *fds)
 void set_filters(uint8_t *asked_pid, fds_t *fds)
 {
 
-	int curr_pid = 0;
-
-	for(curr_pid=0;curr_pid<8193;curr_pid++)
-		if ((asked_pid[curr_pid] == PID_ASKED) )
+	for(int curr_pid=0;curr_pid<8193;curr_pid++)
+		if (asked_pid[curr_pid] == PID_ASKED )
 		{
 			set_ts_filt (fds->fd_demuxer[curr_pid], curr_pid);
 			asked_pid[curr_pid] = PID_FILTERED;
