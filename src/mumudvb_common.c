@@ -363,7 +363,7 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 		if ((!multicast_vars->rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
 				||(multicast_vars->rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE))) {
 			now_time=get_time();
-			send_func(channel, now_time, unicast_vars, multicast_vars, chan_p, fds);
+			send_func(channel, now_time, unicast_vars, multicast_vars,  fds);
 		}
 
 	}
@@ -374,7 +374,7 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 
 /** @brief function for sending demultiplexed data.
  */
-void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumu_chan_p_t *chan_p, fds_t *fds)
+void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, fds_t *fds)
 {
 	//For bandwith measurement (traffic)
 	pthread_mutex_lock(&channel->stats_lock);
@@ -439,7 +439,7 @@ void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_pa
 						data_len);
 		}
 	/*********** UNICAST **************/
-	unicast_data_send(channel, chan_p->channels, fds, unicast_vars);
+	unicast_data_send(channel, fds, unicast_vars);
 	/********* END of UNICAST **********/
 	channel->nb_bytes = 0;
 

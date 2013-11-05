@@ -107,8 +107,8 @@ typedef struct unicast_client_t{
   int consecutive_errors;
   /**When the first consecutive error happeard*/
   long first_error_time;
-  /**Channel : -1 if not associated yet*/
-  int channel;
+  /**Channel : NULL if not associated yet*/
+  mumudvb_channel_t *chan_ptr;
   /**Future channel : we will set the channel when we will receive the get*/
   int askedChannel;
   /**Next client*/
@@ -182,15 +182,15 @@ int unicast_create_listening_socket(int socket_type, int socket_channel, char *i
 struct strength_parameters_t; //just to avoid including dvb.h for one structure
 int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels, struct strength_parameters_t *strengthparams, struct autoconf_parameters_t *autoconf_vars, void *cam_vars, void *scam_vars);
 
-int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels);
+int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *client);
 
 int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *channel);
 
-void unicast_freeing(unicast_parameters_t *unicast_vars, mumudvb_channel_t *channels);
+void unicast_freeing(unicast_parameters_t *unicast_vars);
 
 int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
 
-void unicast_data_send(mumudvb_channel_t *actual_channel, mumudvb_channel_t *channels, fds_t *fds, unicast_parameters_t *unicast_vars);
+void unicast_data_send(mumudvb_channel_t *actual_channel,  fds_t *fds, unicast_parameters_t *unicast_vars);
 
 
 

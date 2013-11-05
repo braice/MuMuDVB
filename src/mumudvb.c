@@ -1952,7 +1952,7 @@ int mumudvb_close(int no_daemon, monitor_parameters_t *monitor_thread_params,rew
 	close_card_fd(&fds);
 
 	//We close the unicast connections and free the clients
-	unicast_freeing(unicast_vars, chan_p.channels);
+	unicast_freeing(unicast_vars);
 
 #ifdef ENABLE_CAM_SUPPORT
 	if(cam_p->cam_support)

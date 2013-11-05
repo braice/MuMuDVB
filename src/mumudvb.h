@@ -529,7 +529,7 @@ char *mumu_string_replace(char *source, int *length, int can_realloc, char *tore
 int string_comput(char *string);
 uint64_t get_time(void);
 void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, mumu_chan_p_t *chan_p, fds_t *fds);
-void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumu_chan_p_t *chan_p, fds_t *fds);
+void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, fds_t *fds);
 
 
 long int mumu_timing();

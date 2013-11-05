@@ -61,6 +61,7 @@ static char *log_module="SCAM_SEND: ";
 
 void *sendthread_func(void* arg)
 {
+
   int pid;			/** pid of the current mpeg2 packet */
   int ScramblingControl;
   int curr_pid = 0;
@@ -152,7 +153,7 @@ void *sendthread_func(void* arg)
     if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
       ||(multicast_vars.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
     {
-      send_func(channel, send_time, &unicast_vars, &multicast_vars, &chan_p, &fds);
+      send_func(channel, send_time, &unicast_vars, &multicast_vars, &fds);
     }
   }
   return 0;

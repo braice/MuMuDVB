@@ -140,7 +140,7 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 	client->buffer=NULL;
 	client->buffersize=0;
 	client->bufferpos=0;
-	client->channel=-1;
+	client->chan_ptr=NULL;
 	client->askedChannel=-1;
 	client->consecutive_errors=0;
 	client->next=NULL;
@@ -167,9 +167,8 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
  *
  * @param unicast_vars the unicast parameters
  * @param client the client we want to delete
- * @param channels the array of channels
  */
-int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels)
+int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *client)
 {
 	unicast_client_t *prev_client,*next_client;
 
@@ -194,15 +193,15 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *cli
 		next_client->prev=prev_client;
 
 	//We delete the client in the channel
-	if(client->channel!=-1)
+	if(client->chan_ptr!=NULL)
 	{
-		log_message( log_module, MSG_DEBUG,"We remove the client from the channel \"%s\"\n",channels[client->channel].name);
+		log_message( log_module, MSG_DEBUG,"We remove the client from the channel \"%s\"\n",client->chan_ptr->name);
 
 		if(client->chan_prev==NULL)
 		{
-			channels[client->channel].clients=client->chan_next;
-			if(channels[client->channel].clients)
-				channels[client->channel].clients->chan_prev=NULL;
+			client->chan_ptr->clients=client->chan_next;
+			if(client->chan_ptr->clients)
+				client->chan_ptr->clients->chan_prev=NULL;
 		}
 		else
 		{
@@ -267,9 +266,8 @@ int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *chann
 /** @brief Delete all the clients
  *
  * @param unicast_vars the unicast parameters
- * @param channels : the channels structure
  */
-void unicast_freeing(unicast_parameters_t *unicast_vars, mumudvb_channel_t *channels)
+void unicast_freeing(unicast_parameters_t *unicast_vars)
 {
 	unicast_client_t *actual_client;
 	unicast_client_t *next_client;
@@ -277,7 +275,7 @@ void unicast_freeing(unicast_parameters_t *unicast_vars, mumudvb_channel_t *chan
 	for(actual_client=unicast_vars->clients; actual_client != NULL; actual_client=next_client)
 	{
 		next_client= actual_client->next;
-		unicast_del_client(unicast_vars, actual_client, channels);
+		unicast_del_client(unicast_vars, actual_client);
 	}
 }
 

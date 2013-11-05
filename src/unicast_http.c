@@ -73,7 +73,7 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *channel);
 
 unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, int socketIn);
-void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, int Socket, mumudvb_channel_t *channels);
+void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, int Socket);
 
 int
 unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *host);
@@ -279,7 +279,7 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
 		if((fds->pfds[actual_fd].revents&POLLHUP)&&(unicast_vars->fd_info[actual_fd].type==UNICAST_CLIENT))
 		{
 			log_message( log_module, MSG_DEBUG,"We've got a POLLHUP. Actual_fd %d socket %d we close the connection \n", actual_fd, fds->pfds[actual_fd].fd );
-			unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels);
+			unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd);
 			//We check if we hage to parse fds->pfds[actual_fd].revents (the last fd moved to the actual one)
 			if(fds->pfds[actual_fd].revents)
 				actual_fd--;//Yes, we force the loop to see it
@@ -348,7 +348,7 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
 				iRet=unicast_handle_message(unicast_vars,unicast_vars->fd_info[actual_fd].client, channels, number_of_channels, strengthparams, autoconf_vars, cam_p, scam_vars);
 				if (iRet==-2 ) //iRet==-2 --> 0 received data or error, we close the connection
 				{
-					unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd,channels);
+					unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd);
 					//We check if we hage to parse fds->pfds[actual_fd].revents (the last fd moved to the actual one)
 					if(fds->pfds[actual_fd].revents)
 						actual_fd--;//Yes, we force the loop to see it again
@@ -435,9 +435,8 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
  * @param unicast_vars the unicast parameters
  * @param fds The polling file descriptors
  * @param Socket The socket of the client we want to disconnect
- * @param channels The channel list
  */
-void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, int Socket, mumudvb_channel_t *channels)
+void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, int Socket)
 {
 
 	int actual_fd;
@@ -461,7 +460,7 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
 
 	log_message( log_module, MSG_FLOOD,"We close the connection\n");
 	//We delete the client
-	unicast_del_client(unicast_vars, unicast_vars->fd_info[actual_fd].client, channels);
+	unicast_del_client(unicast_vars, unicast_vars->fd_info[actual_fd].client);
 	//We move the last fd to the actual/deleted one, and decrease the number of fds by one
 	fds->pfds[actual_fd].fd = fds->pfds[fds->pfdsnum-1].fd;
 	fds->pfds[actual_fd].events = fds->pfds[fds->pfdsnum-1].events;
@@ -575,9 +574,9 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 			//GET /bynumber/channelnumber
 			else if(strstr(client->buffer +pos ,"/bynumber/")==(client->buffer +pos))
 			{
-				if(client->channel!=-1)
+				if(client->chan_ptr!=NULL)
 				{
-					log_message( log_module, MSG_INFO,"A channel (%d) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->channel);
+					log_message( log_module, MSG_INFO,"A channel (%s) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->chan_ptr->name);
 					iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY));
 					if(iRet<0)
 						log_message( log_module, MSG_INFO,"Error writing reply\n");
@@ -606,9 +605,9 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 			//GET /bysid/sid
 			else if(strstr(client->buffer +pos ,"/bysid/")==(client->buffer +pos))
 			{
-				if(client->channel!=-1)
+				if(client->chan_ptr!=NULL)
 				{
-					log_message( log_module, MSG_INFO,"A channel (%d) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->channel);
+					log_message( log_module, MSG_INFO,"A channel (%s) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->chan_ptr->name);
 					iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY)); //iRet is to make the copiler happy we will close the connection anyways
 					return -2; //to delete the client
 				}
@@ -639,9 +638,9 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 			//GET /byname/channelname
 			else if(strstr(client->buffer +pos ,"/byname/")==(client->buffer +pos))
 			{
-				if(client->channel!=-1)
+				if(client->chan_ptr!=NULL)
 				{
-					log_message( log_module, MSG_INFO,"A channel is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n");
+					log_message( log_module, MSG_INFO,"A channel (%s) is already streamed to this client, it shouldn't ask for a new one without closing the connection, error 501\n",client->chan_ptr->name);
 					iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY));//iRet is to make the copiler happy we will close the connection anyways
 					return -2; //to delete the client
 				}
@@ -764,7 +763,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 			if(requested_channel)
 			{
 				if(!channel_add_unicast_client(client,&channels[requested_channel-1]))
-					client->channel=requested_channel-1;
+					client->chan_ptr=&channels[requested_channel-1];
 				else
 					return -2;
 			}
@@ -773,7 +772,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 		else
 		{
 			//We don't implement this http method, but if the client is already connected, we keep the connection
-			if(client->channel==-1)
+			if(client->chan_ptr==NULL)
 			{
 				log_message( log_module, MSG_INFO,"Unhandled HTTP method : \"%s\", error 501\n",  strtok (client->buffer+pos, " "));
 				iRet=write(client->Socket,HTTP_501_REPLY, strlen(HTTP_501_REPLY));//iRet is to make the copiler happy we will close the connection anyways
