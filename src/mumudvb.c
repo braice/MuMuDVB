@@ -162,16 +162,8 @@ pthread_t cardthread;
 pthread_t monitorthread;
 card_thread_parameters_t cardthreadparams;
 
-
-mumu_chan_p_t chan_p={
-		.lock=PTHREAD_MUTEX_INITIALIZER,
-		.number_of_channels=0,
-		.dont_send_scrambled=0,
-		.filter_transport_error=0,
-		.psi_tables_filtering=PSI_TABLES_FILTERING_NONE,
-		.check_cc=0,
-};
-
+/** Do we send scrambled packets ? */
+int dont_send_scrambled=0;
 
 //multicast parameters
 multicast_parameters_t multicast_vars={
@@ -214,28 +206,47 @@ extern log_params_t log_params;
 static void SignalHandler (int signum);//below
 int read_multicast_configuration(multicast_parameters_t *, mumudvb_channel_t *, int, int *, char *); //in multicast.c
 void *monitor_func(void* arg);
-int mumudvb_close(int no_daemon, monitor_parameters_t* monitor_thread_params, rewrite_parameters_t *rewrite_vars, autoconf_parameters_t *autoconf_vars, unicast_parameters_t* unicast_vars, volatile int* strengththreadshutdown, void *cam_vars_v, void *scam_vars_v, char* filename_channels_not_streamed,char *filename_channels_streamed, char *filename_pid, int Interrupted);
+int mumudvb_close(int no_daemon,
+		monitor_parameters_t *monitor_thread_params,
+		rewrite_parameters_t *rewrite_vars,
+		autoconf_parameters_t *autoconf_vars,
+		unicast_parameters_t *unicast_vars,
+		volatile int *strengththreadshutdown,
+		void *cam_p_v,
+		void *scam_vars_v,
+		char *filename_channels_not_streamed,
+		char *filename_channels_streamed,
+		char *filename_pid,
+		int Interrupted,
+		mumu_chan_p_t *chan_p);
 
 
 
 int
 main (int argc, char **argv)
 {
+
+	mumu_chan_p_t chan_p={
+			.lock=PTHREAD_MUTEX_INITIALIZER,
+			.number_of_channels=0,
+			.filter_transport_error=0,
+			.psi_tables_filtering=PSI_TABLES_FILTERING_NONE,
+			.check_cc=0,
+	};
+
+
 	//sap announces variables
 	sap_p_t sap_p;
 	init_sap_v(&sap_p);
-
 
 	//Statistics
 	stats_infos_t stats_infos;
 	init_stats_v(&stats_infos);
 
-
 	//tuning parameters
 	tune_p_t tune_p;
 	init_tune_v(&tune_p);
 	card_tuned=&tune_p.card_tuned;
-
 
 #ifdef ENABLE_CAM_SUPPORT
 	//CAM (Conditionnal Access Modules : for scrambled channels)
@@ -245,7 +256,6 @@ main (int argc, char **argv)
 #else
 	void *cam_p_ptr=NULL;
 #endif
-
 
 #ifdef ENABLE_SCAM_SUPPORT
 	//SCAM (software conditionnal Access Modules : for scrambled channels)
@@ -601,7 +611,7 @@ main (int argc, char **argv)
 		else if (!strcmp (substring, "dont_send_scrambled"))
 		{
 			substring = strtok (NULL, delimiteurs);
-			chan_p.dont_send_scrambled = atoi (substring);
+			dont_send_scrambled = atoi (substring);
 		}
 		else if (!strcmp (substring, "filter_transport_error"))
 		{
@@ -1794,7 +1804,7 @@ main (int argc, char **argv)
 						rewrite_vars.rewrite_eit == OPTION_ON) //AND we asked for EIT sorting
 				{
 					eit_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_p.channels[curr_channel],
-							&multicast_vars, &unicast_vars, scam_vars_ptr ,&chan_p,&fds);
+							&multicast_vars, &unicast_vars, scam_vars_ptr, &fds);
 					send_packet=0; //for EIT it is sent by the rewrite function itself
 				}
 
@@ -1815,7 +1825,7 @@ main (int argc, char **argv)
 				/******************************************************/
 				if(send_packet==1)
 				{
-					buffer_func(channel, actual_ts_packet, &unicast_vars, &multicast_vars, scam_vars_ptr, &chan_p, &fds);
+					buffer_func(channel, actual_ts_packet, &unicast_vars, &multicast_vars, scam_vars_ptr, &fds);
 				}
 
 			}
@@ -1839,7 +1849,19 @@ main (int argc, char **argv)
 				"We have got %d overflow errors\n",card_buffer.overflow_number );
 	mumudvb_close_goto:
 	//If the thread is not started, we don't send the unexisting address of monitor_thread_params
-	return mumudvb_close(no_daemon, monitorthread == 0 ? NULL:&monitor_thread_params , &rewrite_vars, &autoconf_vars, &unicast_vars, &tune_p.strengththreadshutdown, cam_p_ptr, scam_vars_ptr, filename_channels_not_streamed, filename_channels_streamed, filename_pid, get_interrupted());
+	return mumudvb_close(no_daemon,
+			monitorthread == 0 ? NULL:&monitor_thread_params,
+					&rewrite_vars,
+					&autoconf_vars,
+					&unicast_vars,
+					&tune_p.strengththreadshutdown,
+					cam_p_ptr,
+					scam_vars_ptr,
+					filename_channels_not_streamed,
+					filename_channels_streamed,
+					filename_pid,
+					get_interrupted(),
+					&chan_p);
 
 }
 
@@ -1847,7 +1869,19 @@ main (int argc, char **argv)
  *
  *
  */
-int mumudvb_close(int no_daemon, monitor_parameters_t *monitor_thread_params,rewrite_parameters_t *rewrite_vars, autoconf_parameters_t *autoconf_vars, unicast_parameters_t *unicast_vars, volatile int *strengththreadshutdown, void *cam_p_v, void *scam_vars_v, char *filename_channels_not_streamed, char *filename_channels_streamed, char *filename_pid, int Interrupted)
+int mumudvb_close(int no_daemon,
+		monitor_parameters_t *monitor_thread_params,
+		rewrite_parameters_t *rewrite_vars,
+		autoconf_parameters_t *autoconf_vars,
+		unicast_parameters_t *unicast_vars,
+		volatile int *strengththreadshutdown,
+		void *cam_p_v,
+		void *scam_vars_v,
+		char *filename_channels_not_streamed,
+		char *filename_channels_streamed,
+		char *filename_pid,
+		int Interrupted,
+		mumu_chan_p_t *chan_p)
 {
 
 	int curr_channel;
@@ -1912,26 +1946,26 @@ int mumudvb_close(int no_daemon, monitor_parameters_t *monitor_thread_params,rew
 			log_message(log_module,MSG_WARN,"Monitor Thread badly closed: %s\n", strerror(iRet));
 	}
 
-	for (curr_channel = 0; curr_channel < chan_p.number_of_channels; curr_channel++)
+	for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++)
 	{
 #ifdef ENABLE_TRANSCODING
-		transcode_request_thread_end(chan_p.channels[curr_channel].transcode_handle);
+		transcode_request_thread_end(chan_p->channels[curr_channel].transcode_handle);
 #endif
-		if(chan_p.channels[curr_channel].socketOut4>0)
-			close (chan_p.channels[curr_channel].socketOut4);
-		if(chan_p.channels[curr_channel].socketOut6>0)
-			close (chan_p.channels[curr_channel].socketOut6);
-		if(chan_p.channels[curr_channel].socketIn>0)
-			close (chan_p.channels[curr_channel].socketIn);
+		if(chan_p->channels[curr_channel].socketOut4>0)
+			close (chan_p->channels[curr_channel].socketOut4);
+		if(chan_p->channels[curr_channel].socketOut6>0)
+			close (chan_p->channels[curr_channel].socketOut6);
+		if(chan_p->channels[curr_channel].socketIn>0)
+			close (chan_p->channels[curr_channel].socketIn);
 		//Free the channel structures
-		if(chan_p.channels[curr_channel].pmt_packet)
-			free(chan_p.channels[curr_channel].pmt_packet);
-		chan_p.channels[curr_channel].pmt_packet=NULL;
+		if(chan_p->channels[curr_channel].pmt_packet)
+			free(chan_p->channels[curr_channel].pmt_packet);
+		chan_p->channels[curr_channel].pmt_packet=NULL;
 
 
 #ifdef ENABLE_SCAM_SUPPORT
-		if (chan_p.channels[curr_channel].scam_support && scam_vars->scam_support) {
-			scam_channel_stop(&chan_p.channels[curr_channel]);
+		if (chan_p->channels[curr_channel].scam_support && scam_vars->scam_support) {
+			scam_channel_stop(&chan_p->channels[curr_channel]);
 		}
 #endif
 
@@ -1941,10 +1975,10 @@ int mumudvb_close(int no_daemon, monitor_parameters_t *monitor_thread_params,rew
 
 #ifdef ENABLE_TRANSCODING
 	/* End transcoding and clear transcode options */
-	for (curr_channel = 0; curr_channel < chan_p.number_of_channels; curr_channel++)
+	for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++)
 	{
-		transcode_wait_thread_end(chan_p.channels[curr_channel].transcode_handle);
-		free_transcode_options(&chan_p.channels[curr_channel].transcode_options);
+		transcode_wait_thread_end(chan_p->channels[curr_channel].transcode_handle);
+		free_transcode_options(&chan_p->channels[curr_channel].transcode_options);
 	}
 	free_transcode_options(&global_transcode_opt);
 #endif
@@ -2319,7 +2353,7 @@ void *monitor_func(void* arg)
 					double packets_per_sec;
 					int num_scrambled;
 					pthread_mutex_lock(&current->stats_lock);
-					if(params->chan_p->dont_send_scrambled) {
+					if(dont_send_scrambled) {
 						num_scrambled=current->num_scrambled_packets;
 					}
 					else

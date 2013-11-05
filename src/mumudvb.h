@@ -474,8 +474,6 @@ typedef struct mumu_chan_p_t{
 	pthread_mutex_t lock;
 	/** The number of channels ... */
 	int number_of_channels;
-	/** Do we send scrambled packets ? */
-	int dont_send_scrambled;
 	/** Do we send packets with error bit set by decoder ? */
 	int filter_transport_error;
 	/** Do we do filtering to keep only PSI tables (without DVB tables) ? **/
@@ -528,7 +526,7 @@ int mumudvb_poll(fds_t *fds);
 char *mumu_string_replace(char *source, int *length, int can_realloc, char *toreplace, char *replacement);
 int string_comput(char *string);
 uint64_t get_time(void);
-void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, mumu_chan_p_t *chan_p, fds_t *fds);
+void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, fds_t *fds);
 void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, fds_t *fds);
 
 

@@ -301,12 +301,13 @@ uint64_t get_time(void) {
 }
 /** @brief function for buffering demultiplexed data.
  */
-void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, mumu_chan_p_t *chan_p, fds_t *fds)
+void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, fds_t *fds)
 {
 	int pid;			/** pid of the current mpeg2 packet */
 	int ScramblingControl;
 	int curr_pid = 0;
 	int send_packet = 0;
+	extern int dont_send_scrambled;
 
 #ifndef ENABLE_SCAM_SUPPORT
 	(void) scam_vars_v; //to make compiler happy
@@ -351,7 +352,7 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 		pthread_mutex_unlock(&channel->stats_lock);
 		//avoid sending of scrambled channels if we asked to
 		send_packet=1;
-		if(chan_p->dont_send_scrambled && (ScramblingControl>0)&& (channel->pmt_pid) )
+		if(dont_send_scrambled && (ScramblingControl>0)&& (channel->pmt_pid) )
 			send_packet=0;
 
 		if (send_packet) {
