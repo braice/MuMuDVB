@@ -301,7 +301,7 @@ uint64_t get_time(void) {
 }
 /** @brief function for buffering demultiplexed data.
  */
-void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
+void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, mumu_chan_p_t *chan_p, fds_t *fds)
 {
 	int pid;			/** pid of the current mpeg2 packet */
 	int ScramblingControl;
@@ -351,7 +351,7 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 		pthread_mutex_unlock(&channel->stats_lock);
 		//avoid sending of scrambled channels if we asked to
 		send_packet=1;
-		if(chan_and_pids->dont_send_scrambled && (ScramblingControl>0)&& (channel->pmt_pid) )
+		if(chan_p->dont_send_scrambled && (ScramblingControl>0)&& (channel->pmt_pid) )
 			send_packet=0;
 
 		if (send_packet) {
@@ -363,7 +363,7 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 		if ((!multicast_vars->rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
 				||(multicast_vars->rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE))) {
 			now_time=get_time();
-			send_func(channel, now_time, unicast_vars, multicast_vars, chan_and_pids, fds);
+			send_func(channel, now_time, unicast_vars, multicast_vars, chan_p, fds);
 		}
 
 	}
@@ -374,7 +374,7 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 
 /** @brief function for sending demultiplexed data.
  */
-void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds)
+void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumu_chan_p_t *chan_p, fds_t *fds)
 {
 	//For bandwith measurement (traffic)
 	pthread_mutex_lock(&channel->stats_lock);
@@ -439,7 +439,7 @@ void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_pa
 						data_len);
 		}
 	/*********** UNICAST **************/
-	unicast_data_send(channel, chan_and_pids->channels, fds, unicast_vars);
+	unicast_data_send(channel, chan_p->channels, fds, unicast_vars);
 	/********* END of UNICAST **********/
 	channel->nb_bytes = 0;
 

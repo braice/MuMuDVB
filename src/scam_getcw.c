@@ -56,9 +56,14 @@
 static void *getcwthread_func(void* arg); //The polling thread
 static char *log_module="SCAM_GETCW: ";
 
+typedef struct getcw_params_t{
+	scam_parameters_t *scam_params;
+	mumu_chan_p_t *chan_p;
+}getcw_params_t;
+
 /** @brief start the thread for getting cw's from oscam
  * This function will create the communication layers*/
-int scam_getcw_start(scam_parameters_t *scam_params, int adapter_id)
+int scam_getcw_start(scam_parameters_t *scam_params, int adapter_id, mumu_chan_p_t *chan_p)
 {
   struct sockaddr_in socketAddr;
   memset(&socketAddr, 0, sizeof(struct sockaddr_in));
@@ -85,8 +90,10 @@ int scam_getcw_start(scam_parameters_t *scam_params, int adapter_id)
       }
     }
   }
-
-  pthread_create(&(scam_params->getcwthread), NULL, getcwthread_func, scam_params);
+  getcw_params_t *getcw_params=malloc(sizeof(getcw_params_t));
+  getcw_params->scam_params=scam_params;
+  getcw_params->chan_p=chan_p;
+  pthread_create(&(scam_params->getcwthread), NULL, getcwthread_func, getcw_params);
   log_message(log_module, MSG_DEBUG,"Getcw thread started\n");
   return 0;
   
@@ -106,9 +113,12 @@ void scam_getcw_stop(scam_parameters_t *scam_params)
 /** @brief The thread function for getting cw's from oscam */
 static void *getcwthread_func(void* arg)
 {
+  struct getcw_params_t *getcw_params;
+  getcw_params= (struct getcw_params_t *) arg;
   scam_parameters_t *scam_params;
-  scam_params= (scam_parameters_t *) arg;
-  extern mumudvb_chan_and_pids_t chan_and_pids; /** @todo ugly way to access channel data */
+  mumu_chan_p_t *chan_p;
+  scam_params=getcw_params->scam_params;
+  chan_p=getcw_params->chan_p;
   int curr_channel = 0;
   int curr_pid = 0;
   unsigned char buff[sizeof(int) + sizeof(ca_descr_t)];
@@ -124,9 +134,9 @@ static void *getcwthread_func(void* arg)
       memcpy((&(scam_params->ca_descr)), &buff[sizeof(int)], sizeof(ca_descr_t));
       log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request index: %d, parity %d, key %02x %02x %02x %02x %02x %02x %02x %02x\n", scam_params->ca_descr.index, scam_params->ca_descr.parity, scam_params->ca_descr.cw[0], scam_params->ca_descr.cw[1], scam_params->ca_descr.cw[2], scam_params->ca_descr.cw[3], scam_params->ca_descr.cw[4], scam_params->ca_descr.cw[5], scam_params->ca_descr.cw[6], scam_params->ca_descr.cw[7]);
       if(scam_params->ca_descr.index != (unsigned) -1) {
-        pthread_mutex_lock(&chan_and_pids.lock);
-        for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++) {
-          mumudvb_channel_t *channel = &chan_and_pids.channels[curr_channel];
+        pthread_mutex_lock(&chan_p->lock);
+        for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++) {
+          mumudvb_channel_t *channel = &chan_p->channels[curr_channel];
           pthread_mutex_lock(&channel->cw_lock);
           if (channel->ca_idx == scam_params->ca_descr.index + 1) {
             if (scam_params->ca_descr.parity) {
@@ -140,7 +150,7 @@ static void *getcwthread_func(void* arg)
           }
           pthread_mutex_unlock(&channel->cw_lock);
         }
-        pthread_mutex_unlock(&chan_and_pids.lock);
+        pthread_mutex_unlock(&chan_p->lock);
       } else {
         log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR removal request, ignoring");
       }
@@ -151,9 +161,9 @@ static void *getcwthread_func(void* arg)
       log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request index: %d pid: %d\n",scam_params->ca_pid.index, scam_params->ca_pid.pid);
       if(scam_params->ca_pid.index == -1) {
         log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID removal request, removing pid: %d\n", scam_params->ca_pid.pid);
-        pthread_mutex_lock(&chan_and_pids.lock);
-        for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++) {
-          mumudvb_channel_t *channel = &chan_and_pids.channels[curr_channel];
+        pthread_mutex_lock(&chan_p->lock);
+        for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++) {
+          mumudvb_channel_t *channel = &chan_p->channels[curr_channel];
           for (curr_pid = 1; curr_pid < channel->num_pids; curr_pid++) {
             if ((channel->pids_type[curr_pid] != PID_EXTRA_VBIDATA) && (channel->pids_type[curr_pid] != PID_EXTRA_VBITELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_TELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_SUBTITLE) && (channel->pids[curr_pid] == (int) scam_params->ca_pid.pid)) {
               pthread_mutex_lock(&channel->cw_lock);
@@ -167,11 +177,11 @@ static void *getcwthread_func(void* arg)
             }
           }
         }
-        pthread_mutex_unlock(&chan_and_pids.lock);
+        pthread_mutex_unlock(&chan_p->lock);
       } else {
-        pthread_mutex_lock(&chan_and_pids.lock);
-        for (curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++) {
-          mumudvb_channel_t *channel = &chan_and_pids.channels[curr_channel];
+        pthread_mutex_lock(&chan_p->lock);
+        for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++) {
+          mumudvb_channel_t *channel = &chan_p->channels[curr_channel];
           for (curr_pid = 1; curr_pid < channel->num_pids; curr_pid++) {
             if ((channel->pids_type[curr_pid] != PID_EXTRA_VBIDATA) && (channel->pids_type[curr_pid] != PID_EXTRA_VBITELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_TELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_SUBTITLE) && (channel->pids[curr_pid] == (int) scam_params->ca_pid.pid)) {
               pthread_mutex_lock(&channel->cw_lock);
@@ -185,9 +195,10 @@ static void *getcwthread_func(void* arg)
             }
           }
         }
-        pthread_mutex_unlock(&chan_and_pids.lock);
+        pthread_mutex_unlock(&chan_p->lock);
       }
     }
   }
+  free(getcw_params);
   return 0;
 }

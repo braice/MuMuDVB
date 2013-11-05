@@ -42,6 +42,7 @@
 #include <sys/time.h>
 
 #include "scam_common.h"
+#include "mumudvb.h"
 
 /**@file
  * @brief scam support
@@ -49,7 +50,7 @@
  * Header for getting cw's from oscam
  */
 
-int scam_getcw_start(scam_parameters_t *, int);
+int scam_getcw_start(scam_parameters_t *, int, mumu_chan_p_t *);
 void scam_getcw_stop(scam_parameters_t *);
 
 #endif

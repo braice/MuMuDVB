@@ -115,7 +115,7 @@ void display_service_type(int type, int loglevel,char *log_module);
 char *pid_type_to_str(int type);
 char *service_type_to_str(int type);
 char *simple_service_type_to_str(int type);
-void show_traffic(char *log_module, double now, int show_traffic_interval, mumudvb_chan_and_pids_t *chan_and_pids);
+void show_traffic(char *log_module, double now, int show_traffic_interval, mumu_chan_p_t *chan_p);
 char *liben50221_error_to_str(int error);
 char *liben50221_error_to_str_descr(int error);
 void log_pids(char *log_module, mumudvb_channel_t *channel, int curr_channel);

@@ -299,11 +299,14 @@ void init_cam_v(cam_p_t *cam_p)
 	 return -1;
  }
 
-
+ typedef struct camthread_params_t{
+	 cam_p_t *cam_p;
+ 	 mumu_chan_p_t *chan_p;
+ }camthread_params_t;
 
  /** @brief start the cam
   * This function will create the communication layers and set the callbacks*/
- int cam_start(cam_p_t *cam_p, int adapter_id)
+ int cam_start(cam_p_t *cam_p, int adapter_id,mumu_chan_p_t *chan_p)
  {
 
 	 // CAM Log
@@ -383,7 +386,10 @@ void init_cam_v(cam_p_t *cam_p)
 	 }
 
 	 // start the cam thread
-	 pthread_create(&(cam_p->camthread), NULL, camthread_func, cam_p);
+	 camthread_params_t *camthread_params=malloc(sizeof(camthread_params_t));
+	 camthread_params->cam_p=cam_p;
+	 camthread_params->chan_p=chan_p;
+	 pthread_create(&(cam_p->camthread), NULL, camthread_func, camthread_params);
 	 return 0;
  }
 
@@ -416,8 +422,12 @@ void init_cam_v(cam_p_t *cam_p)
  /** @brief The thread for polling the cam */
  static void *camthread_func(void* arg)
  {
+	 camthread_params_t *camthread_params;
+	 camthread_params= (camthread_params_t *) arg;
 	 cam_p_t *cam_p;
-	 cam_p= (cam_p_t *) arg;
+	 mumu_chan_p_t *chan_p;
+	 cam_p=camthread_params->cam_p;
+	 chan_p=camthread_params->chan_p;
 	 int i;
 	 int camstate;
 	 struct timeval tv;
@@ -425,7 +435,6 @@ void init_cam_v(cam_p_t *cam_p)
 	 long now;
 	 long last_channel_check;
 
-	 extern mumudvb_chan_and_pids_t chan_and_pids; /** @todo ugly way to access channel data */
 	 //We record the starting time
 	 gettimeofday (&tv, (struct timezone *) NULL);
 	 real_start_time = tv.tv_sec;
@@ -460,18 +469,18 @@ void init_cam_v(cam_p_t *cam_p)
 			 if((now-last_channel_check)>2)
 			 {
 				 last_channel_check=now;
-				 for (int curr_channel = 0; curr_channel < chan_and_pids.number_of_channels; curr_channel++)
+				 for (int curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++)
 				 {
 					 // Check if reasking (ie sending a CAM PMT UPDATE) is needed. IE channel hyghly/partially scrambled or down and asked a while ago
-					 if((chan_and_pids.channels[curr_channel].scrambled_channel == HIGHLY_SCRAMBLED || chan_and_pids.channels[curr_channel].scrambled_channel == PARTIALLY_UNSCRAMBLED || chan_and_pids.channels[curr_channel].streamed_channel == 0)&&
-							 (chan_and_pids.channels[curr_channel].need_cam_ask==CAM_ASKED)&&
-							 ((tv.tv_sec-chan_and_pids.channels[curr_channel].cam_asking_time)>cam_p->cam_reask_interval))
+					 if((chan_p->channels[curr_channel].scrambled_channel == HIGHLY_SCRAMBLED || chan_p->channels[curr_channel].scrambled_channel == PARTIALLY_UNSCRAMBLED || chan_p->channels[curr_channel].streamed_channel == 0)&&
+							 (chan_p->channels[curr_channel].need_cam_ask==CAM_ASKED)&&
+							 ((tv.tv_sec-chan_p->channels[curr_channel].cam_asking_time)>cam_p->cam_reask_interval))
 					 {
-						 chan_and_pids.channels[curr_channel].need_cam_ask=CAM_NEED_UPDATE; //No race condition because need_cam_ask is not changed when it is at the value CAM_ASKED
+						 chan_p->channels[curr_channel].need_cam_ask=CAM_NEED_UPDATE; //No race condition because need_cam_ask is not changed when it is at the value CAM_ASKED
 						 log_message( log_module,  MSG_DETAIL,
 								 "Channel \"%s\" highly scrambled for more than %ds. We ask the CAM to update.\n",
-								 chan_and_pids.channels[curr_channel].name,cam_p->cam_reask_interval);
-						 chan_and_pids.channels[curr_channel].cam_asking_time=tv.tv_sec;
+								 chan_p->channels[curr_channel].name,cam_p->cam_reask_interval);
+						 chan_p->channels[curr_channel].cam_asking_time=tv.tv_sec;
 					 }
 				 }
 			 }
@@ -598,7 +607,7 @@ void init_cam_v(cam_p_t *cam_p)
 	 }
 
 	 log_message( log_module,  MSG_DEBUG,"CAM Thread stopped\n");
-
+	 free(camthread_params);
 	 return 0;
  }
 

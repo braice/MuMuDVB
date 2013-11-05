@@ -245,7 +245,7 @@ typedef struct card_buffer_t{
 struct unicast_client_t;
 /** @brief Structure for storing channels
  *
- * All members are protected by the global lock in chan_and_pids, with the
+ * All members are protected by the global lock in chan_p, with the
  * following exceptions:
  *
  *  - The EIT variables, since they are only ever accessed from the main thread. 
@@ -357,7 +357,7 @@ typedef struct mumudvb_channel_t{
 	/** Says if we need to get pmt for this channel on scam own*/
 	int need_pmt_get;
 	/** Says if we've got first cw for channel.
-	 * NOTE: This is _not_ under cw_lock, but under the regular chan_and_pids lock. */
+	 * NOTE: This is _not_ under cw_lock, but under the regular chan_p lock. */
 	int got_cw_started;
 #endif
 
@@ -467,7 +467,7 @@ typedef struct multicast_parameters_t{
 #define PSI_TABLES_FILTERING_PAT_ONLY 2
 
 /** structure containing the channels and the asked pids information*/
-typedef struct mumudvb_chan_and_pids_t{
+typedef struct mumu_chan_p_t{
 	/** Protects all the members, including most of the channels (see the documentation
 	 * for mumudvb_channel_t for details).
 	 */
@@ -490,7 +490,7 @@ typedef struct mumudvb_chan_and_pids_t{
 	/** The number of TS discontinuities per PID **/
 	int16_t continuity_counter_pid[8193]; //on 16 bits for storing the initial -1
 	uint8_t check_cc;
-}mumudvb_chan_and_pids_t;
+}mumu_chan_p_t;
 
 
 typedef struct monitor_parameters_t{
@@ -498,7 +498,7 @@ typedef struct monitor_parameters_t{
 	int wait_time;
 	struct autoconf_parameters_t *autoconf_vars;
 	struct sap_p_t *sap_p;
-	mumudvb_chan_and_pids_t *chan_and_pids;
+	mumu_chan_p_t *chan_p;
 	multicast_parameters_t *multicast_vars;
 	struct unicast_parameters_t *unicast_vars;
 	struct tune_p_t *tune_p;
@@ -528,8 +528,8 @@ int mumudvb_poll(fds_t *fds);
 char *mumu_string_replace(char *source, int *length, int can_realloc, char *toreplace, char *replacement);
 int string_comput(char *string);
 uint64_t get_time(void);
-void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds);
-void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumudvb_chan_and_pids_t *chan_and_pids, fds_t *fds);
+void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, mumu_chan_p_t *chan_p, fds_t *fds);
+void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars,mumu_chan_p_t *chan_p, fds_t *fds);
 
 
 long int mumu_timing();

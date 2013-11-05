@@ -67,7 +67,7 @@ void *sendthread_func(void* arg)
   int send_packet = 0;
   extern unicast_parameters_t unicast_vars;
   extern multicast_parameters_t multicast_vars;
-  extern mumudvb_chan_and_pids_t chan_and_pids;
+  extern mumu_chan_p_t chan_p;
   extern fds_t fds;
   mumudvb_channel_t *channel;
   channel = ((mumudvb_channel_t *) arg);
@@ -134,7 +134,7 @@ void *sendthread_func(void* arg)
     pthread_mutex_unlock(&channel->stats_lock);
     //avoid sending of scrambled channels if we asked to
     send_packet=1;
-    if(chan_and_pids.dont_send_scrambled && (ScramblingControl>0)&& (channel->pmt_pid) )
+    if(chan_p.dont_send_scrambled && (ScramblingControl>0)&& (channel->pmt_pid) )
       send_packet=0;
 
     if (send_packet) {
@@ -152,7 +152,7 @@ void *sendthread_func(void* arg)
     if ((!multicast_vars.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
       ||(multicast_vars.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
     {
-      send_func(channel, send_time, &unicast_vars, &multicast_vars, &chan_and_pids, &fds);
+      send_func(channel, send_time, &unicast_vars, &multicast_vars, &chan_p, &fds);
     }
   }
   return 0;

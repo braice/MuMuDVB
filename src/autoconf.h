@@ -121,8 +121,8 @@ void init_aconf_v(autoconf_parameters_t *aconf_p);
 int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *channels,int number_of_channels);
 void autoconf_freeing(autoconf_parameters_t *);
 int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, char *substring);
-int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, fds_t *fds, mumudvb_chan_and_pids_t *chan_and_pids, tune_p_t *tune_p, multicast_parameters_t *multicast_vars,  unicast_parameters_t *unicast_vars, int server_id, void *scam_vars);
-int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_and_pids_t *chan_and_pids, tune_p_t *tune_p, multicast_parameters_t *multicast_vars, fds_t *fds, unicast_parameters_t *unicast_vars, int server_id, void *scam_vars);
-void autoconf_pmt_follow( unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t *actual_channel, char *card_base_path, int tuner, mumudvb_chan_and_pids_t *chan_and_pids );
+int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, fds_t *fds, mumu_chan_p_t *chan_p, tune_p_t *tune_p, multicast_parameters_t *multicast_vars,  unicast_parameters_t *unicast_vars, int server_id, void *scam_vars);
+int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumu_chan_p_t *chan_p, tune_p_t *tune_p, multicast_parameters_t *multicast_vars, fds_t *fds, unicast_parameters_t *unicast_vars, int server_id, void *scam_vars);
+void autoconf_pmt_follow( unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t *actual_channel, char *card_base_path, int tuner, mumu_chan_p_t *chan_p );
 
 #endif

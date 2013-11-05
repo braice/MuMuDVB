@@ -326,7 +326,7 @@ void eit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_
  * This function copy the rewritten EIT to the buffer. And checks if the EIT was changed so the rewritten version have to be updated
  */
 void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel,
-		multicast_parameters_t *multicast_vars, unicast_parameters_t *unicast_vars, void *scam_vars_v, mumudvb_chan_and_pids_t *chan_and_pids,fds_t *fds)
+		multicast_parameters_t *multicast_vars, unicast_parameters_t *unicast_vars, void *scam_vars_v, mumu_chan_p_t *chan_p,fds_t *fds)
 {
 	int i=0;
 	//If payload unit start indicator , we will send all the present EIT for this service, otherwise nothing
@@ -434,7 +434,7 @@ void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters
 			data_left_to_send=0;
 		}
 		//NOW we fill the channel buffer for sending
-		buffer_func(channel, send_buf, unicast_vars, multicast_vars, scam_vars_v, chan_and_pids, fds);
+		buffer_func(channel, send_buf, unicast_vars, multicast_vars, scam_vars_v, chan_p, fds);
 	}
 
 	//We update which section we want to send

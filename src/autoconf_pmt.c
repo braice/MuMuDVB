@@ -608,7 +608,7 @@ void update_pmt_version(mumudvb_channel_t *channel)
 
 
 /** @brief This function is called when a new PMT packet is there and we asked to check if there is updates*/
-void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t *channel, char *card_base_path, int tuner, mumudvb_chan_and_pids_t *chan_and_pids)
+void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t *channel, char *card_base_path, int tuner, mumu_chan_p_t *chan_p)
 {
 	/*Note : the pmt version is initialized during autoconfiguration*/
 	/*Check the version stored in the channel*/
@@ -628,7 +628,7 @@ void autoconf_pmt_follow(unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t
 			{
 				log_message( log_module, MSG_DETAIL,"PMT packet updated, we have now to check if there is new things\n");
 				/*We've got the FULL PMT packet*/
-				if(autoconf_read_pmt(channel->pmt_packet, channel, card_base_path, tuner, chan_and_pids->asked_pid, chan_and_pids->number_chan_asked_pid, fds)==0)
+				if(autoconf_read_pmt(channel->pmt_packet, channel, card_base_path, tuner, chan_p->asked_pid, chan_p->number_chan_asked_pid, fds)==0)
 				{
 					if(channel->need_cam_ask==CAM_ASKED)
 						channel->need_cam_ask=CAM_NEED_UPDATE; //We we resend this packet to the CAM

@@ -951,7 +951,7 @@ void usage (char *name)
 	print_info ();
 }
 
-void show_traffic( char *log_module, double now, int show_traffic_interval, mumudvb_chan_and_pids_t *chan_and_pids)
+void show_traffic( char *log_module, double now, int show_traffic_interval, mumu_chan_p_t *chan_p)
 {
 	static long show_traffic_time=0;
 
@@ -960,11 +960,11 @@ void show_traffic( char *log_module, double now, int show_traffic_interval, mumu
 	if((now-show_traffic_time)>=show_traffic_interval)
 	{
 		show_traffic_time=now;
-		for (int curr_channel = 0; curr_channel < chan_and_pids->number_of_channels; curr_channel++)
+		for (int curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++)
 		{
 			log_message( log_module,  MSG_INFO, "Traffic :  %.2f kb/s \t  for channel \"%s\"\n",
-					chan_and_pids->channels[curr_channel].traffic*8,
-					chan_and_pids->channels[curr_channel].name);
+					chan_p->channels[curr_channel].traffic*8,
+					chan_p->channels[curr_channel].name);
 		}
 	}
 }
