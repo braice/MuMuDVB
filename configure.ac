@@ -145,12 +145,6 @@ else
         echo "Build with SCAM support:                             no"
 fi
 
-if test "${enable_transcoding}" != "no" ; then
-        echo "Build with transcoding support:                     yes"
-else
-        echo "Build with transcoding support:                      no"
-fi
-
 if test "${atsc_long_names}" = "yes" ; then
         echo "Build with ATSC long names support:                 yes"
 else
