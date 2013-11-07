@@ -76,34 +76,6 @@ fi
 AM_CONDITIONAL(BUILD_SCAMSUPPORT, [test "${enable_scam_support}" != "no"])
 
 dnl
-dnl transcoding support
-dnl
-AC_ARG_ENABLE(transcoding,
-  [  --enable-transcoding          transcoding support (default disabled)],,[enable_transcoding="no"])
-
-if test "${enable_transcoding}" = "yes"
-then
-  AC_CHECK_LIB([avformat], [url_split],[AC_DEFINE(HAVE_URL_SPLIT, 1, Define if the function url_split exists)], [])
-  AC_CHECK_LIB([avformat], [ff_url_split],[AC_DEFINE(HAVE_FF_URL_SPLIT, 1, Define if the function ff_url_split exists)], [])
-  AC_CHECK_HEADERS([libavcodec/avcodec.h ffmpeg/avcodec.h])
-  AC_CHECK_HEADERS([libavformat/avformat.h ffmpeg/avformat.h])
-  AC_CHECK_HEADERS([libswscale/swscale.h ffmpeg/swscale.h])
-  AC_CHECK_LIB([avcodec], [av_picture_copy],[], [enable_transcoding="no"])
-  AC_CHECK_LIB([avformat], [av_get_frame_filename],[], [enable_transcoding="no"])
-  AC_CHECK_LIB([swscale], [sws_freeContext],[], [enable_transcoding="no"])
-  if test "${enable_transcoding}" != "no"
-  then
-    AC_DEFINE(ENABLE_TRANSCODING, 1, Define if you want the transcoding support)
-  else
-    AC_MSG_WARN([libavcodec, libavformat and libswscale are needed for transcoding support])
-  fi
-else
-  enable_transcoding="no"
-fi
-AM_CONDITIONAL(BUILD_TRANSCODING, [test "${enable_transcoding}" != "no"])
-
-
-dnl
 dnl  Test coverage
 dnl
 AC_ARG_ENABLE(coverage,

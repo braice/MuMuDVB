@@ -8,8 +8,6 @@
  * Copyright (C) 2004, 2005 Manu Abraham <abraham.manu@gmail.com>
  * Copyright (C) 2006 Andrew de Quincey (adq_dvb@lidskialf.net)
  * 
- * Transcoding written by Utelisys Communications B.V.
- * Copyright (C) 2009 Utelisys Communications B.V.
  *
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -131,9 +129,6 @@
 #include "unicast_http.h"
 #include "rtp.h"
 #include "log.h"
-#ifdef ENABLE_TRANSCODING
-#include "transcode.h"
-#endif
 
 #ifdef __UCLIBC__
 #define program_invocation_short_name "mumudvb"
@@ -194,10 +189,6 @@ unicast_parameters_t unicast_vars={
 
 
 
-#ifdef ENABLE_TRANSCODING
-/** The transcode options defined for all the channels */
-transcode_options_t global_transcode_opt;
-#endif
 
 //logging
 extern log_params_t log_params;
@@ -588,12 +579,6 @@ main (int argc, char **argv)
 			if(iRet==-1)
 				exit(ERROR_CONF);
 		}
-#ifdef ENABLE_TRANSCODING
-		else if ((transcode_read_option((curr_channel>=0)?&chan_p.channels[curr_channel].transcode_options : &global_transcode_opt, delimiteurs, &substring)))
-		{
-			continue;
-		}
-#endif
 		else if((iRet=read_logging_configuration(&stats_infos, substring))) //Read the line concerning the logging parameters
 		{
 			if(iRet==-1)
@@ -760,10 +745,6 @@ main (int argc, char **argv)
 		if(curr_channel_old != curr_channel)
 		{
 			curr_channel_old = curr_channel;
-#ifdef ENABLE_TRANSCODING
-			//We copy the common transcode options to the new channel
-			transcode_copy_options(&global_transcode_opt,&chan_p.channels[curr_channel].transcode_options);
-#endif
 		}
 	}
 	fclose (conf_file);
@@ -876,14 +857,6 @@ main (int argc, char **argv)
 	//End of Autoconfiguration init
 	/*****************************************************/
 
-	//Transcoding, we apply the templates
-#ifdef ENABLE_TRANSCODING
-	for (curr_channel = 0; curr_channel < MAX_CHANNELS; curr_channel++)
-	{
-		transcode_options_apply_templates(&chan_p.channels[curr_channel].transcode_options,tune_p.card,tune_p.tuner,server_id,curr_channel);
-	}
-#endif
-
 	//We deactivate things depending on multicast if multicast is suppressed
 	if(!multi_p.ttl)
 	{
@@ -892,16 +865,6 @@ main (int argc, char **argv)
 	}
 	if(!multi_p.multicast)
 	{
-#ifdef ENABLE_TRANSCODING
-		for (curr_channel = 0; curr_channel < MAX_CHANNELS; curr_channel++)
-		{
-			if(chan_p.channels[curr_channel].transcode_options.enable)
-			{
-				log_message( log_module,  MSG_INFO, "NO Multicast, transcoding disabled for channel \"%s\".\n", chan_p.channels[curr_channel].name);
-				chan_p.channels[curr_channel].transcode_options.enable=0;
-			}
-		}
-#endif
 		if(multi_p.rtp_header)
 		{
 			multi_p.rtp_header=0;
@@ -1952,9 +1915,6 @@ int mumudvb_close(int no_daemon,
 
 	for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++)
 	{
-#ifdef ENABLE_TRANSCODING
-		transcode_request_thread_end(chan_p->channels[curr_channel].transcode_handle);
-#endif
 		if(chan_p->channels[curr_channel].socketOut4>0)
 			close (chan_p->channels[curr_channel].socketOut4);
 		if(chan_p->channels[curr_channel].socketOut6>0)
@@ -1977,15 +1937,6 @@ int mumudvb_close(int no_daemon,
 
 	}
 
-#ifdef ENABLE_TRANSCODING
-	/* End transcoding and clear transcode options */
-	for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++)
-	{
-		transcode_wait_thread_end(chan_p->channels[curr_channel].transcode_handle);
-		free_transcode_options(&chan_p->channels[curr_channel].transcode_options);
-	}
-	free_transcode_options(&global_transcode_opt);
-#endif
 	// we close the file descriptors
 	close_card_fd(&fds);
 

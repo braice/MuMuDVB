@@ -8,8 +8,6 @@ link:README.html[README]
 
 link:README_CONF.html[README concerning the configuration file]
 
-link:TRANSCODE.html[Information concerning the transcoding]
-
 link:TRANSCODE_EXTERNAL.html[External transcoding tutorial]
 
 link:WEBSERVICES.html[Information concerning the WEB services]

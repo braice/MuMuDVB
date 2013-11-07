@@ -38,9 +38,6 @@
 #include <pthread.h>
 #include <net/if.h>
 
-#ifdef ENABLE_TRANSCODING
-#include "transcode_common.h"
-#endif
 
 #define IPV6_CHAR_LEN 64
 
@@ -427,11 +424,6 @@ typedef struct mumudvb_channel_t{
 	/** The occupied traffic (in kB/s) */
 	float traffic;
 
-
-#ifdef ENABLE_TRANSCODING
-	void *transcode_handle;
-	struct transcode_options_t transcode_options;
-#endif
 
 }mumudvb_channel_t;
 

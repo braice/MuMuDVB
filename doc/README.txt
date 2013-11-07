@@ -39,7 +39,6 @@ Authors and contacts
 - mailto:glondu@REMOVEMEcrans.ens-cachan.fr[Stéphane Glondu] (man page, debian package)
 - Special thanks to Dave Chapman (dvbstream author and contributor)
 - Pierre Gronlier, Sébastien Raillard, Ludovic Boué, Romolo Manfredini
-- Utelisys Communications B.V. for the transcoding code
 
 .Mailing list:
 - mailto:mumudvb-dev@REMOVEMElists.crans.org[MuMuDVB dev]
@@ -63,7 +62,6 @@ Features overview
 - Possibility to partially rewrite the stream for better compatibility with set-top boxes and some clients. See <<pat_rewrite,PAT Rewrite>> and <<sdt_rewrite,SDT Rewrite>> sections.
 - Support for HTTP unicast see <<unicast,http unicast>> section
 - Support for RTP headers (only for multicast)
-- Ability to transcode the stream (only for multicast for the moment) see the <<transcoding,Transcoding>> section
 - CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.txt and CAM_menu_interface.png for screenshot)
 - Software descrambling through oscam dvbapi and libdvbcsa
 
@@ -831,20 +829,6 @@ In order to enable this feature, use the option `dvr_thread`.
 This reading uses two buffers: one for the data just received from the card, one for the data treated by the main program. You can adjust the size of this buffers using the option `dvr_thread_buffer_size`. The default value  (5000 packets of 188 bytes) should be sufficient for most of the cases. 
 
 The message "Thread trowing dvb packets" informs you that the thread buffer is full and some packets are dropped. Increase the buffer size will probably solve the problem.
-
-
-[[transcoding]]
-Transcoding
------------
-
-MuMuDVB supports transcoding to various formats to save bandwidth. The transcoding is made using ffmpeg librairies. This feature is pretty new, so feel free to contact if you have comments/suggestions.
-
-For transcoding support, you have to compile MuMuDVB yourself. Due tu API changes, transcoding is broken for recent versions of MuMuDVB.
-
-[NOTE]
-Transcoding doesn't work for the moment with unicast
-
-To have more details on transcoding, see the dedicated documentation file
 
 
 [[ipv6]]

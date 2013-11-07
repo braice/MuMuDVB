@@ -383,33 +383,7 @@ void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_pa
 	if (multi_p->rtp_header) channel->sent_data+=RTP_HEADER_LEN;
 	pthread_mutex_unlock(&channel->stats_lock);
 
-	/********* TRANSCODE **********/
-#ifdef ENABLE_TRANSCODING
-	if (NULL != channel->transcode_options.enable &&
-			1 == *channel->transcode_options.enable) {
 
-		if (NULL == channel->transcode_handle) {
-
-			strcpy(channel->transcode_options.ip, channel->ip4Out);
-
-			channel->transcode_handle = transcode_start_thread(channel->socketOut4,
-					&channel->sOut4, &channel->transcode_options);
-		}
-
-		if (NULL != channel->transcode_handle) {
-			transcode_enqueue_data(channel->transcode_handle,
-					channel->buf,
-					channel->nb_bytes);
-		}
-	}
-
-	if (NULL == channel->transcode_options.enable ||
-			1 != *channel->transcode_options.enable ||
-			((NULL != channel->transcode_options.streaming_type &&
-					STREAMING_TYPE_MPEGTS != *channel->transcode_options.streaming_type)&&
-					(NULL == channel->transcode_options.send_transcoded_only ||
-							1 != *channel->transcode_options.send_transcoded_only)))
-#endif
 		/********** MULTICAST *************/
 		//if the multicast TTL is set to 0 we don't send the multicast packets
 		if(multi_p->multicast)

@@ -902,11 +902,6 @@ void print_info ()
 #else
 			"Built without SCAM support.\n"
 #endif
-#ifdef ENABLE_TRANSCODING
-			"Built with transcoding support.\n"
-#else
-			"Built without transcoding support.\n"
-#endif
 #ifdef ATSC
 			"Built with ATSC support.\n"
 #ifdef HAVE_LIBUCSI

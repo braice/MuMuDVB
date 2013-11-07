@@ -76,9 +76,6 @@
 #include "autoconf.h"
 #include "rtp.h"
 #include "log.h"
-#ifdef ENABLE_TRANSCODING
-#include "transcode.h"
-#endif
 #ifdef ENABLE_SCAM_SUPPORT
 #include "scam_capmt.h"
 #include "scam_common.h"
@@ -87,9 +84,6 @@
 #endif
 
 static char *log_module="Autoconf: ";
-#ifdef ENABLE_TRANSCODING
-extern transcode_options_t global_transcode_opt;
-#endif
 
 
 mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int service_id);
@@ -823,11 +817,6 @@ int autoconf_services_to_channels(const auto_p_t *parameters, mumudvb_channel_t 
 					channels[iChan].unicast_port=string_comput(tempstring);
 					log_message( log_module, MSG_DEBUG,"Channel (direct) unicast port  %d\n",channels[iChan].unicast_port);
 				}
-#ifdef ENABLE_TRANSCODING
-				//We copy the common transcode options to the new channel
-				transcode_copy_options(&global_transcode_opt,&channels[iChan].transcode_options);
-				transcode_options_apply_templates(&channels[iChan].transcode_options,card,tuner,server_id,iChan);
-#endif
 #ifdef ENABLE_SCAM_SUPPORT
 				if (service->free_ca_mode && scam_vars->scam_support) {
 					channels[iChan].scam_support=1;
