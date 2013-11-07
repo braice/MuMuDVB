@@ -88,13 +88,13 @@ unicast_send_signal_power_js (int Socket, strength_parameters_t *strengthparams)
 int
 unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *channels, int Socket);
 int
-unicast_send_xml_state (int number_of_channels, mumudvb_channel_t* channels, int Socket, strength_parameters_t* strengthparams, autoconf_parameters_t* autoconf_vars, void* cam_p_v, void* scam_vars_v);
+unicast_send_xml_state (int number_of_channels, mumudvb_channel_t* channels, int Socket, strength_parameters_t* strengthparams, auto_p_t* auto_p, void* cam_p_v, void* scam_vars_v);
 int
 unicast_send_cam_menu (int Socket, void *cam_p);
 int
 unicast_send_cam_action (int Socket, char *Key, void *cam_p);
 
-int unicast_handle_message(unicast_parameters_t* unicast_vars, unicast_client_t* client, mumudvb_channel_t* channels, int number_of_channels, strength_parameters_t* strengthparams, autoconf_parameters_t* autoconf_vars, void* cam_p, void* scam_vars);
+int unicast_handle_message(unicast_parameters_t* unicast_vars, unicast_client_t* client, mumudvb_channel_t* channels, int number_of_channels, strength_parameters_t* strengthparams, auto_p_t* auto_p, void* cam_p, void* scam_vars);
 
 #define REPLY_HEADER 0
 #define REPLY_BODY 1
@@ -266,7 +266,7 @@ int unicast_create_listening_socket(int socket_type, int socket_channel, char *i
  * If the event is on a channel specific socket, it accepts the new connection and starts streaming
  *
  */
-int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels, strength_parameters_t *strengthparams, autoconf_parameters_t *autoconf_vars, void *cam_p, void *scam_vars)
+int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels, strength_parameters_t *strengthparams, auto_p_t *auto_p, void *cam_p, void *scam_vars)
 {
 	int iRet;
 	//We look what happened for which connection
@@ -345,7 +345,7 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
 			{
 				//Event on a client connectio i.e. the client asked something
 				log_message( log_module, MSG_FLOOD,"New message for socket %d\n", fds->pfds[actual_fd].fd);
-				iRet=unicast_handle_message(unicast_vars,unicast_vars->fd_info[actual_fd].client, channels, number_of_channels, strengthparams, autoconf_vars, cam_p, scam_vars);
+				iRet=unicast_handle_message(unicast_vars,unicast_vars->fd_info[actual_fd].client, channels, number_of_channels, strengthparams, auto_p, cam_p, scam_vars);
 				if (iRet==-2 ) //iRet==-2 --> 0 received data or error, we close the connection
 				{
 					unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd);
@@ -500,7 +500,7 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
  * @param channels the channel array
  * @param number_of_channels quite explicit ...
  */
-int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels, strength_parameters_t *strengthparams, autoconf_parameters_t *autoconf_vars, void *cam_p, void *scam_vars)
+int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels, strength_parameters_t *strengthparams, auto_p_t *auto_p, void *cam_p, void *scam_vars)
 {
 	int received_len;
 	(void) unicast_vars;
@@ -721,7 +721,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 			else if(strstr(client->buffer +pos ,"/monitor/state.xml ")==(client->buffer +pos))
 			{
 				log_message( log_module, MSG_DETAIL,"HTTP request for XML State\n");
-				unicast_send_xml_state(number_of_channels, channels, client->Socket, strengthparams, autoconf_vars, cam_p, scam_vars);
+				unicast_send_xml_state(number_of_channels, channels, client->Socket, strengthparams, auto_p, cam_p, scam_vars);
 				return -2; //We close the connection afterwards
 			}
 			else if(strstr(client->buffer +pos ,"/cam/menu.xml ")==(client->buffer +pos))
@@ -1075,7 +1075,7 @@ unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t *cha
 	int curr_channel;
 	char urlheader[4];
 	char vlcchar[2];
-	extern multicast_parameters_t multicast_vars;
+	extern multi_p_t multi_p;
 
 	struct unicast_reply* reply = unicast_reply_init();
 	if (NULL == reply) {
@@ -1090,7 +1090,7 @@ unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t *cha
 	else
 		vlcchar[0]='\0';
 
-	if(multicast_vars.rtp_header)
+	if(multi_p.rtp_header)
 		strcpy(urlheader,"rtp");
 	else
 		strcpy(urlheader,"udp");
@@ -1262,7 +1262,7 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
  * @param fds the frontend device structure
  */
 int
-unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int Socket, strength_parameters_t *strengthparams, autoconf_parameters_t *autoconf_vars, void *cam_p_v, void *scam_vars_v)
+unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int Socket, strength_parameters_t *strengthparams, auto_p_t *auto_p, void *cam_p_v, void *scam_vars_v)
 {
 #ifndef ENABLE_CAM_SUPPORT
 	(void) cam_p_v; //to make compiler happy
@@ -1369,7 +1369,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 
 
 	// Autoconfiguration state
-	if (autoconf_vars->autoconfiguration!=0)
+	if (auto_p->autoconfiguration!=0)
 		unicast_reply_write(reply, "\t<autoconf_end>%d</autoconf_end>\n",0);
 	else
 		unicast_reply_write(reply, "\t<autoconf_end>%d</autoconf_end>\n",1);

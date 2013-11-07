@@ -436,7 +436,7 @@ typedef struct mumudvb_channel_t{
 }mumudvb_channel_t;
 
 /**The parameters concerning the multicast*/
-typedef struct multicast_parameters_t{
+typedef struct multi_p_t{
 	/** Do we activate multicast ? */
 	int multicast;
 	/** Do we activate multicast ? */
@@ -457,7 +457,7 @@ typedef struct multicast_parameters_t{
 	char iface6[IF_NAMESIZE+1];
 	/** num mpeg packets in one sent packet */
 	unsigned char num_pack;
-}multicast_parameters_t;
+}multi_p_t;
 
 /** No PSI tables filtering */
 #define PSI_TABLES_FILTERING_NONE 0
@@ -494,10 +494,10 @@ typedef struct mumu_chan_p_t{
 typedef struct monitor_parameters_t{
 	volatile int threadshutdown;
 	int wait_time;
-	struct autoconf_parameters_t *autoconf_vars;
+	struct auto_p_t *auto_p;
 	struct sap_p_t *sap_p;
 	mumu_chan_p_t *chan_p;
-	multicast_parameters_t *multicast_vars;
+	multi_p_t *multi_p;
 	struct unicast_parameters_t *unicast_vars;
 	struct tune_p_t *tune_p;
 	struct stats_infos_t *stats_infos;
@@ -526,8 +526,8 @@ int mumudvb_poll(fds_t *fds);
 char *mumu_string_replace(char *source, int *length, int can_realloc, char *toreplace, char *replacement);
 int string_comput(char *string);
 uint64_t get_time(void);
-void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, fds_t *fds);
-void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, fds_t *fds);
+void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multi_p_t *multi_p, void *scam_vars_v, fds_t *fds);
+void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multi_p_t *multi_p, fds_t *fds);
 
 
 long int mumu_timing();

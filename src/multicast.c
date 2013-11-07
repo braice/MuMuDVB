@@ -39,10 +39,10 @@ static char *log_module="Multicast: ";
 
  /** @brief Read a line of the configuration file to check if there is a cam parameter
  *
- * @param multicast_vars the multicast parameters
+ * @param multi_p the multicast parameters
  * @param substring The currrent line
   */
-int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb_channel_t *channels, int channel_start, int *curr_channel, char *substring)
+int read_multicast_configuration(multi_p_t *multi_p, mumudvb_channel_t *channels, int channel_start, int *curr_channel, char *substring)
 {
   char delimiteurs[] = CONFIG_FILE_SEPARATOR;
 
@@ -55,27 +55,27 @@ int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb
       return -1;
     }
     substring = strtok (NULL, delimiteurs);
-    multicast_vars->common_port = atoi (substring);
+    multi_p->common_port = atoi (substring);
   }
   else if (!strcmp (substring, "multicast_ttl"))
   {
     substring = strtok (NULL, delimiteurs);
-    multicast_vars->ttl = atoi (substring);
+    multi_p->ttl = atoi (substring);
   }
   else if (!strcmp (substring, "multicast_ipv4"))
   {
     substring = strtok (NULL, delimiteurs);
-    multicast_vars->multicast_ipv4 = atoi (substring);
+    multi_p->multicast_ipv4 = atoi (substring);
   }
   else if (!strcmp (substring, "multicast_ipv6"))
   {
     substring = strtok (NULL, delimiteurs);
-    multicast_vars->multicast_ipv6 = atoi (substring);
+    multi_p->multicast_ipv6 = atoi (substring);
   }
   else if (!strcmp (substring, "multicast_auto_join"))
   {
     substring = strtok (NULL, delimiteurs);
-    multicast_vars->auto_join = atoi (substring);
+    multi_p->auto_join = atoi (substring);
   }
   else if (!strcmp (substring, "ip"))
   {
@@ -115,8 +115,8 @@ int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb
   else if (!strcmp (substring, "rtp_header"))
   {
     substring = strtok (NULL, delimiteurs);
-    multicast_vars->rtp_header = atoi (substring);
-    if (multicast_vars->rtp_header==1)
+    multi_p->rtp_header = atoi (substring);
+    if (multi_p->rtp_header==1)
       log_message( log_module,  MSG_INFO, "You decided to send the RTP header (multicast only).\n");
   }
   else if (!strcmp (substring, "multicast_iface4"))
@@ -128,7 +128,7 @@ int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb
                    "The interface name ipv4 address %s is too long.\n", substring);
       return -1;
     }
-    sscanf (substring, "%s\n", multicast_vars->iface4);
+    sscanf (substring, "%s\n", multi_p->iface4);
   }
   else if (!strcmp (substring, "multicast_iface6"))
   {
@@ -139,7 +139,7 @@ int read_multicast_configuration(multicast_parameters_t *multicast_vars, mumudvb
                    "The interface name ipv6 address %s is too long.\n", substring);
       return -1;
     }
-    sscanf (substring, "%s\n", multicast_vars->iface6);
+    sscanf (substring, "%s\n", multi_p->iface6);
   }
   else
     return 0; //Nothing concerning multicast, we return 0 to explore the other possibilities

@@ -301,7 +301,7 @@ uint64_t get_time(void) {
 }
 /** @brief function for buffering demultiplexed data.
  */
-void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, void *scam_vars_v, fds_t *fds)
+void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multi_p_t *multi_p, void *scam_vars_v, fds_t *fds)
 {
 	int pid;			/** pid of the current mpeg2 packet */
 	int ScramblingControl;
@@ -361,10 +361,10 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 			channel->nb_bytes += TS_PACKET_SIZE;
 		}
 		//The buffer is full, we send it
-		if ((!multicast_vars->rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
-				||(multicast_vars->rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE))) {
+		if ((!multi_p->rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
+				||(multi_p->rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE))) {
 			now_time=get_time();
-			send_func(channel, now_time, unicast_vars, multicast_vars,  fds);
+			send_func(channel, now_time, unicast_vars, multi_p,  fds);
 		}
 
 	}
@@ -375,12 +375,12 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 
 /** @brief function for sending demultiplexed data.
  */
-void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multicast_parameters_t *multicast_vars, fds_t *fds)
+void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multi_p_t *multi_p, fds_t *fds)
 {
 	//For bandwith measurement (traffic)
 	pthread_mutex_lock(&channel->stats_lock);
 	channel->sent_data+=channel->nb_bytes+20+8; // IP=20 bytes header and UDP=8 bytes header
-	if (multicast_vars->rtp_header) channel->sent_data+=RTP_HEADER_LEN;
+	if (multi_p->rtp_header) channel->sent_data+=RTP_HEADER_LEN;
 	pthread_mutex_unlock(&channel->stats_lock);
 
 	/********* TRANSCODE **********/
@@ -412,11 +412,11 @@ void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_pa
 #endif
 		/********** MULTICAST *************/
 		//if the multicast TTL is set to 0 we don't send the multicast packets
-		if(multicast_vars->multicast)
+		if(multi_p->multicast)
 		{
 			unsigned char *data;
 			int data_len;
-			if(multicast_vars->rtp_header)
+			if(multi_p->rtp_header)
 			{
 				/****** RTP *******/
 				rtp_update_sequence_number(channel,now_time);
@@ -428,12 +428,12 @@ void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_pa
 				data=channel->buf;
 				data_len=channel->nb_bytes;
 			}
-			if(multicast_vars->multicast_ipv4)
+			if(multi_p->multicast_ipv4)
 				sendudp (channel->socketOut4,
 						&channel->sOut4,
 						data,
 						data_len);
-			if(multicast_vars->multicast_ipv6)
+			if(multi_p->multicast_ipv6)
 				sendudp6 (channel->socketOut6,
 						&channel->sOut6,
 						data,

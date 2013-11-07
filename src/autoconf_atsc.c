@@ -50,7 +50,7 @@
 #endif
 
 mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int service_id);
-int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parameters);
+int autoconf_parse_vct_channel(unsigned char *buf, auto_p_t *parameters);
 
 static char *log_module="Autoconf: ";
 
@@ -67,7 +67,7 @@ static char *log_module="Autoconf: ";
  * 
  * @param parameters : the structure containing autoconfiguration parameters
  */
-int autoconf_read_psip(autoconf_parameters_t *parameters)
+int autoconf_read_psip(auto_p_t *parameters)
 {
 	mumudvb_ts_packet_t *psip_mumu;
 	int number_of_channels_in_section=0;
@@ -132,7 +132,7 @@ int autoconf_read_psip(autoconf_parameters_t *parameters)
  * @param parameters - The structure containing autoconf parameters
  */
 
-int autoconf_parse_vct_channel(unsigned char *buf, autoconf_parameters_t *parameters)
+int autoconf_parse_vct_channel(unsigned char *buf, auto_p_t *parameters)
 {
 	psip_vct_channel_t *vct_channel;
 	char unconverted_short_name[15];//2*7 + 1 (for '\0')

@@ -183,21 +183,19 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
 /** @brief initialize the pmt get for scam descrambled channels
  *
  */
-int scam_init_no_autoconf(autoconf_parameters_t *autoconf_vars, scam_parameters_t *scam_vars, mumudvb_channel_t *channels,int number_of_channels)
+int scam_init_no_autoconf(scam_parameters_t *scam_vars, mumudvb_channel_t *channels,int number_of_channels)
 {
   int curr_channel;
 
   if (scam_vars->scam_support){
-    if (autoconf_vars->autoconfiguration==AUTOCONF_MODE_PIDS || autoconf_vars->autoconfiguration==AUTOCONF_MODE_NONE) {
-      for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-      {
-        if (channels[curr_channel].scam_support==1 && channels[curr_channel].num_pids>1) {
-          channels[curr_channel].pmt_pid=channels[curr_channel].pids[0];
-          channels[curr_channel].pids_type[0]=PID_PMT;
-          snprintf(channels[curr_channel].pids_language[0],4,"%s","---");
-          ++scam_vars->need_pmt_get;
-          channels[curr_channel].need_pmt_get=1;
-        }
+    for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+    {
+      if (channels[curr_channel].scam_support==1 && channels[curr_channel].num_pids>1) {
+        channels[curr_channel].pmt_pid=channels[curr_channel].pids[0];
+        channels[curr_channel].pids_type[0]=PID_PMT;
+        snprintf(channels[curr_channel].pids_language[0],4,"%s","---");
+        ++scam_vars->need_pmt_get;
+        channels[curr_channel].need_pmt_get=1;
       }
     }
   }

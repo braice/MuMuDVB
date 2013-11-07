@@ -50,7 +50,7 @@ void parse_lcn_descriptor(unsigned char *buf, mumudvb_channel_t *channels, int n
 /** @brief Read the network information table (cf EN 300 468)
  *
  */
-int autoconf_read_nit(autoconf_parameters_t *parameters, mumudvb_channel_t *channels, int number_of_channels)
+int autoconf_read_nit(auto_p_t *parameters, mumudvb_channel_t *channels, int number_of_channels)
 {
 	mumudvb_ts_packet_t *nit_mumu;
 	unsigned char *buf=NULL;

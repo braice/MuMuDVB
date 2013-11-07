@@ -166,7 +166,7 @@ card_thread_parameters_t cardthreadparams;
 int dont_send_scrambled=0;
 
 //multicast parameters
-multicast_parameters_t multicast_vars={
+multi_p_t multi_p={
 		.multicast=1,
 		.multicast_ipv6=0,
 		.multicast_ipv4=1,
@@ -204,12 +204,12 @@ extern log_params_t log_params;
 
 // prototypes
 static void SignalHandler (int signum);//below
-int read_multicast_configuration(multicast_parameters_t *, mumudvb_channel_t *, int, int *, char *); //in multicast.c
+int read_multicast_configuration(multi_p_t *, mumudvb_channel_t *, int, int *, char *); //in multicast.c
 void *monitor_func(void* arg);
 int mumudvb_close(int no_daemon,
 		monitor_parameters_t *monitor_thread_params,
 		rewrite_parameters_t *rewrite_vars,
-		autoconf_parameters_t *autoconf_vars,
+		auto_p_t *auto_p,
 		unicast_parameters_t *unicast_vars,
 		volatile int *strengththreadshutdown,
 		void *cam_p_v,
@@ -226,6 +226,7 @@ int
 main (int argc, char **argv)
 {
 
+	//Channel information
 	mumu_chan_p_t chan_p={
 			.lock=PTHREAD_MUTEX_INITIALIZER,
 			.number_of_channels=0,
@@ -270,8 +271,8 @@ main (int argc, char **argv)
 #endif
 
 	//autoconfiguration
-	autoconf_parameters_t autoconf_vars;
-	init_aconf_v(&autoconf_vars);
+	auto_p_t auto_p;
+	init_aconf_v(&auto_p);
 
 	//Parameters for rewriting
 	rewrite_parameters_t rewrite_vars;
@@ -548,7 +549,7 @@ main (int argc, char **argv)
 			if(iRet==-1)
 				exit(ERROR_CONF);
 		}
-		else if((iRet=read_autoconfiguration_configuration(&autoconf_vars, substring))) //Read the line concerning the autoconfiguration parameters
+		else if((iRet=read_autoconfiguration_configuration(&auto_p, substring))) //Read the line concerning the autoconfiguration parameters
 		{
 			if(iRet==-1)
 				exit(ERROR_CONF);
@@ -577,7 +578,7 @@ main (int argc, char **argv)
 			if(iRet==-1)
 				exit(ERROR_CONF);
 		}
-		else if((iRet=read_multicast_configuration(&multicast_vars, chan_p.channels, channel_start, &curr_channel, substring))) //Read the line concerning the multicast parameters
+		else if((iRet=read_multicast_configuration(&multi_p, chan_p.channels, channel_start, &curr_channel, substring))) //Read the line concerning the multicast parameters
 		{
 			if(iRet==-1)
 				exit(ERROR_CONF);
@@ -681,8 +682,8 @@ main (int argc, char **argv)
 						"pids : You have to start a channel first (using ip= or channel_next)\n");
 				exit(ERROR_CONF);
 			}
-			if (multicast_vars.common_port!=0 && chan_p.channels[curr_channel].portOut == 0)
-				chan_p.channels[curr_channel].portOut = multicast_vars.common_port;
+			if (multi_p.common_port!=0 && chan_p.channels[curr_channel].portOut == 0)
+				chan_p.channels[curr_channel].portOut = multi_p.common_port;
 			while ((substring = strtok (NULL, delimiteurs)) != NULL)
 			{
 				chan_p.channels[curr_channel].pids[curr_pid] = atoi (substring);
@@ -769,9 +770,9 @@ main (int argc, char **argv)
 
 
 	//Autoconfiguration full is the simple mode for autoconfiguration, we set other option by default
-	if(autoconf_vars.autoconfiguration==AUTOCONF_MODE_FULL)
+	if(auto_p.autoconfiguration==AUTOCONF_MODE_FULL)
 	{
-		if((sap_p.sap == OPTION_UNDEFINED) && (multicast_vars.multicast))
+		if((sap_p.sap == OPTION_UNDEFINED) && (multi_p.multicast))
 		{
 			log_message( log_module,  MSG_INFO,
 					"Full autoconfiguration, we activate SAP announces. if you want to deactivate them see the README.\n");
@@ -861,16 +862,16 @@ main (int argc, char **argv)
 	//Autoconfiguration init
 	/*****************************************************/
 
-	if(autoconf_vars.autoconfiguration)
+	if(auto_p.autoconfiguration)
 	{
-		if(autoconf_vars.autoconf_pid_update)
+		if(auto_p.autoconf_pid_update)
 		{
 			log_message( "Autoconf: ", MSG_INFO,
 					"The autoconfiguration auto update is enabled. If you want to disable it put \"autoconf_pid_update=0\" in your config file.\n");
 		}
 	}
 	else
-		autoconf_vars.autoconf_pid_update=0;
+		auto_p.autoconf_pid_update=0;
 	/*****************************************************/
 	//End of Autoconfiguration init
 	/*****************************************************/
@@ -884,12 +885,12 @@ main (int argc, char **argv)
 #endif
 
 	//We deactivate things depending on multicast if multicast is suppressed
-	if(!multicast_vars.ttl)
+	if(!multi_p.ttl)
 	{
 		log_message( log_module,  MSG_INFO, "The multicast TTL is set to 0, multicast will be disabled.\n");
-		multicast_vars.multicast=0;
+		multi_p.multicast=0;
 	}
-	if(!multicast_vars.multicast)
+	if(!multi_p.multicast)
 	{
 #ifdef ENABLE_TRANSCODING
 		for (curr_channel = 0; curr_channel < MAX_CHANNELS; curr_channel++)
@@ -901,9 +902,9 @@ main (int argc, char **argv)
 			}
 		}
 #endif
-		if(multicast_vars.rtp_header)
+		if(multi_p.rtp_header)
 		{
-			multicast_vars.rtp_header=0;
+			multi_p.rtp_header=0;
 			log_message( log_module,  MSG_INFO, "NO Multicast, RTP Header is disabled.\n");
 		}
 		if(sap_p.sap==OPTION_ON)
@@ -913,7 +914,7 @@ main (int argc, char **argv)
 		}
 	}
 	free(conf_filename);
-	if(!multicast_vars.multicast && !unicast_vars.unicast)
+	if(!multi_p.multicast && !unicast_vars.unicast)
 	{
 		log_message( log_module,  MSG_ERROR, "NO Multicast AND NO unicast. No data can be send :(, Exciting ....\n");
 		set_interrupted(ERROR_CONF<<8);
@@ -1099,10 +1100,10 @@ main (int argc, char **argv)
 	monitor_parameters_t monitor_thread_params ={
 			.threadshutdown=0,
 			.wait_time=10,
-			.autoconf_vars=&autoconf_vars,
+			.auto_p=&auto_p,
 			.sap_p=&sap_p,
 			.chan_p=&chan_p,
-			.multicast_vars=&multicast_vars,
+			.multi_p=&multi_p,
 			.unicast_vars=&unicast_vars,
 			.tune_p=&tune_p,
 			.stats_infos=&stats_infos,
@@ -1130,7 +1131,7 @@ main (int argc, char **argv)
 		else
 		{
 			//If the scam is properly initialised, we autoconfigure scrambled channels
-			autoconf_vars.autoconf_scrambled=1;
+			auto_p.autoconf_scrambled=1;
 		}
 	}
 #endif
@@ -1150,7 +1151,7 @@ main (int argc, char **argv)
 		else
 		{
 			//If the cam is properly initialised, we autoconfigure scrambled channels
-			autoconf_vars.autoconf_scrambled=1;
+			auto_p.autoconf_scrambled=1;
 		}
 		for (curr_channel = 0; curr_channel < chan_p.number_of_channels; curr_channel++)
 		{
@@ -1176,7 +1177,7 @@ main (int argc, char **argv)
 	//memory allocation for MPEG2-TS
 	//packet structures
 	/*****************************************************/
-	iRet=autoconf_init(&autoconf_vars, chan_p.channels,chan_p.number_of_channels);
+	iRet=autoconf_init(&auto_p, chan_p.channels,chan_p.number_of_channels);
 	if(iRet)
 	{
 		set_interrupted(ERROR_GENERIC<<8);
@@ -1187,11 +1188,14 @@ main (int argc, char **argv)
 	/*****************************************************/
 	//scam
 	/*****************************************************/
-	iRet=scam_init_no_autoconf(&autoconf_vars, scam_vars_ptr, chan_p.channels,chan_p.number_of_channels);
-	if(iRet)
+	if (auto_p.autoconfiguration==AUTOCONF_MODE_PIDS || auto_p.autoconfiguration==AUTOCONF_MODE_NONE)
 	{
-		set_interrupted(ERROR_GENERIC<<8);
-		goto mumudvb_close_goto;
+		iRet=scam_init_no_autoconf(scam_vars_ptr, chan_p.channels,chan_p.number_of_channels);
+		if(iRet)
+		{
+			set_interrupted(ERROR_GENERIC<<8);
+			goto mumudvb_close_goto;
+		}
 	}
 
 #endif
@@ -1261,13 +1265,13 @@ main (int argc, char **argv)
 	/*****************************************************/
 	//Some initialisations
 	/*****************************************************/
-	if(multicast_vars.rtp_header)
-		multicast_vars.num_pack=(MAX_UDP_SIZE-TS_PACKET_SIZE)/TS_PACKET_SIZE;
+	if(multi_p.rtp_header)
+		multi_p.num_pack=(MAX_UDP_SIZE-TS_PACKET_SIZE)/TS_PACKET_SIZE;
 	else
-		multicast_vars.num_pack=(MAX_UDP_SIZE)/TS_PACKET_SIZE;
+		multi_p.num_pack=(MAX_UDP_SIZE)/TS_PACKET_SIZE;
 
 	//Initialisation of the channels for RTP
-	if(multicast_vars.rtp_header)
+	if(multi_p.rtp_header)
 		for (curr_channel = 0; curr_channel < chan_p.number_of_channels; curr_channel++)
 			init_rtp_header(&chan_p.channels[curr_channel]);
 
@@ -1398,24 +1402,24 @@ main (int argc, char **argv)
 	/*****************************************************/
 	// Init network, we open the sockets
 	/*****************************************************/
-	if(multicast_vars.multicast)
+	if(multi_p.multicast)
 		for (curr_channel = 0; curr_channel < chan_p.number_of_channels; curr_channel++)
 		{
-			if(multicast_vars.multicast_ipv4)
+			if(multi_p.multicast_ipv4)
 			{
 				//See the README for the reason of this option
-				if(multicast_vars.auto_join)
-					chan_p.channels[curr_channel].socketOut4 = makeclientsocket (chan_p.channels[curr_channel].ip4Out, chan_p.channels[curr_channel].portOut, multicast_vars.ttl, multicast_vars.iface4, &chan_p.channels[curr_channel].sOut4);
+				if(multi_p.auto_join)
+					chan_p.channels[curr_channel].socketOut4 = makeclientsocket (chan_p.channels[curr_channel].ip4Out, chan_p.channels[curr_channel].portOut, multi_p.ttl, multi_p.iface4, &chan_p.channels[curr_channel].sOut4);
 				else
-					chan_p.channels[curr_channel].socketOut4 = makesocket (chan_p.channels[curr_channel].ip4Out, chan_p.channels[curr_channel].portOut, multicast_vars.ttl, multicast_vars.iface4, &chan_p.channels[curr_channel].sOut4);
+					chan_p.channels[curr_channel].socketOut4 = makesocket (chan_p.channels[curr_channel].ip4Out, chan_p.channels[curr_channel].portOut, multi_p.ttl, multi_p.iface4, &chan_p.channels[curr_channel].sOut4);
 			}
-			if(multicast_vars.multicast_ipv6)
+			if(multi_p.multicast_ipv6)
 			{
 				//See the README for the reason of this option
-				if(multicast_vars.auto_join)
-					chan_p.channels[curr_channel].socketOut6 = makeclientsocket6 (chan_p.channels[curr_channel].ip6Out, chan_p.channels[curr_channel].portOut, multicast_vars.ttl, multicast_vars.iface6, &chan_p.channels[curr_channel].sOut6);
+				if(multi_p.auto_join)
+					chan_p.channels[curr_channel].socketOut6 = makeclientsocket6 (chan_p.channels[curr_channel].ip6Out, chan_p.channels[curr_channel].portOut, multi_p.ttl, multi_p.iface6, &chan_p.channels[curr_channel].sOut6);
 				else
-					chan_p.channels[curr_channel].socketOut6 = makesocket6 (chan_p.channels[curr_channel].ip6Out, chan_p.channels[curr_channel].portOut, multicast_vars.ttl, multicast_vars.iface6, &chan_p.channels[curr_channel].sOut6);
+					chan_p.channels[curr_channel].socketOut6 = makesocket6 (chan_p.channels[curr_channel].ip6Out, chan_p.channels[curr_channel].portOut, multi_p.ttl, multi_p.iface6, &chan_p.channels[curr_channel].sOut6);
 			}
 		}
 
@@ -1439,7 +1443,7 @@ main (int argc, char **argv)
 	// init sap
 	/*****************************************************/
 
-	iRet=init_sap(&sap_p, multicast_vars);
+	iRet=init_sap(&sap_p, multi_p);
 	if(iRet)
 	{
 		set_interrupted(ERROR_GENERIC<<8);
@@ -1450,17 +1454,17 @@ main (int argc, char **argv)
 	// Information about streamed channels
 	/*****************************************************/
 
-	if(autoconf_vars.autoconfiguration!=AUTOCONF_MODE_FULL)
+	if(auto_p.autoconfiguration!=AUTOCONF_MODE_FULL)
 		log_streamed_channels(log_module,
 				chan_p.number_of_channels,
 				chan_p.channels,
-				multicast_vars.multicast_ipv4,
-				multicast_vars.multicast_ipv6,
+				multi_p.multicast_ipv4,
+				multi_p.multicast_ipv6,
 				unicast_vars.unicast,
 				unicast_vars.portOut,
 				unicast_vars.ipOut);
 
-	if(autoconf_vars.autoconfiguration)
+	if(auto_p.autoconfiguration)
 		log_message("Autoconf: ",MSG_INFO,"Autoconfiguration Start\n");
 
 
@@ -1538,7 +1542,7 @@ main (int argc, char **argv)
 			pthread_mutex_unlock(&cardthreadparams.carddatamutex);
 			if(cardthreadparams.unicast_data)
 			{
-				iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_p.channels, chan_p.number_of_channels, &strengthparams, &autoconf_vars, cam_p_ptr, scam_vars_ptr);
+				iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_p.channels, chan_p.number_of_channels, &strengthparams, &auto_p, cam_p_ptr, scam_vars_ptr);
 				if(iRet)
 				{
 					set_interrupted(iRet);
@@ -1564,7 +1568,7 @@ main (int argc, char **argv)
 			/**************************************************************/
 			if((!(fds.pfds[0].revents&POLLIN)) && (!(fds.pfds[0].revents&POLLPRI))) //Priority to the DVB packets so if there is dvb packets and something else, we look first to dvb packets
 			{
-				iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_p.channels, chan_p.number_of_channels, &strengthparams, &autoconf_vars, cam_p_ptr, scam_vars_ptr);
+				iRet=unicast_handle_fd_event(&unicast_vars, &fds, chan_p.channels, chan_p.number_of_channels, &strengthparams, &auto_p, cam_p_ptr, scam_vars_ptr);
 				if(iRet)
 					set_interrupted(iRet);
 				//no DVB packet, we continue
@@ -1628,13 +1632,13 @@ main (int argc, char **argv)
 			/******************************************************/
 			//   AUTOCONFIGURATION PART
 			/******************************************************/
-			if(!ScramblingControl &&  autoconf_vars.autoconfiguration)
+			if(!ScramblingControl &&  auto_p.autoconfiguration)
 			{
-				iRet = autoconf_new_packet(pid, actual_ts_packet, &autoconf_vars,  &fds, &chan_p, &tune_p, &multicast_vars, &unicast_vars, server_id, scam_vars_ptr);
+				iRet = autoconf_new_packet(pid, actual_ts_packet, &auto_p,  &fds, &chan_p, &tune_p, &multi_p, &unicast_vars, server_id, scam_vars_ptr);
 				if(iRet)
 					set_interrupted(iRet);
 			}
-			if(autoconf_vars.autoconfiguration)
+			if(auto_p.autoconfiguration)
 				continue;
 
 			/******************************************************/
@@ -1662,7 +1666,7 @@ main (int argc, char **argv)
 				scam_threads_started=1;
 			}
 #endif
-/******************************************************/
+			/******************************************************/
 			//Pat rewrite
 			/******************************************************/
 			if( (pid == 0) && //This is a PAT PID
@@ -1755,7 +1759,7 @@ main (int argc, char **argv)
 				/******************************************************/
 				//PMT follow (ie we check if the pids announced in the PMT changed)
 				/******************************************************/
-				if( (autoconf_vars.autoconf_pid_update) &&
+				if( (auto_p.autoconf_pid_update) &&
 						(send_packet==1) && //no need to check paquets we don't send
 						(chan_p.channels[curr_channel].autoconfigurated) && //only channels whose pids where detected by autoconfiguration (we don't erase "manual" channels)
 						(chan_p.channels[curr_channel].pmt_pid==pid) &&     //And we see the PMT
@@ -1804,7 +1808,7 @@ main (int argc, char **argv)
 						rewrite_vars.rewrite_eit == OPTION_ON) //AND we asked for EIT sorting
 				{
 					eit_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_p.channels[curr_channel],
-							&multicast_vars, &unicast_vars, scam_vars_ptr, &fds);
+							&multi_p, &unicast_vars, scam_vars_ptr, &fds);
 					send_packet=0; //for EIT it is sent by the rewrite function itself
 				}
 
@@ -1825,7 +1829,7 @@ main (int argc, char **argv)
 				/******************************************************/
 				if(send_packet==1)
 				{
-					buffer_func(channel, actual_ts_packet, &unicast_vars, &multicast_vars, scam_vars_ptr, &fds);
+					buffer_func(channel, actual_ts_packet, &unicast_vars, &multi_p, scam_vars_ptr, &fds);
 				}
 
 			}
@@ -1852,7 +1856,7 @@ main (int argc, char **argv)
 	return mumudvb_close(no_daemon,
 			monitorthread == 0 ? NULL:&monitor_thread_params,
 					&rewrite_vars,
-					&autoconf_vars,
+					&auto_p,
 					&unicast_vars,
 					&tune_p.strengththreadshutdown,
 					cam_p_ptr,
@@ -1872,7 +1876,7 @@ main (int argc, char **argv)
 int mumudvb_close(int no_daemon,
 		monitor_parameters_t *monitor_thread_params,
 		rewrite_parameters_t *rewrite_vars,
-		autoconf_parameters_t *autoconf_vars,
+		auto_p_t *auto_p,
 		unicast_parameters_t *unicast_vars,
 		volatile int *strengththreadshutdown,
 		void *cam_p_v,
@@ -2012,7 +2016,7 @@ int mumudvb_close(int no_daemon,
 #endif
 
 	//autoconf variables freeing
-	autoconf_freeing(autoconf_vars);
+	autoconf_freeing(auto_p);
 
 	//sap variables freeing
 	if(monitor_thread_params && monitor_thread_params->sap_p->sap_messages4)
@@ -2063,9 +2067,6 @@ int mumudvb_close(int no_daemon,
 	if(unicast_vars->fd_info)
 		free(unicast_vars->fd_info);
 	unicast_vars->fd_info=NULL;
-
-	//   plop if(temp_buffer_from_dvr)
-	//       free(temp_buffer_from_dvr);
 
 	// Format ExitCode (normal exit)
 	int ExitCode;
@@ -2180,25 +2181,25 @@ void *monitor_func(void* arg)
 
 		/*autoconfiguration*/
 		/*We check if we reached the autoconfiguration timeout*/
-		pthread_mutex_lock(&params->autoconf_vars->lock);
-		if(params->autoconf_vars->autoconfiguration)
+		pthread_mutex_lock(&params->auto_p->lock);
+		if(params->auto_p->autoconfiguration)
 		{
 			int iRet;
 			//autoconf_poll deals with the locks
-			iRet = autoconf_poll(now, params->autoconf_vars, params->chan_p, params->tune_p, params->multicast_vars, &fds, params->unicast_vars, params->server_id, params->scam_vars_v);
+			iRet = autoconf_poll(now, params->auto_p, params->chan_p, params->tune_p, params->multi_p, &fds, params->unicast_vars, params->server_id, params->scam_vars_v);
 
 			if(iRet)
 				set_interrupted(iRet);
 		}
-		autoconf=params->autoconf_vars->autoconfiguration;//to reduce the lock range we store the status
+		autoconf=params->auto_p->autoconfiguration;//to reduce the lock range we store the status
 		//this value is not going from null values to non zero values due to the sequencial implementation of autoconfiguration
-		pthread_mutex_unlock(&params->autoconf_vars->lock);
+		pthread_mutex_unlock(&params->auto_p->lock);
 		pthread_mutex_lock(&params->chan_p->lock);
 		if(!autoconf)
 		{
 			/*we are not doing autoconfiguration we can do something else*/
 			/*sap announces*/
-			sap_poll(params->sap_p,params->chan_p->number_of_channels,params->chan_p->channels,*params->multicast_vars, (long)monitor_now);
+			sap_poll(params->sap_p,params->chan_p->number_of_channels,params->chan_p->channels,*params->multi_p, (long)monitor_now);
 
 
 
@@ -2376,7 +2377,7 @@ void *monitor_func(void* arg)
 								current->name, params->tune_p->card);
 						current->streamed_channel = 1;  // update
 						if(params->sap_p->sap == OPTION_ON)
-							sap_update(&params->chan_p->channels[curr_channel], params->sap_p, curr_channel, *params->multicast_vars); //Channel status changed, we update the sap announces
+							sap_update(&params->chan_p->channels[curr_channel], params->sap_p, curr_channel, *params->multi_p); //Channel status changed, we update the sap announces
 					}
 					else if ((current->streamed_channel) && (packets_per_sec < params->stats_infos->down_threshold))
 					{
@@ -2385,7 +2386,7 @@ void *monitor_func(void* arg)
 								current->name, params->tune_p->card);
 						current->streamed_channel = 0;  // update
 						if(params->sap_p->sap == OPTION_ON)
-							sap_update(&params->chan_p->channels[curr_channel], params->sap_p, curr_channel, *params->multicast_vars); //Channel status changed, we update the sap announces
+							sap_update(&params->chan_p->channels[curr_channel], params->sap_p, curr_channel, *params->multi_p); //Channel status changed, we update the sap announces
 					}
 				}
 			}

@@ -140,6 +140,6 @@ void set_continuity_counter(unsigned char *buf,int continuity_counter);
 
 void eit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars);
 void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel,
-		multicast_parameters_t *multicast_vars, unicast_parameters_t *unicast_vars, void *scam_vars_v,fds_t *fds);
+		multi_p_t *multi_p, unicast_parameters_t *unicast_vars, void *scam_vars_v,fds_t *fds);
 
 #endif

@@ -38,7 +38,7 @@
 extern uint32_t       crc32_table[256];
 static char *log_module="SAP: ";
 
-int sap_add_program(mumudvb_channel_t *channel, sap_p_t *sap_p, mumudvb_sap_message_t *sap_message4, mumudvb_sap_message_t *sap_message6, multicast_parameters_t multicast_vars);
+int sap_add_program(mumudvb_channel_t *channel, sap_p_t *sap_p, mumudvb_sap_message_t *sap_message4, mumudvb_sap_message_t *sap_message6, multi_p_t multi_p);
 
 
 /** Initialize sap variables*/
@@ -170,11 +170,11 @@ int read_sap_configuration(sap_p_t *sap_p, mumudvb_channel_t *current_channel, i
 /** @brief init the sap
  * Alloc the memory for the messages, open the socket
  */
-int init_sap(sap_p_t *sap_p, multicast_parameters_t multicast_vars)
+int init_sap(sap_p_t *sap_p, multi_p_t multi_p)
 {
 	if(sap_p->sap == OPTION_ON)
 	{
-		if(multicast_vars.multicast_ipv4)
+		if(multi_p.multicast_ipv4)
 		{
 			log_message( log_module,  MSG_DETAIL,  "init sap v4\n");
 			sap_p->sap_messages4=malloc(sizeof(mumudvb_sap_message_t)*MAX_CHANNELS);
@@ -186,12 +186,12 @@ int init_sap(sap_p_t *sap_p, multicast_parameters_t multicast_vars)
 			memset (sap_p->sap_messages4, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
 			//For sap announces, we open the socket
 			//See the README about multicast_auto_join
-			if(multicast_vars.auto_join)
-				sap_p->sap_socketOut4 =  makeclientsocket (SAP_IP4, SAP_PORT, sap_p->sap_ttl, multicast_vars.iface4, &sap_p->sap_sOut4);
+			if(multi_p.auto_join)
+				sap_p->sap_socketOut4 =  makeclientsocket (SAP_IP4, SAP_PORT, sap_p->sap_ttl, multi_p.iface4, &sap_p->sap_sOut4);
 			else
-				sap_p->sap_socketOut4 =  makesocket (SAP_IP4, SAP_PORT, sap_p->sap_ttl, multicast_vars.iface4, &sap_p->sap_sOut4);
+				sap_p->sap_socketOut4 =  makesocket (SAP_IP4, SAP_PORT, sap_p->sap_ttl, multi_p.iface4, &sap_p->sap_sOut4);
 		}
-		if(multicast_vars.multicast_ipv6)
+		if(multi_p.multicast_ipv6)
 		{
 			log_message( log_module,  MSG_DETAIL,  "init sap v6\n");
 			sap_p->sap_messages6=malloc(sizeof(mumudvb_sap_message_t)*MAX_CHANNELS);
@@ -203,10 +203,10 @@ int init_sap(sap_p_t *sap_p, multicast_parameters_t multicast_vars)
 			memset (sap_p->sap_messages6, 0, sizeof( mumudvb_sap_message_t)*MAX_CHANNELS);//we clear it
 			//For sap announces, we open the socket
 			//See the README about multicast_auto_join
-			if(multicast_vars.auto_join)
-				sap_p->sap_socketOut6 =  makeclientsocket6 (SAP_IP6, SAP_PORT, sap_p->sap_ttl, multicast_vars.iface6, &sap_p->sap_sOut6);
+			if(multi_p.auto_join)
+				sap_p->sap_socketOut6 =  makeclientsocket6 (SAP_IP6, SAP_PORT, sap_p->sap_ttl, multi_p.iface6, &sap_p->sap_sOut6);
 			else
-				sap_p->sap_socketOut6 =  makesocket6 (SAP_IP6, SAP_PORT, sap_p->sap_ttl, multicast_vars.iface6, &sap_p->sap_sOut6);
+				sap_p->sap_socketOut6 =  makesocket6 (SAP_IP6, SAP_PORT, sap_p->sap_ttl, multi_p.iface6, &sap_p->sap_sOut6);
 		}
 		sap_p->sap_serial= 1 + (int) (424242.0 * (rand() / (RAND_MAX + 1.0)));
 		sap_p->sap_last_time_sent = 0;
@@ -246,7 +246,7 @@ void sap_send(sap_p_t *sap_p, int num_messages)
  * @param sap_p the sap variables
  * @param curr_channel the number of the updated channel
  */
-int sap_update(mumudvb_channel_t *channel, sap_p_t *sap_p, int curr_channel, multicast_parameters_t multicast_vars)
+int sap_update(mumudvb_channel_t *channel, sap_p_t *sap_p, int curr_channel, multi_p_t multi_p)
 {
 	/** @todo check PACKET Size < MTU*/
 	//This function is called when the channel changes so it increases the version and update the packet
@@ -336,7 +336,7 @@ int sap_update(mumudvb_channel_t *channel, sap_p_t *sap_p, int curr_channel, mul
 		sap_message6->len++;
 	}
 	// one program per message
-	sap_add_program(channel, sap_p, sap_message4, sap_message6, multicast_vars);
+	sap_add_program(channel, sap_p, sap_message4, sap_message6, multi_p);
 
 
 	//we compute the CRC32 of the message in order to generate a hash
@@ -373,7 +373,7 @@ int sap_update(mumudvb_channel_t *channel, sap_p_t *sap_p, int curr_channel, mul
  * @param sap_p the sap variables
  * @param sap_message the sap message
  */
-int sap_add_program(mumudvb_channel_t *channel, sap_p_t *sap_p, mumudvb_sap_message_t *sap_message4, mumudvb_sap_message_t *sap_message6, multicast_parameters_t multicast_vars)
+int sap_add_program(mumudvb_channel_t *channel, sap_p_t *sap_p, mumudvb_sap_message_t *sap_message4, mumudvb_sap_message_t *sap_message6, multi_p_t multi_p)
 {
 
 	//See RFC 2327
@@ -454,7 +454,7 @@ int sap_add_program(mumudvb_channel_t *channel, sap_p_t *sap_p, mumudvb_sap_mess
 	if(channel->socketOut4)
 		mumu_string_append(&payload4,
 				"c=IN IP4 %s/%d\r\n",
-				channel->ip4Out, multicast_vars.ttl);
+				channel->ip4Out, multi_p.ttl);
 	if(channel->socketOut6)
 		mumu_string_append(&payload6,
 				"c=IN IP6 %s\r\n",
@@ -544,7 +544,7 @@ int sap_add_program(mumudvb_channel_t *channel, sap_p_t *sap_p, mumudvb_sap_mess
      m=video channel_port rtp/avp 33     
 
 	 */
-	if(!multicast_vars.rtp_header)
+	if(!multi_p.rtp_header)
 	{
 		if(channel->socketOut4)
 			mumu_string_append(&payload4,"m=video %d udp 33\r\n", channel->portOut);
@@ -610,10 +610,10 @@ int sap_add_program(mumudvb_channel_t *channel, sap_p_t *sap_p, mumudvb_sap_mess
  * @param number_of_channels the number of channels
  * @param channels the channels
  * @param sap_p the sap variables
- * @param multicast_vars the multicast variables
+ * @param multi_p the multicast variables
  * @param now the time
  */
-void sap_poll(sap_p_t *sap_p,int number_of_channels,mumudvb_channel_t  *channels, multicast_parameters_t multicast_vars, long now)
+void sap_poll(sap_p_t *sap_p,int number_of_channels,mumudvb_channel_t  *channels, multi_p_t multi_p, long now)
 {
 	int curr_channel;
 	//we check if SAP is initialised
@@ -625,7 +625,7 @@ void sap_poll(sap_p_t *sap_p,int number_of_channels,mumudvb_channel_t  *channels
 		{
 			// it's the first time we are here, we initialize all the channels
 			for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-				sap_update(&channels[curr_channel], sap_p, curr_channel, multicast_vars);
+				sap_update(&channels[curr_channel], sap_p, curr_channel, multi_p);
 			sap_p->sap_last_time_sent=now-sap_p->sap_interval-1;
 		}
 		if((now-sap_p->sap_last_time_sent)>=sap_p->sap_interval)

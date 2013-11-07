@@ -69,7 +69,7 @@ typedef struct mumudvb_service_t{
 }mumudvb_service_t;
 
 /**@brief The different parameters used for autoconfiguration*/
-typedef struct autoconf_parameters_t{
+typedef struct auto_p_t{
 	pthread_mutex_t lock;
 	/**Do we use autoconfiguration ?
 
@@ -114,15 +114,15 @@ Possible values for this variable
 	/** the template for the channel name*/
 	char name_template[MAX_NAME_LEN];
 
-}autoconf_parameters_t;
+}auto_p_t;
 
 
-void init_aconf_v(autoconf_parameters_t *aconf_p);
-int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *channels,int number_of_channels);
-void autoconf_freeing(autoconf_parameters_t *);
-int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, char *substring);
-int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, fds_t *fds, mumu_chan_p_t *chan_p, tune_p_t *tune_p, multicast_parameters_t *multicast_vars,  unicast_parameters_t *unicast_vars, int server_id, void *scam_vars);
-int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumu_chan_p_t *chan_p, tune_p_t *tune_p, multicast_parameters_t *multicast_vars, fds_t *fds, unicast_parameters_t *unicast_vars, int server_id, void *scam_vars);
+void init_aconf_v(auto_p_t *aconf_p);
+int autoconf_init(auto_p_t *auto_p, mumudvb_channel_t *channels,int number_of_channels);
+void autoconf_freeing(auto_p_t *);
+int read_autoconfiguration_configuration(auto_p_t *auto_p, char *substring);
+int autoconf_new_packet(int pid, unsigned char *ts_packet, auto_p_t *auto_p, fds_t *fds, mumu_chan_p_t *chan_p, tune_p_t *tune_p, multi_p_t *multi_p,  unicast_parameters_t *unicast_vars, int server_id, void *scam_vars);
+int autoconf_poll(long now, auto_p_t *auto_p, mumu_chan_p_t *chan_p, tune_p_t *tune_p, multi_p_t *multi_p, fds_t *fds, unicast_parameters_t *unicast_vars, int server_id, void *scam_vars);
 void autoconf_pmt_follow( unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t *actual_channel, char *card_base_path, int tuner, mumu_chan_p_t *chan_p );
 
 #endif
