@@ -308,8 +308,8 @@ main (int argc, char **argv)
 	FILE *dump_file;
 
 	// configuration file parsing
-	int curr_channel = 0;
-	int curr_pid = 0;
+	int ichan = 0;
+	int ipid = 0;
 	int send_packet=0;
 	int channel_start = 0;
 	char current_line[CONF_LINELEN];
@@ -493,7 +493,7 @@ main (int argc, char **argv)
 		exit(ERROR_CONF_FILE);
 	}
 
-	curr_channel=-1;
+	ichan=-1;
 	int curr_channel_old=-1;
 	// we scan config file
 	// see doc/README_CONF* for further information
@@ -531,7 +531,7 @@ main (int argc, char **argv)
 		if (substring[0] == '#')
 			continue;
 
-		if(curr_channel<0)
+		if(ichan<0)
 			channel_start=0;
 		else
 			channel_start=1;
@@ -545,31 +545,31 @@ main (int argc, char **argv)
 			if(iRet==-1)
 				exit(ERROR_CONF);
 		}
-		else if((iRet=read_sap_configuration(&sap_p, &chan_p.channels[curr_channel], channel_start, substring))) //Read the line concerning the sap parameters
+		else if((iRet=read_sap_configuration(&sap_p, &chan_p.channels[ichan], channel_start, substring))) //Read the line concerning the sap parameters
 		{
 			if(iRet==-1)
 				exit(ERROR_CONF);
 		}
 #ifdef ENABLE_CAM_SUPPORT
-		else if((iRet=read_cam_configuration(&cam_p, &chan_p.channels[curr_channel], channel_start, substring))) //Read the line concerning the cam parameters
+		else if((iRet=read_cam_configuration(&cam_p, &chan_p.channels[ichan], channel_start, substring))) //Read the line concerning the cam parameters
 		{
 			if(iRet==-1)
 				exit(ERROR_CONF);
 		}
 #endif
 #ifdef ENABLE_SCAM_SUPPORT
-		else if((iRet=read_scam_configuration(scam_vars_ptr, &chan_p.channels[curr_channel], channel_start, substring))) //Read the line concerning the cam parameters
+		else if((iRet=read_scam_configuration(scam_vars_ptr, &chan_p.channels[ichan], channel_start, substring))) //Read the line concerning the cam parameters
 		{
 			if(iRet==-1)
 				exit(ERROR_CONF);
 		}
 #endif
-		else if((iRet=read_unicast_configuration(&unicast_vars, &chan_p.channels[curr_channel], channel_start, substring))) //Read the line concerning the unicast parameters
+		else if((iRet=read_unicast_configuration(&unicast_vars, &chan_p.channels[ichan], channel_start, substring))) //Read the line concerning the unicast parameters
 		{
 			if(iRet==-1)
 				exit(ERROR_CONF);
 		}
-		else if((iRet=read_multicast_configuration(&multi_p, chan_p.channels, channel_start, &curr_channel, substring))) //Read the line concerning the multicast parameters
+		else if((iRet=read_multicast_configuration(&multi_p, chan_p.channels, channel_start, &ichan, substring))) //Read the line concerning the multicast parameters
 		{
 			if(iRet==-1)
 				exit(ERROR_CONF);
@@ -586,7 +586,7 @@ main (int argc, char **argv)
 		}
 		else if (!strcmp (substring, "channel_next"))
 		{
-			curr_channel++;
+			ichan++;
 			log_message( log_module, MSG_INFO,"channel next\n");
 		}
 		else if (!strcmp (substring, "timeout_no_diff"))
@@ -656,40 +656,40 @@ main (int argc, char **argv)
 				exit(ERROR_CONF);
 			}
 			substring = strtok (NULL, delimiteurs);
-			chan_p.channels[curr_channel].service_id = atoi (substring);
+			chan_p.channels[ichan].service_id = atoi (substring);
 		}
 		else if (!strcmp (substring, "pids"))
 		{
-			curr_pid = 0;
+			ipid = 0;
 			if ( channel_start == 0)
 			{
 				log_message( log_module,  MSG_ERROR,
 						"pids : You have to start a channel first (using ip= or channel_next)\n");
 				exit(ERROR_CONF);
 			}
-			if (multi_p.common_port!=0 && chan_p.channels[curr_channel].portOut == 0)
-				chan_p.channels[curr_channel].portOut = multi_p.common_port;
+			if (multi_p.common_port!=0 && chan_p.channels[ichan].portOut == 0)
+				chan_p.channels[ichan].portOut = multi_p.common_port;
 			while ((substring = strtok (NULL, delimiteurs)) != NULL)
 			{
-				chan_p.channels[curr_channel].pids[curr_pid] = atoi (substring);
+				chan_p.channels[ichan].pids[ipid] = atoi (substring);
 				// we see if the given pid is good
-				if (chan_p.channels[curr_channel].pids[curr_pid] < 10 || chan_p.channels[curr_channel].pids[curr_pid] >= 8193)
+				if (chan_p.channels[ichan].pids[ipid] < 10 || chan_p.channels[ichan].pids[ipid] >= 8193)
 				{
 					log_message( log_module,  MSG_ERROR,
 							"Config issue : %s in pids, given pid : %d\n",
-							conf_filename, chan_p.channels[curr_channel].pids[curr_pid]);
+							conf_filename, chan_p.channels[ichan].pids[ipid]);
 					exit(ERROR_CONF);
 				}
-				curr_pid++;
-				if (curr_pid >= MAX_PIDS)
+				ipid++;
+				if (ipid >= MAX_PIDS)
 				{
 					log_message( log_module,  MSG_ERROR,
 							"Too many pids : %d channel : %d\n",
-							curr_pid, curr_channel);
+							ipid, ichan);
 					exit(ERROR_CONF);
 				}
 			}
-			chan_p.channels[curr_channel].num_pids = curr_pid;
+			chan_p.channels[ichan].num_pids = ipid;
 		}
 		else if (!strcmp (substring, "name"))
 		{
@@ -701,8 +701,8 @@ main (int argc, char **argv)
 			}
 			// other substring extraction method in order to keep spaces
 			substring = strtok (NULL, "=");
-			strncpy(chan_p.channels[curr_channel].name,strtok(substring,"\n"),MAX_NAME_LEN-1);
-			chan_p.channels[curr_channel].name[MAX_NAME_LEN-1]='\0';
+			strncpy(chan_p.channels[ichan].name,strtok(substring,"\n"),MAX_NAME_LEN-1);
+			chan_p.channels[ichan].name[MAX_NAME_LEN-1]='\0';
 			if (strlen (substring) >= MAX_NAME_LEN - 1)
 				log_message( log_module,  MSG_WARN,"Channel name too long\n");
 		}
@@ -734,17 +734,17 @@ main (int argc, char **argv)
 			continue;
 		}
 
-		if (curr_channel > MAX_CHANNELS)
+		if (ichan > MAX_CHANNELS)
 		{
 			log_message( log_module,  MSG_ERROR, "Too many channels : %d limit : %d\n",
-					curr_channel, MAX_CHANNELS);
+					ichan, MAX_CHANNELS);
 			exit(ERROR_TOO_CHANNELS);
 		}
 
 		//A new channel have been defined
-		if(curr_channel_old != curr_channel)
+		if(curr_channel_old != ichan)
 		{
-			curr_channel_old = curr_channel;
+			curr_channel_old = ichan;
 		}
 	}
 	fclose (conf_file);
@@ -794,7 +794,6 @@ main (int argc, char **argv)
 	{
 		int len;
 		len=strlen(unicast_vars.portOut_str)+1;
-		char number[10];
 		sprintf(number,"%d",tune_p.card);
 		unicast_vars.portOut_str=mumu_string_replace(unicast_vars.portOut_str,&len,1,"%card",number);
 		sprintf(number,"%d",tune_p.tuner);
@@ -809,7 +808,6 @@ main (int argc, char **argv)
 	{
 		int len;
 		len=strlen(log_params.log_file_path)+1;
-		char number[10];
 		sprintf(number,"%d",tune_p.card);
 		log_params.log_file_path=mumu_string_replace(log_params.log_file_path,&len,1,"%card",number);
 		sprintf(number,"%d",tune_p.tuner);
@@ -831,7 +829,7 @@ main (int argc, char **argv)
 
 	// + 1 Because of the new syntax
 	pthread_mutex_lock(&chan_p.lock);
-	chan_p.number_of_channels = curr_channel+1;
+	chan_p.number_of_channels = ichan+1;
 	pthread_mutex_unlock(&chan_p.lock);
 	/*****************************************************/
 	//Autoconfiguration init
@@ -965,7 +963,6 @@ main (int argc, char **argv)
 		{
 			int len;
 			len=DEFAULT_PATH_LEN;
-			char number[10];
 			sprintf(number,"%d",tune_p.card);
 			mumu_string_replace(filename_pid,&len,0,"%card",number);
 			sprintf(number,"%d",tune_p.tuner);
@@ -1110,20 +1107,20 @@ main (int argc, char **argv)
 			//If the cam is properly initialised, we autoconfigure scrambled channels
 			auto_p.autoconf_scrambled=1;
 		}
-		for (curr_channel = 0; curr_channel < chan_p.number_of_channels; curr_channel++)
+		for (ichan = 0; ichan < chan_p.number_of_channels; ichan++)
 		{
 			//We allocate the packet for storing the PMT for CAM purposes
-			if(chan_p.channels[curr_channel].cam_pmt_packet==NULL)
+			if(chan_p.channels[ichan].cam_pmt_packet==NULL)
 			{
-				chan_p.channels[curr_channel].cam_pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
-				if(chan_p.channels[curr_channel].cam_pmt_packet==NULL)
+				chan_p.channels[ichan].cam_pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
+				if(chan_p.channels[ichan].cam_pmt_packet==NULL)
 				{
 					log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 					set_interrupted(ERROR_MEMORY<<8);
 					goto mumudvb_close_goto;
 				}
-				memset (chan_p.channels[curr_channel].cam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-				pthread_mutex_init(&chan_p.channels[curr_channel].cam_pmt_packet->packetmutex,NULL);
+				memset (chan_p.channels[ichan].cam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+				pthread_mutex_init(&chan_p.channels[ichan].cam_pmt_packet->packetmutex,NULL);
 			}
 		}
 	}
@@ -1164,8 +1161,8 @@ main (int argc, char **argv)
 
 	if(rewrite_vars.rewrite_pat == OPTION_ON)
 	{
-		for (curr_channel = 0; curr_channel < MAX_CHANNELS; curr_channel++)
-			chan_p.channels[curr_channel].generated_pat_version=-1;
+		for (ichan = 0; ichan < MAX_CHANNELS; ichan++)
+			chan_p.channels[ichan].generated_pat_version=-1;
 
 		rewrite_vars.full_pat=malloc(sizeof(mumudvb_ts_packet_t));
 		if(rewrite_vars.full_pat==NULL)
@@ -1186,8 +1183,8 @@ main (int argc, char **argv)
 
 	if(rewrite_vars.rewrite_sdt == OPTION_ON)
 	{
-		for (curr_channel = 0; curr_channel < MAX_CHANNELS; curr_channel++)
-			chan_p.channels[curr_channel].generated_sdt_version=-1;
+		for (ichan = 0; ichan < MAX_CHANNELS; ichan++)
+			chan_p.channels[ichan].generated_sdt_version=-1;
 
 		rewrite_vars.full_sdt=malloc(sizeof(mumudvb_ts_packet_t));
 		if(rewrite_vars.full_sdt==NULL)
@@ -1229,30 +1226,30 @@ main (int argc, char **argv)
 
 	//Initialisation of the channels for RTP
 	if(multi_p.rtp_header)
-		for (curr_channel = 0; curr_channel < chan_p.number_of_channels; curr_channel++)
-			init_rtp_header(&chan_p.channels[curr_channel]);
+		for (ichan = 0; ichan < chan_p.number_of_channels; ichan++)
+			init_rtp_header(&chan_p.channels[ichan]);
 
 	// initialisation of active channels list
-	for (curr_channel = 0; curr_channel < chan_p.number_of_channels; curr_channel++)
+	for (ichan = 0; ichan < chan_p.number_of_channels; ichan++)
 	{
-		chan_p.channels[curr_channel].num_packet = 0;
-		chan_p.channels[curr_channel].streamed_channel = 1;
-		chan_p.channels[curr_channel].num_scrambled_packets = 0;
-		chan_p.channels[curr_channel].scrambled_channel = 0;
+		chan_p.channels[ichan].num_packet = 0;
+		chan_p.channels[ichan].streamed_channel = 1;
+		chan_p.channels[ichan].num_scrambled_packets = 0;
+		chan_p.channels[ichan].scrambled_channel = 0;
 
 		//We alloc the channel pmt_packet (useful for autoconf and cam)
 		/** @todo : allocate only if autoconf */
-		if(chan_p.channels[curr_channel].pmt_packet==NULL)
+		if(chan_p.channels[ichan].pmt_packet==NULL)
 		{
-			chan_p.channels[curr_channel].pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
-			if(chan_p.channels[curr_channel].pmt_packet==NULL)
+			chan_p.channels[ichan].pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
+			if(chan_p.channels[ichan].pmt_packet==NULL)
 			{
 				log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 				set_interrupted(ERROR_MEMORY<<8);
 				goto mumudvb_close_goto;
 			}
-			memset (chan_p.channels[curr_channel].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-			pthread_mutex_init(&chan_p.channels[curr_channel].pmt_packet->packetmutex,NULL);
+			memset (chan_p.channels[ichan].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+			pthread_mutex_init(&chan_p.channels[ichan].pmt_packet->packetmutex,NULL);
 
 		}
 
@@ -1263,8 +1260,8 @@ main (int argc, char **argv)
 	memset (chan_p.number_chan_asked_pid, 0, sizeof( uint8_t)*8193);//we clear it
 
 	// We initialize the table for checking the TS discontinuities
-	for (curr_pid = 0; curr_pid < 8193; curr_pid++)
-		chan_p.continuity_counter_pid[curr_pid]=-1;
+	for (ipid = 0; ipid < 8193; ipid++)
+		chan_p.continuity_counter_pid[ipid]=-1;
 
 	//We initialise mandatory pid table
 	memset (mandatory_pid, 0, sizeof( uint8_t)*MAX_MANDATORY_PID_NUMBER);//we clear it
@@ -1305,13 +1302,13 @@ main (int argc, char **argv)
 	/*****************************************************/
 
 	//We fill the asked_pid array
-	for (curr_channel = 0; curr_channel < chan_p.number_of_channels; curr_channel++)
+	for (ichan = 0; ichan < chan_p.number_of_channels; ichan++)
 	{
-		for (curr_pid = 0; curr_pid < chan_p.channels[curr_channel].num_pids; curr_pid++)
+		for (ipid = 0; ipid < chan_p.channels[ichan].num_pids; ipid++)
 		{
-			if(chan_p.asked_pid[chan_p.channels[curr_channel].pids[curr_pid]]==PID_NOT_ASKED)
-				chan_p.asked_pid[chan_p.channels[curr_channel].pids[curr_pid]]=PID_ASKED;
-			chan_p.number_chan_asked_pid[chan_p.channels[curr_channel].pids[curr_pid]]++;
+			if(chan_p.asked_pid[chan_p.channels[ichan].pids[ipid]]==PID_NOT_ASKED)
+				chan_p.asked_pid[chan_p.channels[ichan].pids[ipid]]=PID_ASKED;
+			chan_p.number_chan_asked_pid[chan_p.channels[ichan].pids[ipid]]++;
 		}
 	}
 
@@ -1360,23 +1357,23 @@ main (int argc, char **argv)
 	// Init network, we open the sockets
 	/*****************************************************/
 	if(multi_p.multicast)
-		for (curr_channel = 0; curr_channel < chan_p.number_of_channels; curr_channel++)
+		for (ichan = 0; ichan < chan_p.number_of_channels; ichan++)
 		{
 			if(multi_p.multicast_ipv4)
 			{
 				//See the README for the reason of this option
 				if(multi_p.auto_join)
-					chan_p.channels[curr_channel].socketOut4 = makeclientsocket (chan_p.channels[curr_channel].ip4Out, chan_p.channels[curr_channel].portOut, multi_p.ttl, multi_p.iface4, &chan_p.channels[curr_channel].sOut4);
+					chan_p.channels[ichan].socketOut4 = makeclientsocket (chan_p.channels[ichan].ip4Out, chan_p.channels[ichan].portOut, multi_p.ttl, multi_p.iface4, &chan_p.channels[ichan].sOut4);
 				else
-					chan_p.channels[curr_channel].socketOut4 = makesocket (chan_p.channels[curr_channel].ip4Out, chan_p.channels[curr_channel].portOut, multi_p.ttl, multi_p.iface4, &chan_p.channels[curr_channel].sOut4);
+					chan_p.channels[ichan].socketOut4 = makesocket (chan_p.channels[ichan].ip4Out, chan_p.channels[ichan].portOut, multi_p.ttl, multi_p.iface4, &chan_p.channels[ichan].sOut4);
 			}
 			if(multi_p.multicast_ipv6)
 			{
 				//See the README for the reason of this option
 				if(multi_p.auto_join)
-					chan_p.channels[curr_channel].socketOut6 = makeclientsocket6 (chan_p.channels[curr_channel].ip6Out, chan_p.channels[curr_channel].portOut, multi_p.ttl, multi_p.iface6, &chan_p.channels[curr_channel].sOut6);
+					chan_p.channels[ichan].socketOut6 = makeclientsocket6 (chan_p.channels[ichan].ip6Out, chan_p.channels[ichan].portOut, multi_p.ttl, multi_p.iface6, &chan_p.channels[ichan].sOut6);
 				else
-					chan_p.channels[curr_channel].socketOut6 = makesocket6 (chan_p.channels[curr_channel].ip6Out, chan_p.channels[curr_channel].portOut, multi_p.ttl, multi_p.iface6, &chan_p.channels[curr_channel].sOut6);
+					chan_p.channels[ichan].socketOut6 = makesocket6 (chan_p.channels[ichan].ip6Out, chan_p.channels[ichan].portOut, multi_p.ttl, multi_p.iface6, &chan_p.channels[ichan].sOut6);
 			}
 		}
 
@@ -1387,11 +1384,11 @@ main (int argc, char **argv)
 		log_message("Unicast: ", MSG_INFO,"We open the Master http socket for address %s:%d\n",unicast_vars.ipOut, unicast_vars.portOut);
 		unicast_create_listening_socket(UNICAST_MASTER, -1, unicast_vars.ipOut, unicast_vars.portOut, &unicast_vars.sIn, &unicast_vars.socketIn, &fds, &unicast_vars);
 		/** open the unicast listening connections fo the channels */
-		for (curr_channel = 0; curr_channel < chan_p.number_of_channels; curr_channel++)
-			if(chan_p.channels[curr_channel].unicast_port)
+		for (ichan = 0; ichan < chan_p.number_of_channels; ichan++)
+			if(chan_p.channels[ichan].unicast_port)
 			{
-				log_message("Unicast: ", MSG_INFO,"We open the channel %d http socket address %s:%d\n",curr_channel, unicast_vars.ipOut, chan_p.channels[curr_channel].unicast_port);
-				unicast_create_listening_socket(UNICAST_LISTEN_CHANNEL, curr_channel, unicast_vars.ipOut,chan_p.channels[curr_channel].unicast_port , &chan_p.channels[curr_channel].sIn, &chan_p.channels[curr_channel].socketIn, &fds, &unicast_vars);
+				log_message("Unicast: ", MSG_INFO,"We open the channel %d http socket address %s:%d\n",ichan, unicast_vars.ipOut, chan_p.channels[ichan].unicast_port);
+				unicast_create_listening_socket(UNICAST_LISTEN_CHANNEL, ichan, unicast_vars.ipOut,chan_p.channels[ichan].unicast_port , &chan_p.channels[ichan].sIn, &chan_p.channels[ichan].socketIn, &fds, &unicast_vars);
 			}
 	}
 
@@ -1616,9 +1613,9 @@ main (int argc, char **argv)
 			//   SCAM PMT GET PART FINISHED
 			/******************************************************/
 			if(!scam_threads_started) {
-				for (curr_channel = 0; curr_channel < chan_p.number_of_channels; curr_channel++) {
-					if (chan_p.channels[curr_channel].scam_support && scam_vars.scam_support)
-						set_interrupted(scam_channel_start(&chan_p.channels[curr_channel]));
+				for (ichan = 0; ichan < chan_p.number_of_channels; ichan++) {
+					if (chan_p.channels[ichan].scam_support && scam_vars.scam_support)
+						set_interrupted(scam_channel_start(&chan_p.channels[ichan]));
 				}
 				scam_threads_started=1;
 			}
@@ -1641,8 +1638,8 @@ main (int argc, char **argv)
 				if(sdt_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars)==1)
 				{
 					log_message( log_module, MSG_DETAIL,"The SDT version changed, we force the update of all the channels.\n");
-					for (curr_channel = 0; curr_channel < chan_p.number_of_channels; curr_channel++)
-						chan_p.channels[curr_channel].sdt_rewrite_skip=0; //no lock needed, accessed only by main thread
+					for (ichan = 0; ichan < chan_p.number_of_channels; ichan++)
+						chan_p.channels[ichan].sdt_rewrite_skip=0; //no lock needed, accessed only by main thread
 				}
 			}
 			/******************************************************/
@@ -1659,7 +1656,7 @@ main (int argc, char **argv)
 			//for each channel we'll look if we must send this PID
 			/******************************************************/
 			pthread_mutex_lock(&chan_p.lock);
-			for (curr_channel = 0; curr_channel < chan_p.number_of_channels; curr_channel++)
+			for (ichan = 0; ichan < chan_p.number_of_channels; ichan++)
 			{
 				//we'll see if we must send this pid for this channel
 				send_packet=0;
@@ -1673,8 +1670,8 @@ main (int argc, char **argv)
 
 				//if it isn't mandatory wee see if it is in the channel list
 				if(!send_packet)
-					for (curr_pid = 0; (curr_pid < chan_p.channels[curr_channel].num_pids)&& !send_packet; curr_pid++)
-						if ((chan_p.channels[curr_channel].pids[curr_pid] == pid) || (chan_p.channels[curr_channel].pids[curr_pid] == 8192)) //We can stream whole transponder using 8192
+					for (ipid = 0; (ipid < chan_p.channels[ichan].num_pids)&& !send_packet; ipid++)
+						if ((chan_p.channels[ichan].pids[ipid] == pid) || (chan_p.channels[ichan].pids[ipid] == 8192)) //We can stream whole transponder using 8192
 						{
 							send_packet=1;
 
@@ -1689,7 +1686,7 @@ main (int argc, char **argv)
 						cam_p.ca_resource_connected &&
 						((now-cam_p.cam_pmt_send_time)>=cam_p.cam_interval_pmt_send ))
 				{
-					if(cam_new_packet(pid, curr_channel, actual_ts_packet, &cam_p, &chan_p.channels[curr_channel]))
+					if(cam_new_packet(pid, ichan, actual_ts_packet, &cam_p, &chan_p.channels[ichan]))
 						cam_p.cam_pmt_send_time=now; //A packet was sent to the CAM
 				}
 #endif
@@ -1699,17 +1696,17 @@ main (int argc, char **argv)
 				// sending capmt to oscam
 				/******************************************************/
 #ifdef ENABLE_SCAM_SUPPORT
-				if (scam_vars.scam_support &&(chan_p.channels[curr_channel].need_scam_ask==CAM_NEED_ASK))
+				if (scam_vars.scam_support &&(chan_p.channels[ichan].need_scam_ask==CAM_NEED_ASK))
 				{
-					if (chan_p.channels[curr_channel].scam_support && chan_p.channels[curr_channel].pmt_packet->len_full != 0 ) {
-						iRet=scam_send_capmt(&chan_p.channels[curr_channel],tune_p.card);
+					if (chan_p.channels[ichan].scam_support && chan_p.channels[ichan].pmt_packet->len_full != 0 ) {
+						iRet=scam_send_capmt(&chan_p.channels[ichan],tune_p.card);
 						if(iRet)
 						{
 							set_interrupted(ERROR_GENERIC<<8);
 							goto mumudvb_close_goto;
 						}
 					}
-					chan_p.channels[curr_channel].need_scam_ask=CAM_ASKED;
+					chan_p.channels[ichan].need_scam_ask=CAM_ASKED;
 				}
 #endif
 
@@ -1718,11 +1715,11 @@ main (int argc, char **argv)
 				/******************************************************/
 				if( (auto_p.autoconf_pid_update) &&
 						(send_packet==1) && //no need to check paquets we don't send
-						(chan_p.channels[curr_channel].autoconfigurated) && //only channels whose pids where detected by autoconfiguration (we don't erase "manual" channels)
-						(chan_p.channels[curr_channel].pmt_pid==pid) &&     //And we see the PMT
+						(chan_p.channels[ichan].autoconfigurated) && //only channels whose pids where detected by autoconfiguration (we don't erase "manual" channels)
+						(chan_p.channels[ichan].pmt_pid==pid) &&     //And we see the PMT
 						pid)
 				{
-					autoconf_pmt_follow( actual_ts_packet, &fds, &chan_p.channels[curr_channel], tune_p.card_dev_path, tune_p.tuner, &chan_p );
+					autoconf_pmt_follow( actual_ts_packet, &fds, &chan_p.channels[ichan], tune_p.card_dev_path, tune_p.tuner, &chan_p );
 				}
 				/******************************************************/
 				//PMT follow for the cam for  non autoconfigurated channels.
@@ -1730,13 +1727,13 @@ main (int argc, char **argv)
 				/******************************************************/
 #ifdef ENABLE_CAM_SUPPORT
 				if((cam_p.cam_pmt_follow) &&
-						(chan_p.channels[curr_channel].need_cam_ask==CAM_ASKED) &&
+						(chan_p.channels[ichan].need_cam_ask==CAM_ASKED) &&
 						(send_packet==1) && //no need to check paquets we don't send
-						(!chan_p.channels[curr_channel].autoconfigurated) && //the check is for the non autoconfigurated channels
-						(chan_p.channels[curr_channel].pmt_pid==pid) &&     //And we see the PMT
+						(!chan_p.channels[ichan].autoconfigurated) && //the check is for the non autoconfigurated channels
+						(chan_p.channels[ichan].pmt_pid==pid) &&     //And we see the PMT
 						pid)
 				{
-					cam_pmt_follow( actual_ts_packet, &chan_p.channels[curr_channel] );
+					cam_pmt_follow( actual_ts_packet, &chan_p.channels[ichan] );
 				}
 #endif
 				/******************************************************/
@@ -1745,7 +1742,7 @@ main (int argc, char **argv)
 				if((send_packet==1) && //no need to check paquets we don't send
 						(pid == 0) && //This is a PAT PID
 						rewrite_vars.rewrite_pat == OPTION_ON )  //AND we asked for rewrite
-					send_packet=pat_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_p.channels[curr_channel], curr_channel);
+					send_packet=pat_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_p.channels[ichan], ichan);
 
 				/******************************************************/
 				//Rewrite SDT
@@ -1753,18 +1750,18 @@ main (int argc, char **argv)
 				if((send_packet==1) && //no need to check paquets we don't send
 						(pid == 17) && //This is a SDT PID
 						rewrite_vars.rewrite_sdt == OPTION_ON &&  //AND we asked for rewrite
-						!chan_p.channels[curr_channel].sdt_rewrite_skip ) //AND the generation was successful
-					send_packet=sdt_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_p.channels[curr_channel], curr_channel);
+						!chan_p.channels[ichan].sdt_rewrite_skip ) //AND the generation was successful
+					send_packet=sdt_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_p.channels[ichan], ichan);
 
 				/******************************************************/
 				//Rewrite EIT
 				/******************************************************/
 				if((send_packet==1) &&//no need to check paquets we don't send
 						(pid == 18) && //This is a EIT PID
-						(chan_p.channels[curr_channel].service_id) && //we have the service_id
+						(chan_p.channels[ichan].service_id) && //we have the service_id
 						rewrite_vars.rewrite_eit == OPTION_ON) //AND we asked for EIT sorting
 				{
-					eit_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_p.channels[curr_channel],
+					eit_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_p.channels[ichan],
 							&multi_p, &unicast_vars, scam_vars_ptr, &fds);
 					send_packet=0; //for EIT it is sent by the rewrite function itself
 				}
@@ -1779,7 +1776,7 @@ main (int argc, char **argv)
 					// Keep only PAT
 					if (chan_p.psi_tables_filtering==2 && pid>0) send_packet=0;
 				}
-				mumudvb_channel_t *channel = &chan_p.channels[curr_channel];
+				mumudvb_channel_t *channel = &chan_p.channels[ichan];
 				/******************************************************/
 				//Ok we must send this packet,
 				// we add it to the channel buffer
