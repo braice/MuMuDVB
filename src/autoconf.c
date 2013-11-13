@@ -262,7 +262,7 @@ int read_autoconfiguration_configuration(auto_p_t *auto_p, char *substring)
  */
 int autoconf_init(auto_p_t *auto_p, mumudvb_channel_t *channels,int number_of_channels)
 {
-	int curr_channel;
+	int ichan;
 
 	if(auto_p->autoconfiguration==AUTOCONF_MODE_FULL)
 	{
@@ -307,21 +307,21 @@ int autoconf_init(auto_p_t *auto_p, mumudvb_channel_t *channels,int number_of_ch
 	}
 
 	if (auto_p->autoconfiguration==AUTOCONF_MODE_PIDS)
-		for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+		for (ichan = 0; ichan < number_of_channels; ichan++)
 		{
 			//If there is more than one pid in one channel we mark it
 			//For no autoconfiguration
-			if(channels[curr_channel].num_pids>1)
+			if(channels[ichan].num_pids>1)
 			{
-				log_message( log_module,  MSG_DETAIL, "Autoconfiguration deactivated for channel \"%s\" \n", channels[curr_channel].name);
-				channels[curr_channel].autoconfigurated=1;
+				log_message( log_module,  MSG_DETAIL, "Autoconfiguration deactivated for channel \"%s\" \n", channels[ichan].name);
+				channels[ichan].autoconfigurated=1;
 			}
-			else if (channels[curr_channel].num_pids==1)
+			else if (channels[ichan].num_pids==1)
 			{
 				//Only one pid with autoconfiguration=partial, it's the PMT pid
-				channels[curr_channel].pmt_pid=channels[curr_channel].pids[0];
-				channels[curr_channel].pids_type[0]=PID_PMT;
-				snprintf(channels[curr_channel].pids_language[0],4,"%s","---");
+				channels[ichan].pmt_pid=channels[ichan].pids[0];
+				channels[ichan].pids_type[0]=PID_PMT;
+				snprintf(channels[ichan].pids_language[0],4,"%s","---");
 			}
 		}
 	if (auto_p->autoconfiguration)
@@ -861,18 +861,18 @@ int autoconf_services_to_channels(const auto_p_t *parameters, mumudvb_channel_t 
 int autoconf_finish_full(mumu_chan_p_t *chan_p, auto_p_t *auto_p, multi_p_t *multi_p, tune_p_t *tune_p, fds_t *fds, unicast_parameters_t *unicast_vars, int server_id, void *scam_vars)
 {
 	pthread_mutex_lock(&chan_p->lock);
-	int curr_channel,curr_pid;
+	int ichan,ipid;
 	//We sort the services
 	autoconf_sort_services(auto_p->services);
 	chan_p->number_of_channels=autoconf_services_to_channels(auto_p, chan_p->channels, multi_p->common_port, tune_p->card, tune_p->tuner, unicast_vars, multi_p, server_id, scam_vars); //Convert the list of services into channels
 	//we got the pmt pids for the channels, we open the filters
-	for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++)
+	for (ichan = 0; ichan < chan_p->number_of_channels; ichan++)
 	{
-		for (curr_pid = 0; curr_pid < chan_p->channels[curr_channel].num_pids; curr_pid++)
+		for (ipid = 0; ipid < chan_p->channels[ichan].num_pids; ipid++)
 		{
-			if(chan_p->asked_pid[chan_p->channels[curr_channel].pids[curr_pid]]==PID_NOT_ASKED)
-				chan_p->asked_pid[chan_p->channels[curr_channel].pids[curr_pid]]=PID_ASKED;
-			chan_p->number_chan_asked_pid[chan_p->channels[curr_channel].pids[curr_pid]]++;
+			if(chan_p->asked_pid[chan_p->channels[ichan].pids[ipid]]==PID_NOT_ASKED)
+				chan_p->asked_pid[chan_p->channels[ichan].pids[ipid]]=PID_ASKED;
+			chan_p->number_chan_asked_pid[chan_p->channels[ichan].pids[ipid]]++;
 		}
 	}
 
@@ -886,22 +886,22 @@ int autoconf_finish_full(mumu_chan_p_t *chan_p, auto_p_t *auto_p, multi_p_t *mul
 
 
 	//Networking
-	for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++)
+	for (ichan = 0; ichan < chan_p->number_of_channels; ichan++)
 	{
 
 		/** open the unicast listening connections for the channels */
-		if(chan_p->channels[curr_channel].unicast_port && unicast_vars->unicast)
+		if(chan_p->channels[ichan].unicast_port && unicast_vars->unicast)
 		{
 			log_message( log_module, MSG_INFO,"Unicast : We open the channel %d http socket address %s:%d\n",
-					curr_channel,
+					ichan,
 					unicast_vars->ipOut,
-					chan_p->channels[curr_channel].unicast_port);
+					chan_p->channels[ichan].unicast_port);
 			unicast_create_listening_socket(UNICAST_LISTEN_CHANNEL,
-					curr_channel,
+					ichan,
 					unicast_vars->ipOut,
-					chan_p->channels[curr_channel].unicast_port,
-					&chan_p->channels[curr_channel].sIn,
-					&chan_p->channels[curr_channel].socketIn,
+					chan_p->channels[ichan].unicast_port,
+					&chan_p->channels[ichan].sIn,
+					&chan_p->channels[ichan].socketIn,
 					fds,
 					unicast_vars);
 		}
@@ -910,36 +910,36 @@ int autoconf_finish_full(mumu_chan_p_t *chan_p, auto_p_t *auto_p, multi_p_t *mul
 		if(multi_p->multicast_ipv4)
 		{
 			if(multi_p->multicast && multi_p->auto_join) //See the README for the reason of this option
-				chan_p->channels[curr_channel].socketOut4 =
-						makeclientsocket (chan_p->channels[curr_channel].ip4Out,
-								chan_p->channels[curr_channel].portOut,
+				chan_p->channels[ichan].socketOut4 =
+						makeclientsocket (chan_p->channels[ichan].ip4Out,
+								chan_p->channels[ichan].portOut,
 								multi_p->ttl,
 								multi_p->iface4,
-								&chan_p->channels[curr_channel].sOut4);
+								&chan_p->channels[ichan].sOut4);
 			else if(multi_p->multicast)
-				chan_p->channels[curr_channel].socketOut4 =
-						makesocket (chan_p->channels[curr_channel].ip4Out,
-								chan_p->channels[curr_channel].portOut,
+				chan_p->channels[ichan].socketOut4 =
+						makesocket (chan_p->channels[ichan].ip4Out,
+								chan_p->channels[ichan].portOut,
 								multi_p->ttl,
 								multi_p->iface4,
-								&chan_p->channels[curr_channel].sOut4);
+								&chan_p->channels[ichan].sOut4);
 		}
 		if(multi_p->multicast_ipv6)
 		{
 			if(multi_p->multicast && multi_p->auto_join) //See the README for the reason of this option
-				chan_p->channels[curr_channel].socketOut6 =
-						makeclientsocket6 (chan_p->channels[curr_channel].ip6Out,
-								chan_p->channels[curr_channel].portOut,
+				chan_p->channels[ichan].socketOut6 =
+						makeclientsocket6 (chan_p->channels[ichan].ip6Out,
+								chan_p->channels[ichan].portOut,
 								multi_p->ttl,
 								multi_p->iface6,
-								&chan_p->channels[curr_channel].sOut6);
+								&chan_p->channels[ichan].sOut6);
 			else if(multi_p->multicast)
-				chan_p->channels[curr_channel].socketOut6 =
-						makesocket6 (chan_p->channels[curr_channel].ip6Out,
-								chan_p->channels[curr_channel].portOut,
+				chan_p->channels[ichan].socketOut6 =
+						makesocket6 (chan_p->channels[ichan].ip6Out,
+								chan_p->channels[ichan].portOut,
 								multi_p->ttl,
 								multi_p->iface6,
-								&chan_p->channels[curr_channel].sOut6);
+								&chan_p->channels[ichan].sOut6);
 		}
 	}
 
@@ -968,19 +968,19 @@ int autoconf_finish_full(mumu_chan_p_t *chan_p, auto_p_t *auto_p, multi_p_t *mul
  */
 void autoconf_set_channel_filt(char *card_base_path, int tuner, mumu_chan_p_t *chan_p, fds_t *fds)
 {
-	int curr_channel;
-	int curr_pid;
+	int ichan;
+	int ipid;
 
 
 	log_message( log_module, MSG_DETAIL,"Autoconfiguration almost done\n");
 	log_message( log_module, MSG_DETAIL,"We open the new file descriptors\n");
-	for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++)
+	for (ichan = 0; ichan < chan_p->number_of_channels; ichan++)
 	{
-		for (curr_pid = 0; curr_pid < chan_p->channels[curr_channel].num_pids; curr_pid++)
+		for (ipid = 0; ipid < chan_p->channels[ichan].num_pids; ipid++)
 		{
-			if(chan_p->asked_pid[chan_p->channels[curr_channel].pids[curr_pid]]==PID_NOT_ASKED)
-				chan_p->asked_pid[chan_p->channels[curr_channel].pids[curr_pid]]=PID_ASKED;
-			chan_p->number_chan_asked_pid[chan_p->channels[curr_channel].pids[curr_pid]]++;
+			if(chan_p->asked_pid[chan_p->channels[ichan].pids[ipid]]==PID_NOT_ASKED)
+				chan_p->asked_pid[chan_p->channels[ichan].pids[ipid]]=PID_ASKED;
+			chan_p->number_chan_asked_pid[chan_p->channels[ichan].pids[ipid]]++;
 		}
 	}
 	// we open the file descriptors
@@ -1042,25 +1042,25 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, auto_p_t *auto_p, fds
 	}
 	else if(auto_p->autoconfiguration==AUTOCONF_MODE_PIDS) //We have the channels and their PMT, we search the other pids
 	{
-		int curr_channel;
-		for(curr_channel=0;curr_channel<MAX_CHANNELS;curr_channel++)
+		int ichan;
+		for(ichan=0;ichan<MAX_CHANNELS;ichan++)
 		{
-			if((!chan_p->channels[curr_channel].autoconfigurated) &&(chan_p->channels[curr_channel].pmt_pid==pid)&& pid)
+			if((!chan_p->channels[ichan].autoconfigurated) &&(chan_p->channels[ichan].pmt_pid==pid)&& pid)
 			{
-				while((auto_p->autoconfiguration==AUTOCONF_MODE_PIDS)&&(chan_p->channels[curr_channel].pmt_packet)&&(get_ts_packet(ts_packet,chan_p->channels[curr_channel].pmt_packet)))
+				while((auto_p->autoconfiguration==AUTOCONF_MODE_PIDS)&&(chan_p->channels[ichan].pmt_packet)&&(get_ts_packet(ts_packet,chan_p->channels[ichan].pmt_packet)))
 				{
 					ts_packet=NULL; // next call we only POP packets from the stack
 					//Now we have the PMT, we parse it
-					if(autoconf_read_pmt(chan_p->channels[curr_channel].pmt_packet, &chan_p->channels[curr_channel], tune_p->card_dev_path, tune_p->tuner, chan_p->asked_pid, chan_p->number_chan_asked_pid, fds)==0)
+					if(autoconf_read_pmt(chan_p->channels[ichan].pmt_packet, &chan_p->channels[ichan], tune_p->card_dev_path, tune_p->tuner, chan_p->asked_pid, chan_p->number_chan_asked_pid, fds)==0)
 					{
-						log_pids(log_module,&chan_p->channels[curr_channel],curr_channel);
+						log_pids(log_module,&chan_p->channels[ichan],ichan);
 
-						chan_p->channels[curr_channel].autoconfigurated=1;
+						chan_p->channels[ichan].autoconfigurated=1;
 
 						//We parse the NIT before finishing autoconfiguration
 						auto_p->autoconfiguration=AUTOCONF_MODE_NIT;
-						for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++)
-							if(!chan_p->channels[curr_channel].autoconfigurated)
+						for (ichan = 0; ichan < chan_p->number_of_channels; ichan++)
+							if(!chan_p->channels[ichan].autoconfigurated)
 								auto_p->autoconfiguration=AUTOCONF_MODE_PIDS;  //not finished we continue
 
 						//if it's finished, we open the new descriptors and add the new filters
@@ -1090,22 +1090,22 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, auto_p_t *auto_p, fds
 				if(autoconf_read_nit(auto_p, chan_p->channels, chan_p->number_of_channels)==0)
 				{
 					auto_p->autoconfiguration=0;
-					int curr_channel;
+					int ichan;
 					char lcn[4];
 					int len=MAX_NAME_LEN;
-					for(curr_channel=0;curr_channel<MAX_CHANNELS;curr_channel++)
+					for(ichan=0;ichan<MAX_CHANNELS;ichan++)
 					{
-						if(chan_p->channels[curr_channel].logical_channel_number)
+						if(chan_p->channels[ichan].logical_channel_number)
 						{
-							sprintf(lcn,"%03d",chan_p->channels[curr_channel].logical_channel_number);
-							mumu_string_replace(chan_p->channels[curr_channel].name,&len,0,"%lcn",lcn);
-							sprintf(lcn,"%02d",chan_p->channels[curr_channel].logical_channel_number);
-							mumu_string_replace(chan_p->channels[curr_channel].name,&len,0,"%2lcn",lcn);
+							sprintf(lcn,"%03d",chan_p->channels[ichan].logical_channel_number);
+							mumu_string_replace(chan_p->channels[ichan].name,&len,0,"%lcn",lcn);
+							sprintf(lcn,"%02d",chan_p->channels[ichan].logical_channel_number);
+							mumu_string_replace(chan_p->channels[ichan].name,&len,0,"%2lcn",lcn);
 						}
 						else
 						{
-							mumu_string_replace(chan_p->channels[curr_channel].name,&len,0,"%lcn","");
-							mumu_string_replace(chan_p->channels[curr_channel].name,&len,0,"%2lcn","");
+							mumu_string_replace(chan_p->channels[ichan].name,&len,0,"%lcn","");
+							mumu_string_replace(chan_p->channels[ichan].name,&len,0,"%2lcn","");
 						}
 					}
 					free(auto_p->autoconf_temp_nit);

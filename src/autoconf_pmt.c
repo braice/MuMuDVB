@@ -468,9 +468,9 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
 			}
 		}
 		log_message( log_module,  MSG_DETAIL, "        pids : \n");/**@todo Generate a strind and call log_message after, in syslog it generates one line per pid : use the toolbox unicast*/
-		int curr_pid;
-		for (curr_pid = 0; curr_pid < channel->num_pids; curr_pid++)
-			log_message( log_module,  MSG_DETAIL, "              %d (%s) \n", channel->pids[curr_pid], pid_type_to_str(channel->pids_type[curr_pid]));
+		int ipid;
+		for (ipid = 0; ipid < channel->num_pids; ipid++)
+			log_message( log_module,  MSG_DETAIL, "              %d (%s) \n", channel->pids[ipid], pid_type_to_str(channel->pids_type[ipid]));
 
 	}
 	/** @todo : update generated conf file*/
