@@ -1269,27 +1269,24 @@ main (int argc, char **argv)
 	//mandatory pids (always sent with all channels)
 	//PAT : Program Association Table
 	mandatory_pid[0]=1;
-	chan_p.asked_pid[0]=PID_ASKED;
 	//CAT : Conditional Access Table
 	mandatory_pid[1]=1;
-	chan_p.asked_pid[1]=PID_ASKED;
 	//NIT : Network Information Table
 	//It is intended to provide information about the physical network.
 	mandatory_pid[16]=1;
-	chan_p.asked_pid[16]=PID_ASKED;
 	//SDT : Service Description Table
 	//the SDT contains data describing the services in the system e.g. names of services, the service provider, etc.
 	mandatory_pid[17]=1;
-	chan_p.asked_pid[17]=PID_ASKED;
 	//EIT : Event Information Table
 	//the EIT contains data concerning events or programmes such as event name, start time, duration, etc.
 	mandatory_pid[18]=1;
-	chan_p.asked_pid[18]=PID_ASKED;
 	//TDT : Time and Date Table
 	//the TDT gives information relating to the present time and date.
 	//This information is given in a separate table due to the frequent updating of this information.
 	mandatory_pid[20]=1;
-	chan_p.asked_pid[20]=PID_ASKED;
+	for (ipid = 0; ipid < 21; ipid++)
+		if(mandatory_pid[ipid])
+			chan_p.asked_pid[ipid]=PID_ASKED;
 
 	//PSIP : Program and System Information Protocol
 	//Specific to ATSC, this is more or less the equivalent of sdt plus other stuff
