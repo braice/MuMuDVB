@@ -771,12 +771,6 @@ main (int argc, char **argv)
 			log_message( log_module,  MSG_INFO,
 					"Full autoconfiguration, we activate SDT rewriting. if you want to disable it see the README.\n");
 		}
-		if(rewrite_vars.rewrite_eit == OPTION_UNDEFINED)
-		{
-			rewrite_vars.rewrite_eit=OPTION_ON;
-			log_message( log_module,  MSG_INFO,
-					"Full autoconfiguration, we activate EIT rewriting. if you want to disable it see the README.\n");
-		}
 	}
 	if(card_buffer.max_thread_buffer_size<card_buffer.dvr_buffer_size)
 	{

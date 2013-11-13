@@ -278,7 +278,7 @@ If you don't use the common_port directive, MuMuDVB will use the port 1234.
 By default, SAP announces are activated if you use this autoconfiguration mode. To deactivate them put `sap=0` in your config file.
 By default, SDT rewriting is activated if you use this autoconfiguration mode. To deactivate it put `rewrite_sdt=0` in your config file.
 By default, PAT rewriting is activated if you use this autoconfiguration mode. To deactivate it put `rewrite_pat=0` in your config file.
-By default, EIT sorting activated if you use this autoconfiguration mode. To deactivate it put `sort_eit=0` in your config file.
+
 
 [NOTE]
 If you want to select the services to stream, you can use the `autoconf_sid_list` option.
@@ -792,9 +792,9 @@ If you don't use full autoconfiguration, SDT rewrite needs the `service_id` opti
 EIT PID (Event Information Table) Sorting
 -----------------------------------------
 
-This option will make MuMuDVB stream only the EIT packets corresponding to the streamed channel instead of all transponder channels. Some clients parse this table and can show/select ghost programs  (even if the PAT and the SDT are rewritten).
+This option will make MuMuDVB stream only the EIT packets corresponding to the streamed channel instead of all transponder channels. Some clients parse this table and can show/select ghost programs (even if the PAT and the SDT are rewritten).
 
-The EIT PID contains the description of the current program and the future programs. It is used to build the Electronic Program Guide
+The EIT PID contains the description of the current program and the future programs. It is used to build the Electronic Program Guide.
 
 To enable EIT sorting, add `sort_eit=1` to your config file. 
 
