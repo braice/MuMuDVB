@@ -1,6 +1,6 @@
 Webservices
 ===========
-Sebastien RAILLARD
+Sebastien RAILLARD and Brice DUBOST
 
 To activate the webservices, just enable the unicast mode with something like that:
 ----------------
@@ -12,11 +12,11 @@ port_http=8005    : Listening port
 [NOTE]
 When you use several card on one server you can use the template `%card` for the listening port. Ex: `port_http=4000+%card`. Ports higher than 1024 can be used by unprivileged users.
 
-The webservices responses are not SOAP compliant, but formatted in simple XML documents (UTF-8).
+The webservices responses are not SOAP compliant, but formatted in simple XML documents (UTF-8) or in JSON.
 The output can be easily parsed in PHP for example.
 
 Status monitoring :
----------------------
+-------------------
 
 There is no input parameters.
 URL : http://ip_http:port_http/monitor/state.xml
@@ -75,8 +75,18 @@ Example of response with comments:
 </mumudvb>                                                               => End of response
 ----------------
 
+JSON files:
+~~~~~~~~~~~
+
+You can get similar information in the JSON files
+
+* `http://ip_http:port_http/channels_list.json`
+* `http://ip_http:port_http/monitor/signal_power.json`
+* `http://ip_http:port_http/channels_traffic.json`
+
+
 Access to the CAM menu:
--------------------------
+-----------------------
 
 These two webservices allow for accessing the CAM menu during streaming.
 This is usefull for checking rights or download status for example.
