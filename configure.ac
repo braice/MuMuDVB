@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.61])
-AC_INIT([MuMuDVB], [1.7.1], [mumudvb@braice.net])
+AC_INIT([MuMuDVB], [1.7.2_release], [mumudvb@braice.net])
 AC_CONFIG_SRCDIR([src/mumudvb.c])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([src/config.h])
@@ -29,9 +29,10 @@ AM_ICONV
 
 AC_CHECK_LIB([dvbapi], [dvbdemux_set_section_filter])
 AC_CHECK_LIB([ucsi], [atsc_text_segment_decode],[atsc_long_names="yes"], [atsc_long_names="no"])
-#AC_CHECK_LIB([dvben50221], [en50221_stdcam_create],,,[ucsi,pthread])
 AC_CHECK_LIB([pthread], [pthread_create])
 AC_CHECK_LIB([rt], [clock_gettime])
+AC_CHECK_LIB([m], [log2l])
+
 
 dnl
 dnl cam support
@@ -55,32 +56,24 @@ fi
 AM_CONDITIONAL(BUILD_CAMSUPPORT, [test "${enable_cam_support}" != "no"])
 
 dnl
-dnl transcoding support
+dnl scam support
 dnl
-AC_ARG_ENABLE(transcoding,
-  [  --enable-transcoding          transcoding support (default disabled)],,[enable_transcoding="no"])
+AC_ARG_ENABLE(scam_support,
+  [  --enable-scam-support          SCAM support (default enabled)],,[enable_scam_support="yes"])
 
-if test "${enable_transcoding}" = "yes"
+if test "${enable_scam_support}" = "yes"
 then
-  AC_CHECK_LIB([avformat], [url_split],[AC_DEFINE(HAVE_URL_SPLIT, 1, Define if the function url_split exists)], [])
-  AC_CHECK_LIB([avformat], [ff_url_split],[AC_DEFINE(HAVE_FF_URL_SPLIT, 1, Define if the function ff_url_split exists)], [])
-  AC_CHECK_HEADERS([libavcodec/avcodec.h ffmpeg/avcodec.h])
-  AC_CHECK_HEADERS([libavformat/avformat.h ffmpeg/avformat.h])
-  AC_CHECK_HEADERS([libswscale/swscale.h ffmpeg/swscale.h])
-  AC_CHECK_LIB([avcodec], [av_picture_copy],[], [enable_transcoding="no"])
-  AC_CHECK_LIB([avformat], [av_get_frame_filename],[], [enable_transcoding="no"])
-  AC_CHECK_LIB([swscale], [sws_freeContext],[], [enable_transcoding="no"])
-  if test "${enable_transcoding}" != "no"
+  AC_CHECK_LIB([dvbcsa], [dvbcsa_bs_decrypt],[], [enable_scam_support="no"])
+  if test "${enable_scam_support}" != "no"
   then
-    AC_DEFINE(ENABLE_TRANSCODING, 1, Define if you want the transcoding support)
+    AC_DEFINE(ENABLE_SCAM_SUPPORT, 1, Define if you want the SCAM support)
   else
-    AC_MSG_WARN([libavcodev, libavformat and libswscale are needed for transcoding support])
+    AC_MSG_WARN([libdvbcsa are needed for SCAM support])
   fi
 else
-  enable_transcoding="no"
+  enable_scam_support="no"
 fi
-AM_CONDITIONAL(BUILD_TRANSCODING, [test "${enable_transcoding}" != "no"])
-
+AM_CONDITIONAL(BUILD_SCAMSUPPORT, [test "${enable_scam_support}" != "no"])
 
 dnl
 dnl  Test coverage
@@ -125,8 +118,6 @@ AC_TYPE_UINT32_T
 AC_TYPE_UINT8_T
 
 # Checks for library functions.
-AC_FUNC_MALLOC
-AC_FUNC_REALLOC
 AC_CHECK_FUNCS([alarm gettimeofday inet_ntoa memset socket strerror strstr])
 
 AC_CONFIG_FILES([Makefile
@@ -148,11 +139,10 @@ else
         echo "Build with CAM support:                              no"
 fi
 
-
-if test "${enable_transcoding}" != "no" ; then
-        echo "Build with transcoding support:                     yes"
+if test "${enable_scam_support}" != "no" ; then
+        echo "Build with SCAM support:                            yes"
 else
-        echo "Build with transcoding support:                      no"
+        echo "Build with SCAM support:                             no"
 fi
 
 if test "${atsc_long_names}" = "yes" ; then

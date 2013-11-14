@@ -29,6 +29,8 @@
 #ifndef _AUTOCONF_H
 #define _AUTOCONF_H
 
+#include <pthread.h>
+
 #include "mumudvb.h"
 #include "unicast_http.h"
 #include "ts.h"
@@ -48,27 +50,28 @@
 
 /**@brief chained list of services for autoconfiguration
  *
-*/
+ */
 typedef struct mumudvb_service_t{
-  /**The channel name*/
-  char name[MAX_NAME_LEN];
-  /**Is the channel running ? Not used for the moment*/
-  int running_status; 
-  /**The service type : television, radio, data, ...*/
-  int type; 
-  /**The PMT pid of the service*/
-  int pmt_pid; 
-  /**The program ID, also called program number in the PAT or in ATSC*/
-  int id;
-  /**Tell if this service is scrambled*/
-  int free_ca_mode;
-  /**The next service in the chained list*/
-  struct mumudvb_service_t *next;
+	/**The channel name*/
+	char name[MAX_NAME_LEN];
+	/**Is the channel running ? Not used for the moment*/
+	int running_status;
+	/**The service type : television, radio, data, ...*/
+	int type;
+	/**The PMT pid of the service*/
+	int pmt_pid;
+	/**The program ID, also called program number in the PAT or in ATSC*/
+	int id;
+	/**Tell if this service is scrambled*/
+	int free_ca_mode;
+	/**The next service in the chained list*/
+	struct mumudvb_service_t *next;
 }mumudvb_service_t;
 
 /**@brief The different parameters used for autoconfiguration*/
-typedef struct autoconf_parameters_t{
-  /**Do we use autoconfiguration ?
+typedef struct auto_p_t{
+	pthread_mutex_t lock;
+	/**Do we use autoconfiguration ?
 
 Possible values for this variable
 
@@ -77,49 +80,49 @@ Possible values for this variable
  AUTOCONF_MODE_PIDS : we have the PMT pids and the channels, we search the audio and video
 
  AUTOCONF_MODE_FULL : we have only the tuning parameters, we search the channels and their pmt pids*/
-  int autoconfiguration;
-  /**do we autoconfigure the radios ?*/
-  int autoconf_radios;
-  /** The template of autoconfigured multicast addresses*/
-  char autoconf_ip4[80];
-  char autoconf_ip6[80];
-  /**When did we started autoconfiguration ?*/
-  long time_start_autoconfiguration; 
-  /**The transport stream id (used to read ATSC PSIP tables)*/
-  int transport_stream_id;
-  /** Do we autoconfigure scrambled channels ? */
-  int autoconf_scrambled;
-  /** Do we follow pmt changes*/
-  int autoconf_pid_update;
-  //Different packets used by autoconfiguration
-  mumudvb_ts_packet_t *autoconf_temp_pat;
-  mumudvb_ts_packet_t *autoconf_temp_sdt;
-  mumudvb_ts_packet_t *autoconf_temp_nit;
-  /**For ATSC Program and System Information Protocol*/
-  mumudvb_ts_packet_t *autoconf_temp_psip;
-  mumudvb_service_t   *services;
+	int autoconfiguration;
+	/**do we autoconfigure the radios ?*/
+	int autoconf_radios;
+	/** The template of autoconfigured multicast addresses*/
+	char autoconf_ip4[80];
+	char autoconf_ip6[80];
+	/**When did we started autoconfiguration ?*/
+	long time_start_autoconfiguration;
+	/**The transport stream id (used to read ATSC PSIP tables)*/
+	int transport_stream_id;
+	/** Do we autoconfigure scrambled channels ? */
+	int autoconf_scrambled;
+	/** Do we follow pmt changes*/
+	int autoconf_pid_update;
+	//Different packets used by autoconfiguration
+	mumudvb_ts_packet_t *autoconf_temp_pat;
+	mumudvb_ts_packet_t *autoconf_temp_sdt;
+	mumudvb_ts_packet_t *autoconf_temp_nit;
+	/**For ATSC Program and System Information Protocol*/
+	mumudvb_ts_packet_t *autoconf_temp_psip;
+	mumudvb_service_t   *services;
 
-  /**the http unicast port (string with %card %number, * and + ) */
-  char autoconf_unicast_port[256];
-  /**the multicast port (string with %card %number, * and + ) */
-  char autoconf_multicast_port[256];
+	/**the http unicast port (string with %card %number, * and + ) */
+	char autoconf_unicast_port[256];
+	/**the multicast port (string with %card %number, * and + ) */
+	char autoconf_multicast_port[256];
 
-  /**the list of SID for full autoconfiguration*/
-  int service_id_list[MAX_CHANNELS];
-  /**number of SID*/
-  int num_service_id;
-  /** the template for the channel name*/
-  char name_template[MAX_NAME_LEN];
+	/**the list of SID for full autoconfiguration*/
+	int service_id_list[MAX_CHANNELS];
+	/**number of SID*/
+	int num_service_id;
+	/** the template for the channel name*/
+	char name_template[MAX_NAME_LEN];
 
-}autoconf_parameters_t;
+}auto_p_t;
 
 
-
-int autoconf_init(autoconf_parameters_t *autoconf_vars, mumudvb_channel_t *channels,int number_of_channels);
-void autoconf_freeing(autoconf_parameters_t *);
-int read_autoconfiguration_configuration(autoconf_parameters_t *autoconf_vars, char *substring);
-int autoconf_new_packet(int pid, unsigned char *ts_packet, autoconf_parameters_t *autoconf_vars, fds_t *fds, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars,  unicast_parameters_t *unicast_vars, int server_id);
-int autoconf_poll(long now, autoconf_parameters_t *autoconf_vars, mumudvb_chan_and_pids_t *chan_and_pids, tuning_parameters_t *tuneparams, multicast_parameters_t *multicast_vars, fds_t *fds, unicast_parameters_t *unicast_vars, int server_id);
-void autoconf_pmt_follow( unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t *actual_channel, char *card_base_path, int tuner, mumudvb_chan_and_pids_t *chan_and_pids );
+void init_aconf_v(auto_p_t *aconf_p);
+int autoconf_init(auto_p_t *auto_p, mumudvb_channel_t *channels,int number_of_channels);
+void autoconf_freeing(auto_p_t *);
+int read_autoconfiguration_configuration(auto_p_t *auto_p, char *substring);
+int autoconf_new_packet(int pid, unsigned char *ts_packet, auto_p_t *auto_p, fds_t *fds, mumu_chan_p_t *chan_p, tune_p_t *tune_p, multi_p_t *multi_p,  unicast_parameters_t *unicast_vars, int server_id, void *scam_vars);
+int autoconf_poll(long now, auto_p_t *auto_p, mumu_chan_p_t *chan_p, tune_p_t *tune_p, multi_p_t *multi_p, fds_t *fds, unicast_parameters_t *unicast_vars, int server_id, void *scam_vars);
+void autoconf_pmt_follow( unsigned char *ts_packet, fds_t *fds, mumudvb_channel_t *actual_channel, char *card_base_path, int tuner, mumu_chan_p_t *chan_p );
 
 #endif

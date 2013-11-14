@@ -1,9 +1,13 @@
 /* 
- * mumudvb - UDP-ize a DVB transport stream.
+ * MuMuDVB - Stream a DVB transport stream.
+ * Header file for software descrambling connection with oscam
  * 
- * (C) 2004-2009 Brice DUBOST
- * 
+ * (C) 2004-2010 Brice DUBOST
+ *
  * The latest version can be found at http://mumudvb.braice.net
+ *
+ * Code inspired by vdr plugin dvbapi
+ * Copyright (C) 2011,2012 Mariusz Białończyk <manio@skyboo.net>
  * 
  * Copyright notice:
  * 
@@ -20,33 +24,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *     
  */
+
+
+#ifndef _SCAM_GETCW_H
+#define _SCAM_GETCW_H
+
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <sys/ioctl.h>
+#include <linux/dvb/ca.h>
+#include <stdlib.h>
+#include <netinet/in.h>
+#include <sys/time.h>
+
+#include "scam_common.h"
+#include "mumudvb.h"
 
 /**@file
- *File for the enumeration of the different possible errors
- *@todo : update it 
+ * @brief scam support
+ * 
+ * Header for getting cw's from oscam
  */
 
-#ifndef _ERRORS_MUMUDVB_H
-#define _ERRORS_MUMUDVB_H
-
-enum
-  {
-    ERROR_ARGS=1,
-    ERROR_CONF_FILE,
-    ERROR_CONF,
-    ERROR_TOO_CHANNELS,
-    ERROR_CREATE_FILE,
-    ERROR_DEL_FILE,
-    ERROR_TUNE,
-    ERROR_NO_DIFF,
-    ERROR_NO_FIRST_CW,
-    ERROR_MEMORY,
-    ERROR_NETWORK,
-    ERROR_CAM,
-    ERROR_GENERIC,
-    ERROR_NO_CAM_INIT,
-  };
+int scam_getcw_start(scam_parameters_t *, int, mumu_chan_p_t *);
+void scam_getcw_stop(scam_parameters_t *);
 
 #endif

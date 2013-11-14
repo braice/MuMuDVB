@@ -59,6 +59,9 @@ adresses
 [NOTE]
 The SAP (session announcement protocol) announces will be sent automatically.
 
+[NOTE]
+If you want to stream a subset of the transponder you can use autoconf_sid_list
+
 DVB-T
 -----
 
@@ -94,3 +97,6 @@ contact (see the README for getting the e-mail addresses)
 
 [NOTE]
 When contacting about an issue, please join the config file used and the output of MuMuDVB in verbose mode ( -vvv on the command line) and any other information that could be useful.
+
+[NOTE]
+You can easily select a part of a transponder using autoconf_sid_list

@@ -1,7 +1,7 @@
 MuMuDVB - README
 ================
 Brice Dubost <mumudvb@braice.net>
-Version 1.7.1
+Version 1.7
 
 [NOTE]
 An HTML version of this file is availaible on http://mumudvb.braice.net[MuMuDVB's website].
@@ -20,7 +20,7 @@ Now, it's a standalone project.
 
 MuMuDVB is a program that redistributes streams from DVB (Digital Television) on a network (also called IPTV) using
 multicasting or HTTP unicast. It can multicast a whole DVB transponder by assigning
-each channel a different multicast IP.
+each channel a different multicast IP. It detects the different services present, rewrite the main DVB tables to show clients only the right stream in each group.
 
 Website
 ~~~~~~~
@@ -39,7 +39,6 @@ Authors and contacts
 - mailto:glondu@REMOVEMEcrans.ens-cachan.fr[Stéphane Glondu] (man page, debian package)
 - Special thanks to Dave Chapman (dvbstream author and contributor)
 - Pierre Gronlier, Sébastien Raillard, Ludovic Boué, Romolo Manfredini
-- Utelisys Communications B.V. for the transcoding code
 
 .Mailing list:
 - mailto:mumudvb-dev@REMOVEMElists.crans.org[MuMuDVB dev]
@@ -63,8 +62,9 @@ Features overview
 - Possibility to partially rewrite the stream for better compatibility with set-top boxes and some clients. See <<pat_rewrite,PAT Rewrite>> and <<sdt_rewrite,SDT Rewrite>> sections.
 - Support for HTTP unicast see <<unicast,http unicast>> section
 - Support for RTP headers (only for multicast)
-- Ability to transcode the stream (only for multicast for the moment) see the <<transcoding,Transcoding>> section
 - CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.txt and CAM_menu_interface.png for screenshot)
+- Software descrambling through oscam dvbapi and libdvbcsa
+
 
 Detailled feature list
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -129,9 +129,13 @@ The `[configure options]` specific to MuMuDVB are:
 
 ---------------------------------------------------------------------
   --enable-cam-support    CAM support (default enabled)
+  --enable-scam-support   SCAM support (default enabled) (see note below)
   --enable-coverage       build for test coverage (default disabled)
   --enable-duma           Debbuging DUMA library (default disabled)
 ---------------------------------------------------------------------
+
+[NOTE]
+If you want to compile MuMuDVB with clang/llvm, you have to install llvm-gcc and add  `CC=llvm-gcc LD=llvm-ld` or `CC=clang LD=llvm-ld` to your `[configure options]`.
 
 You can have a list of all the configure options by typing
 
@@ -141,6 +145,10 @@ $ ./configure --help
 
 [NOTE]
 The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of these libraries and deactivate the CAM support if one of them is not present.
+In the case of fedora, the dvb-apps package does not contains the headers, you have to install it manually follwing the instructions here : http://www.linuxtv.org/wiki/index.php/LinuxTV_dvb-apps 
+
+[NOTE]
+The SCAM support depends on libdvbcsa from videolan. The configure script will detect automatically the presence of these libraries and deactivate the SCAM support if one of them is not present. It needs also trunk version of oscam to get control words. Oscam configuration is described below in section concerning software descrambling v2 inside mumudvb. 
 
 [NOTE]
 The decoding of long channel names for autoconfiguration in ATSC depends on libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of this library and deactivate the long channel name support if it is not present. The full autoconfiguration will still work with ATSC but the channel names will be the short channels names (7 characters maximum)
@@ -231,8 +239,6 @@ MuMuDVB is able to find the channels in the transponder and their PIDs (Program 
 
 Without autoconfiguration, you have to set the transponder parameters, and for each channel, the multicast ip, the name and the PIDs (PMT, audio, video, teletext etc...)
 
-At the end of autoconfiguration, MuMuDVB generates a config file with the discovered parameters. This file is: `/var/run/mumudvb/mumudvb_generated_conf_card%d_tuner%d`
-
 If the PIDs are changed, MuMuDVB will automatically update the channels except if you put `autoconf_pid_update=0` in your configuration file.
 
 MuMuDVB is able to do two kinds of autoconfiguration:
@@ -272,7 +278,10 @@ If you don't use the common_port directive, MuMuDVB will use the port 1234.
 By default, SAP announces are activated if you use this autoconfiguration mode. To deactivate them put `sap=0` in your config file.
 By default, SDT rewriting is activated if you use this autoconfiguration mode. To deactivate it put `rewrite_sdt=0` in your config file.
 By default, PAT rewriting is activated if you use this autoconfiguration mode. To deactivate it put `rewrite_pat=0` in your config file.
-By default, EIT sorting activated if you use this autoconfiguration mode. To deactivate it put `sort_eit=0` in your config file.
+
+
+[NOTE]
+If you want to select the services to stream, you can use the `autoconf_sid_list` option.
 
 [NOTE]
 A detailled, documented example configuration file can be found in `doc/configuration_examples/autoconf_full.conf`
@@ -301,9 +310,12 @@ There is different keywords available:
 |%server| The server number specified by server_id or the command line 
 |%lcn | The logical channel number (channel number given by the provider). Your provider have to stream the LCN. The LCN will be displayed with three digits including 0. Ex "002". If the LCN is not detected, %lcn will be replaced by an empty string.
 |%2lcn | Same as above but with a two digits format
+|%sid| The channel service id (decimal for the port, hexadecimal for ipv6)
+|%sid_hi| The channel service id. The two higher bits (between 0 and 255)
+|%sid_lo| The channel service id. The two lower bits (between 0 and 255)
 |==================================================================================================================
 
-Please refer to README_CONF to see which options accept which templates
+Please refer to `doc/README_CONF.txt` (link:README_CONF.html[HTML version]) to see which options accept which templates
 
 Other keywords can be easily added if necessary.
 
@@ -576,9 +588,80 @@ Just add `cam_support=1` to your config file
 You have an example of CAM support in doc/configuration_examples/autoconf_partial.conf
 
 
+Hardware CAM issues
+~~~~~~~~~~~~~~~~~~~
 
-Software descrambling
-~~~~~~~~~~~~~~~~~~~~~
+Some hardware CAM are not directly connected to the tuner, one can choose the stream sent to the CAM. This can make the work slightly more complicated to run the CAM since you have to ensure the right stream is sent to the CAM.
+
+
+Digital Devices Cine CT V6
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We always use cards and hardware from Digital Devices(http://www.digitaldevices.de/).
+        - Octopus CI
+        - Cine S2 V6.5
+
+After a lot of problem with mumudvb and the ci card we found out, that the hardware wasn't detected by mumudvb.
+The folder /dev/dvb looked like :
+
+----------------------------------------
+        - Adapter0
+        - Adapter1
+        - Adapter2
+        - Adapter3
+----------------------------------------
+
+`/dev/dvb/Adapter0` and Adapter1 had the following content:
+
+
+----------------------------------------
+demux0  dvr0  frontend0  net0
+----------------------------------------
+
+`/dev/dvb/Adapter2` and Adapter3 had the following content:
+
+----------------------------------------
+sec0    ca0
+----------------------------------------
+
+So there was no connection between the tuner and the CI.
+
+So we tried to load the driver of the card with a different parameter to get everything into one single folder.
+
+-----------------------------------------
+sudo modprobe ddbridge adapter_alloc = 3
+-----------------------------------------
+
+Result:
+
+/dev/dvb/ includes only adapter0
+
+Content of adapter0:
+
+-----------------------------------------
+ca0  demux0  dvr0  frontend0  net0  sec0
+ca1  demux1  dvr1  frontend1  net1  sec1
+-----------------------------------------
+
+After that we had to pipe the stream from the frontend truth the CI modul.
+This part is still very buggy and we don't know exactly how that works.
+
+------------------------------------------------------------
+sudo echo "02 02" > /sys/class/ddbridge/ddbridge0/redirect
+sudo echo "03 03" > /sys/class/ddbridge/ddbridge0/redirect
+------------------------------------------------------------
+
+
+At the moment we have the problem that we can use only one tuner. :(
+
+Here you can see some more information about this problem
+
+http://www.spinics.net/lists/linux-media/msg39494.html
+
+
+
+Software descrambling v1
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Important note : this solution is not allowed by some provider contracts.
 
@@ -627,6 +710,61 @@ The scrambling status is stored together with the streamed channel list.
  * PartiallyUnscrambled : between 5% and 95% of scrambled packets
  * HighlyScrambled : more than 95% of scrambled packets
 
+
+Software descrambling v2
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Important note : this solution is not allowed by some provider contracts.
+
+MuMuDVB now has support for software descrambling on its own, to do that you'll need to have trunk version of oscam and libdvbcsa installed.
+To enable you have to add to global options 
+scam_support=1
+on program options add
+oscam=1
+Other setting are documented at `doc/README_CONF.txt` (link:README_CONF.html[HTML version]), there is also a configuration example available at `configuration_examples/oscam.conf`
+
+If channel has a lot of bandwidth it may be needed to extend ring buffer size. 
+
+If cw's don't get in time defined as decsa delay(default 500000us=0.5s), you may try to extend it (decsa_delay max is 10000000, and send_delay should be lower than decsa_delay, because we can't send descrambled packets befor they're being descrambled) for example:
+------------------------------
+	decsa_delay=3500000
+	send_delay=4500000
+------------------------------
+
+note that bigger delays in ring buffer may need also extending ring buffer size
+
+In debug mode number of packets in the buffer is reported and buffer overflow is detected, you should use that to tweak your delays and ring buffer size. In http state.xml number of packets in the buffer is also reported.
+
+
+[NOTE]
+Use the latest version of oscam from trunk, older versions did not have support for pc dvbapi. Instructions how to compile are on http://streamboard.de.vu:8001/wiki/crosscompiling
+
+[NOTE] 
+When using oscam with more than 16 channels adjust macro definition `MAX_DEMUX` (line below) on oscam header `module-dvbapi.h` to number of your channels
+------------------------------
+#define MAX_DEMUX 16
+------------------------------
+
+[NOTE]
+When using multiple channels per card (more than (ecm_change_time)/(2*card_response_time)), you may get timeouts on oscam on mumudvb startup, it's because on startup oscam asks card for two cw's at the same time.
+It should get right after a while.
+Currently there is no solution for that bug.
+
+Some information on how to configure oscam
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In the `oscam.conf` file add the following options
+------------------------------
+        [dvbapi]
+        enabled = 1
+        au = 1
+        boxtype = pc
+        user = mumudvb
+        pmt_mode = 4
+        request_mode = 1
+------------------------------
+
+
 [[pat_rewrite]]
 PAT (Program Allocation Table) Rewriting
 -----------------------------------------
@@ -654,7 +792,9 @@ If you don't use full autoconfiguration, SDT rewrite needs the `service_id` opti
 EIT PID (Event Information Table) Sorting
 -----------------------------------------
 
-This option will make MuMuDVB stream only the EIT packets corresponding to the streamed channel instead of all transponder channels. Some clients parse this table and can show/select ghost programs  (even if the PAT and the SDT are rewritten).
+This option will make MuMuDVB stream only the EIT packets corresponding to the streamed channel instead of all transponder channels. Some clients parse this table and can show/select ghost programs (even if the PAT and the SDT are rewritten).
+
+The EIT PID contains the description of the current program and the future programs. It is used to build the Electronic Program Guide.
 
 To enable EIT sorting, add `sort_eit=1` to your config file. 
 
@@ -689,20 +829,6 @@ In order to enable this feature, use the option `dvr_thread`.
 This reading uses two buffers: one for the data just received from the card, one for the data treated by the main program. You can adjust the size of this buffers using the option `dvr_thread_buffer_size`. The default value  (5000 packets of 188 bytes) should be sufficient for most of the cases. 
 
 The message "Thread trowing dvb packets" informs you that the thread buffer is full and some packets are dropped. Increase the buffer size will probably solve the problem.
-
-
-[[transcoding]]
-Transcoding
------------
-
-MuMuDVB supports transcoding to various formats to save bandwidth. The transcoding is made using ffmpeg librairies. This feature is pretty new, so feel free to contact if you have comments/suggestions.
-
-For transcoding support, you have to compile MuMuDVB yourself. Due tu API changes, transcoding is broken for recent versions of MuMuDVB.
-
-[NOTE]
-Transcoding doesn't work for the moment with unicast
-
-To have more details on transcoding, see the dedicated documentation file
 
 
 [[ipv6]]
@@ -839,7 +965,7 @@ If you use sasc-ng + dvbloopback, MuMuDVB will eat more CPU than needed.
 
 A part of this CPU time is used to descramble the channels, another part is due to the way dvbloopback is implemented and the way MuMuDVB ask the card.
 
-To reduce the cpu usage, see <<reduce_cpu,reduce MuMuDVB CPU usage>> section. In the case of using MuMuDVB with sasc-ng this improvement can be quite large.
+To reduce the cpu usage, see <<reduce_cpu,reduce MuMuDVB CPU usage>> section. In the case of using MuMuDVB with sasc-ng this improvement can be quite large. Or you can use oscam.
 
 
 The reception is working but all the channels are down
@@ -1038,6 +1164,4 @@ udp://192.168.2.101:1239
 
 
 Thanks to Nick Graham for the tutorial
-
-
 

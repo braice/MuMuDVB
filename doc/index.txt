@@ -4,11 +4,11 @@ Brice Dubost <mumudvb@braice.net>
 
 link:QUICKSTART.html[QUICKSTART guide]
 
-link:README.html[README english version]
+link:README.html[README]
 
 link:README_CONF.html[README concerning the configuration file]
 
-link:TRANSCODE.html[Information concerning the transcoding, english]
+link:TRANSCODE_EXTERNAL.html[External transcoding tutorial]
 
-link:WEBSERVICES.html[Information concerning the WEB services, english]
+link:WEBSERVICES.html[Information concerning the WEB services]
 

@@ -49,56 +49,56 @@
 #include "mumudvb.h"
 #include "tune.h"
 
-#define DVB_DEV_PATH "/dev/dvb/adapter%d"
+#define DVB_DEV_PATH "/dev/dvb/adapter%card"
 #define FRONTEND_DEV_NAME "frontend"
 #define DEMUX_DEV_NAME    "demux"
 #define DVR_DEV_NAME      "dvr"
 
 enum
 {
-  PID_NOT_ASKED=0,
-  PID_ASKED,
-  PID_FILTERED,
+	PID_NOT_ASKED=0,
+	PID_ASKED,
+	PID_FILTERED,
 };
 
 
 /** The parameters for the thread for showing the strength */
 typedef struct strength_parameters_t{
-  tuning_parameters_t *tuneparams;
-  fds_t *fds;
-  fe_status_t festatus;
-  int strength, ber, snr, ub;
-  int ts_discontinuities;
+	tune_p_t *tune_p;
+	fds_t *fds;
+	fe_status_t festatus;
+	int strength, ber, snr, ub;
+	int ts_discontinuities;
 }strength_parameters_t;
 
 /** The parameters for the thread for reading the data from the card */
 typedef struct card_thread_parameters_t{
-  //mutex for the data buffer
-  pthread_mutex_t carddatamutex;
-  //Condition variable for locking the main program in order to wait for new data
-  pthread_cond_t threadcond;
-  //file descriptors
-  fds_t *fds;
-  //The shutdown for the thread
-  int threadshutdown;
-  //The buffer for the card
-  card_buffer_t *card_buffer;
-  //
-  int thread_running;
-  /** Is main waiting ?*/
-  int main_waiting;
-  int unicast_data;
+	//mutex for the data buffer
+	pthread_mutex_t carddatamutex;
+	//Condition variable for locking the main program in order to wait for new data
+	pthread_cond_t threadcond;
+	//file descriptors
+	fds_t *fds;
+	//The shutdown for the thread
+	volatile int threadshutdown;
+	//The buffer for the card
+	card_buffer_t *card_buffer;
+	//
+	int thread_running;
+	/** Is main waiting ?*/
+	int main_waiting;
+	int unicast_data;
 }card_thread_parameters_t;
 
 void *read_card_thread_func(void* arg);
 
 
 
-int open_fe (int *fd_frontend, char *base_path, int tuner);
+int open_fe (int *fd_frontend, char *base_path, int tuner, int rw);
 void set_ts_filt (int fd,uint16_t pid);
 int create_card_fd(char *base_path, int tuner, uint8_t *asked_pid, fds_t *fds);
 void set_filters(uint8_t *asked_pid, fds_t *fds);
-void close_card_fd(fds_t fds);
+void close_card_fd(fds_t *fds);
 
 void *show_power_func(void* arg);
 int card_read(int fd_dvr, unsigned char *dest_buffer, card_buffer_t *card_buffer);

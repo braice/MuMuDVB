@@ -1,9 +1,8 @@
 /* 
- * MuMuDVB - UDP-ize a DVB transport stream.
- * Code for transcoding
+ * MuMuDVB - Stream a DVB transport stream.
+ * Header file for software descrambling sending part
  * 
- * Code written by Utelisys Communications B.V.
- * Copyright (C) 2009 Utelisys Communications B.V.
+ * (C) 2004-2010 Brice DUBOST
  *
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -22,17 +21,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
  */
-#ifndef _TRANSCODE_AVLIB_H
-#define _TRANSCODE_AVLIB_H
 
-#include "transcode_common.h"
 
-void* initialize_transcode(transcode_thread_data_t *transcode_thread_data);
-void free_transcode(void *transcode_avlib_handle, transcode_thread_data_t *transcode_thread_data);
-void transcode(void *transcode_avlib_handle, transcode_thread_data_t *transcode_thread_data);
+#ifndef _SCAM_SEND_H
+#define _SCAM_SEND_H
 
-void transcode_simple(transcode_thread_data_t *transcode_thread_data);
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <sys/ioctl.h>
+#include <linux/dvb/ca.h>
+#include <stdlib.h>
+#include <netinet/in.h>
+#include <sys/time.h>
 
-#endif 
+/**@file
+ * @brief scam support
+ * 
+ * Header file for code concerning software descrambling
+ */
+
+void scam_send_start(mumudvb_channel_t *channel);
+void scam_send_stop(mumudvb_channel_t *channel);
+void *sendthread_func(void* arg); 
+
+#endif

@@ -1,9 +1,0 @@
- * HTTP unicast
-  * Master connection not mandatory, option unicast=1
-
- * Autoconfiguration
-  * make the syntax autoconfiguration=1/2 obsolete and replace by full/partial
-  * In partial autoconfiguration, add a step for channels with a service ID and no PMT (this step will be skipped in full autoconf since we get both automatically)
-
-
- 

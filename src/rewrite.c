@@ -38,6 +38,32 @@
 
 static char *log_module="Rewrite: ";
 
+
+/** Initialize Rewrite variables*/
+void init_rewr_v(rewrite_parameters_t *rewr_p)
+{
+	*rewr_p=(rewrite_parameters_t){
+				.rewrite_pat = OPTION_UNDEFINED,
+				.pat_version=-1,
+				.full_pat=NULL,
+				.pat_needs_update=1,
+				.full_pat_ok=0,
+				.pat_continuity_counter=0,
+				.rewrite_sdt = OPTION_UNDEFINED,
+				.sdt_version=-1,
+				.full_sdt=NULL,
+				.sdt_needs_update=1,
+				.full_sdt_ok=0,
+				.sdt_continuity_counter=0,
+				.rewrite_eit=OPTION_UNDEFINED,
+				.eit_version=-1,
+				.full_eit=NULL,
+				.eit_needs_update=0,
+				.sdt_force_eit=OPTION_UNDEFINED,
+				.eit_packets=NULL,
+		};
+}
+
 /** @brief Read a line of the configuration file to check if there is a rewrite parameter
  *
  * @param rewrite_vars the autoconfiguration parameters
@@ -45,60 +71,60 @@ static char *log_module="Rewrite: ";
  */
 int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substring)
 {
-  char delimiteurs[] = CONFIG_FILE_SEPARATOR;
-  if (!strcmp (substring, "rewrite_pat"))
-  {
-    substring = strtok (NULL, delimiteurs);
-    if(atoi (substring))
-    {
-      rewrite_vars->rewrite_pat = OPTION_ON;
-      log_message( log_module, MSG_INFO,
-                   "You have enabled the PAT Rewriting\n");
-    }
-    else
-      rewrite_vars->rewrite_pat = OPTION_OFF;
-  }
-  else if (!strcmp (substring, "rewrite_sdt"))
-  {
-    substring = strtok (NULL, delimiteurs);
-    if(atoi (substring))
-    {
-      rewrite_vars->rewrite_sdt = OPTION_ON;
-      log_message( log_module, MSG_INFO,
-                   "You have enabled the SDT Rewriting\n");
-    }
-    else
-      rewrite_vars->rewrite_sdt = OPTION_OFF;
+	char delimiteurs[] = CONFIG_FILE_SEPARATOR;
+	if (!strcmp (substring, "rewrite_pat"))
+	{
+		substring = strtok (NULL, delimiteurs);
+		if(atoi (substring))
+		{
+			rewrite_vars->rewrite_pat = OPTION_ON;
+			log_message( log_module, MSG_INFO,
+					"You have enabled the PAT Rewriting\n");
+		}
+		else
+			rewrite_vars->rewrite_pat = OPTION_OFF;
+	}
+	else if (!strcmp (substring, "rewrite_sdt"))
+	{
+		substring = strtok (NULL, delimiteurs);
+		if(atoi (substring))
+		{
+			rewrite_vars->rewrite_sdt = OPTION_ON;
+			log_message( log_module, MSG_INFO,
+					"You have enabled the SDT Rewriting\n");
+		}
+		else
+			rewrite_vars->rewrite_sdt = OPTION_OFF;
 
-  }
-  else if (!strcmp (substring, "sort_eit"))
-  {
-    substring = strtok (NULL, delimiteurs);
-    if(atoi (substring))
-    {
-      rewrite_vars->eit_sort = OPTION_ON;
-      log_message( log_module, MSG_INFO,
-                   "You have enabled the sort of the EIT PID\n");
-    }
-    else
-      rewrite_vars->eit_sort = OPTION_OFF;
-  }
-  else if (!strcmp (substring, "sdt_force_eit"))
-  {
-    substring = strtok (NULL, delimiteurs);
-    if(atoi (substring))
-    {
-      rewrite_vars->sdt_force_eit = OPTION_ON;
-      log_message( log_module, MSG_INFO,
-                   "You have enabled the forcing of the EIT flag in the SDT rewrite\n");
-    }
-    else
-      rewrite_vars->sdt_force_eit = OPTION_OFF;
-  }
-  else
-    return 0; //Nothing concerning rewrite, we return 0 to explore the other possibilities
+	}
+	else if ( (!strcmp (substring, "sort_eit")) || (!strcmp (substring, "rewrite_eit")))
+	{
+		substring = strtok (NULL, delimiteurs);
+		if(atoi (substring))
+		{
+			rewrite_vars->rewrite_eit = OPTION_ON;
+			log_message( log_module, MSG_INFO,
+					"You have enabled the EIT rewriting\n");
+		}
+		else
+			rewrite_vars->rewrite_eit = OPTION_OFF;
+	}
+	else if (!strcmp (substring, "sdt_force_eit"))
+	{
+		substring = strtok (NULL, delimiteurs);
+		if(atoi (substring))
+		{
+			rewrite_vars->sdt_force_eit = OPTION_ON;
+			log_message( log_module, MSG_INFO,
+					"You have enabled the forcing of the EIT flag in the SDT rewrite\n");
+		}
+		else
+			rewrite_vars->sdt_force_eit = OPTION_OFF;
+	}
+	else
+		return 0; //Nothing concerning rewrite, we return 0 to explore the other possibilities
 
-  return 1;//We found something for rewrite, we tell main to go for the next line
+	return 1;//We found something for rewrite, we tell main to go for the next line
 }
 
 
@@ -108,41 +134,7 @@ int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substri
  */
 void set_continuity_counter(unsigned char *buf,int continuity_counter)
 {
-  ts_header_t *ts_header=(ts_header_t *)buf;
-  ts_header->continuity_counter=continuity_counter;
+	ts_header_t *ts_header=(ts_header_t *)buf;
+	ts_header->continuity_counter=continuity_counter;
 }
 
-/** @brief This function tells if we have to send the EIT packet
- */
-int eit_sort_new_packet(unsigned char *ts_packet, mumudvb_channel_t *channel)
-{
-  int send_packet=1;
-  ts_header_t *ts_header=(ts_header_t *)ts_packet;
-  eit_t       *eit_header=(eit_t*)(get_ts_begin(ts_packet));
-  if(ts_header->payload_unit_start_indicator && eit_header) //New packet ?
-  {
-    if((channel->service_id) &&
-        (channel->service_id!= (HILO(eit_header->service_id))))
-    {
-      send_packet=0;
-      channel->eit_dropping=1; //We say that we will drop all the other parts of this packet
-    }
-    else
-    {
-      channel->eit_dropping=0;//We say that we will keep all the other parts of this packet
-    }
-  }
-  else if(channel->eit_dropping) //It's not the beginning of a new packet and we drop the beginning, we continue dropping
-    send_packet=0;
-
-  if(send_packet)
-  {
-    /*We set the continuity counter*/
-    set_continuity_counter(ts_packet,channel->eit_continuity_counter);
-    /*To avoid discontinuities, we have to update the continuity counter*/
-    channel->eit_continuity_counter++;
-    channel->eit_continuity_counter= channel->eit_continuity_counter % 16;
-    return 1;
-  }
-  return 0;
-}

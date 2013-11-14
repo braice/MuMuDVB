@@ -38,9 +38,6 @@
 #include <pthread.h>
 #include <net/if.h>
 
-#ifdef ENABLE_TRANSCODING
-#include "transcode_common.h"
-#endif
 
 #define IPV6_CHAR_LEN 64
 
@@ -55,8 +52,20 @@
 #define ATSC 1
 #endif
 
+/*Do we support DVBT2 ?*/
+#undef DVBT2
+#if defined(DVB_API_VERSION_MINOR)
+#if DVB_API_VERSION == 5 && DVB_API_VERSION_MINOR >= 3
+#define DVBT2 1
+#endif
+#endif
+#if DVB_API_VERSION >= 6
+#define DVBT2 1
+#endif
+
+
 /**the number of pids by channel*/
-#define MAX_PIDS_PAR_CHAINE     18
+#define MAX_PIDS     128
 
 /**the maximum channel number*/
 #define MAX_CHANNELS		128
@@ -81,14 +90,14 @@ We cannot discover easily the MTU with unconnected UDP
       http://linuxgazette.net/149/melinte.html
 
 7*188 plus margin
-*/
+ */
 #define MAX_UDP_SIZE 1320
 
 /**the max mandatory pid number*/
 #define MAX_MANDATORY_PID_NUMBER   32
 /**config line length*/
 #define CONF_LINELEN 	        512
-#define MAX_NAME_LEN		256
+#define MAX_NAME_LEN			512
 #define CONFIG_FILE_SEPARATOR   " ="
 
 /**Maximum number of polling tries (excepted EINTR)*/
@@ -110,96 +119,121 @@ We cannot discover easily the MTU with unconnected UDP
 #define RTP_HEADER_LEN 12
 
 #define SAP_GROUP_LENGTH 20
+
+
+
 enum
-  {
-    FULLY_UNSCRAMBLED=0,
-    PARTIALLY_UNSCRAMBLED,
-    HIGHLY_SCRAMBLED
-  };
+{
+	FULLY_UNSCRAMBLED=0,
+	PARTIALLY_UNSCRAMBLED,
+	HIGHLY_SCRAMBLED
+};
 
 //for need_cam_ask
 enum
-  {
-    CAM_NO_ASK=0,
-    CAM_NEED_ASK,
-    CAM_NEED_UPDATE,
-    CAM_ASKED
-  };
+{
+	CAM_NO_ASK=0,
+	CAM_NEED_ASK,
+	CAM_NEED_UPDATE,
+	CAM_ASKED
+};
 
 /** Enum to tell if the option is set*/
 typedef enum option_status {
-  OPTION_UNDEFINED,
-  OPTION_OFF,
-  OPTION_ON
+	OPTION_UNDEFINED,
+	OPTION_OFF,
+	OPTION_ON
 } option_status_t;
 
 
 /** The different PID types*/
 enum
 {
-  PID_UNKNOW=0,
-  PID_PMT,
-  PID_PCR,
-  PID_VIDEO_MPEG1,
-  PID_VIDEO_MPEG2,
-  PID_VIDEO_MPEG4_ASP,
-  PID_VIDEO_MPEG4_AVC,
-  PID_AUDIO_MPEG1,
-  PID_AUDIO_MPEG2,
-  PID_AUDIO_AAC_LATM,
-  PID_AUDIO_AAC_ADTS,
-  PID_AUDIO_ATSC,
-  PID_AUDIO_AC3,
-  PID_AUDIO_EAC3,
-  PID_AUDIO_DTS,
-  PID_AUDIO_AAC,
-  PID_EXTRA_VBIDATA,
-  PID_EXTRA_VBITELETEXT,
-  PID_EXTRA_TELETEXT,
-  PID_EXTRA_SUBTITLE
+	PID_UNKNOW=0,
+	PID_PMT,
+	PID_PCR,
+	PID_VIDEO_MPEG1,
+	PID_VIDEO_MPEG2,
+	PID_VIDEO_MPEG4_ASP,
+	PID_VIDEO_MPEG4_AVC,
+	PID_AUDIO_MPEG1,
+	PID_AUDIO_MPEG2,
+	PID_AUDIO_AAC_LATM,
+	PID_AUDIO_AAC_ADTS,
+	PID_AUDIO_ATSC,
+	PID_AUDIO_AC3,
+	PID_AUDIO_EAC3,
+	PID_AUDIO_DTS,
+	PID_AUDIO_AAC,
+	PID_EXTRA_VBIDATA,
+	PID_EXTRA_VBITELETEXT,
+	PID_EXTRA_TELETEXT,
+	PID_EXTRA_SUBTITLE
 };
 
 /**@brief file descriptors*/
 typedef struct {
-  /** the dvb dvr*/
-  int fd_dvr;
-  /** the dvb frontend*/
-  int fd_frontend;
-  /** demuxer file descriptors */
-  int fd_demuxer[8193];
-  /** poll file descriptors */
-  struct pollfd *pfds;	//  DVR device + unicast http clients
-  int pfdsnum;
+	/** the dvb dvr*/
+	int fd_dvr;
+	/** the dvb frontend*/
+	int fd_frontend;
+	/** demuxer file descriptors */
+	int fd_demuxer[8193];
+	/** poll file descriptors */
+	struct pollfd *pfds;	//  DVR device + unicast http clients
+	int pfdsnum;
 }fds_t;
 
-
+#ifdef ENABLE_SCAM_SUPPORT
+/**@brief Structure containing ring buffer*/
+typedef struct {
+	/** A mutex protecting all the other members. */
+	pthread_mutex_t lock;
+	/** Buffer with dvb packets*/
+	unsigned char ** data;
+	/** Write index of buffer */
+	unsigned int write_idx;
+	/** Buffer with descrambling timestamps*/
+	uint64_t * time_decsa;
+	/** Number of packets left to descramble*/
+	unsigned int to_descramble;
+	/** Read index of buffer for descrambling thread */
+	unsigned int read_decsa_idx;
+	/** Buffer with sending timestamps*/
+	uint64_t * time_send;
+	/** Number of packets left to send*/
+	unsigned int to_send;
+	/** Read index of buffer for sending thread */
+	unsigned int read_send_idx;
+}ring_buffer_t;  
+#endif
 
 /**@brief Structure containing the card buffers*/
 typedef struct card_buffer_t{
-  /** The two buffers (we put from the card with one, we read from the other one)*/
-  unsigned char *buffer1,*buffer2;
-  int actual_read_buffer;
-  /**The pointer to the reading buffer*/
-  unsigned char *reading_buffer;
-  /**The pointer to the writing buffer*/
-  unsigned char *writing_buffer;
-  /** The maximum number of packets in the buffer from DVR*/
-  int dvr_buffer_size;
-  /** The position in the DVR buffer */
-  int read_buff_pos;
-  /** number of bytes actually read */
-  int bytes_read;
-  /** Do the read is made using a thread */
-  int threaded_read;
-  /** The thread data buffer */
-  int bytes_in_write_buffer;
-  int write_buffer_size; /** @todo put a size for each buffer*/
-  /** The number of partial packets received*/
-  int partial_packet_number;
-  /** The number of overflow errors*/
-  int overflow_number;
-  /**The maximum size of the thread buffer (in packets)*/
-  int max_thread_buffer_size;
+	/** The two buffers (we put from the card with one, we read from the other one)*/
+	unsigned char *buffer1,*buffer2;
+	int actual_read_buffer;
+	/**The pointer to the reading buffer*/
+	unsigned char *reading_buffer;
+	/**The pointer to the writing buffer*/
+	unsigned char *writing_buffer;
+	/** The maximum number of packets in the buffer from DVR*/
+	int dvr_buffer_size;
+	/** The position in the DVR buffer */
+	int read_buff_pos;
+	/** number of bytes actually read */
+	int bytes_read;
+	/** Do the read is made using a thread */
+	int threaded_read;
+	/** The thread data buffer */
+	int bytes_in_write_buffer;
+	int write_buffer_size; /** @todo put a size for each buffer*/
+	/** The number of partial packets received*/
+	int partial_packet_number;
+	/** The number of overflow errors*/
+	int overflow_number;
+	/**The maximum size of the thread buffer (in packets)*/
+	int max_thread_buffer_size;
 }card_buffer_t;
 
 
@@ -208,152 +242,214 @@ typedef struct card_buffer_t{
 struct unicast_client_t;
 /** @brief Structure for storing channels
  *
+ * All members are protected by the global lock in chan_p, with the
+ * following exceptions:
+ *
+ *  - The EIT variables, since they are only ever accessed from the main thread. 
+ *  - buf/nb_bytes, since they are only ever accessed from one thread: SCAM_SEND
+ *    if we are using scam, or the main thread otherwise.
+ *    (XXX: autoconf is the exception, we should look into whether that can happen
+ *    without the thread being shut down first)
+ *  - the odd/even keys, since they have their own locking.
  */
 typedef struct mumudvb_channel_t{
-  /** The logical channel number*/
-  int logical_channel_number;
-  /**Tell the total packet number (without pmt) for the scrambling ratio and up/down detection*/
-  int num_packet;
-  /**Tell the scrambled packet number (without pmt) for the scrambling ratio*/
-  int num_scrambled_packets;
-  /**tell if this channel is actually streamed*/
-  int streamed_channel;
-  /**Ratio of scrambled packet versus all packets*/
-  int ratio_scrambled;
+	/** Mutex for statistics counters. */
+	pthread_mutex_t stats_lock;
+	/** The logical channel number*/
+	int logical_channel_number;
+	/**Tell the total packet number (without pmt) for the scrambling ratio and up/down detection*/
+	int num_packet;
+	/**Tell the scrambled packet number (without pmt) for the scrambling ratio*/
+	int num_scrambled_packets;
+	/**tell if this channel is actually streamed*/
+	int streamed_channel;
+	/**Ratio of scrambled packet versus all packets*/
+	int ratio_scrambled;
 
 
-  /**Tell if at least one of the PID related to the chanel is scrambled*/
-  int scrambled_channel;
-  /**the channel name*/
-  char name[MAX_NAME_LEN];
+	/**Tell if at least one of the PID related to the chanel is scrambled*/
+	int scrambled_channel;
+	/**the channel name*/
+	char name[MAX_NAME_LEN];
 
-  /**the channel pids*/
-  int pids[MAX_PIDS_PAR_CHAINE];
-  /**the channel pids type (PMT, audio, video etc)*/
-  int pids_type[MAX_PIDS_PAR_CHAINE];
-  /**the channel pids language (ISO639 - 3 characters)*/
-  char pids_language[MAX_PIDS_PAR_CHAINE][4];
-  /**count the number of scrambled packets for the PID*/
-  int pids_num_scrambled_packets[MAX_PIDS_PAR_CHAINE];
-  /**tell if the PID is scrambled (1) or not (0)*/
-  char pids_scrambled[MAX_PIDS_PAR_CHAINE];
-  /**number of channel pids*/
-  int num_pids;
+	/**the channel pids*/
+	int pids[MAX_PIDS];
+	/**the channel pids type (PMT, audio, video etc)*/
+	int pids_type[MAX_PIDS];
+	/**the channel pids language (ISO639 - 3 characters)*/
+	char pids_language[MAX_PIDS][4];
+	/**count the number of scrambled packets for the PID*/
+	int pids_num_scrambled_packets[MAX_PIDS];
+	/**tell if the PID is scrambled (1) or not (0)*/
+	char pids_scrambled[MAX_PIDS];
+	/**number of channel pids*/
+	int num_pids;
 
-  /** Channel Type (Radio, TV, etc) / service type*/
-  int channel_type;
-  /**Transport stream ID*/
-  int service_id;
-  /**pmt pid number*/
-  int pmt_pid;
-  /**Say if we need to ask this channel to the cam*/
-  int need_cam_ask;
-  /** When did we asked the channel to the CAM */
-  long cam_asking_time;
-  /**The ca system ids*/
-  int ca_sys_id[32];
-  /** The version of the pmt */
-  int pmt_version;
-  /** Do the pmt needs to be updated ? */
-  int pmt_needs_update;
-  /**The PMT packet*/
-  mumudvb_ts_packet_t *pmt_packet;
+	/** Channel Type (Radio, TV, etc) / service type*/
+	int channel_type;
+	/**Transport stream ID*/
+	int service_id;
+	/**pmt pid number*/
+	int pmt_pid;
+	/**PCR PID number*/
+	int pcr_pid;
+	/**Say if we need to ask this channel to the cam*/
+	int need_cam_ask;
+	/** When did we asked the channel to the CAM */
+	long cam_asking_time;
+	/**The ca system ids*/
+	int ca_sys_id[32];
+	/** The version of the pmt */
+	int pmt_version;
+	/** Do the pmt needs to be updated ? */
+	int pmt_needs_update;
+	/**The PMT packet*/
+	mumudvb_ts_packet_t *pmt_packet;
 #ifdef ENABLE_CAM_SUPPORT
-  /** The PMT packet for CAM purposes*/
-  mumudvb_ts_packet_t *cam_pmt_packet;
+	/** The PMT packet for CAM purposes*/
+	mumudvb_ts_packet_t *cam_pmt_packet;
+#endif
+#ifdef ENABLE_SCAM_SUPPORT
+	/** The camd socket for SCAM*/
+	int camd_socket;
+	/** Say if we need to ask this channel to the oscam*/
+	int need_scam_ask;
+	/** Say if this channel should be descrambled using scam*/
+	int scam_support;
+	/** Mutex for odd_cw and even_cw. */
+	pthread_mutex_t cw_lock;
+	/** Odd control word for descrambling */
+	unsigned char odd_cw[8];
+	/** Even control word for descrambling */
+	unsigned char even_cw[8];
+
+	/** Indicating if we have another odd cw for descrambling */
+	unsigned char got_key_odd;
+	/** Indicating if we have another even cw for descrambling */
+	unsigned char got_key_even;
+
+	unsigned int ca_idx;
+	unsigned int ca_idx_refcnt;
+
+
+
+	/** Thread for software descrambling */
+	pthread_t decsathread;
+	/** Descrambling thread shutdown control */
+	int decsathread_shutdown;
+
+
+	/**ring buffer for sending and software descrambling*/
+	ring_buffer_t* ring_buf;
+	/** Thread for sending packets software descrambled */
+	pthread_t sendthread;
+	/** Sending thread shutdown control */
+	int sendthread_shutdown;
+	/** Size of ring buffer */
+	uint64_t ring_buffer_size;
+	/** Delay of descrambling in us*/
+	uint64_t decsa_delay;
+	/** Delay of sending in us*/
+	uint64_t send_delay;
+	/** Says if we need to get pmt for this channel on scam own*/
+	int need_pmt_get;
+	/** Says if we've got first cw for channel.
+	 * NOTE: This is _not_ under cw_lock, but under the regular chan_p lock. */
+	int got_cw_started;
 #endif
 
-  /**the RTP header (just before the buffer so it can be sended together)*/
-  unsigned char buf_with_rtp_header[RTP_HEADER_LEN];
-  /**the buffer wich will be sent once it's full*/
-  unsigned char buf[MAX_UDP_SIZE];
-  /**number of bytes actually in the buffer*/
-  int nb_bytes;
-  /**The data sent to this channel*/
-  long sent_data;
-
-  /** The packet number for rtp*/
-  int rtp_packet_num;
-
-  /**is the channel autoconfigurated ?*/
-  int autoconfigurated;
-
-  /**The multicast ip address*/
-  char ip4Out[20];
-  /**The multicast port*/
-  int portOut;
-  /**The multicast output socket*/
-  struct sockaddr_in sOut4;
-  /**The multicast output socket*/
-  int socketOut4;
-  /**The ipv6 multicast ip address*/
-  char ip6Out[IPV6_CHAR_LEN];
-  /**The multicast output socket*/
-  struct sockaddr_in6 sOut6;
-  /**The multicast output socket*/
-  int socketOut6;
 
 
-  /**Unicast clients*/
-  struct unicast_client_t *clients;
-  /**Unicast port (listening socket per channel) */
-  int unicast_port;
-  /**Unicast listening socket*/
-  struct sockaddr_in sIn;
-  /**Unicast listening socket*/
-  int socketIn;
+	/**the RTP header (just before the buffer so it can be sended together)*/
+	unsigned char buf_with_rtp_header[RTP_HEADER_LEN];
+	/**the buffer wich will be sent once it's full*/
+	unsigned char buf[MAX_UDP_SIZE];
+	/**number of bytes actually in the buffer*/
+	int nb_bytes;
+	/**The data sent to this channel*/
+	long sent_data;
 
-  /**The sap playlist group*/
-  char sap_group[SAP_GROUP_LENGTH];
+	/** The packet number for rtp*/
+	int rtp_packet_num;
 
-  /**The generated pat to be sent*/
-  unsigned char generated_pat[TS_PACKET_SIZE]; /**@todo: allocate dynamically*/
-  /** The version of the generated pat */
-  int generated_pat_version;
-  /**The generated sdt to be sent*/
-  unsigned char generated_sdt[TS_PACKET_SIZE]; /**@todo: allocate dynamically*/
-  /** The version of the generated sdt */
-  int generated_sdt_version;
-  /** If there is no channel found, we skip sdt rewrite */
-  int sdt_rewrite_skip;
+	/**is the channel autoconfigurated ?*/
+	int autoconfigurated;
 
-  /** The occupied traffic (in kB/s) */
-  float traffic;
+	/**The multicast ip address*/
+	char ip4Out[20];
+	/**The multicast port*/
+	int portOut;
+	/**The multicast output socket*/
+	struct sockaddr_in sOut4;
+	/**The multicast output socket*/
+	int socketOut4;
+	/**The ipv6 multicast ip address*/
+	char ip6Out[IPV6_CHAR_LEN];
+	/**The multicast output socket*/
+	struct sockaddr_in6 sOut6;
+	/**The multicast output socket*/
+	int socketOut6;
 
-  /** Are we dropping the current EIT packet for this channel*/ 
-  int eit_dropping;
-  /**The continuity counter for the EIT*/
-  int eit_continuity_counter;
+
+	/**Unicast clients*/
+	struct unicast_client_t *clients;
+	/**Unicast port (listening socket per channel) */
+	int unicast_port;
+	/**Unicast listening socket*/
+	struct sockaddr_in sIn;
+	/**Unicast listening socket*/
+	int socketIn;
+
+	/**The sap playlist group*/
+	char sap_group[SAP_GROUP_LENGTH];
+
+	/**The generated pat to be sent*/
+	unsigned char generated_pat[TS_PACKET_SIZE]; /**@todo: allocate dynamically*/
+	/** The version of the generated pat */
+	int generated_pat_version;
+	/**The generated sdt to be sent*/
+	unsigned char generated_sdt[TS_PACKET_SIZE]; /**@todo: allocate dynamically*/
+	/** The version of the generated sdt */
+	int generated_sdt_version;
+	/** If there is no service id for the channel found, we skip sdt rewrite */
+	int sdt_rewrite_skip;
+	/** The version of the generated EIT */
+	int eit_section_to_send;
+	/** The table we are currently sending */
+	uint8_t eit_table_id_to_send;
+	/** the continuity counter for the EIT */
+	int eit_cc;
 
 
-#ifdef ENABLE_TRANSCODING
-  void *transcode_handle;
-  struct transcode_options_t transcode_options;
-#endif
+	/** The occupied traffic (in kB/s) */
+	float traffic;
+
 
 }mumudvb_channel_t;
 
 /**The parameters concerning the multicast*/
-typedef struct multicast_parameters_t{
-  /** Do we activate multicast ? */
-  int multicast;
-  /** Do we activate multicast ? */
-  int multicast_ipv4;
-  /** Do we activate multicast ? */
-  int multicast_ipv6;
-  /** Time to live of sent packets */
-  int ttl;
-  /** the default port*/
-  int common_port;
-  /** Does MuMuDVB have to join the created multicast groups ?*/
-  int auto_join;
-  /**Do we send the rtp header ? */
-  int rtp_header;
-  /** The interface for IPv4 */
-  char iface4[IF_NAMESIZE+1];
-  /** The interface for IPv6 */
-  char iface6[IF_NAMESIZE+1];
-}multicast_parameters_t;
+typedef struct multi_p_t{
+	/** Do we activate multicast ? */
+	int multicast;
+	/** Do we activate multicast ? */
+	int multicast_ipv4;
+	/** Do we activate multicast ? */
+	int multicast_ipv6;
+	/** Time to live of sent packets */
+	int ttl;
+	/** the default port*/
+	int common_port;
+	/** Does MuMuDVB have to join the created multicast groups ?*/
+	int auto_join;
+	/**Do we send the rtp header ? */
+	int rtp_header;
+	/** The interface for IPv4 */
+	char iface4[IF_NAMESIZE+1];
+	/** The interface for IPv6 */
+	char iface6[IF_NAMESIZE+1];
+	/** num mpeg packets in one sent packet */
+	unsigned char num_pack;
+}multi_p_t;
 
 /** No PSI tables filtering */
 #define PSI_TABLES_FILTERING_NONE 0
@@ -363,41 +459,44 @@ typedef struct multicast_parameters_t{
 #define PSI_TABLES_FILTERING_PAT_ONLY 2
 
 /** structure containing the channels and the asked pids information*/
-typedef struct mumudvb_chan_and_pids_t{
-  /** The number of channels ... */
-  int number_of_channels;
-  /** Do we send scrambled packets ? */
-  int dont_send_scrambled;
-  /** Do we send packets with error bit set by decoder ? */
-  int filter_transport_error;
-  /** Do we do filtering to keep only PSI tables (without DVB tables) ? **/
-  int psi_tables_filtering;
-  /** The channels array */
-  mumudvb_channel_t channels[MAX_CHANNELS];  /**@todo use realloc*/
-//Asked pids //used for filtering
-  /** this array contains the pids we want to filter,*/
-  uint8_t asked_pid[8193];
-  /** the number of channels who want this pid (used by autoconfiguration update)*/
-  uint8_t number_chan_asked_pid[8193];
-  /** The number of TS discontinuities per PID **/
-  int16_t continuity_counter_pid[8193]; //on 16 bits for storing the initial -1
-  uint8_t check_cc;
-}mumudvb_chan_and_pids_t;
+typedef struct mumu_chan_p_t{
+	/** Protects all the members, including most of the channels (see the documentation
+	 * for mumudvb_channel_t for details).
+	 */
+	pthread_mutex_t lock;
+	/** The number of channels ... */
+	int number_of_channels;
+	/** Do we send packets with error bit set by decoder ? */
+	int filter_transport_error;
+	/** Do we do filtering to keep only PSI tables (without DVB tables) ? **/
+	int psi_tables_filtering;
+	/** The channels array */
+	mumudvb_channel_t channels[MAX_CHANNELS];  /**@todo use realloc*/
+	//Asked pids //used for filtering
+	/** this array contains the pids we want to filter,*/
+	uint8_t asked_pid[8193];
+	/** the number of channels who want this pid (used by autoconfiguration update)*/
+	uint8_t number_chan_asked_pid[8193];
+	/** The number of TS discontinuities per PID **/
+	int16_t continuity_counter_pid[8193]; //on 16 bits for storing the initial -1
+	uint8_t check_cc;
+}mumu_chan_p_t;
 
 
 typedef struct monitor_parameters_t{
-  int threadshutdown;
-  int wait_time;
-  struct autoconf_parameters_t *autoconf_vars;
-  struct sap_parameters_t *sap_vars;
-  mumudvb_chan_and_pids_t *chan_and_pids;
-  multicast_parameters_t *multicast_vars;
-  struct unicast_parameters_t *unicast_vars;
-  struct tuning_parameters_t *tuneparams;
-  struct stats_infos_t *stats_infos;
-  int server_id;
-  char *filename_channels_not_streamed;
-  char *filename_channels_streamed;
+	volatile int threadshutdown;
+	int wait_time;
+	struct auto_p_t *auto_p;
+	struct sap_p_t *sap_p;
+	mumu_chan_p_t *chan_p;
+	multi_p_t *multi_p;
+	struct unicast_parameters_t *unicast_vars;
+	struct tune_p_t *tune_p;
+	struct stats_infos_t *stats_infos;
+	void *scam_vars_v;
+	int server_id;
+	char *filename_channels_not_streamed;
+	char *filename_channels_streamed;
 }monitor_parameters_t;
 
 
@@ -405,8 +504,8 @@ typedef struct monitor_parameters_t{
 
 /** struct containing a string */
 typedef struct mumu_string_t{
-  char *string;
-  int length; //string length (not including \0)
+	char *string;
+	int length; //string length (not including \0)
 }mumu_string_t;
 
 #define EMPTY_STRING {NULL,0}
@@ -418,13 +517,18 @@ void mumu_free_string(mumu_string_t *string);
 int mumudvb_poll(fds_t *fds);
 char *mumu_string_replace(char *source, int *length, int can_realloc, char *toreplace, char *replacement);
 int string_comput(char *string);
+uint64_t get_time(void);
+void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multi_p_t *multi_p, void *scam_vars_v, fds_t *fds);
+void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multi_p_t *multi_p, fds_t *fds);
 
 
 long int mumu_timing();
 
+/** Sets the interrupted flag if value != 0 and it is not already set.
+ * In any case, returns the given value back. Thread- and signal-safe. */
+int set_interrupted(int value);
+
+/** Gets the interrupted flag; 0 if we have not been interrupted. */
+int get_interrupted();
+
 #endif
-
-
-
-
-

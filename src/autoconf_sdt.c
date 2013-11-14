@@ -42,45 +42,16 @@
 #include "autoconf.h"
 #include "log.h"
 
-#ifdef HAVE_ICONV
-#include <iconv.h>
-#endif
 
-extern int Interrupted;
+
 static char *log_module="Autoconf: ";
 
 void parse_sdt_descriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_service_t *services);
 void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *services);
-void autoconf_show_CA_identifier_descriptor(unsigned char *buf);
 void autoconf_show_country_avaibility_descriptor(unsigned char *buf);
 mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int service_id);
 
-/**
-@brief The different encodings that can be used
-Cf EN 300 468 Annex A (I used v1.9.1)
- */
-char *encodings_en300468[] ={
-  "ISO8859-1",
-  "ISO8859-2",
-  "ISO8859-3",
-  "ISO8859-4",
-  "ISO8859-5",
-  "ISO8859-6",
-  "ISO8859-7",
-  "ISO8859-8",
-  "ISO8859-9",
-  "ISO8859-10",
-  "ISO8859-11",
-  "ISO8859-12",
-  "ISO8859-13",
-  "ISO8859-14",
-  "ISO8859-15",
-  "ISO-10646", //control char 0x11
-  "GB2312",    //control char 0x13
-  "BIG5",      //control char 0x14
-  "ISO-10646/UTF8",      //control char 0x15
-};
-
+extern char *encodings_en300468[];
 
 /** @brief Read the service description table (cf EN 300 468)
  *
@@ -94,73 +65,73 @@ char *encodings_en300468[] ={
  */
 int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
 {
-  int delta;
-  sdt_t *header;
-  sdt_descr_t *descr_header;
-  mumudvb_service_t *new_service=NULL;
+	int delta;
+	sdt_t *header;
+	sdt_descr_t *descr_header;
+	mumudvb_service_t *new_service=NULL;
 
-  header=(sdt_t *)buf; //we map the packet over the header structure
+	header=(sdt_t *)buf; //we map the packet over the header structure
 
-  /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+	/*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
   sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
   and shall be the next table to become valid.*/
-  if(header->current_next_indicator == 0)
-  {
-    log_message( log_module, MSG_FLOOD,"SDT not yet valid, we get a new one (current_next_indicator == 0)\n");
-    return 0;
-  }
+	if(header->current_next_indicator == 0)
+	{
+		log_message( log_module, MSG_FLOOD,"SDT not yet valid, we get a new one (current_next_indicator == 0)\n");
+		return 0;
+	}
 
-  //We look only for the following table
-  //0x42 service_description_section - actual_transport_stream
-  if(header->table_id==0x42)
-  {
-    log_message( log_module, MSG_DEBUG, "-- SDT : Service Description Table (id 0x%02x)--\n",header->table_id);
+	//We look only for the following table
+	//0x42 service_description_section - actual_transport_stream
+	if(header->table_id==0x42)
+	{
+		log_message( log_module, MSG_DEBUG, "-- SDT : Service Description Table (id 0x%02x)--\n",header->table_id);
 
-    log_message( log_module, MSG_FLOOD, "-- SDT: TSID %d Original network id %d version %d section number %d last section number %d  --\n",
-                  HILO(header->transport_stream_id),
-                  HILO(header->original_network_id),
-                  header->version_number,
-                  header->section_number,
-                  header->last_section_number);
-    //Loop over different services in the SDT
-    delta=SDT_LEN;
-    while((len-delta)>=(4+SDT_DESCR_LEN))
-    {
-      descr_header=(sdt_descr_t *)(buf +delta );
-      //we search if we already have service id
-      new_service=autoconf_find_service_for_add(services,HILO(descr_header->service_id));
-      if(new_service)
-      {
-        log_message( log_module, MSG_DEBUG, "We discovered a new service, service_id : 0x%x\n", HILO(descr_header->service_id));
-        //For information only
-        switch(descr_header->running_status)
-        {
-          case 0:
-            log_message( log_module, MSG_DEBUG, "\trunning_status : undefined\n");  break;
-          case 1:
-            log_message( log_module, MSG_DEBUG, "\trunning_status : not running\n");  break;
-          case 2:
-            log_message( log_module, MSG_DEBUG, "\trunning_status : starts in a few seconds\n");  break;
-          case 3:
-            log_message( log_module, MSG_DEBUG, "\trunning_status : pausing\n");  break;
-          case 4:  log_message( log_module, MSG_FLOOD, "\trunning_status : running\n");  break; //too usual to be printed as debug
-          case 5:
-            log_message( log_module, MSG_DEBUG, "\trunning_status : service off-air\n");  break;
-        }
-        //we store the data
-        new_service->id=HILO(descr_header->service_id);
-        new_service->running_status=descr_header->running_status;
-        new_service->free_ca_mode=descr_header->free_ca_mode;
-        log_message( log_module, MSG_DEBUG, "\tfree_ca_mode : 0x%x\n", descr_header->free_ca_mode);
-        //We read the descriptor
-        parse_sdt_descriptor(buf+delta+SDT_DESCR_LEN,HILO(descr_header->descriptors_loop_length),new_service);
-      }
-    delta+=HILO(descr_header->descriptors_loop_length)+SDT_DESCR_LEN;
-    }
-  }
-  else
-    log_message( log_module, MSG_FLOOD, "-- SDT : bad table id 0x%02x--\n",header->table_id);
-  return 0;
+		log_message( log_module, MSG_FLOOD, "-- SDT: TSID %d Original network id %d version %d section number %d last section number %d  --\n",
+				HILO(header->transport_stream_id),
+				HILO(header->original_network_id),
+				header->version_number,
+				header->section_number,
+				header->last_section_number);
+		//Loop over different services in the SDT
+		delta=SDT_LEN;
+		while((len-delta)>=(4+SDT_DESCR_LEN))
+		{
+			descr_header=(sdt_descr_t *)(buf +delta );
+			//we search if we already have service id
+			new_service=autoconf_find_service_for_add(services,HILO(descr_header->service_id));
+			if(new_service)
+			{
+				log_message( log_module, MSG_DEBUG, "We discovered a new service, service_id : 0x%x\n", HILO(descr_header->service_id));
+				//For information only
+				switch(descr_header->running_status)
+				{
+				case 0:
+					log_message( log_module, MSG_DEBUG, "\trunning_status : undefined\n");  break;
+				case 1:
+					log_message( log_module, MSG_DEBUG, "\trunning_status : not running\n");  break;
+				case 2:
+					log_message( log_module, MSG_DEBUG, "\trunning_status : starts in a few seconds\n");  break;
+				case 3:
+					log_message( log_module, MSG_DEBUG, "\trunning_status : pausing\n");  break;
+				case 4:  log_message( log_module, MSG_FLOOD, "\trunning_status : running\n");  break; //too usual to be printed as debug
+				case 5:
+					log_message( log_module, MSG_DEBUG, "\trunning_status : service off-air\n");  break;
+				}
+				//we store the data
+				new_service->id=HILO(descr_header->service_id);
+				new_service->running_status=descr_header->running_status;
+				new_service->free_ca_mode=descr_header->free_ca_mode;
+				log_message( log_module, MSG_DEBUG, "\tfree_ca_mode : 0x%x\n", descr_header->free_ca_mode);
+				//We read the descriptor
+				parse_sdt_descriptor(buf+delta+SDT_DESCR_LEN,HILO(descr_header->descriptors_loop_length),new_service);
+			}
+			delta+=HILO(descr_header->descriptors_loop_length)+SDT_DESCR_LEN;
+		}
+	}
+	else
+		log_message( log_module, MSG_FLOOD, "-- SDT : bad table id 0x%02x--\n",header->table_id);
+	return 0;
 }
 
 
@@ -173,130 +144,34 @@ int autoconf_read_sdt(unsigned char *buf,int len, mumudvb_service_t *services)
 void parse_sdt_descriptor(unsigned char *buf,int descriptors_loop_len, mumudvb_service_t *service)
 {
 
-  while (descriptors_loop_len > 0)
-  {
-    unsigned char descriptor_tag = buf[0];
-    unsigned char descriptor_len = buf[1] + 2;
+	while (descriptors_loop_len > 0)
+	{
+		unsigned char descriptor_tag = buf[0];
+		unsigned char descriptor_len = buf[1] + 2;
 
-    if (!descriptor_len)
-    {
-      log_message( log_module, MSG_DEBUG, "--- SDT descriptor --- descriptor_tag == 0x%02x, len is 0\n", descriptor_tag);
-      break;
-    }
+		if (!descriptor_len)
+		{
+			log_message( log_module, MSG_DEBUG, "--- SDT descriptor --- descriptor_tag == 0x%02x, len is 0\n", descriptor_tag);
+			break;
+		}
 
-    //The service descriptor provides the names of the service provider and the service in text form together with the service_type.
-    if(descriptor_tag==0x48)
-      parse_service_descriptor(buf,service);
-    else if( descriptor_tag==0x53) //53 : CA identifier descriptor. This descriptor contains the CA_systems_id (the scrambling algorithms)
-      autoconf_show_CA_identifier_descriptor(buf);
-    else if( descriptor_tag==0x49) //0x49 : Country availability descriptor.
-      autoconf_show_country_avaibility_descriptor(buf);
-    else /** @todo : Add descriptor 0x50 Component descriptor (multilingual 0x5E)*/
-       /** @todo : Add descriptor 0x5D  multilingual_service_name_descriptor*/
-      log_message( log_module, MSG_FLOOD, "SDT descriptor_tag : 0x%2x, descriptor_len %d\n", descriptor_tag, descriptor_len);
+		//The service descriptor provides the names of the service provider and the service in text form together with the service_type.
+		if(descriptor_tag==0x48)
+			parse_service_descriptor(buf,service);
+		else if( descriptor_tag==0x53) //53 : CA identifier descriptor. This descriptor contains the CA_systems_id (the scrambling algorithms)
+			show_CA_identifier_descriptor(buf);
+		else if( descriptor_tag==0x49) //0x49 : Country availability descriptor.
+			ts_display_country_avaibility_descriptor(log_module,buf);
+		else /** @todo : Add descriptor 0x50 Component descriptor (multilingual 0x5E)*/
+			/** @todo : Add descriptor 0x5D  multilingual_service_name_descriptor*/
+			log_message( log_module, MSG_FLOOD, "SDT descriptor_tag : 0x%2x, descriptor_len %d\n", descriptor_tag, descriptor_len);
 
-    buf += descriptor_len;
-    descriptors_loop_len -= descriptor_len;
-  }
+		buf += descriptor_len;
+		descriptors_loop_len -= descriptor_len;
+	}
 }
 
-int convert_en399468_string(char *string, int max_len)
-{
 
-  int encoding_control_char=8; //cf encodings_en300468 
-  char *dest;
-  char *tempdest, *tempbuf;
-  unsigned char *src;
-  /* remove control characters and convert to UTF-8 the channel name */
-  //If no channel encoding is specified, it seems that most of the broadcasters
-  //uses ISO/IEC 8859-9. But the norm (EN 300 468) said that it should be Latin-1 (ISO/IEC 6937 + euro)
-
-  //temporary buffers allocation
-  tempdest=tempbuf=malloc(sizeof(char)*2*strlen(string));
-  if(tempdest==NULL)
-  {
-    log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-    Interrupted=ERROR_MEMORY<<8;
-    return -1;
-  }
-
-  int len=0;
-  for (src = (unsigned char *) string; *src; src++)
-  {
-    if (*src >= 0x20 && (*src < 0x80 || *src > 0x9f))
-    {
-      //We copy non-control characters
-      *tempdest++ = *src;
-      len++;
-    }
-    else if(*src <= 0x20)
-    {
-      log_message( log_module, MSG_FLOOD, "Encoding number 0x%02x, see EN 300 468 Annex A",*src);
-      //control character recognition based on EN 300 468 v1.9.1 Annex A
-      if(*src<=0x0b){
-	encoding_control_char=(int) *src+4-1;
-      }
-      else if(*src==0x10)
-      { //ISO/IEC 8859 : See table A.4
-        src++;//we skip the current byte
-        src++;//This one is always set to 0
-        if(*src >= 0x01 && *src <=0x0f)
-          encoding_control_char=(int) *src-1;
-      }
-      else if(*src==0x11)//ISO/IEC 10646 : Basic Multilingual Plane
-	encoding_control_char=15;
-      else if(*src==0x12)//KSX1001-2004 : Korean Character Set
-	log_message( log_module, MSG_WARN, "\t\t Encoding KSX1001-2004 (korean character set) not implemented yet by iconv, we'll use the default encoding for service name\n");
-      else if(*src==0x13)//GB-2312-1980 : Simplified Chinese Character
-	encoding_control_char=16;
-      else if(*src==0x14)//Big5 subset of ISO/IEC 10646 : Traditional Chinese
-	encoding_control_char=17;
-      else if(*src==0x15)//UTF-8 encoding of ISO/IEC 10646 : Basic Multilingual Plane
-	encoding_control_char=18;
-      else
-	log_message( log_module, MSG_WARN, "\t\t Encoding not implemented yet (0x%02x), we'll use the default encoding for service name\n",*src);
-    }
-    else if (*src >= 0x80 && *src <= 0x9f)
-    {
-      //to encode in UTF-8 we add 0xc2 before this control character
-      //but wh have to put it after iconv, it's a bit boring just for bold
-      //we drop them
-      if(*src==0x86)
-        log_message( log_module, MSG_DETAIL, "Control character \"Bold\", we drop",*src);
-      else if(*src==0x87)
-        log_message( log_module, MSG_DETAIL, "Control character \"UnBold\", we drop",*src);
-      else if(*src==0x8a)
-        log_message( log_module, MSG_DETAIL, "Control character \"CR/LF\", we drop",*src);
-      else if(*src>=0x8b )
-        log_message( log_module, MSG_DETAIL, "Control character 0x%02x \"User defined\" at len %d. We drop",*src,len);
-      else
-	log_message( log_module, MSG_DEBUG, "\tUnimplemented name control_character : %x \n", *src);
-    }
-  }
-#ifdef HAVE_ICONV
-  //Conversion to utf8
-  iconv_t cd;
-  //we open the conversion table
-  cd = iconv_open( "UTF8", encodings_en300468[encoding_control_char] );
-
-  size_t inSize, outSize=max_len;
-  inSize=len;
-  //pointers initialisation because iconv change them, we store
-  dest=string;
-  tempdest=tempbuf;
-  //conversion
-  iconv(cd, &tempdest, &inSize, &dest, &outSize );
-  *dest = '\0';
-  free(tempbuf);
-  iconv_close( cd );
-#else
-  log_message( log_module, MSG_DETAIL, "Iconv not present, no name encoding conversion \n");
-#endif
-
-  log_message( log_module, MSG_FLOOD, "Converted name : \"%s\" (name encoding : %s)\n", string,encodings_en300468[encoding_control_char]);
-  return encoding_control_char;
-
-}
 
 
 /** @brief Parse the service descriptor
@@ -306,7 +181,7 @@ int convert_en399468_string(char *string, int max_len)
  */
 void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *service)
 {
-  /* Service descriptor : 
+	/* Service descriptor :
      descriptor_tag			8
      descriptor_length			8
      service_type			8
@@ -318,101 +193,45 @@ void parse_service_descriptor(unsigned char *buf, mumudvb_service_t *service)
      for (i=0;i<N;I++){
      Char				8
      }
-   */
-  int len;
+	 */
+	int len;
 
-  int encoding_control_char;
-
-
-  buf += 2;
-  if(service)
-    service->type=*buf;
-
-  //We show the service type
-  display_service_type(*buf, MSG_DEBUG,log_module);
+	int encoding_control_char;
 
 
-  buf ++; //we skip the service_type
-  len = *buf; //provider name len
+	buf += 2;
+	if(service)
+		service->type=*buf;
 
-  //we jump the provider_name + the provider_name_len
-  buf += len + 1;
-
-  //Channel name len
-  len = *buf;
-  buf++;  //we jump the channel_name_len
-
-  char *name;
-  char tempbuf[MAX_NAME_LEN];
-  if(service)
-    name=service->name;
-  else
-    name=tempbuf;
-
-  //We store the channel name with the raw encoding
-  memcpy (name, buf, len);
-  name[len] = '\0';
-  encoding_control_char=convert_en399468_string(name,MAX_NAME_LEN);
-  if(encoding_control_char==-1)
-    return;
-
-  log_message( log_module, MSG_DEBUG, "service_name : \"%s\" (name encoding : %s)\n", name,encodings_en300468[encoding_control_char]);
-}
+	//We show the service type
+	display_service_type(*buf, MSG_DEBUG,log_module);
 
 
-/** @brief : show the contents of the CA identifier descriptor
- *
- * @param buf : the buffer containing the descriptor
- */
-void autoconf_show_CA_identifier_descriptor(unsigned char *buf)
-{
+	buf ++; //we skip the service_type
+	len = *buf; //provider name len
 
-  int length,i,ca_id;
+	//we jump the provider_name + the provider_name_len
+	buf += len + 1;
 
-  log_message( log_module, MSG_DETAIL, "--- SDT descriptor --- CA identifier descriptor\n");
-  log_message( log_module, MSG_DETAIL, "CA_system_ids : \n");
+	//Channel name len
+	len = *buf;
+	buf++;  //we jump the channel_name_len
 
-  length=buf[1];
-  buf+=2;
-  for(i=0;i<length;i+=2)
-  {
-    ca_id=(buf[i]<<8)+buf[i+1];
-    log_message( log_module,  MSG_DETAIL,"Ca system id 0x%04x : %s\n",ca_id, ca_sys_id_to_str(ca_id));
-  }
-}
+	char *name;
+	char tempbuf[MAX_NAME_LEN];
+	if(service)
+		name=service->name;
+	else
+		name=tempbuf;
 
-typedef struct {
-   u_char descriptor_tag                         :8;
-   u_char descriptor_length                      :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char country_availability_flag              :1;
-   u_char                                        :7;
-#else
-   u_char                                        :7;
-   u_char country_availability_flag              :1;
-#endif
-} country_avaibility_descr_t;
+	//We store the channel name with the raw encoding
+	memcpy (name, buf, len);
+	name[len] = '\0';
+	encoding_control_char=convert_en300468_string(name,MAX_NAME_LEN);
+	if(encoding_control_char==-1)
+		return;
 
-/** @brief : show the contents of the country avaibility descriptor
- *
- * @param buf : the buffer containing the descriptor
- */
-void autoconf_show_country_avaibility_descriptor(unsigned char *buf)
-{
-  int length,i;
-  country_avaibility_descr_t *descr;
-  log_message( log_module, MSG_DETAIL, "--- SDT descriptor --- country avaibility descriptor\n");
-
-  descr=(country_avaibility_descr_t *)buf;
-  length=descr->descriptor_length-1;
-  if(descr->country_availability_flag)
-    log_message( log_module, MSG_DETAIL, "The reception is intended for the following countries : \n");
-  else
-    log_message( log_module, MSG_DETAIL, "The reception is NOT intended for the following countries : \n");
-  for(i=0;i<length;i+=3)
-  {
-    log_message( log_module,  MSG_DETAIL,"Country : %c%c%c\n",buf[i+3], buf[i+3+1],buf[i+3+2]);
-  }
+	log_message( log_module, MSG_DEBUG, "service_name : \"%s\" (name encoding : %s)\n", name,encodings_en300468[encoding_control_char]);
 }
 
 

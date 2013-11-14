@@ -3,8 +3,8 @@
 /* Define if you want the CAM support */
 #undef ENABLE_CAM_SUPPORT
 
-/* Define if you want the transcoding support */
-#undef ENABLE_TRANSCODING
+/* Define if you want the SCAM support */
+#undef ENABLE_SCAM_SUPPORT
 
 /* Define to 1 if you have the `alarm' function. */
 #undef HAVE_ALARM
@@ -18,18 +18,6 @@
 /* Define to 1 if you have the <fcntl.h> header file. */
 #undef HAVE_FCNTL_H
 
-/* Define to 1 if you have the <ffmpeg/avcodec.h> header file. */
-#undef HAVE_FFMPEG_AVCODEC_H
-
-/* Define to 1 if you have the <ffmpeg/avformat.h> header file. */
-#undef HAVE_FFMPEG_AVFORMAT_H
-
-/* Define to 1 if you have the <ffmpeg/swscale.h> header file. */
-#undef HAVE_FFMPEG_SWSCALE_H
-
-/* Define if the function ff_url_split exists */
-#undef HAVE_FF_URL_SPLIT
-
 /* Define to 1 if you have the `gettimeofday' function. */
 #undef HAVE_GETTIMEOFDAY
 
@@ -42,26 +30,20 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Define to 1 if you have the `avcodec' library (-lavcodec). */
-#undef HAVE_LIBAVCODEC
-
-/* Define to 1 if you have the <libavcodec/avcodec.h> header file. */
-#undef HAVE_LIBAVCODEC_AVCODEC_H
-
-/* Define to 1 if you have the `avformat' library (-lavformat). */
-#undef HAVE_LIBAVFORMAT
-
-/* Define to 1 if you have the <libavformat/avformat.h> header file. */
-#undef HAVE_LIBAVFORMAT_AVFORMAT_H
-
 /* Define to 1 if you have the `duma' library (-lduma). */
 #undef HAVE_LIBDUMA
 
 /* Define to 1 if you have the `dvbapi' library (-ldvbapi). */
 #undef HAVE_LIBDVBAPI
 
+/* Define to 1 if you have the `dvbcsa' library (-ldvbcsa). */
+#undef HAVE_LIBDVBCSA
+
 /* Define to 1 if you have the `dvben50221' library (-ldvben50221). */
 #undef HAVE_LIBDVBEN50221
+
+/* Define to 1 if you have the `m' library (-lm). */
+#undef HAVE_LIBM
 
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD
@@ -69,18 +51,8 @@
 /* Define to 1 if you have the `rt' library (-lrt). */
 #undef HAVE_LIBRT
 
-/* Define to 1 if you have the `swscale' library (-lswscale). */
-#undef HAVE_LIBSWSCALE
-
-/* Define to 1 if you have the <libswscale/swscale.h> header file. */
-#undef HAVE_LIBSWSCALE_SWSCALE_H
-
 /* Define to 1 if you have the `ucsi' library (-lucsi). */
 #undef HAVE_LIBUCSI
-
-/* Define to 1 if your system has a GNU libc compatible `malloc' function, and
-   to 0 otherwise. */
-#undef HAVE_MALLOC
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
@@ -93,10 +65,6 @@
 
 /* Define to 1 if you have the <netinet/in.h> header file. */
 #undef HAVE_NETINET_IN_H
-
-/* Define to 1 if your system has a GNU libc compatible `realloc' function,
-   and to 0 otherwise. */
-#undef HAVE_REALLOC
 
 /* Define to 1 if you have the <resolv.h> header file. */
 #undef HAVE_RESOLV_H
@@ -142,9 +110,6 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
-
-/* Define if the function url_split exists */
-#undef HAVE_URL_SPLIT
 
 /* Define to 1 if you have the <values.h> header file. */
 #undef HAVE_VALUES_H
@@ -192,12 +157,6 @@
 /* Define to the type of a signed integer type of width exactly 32 bits if
    such a type exists and the standard includes do not define it. */
 #undef int32_t
-
-/* Define to rpl_malloc if the replacement function should be used. */
-#undef malloc
-
-/* Define to rpl_realloc if the replacement function should be used. */
-#undef realloc
 
 /* Define to `unsigned int' if <sys/types.h> does not define. */
 #undef size_t

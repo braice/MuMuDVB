@@ -39,25 +39,25 @@
  */
 void init_rtp_header(mumudvb_channel_t *channel)
 {
-  // See RFC 1889
-  channel->buf_with_rtp_header[0]=128; //version=2 padding=0 extension=0 CSRC=0
-  channel->buf_with_rtp_header[1]=33;  // marker=0 payload type=33 (MP2T)
-  channel->buf_with_rtp_header[2]=0;   // sequence number
-  channel->buf_with_rtp_header[3]=0;   // sequence number
-  channel->buf_with_rtp_header[4]=0;   // timestamp
-  channel->buf_with_rtp_header[5]=0;   // timestamp
-  channel->buf_with_rtp_header[6]=0;   // timestamp
-  channel->buf_with_rtp_header[7]=0;   // timestamp
-  channel->buf_with_rtp_header[8]= (char)(rand() % 256); // synchronization source
-  channel->buf_with_rtp_header[9]= (char)(rand() % 256); // synchronization source
-  channel->buf_with_rtp_header[10]=(char)(rand() % 256); // synchronization source
-  channel->buf_with_rtp_header[11]=(char)(rand() % 256); // synchronization source
+	// See RFC 1889
+	channel->buf_with_rtp_header[0]=128; //version=2 padding=0 extension=0 CSRC=0
+	channel->buf_with_rtp_header[1]=33;  // marker=0 payload type=33 (MP2T)
+	channel->buf_with_rtp_header[2]=0;   // sequence number
+	channel->buf_with_rtp_header[3]=0;   // sequence number
+	channel->buf_with_rtp_header[4]=0;   // timestamp
+	channel->buf_with_rtp_header[5]=0;   // timestamp
+	channel->buf_with_rtp_header[6]=0;   // timestamp
+	channel->buf_with_rtp_header[7]=0;   // timestamp
+	channel->buf_with_rtp_header[8]= (char)(rand() % 256); // synchronization source
+	channel->buf_with_rtp_header[9]= (char)(rand() % 256); // synchronization source
+	channel->buf_with_rtp_header[10]=(char)(rand() % 256); // synchronization source
+	channel->buf_with_rtp_header[11]=(char)(rand() % 256); // synchronization source
 
 }
 
-void rtp_update_sequence_number(mumudvb_channel_t *channel)
+void rtp_update_sequence_number(mumudvb_channel_t *channel, uint64_t time)
 {
-  /* From RFC 2250           RTP Format for MPEG1/MPEG2 Video        January 1998
+	/* From RFC 2250           RTP Format for MPEG1/MPEG2 Video        January 1998
   Each RTP packet will contain a timestamp derived from the sender's
    90KHz clock reference.  This clock is synchronized to the system
    stream Program Clock Reference (PCR) or System Clock Reference (SCR)
@@ -70,20 +70,17 @@ void rtp_update_sequence_number(mumudvb_channel_t *channel)
    jitter and to synchronize relative time drift between the transmitter
    and receiver.*/
 
-  struct timeval tv;
-  uint32_t timestamp;
+	uint32_t timestamp;
 
-  gettimeofday(&tv, NULL);
+	timestamp=(uint32_t) (90000 * (time/1000000ll))+(9*(time%1000000ll))/100;	// 90 kHz Clock
 
-  timestamp=(uint32_t) (90000 * (tv.tv_sec + tv.tv_usec/1000000.0));	// 90 kHz Clock
-
-  // Change the header (sequence number)
-  channel->buf_with_rtp_header[2]=(char)((channel->rtp_packet_num >> 8) & 0xff); // sequence number (high)
-  channel->buf_with_rtp_header[3]=(char)(channel->rtp_packet_num & 0xff);        // sequence number (low)
-  channel->buf_with_rtp_header[4]=(timestamp>>24)&0x0FF;   // timestamp
-  channel->buf_with_rtp_header[5]=(timestamp>>16)&0x0FF;   // timestamp
-  channel->buf_with_rtp_header[6]=(timestamp>>8)&0x0FF;   // timestamp
-  channel->buf_with_rtp_header[7]=(timestamp)&0x0FF;   // timestamp
-  channel->rtp_packet_num++;
-  channel->rtp_packet_num &= 0xffff;
+	// Change the header (sequence number)
+	channel->buf_with_rtp_header[2]=(char)((channel->rtp_packet_num >> 8) & 0xff); // sequence number (high)
+	channel->buf_with_rtp_header[3]=(char)(channel->rtp_packet_num & 0xff);        // sequence number (low)
+	channel->buf_with_rtp_header[4]=(timestamp>>24)&0x0FF;   // timestamp
+	channel->buf_with_rtp_header[5]=(timestamp>>16)&0x0FF;   // timestamp
+	channel->buf_with_rtp_header[6]=(timestamp>>8)&0x0FF;   // timestamp
+	channel->buf_with_rtp_header[7]=(timestamp)&0x0FF;   // timestamp
+	channel->rtp_packet_num++;
+	channel->rtp_packet_num &= 0xffff;
 }

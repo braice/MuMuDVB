@@ -73,8 +73,21 @@
 #define MAX_CMDSEQ_PROPS_NUM 12
 #endif
 
+
+/*Do we support stream_id ?*/
+#undef STREAM_ID
+#if defined(DVB_API_VERSION_MINOR)
+#if DVB_API_VERSION == 5 && DVB_API_VERSION_MINOR >= 8
+#define STREAM_ID 1
+#endif
+#endif
+#if DVB_API_VERSION >= 6
+#define STREAM_ID 1
+#endif
+
+
 /** @brief Parameters for tuning the card*/
-typedef struct tuning_parameters_t{
+typedef struct tune_p_t{
   /**The card number*/
   int card;
   /**The tuner number*/
@@ -105,6 +118,8 @@ typedef struct tuning_parameters_t{
   int lnb_voltage_off;
   /**The satellite number ie the LNB number*/
   unsigned char sat_number;
+  /** The switch input */
+  unsigned char switch_no;
   /**The type of switch U uncommitted C committed*/
   char switch_type;
   /** The kind of modulation */
@@ -130,7 +145,7 @@ typedef struct tuning_parameters_t{
   /** do we periodically check the status of the card ?*/
   int check_status;
   /**shutdown the thread for display strength */
-  int strengththreadshutdown;
+  volatile int strengththreadshutdown;
   /**The frontend type*/
   fe_type_t fe_type;
   /** The frontend name */
@@ -142,12 +157,16 @@ typedef struct tuning_parameters_t{
   /** Rolloff (For DVB-S and DVB-S2)*/
   fe_rolloff_t rolloff;
 #endif
-}tuning_parameters_t;
+#if STREAM_ID
+  /** The substream id */
+  int stream_id;
+#endif
+}tune_p_t;
 
 
-
-int tune_it(int, tuning_parameters_t *);
-int read_tuning_configuration(tuning_parameters_t *, char *);
+void init_tune_v(tune_p_t *);
+int tune_it(int, tune_p_t *);
+int read_tuning_configuration(tune_p_t *, char *);
 void print_status(fe_status_t festatus);
 
 #endif

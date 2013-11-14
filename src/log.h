@@ -96,26 +96,33 @@ typedef struct log_params_t{
   float log_flush_interval;
 }log_params_t;
 
+typedef struct flag_descr_t
+{
+	int num;
+	char descr[128];
+}flag_descr_t;
 
 
+
+void init_stats_v(stats_infos_t *stats_p);
 void print_info ();
 void usage (char *name);
-void log_message( char* log_module, int , const char *, ... );
+void log_message( char* log_module, int , const char *, ... ) __attribute__ ((format (printf, 3, 4)));
 void gen_file_streamed_channels (char *nom_fich_chaines_diff, char *nom_fich_chaines_non_diff, int nb_flux, mumudvb_channel_t *channels);
 void log_streamed_channels(char *log_module,int number_of_channels, mumudvb_channel_t *channels, int multicast_ipv4, int multicast_ipv6, int unicast, int unicast_master_port, char *unicastipOut);
-void gen_config_file_header(char *orig_conf_filename, char *saving_filename);
-void gen_config_file(int number_of_channels, mumudvb_channel_t *channels, char *saving_filename);
 char *ca_sys_id_to_str(int id);
 void display_service_type(int type, int loglevel,char *log_module);
 char *pid_type_to_str(int type);
 char *service_type_to_str(int type);
 char *simple_service_type_to_str(int type);
-void show_traffic(char *log_module, double now, int show_traffic_interval, mumudvb_chan_and_pids_t *chan_and_pids);
+void show_traffic(char *log_module, double now, int show_traffic_interval, mumu_chan_p_t *chan_p);
 char *liben50221_error_to_str(int error);
 char *liben50221_error_to_str_descr(int error);
 void log_pids(char *log_module, mumudvb_channel_t *channel, int curr_channel);
 int read_logging_configuration(stats_infos_t *stats_infos, char *substring);
 void sync_logs();
-
+char *running_status_to_str(int running_status);
+int convert_en300468_string(char *string, int max_len);
+void show_CA_identifier_descriptor(unsigned char *buf);
 
 #endif
