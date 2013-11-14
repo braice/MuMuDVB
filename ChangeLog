@@ -1,3 +1,11 @@
+-- MuMuDVB 1.7.2 --
+New features / improvements :
+ * New parser for TS packet, more reliable
+ * Software CAM support
+ * Overall stability improved
+ * More templates for more flexible configuration
+ * Multiple fixes
+
 -- MuMuDVB 1.7 --
 New features / improvements :
  * Implements dual stack for IPv6 Mulicast
