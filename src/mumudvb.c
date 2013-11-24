@@ -2365,7 +2365,10 @@ void *monitor_func(void* arg)
 				for (curr_channel = 0; curr_channel < params->chan_p->number_of_channels; curr_channel++) {
 					mumudvb_channel_t *channel = &params->chan_p->channels[curr_channel];
 					if (channel->scam_support) {
-						if (channel->need_scam_ask==CAM_NEED_ASK || (channel->need_scam_ask==CAM_ASKED && write(channel->camd_socket, NULL, 0) < 0)) {
+
+						//check if socket is still alive
+						if (channel->need_scam_ask==CAM_ASKED && write(channel->camd_socket, NULL, 0) < 0) {
+							log_message(log_module, MSG_ERROR,"channel %s socket not alive, will try to reconnect\n", channel->name);
 							close(channel->camd_socket);
 							channel->camd_socket=-1;
 							channel->need_scam_ask=CAM_NEED_ASK;
@@ -2373,6 +2376,10 @@ void *monitor_func(void* arg)
 							channel->ca_idx_refcnt = 0;
 							channel->ca_idx = 0;
 							pthread_mutex_unlock(&channel->cw_lock);
+						}
+
+						//send capmt if we need
+						if (channel->need_scam_ask==CAM_NEED_ASK) {
 							if (channel->scam_support && channel->pmt_packet->len_full != 0 ) {
 								if (!scam_send_capmt(channel,params->tune_p->card))
 								{
