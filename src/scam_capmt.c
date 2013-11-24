@@ -56,6 +56,22 @@ static char *log_module="SCAM_CAPMT: ";
 /** @brief sending to oscam data to begin geting cw's for channel */
 int scam_send_capmt(mumudvb_channel_t *channel, int adapter)
 {
+  if (channel->camd_socket < 0)
+  {
+	channel->camd_socket = socket(AF_LOCAL, SOCK_STREAM, 0);
+	struct sockaddr_un serv_addr_un;
+	memset(&serv_addr_un, 0, sizeof(serv_addr_un));
+	serv_addr_un.sun_family = AF_LOCAL;
+	snprintf(serv_addr_un.sun_path, sizeof(serv_addr_un.sun_path), "/tmp/camd.socket");
+	if (connect(channel->camd_socket, (const struct sockaddr *) &serv_addr_un, sizeof(serv_addr_un)) != 0)
+	{
+	  log_message(log_module, MSG_DEBUG,"cannot connect to /tmp/camd.socket for channel %s. Do you have OSCam running?\n", channel->name);
+	  close(channel->camd_socket);
+	  channel->camd_socket = -1;
+	  return 1;
+	} else log_message(log_module,  MSG_DEBUG, "created socket for channel %s\n", channel->name);
+  }
+
   char *caPMT = (char *) malloc(1024);
   int length_field;
   int toWrite;
@@ -84,33 +100,17 @@ int scam_send_capmt(mumudvb_channel_t *channel, int adapter)
   caPMT[5] = length_field & 0xff;
   toWrite = length_field + 6;
 
-  if (channel->camd_socket < 0)
-  {
-    channel->camd_socket = socket(AF_LOCAL, SOCK_STREAM, 0);
-    struct sockaddr_un serv_addr_un;
-    memset(&serv_addr_un, 0, sizeof(serv_addr_un));
-    serv_addr_un.sun_family = AF_LOCAL;
-    snprintf(serv_addr_un.sun_path, sizeof(serv_addr_un.sun_path), "/tmp/camd.socket");
-    if (connect(channel->camd_socket, (const struct sockaddr *) &serv_addr_un, sizeof(serv_addr_un)) != 0)
-    {
-      log_message(log_module, MSG_ERROR,"cannot connect to /tmp/camd.socket for channel %s. Do you have OSCam running?\n", channel->name);
-      close(channel->camd_socket);
-      channel->camd_socket = -1;
-      free(caPMT);
-      return 1;
-    } else log_message(log_module,  MSG_DEBUG, "created socket for channel %s\n", channel->name);
-  }
-
   int wrote = write(channel->camd_socket, caPMT, toWrite);
   log_message( log_module,  MSG_DEBUG, "sent CAPMT message to socket for channel %s, toWrite=%d wrote=%d\n", channel->name, toWrite, wrote);
+  free(caPMT);
+
   if (wrote != toWrite)
   {
     log_message(log_module, MSG_ERROR,"channel %s:wrote != toWrite\n", channel->name);
     close(channel->camd_socket);
     channel->camd_socket = -1;
+    return 1;
   }
-  free(caPMT);
-
   return 0;
 }
 
