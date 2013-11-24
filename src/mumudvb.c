@@ -1689,23 +1689,6 @@ main (int argc, char **argv)
 #endif
 
 				/******************************************************/
-				//scam support
-				// sending capmt to oscam
-				/******************************************************/
-#ifdef ENABLE_SCAM_SUPPORT
-				if (scam_vars.scam_support &&(chan_p.channels[ichan].need_scam_ask==CAM_NEED_ASK))
-				{
-					if (chan_p.channels[ichan].scam_support && chan_p.channels[ichan].pmt_packet->len_full != 0 ) {
-						iRet=scam_send_capmt(&chan_p.channels[ichan],tune_p.card);
-						if(!iRet)
-						{
-							chan_p.channels[ichan].need_scam_ask=CAM_ASKED;
-						}
-					}
-				}
-#endif
-
-				/******************************************************/
 				//PMT follow (ie we check if the pids announced in the PMT changed)
 				/******************************************************/
 				if( (auto_p.autoconf_pid_update) &&
@@ -2382,8 +2365,7 @@ void *monitor_func(void* arg)
 				for (curr_channel = 0; curr_channel < params->chan_p->number_of_channels; curr_channel++) {
 					mumudvb_channel_t *channel = &params->chan_p->channels[curr_channel];
 					if (channel->scam_support) {
-						if (channel->need_scam_ask==CAM_ASKED && write(channel->camd_socket, NULL, 0) < 0) {
-							log_message(log_module, MSG_ERROR,"channel %s socket not alive, will try to reconnect\n", channel->name);
+						if (channel->need_scam_ask==CAM_NEED_ASK || (channel->need_scam_ask==CAM_ASKED && write(channel->camd_socket, NULL, 0) < 0)) {
 							close(channel->camd_socket);
 							channel->camd_socket=-1;
 							channel->need_scam_ask=CAM_NEED_ASK;
@@ -2391,6 +2373,12 @@ void *monitor_func(void* arg)
 							channel->ca_idx_refcnt = 0;
 							channel->ca_idx = 0;
 							pthread_mutex_unlock(&channel->cw_lock);
+							if (channel->scam_support && channel->pmt_packet->len_full != 0 ) {
+								if (!scam_send_capmt(channel,params->tune_p->card))
+								{
+									channel->need_scam_ask=CAM_ASKED;
+								}
+							}
 						}
 						unsigned int ring_buffer_num_packets = 0;
 						unsigned int to_descramble = 0;
