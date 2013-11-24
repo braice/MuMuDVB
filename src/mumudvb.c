@@ -1699,7 +1699,7 @@ main (int argc, char **argv)
 						iRet=scam_send_capmt(&chan_p.channels[ichan],tune_p.card);
 						if(!iRet)
 						{
-						        chan_p.channels[ichan].need_scam_ask=CAM_ASKED;
+							chan_p.channels[ichan].need_scam_ask=CAM_ASKED;
 						}
 					}
 				}
