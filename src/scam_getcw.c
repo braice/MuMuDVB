@@ -37,7 +37,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <stdlib.h>
-
+#include <sys/epoll.h>
 
 #include "errors.h"
 #include "ts.h"
@@ -63,33 +63,8 @@ typedef struct getcw_params_t{
 
 /** @brief start the thread for getting cw's from oscam
  * This function will create the communication layers*/
-int scam_getcw_start(scam_parameters_t *scam_params, int adapter_id, mumu_chan_p_t *chan_p)
+int scam_getcw_start(scam_parameters_t *scam_params, mumu_chan_p_t *chan_p)
 {
-  struct sockaddr_in socketAddr;
-  memset(&socketAddr, 0, sizeof(struct sockaddr_in));
-  const struct hostent *const hostaddr = gethostbyname("127.0.0.1");
-  if (hostaddr)
-  {
-    unsigned int port;
-    port = 9000 + adapter_id;
-    socketAddr.sin_family = AF_INET;
-    socketAddr.sin_port = htons(port);
-    socketAddr.sin_addr.s_addr = ((struct in_addr *) hostaddr->h_addr)->s_addr;
-    const struct protoent *const ptrp = getprotobyname("udp");
-    if (ptrp)
-    {
-      scam_params->net_socket_fd = socket(PF_INET, SOCK_DGRAM, ptrp->p_proto);
-      if (scam_params->net_socket_fd > 0)
-      {
-        if (bind(scam_params->net_socket_fd, (struct sockaddr *) &socketAddr, sizeof(socketAddr)) >= 0)
-          log_message( log_module,  MSG_DEBUG, "network socket bind\n");
-        else {
-          log_message( log_module,  MSG_ERROR, "cannot bind network socket\n");
-          return 1;
-        }
-      }
-    }
-  }
   getcw_params_t *getcw_params=malloc(sizeof(getcw_params_t));
   getcw_params->scam_params=scam_params;
   getcw_params->chan_p=chan_p;
@@ -120,83 +95,96 @@ static void *getcwthread_func(void* arg)
   scam_params=getcw_params->scam_params;
   chan_p=getcw_params->chan_p;
   int curr_channel = 0;
-  int curr_pid = 0;
   unsigned char buff[sizeof(int) + sizeof(ca_descr_t)];
   int cRead, *request;
+  struct epoll_event events[MAX_CHANNELS];
+  int num_of_events;
+  int i;
 
   //Loop
   while(!scam_params->getcwthread_shutdown) {
-    cRead = recv(scam_params->net_socket_fd, &buff, sizeof(buff), 0);
-    if (cRead <= 0)
+    num_of_events = epoll_wait (scam_params->epfd, events, MAX_CHANNELS, -1);
+    if (num_of_events < 0) {
+      set_interrupted(ERROR_NETWORK<<8);
       break;
-    request = (int *) &buff;
-    if (*request == CA_SET_DESCR) {
-      memcpy((&(scam_params->ca_descr)), &buff[sizeof(int)], sizeof(ca_descr_t));
-      log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request index: %d, parity %d, key %02x %02x %02x %02x %02x %02x %02x %02x\n", scam_params->ca_descr.index, scam_params->ca_descr.parity, scam_params->ca_descr.cw[0], scam_params->ca_descr.cw[1], scam_params->ca_descr.cw[2], scam_params->ca_descr.cw[3], scam_params->ca_descr.cw[4], scam_params->ca_descr.cw[5], scam_params->ca_descr.cw[6], scam_params->ca_descr.cw[7]);
-      if(scam_params->ca_descr.index != (unsigned) -1) {
-        pthread_mutex_lock(&chan_p->lock);
-        for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++) {
-          mumudvb_channel_t *channel = &chan_p->channels[curr_channel];
-          pthread_mutex_lock(&channel->cw_lock);
-          if (channel->ca_idx == scam_params->ca_descr.index + 1) {
-            if (scam_params->ca_descr.parity) {
-              memcpy(channel->odd_cw,scam_params->ca_descr.cw,8);
-              channel->got_key_odd=1;
-            }
-            else {
-              memcpy(channel->even_cw,scam_params->ca_descr.cw,8);
-              channel->got_key_even=1;
-            }
-          }
-          pthread_mutex_unlock(&channel->cw_lock);
-        }
-        pthread_mutex_unlock(&chan_p->lock);
-      } else {
-        log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR removal request, ignoring");
-      }
     }
-    if (*request == CA_SET_PID)
-    {
-      memcpy((&(scam_params->ca_pid)), &buff[sizeof(int)], sizeof(ca_pid_t));
-      log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request index: %d pid: %d\n",scam_params->ca_pid.index, scam_params->ca_pid.pid);
-      if(scam_params->ca_pid.index == -1) {
-        log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID removal request, removing pid: %d\n", scam_params->ca_pid.pid);
-        pthread_mutex_lock(&chan_p->lock);
-        for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++) {
-          mumudvb_channel_t *channel = &chan_p->channels[curr_channel];
-          for (curr_pid = 1; curr_pid < channel->num_pids; curr_pid++) {
-            if ((channel->pids_type[curr_pid] != PID_EXTRA_VBIDATA) && (channel->pids_type[curr_pid] != PID_EXTRA_VBITELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_TELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_SUBTITLE) && (channel->pids[curr_pid] == (int) scam_params->ca_pid.pid)) {
-              pthread_mutex_lock(&channel->cw_lock);
-              --channel->ca_idx_refcnt;
-              if (!channel->ca_idx_refcnt) {
+    for (i = 0; i < num_of_events; i++) {
+      pthread_mutex_lock(&chan_p->lock);
+      for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++) {
+        mumudvb_channel_t *channel = &chan_p->channels[curr_channel];
+        if (events[i].data.fd == channel->camd_socket) {
+          if (events[i].events & EPOLLERR || events[i].events & EPOLLHUP) {
+            log_message(log_module, MSG_DEBUG,"channel %s socket not alive, will try to reconnect\n", channel->name);
+            int s = epoll_ctl(scam_params->epfd, EPOLL_CTL_DEL, channel->camd_socket, &events[i]);
+            if (s == -1)
+            {
+              log_message(log_module, MSG_ERROR,"channel %s: unsuccessful epoll_ctl EPOLL_CTL_DEL", channel->name);
+              set_interrupted(ERROR_NETWORK<<8);
+              free(getcw_params);
+              return 0;
+            }
+            close(channel->camd_socket);
+            channel->camd_socket=-1;
+            channel->need_scam_ask=CAM_NEED_ASK;
+            pthread_mutex_lock(&channel->cw_lock);
+            channel->ca_idx_refcnt = 0;
+            channel->ca_idx = 0;
+            pthread_mutex_unlock(&channel->cw_lock);
+          } else {
+            cRead = recv(channel->camd_socket, &buff, sizeof(buff), 0);
+            if (cRead <= 0) {
+              log_message(log_module, MSG_ERROR,"channel: %s recv", channel->name);
+              set_interrupted(ERROR_NETWORK<<8);
+              free(getcw_params);
+              return 0;
+            }
+            request = (int *) &buff;
+            if (*request == CA_SET_DESCR) {
+              memcpy((&(scam_params->ca_descr)), &buff[sizeof(int)], sizeof(ca_descr_t));
+              log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request for channel: %s, index: %d, parity %d, key %02x %02x %02x %02x %02x %02x %02x %02x\n", channel->name, scam_params->ca_descr.index, scam_params->ca_descr.parity, scam_params->ca_descr.cw[0], scam_params->ca_descr.cw[1], scam_params->ca_descr.cw[2], scam_params->ca_descr.cw[3], scam_params->ca_descr.cw[4], scam_params->ca_descr.cw[5], scam_params->ca_descr.cw[6], scam_params->ca_descr.cw[7]);
+              if(scam_params->ca_descr.index != (unsigned) -1) {
+                pthread_mutex_lock(&channel->cw_lock);
+                if (scam_params->ca_descr.parity) {
+                  memcpy(channel->odd_cw,scam_params->ca_descr.cw,8);
+                  channel->got_key_odd=1;
+                }
+                else {
+                  memcpy(channel->even_cw,scam_params->ca_descr.cw,8);
+                  channel->got_key_even=1;
+                }
+                pthread_mutex_unlock(&channel->cw_lock);
+              } else {
+                log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR removal request, ignoring");
+              }
+            }
+            if (*request == CA_SET_PID)
+            {
+              memcpy((&(scam_params->ca_pid)), &buff[sizeof(int)], sizeof(ca_pid_t));
+              log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request channel: %s, index: %d pid: %d\n", channel->name, scam_params->ca_pid.index, scam_params->ca_pid.pid);
+              if(scam_params->ca_pid.index == -1) {
+                log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID removal request, removing pid: %d\n", scam_params->ca_pid.pid);
+                pthread_mutex_lock(&chan_p->lock);
+                --channel->ca_idx_refcnt;
+                if (!channel->ca_idx_refcnt) {
                   channel->ca_idx = 0;
                   log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID removal request: %d setting channel %s with ca_idx to 0 %d\n", scam_params->ca_pid.pid, channel->name, scam_params->ca_pid.index+1);
+                }
+                pthread_mutex_unlock(&channel->cw_lock);
+              } else {
+                pthread_mutex_lock(&channel->cw_lock);
+                if(!channel->ca_idx_refcnt) {
+                  channel->ca_idx = scam_params->ca_pid.index+1;
+                  log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID with pid: %d setting channel %s ca_idx %d\n", scam_params->ca_pid.pid, channel->name, scam_params->ca_pid.index+1);
+                }
+                ++channel->ca_idx_refcnt;
+                pthread_mutex_unlock(&channel->cw_lock);
               }
-              pthread_mutex_unlock(&channel->cw_lock);
-              break;
             }
           }
+          break;
         }
-        pthread_mutex_unlock(&chan_p->lock);
-      } else {
-        pthread_mutex_lock(&chan_p->lock);
-        for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++) {
-          mumudvb_channel_t *channel = &chan_p->channels[curr_channel];
-          for (curr_pid = 1; curr_pid < channel->num_pids; curr_pid++) {
-            if ((channel->pids_type[curr_pid] != PID_EXTRA_VBIDATA) && (channel->pids_type[curr_pid] != PID_EXTRA_VBITELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_TELETEXT) && (channel->pids_type[curr_pid] != PID_EXTRA_SUBTITLE) && (channel->pids[curr_pid] == (int) scam_params->ca_pid.pid)) {
-              pthread_mutex_lock(&channel->cw_lock);
-              if(!channel->ca_idx_refcnt) {
-                channel->ca_idx = scam_params->ca_pid.index+1;
-                log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID with pid: %d setting channel %s ca_idx %d\n", scam_params->ca_pid.pid, channel->name, scam_params->ca_pid.index+1);
-              }
-              ++channel->ca_idx_refcnt;
-              pthread_mutex_unlock(&channel->cw_lock);
-              break;
-            }
-          }
-        }
-        pthread_mutex_unlock(&chan_p->lock);
       }
+      pthread_mutex_unlock(&chan_p->lock);
     }
   }
   free(getcw_params);

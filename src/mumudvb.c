@@ -92,6 +92,7 @@
 #include <ctype.h>
 #include <sys/time.h>
 #include <sys/poll.h>
+#include <sys/epoll.h>
 #include <sys/stat.h>
 #include <stdint.h>
 #include <resolv.h>
@@ -255,6 +256,7 @@ main (int argc, char **argv)
 			.scam_support = 0,
 			.getcwthread_shutdown=0,
 	};
+	scam_vars.epfd = epoll_create(MAX_CHANNELS);
 	scam_parameters_t *scam_vars_ptr=&scam_vars;
 	int scam_threads_started=0;
 #else
@@ -1077,7 +1079,7 @@ main (int argc, char **argv)
 
 #ifdef ENABLE_SCAM_SUPPORT
 	if(scam_vars.scam_support){
-		if(scam_getcw_start(scam_vars_ptr,tune_p.card,&chan_p))
+		if(scam_getcw_start(scam_vars_ptr,&chan_p))
 		{
 			log_message("SCAM_GETCW: ", MSG_ERROR,"Cannot initalise scam\n");
 			scam_vars.scam_support=0;
@@ -2365,23 +2367,10 @@ void *monitor_func(void* arg)
 				for (curr_channel = 0; curr_channel < params->chan_p->number_of_channels; curr_channel++) {
 					mumudvb_channel_t *channel = &params->chan_p->channels[curr_channel];
 					if (channel->scam_support) {
-
-						//check if socket is still alive
-						if (channel->need_scam_ask==CAM_ASKED && write(channel->camd_socket, NULL, 0) < 0) {
-							log_message(log_module, MSG_ERROR,"channel %s socket not alive, will try to reconnect\n", channel->name);
-							close(channel->camd_socket);
-							channel->camd_socket=-1;
-							channel->need_scam_ask=CAM_NEED_ASK;
-							pthread_mutex_lock(&channel->cw_lock);
-							channel->ca_idx_refcnt = 0;
-							channel->ca_idx = 0;
-							pthread_mutex_unlock(&channel->cw_lock);
-						}
-
-						//send capmt if we need
+						//send capmt if needed
 						if (channel->need_scam_ask==CAM_NEED_ASK) {
 							if (channel->scam_support && channel->pmt_packet->len_full != 0 ) {
-								if (!scam_send_capmt(channel,params->tune_p->card))
+								if (!scam_send_capmt(channel, scam_vars,params->tune_p->card))
 								{
 									channel->need_scam_ask=CAM_ASKED;
 								}
