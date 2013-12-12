@@ -95,7 +95,7 @@ static void *getcwthread_func(void* arg)
   scam_params=getcw_params->scam_params;
   chan_p=getcw_params->chan_p;
   int curr_channel = 0;
-  unsigned char buff[sizeof(int) + sizeof(ca_descr_t)];
+  unsigned char buff[1 + sizeof(int) + sizeof(ca_descr_t)];
   int cRead, *request;
   struct epoll_event events[MAX_CHANNELS];
   int num_of_events;
@@ -138,9 +138,9 @@ static void *getcwthread_func(void* arg)
               free(getcw_params);
               return 0;
             }
-            request = (int *) &buff;
+            request = (int *) (buff + 1);
             if (*request == CA_SET_DESCR) {
-              memcpy((&(scam_params->ca_descr)), &buff[sizeof(int)], sizeof(ca_descr_t));
+              memcpy((&(scam_params->ca_descr)), buff + 1 + sizeof(int), sizeof(ca_descr_t));
               log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR request for channel: %s, index: %d, parity %d, key %02x %02x %02x %02x %02x %02x %02x %02x\n", channel->name, scam_params->ca_descr.index, scam_params->ca_descr.parity, scam_params->ca_descr.cw[0], scam_params->ca_descr.cw[1], scam_params->ca_descr.cw[2], scam_params->ca_descr.cw[3], scam_params->ca_descr.cw[4], scam_params->ca_descr.cw[5], scam_params->ca_descr.cw[6], scam_params->ca_descr.cw[7]);
               if(scam_params->ca_descr.index != (unsigned) -1) {
                 pthread_mutex_lock(&channel->cw_lock);
@@ -159,7 +159,7 @@ static void *getcwthread_func(void* arg)
             }
             if (*request == CA_SET_PID)
             {
-              memcpy((&(scam_params->ca_pid)), &buff[sizeof(int)], sizeof(ca_pid_t));
+              memcpy((&(scam_params->ca_pid)), buff + 1 + sizeof(int), sizeof(ca_pid_t));
               log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request channel: %s, index: %d pid: %d\n", channel->name, scam_params->ca_pid.index, scam_params->ca_pid.pid);
               if(scam_params->ca_pid.index == -1) {
                 log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID removal request, removing pid: %d\n", scam_params->ca_pid.pid);
