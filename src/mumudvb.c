@@ -1255,6 +1255,21 @@ main (int argc, char **argv)
 
 		}
 
+#ifdef ENABLE_SCAM_SUPPORT
+                if(chan_p.channels[ichan].scam_pmt_packet==NULL && scam_vars.scam_support)
+                {
+                        chan_p.channels[ichan].scam_pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
+                        if(chan_p.channels[ichan].scam_pmt_packet==NULL)
+                        {
+                                log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+                                set_interrupted(ERROR_MEMORY<<8);
+                                return -1;
+                        }
+                        memset (chan_p.channels[ichan].scam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+                        pthread_mutex_init(&chan_p.channels[ichan].scam_pmt_packet->packetmutex,NULL);
+                }
+#endif
+
 	}
 
 	//We initialise asked pid table
@@ -1899,6 +1914,11 @@ int mumudvb_close(int no_daemon,
 
 
 #ifdef ENABLE_SCAM_SUPPORT
+                //Free the channel structures
+                if(chan_p->channels[curr_channel].scam_pmt_packet)
+                        free(chan_p->channels[curr_channel].scam_pmt_packet);
+                chan_p->channels[curr_channel].scam_pmt_packet=NULL;
+
 		if (chan_p->channels[curr_channel].scam_support && scam_vars->scam_support) {
 			scam_channel_stop(&chan_p->channels[curr_channel]);
 		}
@@ -2369,12 +2389,16 @@ void *monitor_func(void* arg)
 					if (channel->scam_support) {
 						//send capmt if needed
 						if (channel->need_scam_ask==CAM_NEED_ASK) {
-							if (channel->scam_support && channel->pmt_packet->len_full != 0 ) {
-								if (!scam_send_capmt(channel, scam_vars,params->tune_p->card))
-								{
-									channel->need_scam_ask=CAM_ASKED;
-								}
-							}
+						        if (channel->scam_support) {
+                                                            pthread_mutex_lock(&channel->scam_pmt_packet->packetmutex);
+                                                            if (channel->scam_pmt_packet->len_full != 0 ) {
+                                                                    if (!scam_send_capmt(channel, scam_vars,params->tune_p->card))
+                                                                    {
+                                                                            channel->need_scam_ask=CAM_ASKED;
+                                                                    }
+                                                            }
+                                                            pthread_mutex_unlock(&channel->scam_pmt_packet->packetmutex);
+						        }
 						}
 						unsigned int ring_buffer_num_packets = 0;
 						unsigned int to_descramble = 0;

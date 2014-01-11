@@ -818,6 +818,19 @@ int autoconf_services_to_channels(const auto_p_t *parameters, mumudvb_channel_t 
 					log_message( log_module, MSG_DEBUG,"Channel (direct) unicast port  %d\n",channels[iChan].unicast_port);
 				}
 #ifdef ENABLE_SCAM_SUPPORT
+                                if(channels[iChan].scam_pmt_packet==NULL && scam_vars->scam_support)
+                                {
+                                        channels[iChan].scam_pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
+                                        if(channels[iChan].scam_pmt_packet==NULL)
+                                        {
+                                                log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+                                                set_interrupted(ERROR_MEMORY<<8);
+                                                return -1;
+                                        }
+                                        memset (channels[iChan].scam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+                                        pthread_mutex_init(&channels[iChan].scam_pmt_packet->packetmutex,NULL);
+                                }
+
 				if (service->free_ca_mode && scam_vars->scam_support) {
 					channels[iChan].scam_support=1;
 					channels[iChan].need_scam_ask=CAM_NEED_ASK;

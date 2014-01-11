@@ -114,7 +114,7 @@ static void *getcwthread_func(void* arg)
         mumudvb_channel_t *channel = &chan_p->channels[curr_channel];
         if (events[i].data.fd == channel->camd_socket) {
           if (events[i].events & EPOLLERR || events[i].events & EPOLLHUP) {
-            log_message(log_module, MSG_DEBUG,"channel %s socket not alive, will try to reconnect\n", channel->name);
+            log_message(log_module, MSG_INFO,"channel %s socket not alive, will try to reconnect\n", channel->name);
             int s = epoll_ctl(scam_params->epfd, EPOLL_CTL_DEL, channel->camd_socket, &events[i]);
             if (s == -1)
             {
@@ -162,19 +162,18 @@ static void *getcwthread_func(void* arg)
               memcpy((&(scam_params->ca_pid)), buff + 1 + sizeof(int), sizeof(ca_pid_t));
               log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request channel: %s, index: %d pid: %d\n", channel->name, scam_params->ca_pid.index, scam_params->ca_pid.pid);
               if(scam_params->ca_pid.index == -1) {
-                log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID removal request, removing pid: %d\n", scam_params->ca_pid.pid);
                 pthread_mutex_lock(&chan_p->lock);
                 --channel->ca_idx_refcnt;
                 if (!channel->ca_idx_refcnt) {
                   channel->ca_idx = 0;
-                  log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID removal request: %d setting channel %s with ca_idx to 0 %d\n", scam_params->ca_pid.pid, channel->name, scam_params->ca_pid.index+1);
+                  log_message( log_module,  MSG_INFO, "Got CA_SET_PID removal request: %d setting channel %s with ca_idx to 0 %d\n", scam_params->ca_pid.pid, channel->name, scam_params->ca_pid.index+1);
                 }
                 pthread_mutex_unlock(&channel->cw_lock);
               } else {
                 pthread_mutex_lock(&channel->cw_lock);
                 if(!channel->ca_idx_refcnt) {
                   channel->ca_idx = scam_params->ca_pid.index+1;
-                  log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID with pid: %d setting channel %s ca_idx %d\n", scam_params->ca_pid.pid, channel->name, scam_params->ca_pid.index+1);
+                  log_message( log_module,  MSG_INFO, "Got CA_SET_PID with pid: %d setting channel %s ca_idx %d\n", scam_params->ca_pid.pid, channel->name, scam_params->ca_pid.index+1);
                 }
                 ++channel->ca_idx_refcnt;
                 pthread_mutex_unlock(&channel->cw_lock);
