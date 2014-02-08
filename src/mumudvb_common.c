@@ -318,7 +318,7 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 #ifdef ENABLE_SCAM_SUPPORT
 	if (channel->scam_support && scam_vars->scam_support) {
 		pthread_mutex_lock(&channel->ring_buf->lock);
-		memcpy(channel->ring_buf->data[channel->ring_buf->write_idx], ts_packet, TS_PACKET_SIZE);
+		memcpy(channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->write_idx, ts_packet, TS_PACKET_SIZE);
 		now_time=get_time();
 		channel->ring_buf->time_send[channel->ring_buf->write_idx]=now_time + channel->send_delay;
 		channel->ring_buf->time_decsa[channel->ring_buf->write_idx]=now_time + channel->decsa_delay;

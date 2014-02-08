@@ -190,7 +190,7 @@ typedef struct {
 	/** A mutex protecting all the other members. */
 	pthread_mutex_t lock;
 	/** Buffer with dvb packets*/
-	unsigned char ** data;
+	unsigned char * data;
 	/** Write index of buffer */
 	unsigned int write_idx;
 	/** Buffer with descrambling timestamps*/

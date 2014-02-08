@@ -165,10 +165,10 @@ static void *decsathread_func(void* arg)
       pthread_mutex_lock(&channel->ring_buf->lock);
     }
 
-    scrambling_control_packet = ((channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3] & 0xc0) >> 6);
+    scrambling_control_packet = ((*(channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->read_decsa_idx+3) & 0xc0) >> 6);
 
     if (scrambling_control_packet) {
-      offset = ts_packet_get_payload_offset(channel->ring_buf->data[channel->ring_buf->read_decsa_idx]);
+      offset = ts_packet_get_payload_offset(channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->read_decsa_idx);
       if (!offset)
         scrambling_control_packet = 0;
       len=188-offset;
@@ -178,18 +178,18 @@ static void *decsathread_func(void* arg)
           case 2:
             ++scrambled;
             if (ca_idx) {
-              even_batch[even_batch_idx].data = channel->ring_buf->data[channel->ring_buf->read_decsa_idx] + offset;
+              even_batch[even_batch_idx].data = channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->read_decsa_idx + offset;
               even_batch[even_batch_idx].len = len;
-              even_scnt_field[even_batch_idx] = &channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3];
+              even_scnt_field[even_batch_idx] = channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->read_decsa_idx+3;
               ++even_batch_idx;
             }
             break;
           case 3:
             ++scrambled;
             if (ca_idx) {
-              odd_batch[odd_batch_idx].data = channel->ring_buf->data[channel->ring_buf->read_decsa_idx] + offset;
+              odd_batch[odd_batch_idx].data = channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->read_decsa_idx + offset;
               odd_batch[odd_batch_idx].len = len;
-              odd_scnt_field[odd_batch_idx] = &channel->ring_buf->data[channel->ring_buf->read_decsa_idx][3];
+              odd_scnt_field[odd_batch_idx] = channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->read_decsa_idx+3;
               ++odd_batch_idx;
             }
             break;
