@@ -92,6 +92,7 @@
 #include <ctype.h>
 #include <sys/time.h>
 #include <sys/poll.h>
+#include <sys/epoll.h>
 #include <sys/stat.h>
 #include <stdint.h>
 #include <resolv.h>
@@ -255,6 +256,7 @@ main (int argc, char **argv)
 			.scam_support = 0,
 			.getcwthread_shutdown=0,
 	};
+	scam_vars.epfd = epoll_create(MAX_CHANNELS);
 	scam_parameters_t *scam_vars_ptr=&scam_vars;
 	int scam_threads_started=0;
 #else
@@ -1077,7 +1079,7 @@ main (int argc, char **argv)
 
 #ifdef ENABLE_SCAM_SUPPORT
 	if(scam_vars.scam_support){
-		if(scam_getcw_start(scam_vars_ptr,tune_p.card,&chan_p))
+		if(scam_getcw_start(scam_vars_ptr,&chan_p))
 		{
 			log_message("SCAM_GETCW: ", MSG_ERROR,"Cannot initalise scam\n");
 			scam_vars.scam_support=0;
@@ -1252,6 +1254,21 @@ main (int argc, char **argv)
 			pthread_mutex_init(&chan_p.channels[ichan].pmt_packet->packetmutex,NULL);
 
 		}
+
+#ifdef ENABLE_SCAM_SUPPORT
+                if(chan_p.channels[ichan].scam_pmt_packet==NULL && scam_vars.scam_support)
+                {
+                        chan_p.channels[ichan].scam_pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
+                        if(chan_p.channels[ichan].scam_pmt_packet==NULL)
+                        {
+                                log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+                                set_interrupted(ERROR_MEMORY<<8);
+                                return -1;
+                        }
+                        memset (chan_p.channels[ichan].scam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+                        pthread_mutex_init(&chan_p.channels[ichan].scam_pmt_packet->packetmutex,NULL);
+                }
+#endif
 
 	}
 
@@ -1689,25 +1706,6 @@ main (int argc, char **argv)
 #endif
 
 				/******************************************************/
-				//scam support
-				// sending capmt to oscam
-				/******************************************************/
-#ifdef ENABLE_SCAM_SUPPORT
-				if (scam_vars.scam_support &&(chan_p.channels[ichan].need_scam_ask==CAM_NEED_ASK))
-				{
-					if (chan_p.channels[ichan].scam_support && chan_p.channels[ichan].pmt_packet->len_full != 0 ) {
-						iRet=scam_send_capmt(&chan_p.channels[ichan],tune_p.card);
-						if(iRet)
-						{
-							set_interrupted(ERROR_GENERIC<<8);
-							goto mumudvb_close_goto;
-						}
-					}
-					chan_p.channels[ichan].need_scam_ask=CAM_ASKED;
-				}
-#endif
-
-				/******************************************************/
 				//PMT follow (ie we check if the pids announced in the PMT changed)
 				/******************************************************/
 				if( (auto_p.autoconf_pid_update) &&
@@ -1916,6 +1914,11 @@ int mumudvb_close(int no_daemon,
 
 
 #ifdef ENABLE_SCAM_SUPPORT
+                //Free the channel structures
+                if(chan_p->channels[curr_channel].scam_pmt_packet)
+                        free(chan_p->channels[curr_channel].scam_pmt_packet);
+                chan_p->channels[curr_channel].scam_pmt_packet=NULL;
+
 		if (chan_p->channels[curr_channel].scam_support && scam_vars->scam_support) {
 			scam_channel_stop(&chan_p->channels[curr_channel]);
 		}
@@ -2384,6 +2387,19 @@ void *monitor_func(void* arg)
 				for (curr_channel = 0; curr_channel < params->chan_p->number_of_channels; curr_channel++) {
 					mumudvb_channel_t *channel = &params->chan_p->channels[curr_channel];
 					if (channel->scam_support) {
+						//send capmt if needed
+						if (channel->need_scam_ask==CAM_NEED_ASK) {
+						        if (channel->scam_support) {
+                                                            pthread_mutex_lock(&channel->scam_pmt_packet->packetmutex);
+                                                            if (channel->scam_pmt_packet->len_full != 0 ) {
+                                                                    if (!scam_send_capmt(channel, scam_vars,params->tune_p->card))
+                                                                    {
+                                                                            channel->need_scam_ask=CAM_ASKED;
+                                                                    }
+                                                            }
+                                                            pthread_mutex_unlock(&channel->scam_pmt_packet->packetmutex);
+						        }
+						}
 						unsigned int ring_buffer_num_packets = 0;
 						unsigned int to_descramble = 0;
 						unsigned int to_send = 0;

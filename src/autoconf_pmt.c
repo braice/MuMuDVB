@@ -123,6 +123,15 @@ int autoconf_read_pmt(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel, char
 #endif
 	}
 
+#ifdef ENABLE_SCAM_SUPPORT
+	if (channel->scam_support) {
+	    pthread_mutex_lock(&channel->scam_pmt_packet->packetmutex);
+	    channel->scam_pmt_packet->len_full = pmt->len_full;
+            memcpy(channel->scam_pmt_packet->data_full, pmt->data_full, pmt->len_full);
+            pthread_mutex_unlock(&channel->scam_pmt_packet->packetmutex);
+	}
+#endif
+
 	program_info_length=HILO(header->program_info_length); //program_info_length
 	char language[4]="";
 	int pos=0;
