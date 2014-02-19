@@ -658,7 +658,8 @@ int autoconf_services_to_channels(const auto_p_t *parameters, mumudvb_channel_t 
 			if((service->type==0x01||
 					service->type==0x11||
 					service->type==0x16||
-					service->type==0x19)||
+					service->type==0x19||
+					service->type==0xc0)||
 					((service->type==0x02||
 							service->type==0x0a)&&parameters->autoconf_radios))
 			{
