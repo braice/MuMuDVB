@@ -1070,7 +1070,7 @@ int convert_en300468_string(char *string, int max_len)
 	//Conversion to utf8
 	iconv_t cd;
 	//we open the conversion table
-	cd = iconv_open( "UTF8", encodings_en300468[encoding_control_char] );
+	cd = iconv_open( "UTF-8", encodings_en300468[encoding_control_char] );
 
 	size_t inSize, outSize=max_len;
 	inSize=len;
