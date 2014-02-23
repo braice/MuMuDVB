@@ -37,6 +37,7 @@
 #include <sys/ioctl.h>
 #include <sys/poll.h>
 #include <unistd.h>
+#include "config.h"
 #ifdef ANDROID
 #include <err.h>
 #else
