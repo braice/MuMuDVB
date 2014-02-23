@@ -99,7 +99,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
+#ifdef ANDROID
+#include <limits.h>
+#else
 #include <values.h>
+#endif
 #include <string.h>
 #include <syslog.h>
 #include <getopt.h>
