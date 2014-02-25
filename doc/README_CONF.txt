@@ -1,7 +1,7 @@
 MuMuDVB - README for the configuration file
 ===========================================
 Brice Dubost <mumudvb@braice.net>
-Version 1.7.3
+Version 2.0.0
 
 General behavior
 ----------------
@@ -32,13 +32,13 @@ See the <<tuning,tuning>> section for the list of parameters used to tune the ca
 Channels part
 ~~~~~~~~~~~~~
 
-If you are not using full autoconfiguration you need to set the list of the channels you want to stream.
-Each channel start with an `ip=` or `channel_next` line.
+If you are not using autoconfiguration you need to set the list of the channels you want to stream.
+Each channel start with an `new_channel` line.
 
 
 .Example (unicast only)
 ---------------------------
-channel_next
+new_channel
 name=Barcelona TV
 unicast_port=8090
 pids=272
@@ -46,6 +46,7 @@ pids=272
 
 .Example
 ---------------------------
+new_channel
 ip=239.100.0.0
 port=1234
 name=Barcelona TV
@@ -53,10 +54,10 @@ pids=272 256 257 258
 ---------------------------
 
 
-See <<channel_parameters,channel parameters>> section for a list of detailled parameters.
+See <<channel_parameters,channel parameters>> section for a list of detailed parameters.
 
-Example config files
---------------------
+Example configuration files
+---------------------------
 
 You can find documented examples in the directory `doc/configuration_examples`
 
@@ -156,11 +157,6 @@ Parameters specific to ATSC (Cable or Terrestrial)
 
 If needed, specify the modulation using the option `modulation`.
 
-[width="80%",cols="1,3,1,2,2",options="header"]
-|==================================================================================================================
-|Parameter name |Description | Default value | Possible values | Comments
-|==================================================================================================================
-
 [NOTE]
 VSB 8 is the default modulation for most of the terrestrial ATSC transmission
 
@@ -193,8 +189,8 @@ Packets sending parameters
 |dont_send_scrambled | If set to 1 don't send the packets detected as scrambled. this will also remove indirectly the sap announces for the scrambled channels |0 | |
 |filter_transport_error | If set to 1 don't send the packets tagged with errors by the demodulator. |0 | |
 |psi_tables_filtering | If set to 'pat', TS packets with PID from 0x01 to 0x1F are discarded. If set to 'pat_cat', TS packets with PID from 0x02 to 0x1F are discarded. | 'none' | Option to keep only mandatory PSI PID | 
-|rewrite_pat | Do we rewrite the PAT PID | 0, 1 in full autoconf | 0 or 1 | See README, important for some set top boxes 
-|rewrite_sdt | Do we rewrite the SDT PID | 0, 1 in full autoconf | 0 or 1 | See README 
+|rewrite_pat | Do we rewrite the PAT PID | 0, 1 in autoconf | 0 or 1 | See README, important for some set top boxes 
+|rewrite_sdt | Do we rewrite the SDT PID | 0, 1 in autoconf | 0 or 1 | See README 
 |rewrite_eit sort_eit | Do we rewrite/sort the EIT PID | 0 | 0 or 1 | See README 
 |sdt_force_eit | Do we force the EIT_schedule_flag and EIT_present_following_flag in SDT | 0 | 0 or 1 | Let to 0 if you don't understand
 |rtp_header | Send the stream with the rtp headers (execpt for HTTP unicast) | 0 | 0 or 1 | 
@@ -256,16 +252,16 @@ Autoconfiguration parameters
 [width="80%",cols="3,5,1,2,5",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
-|autoconfiguration |autoconfiguration 1, partial: find audio and video PIDs, 2, full: full autoconfiguration | 0 | 0, 1, 2, partial or full | see the README for more details
-|autoconf_ip4 |For full autoconfiguration, the template for the ipv4 for streamed channel | 239.100.%card.%number  | |  You can use expressions with `+`, `*` , `%card`, `%tuner`, `%server`, `%sid_hi`, `%sid_lo` and `%number`. Ex:  `239.100.150+%server*10+%card.%number`
-|autoconf_ip6 |For full autoconfiguration, the template for the ipv6 for streamed channel | FF15:4242::%server:%card:%number  | |  You can use the keywords `%card`, `%tuner`, `%server`, `%sid` (the SID will be in hexadecimal) and `%number`
-|autoconf_radios |Do we consider radios as valid channels during full autoconfiguration ? | 0 | 0 or 1 | 
-|autoconf_scrambled |Do we consider scrambled channels valid channels during full autoconfiguration ? | 0 | 0 or 1 | Automatic when cam_support=1 or scam_support=1. Sometimes a clear channel can be marked as scrambled. This option allows you to bypass the ckecking.
+|autoconfiguration |autoconfiguration allows to detect channels and their parameters | none | none or full | see the README for more details
+|autoconf_ip4 |For autoconfiguration, the template for the ipv4 for streamed channel | 239.100.%card.%number  | |  You can use expressions with `+`, `*` , `%card`, `%tuner`, `%server`, `%sid_hi`, `%sid_lo` and `%number`. Ex:  `239.100.150+%server*10+%card.%number`
+|autoconf_ip6 |For autoconfiguration, the template for the ipv6 for streamed channel | FF15:4242::%server:%card:%number  | |  You can use the keywords `%card`, `%tuner`, `%server`, `%sid` (the SID will be in hexadecimal) and `%number`
+|autoconf_radios |Do we consider radios as valid channels during autoconfiguration ? | 0 | 0 or 1 | 
+|autoconf_scrambled |Do we consider scrambled channels valid channels during autoconfiguration ? | 0 | 0 or 1 | Automatic when cam_support=1 or scam_support=1. Sometimes a clear channel can be marked as scrambled. This option allows you to bypass the ckecking.
 |autoconf_pid_update |Do we follow the changes in the PIDs when the PMT is updated ? | 1 | 0 or 1 | 
 |autoconf_unicast_start_port |The unicast port for the first discovered channel |  |  | `autoconf_unicast_start_port=value` is equivalent to `autoconf_unicast_port=value + %number`
-|autoconf_unicast_port |The unicast port for each discovered channel (autoconf full). Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%tuner` `%server`, `%sid` and `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
-|autoconf_multicast_port |The multicast port for each discovered channel (autoconf full). Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%tuner` `%server`, `%sid` and `%number`. Ex : `autoconf_multicast_port=2000+100*%card+%number`
-|autoconf_sid_list | If you don't want to configure all the channels of the transponder in full autoconfiguration mode, specify with this option the list of the service ids of the channels you want to autoconfigure. | empty |  | 
+|autoconf_unicast_port |The unicast port for each discovered channel. Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%tuner` `%server`, `%sid` and `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
+|autoconf_multicast_port |The multicast port for each discovered channel. Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%tuner` `%server`, `%sid` and `%number`. Ex : `autoconf_multicast_port=2000+100*%card+%number`
+|autoconf_sid_list | If you don't want to configure all the channels of the transponder in autoconfiguration mode, specify with this option the list of the service ids of the channels you want to autoconfigure. | empty |  | 
 |autoconf_name_template | The template for the channel name, ex `%number-%name` | empty | | See README for more details
 |==================================================================================================================
 
@@ -274,7 +270,7 @@ SAP announces parameters
 [width="80%",cols="2,6,1,2,5",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
-|sap | Generation of SAP announces | 0 (1 if full autoconfiguration) | 0 or 1 | 
+|sap | Generation of SAP announces | 0 (1 if autoconfiguration) | 0 or 1 | 
 |sap_organisation |Organisation field sent in the SAP announces | MuMuDVB | | Optionnal
 |sap_uri |URI  field sent in the SAP announces |  | | Optionnal
 |sap_sending_ip4 |The SAP sender IPv4 address | 0.0.0.0 | | Optionnal, not autodetected, if set, enable RFC 4570 SDP Source Filters field
@@ -302,28 +298,32 @@ HTTP unicast parameters
 Channel parameters
 ------------------
 
-Each channel start with an `ip=` or `channel_next` line. The only other mandatory parameter is the `name` of the channel.
-All these options have no effect in full autoconfiguration where all parameters are detected from the stream and the autoconf options.
+Each channel start with a `new_channel` line.
+All these options if they are used together with autoconfiguration will override the detected values. Eg. if the name is specified with name="my channel" this name will be kept even if autoconfiguration detectes that the service is called 'euronews'.
+
+[[NOTE]]
+The service id must be set with service_id to allow autoconfiguration to detect parameters which are not user specified.
 
 Concerning the PIDs see the <<getpids,getting the PIDs>> section
 
+The column "Can be detected/autoset" specifies if this parameter can be ommitted while using autoconfiguration
 
-[width="80%",cols="2,8,1,1,3",options="header"]
+[width="80%",cols="2,6,1,2,1,4",options="header"]
 |==================================================================================================================
-|Parameter name |Description | Default value | Possible values | Comments
-|ip |multicast (can also be unicast, in raw UDP ) ipv4 where the chanel will be streamed | | | Optionnal if you set multicast=0 (if not used you must use channel_next)
-|ip6 |multicast (can also be unicast, in raw UDP ) ipv6 where the chanel will be streamed | | | Optionnal if you set multicast=0
-|port | The port | 1234 or common_port | | Ports below 1024 needs root rights.
-|unicast_port | The HTTP unicast port for this channel | | | Ports below 1024 needs root rights. You need to activate HTTP unicast with `ip_http`
-|sap_group |The playlist group for SAP announces | | string | optionnal
-|cam_pmt_pid |Only for scrambled channels. The PMT PID for CAM support | | | This option needs to be specified for descrambling the channel.
-|service_id |The service id (program number), olny for autoconfiguration, or rewrite (PAT or SDT) see README for more details | | | 
-|name | The name of the channel. Will be used for /var/run/mumudvb/channels_streamed_adapter%d_tuner%d, logging and SAP announces | | | Mandatory
-|pids | The PIDs list, separated by spaces | | | some pids are always sent (PAT CAT EIT SDT TDT NIT), see README for more details
-|oscam |Do we activate software descrambling for this channel| 0 | 0 or 1 |
-|ring_buffer_size | number of ts packets in ring buffer (for software CAM) | 131072 |it gets rounded to the value that is power of 2 not lower than it|
-|decsa_delay | delay time in us between getting packet and descrambling (for software CAM) | 4500000 | max is 10000000 |
-|send_delay | delay time in us between getting packet and sending (for software CAM) | 7000000 |  mustn't be lower than decsa delay |
+|Parameter name |Description | Default value | Possible values | Can be detected/autoset | Comments
+|ip |multicast (can also be unicast, in raw UDP ) ipv4 where the channel will be streamed | | | Yes | 
+|ip6 |multicast (can also be unicast, in raw UDP ) ipv6 where the channel will be streamed | | |  Yes |
+|port | The port | 1234 or common_port | | Yes | Ports below 1024 needs root rights.
+|unicast_port | The HTTP unicast port for this channel | | |  Yes |Ports below 1024 needs root rights. You need to activate HTTP unicast with `ip_http`
+|sap_group |The playlist group for SAP announces | | string |  No |optionnal
+|pmt_pid |Only for scrambled channels without autoconf. The PMT PID for CAM support | | | Yes | This option needs to be specified for descrambling the channel. The pid will be added to the pid list if ommitted
+|service_id |The service id (program number), only for autoconfiguration, or rewrite (PAT or SDT) see README for more details | | | NO | Mandatory for autodetection of the other parameters 
+|name | The name of the channel. Will be used for /var/run/mumudvb/channels_streamed_adapter%d_tuner%d, logging and SAP announces | | | Yes | templates %name %number %lcn %2lcn can be used, other may be added if necessary
+|pids | The PIDs list, separated by spaces | | | Yes | some pids are always sent (PAT CAT EIT SDT TDT NIT), see README for more details
+|oscam |Do we activate software descrambling for this channel| 0 | 0 or 1 |No | 
+|ring_buffer_size | number of ts packets in ring buffer (for software CAM) | 131072 |it gets rounded to the value that is power of 2 not lower than it|No |
+|decsa_delay | delay time in us between getting packet and descrambling (for software CAM) | 4500000 | max is 10000000 |No |
+|send_delay | delay time in us between getting packet and sending (for software CAM) | 7000000 |  mustn't be lower than decsa delay |No |
 |==================================================================================================================
 
 
@@ -335,12 +335,13 @@ Get the PID numbers
 You use autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you use full autoconfiguration, you don't need to specify any channel and don't need any PID, this section does not concern you.
+If you use autoconfiguration, you don't need to specify any channel and don't need any PID, this section does not concern you.
 
-If you use partial autoconfiguration, you'll need the PMT PID for each channel.
 
 You do not use autoconfiguration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is strongly advised to use autoconfiguration as the PIDs may change and manual PID setting need to maintain them. If you don't use autoconfiguration because of limitations of the autoconfiguration system pleas contact so we can see how to fix that.
 
 If you don't use autoconfiguration (see the README), you have to get the PIDs (Program Identifier) for each channel.
 
@@ -389,7 +390,7 @@ For more information, see w_scan's help
 
 Your will get lines channels with the file format described http://www.vdr-wiki.de/wiki/index.php/Vdr%285%29#CHANNELS[here]  
 
-If you want to use full autoconfiguration, this contains all the parameters you need. For example the second row is the frequency.
+If you want to use autoconfiguration, this contains all the parameters you need. For example the second row is the frequency.
 
 [[scan_inital_tuning]]
 Using scan with an initial tuning file
@@ -421,7 +422,7 @@ You'll first get blocks like
 0x0000 0x785b: pmt_pid 0x0610 Radio Ciutat Badalona -- Radio Ciutat Badal
 ----------------------------------------------------------------------------------------------------------------
 
-You have now acces to the PMT PID (in hexadecimal), you can convert it to decimal and use partial autoconfiguration.
+You have now acces to the PMT PID (in hexadecimal)
 
 After this blocks, you'll get lines like
 
@@ -452,7 +453,7 @@ After you use the scan utility:
 scan -o pids -c -a 0
 ----------------------
 
-Where 0 is the card number
+Where `0` is the card number
 
 And you'll get results like in the section <<scan_initial_tuning,scan with an initial tuning file>>
 

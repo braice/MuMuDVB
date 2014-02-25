@@ -35,6 +35,8 @@
 #define _TUNE_H
 
 #include <linux/dvb/frontend.h>
+#include <linux/dvb/version.h>
+
 
 /* DVB-S */
 /** lnb_slof: switch frequency of LNB */

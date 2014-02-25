@@ -47,16 +47,39 @@ static char *log_module="Autoconf: ";
 void parse_nit_ts_descriptor(unsigned char *buf,int ts_descriptors_loop_len, mumudvb_channel_t *channels, int number_of_channels);
 void parse_lcn_descriptor(unsigned char *buf, mumudvb_channel_t *channels, int number_of_channels);
 
+
+
+void autoconf_nit_need_update(auto_p_t *auto_p, unsigned char *buf)
+{
+	nit_t       *nit=(nit_t*)(get_ts_begin(buf));
+	if(nit) //It's the beginning of a new packet
+		if(nit->version_number!=auto_p->nit_version && nit->table_id == 0x40 && !auto_p->nit_all_sections_seen)
+		{
+			/*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+        sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+        and shall be the next table to become valid.*/
+			if(nit->current_next_indicator == 0)
+			{
+				return;
+			}
+			log_message( log_module, MSG_DEBUG,"NIT Need update. stored version : %d, new: %d\n",auto_p->nit_version,nit->version_number);
+			auto_p->nit_need_update=1;
+		}
+}
+
+
+
+
 /** @brief Read the network information table (cf EN 300 468)
  *
  */
-int autoconf_read_nit(auto_p_t *parameters, mumudvb_channel_t *channels, int number_of_channels)
+int autoconf_read_nit(auto_p_t *auto_p, mumu_chan_p_t *chan_p)
 {
 	mumudvb_ts_packet_t *nit_mumu;
 	unsigned char *buf=NULL;
-
+	log_message( log_module, MSG_FLOOD,"New NIT\n");
 	//We get the packet
-	nit_mumu=parameters->autoconf_temp_nit;
+	nit_mumu=auto_p->autoconf_temp_nit;
 	buf=nit_mumu->data_full;
 	nit_t       *header=(nit_t*)(buf);
 
@@ -66,6 +89,33 @@ int autoconf_read_nit(auto_p_t *parameters, mumudvb_channel_t *channels, int num
 		log_message( log_module, MSG_FLOOD,"NIT :  Bad table %d\n", header->table_id);
 		return 1;
 	}
+
+	if(header->version_number==auto_p->nit_version)
+	{
+		//check if we saw this section
+		if(auto_p->nit_sections_seen[header->section_number])
+		{
+			log_message( log_module, MSG_FLOOD,"NIT section %d seen", header->section_number );
+			return 0;
+		}
+
+	}
+	else
+	{
+		//New version, no section seen
+		for(int i=0;i<256;i++)
+			auto_p->nit_sections_seen[i]=0;
+		auto_p->nit_version=header->version_number;
+		auto_p->nit_all_sections_seen=0;
+		if(auto_p->nit_version!=-1)
+			log_message( log_module, MSG_INFO,"The NIT version changed, channels number could have changed !");
+
+	}
+	//we store the section
+	auto_p->nit_sections_seen[header->section_number]=1;
+
+
+
 
 	/*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
   sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
@@ -77,9 +127,9 @@ int autoconf_read_nit(auto_p_t *parameters, mumudvb_channel_t *channels, int num
 	}
 
 
-	log_message( log_module, MSG_DEBUG, "-- NIT : Network Information Table --\n");
+	log_message( log_module, MSG_FLOOD, "-- NIT : Network Information Table --\n");
 
-	log_message( log_module, MSG_DEBUG, "Network id 0x%02x\n", HILO(header->network_id));
+	log_message( log_module, MSG_FLOOD, "Network id 0x%02x\n", HILO(header->network_id));
 	int network_descriptors_length = HILO(header->network_descriptor_length);
 
 	//Loop over different descriptors in the NIT
@@ -91,8 +141,29 @@ int autoconf_read_nit(auto_p_t *parameters, mumudvb_channel_t *channels, int num
 	nit_mid_t *middle=(nit_mid_t *)buf;
 	int ts_loop_length=HILO(middle->transport_stream_loop_length);
 	buf +=SIZE_NIT_MID;
-	parse_nit_ts_descriptor(buf,ts_loop_length, channels, number_of_channels);
+	parse_nit_ts_descriptor(buf,ts_loop_length, chan_p->channels, chan_p->number_of_channels);
+
+
+	int sections_missing=0;
+	//We check if we saw all sections
+	for(int i=0;i<=header->last_section_number;i++)
+		if(auto_p->nit_sections_seen[i]==0)
+			sections_missing++;
+	if(sections_missing)
+	{
+		log_message( log_module, MSG_DETAIL,"NIT  %d sections on %d are missing",
+				sections_missing,header->last_section_number);
+		return 0;
+	}
+	else
+	{
+		auto_p->nit_all_sections_seen=1;
+		auto_p->nit_need_update=0;
+		log_message( log_module, MSG_DEBUG,"It seems that we have finished to get the logical channel number");
+		return 1;
+	}
 	return 0;
+
 }
 
 
@@ -107,7 +178,7 @@ void parse_nit_ts_descriptor(unsigned char* buf, int ts_descriptors_loop_len, mu
 		descriptors_loop_len=HILO(descr_header->transport_descriptors_length);
 		log_message( log_module, MSG_FLOOD, " --- NIT ts_descriptors_loop_len %d descriptors_loop_len %d\n", ts_descriptors_loop_len, descriptors_loop_len);
 		ts_id=HILO(descr_header->transport_stream_id);
-		log_message( log_module, MSG_DEBUG, " --- NIT descriptor concerning the multiplex %d\n", ts_id);
+		log_message( log_module, MSG_FLOOD, " --- NIT descriptor concerning the multiplex %d\n", ts_id);
 		buf +=NIT_TS_LEN;
 		ts_descriptors_loop_len -= (descriptors_loop_len+NIT_TS_LEN);
 		while (descriptors_loop_len > 0)
@@ -117,7 +188,7 @@ void parse_nit_ts_descriptor(unsigned char* buf, int ts_descriptors_loop_len, mu
 
 			if (!descriptor_len)
 			{
-				log_message( log_module, MSG_DEBUG, " --- NIT descriptor --- descriptor_tag == 0x%02x, len is 0\n", descriptor_tag);
+				log_message( log_module, MSG_FLOOD, " --- NIT descriptor --- descriptor_tag == 0x%02x, len is 0\n", descriptor_tag);
 				break;
 			}
 			if(descriptor_tag==0x83)

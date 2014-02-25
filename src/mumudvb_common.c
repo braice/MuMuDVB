@@ -2,7 +2,7 @@
  * MuMuDVB - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * (C) 2004-2011 Brice DUBOST
+ * (C) 2004-2014 Brice DUBOST
  * 
  * The latest version can be found at http://mumudvb.braice.net
  * 
@@ -25,9 +25,6 @@
  */
 
 
-/** @file
- * @brief This file contains some common functions
- */
 
 
 #include "mumudvb.h"
@@ -318,7 +315,7 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 #ifdef ENABLE_SCAM_SUPPORT
 	if (channel->scam_support && scam_vars->scam_support) {
 		pthread_mutex_lock(&channel->ring_buf->lock);
-		memcpy(channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->write_idx, ts_packet, TS_PACKET_SIZE);
+		memcpy(channel->ring_buf->data[channel->ring_buf->write_idx], ts_packet, TS_PACKET_SIZE);
 		now_time=get_time();
 		channel->ring_buf->time_send[channel->ring_buf->write_idx]=now_time + channel->send_delay;
 		channel->ring_buf->time_decsa[channel->ring_buf->write_idx]=now_time + channel->decsa_delay;
@@ -335,24 +332,24 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 		pid = ((ts_packet[1] & 0x1f) << 8) | (ts_packet[2]);
 		ScramblingControl = (ts_packet[3] & 0xc0) >> 6;
 		pthread_mutex_lock(&channel->stats_lock);
-		for (curr_pid = 0; (curr_pid < channel->num_pids); curr_pid++)
-			if ((channel->pids[curr_pid] == pid) || (channel->pids[curr_pid] == 8192)) //We can stream whole transponder using 8192
+		for (curr_pid = 0; (curr_pid < channel->pid_i.num_pids); curr_pid++)
+			if ((channel->pid_i.pids[curr_pid] == pid) || (channel->pid_i.pids[curr_pid] == 8192)) //We can stream whole transponder using 8192
 			{
-				if ((ScramblingControl>0) && (pid != channel->pmt_pid) )
+				if ((ScramblingControl>0) && (pid != channel->pid_i.pmt_pid) )
 					channel->num_scrambled_packets++;
 
 				//check if the PID is scrambled for determining its state
-				if (ScramblingControl>0) channel->pids_num_scrambled_packets[curr_pid]++;
+				if (ScramblingControl>0) channel->pid_i.pids_num_scrambled_packets[curr_pid]++;
 
 				//we don't count the PMT pid for up channels
-				if (pid != channel->pmt_pid)
+				if (pid != channel->pid_i.pmt_pid)
 					channel->num_packet++;
 				break;
 			}
 		pthread_mutex_unlock(&channel->stats_lock);
 		//avoid sending of scrambled channels if we asked to
 		send_packet=1;
-		if(dont_send_scrambled && (ScramblingControl>0)&& (channel->pmt_pid) )
+		if(dont_send_scrambled && (ScramblingControl>0)&& (channel->pid_i.pmt_pid) )
 			send_packet=0;
 
 		if (send_packet) {

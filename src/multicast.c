@@ -25,11 +25,7 @@
  *
  */
  
- /** @file
- * @brief File for Multicast related functions
- * @author Brice DUBOST
- * @date 2009
-  */
+
 
 #include "mumudvb.h"
 #include "log.h"
@@ -42,18 +38,12 @@ static char *log_module="Multicast: ";
  * @param multi_p the multicast parameters
  * @param substring The currrent line
   */
-int read_multicast_configuration(multi_p_t *multi_p, mumudvb_channel_t *channels, int channel_start, int *curr_channel, char *substring)
+int read_multicast_configuration(multi_p_t *multi_p, mumudvb_channel_t *c_chan,  char *substring)
 {
   char delimiteurs[] = CONFIG_FILE_SEPARATOR;
 
   if (!strcmp (substring, "common_port"))
   {
-    if ( channel_start )
-    {
-      log_message( log_module,  MSG_ERROR,
-                   "You have to set common_port before the channels\n");
-      return -1;
-    }
     substring = strtok (NULL, delimiteurs);
     multi_p->common_port = atoi (substring);
   }
@@ -79,7 +69,13 @@ int read_multicast_configuration(multi_p_t *multi_p, mumudvb_channel_t *channels
   }
   else if (!strcmp (substring, "ip"))
   {
-    (*curr_channel)++;
+	if ( c_chan == NULL)
+    {
+      log_message( log_module,  MSG_ERROR,
+                   "ip : You have to start a channel first (using channel_next)\n");
+      return -1;
+    }
+
     substring = strtok (NULL, delimiteurs);
     if(strlen(substring)>19)
     {
@@ -87,10 +83,18 @@ int read_multicast_configuration(multi_p_t *multi_p, mumudvb_channel_t *channels
                    "The Ip address %s is too long.\n", substring);
       return -1;
     }
-    sscanf (substring, "%s\n", channels[*curr_channel].ip4Out);
+    sscanf (substring, "%s\n", c_chan->ip4Out);
+    MU_F(c_chan->ip4Out)=F_USER;
   }
   else if (!strcmp (substring, "ip6"))
   {
+	if ( c_chan == NULL)
+    {
+      log_message( log_module,  MSG_ERROR,
+                   "ip6 : You have to start a channel first (using channel_next)\n");
+      return -1;
+    }
+
     substring = strtok (NULL, delimiteurs);
     if(strlen(substring)>(IPV6_CHAR_LEN-1))
     {
@@ -98,19 +102,21 @@ int read_multicast_configuration(multi_p_t *multi_p, mumudvb_channel_t *channels
                    "The Ip v6 address %s is too long.\n", substring);
       return -1;
     }
-    sscanf (substring, "%s\n", channels[*curr_channel].ip6Out);
+    sscanf (substring, "%s\n", c_chan->ip6Out);
+    MU_F(c_chan->ip6Out)=F_USER;
   }
 
   else if (!strcmp (substring, "port"))
   {
-    if ( channel_start == 0)
+	if ( c_chan == NULL)
     {
       log_message( log_module,  MSG_ERROR,
-                   "port : You have to start a channel first (using ip= or channel_next)\n");
+                   "port : You have to start a channel first (using channel_next)\n");
       return -1;
     }
     substring = strtok (NULL, delimiteurs);
-    channels[*curr_channel].portOut = atoi (substring);
+    c_chan->portOut = atoi (substring);
+    MU_F(c_chan->portOut)=F_USER;
   }
   else if (!strcmp (substring, "rtp_header"))
   {

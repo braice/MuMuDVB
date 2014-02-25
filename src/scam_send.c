@@ -114,33 +114,33 @@ void *sendthread_func(void* arg)
 
     pthread_mutex_lock(&channel->ring_buf->lock);
 
-    pid = ((*(channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->read_send_idx+1) & 0x1f) << 8) | *(channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->read_send_idx+2);
-    ScramblingControl = (*(channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->read_send_idx+3) & 0xc0) >> 6;
+    pid = ((channel->ring_buf->data[channel->ring_buf->read_send_idx][1] & 0x1f) << 8) | (channel->ring_buf->data[channel->ring_buf->read_send_idx][2]);
+    ScramblingControl = (channel->ring_buf->data[channel->ring_buf->read_send_idx][3] & 0xc0) >> 6;
 
     pthread_mutex_lock(&channel->stats_lock);
-    for (curr_pid = 0; (curr_pid < channel->num_pids); curr_pid++)
-      if ((channel->pids[curr_pid] == pid) || (channel->pids[curr_pid] == 8192)) //We can stream whole transponder using 8192
+    for (curr_pid = 0; (curr_pid < channel->pid_i.num_pids); curr_pid++)
+      if ((channel->pid_i.pids[curr_pid] == pid) || (channel->pid_i.pids[curr_pid] == 8192)) //We can stream whole transponder using 8192
       {
-        if ((ScramblingControl>0) && (pid != channel->pmt_pid) )
+        if ((ScramblingControl>0) && (pid != channel->pid_i.pmt_pid) )
            channel->num_scrambled_packets++;
 
          //check if the PID is scrambled for determining its state
-         if (ScramblingControl>0) channel->pids_num_scrambled_packets[curr_pid]++;
+         if (ScramblingControl>0) channel->pid_i.pids_num_scrambled_packets[curr_pid]++;
 
            //we don't count the PMT pid for up channels
-         if (pid != channel->pmt_pid)
+         if (pid != channel->pid_i.pmt_pid)
              channel->num_packet++;
          break;
       }
     pthread_mutex_unlock(&channel->stats_lock);
     //avoid sending of scrambled channels if we asked to
     send_packet=1;
-    if(dont_send_scrambled && (ScramblingControl>0)&& (channel->pmt_pid) )
+    if(dont_send_scrambled && (ScramblingControl>0)&& (channel->pid_i.pmt_pid) )
       send_packet=0;
 
     if (send_packet) {
       // we fill the channel buffer
-      memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->read_send_idx, TS_PACKET_SIZE);
+      memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data[channel->ring_buf->read_send_idx], TS_PACKET_SIZE);
       channel->nb_bytes += TS_PACKET_SIZE;
     }
     ++channel->ring_buf->read_send_idx;

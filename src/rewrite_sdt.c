@@ -402,7 +402,9 @@ int sdt_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_
 	{
 		/*We check if it's the first sdt packet ? or we send it each time ?*/
 		/*We check if the versions corresponds*/
-		if(!rewrite_vars->sdt_needs_update && channel->generated_sdt_version!=rewrite_vars->sdt_version)//We check the version only if the SDT is not currently updated
+		if(!rewrite_vars->sdt_needs_update
+				&& channel->channel_ready>=READY
+				&& channel->generated_sdt_version!=rewrite_vars->sdt_version)//We check the version only if the SDT is not currently updated
 		{
 			log_message( log_module, MSG_DEBUG,"We need to rewrite the SDT for the channel %d : \"%s\"\n", curr_channel, channel->name);
 			/*They mismatch*/

@@ -87,21 +87,21 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
 				channels[curr_channel].portOut,
 				clients,
 				channels[curr_channel].ratio_scrambled,
-				channels[curr_channel].streamed_channel,
-				channels[curr_channel].pcr_pid,
+				channels[curr_channel].has_traffic,
+				channels[curr_channel].pid_i.pcr_pid,
 				channels[curr_channel].pmt_version );
 
 		unicast_reply_write(reply, "\"unicast_port\":%d, \"service_id\":%d, \"service_type\":\"%s\", \"pids_num\":%d, \n",
 				channels[curr_channel].unicast_port,
 				channels[curr_channel].service_id,
-				service_type_to_str(channels[curr_channel].channel_type),
-				channels[curr_channel].num_pids);
+				service_type_to_str(channels[curr_channel].service_type),
+				channels[curr_channel].pid_i.num_pids);
 		unicast_reply_write(reply, "\"pids\":[");
-		for(int i=0;i<channels[curr_channel].num_pids;i++)
+		for(int i=0;i<channels[curr_channel].pid_i.num_pids;i++)
 			unicast_reply_write(reply, "{\"number\":%d, \"type\":\"%s\", \"language\":\"%s\"},\n",
-					channels[curr_channel].pids[i],
-					pid_type_to_str(channels[curr_channel].pids_type[i]),
-					channels[curr_channel].pids_language[i]);
+					channels[curr_channel].pid_i.pids[i],
+					pid_type_to_str(channels[curr_channel].pid_i.pids_type[i]),
+					channels[curr_channel].pid_i.pids_language[i]);
 		reply->used_body -= 2; // dirty hack to erase the last comma
 		unicast_reply_write(reply, "]");
 		unicast_reply_write(reply, "},\n");
@@ -299,10 +299,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 
 
 	// Autoconfiguration state
-	if (auto_p->autoconfiguration!=0)
-		unicast_reply_write(reply, "\t<autoconf_end>%d</autoconf_end>\n",0);
-	else
-		unicast_reply_write(reply, "\t<autoconf_end>%d</autoconf_end>\n",1);
+	unicast_reply_write(reply, "\t<autoconfiguration>%d</autoconfiguration>\n",auto_p->autoconfiguration);
 
 	// CAM information
 #ifdef ENABLE_CAM_SUPPORT
@@ -341,10 +338,13 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 	int curr_channel;
 	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	{
-		unicast_reply_write(reply, "\t<channel number=\"%d\" is_up=\"%d\">\n",curr_channel+1,channels[curr_channel].streamed_channel);
+		//We give only channels which are ready
+		if(channels[curr_channel].channel_ready<READY)
+			continue;
+		unicast_reply_write(reply, "\t<channel number=\"%d\" is_up=\"%d\">\n",curr_channel+1,channels[curr_channel].has_traffic);
 		unicast_reply_write(reply, "\t\t<lcn>%d</lcn>\n",channels[curr_channel].logical_channel_number);
 		unicast_reply_write(reply, "\t\t<name><![CDATA[%s]]></name>\n",channels[curr_channel].name);
-		unicast_reply_write(reply, "\t\t<service_type type=\"%d\"><![CDATA[%s]]></service_type>\n",channels[curr_channel].channel_type,service_type_to_str(channels[curr_channel].channel_type));
+		unicast_reply_write(reply, "\t\t<service_type type=\"%d\"><![CDATA[%s]]></service_type>\n",channels[curr_channel].service_type,service_type_to_str(channels[curr_channel].service_type));
 		if (channels[curr_channel].portOut==0)
 			unicast_reply_write(reply, "\t\t<ip_multicast><![CDATA[0.0.0.0]]></ip_multicast>\n");
 		else
@@ -353,9 +353,9 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 		unicast_reply_write(reply, "\t\t<traffic>%.0f</traffic>\n",channels[curr_channel].traffic);
 		unicast_reply_write(reply, "\t\t<ratio_scrambled>%d</ratio_scrambled>\n",channels[curr_channel].ratio_scrambled);
 		unicast_reply_write(reply, "\t\t<service_id>%d</service_id>\n",channels[curr_channel].service_id);
-		unicast_reply_write(reply, "\t\t<pmt_pid>%d</pmt_pid>\n",channels[curr_channel].pmt_pid);
+		unicast_reply_write(reply, "\t\t<pmt_pid>%d</pmt_pid>\n",channels[curr_channel].pid_i.pmt_pid);
 		unicast_reply_write(reply, "\t\t<pmt_version>%d</pmt_version>\n",channels[curr_channel].pmt_version);
-		unicast_reply_write(reply, "\t\t<pcr_pid>%d</pcr_pid>\n",channels[curr_channel].pcr_pid);
+		unicast_reply_write(reply, "\t\t<pcr_pid>%d</pcr_pid>\n",channels[curr_channel].pid_i.pcr_pid);
 		unicast_reply_write(reply, "\t\t<unicast_port>%d</unicast_port>\n",channels[curr_channel].unicast_port);
 		// SCAM information
 #ifdef ENABLE_SCAM_SUPPORT
@@ -384,8 +384,8 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 				unicast_reply_write(reply, "\t\t\t<ca num=\"%d\"><![CDATA[%s]]></ca>\n",channels[curr_channel].ca_sys_id[i],ca_sys_id_to_str(channels[curr_channel].ca_sys_id[i]));
 		unicast_reply_write(reply, "\t\t</ca_sys>\n");
 		unicast_reply_write(reply, "\t\t<pids>\n");
-		for(int i=0;i<channels[curr_channel].num_pids;i++)
-			unicast_reply_write(reply, "\t\t\t<pid number=\"%d\" language=\"%s\" scrambled=\"%d\"><![CDATA[%s]]></pid>\n", channels[curr_channel].pids[i], channels[curr_channel].pids_language[i], channels[curr_channel].pids_scrambled[i], pid_type_to_str(channels[curr_channel].pids_type[i]));
+		for(int i=0;i<channels[curr_channel].pid_i.num_pids;i++)
+			unicast_reply_write(reply, "\t\t\t<pid number=\"%d\" language=\"%s\" scrambled=\"%d\"><![CDATA[%s]]></pid>\n", channels[curr_channel].pid_i.pids[i], channels[curr_channel].pid_i.pids_language[i], channels[curr_channel].pid_i.pids_scrambled[i], pid_type_to_str(channels[curr_channel].pid_i.pids_type[i]));
 		unicast_reply_write(reply, "\t\t</pids>\n");
 		unicast_reply_write(reply, "\t</channel>\n");
 	}

@@ -766,7 +766,6 @@ int get_ts_packet(unsigned char *, mumudvb_ts_packet_t *);
 unsigned char *get_ts_begin(unsigned char *buf);
 
 struct mumudvb_channel_t;
-int check_pmt_service_id(mumudvb_ts_packet_t *pmt, struct mumudvb_channel_t *channel);
 void ts_display_pat(char* log_module,unsigned char *buf);
 void ts_display_country_avaibility_descriptor(char* log_module,unsigned char *buf);
 

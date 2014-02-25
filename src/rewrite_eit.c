@@ -333,6 +333,9 @@ void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters
 	//We generate the TS packets on by one, and for each one, we check if we have to send
 	//Otherwise we skip the packet
 
+	//if channel not ready we return
+	if(channel->channel_ready<READY)
+		return;
 
 	//If payload unit start indicator, we will send all the present EIT for this service, otherwise nothing
 	//just a matter to send an EIT per service only if an EIT is starting in the stream,

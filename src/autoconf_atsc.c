@@ -2,7 +2,7 @@
  * MuMuDVB - Stream a DVB transport stream.
  * File for Autoconfiguration
  * 
- * (C) 2008-2010 Brice DUBOST <mumudvb@braice.net>
+ * (C) 2008-2014 Brice DUBOST <mumudvb@braice.net>
  *
  * Parts of this code come from libdvb, modified for mumudvb
  * by Brice DUBOST 
@@ -34,6 +34,9 @@
 
 #include <errno.h>
 #include <string.h>
+#include <stddef.h>
+
+
 
 #include "errors.h"
 #include "mumudvb.h"
@@ -49,14 +52,34 @@
 #include <libucsi/atsc/types.h>
 #endif
 
-mumudvb_service_t *autoconf_find_service_for_add(mumudvb_service_t *services,int service_id);
-int autoconf_parse_vct_channel(unsigned char *buf, auto_p_t *parameters);
+int autoconf_parse_vct_channel(unsigned char *buf, auto_p_t *auto_p, mumu_chan_p_t *chan_p);
 
 static char *log_module="Autoconf: ";
 
 /*******************************************************
   ATSC 
  ********************************************************/
+
+
+void autoconf_psip_need_update(auto_p_t *auto_p, unsigned char *buf)
+{
+	psip_t       *psip=(psip_t*)(get_ts_begin(buf));
+	if(psip) //It's the beginning of a new packet
+		if(psip->version_number!=auto_p->psip_version && !auto_p->psip_all_sections_seen)
+		{
+			/*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+        sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+        and shall be the next table to become valid.*/
+			if(psip->current_next_indicator == 0)
+			{
+				return;
+			}
+			log_message( log_module, MSG_DEBUG,"PSIP Need update. stored version : %d, new: %d\n",
+					auto_p->psip_version,psip->version_number);
+			auto_p->psip_need_update=1;
+		}
+}
+
 
 /** @brief Read a PSIP table to find channels names 
  *
@@ -65,10 +88,12 @@ static char *log_module="Autoconf: ";
  * the transport id found in the PAT) and for the extended channel name descriptor
  * For the moment if the name of the channel is compressed, it will use the short channel
  * 
- * @param parameters : the structure containing autoconfiguration parameters
+ * @param auto_p : the structure containing autoconfiguration parameters
  */
-int autoconf_read_psip(auto_p_t *parameters)
+int autoconf_read_psip(auto_p_t *auto_p, mumu_chan_p_t *chan_p)
 {
+	//DOC : www.atsc.org/cms/standards/a_65-2009.pdf‎
+
 	mumudvb_ts_packet_t *psip_mumu;
 	int number_of_channels_in_section=0;
 	int delta=0;
@@ -76,26 +101,19 @@ int autoconf_read_psip(auto_p_t *parameters)
 	unsigned char *buf=NULL;
 
 	//We get the packet
-	psip_mumu=parameters->autoconf_temp_psip;
+	psip_mumu=auto_p->autoconf_temp_psip;
 	buf=psip_mumu->data_full;
 	psip_t       *psip=(psip_t*)(buf);
 
 	//We look only for the following tables OxC8 : TVCT (Terrestrial Virtual Channel Table), 0XC9 : CVCT (Cable Virtual Channel Table)
+	//We check the table id before the section number because the section numbers are for a given table_id
+	//Since we don't have the two table_id in the same stream, we are safe
 	if (psip->table_id != 0xc8 && psip->table_id != 0xc9)
 		return 1;
-
 	log_message( log_module, MSG_DEBUG,"---- ATSC : PSIP TVCT ot CVCT----\n");
 
-	/*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
-  sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
-  and shall be the next table to become valid.*/
-	if(psip->current_next_indicator == 0)
-	{
-		log_message( log_module, MSG_FLOOD,"PSIP not yet valid, we get a new one (current_next_indicator == 0)\n");
-		return 1;
-	}
 
-	if(parameters->transport_stream_id<0)
+	if(auto_p->transport_stream_id<0)
 	{
 		log_message( log_module, MSG_DEBUG,"We don't have a transport id from the PAT, we skip this PSIP\n");
 		return 1;
@@ -103,13 +121,36 @@ int autoconf_read_psip(auto_p_t *parameters)
 
 	log_message( log_module, MSG_DEBUG,"PSIP transport_stream_id : 0x%x PAT TSID 0x%x\n",
 			HILO(psip->transport_stream_id),
-			parameters->transport_stream_id);
+			auto_p->transport_stream_id);
 
-	if(HILO(psip->transport_stream_id)!=parameters->transport_stream_id)
+	if(HILO(psip->transport_stream_id)!=auto_p->transport_stream_id)
 	{
 		log_message( log_module, MSG_DEBUG,"This table belongs to another transponder, we skip\n");
 		return 1;
 	}
+
+
+	if(psip->version_number==auto_p->psip_version)
+	{
+		//check if we saw this section
+		if(auto_p->psip_sections_seen[psip->section_number])
+			return 0;
+	}
+	else
+	{
+		//New version, no section seen
+		for(int i=0;i<256;i++)
+			auto_p->psip_sections_seen[i]=0;
+		auto_p->psip_version=psip->version_number;
+		auto_p->psip_all_sections_seen=0;
+		if(auto_p->psip_version!=-1)
+			log_message( log_module, MSG_INFO,"The PSIP version changed, channels description have changed");
+
+	}
+	//we store the section
+	auto_p->psip_sections_seen[psip->section_number]=1;
+
+
 
 
 	number_of_channels_in_section=buf[PSIP_HEADER_LEN]; //This field is the byte just after the PSIP header
@@ -119,9 +160,32 @@ int autoconf_read_psip(auto_p_t *parameters)
 
 	//We parse the channels
 	for(i=0;i<number_of_channels_in_section;i++)
-		delta+=autoconf_parse_vct_channel(buf+delta,parameters);
+		delta+=autoconf_parse_vct_channel(buf+delta,auto_p,chan_p);
+
+
+
+
+	int sections_missing=0;
+	//We check if we saw all sections
+	for(int i=0;i<=psip->last_section_number;i++)
+		if(auto_p->psip_sections_seen[i]==0)
+			sections_missing++;
+	if(sections_missing)
+	{
+		log_message( log_module, MSG_DETAIL,"PSIP  %d sections on %d are missing",
+				sections_missing,psip->last_section_number);
+		return 0;
+	}
+	else
+	{
+		auto_p->psip_all_sections_seen=1;
+		auto_p->psip_need_update=0;
+		log_message( log_module, MSG_DEBUG,"It seems that we have finished to update get the channels basic info\n");
+		auto_p->need_filter_chan_update=1; //We have updated lots of stuff we need to update the filters and channels
+	}
 
 	return 0;
+
 }
 
 /** @brief Parse the contents of a (CT)VCT channel descriptor
@@ -129,10 +193,10 @@ int autoconf_read_psip(auto_p_t *parameters)
  * This function parse the channel and add it to the services list
  * 
  * @param buf - The channel descriptor
- * @param parameters - The structure containing autoconf parameters
+ * @param auto_p - The structure containing autoconfiguration parameters
  */
 
-int autoconf_parse_vct_channel(unsigned char *buf, auto_p_t *parameters)
+int autoconf_parse_vct_channel(unsigned char *buf, auto_p_t *auto_p, mumu_chan_p_t *chan_p)
 {
 	psip_vct_channel_t *vct_channel;
 	char unconverted_short_name[15];//2*7 + 1 (for '\0')
@@ -147,8 +211,6 @@ int autoconf_parse_vct_channel(unsigned char *buf, auto_p_t *parameters)
 	vct_channel=(psip_vct_channel_t *)buf;
 	long_name[0]='\0';
 
-	mumudvb_service_t *new_service=NULL;
-
 	// *********** We get the channel short name *******************
 	memcpy (unconverted_short_name, vct_channel->short_name, 14*sizeof(uint8_t));
 	unconverted_short_name[14] = '\0';
@@ -161,7 +223,7 @@ int autoconf_parse_vct_channel(unsigned char *buf, auto_p_t *parameters)
 	log_message( log_module, MSG_DEBUG,"We use big Endian UTF16 as source for channel name, if it give weird characters please contact\n");
 	size_t inSize, outSize=14;
 	inSize=14;
-	//pointers initialisation
+	//pointers initialization
 	dest=utf8_short_name;
 	inbuf=unconverted_short_name;
 	//conversion
@@ -169,24 +231,24 @@ int autoconf_parse_vct_channel(unsigned char *buf, auto_p_t *parameters)
 	*dest = '\0';
 	iconv_close( cd );
 #else
-	log_message( log_module, MSG_DETAIL, "Iconv not present, no name encoding conversion the reseult will be probably bad\n");
+	log_message( log_module, MSG_DETAIL, "Iconv not present, no name encoding conversion the result will be probably bad\n");
 	memcpy (utf8_short_name, vct_channel->short_name, 14*sizeof(uint8_t));
 	utf8_short_name[14] = '\0';
 #endif
 	log_message( log_module, MSG_DEBUG, "\tchannel short_name : \"%s\"\n", utf8_short_name);
 
 
-	//************ We skip "ininteresting" channels  ****************
+	//************ We skip "uninteresting" channels  ****************
 	if(vct_channel->modulation_mode==0x01)
 	{
 		log_message( log_module, MSG_DEBUG, "\tAnalog channel, we skip\n");
 		return PSIP_VCT_LEN + HILO(vct_channel->descriptor_length); //We return the length
 	}
-	if(HILO(vct_channel->channel_tsid)!=parameters->transport_stream_id)
+	if(HILO(vct_channel->channel_tsid)!=auto_p->transport_stream_id)
 	{
 		log_message( log_module, MSG_DEBUG,"Channel for another transponder, we skip :  Channel TSID 0x%x , PAT TSID 0x%x\n",
 				HILO(vct_channel->channel_tsid),
-				parameters->transport_stream_id);
+				auto_p->transport_stream_id);
 		return PSIP_VCT_LEN + HILO(vct_channel->descriptor_length); //We return the length
 	}
 	if(vct_channel->hidden)
@@ -281,23 +343,26 @@ int autoconf_parse_vct_channel(unsigned char *buf, auto_p_t *parameters)
 	channel_name=utf8_short_name;
 #endif
 
-	//************** We add this channel to the list of services *****************
-	//we search if we already have service id
-	new_service=autoconf_find_service_for_add(parameters->services,HILO(vct_channel->program_number)); //The service id IS the program number
+	//************** We update a channel if stored channel  *****************
+	//We base the detection of the services on the PAT, the PSIP gives extra information
 
-	if(new_service)
+	int chan=-1;
+	for(int i=0;i<chan_p->number_of_channels && i< MAX_CHANNELS;i++)
 	{
-		log_message( log_module, MSG_DETAIL, "Adding new channel %s to the list of services , program number : 0x%x \n",
+		if(chan_p->channels[i].service_id==HILO(vct_channel->program_number))
+			chan=i;
+	}
+	if(chan!=-1)
+	{
+		log_message( log_module, MSG_DETAIL, "Updating channel %s, program number : 0x%x \n",
 				channel_name,
 				HILO(vct_channel->program_number));
 		//we store the data
-		new_service->id=HILO(vct_channel->program_number);
-		new_service->running_status=0;
-		new_service->type=mpeg2_service_type;
-		new_service->free_ca_mode=vct_channel->access_controlled;
-		log_message( log_module, MSG_DEBUG, "access_controlled : 0x%x\n", new_service->free_ca_mode);
-		memcpy (new_service->name, channel_name, strlen(channel_name));
-		new_service->name[strlen(channel_name)] = '\0';
+		chan_p->channels[chan].service_type=mpeg2_service_type;
+		chan_p->channels[chan].free_ca_mode=vct_channel->access_controlled;
+		log_message( log_module, MSG_DEBUG, "access_controlled : 0x%x\n", chan_p->channels[chan].free_ca_mode);
+		memcpy (chan_p->channels[chan].service_name, channel_name, strlen(channel_name));
+		chan_p->channels[chan].service_name[strlen(channel_name)] = '\0';
 
 	}
 

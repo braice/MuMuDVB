@@ -29,11 +29,13 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include "mumudvb.h"
 #include "ts.h"
 #include "rewrite.h"
 #include "log.h"
+#include "errors.h"
 #include <stdint.h>
 
 static char *log_module="Rewrite: ";
@@ -63,6 +65,69 @@ void init_rewr_v(rewrite_parameters_t *rewr_p)
 				.eit_packets=NULL,
 		};
 }
+
+int rewrite_init(rewrite_parameters_t *rewr_p)
+{
+	/*****************************************************/
+	//Pat rewriting
+	//memory allocation for MPEG2-TS
+	//packet structures
+	/*****************************************************/
+
+	if(rewr_p->rewrite_pat == OPTION_ON)
+	{
+		rewr_p->full_pat=malloc(sizeof(mumudvb_ts_packet_t));
+		if(rewr_p->full_pat==NULL)
+		{
+			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+			set_interrupted(ERROR_MEMORY<<8);
+			return 1;
+		}
+		memset (rewr_p->full_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+		pthread_mutex_init(&rewr_p->full_pat->packetmutex,NULL);
+	}
+
+	/*****************************************************/
+	//SDT rewriting
+	//memory allocation for MPEG2-TS
+	//packet structures
+	/*****************************************************/
+
+	if(rewr_p->rewrite_sdt == OPTION_ON)
+	{
+		rewr_p->full_sdt=malloc(sizeof(mumudvb_ts_packet_t));
+		if(rewr_p->full_sdt==NULL)
+		{
+			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+			set_interrupted(ERROR_MEMORY<<8);
+			return 1;
+		}
+		memset (rewr_p->full_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+		pthread_mutex_init(&rewr_p->full_sdt->packetmutex,NULL);
+	}
+
+	/*****************************************************/
+	//EIT rewriting
+	//memory allocation for MPEG2-TS
+	//packet structures
+	/*****************************************************/
+
+	if(rewr_p->rewrite_eit == OPTION_ON)
+	{
+		rewr_p->full_eit=malloc(sizeof(mumudvb_ts_packet_t));
+		if(rewr_p->full_eit==NULL)
+		{
+			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+			set_interrupted(ERROR_MEMORY<<8);
+			return 1;
+		}
+		memset (rewr_p->full_eit, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+		pthread_mutex_init(&rewr_p->full_eit->packetmutex,NULL);
+	}
+
+return 0;
+}
+
 
 /** @brief Read a line of the configuration file to check if there is a rewrite parameter
  *

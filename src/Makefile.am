@@ -15,7 +15,9 @@ mumudvb_SOURCES = autoconf.c crc32.c dvb.h log.c log.h multicast.c mumudvb.h net
 		  rtp.h sap.h ts.h tune.h unicast_http.h autoconf.h dvb.c errors.h \
 		  mumudvb.c mumudvb_common.c network.c rewrite_pat.c rewrite.c rewrite_sdt.c rewrite_eit.c \
 		  rtp.c sap.c ts.c tune.c unicast_http.c unicast_queue.c autoconf_sdt.c autoconf_atsc.c \
-		  autoconf_pmt.c autoconf_nit.c unicast_clients.c unicast_monit.c
+		  autoconf_pmt.c autoconf_nit.c unicast_clients.c unicast_monit.c mumudvb_channels.c \
+		  autoconf_pat.c
+
 mumudvb_LDADD = -lm
 
 if BUILD_CAMSUPPORT

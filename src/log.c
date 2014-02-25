@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <syslog.h>
 #include <errno.h>
 #include <linux/dvb/version.h>
@@ -206,6 +207,28 @@ char *priorities(int type)
 	}
 }
 
+/**
+ * @brief Return a string description of the channel status (readyness) flag
+ */
+char *ready_f_to_str(chan_status_t flag)
+{
+	switch(flag)
+	{
+	case REMOVED:
+		return "Channel removed by the provider";
+	case NO_STREAMING:
+		return "Channel not streamed (bad service ID or scrambled)";
+	case NOT_READY:
+		return "Channel detected but not ready";
+	case ALMOST_READY:
+		return "Channel almost ready";
+	case READY:
+	case READY_EXISTING:
+		return "Channel ready";
+	default:
+		return "";
+	}
+}
 
 /**
  * @brief Sync_log for logrotate
@@ -378,12 +401,24 @@ void log_streamed_channels(char *log_module,int number_of_channels, mumudvb_chan
 {
 	int curr_channel;
 	int curr_pid;
+	int num_chan_ready=0;
 
-	log_message( log_module,  MSG_INFO, "Diffusion %d channel%s\n", number_of_channels,
+	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+	{
+		if(channels[curr_channel].channel_ready>=READY)
+			num_chan_ready++;
+	}
+
+	log_message( log_module,  MSG_INFO, "Diffusion %d channel%s\n", num_chan_ready,
 			(number_of_channels <= 1 ? "" : "s"));
 	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	{
-		log_message( log_module,  MSG_INFO, "Channel number : %3d, name : \"%s\"  service id %d \n", curr_channel, channels[curr_channel].name, channels[curr_channel].service_id);
+		if(channels[curr_channel].channel_ready<READY)
+			continue;
+		log_message( log_module,  MSG_INFO, "Channel number : %3d,   service id %d  name : \"%s\"",
+				curr_channel,
+				channels[curr_channel].service_id,
+				channels[curr_channel].name);
 		if(multicast_ipv4)
 		{
 			log_message( log_module,  MSG_INFO, "\tMulticast4 ip : %s:%d\n", channels[curr_channel].ip4Out, channels[curr_channel].portOut);
@@ -401,11 +436,11 @@ void log_streamed_channels(char *log_module,int number_of_channels, mumudvb_chan
 		mumu_string_t string=EMPTY_STRING;
 		char lang[5];
 		if(set_interrupted(mumu_string_append(&string, "        pids : ")))return;
-		for (curr_pid = 0; curr_pid < channels[curr_channel].num_pids; curr_pid++)
+		for (curr_pid = 0; curr_pid < channels[curr_channel].pid_i.num_pids; curr_pid++)
 		{
-			strncpy(lang+1,channels[curr_channel].pids_language[curr_pid],4);
+			strncpy(lang+1,channels[curr_channel].pid_i.pids_language[curr_pid],4);
 			lang[0]=(lang[1]=='-') ? '\0': ' ';
-			if(set_interrupted(mumu_string_append(&string, "%d (%s%s), ", channels[curr_channel].pids[curr_pid], pid_type_to_str(channels[curr_channel].pids_type[curr_pid]), lang)))
+			if(set_interrupted(mumu_string_append(&string, "%d (%s%s), ", channels[curr_channel].pid_i.pids[curr_pid], pid_type_to_str(channels[curr_channel].pid_i.pids_type[curr_pid]), lang)))
 				return;
 		}
 		log_message( log_module, MSG_DETAIL,"%s\n",string.string);
@@ -423,9 +458,9 @@ void log_pids(char *log_module, mumudvb_channel_t *channel, int curr_channel)
 
 	mumu_string_t string=EMPTY_STRING;
 	if(set_interrupted(mumu_string_append(&string, "PIDs for channel %d \"%s\" : ",curr_channel, channel->name)))return;
-	for (int curr_pid = 0; curr_pid < channel->num_pids; curr_pid++)
+	for (int curr_pid = 0; curr_pid < channel->pid_i.num_pids; curr_pid++)
 	{
-		if(set_interrupted(mumu_string_append(&string, " %d",channel->pids[curr_pid])))return;
+		if(set_interrupted(mumu_string_append(&string, " %d",channel->pid_i.pids[curr_pid])))return;
 	}
 	log_message( log_module, MSG_DETAIL,"%s\n",string.string);
 	mumu_free_string(&string);
@@ -474,7 +509,7 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
 
 	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 		//We store the old to be sure that we store only channels over the minimum packets limit
-		if (channels[curr_channel].streamed_channel)
+		if (channels[curr_channel].has_traffic)
 		{
 			fprintf (file_streamed_channels, "%s:%d:%s", channels[curr_channel].ip4Out, channels[curr_channel].portOut, channels[curr_channel].name);
 			if (channels[curr_channel].scrambled_channel == FULLY_UNSCRAMBLED)

@@ -80,7 +80,7 @@ int round_up(int x)
  * @param scam_vars the scam parameters
  * @param substring The currrent line
  */
-int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring)
+int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *c_chan, char *substring)
 {
   char delimiteurs[] = CONFIG_FILE_SEPARATOR;
   if (!strcmp (substring, "scam_support"))
@@ -100,7 +100,7 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
   {
     substring = strtok (NULL, delimiteurs);
     scam_vars->ring_buffer_default_size = round_up(atoi(substring));
-    log_message( log_module,  MSG_DEBUG, "Ring buffer default size set to %llu\n",scam_vars->ring_buffer_default_size);
+    log_message( log_module,  MSG_DEBUG, "Ring buffer default size set to %llu",(long long unsigned int)scam_vars->ring_buffer_default_size);
 
   }
   else if (!strcmp (substring, "decsa_default_delay"))
@@ -118,60 +118,60 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
 
   else if (!strcmp (substring, "oscam"))
   {
-    if ( ip_ok == 0)
+    if ( c_chan == NULL )
     {
       log_message( log_module,  MSG_ERROR,
-                   "oscam : You have to start a channel first (using ip= or channel_next)\n");
+                   "oscam : You have to start a channel first (using new_channel)\n");
       return -1;
     }
     substring = strtok (NULL, delimiteurs);
-    current_channel->scam_support = atoi (substring);
-  if (current_channel->scam_support) {
-    current_channel->need_scam_ask=CAM_NEED_ASK;
-    current_channel->ring_buffer_size=scam_vars->ring_buffer_default_size;
-    current_channel->decsa_delay=scam_vars->decsa_default_delay;
-    current_channel->send_delay=scam_vars->send_default_delay;
+    c_chan->scam_support = atoi (substring);
+  if (c_chan->scam_support) {
+    c_chan->need_scam_ask=CAM_NEED_ASK;
+    c_chan->ring_buffer_size=scam_vars->ring_buffer_default_size;
+    c_chan->decsa_delay=scam_vars->decsa_default_delay;
+    c_chan->send_delay=scam_vars->send_default_delay;
   }
   }
   else if (!strcmp (substring, "ring_buffer_size"))
   {
-    if ( ip_ok == 0)
+    if ( c_chan == NULL)
     {
       log_message( log_module,  MSG_ERROR,
-                   "oscam : You have to start a channel first (using ip= or channel_next)\n");
+                   "ring_buffer_size : You have to start a channel first (using new_channel)\n");
       return -1;
     }
     substring = strtok (NULL, delimiteurs);
-    current_channel->ring_buffer_size = round_up(atoi (substring));
+    c_chan->ring_buffer_size = round_up(atoi (substring));
   }
   else if (!strcmp (substring, "decsa_delay"))
   {
-    if ( ip_ok == 0)
+    if ( c_chan == NULL)
     {
       log_message( log_module,  MSG_ERROR,
-                   "oscam : You have to start a channel first (using ip= or channel_next)\n");
+                   "decsa_delay : You have to start a channel first (using new_channel)\n");
       return -1;
     }
     substring = strtok (NULL, delimiteurs);
-    current_channel->decsa_delay = atoi (substring);
-  if (current_channel->decsa_delay > 10000000)
-    current_channel->decsa_delay = 10000000;
+    c_chan->decsa_delay = atoi (substring);
+  if (c_chan->decsa_delay > 10000000)
+    c_chan->decsa_delay = 10000000;
   }
   else if (!strcmp (substring, "send_delay"))
   {
-    if ( ip_ok == 0)
+    if ( c_chan == NULL)
     {
       log_message( log_module,  MSG_ERROR,
-                   "oscam : You have to start a channel first (using ip= or channel_next)\n");
+                   "send_delay : You have to start a channel first (using new_channel)\n");
       return -1;
     }
     substring = strtok (NULL, delimiteurs);
-    current_channel->send_delay = atoi (substring);
+    c_chan->send_delay = atoi (substring);
   }
   else
-    return 0; //Nothing concerning cam, we return 0 to explore the other possibilities
+    return 0; //Nothing concerning scam, we return 0 to explore the other possibilities
 
-  return 1;//We found something for cam, we tell main to go for the next line
+  return 1;//We found something for scam, we tell main to go for the next line
 
 }
 
@@ -190,10 +190,15 @@ int scam_init_no_autoconf(scam_parameters_t *scam_vars, mumudvb_channel_t *chann
   if (scam_vars->scam_support){
     for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
     {
-      if (channels[curr_channel].scam_support==1 && channels[curr_channel].num_pids>1) {
-        channels[curr_channel].pmt_pid=channels[curr_channel].pids[0];
-        channels[curr_channel].pids_type[0]=PID_PMT;
-        snprintf(channels[curr_channel].pids_language[0],4,"%s","---");
+      if (channels[curr_channel].scam_support==1 && channels[curr_channel].pid_i.num_pids>1) {
+    	  if(!channels[curr_channel].pid_i.pmt_pid)
+    	  {
+    		  log_message( log_module,  MSG_WARN,
+    		                     "channel %d with SCAM support and no PMT set, assuming first PID (%d) as PMT",curr_channel,channels[curr_channel].pid_i.pids[0]);
+    		  channels[curr_channel].pid_i.pmt_pid=channels[curr_channel].pid_i.pids[0];
+    		  channels[curr_channel].pid_i.pids_type[0]=PID_PMT;
+    		  snprintf(channels[curr_channel].pid_i.pids_language[0],4,"%s","---");
+    	  }
         ++scam_vars->need_pmt_get;
         channels[curr_channel].need_pmt_get=1;
       }
@@ -204,37 +209,7 @@ int scam_init_no_autoconf(scam_parameters_t *scam_vars, mumudvb_channel_t *chann
 
 }
 
-/** @brief pmt get for scam descrambled channels
- *
- */
-int scam_new_packet(int pid, unsigned char *ts_packet, scam_parameters_t *scam_vars, mumudvb_channel_t *channels)
-{
-  int curr_channel;
 
-  if(scam_vars->need_pmt_get) //We have the channels and their PMT, we search the other pids
-  {
-    for(curr_channel=0;curr_channel<MAX_CHANNELS;curr_channel++)
-    {
-      if((channels[curr_channel].pmt_pid==pid)&& pid && channels[curr_channel].scam_support && channels[curr_channel].need_pmt_get )
-      {
-        if(get_ts_packet(ts_packet,channels[curr_channel].pmt_packet))
-        {
-          if(check_pmt_service_id(channels[curr_channel].pmt_packet, &channels[curr_channel])) {
-            --scam_vars->need_pmt_get;
-            channels[curr_channel].need_pmt_get=0;
-            log_message(log_module,MSG_DEBUG,"Got pmt for channel %s\n", channels[curr_channel].name);
-            pthread_mutex_lock(&channels[curr_channel].scam_pmt_packet->packetmutex);
-            channels[curr_channel].scam_pmt_packet->len_full = channels[curr_channel].pmt_packet->len_full;
-            memcpy(channels[curr_channel].scam_pmt_packet->data_full, channels[curr_channel].pmt_packet->data_full, channels[curr_channel].pmt_packet->len_full);
-            pthread_mutex_unlock(&channels[curr_channel].scam_pmt_packet->packetmutex);
-          } else log_message(log_module,MSG_DEBUG,"pmt not for channel %s\n", channels[curr_channel].name);
-        }
-      }
-    }
-  }
-  return 0;
-
-}
 
 /** @brief create ring buffer and threads for sending and descrambling
  *
@@ -250,10 +225,18 @@ int scam_channel_start(mumudvb_channel_t *channel)
   }
   memset (channel->ring_buf, 0, sizeof( ring_buffer_t));//we clear it
   
-  channel->ring_buf->data=malloc(channel->ring_buffer_size*TS_PACKET_SIZE);
+  channel->ring_buf->data=malloc(channel->ring_buffer_size*sizeof(char *));
   if (channel->ring_buf->data == NULL) {
     log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     return ERROR_MEMORY<<8;
+  }
+  for ( i = 0; i< channel->ring_buffer_size; i++)
+  {
+    channel->ring_buf->data[i]=malloc(TS_PACKET_SIZE*sizeof(char));
+    if (channel->ring_buf->data[i] == NULL) {
+      log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+      return ERROR_MEMORY<<8;
+    }
   }
   channel->ring_buf->time_send=malloc(channel->ring_buffer_size * sizeof(uint64_t));
   if (channel->ring_buf->time_send == NULL) {
@@ -279,6 +262,10 @@ void scam_channel_stop(mumudvb_channel_t *channel)
   uint64_t i;
   scam_send_stop(channel);
   scam_decsa_stop(channel);
+  for ( i = 0; i< channel->ring_buffer_size; i++)
+  {
+    free(channel->ring_buf->data[i]);
+  }
   free(channel->ring_buf->data);
   free(channel->ring_buf->time_send);
   free(channel->ring_buf->time_decsa);

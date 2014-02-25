@@ -203,7 +203,7 @@ int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *chann
 
 void unicast_freeing(unicast_parameters_t *unicast_vars);
 
-int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
+int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_channel_t *c_chan, char *substring);
 
 void unicast_data_send(mumudvb_channel_t *actual_channel,  fds_t *fds, unicast_parameters_t *unicast_vars);
 
