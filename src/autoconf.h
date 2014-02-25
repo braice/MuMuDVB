@@ -38,9 +38,7 @@
 
 /**No autoconfiguration, only send specified PIDs */
 #define AUTOCONF_MODE_NONE 0
-/**find the audio and video pids from the PMT*/
-#define AUTOCONF_MODE_PIDS 1
-/**find the pmt pids and the channels from the pat, and go to AUTOCONF_MODE_PIDS*/
+/**find everything */
 #define AUTOCONF_MODE_FULL 2
 /**parse the NIT*/
 #define AUTOCONF_MODE_NIT 4
@@ -54,8 +52,6 @@
 typedef struct mumudvb_service_t{
 	/**The channel name*/
 	char name[MAX_NAME_LEN];
-	/**Is the channel running ? Not used for the moment*/
-	int running_status;
 	/**The service type : television, radio, data, ...*/
 	int type;
 	/**The PMT pid of the service*/
@@ -70,15 +66,9 @@ typedef struct mumudvb_service_t{
 
 /**@brief The different parameters used for autoconfiguration*/
 typedef struct auto_p_t{
-	pthread_mutex_t lock;
 	/**Do we use autoconfiguration ?
-
 Possible values for this variable
-
- 0 : none (or autoconf finished)
-
- AUTOCONF_MODE_PIDS : we have the PMT pids and the channels, we search the audio and video
-
+ 0 : none
  AUTOCONF_MODE_FULL : we have only the tuning parameters, we search the channels and their pmt pids*/
 	int autoconfiguration;
 	/**do we autoconfigure the radios ?*/
@@ -96,11 +86,29 @@ Possible values for this variable
 	int autoconf_pid_update;
 	//Different packets used by autoconfiguration
 	mumudvb_ts_packet_t *autoconf_temp_pat;
+	int pat_need_update;
+	int pat_version;
+	int pat_sections_seen[256];
+	int pat_all_sections_seen;
 	mumudvb_ts_packet_t *autoconf_temp_sdt;
+	int sdt_need_update;
+	int sdt_version;
+	int sdt_all_sections_seen;
+	int sdt_sections_seen[256];
 	mumudvb_ts_packet_t *autoconf_temp_nit;
+	int nit_need_update;
+	int nit_version;
+	int nit_all_sections_seen;
+	int nit_sections_seen[256];
 	/**For ATSC Program and System Information Protocol*/
 	mumudvb_ts_packet_t *autoconf_temp_psip;
-	mumudvb_service_t   *services;
+	int psip_need_update;
+	int psip_version;
+	int psip_all_sections_seen;
+	int psip_sections_seen[256];
+	//Tell if we added or removed PIDs and we need to update some card filters or file descriptors
+	//We also update the filters and the chan
+	int need_filter_chan_update;
 
 	/**the http unicast port (string with %card %number, * and + ) */
 	char autoconf_unicast_port[256];
@@ -118,7 +126,7 @@ Possible values for this variable
 
 
 void init_aconf_v(auto_p_t *aconf_p);
-int autoconf_init(auto_p_t *auto_p, mumudvb_channel_t *channels,int number_of_channels);
+int autoconf_init(auto_p_t *auto_p);
 void autoconf_freeing(auto_p_t *);
 int read_autoconfiguration_configuration(auto_p_t *auto_p, char *substring);
 int autoconf_new_packet(int pid, unsigned char *ts_packet, auto_p_t *auto_p, fds_t *fds, mumu_chan_p_t *chan_p, tune_p_t *tune_p, multi_p_t *multi_p,  unicast_parameters_t *unicast_vars, int server_id, void *scam_vars);

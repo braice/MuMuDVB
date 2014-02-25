@@ -145,6 +145,21 @@ typedef enum option_status {
 	OPTION_ON
 } option_status_t;
 
+/** Enum to tell if a channel parameter is user set or autodetected, to avoid erasing of user set params*/
+typedef enum mumu_f {
+	F_UNDEF,
+	F_USER,
+	F_DETECTED
+} mumu_f_t;
+
+
+//Macro helpers to specify if a channel variable is UNDEF:USER_DEFINED:AUTODETECTED
+#define MU_F_V(type, x) type x; mumu_f_t x##_f;
+#define MU_F_T(x) mumu_f_t x##_f;
+#define MU_F(x) x##_f
+
+
+
 
 /** The different PID types*/
 enum
@@ -190,7 +205,7 @@ typedef struct {
 	/** A mutex protecting all the other members. */
 	pthread_mutex_t lock;
 	/** Buffer with dvb packets*/
-	unsigned char * data;
+	unsigned char ** data;
 	/** Write index of buffer */
 	unsigned int write_idx;
 	/** Buffer with descrambling timestamps*/
@@ -237,41 +252,9 @@ typedef struct card_buffer_t{
 }card_buffer_t;
 
 
-
-
-struct unicast_client_t;
-/** @brief Structure for storing channels
- *
- * All members are protected by the global lock in chan_p, with the
- * following exceptions:
- *
- *  - The EIT variables, since they are only ever accessed from the main thread. 
- *  - buf/nb_bytes, since they are only ever accessed from one thread: SCAM_SEND
- *    if we are using scam, or the main thread otherwise.
- *    (XXX: autoconf is the exception, we should look into whether that can happen
- *    without the thread being shut down first)
- *  - the odd/even keys, since they have their own locking.
- */
-typedef struct mumudvb_channel_t{
-	/** Mutex for statistics counters. */
-	pthread_mutex_t stats_lock;
-	/** The logical channel number*/
-	int logical_channel_number;
-	/**Tell the total packet number (without pmt) for the scrambling ratio and up/down detection*/
-	int num_packet;
-	/**Tell the scrambled packet number (without pmt) for the scrambling ratio*/
-	int num_scrambled_packets;
-	/**tell if this channel is actually streamed*/
-	int streamed_channel;
-	/**Ratio of scrambled packet versus all packets*/
-	int ratio_scrambled;
-
-
-	/**Tell if at least one of the PID related to the chanel is scrambled*/
-	int scrambled_channel;
-	/**the channel name*/
-	char name[MAX_NAME_LEN];
-
+typedef struct pid_i_t{
+	/* The flag for the PIDs*/
+	mumu_f_t pid_f;
 	/**the channel pids*/
 	int pids[MAX_PIDS];
 	/**the channel pids type (PMT, audio, video etc)*/
@@ -284,34 +267,93 @@ typedef struct mumudvb_channel_t{
 	char pids_scrambled[MAX_PIDS];
 	/**number of channel pids*/
 	int num_pids;
-
-	/** Channel Type (Radio, TV, etc) / service type*/
-	int channel_type;
-	/**Transport stream ID*/
-	int service_id;
-	/**pmt pid number*/
-	int pmt_pid;
+	/**PMT PID number*/
+	MU_F_V(int,pmt_pid)
 	/**PCR PID number*/
 	int pcr_pid;
+}pid_i_t;
+
+struct unicast_client_t;
+
+
+//Channel status, for autoconfiguration
+typedef enum chan_status {
+	REMOVED=-3,			//Service removed from the PAT (we keep them in case they become up again)
+	NO_STREAMING,		//Service not streaming, (eg bad service ID)
+	NOT_READY,			//Service not ready, we just autodetected it
+	ALMOST_READY,		//Service OK but network is down for example
+	READY,				//Service OK and streaming (first flag >0)
+	READY_EXISTING,		//Service OK, flag for detecting removed services
+} chan_status_t;
+
+/** @brief Structure for storing channels
+ *
+ * All members are protected by the global lock in chan_p, with the
+ * following exceptions:
+ *
+ *  - The EIT variables, since they are only ever accessed from the main thread. 
+ *  - buf/nb_bytes, since they are only ever accessed from one thread: SCAM_SEND
+ *    if we are using scam, or the main thread otherwise.
+ *  - the odd/even keys, since they have their own locking.
+ */
+typedef struct mumu_chan_t{
+
+	/** Flag to say the channel is ready for streaming */
+	chan_status_t channel_ready;
+
+
+	/** Mutex for statistics counters. */
+	pthread_mutex_t stats_lock;
+
+	//TODO : structure stats
+	/** The logical channel number*/
+	int logical_channel_number;
+	/**Tell the total packet number (without pmt) for the scrambling ratio and up/down detection*/
+	int num_packet;
+	/**Tell the scrambled packet number (without pmt) for the scrambling ratio*/
+	int num_scrambled_packets;
+	/**tell if this channel is actually streamed ie packets are going out*/
+	int has_traffic;
+	/**Ratio of scrambled packet versus all packets*/
+	int ratio_scrambled;
+
+
+	/**Tell if at least one of the PID related to the channel is scrambled*/
+	int scrambled_channel;
+	/**the channel name*/
+	char user_name[MAX_NAME_LEN];
+	char name[MAX_NAME_LEN];
+	MU_F_T(name);
+	char service_name[MAX_NAME_LEN];
+
+	/* The PID information for this channel*/
+	pid_i_t pid_i;
+
+	/** The service Type from the SDT */
+	int service_type;
+	/**Transport stream ID*/
+	MU_F_V(int,service_id);
+
 	/**Say if we need to ask this channel to the cam*/
-	int need_cam_ask;
+	MU_F_V(int,need_cam_ask);
 	/** When did we asked the channel to the CAM */
 	long cam_asking_time;
 	/**The ca system ids*/
 	int ca_sys_id[32];
+	//CAM and softcam
+	int free_ca_mode;
+
+	/**The PMT packet*/
+	mumudvb_ts_packet_t *pmt_packet;
 	/** The version of the pmt */
 	int pmt_version;
 	/** Do the pmt needs to be updated ? */
-	int pmt_needs_update;
-	/**The PMT packet*/
-	mumudvb_ts_packet_t *pmt_packet;
-#ifdef ENABLE_CAM_SUPPORT
-	/** The PMT packet for CAM purposes*/
-	mumudvb_ts_packet_t *cam_pmt_packet;
-#endif
+	int pmt_need_update;
+	/** Tells if the PMT was updated and autoconf nneds to read it */
+	int autoconf_pmt_need_update;
+
+
 #ifdef ENABLE_SCAM_SUPPORT
-        /** The PMT packet for SCAM purposes*/
-        mumudvb_ts_packet_t *scam_pmt_packet;
 	/** The camd socket for SCAM*/
 	int camd_socket;
 	/** Say if we need to ask this channel to the oscam*/
@@ -370,23 +412,23 @@ typedef struct mumudvb_channel_t{
 	int nb_bytes;
 	/**The data sent to this channel*/
 	long sent_data;
-
 	/** The packet number for rtp*/
 	int rtp_packet_num;
 
-	/**is the channel autoconfigurated ?*/
-	int autoconfigurated;
+
 
 	/**The multicast ip address*/
 	char ip4Out[20];
+	MU_F_T(ip4Out)
 	/**The multicast port*/
-	int portOut;
+	MU_F_V(int,portOut)
 	/**The multicast output socket*/
 	struct sockaddr_in sOut4;
 	/**The multicast output socket*/
 	int socketOut4;
 	/**The ipv6 multicast ip address*/
 	char ip6Out[IPV6_CHAR_LEN];
+	MU_F_T(ip6Out)
 	/**The multicast output socket*/
 	struct sockaddr_in6 sOut6;
 	/**The multicast output socket*/
@@ -396,7 +438,7 @@ typedef struct mumudvb_channel_t{
 	/**Unicast clients*/
 	struct unicast_client_t *clients;
 	/**Unicast port (listening socket per channel) */
-	int unicast_port;
+	MU_F_V(int,unicast_port)
 	/**Unicast listening socket*/
 	struct sockaddr_in sIn;
 	/**Unicast listening socket*/
@@ -404,13 +446,16 @@ typedef struct mumudvb_channel_t{
 
 	/**The sap playlist group*/
 	char sap_group[SAP_GROUP_LENGTH];
+	MU_F_T(sap_group);
+	//do we need to update the SAP announce (typically a name change)
+	int sap_need_update;
 
 	/**The generated pat to be sent*/
-	unsigned char generated_pat[TS_PACKET_SIZE]; /**@todo: allocate dynamically*/
+	unsigned char generated_pat[TS_PACKET_SIZE];
 	/** The version of the generated pat */
 	int generated_pat_version;
 	/**The generated sdt to be sent*/
-	unsigned char generated_sdt[TS_PACKET_SIZE]; /**@todo: allocate dynamically*/
+	unsigned char generated_sdt[TS_PACKET_SIZE];
 	/** The version of the generated sdt */
 	int generated_sdt_version;
 	/** If there is no service id for the channel found, we skip sdt rewrite */
@@ -477,8 +522,6 @@ typedef struct mumu_chan_p_t{
 	//Asked pids //used for filtering
 	/** this array contains the pids we want to filter,*/
 	uint8_t asked_pid[8193];
-	/** the number of channels who want this pid (used by autoconfiguration update)*/
-	uint8_t number_chan_asked_pid[8193];
 	/** The number of TS discontinuities per PID **/
 	int16_t continuity_counter_pid[8193]; //on 16 bits for storing the initial -1
 	uint8_t check_cc;
@@ -523,7 +566,10 @@ uint64_t get_time(void);
 void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multi_p_t *multi_p, void *scam_vars_v, fds_t *fds);
 void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multi_p_t *multi_p, fds_t *fds);
 
-
+int mumu_init_chan(mumudvb_channel_t *chan);
+void chan_update_CAM(mumu_chan_p_t *chan_p, struct auto_p_t *auto_p,  void *scam_vars_v);
+void chan_update_net(mumu_chan_p_t *chan_p, struct auto_p_t *auto_p, multi_p_t *multi_p, struct unicast_parameters_t *unicast_vars, int server_id, int card, int tuner, fds_t *fds);
+void update_chan_filters(mumu_chan_p_t *chan_p, char *card_base_path, int tuner, fds_t *fds);
 long int mumu_timing();
 
 /** Sets the interrupted flag if value != 0 and it is not already set.

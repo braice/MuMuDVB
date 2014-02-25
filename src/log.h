@@ -124,5 +124,5 @@ void sync_logs();
 char *running_status_to_str(int running_status);
 int convert_en300468_string(char *string, int max_len);
 void show_CA_identifier_descriptor(unsigned char *buf);
-
+char *ready_f_to_str(chan_status_t flag);
 #endif

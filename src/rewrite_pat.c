@@ -150,17 +150,17 @@ int pat_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
 			if((buf_dest_pos+PAT_PROG_LEN+4<TS_PACKET_SIZE) &&
 					(!channel->service_id || (channel->service_id == HILO(prog->program_number)) ))
 			{
-				for(i=0;i<channel->num_pids;i++)
-					if(channel->pids[i]==HILO(prog->network_pid))
+				for(i=0;i<channel->pid_i.num_pids;i++)
+					if(channel->pid_i.pids[i]==HILO(prog->network_pid))
 					{
 						if(buf_dest_pos+PAT_PROG_LEN+4+1>TS_PACKET_SIZE) //The +4 is for CRC32 +1 is because indexing starts at 0
 						{
 							log_message( log_module, MSG_WARN,"The generated PAT is too big for channel %d : \"%s\", we skip the other pids/programs\n", curr_channel, channel->name);
-							i=channel->num_pids;
+							i=channel->pid_i.num_pids;
 						}
 						else
 						{
-							log_message( log_module, MSG_DETAIL,"NEW program for channel %d : \"%s\". PMT pid : %d\n", curr_channel, channel->name,channel->pids[i]);
+							log_message( log_module, MSG_DETAIL,"NEW program for channel %d : \"%s\". PMT pid : %d\n", curr_channel, channel->name,channel->pid_i.pids[i]);
 							/*we found a announce for a PMT PID in our stream, we keep it*/
 							memcpy(buf_dest+buf_dest_pos,rewrite_vars->full_pat->data_full+delta,PAT_PROG_LEN);
 							buf_dest_pos+=PAT_PROG_LEN;
@@ -219,7 +219,7 @@ int pat_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
 }
 
 /** @brief This function is called when a new PAT packet for all channels is there and we asked for rewrite
- * this function save the full PAT wich will be the source PAT for all the channels
+ * this function save the full PAT which will be the source PAT for all the channels
  */
 void pat_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars)
 {
@@ -268,7 +268,9 @@ int pat_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_
 	{
 		/*We check if it's the first pat packet ? or we send it each time ?*/
 		/*We check if the versions corresponds*/
-		if(!rewrite_vars->pat_needs_update && channel->generated_pat_version!=rewrite_vars->pat_version)//We check the version only if the PAT is not currently updated
+		if(!rewrite_vars->pat_needs_update
+				&& channel->channel_ready>=READY
+				&& channel->generated_pat_version!=rewrite_vars->pat_version)//We check the version only if the PAT is not currently updated
 		{
 			log_message( log_module, MSG_DEBUG,"We need to rewrite the PAT for the channel %d : \"%s\"\n", curr_channel, channel->name);
 			/*They mismatch*/

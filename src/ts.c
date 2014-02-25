@@ -658,7 +658,7 @@ void ts_display_nit_network_descriptors(char* log_module,unsigned char *buf,int 
 
 		if (!descriptor_len)
 		{
-			log_message( log_module, MSG_DEBUG, " --- NIT descriptor --- descriptor_tag == 0x%02x, len is 0\n", descriptor_tag);
+			log_message( log_module, MSG_FLOOD, " --- NIT descriptor --- descriptor_tag == 0x%02x, len is 0\n", descriptor_tag);
 			break;
 		}
 
@@ -694,13 +694,13 @@ void ts_display_network_name_descriptor(char* log_module,unsigned char *buf)
 	unsigned char descriptor_len = buf[1];
 	buf += 2;
 
-	log_message( log_module, MSG_DEBUG, "NIT network name descriptor \n");
+	log_message( log_module, MSG_FLOOD, "NIT network name descriptor \n");
 	log_message( log_module, MSG_FLOOD, "NIT network descriptor_len %d\n",descriptor_len);
 	dest=malloc(sizeof(char)*(descriptor_len+1));
 	memcpy (dest, buf, descriptor_len);
 	dest[descriptor_len] = '\0';
 	convert_en300468_string(dest,descriptor_len);
-	log_message( log_module, MSG_DEBUG, "network name : \"%s\"\n", dest);
+	log_message( log_module, MSG_FLOOD, "network name : \"%s\"\n", dest);
 	free(dest);
 
 }
@@ -770,14 +770,14 @@ void ts_display_service_list_descriptor(char* log_module,unsigned char *buf)
 	int i,service_id,service_type;
 	unsigned char descriptor_len = buf[1];
 	buf += 2;
-	log_message( log_module, MSG_DETAIL, "--- NIT descriptor --- Service list descriptor\n");
+	log_message( log_module, MSG_FLOOD, "--- NIT descriptor --- Service list descriptor\n");
 	for(i=0;i<descriptor_len;i+=3)
 	{
 		service_id=(buf[i]<<8)+buf[i+1];;
 		service_type=buf[i+2];
-		log_message( log_module, MSG_DETAIL, "Service ID : 0x%02x service type: 0x%02x : %s \n",service_id, service_type, service_type_to_str(service_type));
+		log_message( log_module, MSG_FLOOD, "Service ID : 0x%02x service type: 0x%02x : %s \n",service_id, service_type, service_type_to_str(service_type));
 	}
-	log_message( log_module, MSG_DETAIL, "--- descriptor done ---\n");
+	log_message( log_module, MSG_FLOOD, "--- descriptor done ---\n");
 }
 
 
@@ -789,124 +789,124 @@ void ts_display_satellite_delivery_system_descriptor(char* log_module, unsigned 
 	descr_sat_delivery_t *descr;
 	descr=(descr_sat_delivery_t *)buf;
 
-	log_message( log_module, MSG_DETAIL, "--- NIT descriptor --- satellite delivery system descriptor\n");
+	log_message( log_module, MSG_FLOOD, "--- NIT descriptor --- satellite delivery system descriptor\n");
 
 	// The frequency is a 32-bit field giving the 4-bit BCD values specifying 8 characters of the frequency value.
-	log_message( log_module, MSG_DETAIL, "Frequency: %x%02x%02x.%02x MHz", descr->frequency_4, descr->frequency_3, descr->frequency_2, descr->frequency_1);
-	log_message( log_module, MSG_DETAIL, "Orbital position: %d%01d,%01d°", descr->orbital_position_hi,(descr->orbital_position_lo>>4)&0x0f, descr->orbital_position_lo&0x0f);
+	log_message( log_module, MSG_FLOOD, "Frequency: %x%02x%02x.%02x MHz", descr->frequency_4, descr->frequency_3, descr->frequency_2, descr->frequency_1);
+	log_message( log_module, MSG_FLOOD, "Orbital position: %d%01d,%01d°", descr->orbital_position_hi,(descr->orbital_position_lo>>4)&0x0f, descr->orbital_position_lo&0x0f);
 	if(descr->west_east_flag)
-		log_message( log_module, MSG_DETAIL, "Estern position");
+		log_message( log_module, MSG_FLOOD, "Estern position");
 	else
-		log_message( log_module, MSG_DETAIL, "Western position");
+		log_message( log_module, MSG_FLOOD, "Western position");
 	switch(descr->polarization)
 	{
-	log_message( log_module, MSG_DETAIL, "Polarization: (0x%02x)", descr->polarization);
+	log_message( log_module, MSG_FLOOD, "Polarization: (0x%02x)", descr->polarization);
 	case 0:
-		log_message( log_module, MSG_DETAIL, "Polarization: linear - horizontal");
+		log_message( log_module, MSG_FLOOD, "Polarization: linear - horizontal");
 		break;
 	case 1:
-		log_message( log_module, MSG_DETAIL, "Polarization: linear - vertical");
+		log_message( log_module, MSG_FLOOD, "Polarization: linear - vertical");
 		break;
 	case 2:
-		log_message( log_module, MSG_DETAIL, "Polarization: circular - left");
+		log_message( log_module, MSG_FLOOD, "Polarization: circular - left");
 		break;
 	case 3:
-		log_message( log_module, MSG_DETAIL, "Polarization: circular - right");
+		log_message( log_module, MSG_FLOOD, "Polarization: circular - right");
 		break;
 	default:
-		log_message( log_module, MSG_DETAIL, "Polarization: BUG");
+		log_message( log_module, MSG_FLOOD, "Polarization: BUG");
 		break;
 	}
 	if(descr->modulation_system)
-		log_message( log_module, MSG_DETAIL, "Modulation system: DVB-S2");
+		log_message( log_module, MSG_FLOOD, "Modulation system: DVB-S2");
 	else
-		log_message( log_module, MSG_DETAIL, "Modulation system: DVB-S");
+		log_message( log_module, MSG_FLOOD, "Modulation system: DVB-S");
 	if(descr->modulation_system) {
 		switch(descr->roll_off) {
 		case 0:
-			log_message( log_module, MSG_DETAIL, "Roll-off factor: α = 0,35");
+			log_message( log_module, MSG_FLOOD, "Roll-off factor: α = 0,35");
 			break;
 		case 1:
-			log_message( log_module, MSG_DETAIL, "Roll-off factor: α = 0,25");
+			log_message( log_module, MSG_FLOOD, "Roll-off factor: α = 0,25");
 			break;
 		case 2:
-			log_message( log_module, MSG_DETAIL, "Roll-off factor: α = 0,20");
+			log_message( log_module, MSG_FLOOD, "Roll-off factor: α = 0,20");
 			break;
 		case 3:
-			log_message( log_module, MSG_DETAIL, "Roll-off factor: reserved");
+			log_message( log_module, MSG_FLOOD, "Roll-off factor: reserved");
 			break;
 		default:
-			log_message( log_module, MSG_DETAIL, "Roll-off factor: BUG");
+			log_message( log_module, MSG_FLOOD, "Roll-off factor: BUG");
 			break;
 		}
 	}
 	switch(descr->modulation_type)
 	{
 	case 0:
-		log_message( log_module, MSG_DETAIL, "Constellation: Auto");
+		log_message( log_module, MSG_FLOOD, "Constellation: Auto");
 		break;
 	case 1:
-		log_message( log_module, MSG_DETAIL, "Constellation: QPSK");
+		log_message( log_module, MSG_FLOOD, "Constellation: QPSK");
 		break;
 	case 2:
-		log_message( log_module, MSG_DETAIL, "Constellation: 8PSK");
+		log_message( log_module, MSG_FLOOD, "Constellation: 8PSK");
 		break;
 	case 3:
-		log_message( log_module, MSG_DETAIL, "Constellation: 16-QAM");
+		log_message( log_module, MSG_FLOOD, "Constellation: 16-QAM");
 		break;
 	default:
-		log_message( log_module, MSG_DETAIL, "Constellation: BUG");
+		log_message( log_module, MSG_FLOOD, "Constellation: BUG");
 		break;
 	}
 
-	log_message( log_module, MSG_DETAIL, "Symbol rate: %d%d%d,%d%d%d%d Msymbol/s", BCDHI(descr->symbol_rate_12), BCDLO(descr->symbol_rate_12), BCDHI(descr->symbol_rate_34), BCDLO(descr->symbol_rate_34), BCDHI(descr->symbol_rate_56), BCDLO(descr->symbol_rate_56),  BCDLO(descr->symbol_rate_7) );
+	log_message( log_module, MSG_FLOOD, "Symbol rate: %d%d%d,%d%d%d%d Msymbol/s", BCDHI(descr->symbol_rate_12), BCDLO(descr->symbol_rate_12), BCDHI(descr->symbol_rate_34), BCDLO(descr->symbol_rate_34), BCDHI(descr->symbol_rate_56), BCDLO(descr->symbol_rate_56),  BCDLO(descr->symbol_rate_7) );
 
 	switch(descr->FEC_inner)
 	{
 	case 0:
-		log_message( log_module, MSG_DETAIL, "Inner FEC scheme: not defined");
+		log_message( log_module, MSG_FLOOD, "Inner FEC scheme: not defined");
 		break;
 	case 1:
-		log_message( log_module, MSG_DETAIL, "Inner FEC scheme: 1/2");
+		log_message( log_module, MSG_FLOOD, "Inner FEC scheme: 1/2");
 		break;
 	case 2:
-		log_message( log_module, MSG_DETAIL, "Inner FEC scheme: 2/3");
+		log_message( log_module, MSG_FLOOD, "Inner FEC scheme: 2/3");
 		break;
 	case 3:
-		log_message( log_module, MSG_DETAIL, "Inner FEC scheme: 3/4");
+		log_message( log_module, MSG_FLOOD, "Inner FEC scheme: 3/4");
 		break;
 	case 4:
-		log_message( log_module, MSG_DETAIL, "Inner FEC scheme: 5/6");
+		log_message( log_module, MSG_FLOOD, "Inner FEC scheme: 5/6");
 		break;
 	case 5:
-		log_message( log_module, MSG_DETAIL, "Inner FEC scheme: 7/8");
+		log_message( log_module, MSG_FLOOD, "Inner FEC scheme: 7/8");
 		break;
 	case 6:
-		log_message( log_module, MSG_DETAIL, "Inner FEC scheme: 8/9");
+		log_message( log_module, MSG_FLOOD, "Inner FEC scheme: 8/9");
 		break;
 	case 7:
-		log_message( log_module, MSG_DETAIL, "Inner FEC scheme: 3/5");
+		log_message( log_module, MSG_FLOOD, "Inner FEC scheme: 3/5");
 		break;
 	case 8:
-		log_message( log_module, MSG_DETAIL, "Inner FEC scheme: 4/5");
+		log_message( log_module, MSG_FLOOD, "Inner FEC scheme: 4/5");
 		break;
 	case 9:
-		log_message( log_module, MSG_DETAIL, "Inner FEC scheme: 9/10");
+		log_message( log_module, MSG_FLOOD, "Inner FEC scheme: 9/10");
 		break;
 	case 10:
-		log_message( log_module, MSG_DETAIL, "Inner FEC scheme: Reserved for future use");
+		log_message( log_module, MSG_FLOOD, "Inner FEC scheme: Reserved for future use");
 		break;
 	case 11:
-		log_message( log_module, MSG_DETAIL, "Inner FEC scheme: Reserved for future use");
+		log_message( log_module, MSG_FLOOD, "Inner FEC scheme: Reserved for future use");
 		break;
 	case 12:
-		log_message( log_module, MSG_DETAIL, "Inner FEC scheme: no convolutional coding");
+		log_message( log_module, MSG_FLOOD, "Inner FEC scheme: no convolutional coding");
 		break;
 	default:
-		log_message( log_module, MSG_DETAIL, "Inner FEC scheme: BUG please contact");
+		log_message( log_module, MSG_FLOOD, "Inner FEC scheme: BUG please contact");
 		break;
 	}
-	log_message( log_module, MSG_DETAIL, "--- descriptor done ---\n");
+	log_message( log_module, MSG_FLOOD, "--- descriptor done ---\n");
 }
 
 
@@ -918,114 +918,114 @@ void ts_display_terrestrial_delivery_system_descriptor(char *log_module, unsigne
 	descr_terr_delivery_t *descr;
 	descr=(descr_terr_delivery_t *)buf;
 
-	log_message( log_module, MSG_DETAIL, "--- NIT descriptor --- terrestrial delivery system descriptor\n");
+	log_message( log_module, MSG_FLOOD, "--- NIT descriptor --- terrestrial delivery system descriptor\n");
 
-	log_message( log_module, MSG_DETAIL, "Frequency: %d Hz", ((descr->frequency_4<<24)+(descr->frequency_3<<16)+(descr->frequency_2<<8)+descr->frequency_1) *10 );
+	log_message( log_module, MSG_FLOOD, "Frequency: %d Hz", ((descr->frequency_4<<24)+(descr->frequency_3<<16)+(descr->frequency_2<<8)+descr->frequency_1) *10 );
 	if(descr->bandwidth<=3)
-		log_message( log_module, MSG_DETAIL, "Bandwidth: %d MHz",8-descr->bandwidth);
+		log_message( log_module, MSG_FLOOD, "Bandwidth: %d MHz",8-descr->bandwidth);
 	else
-		log_message( log_module, MSG_DETAIL, "Bandwidth: Reserved for future use");
+		log_message( log_module, MSG_FLOOD, "Bandwidth: Reserved for future use");
 	if(descr->priority)
-		log_message( log_module, MSG_DETAIL, "Priority: HP (high priority)");
+		log_message( log_module, MSG_FLOOD, "Priority: HP (high priority)");
 	else
-		log_message( log_module, MSG_DETAIL, "Priority: LP (low priority)");
-	log_message( log_module, MSG_DETAIL, "Time_Slicing_indicator: %d",descr->Time_Slicing_indicator);
-	log_message( log_module, MSG_DETAIL, "MPE_FEC_indicator: %d",descr->MPE_FEC_indicator );
+		log_message( log_module, MSG_FLOOD, "Priority: LP (low priority)");
+	log_message( log_module, MSG_FLOOD, "Time_Slicing_indicator: %d",descr->Time_Slicing_indicator);
+	log_message( log_module, MSG_FLOOD, "MPE_FEC_indicator: %d",descr->MPE_FEC_indicator );
 	switch(descr->constellation)
 	{
 	case 0:
-		log_message( log_module, MSG_DETAIL, "Constellation: QPSK");
+		log_message( log_module, MSG_FLOOD, "Constellation: QPSK");
 		break;
 	case 1:
-		log_message( log_module, MSG_DETAIL, "Constellation: 16-QAM");
+		log_message( log_module, MSG_FLOOD, "Constellation: 16-QAM");
 		break;
 	case 2:
-		log_message( log_module, MSG_DETAIL, "Constellation: 64-QAM");
+		log_message( log_module, MSG_FLOOD, "Constellation: 64-QAM");
 		break;
 	case 3:
-		log_message( log_module, MSG_DETAIL, "Constellation: RFU");
+		log_message( log_module, MSG_FLOOD, "Constellation: RFU");
 		break;
 	default:
-		log_message( log_module, MSG_DETAIL, "Constellation: BUG");
+		log_message( log_module, MSG_FLOOD, "Constellation: BUG");
 		break;
 	}
 	switch(descr->hierarchy_information)
 	{
 	case 0:
-		log_message( log_module, MSG_DETAIL, "hierarchy_information: non-hierarchical, native interleaver");
+		log_message( log_module, MSG_FLOOD, "hierarchy_information: non-hierarchical, native interleaver");
 		break;
 	case 1:
-		log_message( log_module, MSG_DETAIL, "hierarchy_information: α = 1, native interleaver");
+		log_message( log_module, MSG_FLOOD, "hierarchy_information: α = 1, native interleaver");
 		break;
 	case 2:
-		log_message( log_module, MSG_DETAIL, "hierarchy_information: α = 2, native interleaver");
+		log_message( log_module, MSG_FLOOD, "hierarchy_information: α = 2, native interleaver");
 		break;
 	case 3:
-		log_message( log_module, MSG_DETAIL, "hierarchy_information: α = 4, native interleaver");
+		log_message( log_module, MSG_FLOOD, "hierarchy_information: α = 4, native interleaver");
 		break;
 	case 4:
-		log_message( log_module, MSG_DETAIL, "hierarchy_information: non-hierarchical, in-depth interleaver");
+		log_message( log_module, MSG_FLOOD, "hierarchy_information: non-hierarchical, in-depth interleaver");
 		break;
 	case 5:
-		log_message( log_module, MSG_DETAIL, "hierarchy_information: α = 1, in-depth interleaver");
+		log_message( log_module, MSG_FLOOD, "hierarchy_information: α = 1, in-depth interleaver");
 		break;
 	case 6:
-		log_message( log_module, MSG_DETAIL, "hierarchy_information: α = 2, in-depth interleaver");
+		log_message( log_module, MSG_FLOOD, "hierarchy_information: α = 2, in-depth interleaver");
 		break;
 	case 7:
-		log_message( log_module, MSG_DETAIL, "hierarchy_information: α = 4, in-depth interleaver");
+		log_message( log_module, MSG_FLOOD, "hierarchy_information: α = 4, in-depth interleaver");
 		break;
 	default:
-		log_message( log_module, MSG_DETAIL, "hierarchy_information: BUG please contact");
+		log_message( log_module, MSG_FLOOD, "hierarchy_information: BUG please contact");
 		break;
 	}
 
 	switch(descr->code_rate_HP_stream)
 	{
 	case 0:
-		log_message( log_module, MSG_DETAIL, "code_rate_HP_stream: 1/2");
+		log_message( log_module, MSG_FLOOD, "code_rate_HP_stream: 1/2");
 		break;
 	case 1:
-		log_message( log_module, MSG_DETAIL, "code_rate_HP_stream: 2/3");
+		log_message( log_module, MSG_FLOOD, "code_rate_HP_stream: 2/3");
 		break;
 	case 2:
-		log_message( log_module, MSG_DETAIL, "code_rate_HP_stream: 3/4");
+		log_message( log_module, MSG_FLOOD, "code_rate_HP_stream: 3/4");
 		break;
 	case 3:
-		log_message( log_module, MSG_DETAIL, "code_rate_HP_stream: 5/6");
+		log_message( log_module, MSG_FLOOD, "code_rate_HP_stream: 5/6");
 		break;
 	case 4:
-		log_message( log_module, MSG_DETAIL, "code_rate_HP_stream: 7/8");
+		log_message( log_module, MSG_FLOOD, "code_rate_HP_stream: 7/8");
 		break;
 	case 5:
 	case 6:
 	case 7:
 	default:
-		log_message( log_module, MSG_DETAIL, "code_rate_HP_stream: RFU");
+		log_message( log_module, MSG_FLOOD, "code_rate_HP_stream: RFU");
 		break;
 	}
 	switch(descr->code_rate_LP_stream)
 	{
 	case 0:
-		log_message( log_module, MSG_DETAIL, "code_rate_LP_stream: 1/2");
+		log_message( log_module, MSG_FLOOD, "code_rate_LP_stream: 1/2");
 		break;
 	case 1:
-		log_message( log_module, MSG_DETAIL, "code_rate_LP_stream: 2/3");
+		log_message( log_module, MSG_FLOOD, "code_rate_LP_stream: 2/3");
 		break;
 	case 2:
-		log_message( log_module, MSG_DETAIL, "code_rate_LP_stream: 3/4");
+		log_message( log_module, MSG_FLOOD, "code_rate_LP_stream: 3/4");
 		break;
 	case 3:
-		log_message( log_module, MSG_DETAIL, "code_rate_LP_stream: 5/6");
+		log_message( log_module, MSG_FLOOD, "code_rate_LP_stream: 5/6");
 		break;
 	case 4:
-		log_message( log_module, MSG_DETAIL, "code_rate_LP_stream: 7/8");
+		log_message( log_module, MSG_FLOOD, "code_rate_LP_stream: 7/8");
 		break;
 	case 5:
 	case 6:
 	case 7:
 	default:
-		log_message( log_module, MSG_DETAIL, "code_rate_LP_stream: RFU");
+		log_message( log_module, MSG_FLOOD, "code_rate_LP_stream: RFU");
 		break;
 	}
 
@@ -1033,47 +1033,47 @@ void ts_display_terrestrial_delivery_system_descriptor(char *log_module, unsigne
 	switch(descr->guard_interval)
 	{
 	case 0:
-		log_message( log_module, MSG_DETAIL, "guard_interval: 1/32");
+		log_message( log_module, MSG_FLOOD, "guard_interval: 1/32");
 		break;
 	case 1:
-		log_message( log_module, MSG_DETAIL, "guard_interval: 1/16");
+		log_message( log_module, MSG_FLOOD, "guard_interval: 1/16");
 		break;
 	case 2:
-		log_message( log_module, MSG_DETAIL, "guard_interval: 1/8");
+		log_message( log_module, MSG_FLOOD, "guard_interval: 1/8");
 		break;
 	case 3:
-		log_message( log_module, MSG_DETAIL, "guard_interval: 1/4");
+		log_message( log_module, MSG_FLOOD, "guard_interval: 1/4");
 		break;
 	default:
-		log_message( log_module, MSG_DETAIL, "guard_interval: BUG");
+		log_message( log_module, MSG_FLOOD, "guard_interval: BUG");
 		break;
 	}
 
 	switch(descr->transmission_mode)
 	{
 	case 0:
-		log_message( log_module, MSG_DETAIL, "transmission_mode: 2k");
+		log_message( log_module, MSG_FLOOD, "transmission_mode: 2k");
 		break;
 	case 1:
-		log_message( log_module, MSG_DETAIL, "transmission_mode: 8k");
+		log_message( log_module, MSG_FLOOD, "transmission_mode: 8k");
 		break;
 	case 2:
-		log_message( log_module, MSG_DETAIL, "transmission_mode: 4k");
+		log_message( log_module, MSG_FLOOD, "transmission_mode: 4k");
 		break;
 	case 3:
-		log_message( log_module, MSG_DETAIL, "transmission_mode: RFU");
+		log_message( log_module, MSG_FLOOD, "transmission_mode: RFU");
 		break;
 	default:
-		log_message( log_module, MSG_DETAIL, "transmission_mode: BUG");
+		log_message( log_module, MSG_FLOOD, "transmission_mode: BUG");
 		break;
 	}
 
 	if(descr->other_frequency_flag)
-		log_message( log_module, MSG_DETAIL, "other_frequency_flag: one or more other frequencies are in use");
+		log_message( log_module, MSG_FLOOD, "other_frequency_flag: one or more other frequencies are in use");
 	else
-		log_message( log_module, MSG_DETAIL, "other_frequency_flag: no other frequency is in use");
+		log_message( log_module, MSG_FLOOD, "other_frequency_flag: no other frequency is in use");
 
-	log_message( log_module, MSG_DETAIL, "--- descriptor done ---\n");
+	log_message( log_module, MSG_FLOOD, "--- descriptor done ---\n");
 }
 
 
@@ -1099,7 +1099,6 @@ void ts_display_lcn_descriptor(char *log_module, unsigned char* buf)
 	int descriptor_len = buf[1];
 	buf += 2;
 	int service_id, i_lcn;
-	log_message( log_module, MSG_DEBUG, "NIT  0x83 descriptor (probably LCN) \n");
 	log_message( log_module, MSG_FLOOD, "NIT  0x83 descriptor (probably LCN) descriptor_len %d\n",descriptor_len);
 
 	while (descriptor_len > 0)
@@ -1108,7 +1107,7 @@ void ts_display_lcn_descriptor(char *log_module, unsigned char* buf)
 		buf+=NIT_LCN_LEN;
 		service_id= HILO(lcn->service_id);
 		i_lcn=HILO(lcn->logical_channel_number);
-		log_message( log_module, MSG_DEBUG, "NIT LCN channel number %d, service id %d visible %d\n",i_lcn ,service_id, lcn->visible_service_flag);
+		log_message( log_module, MSG_FLOOD, "NIT LCN channel number %d, service id %d visible %d\n",i_lcn ,service_id, lcn->visible_service_flag);
 		descriptor_len -= NIT_LCN_LEN;
 	}
 }
@@ -1132,21 +1131,21 @@ void ts_display_frequency_list_descriptor(char* log_module,unsigned char *buf)
 	int i;
 	unsigned char descriptor_len = buf[1];
 	buf += 2;
-	log_message( log_module, MSG_DETAIL, "--- NIT descriptor --- frequency list descriptor\n");
+	log_message( log_module, MSG_FLOOD, "--- NIT descriptor --- frequency list descriptor\n");
 	switch((*buf)&0x3)
 	{
 	case 1:
-		log_message( log_module, MSG_DETAIL, "\t coding type : satellite");
+		log_message( log_module, MSG_FLOOD, "\t coding type : satellite");
 		break;
 	case 2:
-		log_message( log_module, MSG_DETAIL, "\t coding type : cable");
+		log_message( log_module, MSG_FLOOD, "\t coding type : cable");
 		break;
 	case 3:
-		log_message( log_module, MSG_DETAIL, "\t coding type : terrestrial");
+		log_message( log_module, MSG_FLOOD, "\t coding type : terrestrial");
 		break;
 	case 0:
 	default:
-		log_message( log_module, MSG_DETAIL, "\t coding type : not defined");
+		log_message( log_module, MSG_FLOOD, "\t coding type : not defined");
 		break;
 	}
 	buf++;
@@ -1155,10 +1154,10 @@ void ts_display_frequency_list_descriptor(char* log_module,unsigned char *buf)
 	{
 		uint32_t frequency;
 		frequency=((buf[0]<<24)+(buf[1]<<16)+(buf[2]<<8)+buf[3]);
-		log_message( log_module, MSG_DETAIL, "Frequency: %u (Hz or *10Hz)", frequency );
+		log_message( log_module, MSG_FLOOD, "Frequency: %u (Hz or *10Hz)", frequency );
 		buf+=4;
 	}
-	log_message( log_module, MSG_DETAIL, "--- descriptor done ---\n");
+	log_message( log_module, MSG_FLOOD, "--- descriptor done ---\n");
 }
 
 

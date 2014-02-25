@@ -111,7 +111,7 @@ int unicast_handle_message(unicast_parameters_t* unicast_vars, unicast_client_t*
  * @param unicast_vars the unicast parameters
  * @param substring The currrent line
  */
-int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_channel_t *current_channel, int ip_ok, char *substring)
+int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_channel_t *c_chan, char *substring)
 {
 
 	char delimiteurs[] = CONFIG_FILE_SEPARATOR;
@@ -171,14 +171,15 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
 	}
 	else if (!strcmp (substring, "unicast_port"))
 	{
-		if ( ip_ok == 0)
+		if ( c_chan == NULL )
 		{
 			log_message( log_module,  MSG_ERROR,
-					"unicast_port : You have to start a channel first (using ip= or channel_next)\n");
+					"unicast_port : You have to start a channel first (using channel_next)\n");
 			exit(ERROR_CONF);
 		}
 		substring = strtok (NULL, delimiteurs);
-		current_channel->unicast_port = atoi (substring);
+		c_chan->unicast_port = atoi (substring);
+		MU_F(c_chan->unicast_port) = F_USER;
 	}
 	else if (!strcmp (substring, "socket_sendbuf_size"))
 	{
@@ -963,7 +964,7 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
 	unicast_reply_write(reply, HTTP_CHANNELS_REPLY_START);
 
 	for (int curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-		if (channels[curr_channel].streamed_channel)
+		if (channels[curr_channel].channel_ready>=READY)
 		{
 			if(host)
 				unicast_reply_write(reply, "Channel number %d : %s<br>Unicast link : <a href=\"http://%s/bysid/%d\">http://%s/bysid/%d</a><br>Multicast ip : %s:%d<br><br>\r\n",
@@ -1014,7 +1015,8 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
 	if (iRet < 0)
 	{
 		log_message( log_module,  MSG_ERROR,"getsockname failed : %s while making HTTP reply", strerror(errno));
-		unicast_reply_free(reply);
+		if (0 != unicast_reply_free(reply)) {
+			log_message( log_module, MSG_INFO,"Error when releasing the HTTP reply");
 		return -1;
 	}
 	//we write the playlist
@@ -1022,7 +1024,7 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
 
 	//"#EXTINF:0,title\r\nURL"
 	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-		if (channels[curr_channel].streamed_channel)
+		if (channels[curr_channel].channel_ready>=READY)
 		{
 			if(!perport)
 			{
@@ -1085,7 +1087,7 @@ unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t *cha
 
 	//"#EXTINF:0,title\r\nURL"
 	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-		if (channels[curr_channel].streamed_channel)
+		if (channels[curr_channel].channel_ready>=READY)
 		{
 			unicast_reply_write(reply, "#EXTINF:0,%s\r\n%s://%s%s:%d\r\n",
 					channels[curr_channel].name,

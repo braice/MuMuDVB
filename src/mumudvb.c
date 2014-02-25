@@ -92,7 +92,6 @@
 #include <ctype.h>
 #include <sys/time.h>
 #include <sys/poll.h>
-#include <sys/epoll.h>
 #include <sys/stat.h>
 #include <stdint.h>
 #include <resolv.h>
@@ -189,14 +188,12 @@ unicast_parameters_t unicast_vars={
 
 
 
-
-
 //logging
 extern log_params_t log_params;
 
 // prototypes
 static void SignalHandler (int signum);//below
-int read_multicast_configuration(multi_p_t *, mumudvb_channel_t *, int, int *, char *); //in multicast.c
+int read_multicast_configuration(multi_p_t *, mumudvb_channel_t *, char *); //in multicast.c
 void *monitor_func(void* arg);
 int mumudvb_close(int no_daemon,
 		monitor_parameters_t *monitor_thread_params,
@@ -212,21 +209,18 @@ int mumudvb_close(int no_daemon,
 		int Interrupted,
 		mumu_chan_p_t *chan_p);
 
-
+void chan_new_pmt(unsigned char *ts_packet, mumu_chan_p_t *chan_p, int pid);
 
 int
 main (int argc, char **argv)
 {
 
 	//Channel information
-	mumu_chan_p_t chan_p={
-			.lock=PTHREAD_MUTEX_INITIALIZER,
-			.number_of_channels=0,
-			.filter_transport_error=0,
-			.psi_tables_filtering=PSI_TABLES_FILTERING_NONE,
-			.check_cc=0,
-	};
+	mumu_chan_p_t chan_p;
+	memset(&chan_p,0,sizeof(chan_p));
 
+	pthread_mutex_init(&chan_p.lock,NULL);
+	chan_p.psi_tables_filtering=PSI_TABLES_FILTERING_NONE;
 
 	//sap announces variables
 	sap_p_t sap_p;
@@ -256,7 +250,6 @@ main (int argc, char **argv)
 			.scam_support = 0,
 			.getcwthread_shutdown=0,
 	};
-	scam_vars.epfd = epoll_create(MAX_CHANNELS);
 	scam_parameters_t *scam_vars_ptr=&scam_vars;
 	int scam_threads_started=0;
 #else
@@ -313,7 +306,6 @@ main (int argc, char **argv)
 	int ichan = 0;
 	int ipid = 0;
 	int send_packet=0;
-	int channel_start = 0;
 	char current_line[CONF_LINELEN];
 	char *substring=NULL;
 	char delimiteurs[] = CONFIG_FILE_SEPARATOR;
@@ -496,6 +488,7 @@ main (int argc, char **argv)
 	}
 
 	ichan=-1;
+	mumudvb_channel_t *c_chan;
 	int curr_channel_old=-1;
 	// we scan config file
 	// see doc/README_CONF* for further information
@@ -511,12 +504,12 @@ main (int argc, char **argv)
 		//Line without "=" we continue
 		if(strstr(current_line,"=")==NULL)
 		{
-			//We check if it's not a channel_next line
+			//We check if it's not a new_channel line
 			substring = strtok (current_line, delimiteurs);
 			//If nothing in the substring we avoid the segfault in the next line
 			if(substring == NULL)
 				continue;
-			if(strcmp (substring, "channel_next") )
+			if(strcmp (substring, "new_channel") )
 				continue;
 		}
 		//commentary
@@ -534,9 +527,10 @@ main (int argc, char **argv)
 			continue;
 
 		if(ichan<0)
-			channel_start=0;
+			c_chan=NULL;
 		else
-			channel_start=1;
+			c_chan=&chan_p.channels[ichan];
+
 		if((iRet=read_tuning_configuration(&tune_p, substring))) //Read the line concerning the tuning parameters
 		{
 			if(iRet==-1)
@@ -547,31 +541,31 @@ main (int argc, char **argv)
 			if(iRet==-1)
 				exit(ERROR_CONF);
 		}
-		else if((iRet=read_sap_configuration(&sap_p, &chan_p.channels[ichan], channel_start, substring))) //Read the line concerning the sap parameters
+		else if((iRet=read_sap_configuration(&sap_p, c_chan, substring))) //Read the line concerning the sap parameters
 		{
 			if(iRet==-1)
 				exit(ERROR_CONF);
 		}
 #ifdef ENABLE_CAM_SUPPORT
-		else if((iRet=read_cam_configuration(&cam_p, &chan_p.channels[ichan], channel_start, substring))) //Read the line concerning the cam parameters
+		else if((iRet=read_cam_configuration(&cam_p, c_chan, substring))) //Read the line concerning the cam parameters
 		{
 			if(iRet==-1)
 				exit(ERROR_CONF);
 		}
 #endif
 #ifdef ENABLE_SCAM_SUPPORT
-		else if((iRet=read_scam_configuration(scam_vars_ptr, &chan_p.channels[ichan], channel_start, substring))) //Read the line concerning the cam parameters
+		else if((iRet=read_scam_configuration(scam_vars_ptr, c_chan, substring))) //Read the line concerning the cam parameters
 		{
 			if(iRet==-1)
 				exit(ERROR_CONF);
 		}
 #endif
-		else if((iRet=read_unicast_configuration(&unicast_vars, &chan_p.channels[ichan], channel_start, substring))) //Read the line concerning the unicast parameters
+		else if((iRet=read_unicast_configuration(&unicast_vars, c_chan, substring))) //Read the line concerning the unicast parameters
 		{
 			if(iRet==-1)
 				exit(ERROR_CONF);
 		}
-		else if((iRet=read_multicast_configuration(&multi_p, chan_p.channels, channel_start, &ichan, substring))) //Read the line concerning the multicast parameters
+		else if((iRet=read_multicast_configuration(&multi_p, c_chan, substring))) //Read the line concerning the multicast parameters
 		{
 			if(iRet==-1)
 				exit(ERROR_CONF);
@@ -586,10 +580,11 @@ main (int argc, char **argv)
 			if(iRet==-1)
 				exit(ERROR_CONF);
 		}
-		else if (!strcmp (substring, "channel_next"))
+		else if (!strcmp (substring, "new_channel"))
 		{
 			ichan++;
-			log_message( log_module, MSG_INFO,"channel next\n");
+			chan_p.channels[ichan].channel_ready=ALMOST_READY;
+			log_message( log_module, MSG_INFO,"New channel, current number %d", ichan);
 		}
 		else if (!strcmp (substring, "timeout_no_diff"))
 		{
@@ -651,35 +646,35 @@ main (int argc, char **argv)
 		{
 			if(!strcmp (substring, "ts_id"))
 				log_message( log_module,  MSG_WARN, "The option ts_id is depreciated, use service_id instead.\n");
-			if ( channel_start == 0)
+			if ( c_chan == NULL)
 			{
 				log_message( log_module,  MSG_ERROR,
-						"service_id : You have to start a channel first (using ip= or channel_next)\n");
+						"service_id : You have to start a channel first (using new_channel)\n");
 				exit(ERROR_CONF);
 			}
 			substring = strtok (NULL, delimiteurs);
-			chan_p.channels[ichan].service_id = atoi (substring);
+			c_chan->service_id = atoi (substring);
 		}
 		else if (!strcmp (substring, "pids"))
 		{
 			ipid = 0;
-			if ( channel_start == 0)
+			if ( c_chan == NULL)
 			{
 				log_message( log_module,  MSG_ERROR,
-						"pids : You have to start a channel first (using ip= or channel_next)\n");
+						"pids : You have to start a channel first (using new_channel)\n");
 				exit(ERROR_CONF);
 			}
-			if (multi_p.common_port!=0 && chan_p.channels[ichan].portOut == 0)
-				chan_p.channels[ichan].portOut = multi_p.common_port;
+			//Pids are now user set, they won't be overwritten by autoconfiguration
+			c_chan->pid_i.pid_f=F_USER;
 			while ((substring = strtok (NULL, delimiteurs)) != NULL)
 			{
-				chan_p.channels[ichan].pids[ipid] = atoi (substring);
+				c_chan->pid_i.pids[ipid] = atoi (substring);
 				// we see if the given pid is good
-				if (chan_p.channels[ichan].pids[ipid] < 10 || chan_p.channels[ichan].pids[ipid] >= 8193)
+				if (c_chan->pid_i.pids[ipid] < 10 || c_chan->pid_i.pids[ipid] >= 8193)
 				{
 					log_message( log_module,  MSG_ERROR,
 							"Config issue : %s in pids, given pid : %d\n",
-							conf_filename, chan_p.channels[ichan].pids[ipid]);
+							conf_filename, c_chan->pid_i.pids[ipid]);
 					exit(ERROR_CONF);
 				}
 				ipid++;
@@ -691,20 +686,43 @@ main (int argc, char **argv)
 					exit(ERROR_CONF);
 				}
 			}
-			chan_p.channels[ichan].num_pids = ipid;
+			c_chan->pid_i.num_pids = ipid;
+		}
+		else if (!strcmp (substring, "pmt_pid"))
+		{
+			if ( c_chan == NULL)
+			{
+				log_message( log_module,  MSG_ERROR,
+						"pmt_pid : You have to start a channel first (using new_channel)\n");
+				return -1;
+			}
+			substring = strtok (NULL, delimiteurs);
+			c_chan->pid_i.pmt_pid = atoi (substring);
+			if (c_chan->pid_i.pmt_pid < 10 || c_chan->pid_i.pmt_pid > 8191){
+				log_message( log_module,  MSG_ERROR,
+						"Configuration issue in pmt_pid, given PID : %d\n",
+						c_chan->pid_i.pmt_pid);
+				return -1;
+			}
+			MU_F(c_chan->pid_i.pmt_pid)=F_USER;
 		}
 		else if (!strcmp (substring, "name"))
 		{
-			if ( channel_start == 0)
+			if ( c_chan == NULL)
 			{
 				log_message( log_module,  MSG_ERROR,
-						"name : You have to start a channel first (using ip= or channel_next)\n");
+						"name : You have to start a channel first (using new_channel)\n");
 				exit(ERROR_CONF);
 			}
+			//name is now user set
+			MU_F(c_chan->name)=F_USER;
 			// other substring extraction method in order to keep spaces
 			substring = strtok (NULL, "=");
-			strncpy(chan_p.channels[ichan].name,strtok(substring,"\n"),MAX_NAME_LEN-1);
-			chan_p.channels[ichan].name[MAX_NAME_LEN-1]='\0';
+			strncpy(c_chan->name,strtok(substring,"\n"),MAX_NAME_LEN-1);
+			c_chan->name[MAX_NAME_LEN-1]='\0';
+			//We store the user name for being able to use templates
+			strncpy(c_chan->user_name,strtok(substring,"\n"),MAX_NAME_LEN-1);
+			c_chan->user_name[MAX_NAME_LEN-1]='\0';
 			if (strlen (substring) >= MAX_NAME_LEN - 1)
 				log_message( log_module,  MSG_WARN,"Channel name too long\n");
 		}
@@ -752,26 +770,26 @@ main (int argc, char **argv)
 	fclose (conf_file);
 
 
-	//Autoconfiguration full is the simple mode for autoconfiguration, we set other option by default
-	if(auto_p.autoconfiguration==AUTOCONF_MODE_FULL)
+	//if Autoconfiguration, we set other option default
+	if(auto_p.autoconfiguration!=AUTOCONF_MODE_NONE)
 	{
 		if((sap_p.sap == OPTION_UNDEFINED) && (multi_p.multicast))
 		{
 			log_message( log_module,  MSG_INFO,
-					"Full autoconfiguration, we activate SAP announces. if you want to deactivate them see the README.\n");
+					"Autoconfiguration, we activate SAP announces. if you want to disable them see the README.\n");
 			sap_p.sap=OPTION_ON;
 		}
 		if(rewrite_vars.rewrite_pat == OPTION_UNDEFINED)
 		{
 			rewrite_vars.rewrite_pat=OPTION_ON;
 			log_message( log_module,  MSG_INFO,
-					"Full autoconfiguration, we activate PAT rewriting. if you want to disable it see the README.\n");
+					"Autoconfiguration, we activate PAT rewriting. if you want to disable it see the README.\n");
 		}
 		if(rewrite_vars.rewrite_sdt == OPTION_UNDEFINED)
 		{
 			rewrite_vars.rewrite_sdt=OPTION_ON;
 			log_message( log_module,  MSG_INFO,
-					"Full autoconfiguration, we activate SDT rewriting. if you want to disable it see the README.\n");
+					"Autoconfiguration, we activate SDT rewriting. if you want to disable it see the README.\n");
 		}
 	}
 	if(card_buffer.max_thread_buffer_size<card_buffer.dvr_buffer_size)
@@ -839,10 +857,10 @@ main (int argc, char **argv)
 
 	if(auto_p.autoconfiguration)
 	{
-		if(auto_p.autoconf_pid_update)
+		if(!auto_p.autoconf_pid_update)
 		{
 			log_message( "Autoconf: ", MSG_INFO,
-					"The autoconfiguration auto update is enabled. If you want to disable it put \"autoconf_pid_update=0\" in your config file.\n");
+					"The autoconfiguration auto update is NOT enabled. Please report why you need it");
 		}
 	}
 	else
@@ -851,7 +869,7 @@ main (int argc, char **argv)
 	//End of Autoconfiguration init
 	/*****************************************************/
 
-	//We deactivate things depending on multicast if multicast is suppressed
+	//We disable things depending on multicast if multicast is suppressed
 	if(!multi_p.ttl)
 	{
 		log_message( log_module,  MSG_INFO, "The multicast TTL is set to 0, multicast will be disabled.\n");
@@ -990,7 +1008,7 @@ main (int argc, char **argv)
 
 	if (iRet < 0)
 	{
-		log_message( log_module,  MSG_INFO, "Tunning issue, card %d\n", tune_p.card);
+		log_message( log_module,  MSG_INFO, "Tuning issue, card %d\n", tune_p.card);
 		// we close the file descriptors
 		close_card_fd(&fds);
 		set_interrupted(ERROR_TUNE<<8);
@@ -1079,14 +1097,14 @@ main (int argc, char **argv)
 
 #ifdef ENABLE_SCAM_SUPPORT
 	if(scam_vars.scam_support){
-		if(scam_getcw_start(scam_vars_ptr,&chan_p))
+		if(scam_getcw_start(scam_vars_ptr,tune_p.card,&chan_p))
 		{
 			log_message("SCAM_GETCW: ", MSG_ERROR,"Cannot initalise scam\n");
 			scam_vars.scam_support=0;
 		}
 		else
 		{
-			//If the scam is properly initialised, we autoconfigure scrambled channels
+			//If the scam is properly initialized, we autoconfigure scrambled channels
 			auto_p.autoconf_scrambled=1;
 		}
 	}
@@ -1098,7 +1116,7 @@ main (int argc, char **argv)
 
 #ifdef ENABLE_CAM_SUPPORT
 	if(cam_p.cam_support){
-		//We initialise the cam. If fail, we remove cam support
+		//We initialize the cam. If fail, we remove cam support
 		if(cam_start(&cam_p,tune_p.card,&chan_p))
 		{
 			log_message("CAM: ", MSG_ERROR,"Cannot initalise cam\n");
@@ -1106,24 +1124,8 @@ main (int argc, char **argv)
 		}
 		else
 		{
-			//If the cam is properly initialised, we autoconfigure scrambled channels
+			//If the cam is properly initialized, we autoconfigure scrambled channels
 			auto_p.autoconf_scrambled=1;
-		}
-		for (ichan = 0; ichan < chan_p.number_of_channels; ichan++)
-		{
-			//We allocate the packet for storing the PMT for CAM purposes
-			if(chan_p.channels[ichan].cam_pmt_packet==NULL)
-			{
-				chan_p.channels[ichan].cam_pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
-				if(chan_p.channels[ichan].cam_pmt_packet==NULL)
-				{
-					log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-					set_interrupted(ERROR_MEMORY<<8);
-					goto mumudvb_close_goto;
-				}
-				memset (chan_p.channels[ichan].cam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-				pthread_mutex_init(&chan_p.channels[ichan].cam_pmt_packet->packetmutex,NULL);
-			}
 		}
 	}
 #endif
@@ -1133,7 +1135,7 @@ main (int argc, char **argv)
 	//memory allocation for MPEG2-TS
 	//packet structures
 	/*****************************************************/
-	iRet=autoconf_init(&auto_p, chan_p.channels,chan_p.number_of_channels);
+	iRet=autoconf_init(&auto_p);
 	if(iRet)
 	{
 		set_interrupted(ERROR_GENERIC<<8);
@@ -1144,7 +1146,7 @@ main (int argc, char **argv)
 	/*****************************************************/
 	//scam
 	/*****************************************************/
-	if (auto_p.autoconfiguration==AUTOCONF_MODE_PIDS || auto_p.autoconfiguration==AUTOCONF_MODE_NONE)
+	if (auto_p.autoconfiguration==AUTOCONF_MODE_NONE)
 	{
 		iRet=scam_init_no_autoconf(scam_vars_ptr, chan_p.channels,chan_p.number_of_channels);
 		if(iRet)
@@ -1156,134 +1158,38 @@ main (int argc, char **argv)
 
 #endif
 	/*****************************************************/
-	//Pat rewriting
-	//memory allocation for MPEG2-TS
-	//packet structures
+	//Rewriting initialization and allocation
 	/*****************************************************/
-
-	if(rewrite_vars.rewrite_pat == OPTION_ON)
-	{
-		for (ichan = 0; ichan < MAX_CHANNELS; ichan++)
-			chan_p.channels[ichan].generated_pat_version=-1;
-
-		rewrite_vars.full_pat=malloc(sizeof(mumudvb_ts_packet_t));
-		if(rewrite_vars.full_pat==NULL)
-		{
-			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			set_interrupted(ERROR_MEMORY<<8);
-			goto mumudvb_close_goto;
-		}
-		memset (rewrite_vars.full_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-		pthread_mutex_init(&rewrite_vars.full_pat->packetmutex,NULL);
-	}
-
+	if(rewrite_init(&rewrite_vars))
+		goto mumudvb_close_goto;
 	/*****************************************************/
-	//SDT rewriting
-	//memory allocation for MPEG2-TS
-	//packet structures
-	/*****************************************************/
-
-	if(rewrite_vars.rewrite_sdt == OPTION_ON)
-	{
-		for (ichan = 0; ichan < MAX_CHANNELS; ichan++)
-			chan_p.channels[ichan].generated_sdt_version=-1;
-
-		rewrite_vars.full_sdt=malloc(sizeof(mumudvb_ts_packet_t));
-		if(rewrite_vars.full_sdt==NULL)
-		{
-			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			set_interrupted(ERROR_MEMORY<<8);
-			goto mumudvb_close_goto;
-		}
-		memset (rewrite_vars.full_sdt, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-		pthread_mutex_init(&rewrite_vars.full_sdt->packetmutex,NULL);
-	}
-
-	/*****************************************************/
-	//EIT rewriting
-	//memory allocation for MPEG2-TS
-	//packet structures
-	/*****************************************************/
-
-	if(rewrite_vars.rewrite_eit == OPTION_ON)
-	{
-		rewrite_vars.full_eit=malloc(sizeof(mumudvb_ts_packet_t));
-		if(rewrite_vars.full_eit==NULL)
-		{
-			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			set_interrupted(ERROR_MEMORY<<8);
-			goto mumudvb_close_goto;
-		}
-		memset (rewrite_vars.full_eit, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-		pthread_mutex_init(&rewrite_vars.full_eit->packetmutex,NULL);
-	}
-
-	/*****************************************************/
-	//Some initialisations
+	//Some initializations
 	/*****************************************************/
 	if(multi_p.rtp_header)
 		multi_p.num_pack=(MAX_UDP_SIZE-TS_PACKET_SIZE)/TS_PACKET_SIZE;
 	else
 		multi_p.num_pack=(MAX_UDP_SIZE)/TS_PACKET_SIZE;
 
-	//Initialisation of the channels for RTP
-	if(multi_p.rtp_header)
-		for (ichan = 0; ichan < chan_p.number_of_channels; ichan++)
-			init_rtp_header(&chan_p.channels[ichan]);
 
-	// initialisation of active channels list
+	// initialization of active channels list
+	pthread_mutex_lock(&chan_p.lock);
 	for (ichan = 0; ichan < chan_p.number_of_channels; ichan++)
 	{
-		chan_p.channels[ichan].num_packet = 0;
-		chan_p.channels[ichan].streamed_channel = 1;
-		chan_p.channels[ichan].num_scrambled_packets = 0;
-		chan_p.channels[ichan].scrambled_channel = 0;
-
-		//We alloc the channel pmt_packet (useful for autoconf and cam)
-		/** @todo : allocate only if autoconf */
-		if(chan_p.channels[ichan].pmt_packet==NULL)
-		{
-			chan_p.channels[ichan].pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
-			if(chan_p.channels[ichan].pmt_packet==NULL)
-			{
-				log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-				set_interrupted(ERROR_MEMORY<<8);
-				goto mumudvb_close_goto;
-			}
-			memset (chan_p.channels[ichan].pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-			pthread_mutex_init(&chan_p.channels[ichan].pmt_packet->packetmutex,NULL);
-
-		}
-
-#ifdef ENABLE_SCAM_SUPPORT
-                if(chan_p.channels[ichan].scam_pmt_packet==NULL && scam_vars.scam_support)
-                {
-                        chan_p.channels[ichan].scam_pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
-                        if(chan_p.channels[ichan].scam_pmt_packet==NULL)
-                        {
-                                log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-                                set_interrupted(ERROR_MEMORY<<8);
-                                return -1;
-                        }
-                        memset (chan_p.channels[ichan].scam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
-                        pthread_mutex_init(&chan_p.channels[ichan].scam_pmt_packet->packetmutex,NULL);
-                }
-#endif
-
+		if(mumu_init_chan(&chan_p.channels[ichan])<0)
+			goto mumudvb_close_goto;
 	}
-
-	//We initialise asked pid table
+	pthread_mutex_unlock(&chan_p.lock);
+	//We initialize asked PID table
 	memset (chan_p.asked_pid, 0, sizeof( uint8_t)*8193);//we clear it
-	memset (chan_p.number_chan_asked_pid, 0, sizeof( uint8_t)*8193);//we clear it
 
 	// We initialize the table for checking the TS discontinuities
 	for (ipid = 0; ipid < 8193; ipid++)
 		chan_p.continuity_counter_pid[ipid]=-1;
 
-	//We initialise mandatory pid table
+	//We initialize mandatory PID table
 	memset (mandatory_pid, 0, sizeof( uint8_t)*MAX_MANDATORY_PID_NUMBER);//we clear it
 
-	//mandatory pids (always sent with all channels)
+	//mandatory PIDs (always sent with all channels)
 	//PAT : Program Association Table
 	mandatory_pid[0]=1;
 	//CAT : Conditional Access Table
@@ -1295,7 +1201,7 @@ main (int argc, char **argv)
 	//the SDT contains data describing the services in the system e.g. names of services, the service provider, etc.
 	mandatory_pid[17]=1;
 	//EIT : Event Information Table
-	//the EIT contains data concerning events or programmes such as event name, start time, duration, etc.
+	//the EIT contains data concerning events or programs such as event name, start time, duration, etc.
 	mandatory_pid[18]=1;
 	//TDT : Time and Date Table
 	//the TDT gives information relating to the present time and date.
@@ -1311,29 +1217,11 @@ main (int argc, char **argv)
 		chan_p.asked_pid[PSIP_PID]=PID_ASKED;
 
 	/*****************************************************/
-	//We open the file descriptors and
 	//Set the filters
 	/*****************************************************/
+	update_chan_filters(&chan_p, tune_p.card_dev_path, tune_p.tuner, &fds);
 
-	//We fill the asked_pid array
-	for (ichan = 0; ichan < chan_p.number_of_channels; ichan++)
-	{
-		for (ipid = 0; ipid < chan_p.channels[ichan].num_pids; ipid++)
-		{
-			if(chan_p.asked_pid[chan_p.channels[ichan].pids[ipid]]==PID_NOT_ASKED)
-				chan_p.asked_pid[chan_p.channels[ichan].pids[ipid]]=PID_ASKED;
-			chan_p.number_chan_asked_pid[chan_p.channels[ichan].pids[ipid]]++;
-		}
-	}
-
-	// we open the file descriptors
-	if (create_card_fd (tune_p.card_dev_path, tune_p.tuner, chan_p.asked_pid, &fds) < 0)
-	{
-		set_interrupted(ERROR_GENERIC<<8);
-		goto mumudvb_close_goto;
-	}
-
-	set_filters(chan_p.asked_pid, &fds);
+	//We take care of the poll descriptors
 	fds.pfds=NULL;
 	fds.pfdsnum=1;
 	//+1 for closing the pfd list, see man poll
@@ -1370,41 +1258,16 @@ main (int argc, char **argv)
 	/*****************************************************/
 	// Init network, we open the sockets
 	/*****************************************************/
-	if(multi_p.multicast)
-		for (ichan = 0; ichan < chan_p.number_of_channels; ichan++)
-		{
-			if(multi_p.multicast_ipv4)
-			{
-				//See the README for the reason of this option
-				if(multi_p.auto_join)
-					chan_p.channels[ichan].socketOut4 = makeclientsocket (chan_p.channels[ichan].ip4Out, chan_p.channels[ichan].portOut, multi_p.ttl, multi_p.iface4, &chan_p.channels[ichan].sOut4);
-				else
-					chan_p.channels[ichan].socketOut4 = makesocket (chan_p.channels[ichan].ip4Out, chan_p.channels[ichan].portOut, multi_p.ttl, multi_p.iface4, &chan_p.channels[ichan].sOut4);
-			}
-			if(multi_p.multicast_ipv6)
-			{
-				//See the README for the reason of this option
-				if(multi_p.auto_join)
-					chan_p.channels[ichan].socketOut6 = makeclientsocket6 (chan_p.channels[ichan].ip6Out, chan_p.channels[ichan].portOut, multi_p.ttl, multi_p.iface6, &chan_p.channels[ichan].sOut6);
-				else
-					chan_p.channels[ichan].socketOut6 = makesocket6 (chan_p.channels[ichan].ip6Out, chan_p.channels[ichan].portOut, multi_p.ttl, multi_p.iface6, &chan_p.channels[ichan].sOut6);
-			}
-		}
-
-
 	//We open the socket for the http unicast if needed and we update the poll structure
 	if(unicast_vars.unicast)
 	{
 		log_message("Unicast: ", MSG_INFO,"We open the Master http socket for address %s:%d\n",unicast_vars.ipOut, unicast_vars.portOut);
 		unicast_create_listening_socket(UNICAST_MASTER, -1, unicast_vars.ipOut, unicast_vars.portOut, &unicast_vars.sIn, &unicast_vars.socketIn, &fds, &unicast_vars);
-		/** open the unicast listening connections fo the channels */
-		for (ichan = 0; ichan < chan_p.number_of_channels; ichan++)
-			if(chan_p.channels[ichan].unicast_port)
-			{
-				log_message("Unicast: ", MSG_INFO,"We open the channel %d http socket address %s:%d\n",ichan, unicast_vars.ipOut, chan_p.channels[ichan].unicast_port);
-				unicast_create_listening_socket(UNICAST_LISTEN_CHANNEL, ichan, unicast_vars.ipOut,chan_p.channels[ichan].unicast_port , &chan_p.channels[ichan].sIn, &chan_p.channels[ichan].socketIn, &fds, &unicast_vars);
-			}
 	}
+	chan_update_net(&chan_p, &auto_p, &multi_p, &unicast_vars, server_id, tune_p.card, tune_p.tuner,&fds);
+
+
+
 
 
 	/*****************************************************/
@@ -1422,7 +1285,7 @@ main (int argc, char **argv)
 	// Information about streamed channels
 	/*****************************************************/
 
-	if(auto_p.autoconfiguration!=AUTOCONF_MODE_FULL)
+	if(auto_p.autoconfiguration==AUTOCONF_MODE_NONE)
 		log_streamed_channels(log_module,
 				chan_p.number_of_channels,
 				chan_p.channels,
@@ -1433,7 +1296,7 @@ main (int argc, char **argv)
 				unicast_vars.ipOut);
 
 	if(auto_p.autoconfiguration)
-		log_message("Autoconf: ",MSG_INFO,"Autoconfiguration Start\n");
+		log_message("Autoconf: ",MSG_INFO,"Autoconfiguration is now ready to work for you !");
 
 
 	//Thread for reading from the DVB card RUNNING
@@ -1562,7 +1425,7 @@ main (int argc, char **argv)
 		{
 			actual_ts_packet=card_buffer.reading_buffer+card_buffer.read_buff_pos;
 
-			//If the user asked to dump the streams it's here tath it should be done
+			//If the user asked to dump the streams it's here that it should be done
 			if(dump_file)
 				if(fwrite(actual_ts_packet,sizeof(unsigned char),TS_PACKET_SIZE,dump_file)<TS_PACKET_SIZE)
 					log_message( log_module,MSG_WARN,"Error while writing the dump : %s", strerror(errno));
@@ -1596,6 +1459,13 @@ main (int argc, char **argv)
          1 = Reserved for future use
          2 = Scrambled with even key
          3 = Scrambled with odd key*/
+			/******************************************************/
+			//   PMT UPDATE PART: Autoconf, CAM, SCAM
+			/******************************************************/
+			chan_new_pmt(actual_ts_packet, &chan_p, pid);
+			/******************************************************/
+			//   PMT UPDATE PART FINISHED
+			/******************************************************/
 
 			/******************************************************/
 			//   AUTOCONFIGURATION PART
@@ -1606,26 +1476,15 @@ main (int argc, char **argv)
 				if(iRet)
 					set_interrupted(iRet);
 			}
-			if(auto_p.autoconfiguration)
-				continue;
 
 			/******************************************************/
 			//   AUTOCONFIGURATION PART FINISHED
 			/******************************************************/
-#ifdef ENABLE_SCAM_SUPPORT
-			/******************************************************/
-			//   SCAM PMT GET PART in case of no autoconf
-			/******************************************************/
-			if(!ScramblingControl &&  scam_vars.need_pmt_get)
-			{
-				scam_new_packet(pid, actual_ts_packet, &scam_vars, chan_p.channels);
-			}
-			if(scam_vars.need_pmt_get)
-				continue;
 
 			/******************************************************/
-			//   SCAM PMT GET PART FINISHED
+			//   SCAM START PART
 			/******************************************************/
+#ifdef ENABLE_SCAM_SUPPORT
 			if(!scam_threads_started) {
 				for (ichan = 0; ichan < chan_p.number_of_channels; ichan++) {
 					if (chan_p.channels[ichan].scam_support && scam_vars.scam_support)
@@ -1634,6 +1493,9 @@ main (int argc, char **argv)
 				scam_threads_started=1;
 			}
 #endif
+			/******************************************************/
+			//   SCAM START PART FINISHED
+			/******************************************************/
 			/******************************************************/
 			//Pat rewrite
 			/******************************************************/
@@ -1672,10 +1534,14 @@ main (int argc, char **argv)
 			pthread_mutex_lock(&chan_p.lock);
 			for (ichan = 0; ichan < chan_p.number_of_channels; ichan++)
 			{
-				//we'll see if we must send this pid for this channel
+				//We test if the channel is ready (manually configured or autoconf)
+				if(!(chan_p.channels[ichan].channel_ready>0))
+					continue;
+
+				//we'll see if we must send this PID for this channel
 				send_packet=0;
 
-				//If it's a mandatory pid we send it
+				//If it's a mandatory PID we send it
 				if((pid<MAX_MANDATORY_PID_NUMBER) && (mandatory_pid[pid]==1))
 					send_packet=1;
 				if ((pid == PSIP_PID) && (tune_p.fe_type==FE_ATSC))
@@ -1684,8 +1550,8 @@ main (int argc, char **argv)
 
 				//if it isn't mandatory wee see if it is in the channel list
 				if(!send_packet)
-					for (ipid = 0; (ipid < chan_p.channels[ichan].num_pids)&& !send_packet; ipid++)
-						if ((chan_p.channels[ichan].pids[ipid] == pid) || (chan_p.channels[ichan].pids[ipid] == 8192)) //We can stream whole transponder using 8192
+					for (ipid = 0; (ipid < chan_p.channels[ichan].pid_i.num_pids)&& !send_packet; ipid++)
+						if ((chan_p.channels[ichan].pid_i.pids[ipid] == pid) || (chan_p.channels[ichan].pid_i.pids[ipid] == 8192)) //We can stream whole transponder using 8192
 						{
 							send_packet=1;
 
@@ -1696,45 +1562,38 @@ main (int argc, char **argv)
 				// If we send the packet, we look if it's a cam pmt pid
 				/******************************************************/
 #ifdef ENABLE_CAM_SUPPORT
-				if((cam_p.cam_support && send_packet==1) &&  //no need to check paquets we don't send
+				if((cam_p.cam_support && send_packet==1) &&  //no need to check packets we don't send
 						cam_p.ca_resource_connected &&
 						((now-cam_p.cam_pmt_send_time)>=cam_p.cam_interval_pmt_send ))
 				{
-					if(cam_new_packet(pid, ichan, actual_ts_packet, &cam_p, &chan_p.channels[ichan]))
+					if(cam_new_packet(pid, ichan, &cam_p, &chan_p.channels[ichan]))
 						cam_p.cam_pmt_send_time=now; //A packet was sent to the CAM
 				}
 #endif
 
 				/******************************************************/
-				//PMT follow (ie we check if the pids announced in the PMT changed)
+				//scam support
+				// sending capmt to oscam
 				/******************************************************/
-				if( (auto_p.autoconf_pid_update) &&
-						(send_packet==1) && //no need to check paquets we don't send
-						(chan_p.channels[ichan].autoconfigurated) && //only channels whose pids where detected by autoconfiguration (we don't erase "manual" channels)
-						(chan_p.channels[ichan].pmt_pid==pid) &&     //And we see the PMT
-						pid)
+#ifdef ENABLE_SCAM_SUPPORT
+				if (scam_vars.scam_support &&(chan_p.channels[ichan].need_scam_ask==CAM_NEED_ASK))
 				{
-					autoconf_pmt_follow( actual_ts_packet, &fds, &chan_p.channels[ichan], tune_p.card_dev_path, tune_p.tuner, &chan_p );
-				}
-				/******************************************************/
-				//PMT follow for the cam for  non autoconfigurated channels.
-				// This is a PMT update forced for the CAM in case of no autoconfiguration
-				/******************************************************/
-#ifdef ENABLE_CAM_SUPPORT
-				if((cam_p.cam_pmt_follow) &&
-						(chan_p.channels[ichan].need_cam_ask==CAM_ASKED) &&
-						(send_packet==1) && //no need to check paquets we don't send
-						(!chan_p.channels[ichan].autoconfigurated) && //the check is for the non autoconfigurated channels
-						(chan_p.channels[ichan].pmt_pid==pid) &&     //And we see the PMT
-						pid)
-				{
-					cam_pmt_follow( actual_ts_packet, &chan_p.channels[ichan] );
+					if (chan_p.channels[ichan].scam_support && chan_p.channels[ichan].pmt_packet->len_full != 0 ) {
+						iRet=scam_send_capmt(&chan_p.channels[ichan],tune_p.card);
+						if(iRet)
+						{
+							set_interrupted(ERROR_GENERIC<<8);
+							goto mumudvb_close_goto;
+						}
+					}
+					chan_p.channels[ichan].need_scam_ask=CAM_ASKED;
 				}
 #endif
+
 				/******************************************************/
 				//Rewrite PAT
 				/******************************************************/
-				if((send_packet==1) && //no need to check paquets we don't send
+				if((send_packet==1) && //no need to check packets we don't send
 						(pid == 0) && //This is a PAT PID
 						rewrite_vars.rewrite_pat == OPTION_ON )  //AND we asked for rewrite
 					send_packet=pat_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_p.channels[ichan], ichan);
@@ -1742,7 +1601,7 @@ main (int argc, char **argv)
 				/******************************************************/
 				//Rewrite SDT
 				/******************************************************/
-				if((send_packet==1) && //no need to check paquets we don't send
+				if((send_packet==1) && //no need to check packets we don't send
 						(pid == 17) && //This is a SDT PID
 						rewrite_vars.rewrite_sdt == OPTION_ON &&  //AND we asked for rewrite
 						!chan_p.channels[ichan].sdt_rewrite_skip ) //AND the generation was successful
@@ -1751,7 +1610,7 @@ main (int argc, char **argv)
 				/******************************************************/
 				//Rewrite EIT
 				/******************************************************/
-				if((send_packet==1) &&//no need to check paquets we don't send
+				if((send_packet==1) &&//no need to check packets we don't send
 						(pid == 18) && //This is a EIT PID
 						(chan_p.channels[ichan].service_id) && //we have the service_id
 						rewrite_vars.rewrite_eit == OPTION_ON) //AND we asked for EIT sorting
@@ -1801,7 +1660,7 @@ main (int argc, char **argv)
 		log_message( log_module,  MSG_INFO,
 				"We have got %d overflow errors\n",card_buffer.overflow_number );
 	mumudvb_close_goto:
-	//If the thread is not started, we don't send the unexisting address of monitor_thread_params
+	//If the thread is not started, we don't send the nonexistent address of monitor_thread_params
 	return mumudvb_close(no_daemon,
 			monitorthread == 0 ? NULL:&monitor_thread_params,
 					&rewrite_vars,
@@ -1914,11 +1773,6 @@ int mumudvb_close(int no_daemon,
 
 
 #ifdef ENABLE_SCAM_SUPPORT
-                //Free the channel structures
-                if(chan_p->channels[curr_channel].scam_pmt_packet)
-                        free(chan_p->channels[curr_channel].scam_pmt_packet);
-                chan_p->channels[curr_channel].scam_pmt_packet=NULL;
-
 		if (chan_p->channels[curr_channel].scam_support && scam_vars->scam_support) {
 			scam_channel_stop(&chan_p->channels[curr_channel]);
 		}
@@ -2082,7 +1936,6 @@ void *monitor_func(void* arg)
 	double last_flush_time = 0;
 	double time_no_diff=0;
 	int num_big_buffer_show=0;
-	int autoconf;
 
 	gettimeofday (&tv, (struct timezone *) NULL);
 	monitor_start = tv.tv_sec + tv.tv_usec/1000000;
@@ -2116,322 +1969,295 @@ void *monitor_func(void* arg)
 		}
 		else if (received_signal == SIGHUP) //Sync logs
 		{
-			log_message( log_module, MSG_DEBUG,"Syncing logs\n");
+			log_message( log_module, MSG_DEBUG,"Sync logs\n");
 			sync_logs();
 			received_signal = 0;
 		}
 
-		/*autoconfiguration*/
-		/*We check if we reached the autoconfiguration timeout*/
-		pthread_mutex_lock(&params->auto_p->lock);
-		if(params->auto_p->autoconfiguration)
-		{
-			int iRet;
-			//autoconf_poll deals with the locks
-			iRet = autoconf_poll(now, params->auto_p, params->chan_p, params->tune_p, params->multi_p, &fds, params->unicast_vars, params->server_id, params->scam_vars_v);
-
-			if(iRet)
-				set_interrupted(iRet);
-		}
-		autoconf=params->auto_p->autoconfiguration;//to reduce the lock range we store the status
-		//this value is not going from null values to non zero values due to the sequencial implementation of autoconfiguration
-		pthread_mutex_unlock(&params->auto_p->lock);
 		pthread_mutex_lock(&params->chan_p->lock);
-		if(!autoconf)
+
+		/*we are not doing autoconfiguration we can do something else*/
+		/*sap announces*/
+		sap_poll(params->sap_p,params->chan_p->number_of_channels,params->chan_p->channels,*params->multi_p, (long)monitor_now);
+
+
+
+		/*******************************************/
+		/* compute the bandwidth occupied by        */
+		/* each channel                            */
+		/*******************************************/
+		float time_interval;
+		if(!params->stats_infos->compute_traffic_time)
+			params->stats_infos->compute_traffic_time=monitor_now;
+		if((monitor_now-params->stats_infos->compute_traffic_time)>=params->stats_infos->compute_traffic_interval)
 		{
-			/*we are not doing autoconfiguration we can do something else*/
-			/*sap announces*/
-			sap_poll(params->sap_p,params->chan_p->number_of_channels,params->chan_p->channels,*params->multi_p, (long)monitor_now);
-
-
-
-			/*******************************************/
-			/* compute the bandwidth occupied by        */
-			/* each channel                            */
-			/*******************************************/
-			float time_interval;
-			if(!params->stats_infos->compute_traffic_time)
-				params->stats_infos->compute_traffic_time=monitor_now;
-			if((monitor_now-params->stats_infos->compute_traffic_time)>=params->stats_infos->compute_traffic_interval)
-			{
-				time_interval=monitor_now-params->stats_infos->compute_traffic_time;
-				params->stats_infos->compute_traffic_time=monitor_now;
-				for (curr_channel = 0; curr_channel < params->chan_p->number_of_channels; curr_channel++)
-				{
-					mumudvb_channel_t *current;
-					current=&params->chan_p->channels[curr_channel];
-					pthread_mutex_lock(&current->stats_lock);
-					if (time_interval!=0)
-						params->chan_p->channels[curr_channel].traffic=((float)params->chan_p->channels[curr_channel].sent_data)/time_interval*1/1000;
-					else
-						params->chan_p->channels[curr_channel].traffic=0;
-					params->chan_p->channels[curr_channel].sent_data=0;
-					pthread_mutex_unlock(&current->stats_lock);
-				}
-			}
-
-			/*******************************************/
-			/*show the bandwith measurement            */
-			/*******************************************/
-			if(params->stats_infos->show_traffic)
-			{
-				show_traffic(log_module,monitor_now, params->stats_infos->show_traffic_interval, params->chan_p);
-			}
-
-
-			/*******************************************/
-			/* Show the statistics for the big buffer  */
-			/*******************************************/
-			if(params->stats_infos->show_buffer_stats)
-			{
-				if(!params->stats_infos->show_buffer_stats_time)
-					params->stats_infos->show_buffer_stats_time=monitor_now;
-				if((monitor_now-params->stats_infos->show_buffer_stats_time)>=params->stats_infos->show_buffer_stats_interval)
-				{
-					params->stats_infos->show_buffer_stats_time=monitor_now;
-					if (params->stats_infos->stats_num_reads!=0)
-						log_message( log_module,  MSG_DETAIL, "Average packets in the buffer %d\n", params->stats_infos->stats_num_packets_received/params->stats_infos->stats_num_reads);
-					else
-						log_message( log_module,  MSG_DETAIL, "Average packets in the buffer cannot be calculated - No packets read!\n");
-					params->stats_infos->stats_num_packets_received=0;
-					params->stats_infos->stats_num_reads=0;
-					num_big_buffer_show++;
-					if(num_big_buffer_show==10)
-						params->stats_infos->show_buffer_stats=0;
-				}
-			}
-
-			/*******************************************/
-			/* Periodically flush the logs if asked  */
-			/*******************************************/
-			if((log_params.log_file) && (log_params.log_flush_interval !=-1))
-			{
-				if(!last_flush_time)
-				{
-					last_flush_time=monitor_now;
-					fflush(log_params.log_file);
-				}
-				if((monitor_now-last_flush_time)>=log_params.log_flush_interval)
-				{
-					log_message( log_module,  MSG_FLOOD, "Flushing logs\n");
-					fflush(log_params.log_file);
-					last_flush_time=monitor_now;
-				}
-			}
-
-			/*******************************************/
-			/* Check if the chanel scrambling state    */
-			/* has changed                             */
-			/*******************************************/
-			// Current thresholds for calculation
-			// (<2%) FULLY_UNSCRAMBLED
-			// (5%<=ratio<=75%) PARTIALLY_UNSCRAMBLED
-			// (>80%) HIGHLY_SCRAMBLED
-			// The gap is an hysteresis to avoid excessive jumping between states
+			time_interval=monitor_now-params->stats_infos->compute_traffic_time;
+			params->stats_infos->compute_traffic_time=monitor_now;
 			for (curr_channel = 0; curr_channel < params->chan_p->number_of_channels; curr_channel++)
 			{
 				mumudvb_channel_t *current;
 				current=&params->chan_p->channels[curr_channel];
 				pthread_mutex_lock(&current->stats_lock);
-				/* Calculation of the ratio (percentage) of scrambled packets received*/
-				if (current->num_packet >0 && current->num_scrambled_packets>10)
-					current->ratio_scrambled = (int)(current->num_scrambled_packets*100/(current->num_packet));
+				if (time_interval!=0)
+					params->chan_p->channels[curr_channel].traffic=((float)params->chan_p->channels[curr_channel].sent_data)/time_interval*1/1000;
 				else
-					current->ratio_scrambled = 0;
-
-				/* Test if we have only unscrambled packets (<2%) - scrambled_channel=FULLY_UNSCRAMBLED : fully unscrambled*/
-				if ((current->ratio_scrambled < 2) && (current->scrambled_channel != FULLY_UNSCRAMBLED))
-				{
-					log_message( log_module,  MSG_INFO,
-							"Channel \"%s\" is now fully unscrambled (%d%% of scrambled packets). Card %d\n",
-							current->name, current->ratio_scrambled, params->tune_p->card);
-					current->scrambled_channel = FULLY_UNSCRAMBLED;// update
-				}
-				/* Test if we have partially unscrambled packets (5%<=ratio<=75%) - scrambled_channel=PARTIALLY_UNSCRAMBLED : partially unscrambled*/
-				if ((current->ratio_scrambled >= 5) && (current->ratio_scrambled <= 75) && (current->scrambled_channel != PARTIALLY_UNSCRAMBLED))
-				{
-					log_message( log_module,  MSG_INFO,
-							"Channel \"%s\" is now partially unscrambled (%d%% of scrambled packets). Card %d\n",
-							current->name, current->ratio_scrambled, params->tune_p->card);
-					current->scrambled_channel = PARTIALLY_UNSCRAMBLED;// update
-				}
-				/* Test if we have nearly only scrambled packets (>80%) - scrambled_channel=HIGHLY_SCRAMBLED : highly scrambled*/
-				if ((current->ratio_scrambled > 80) && current->scrambled_channel != HIGHLY_SCRAMBLED)
-				{
-					log_message( log_module,  MSG_INFO,
-							"Channel \"%s\" is now highly scrambled (%d%% of scrambled packets). Card %d\n",
-							current->name, current->ratio_scrambled, params->tune_p->card);
-					current->scrambled_channel = HIGHLY_SCRAMBLED;// update
-				}
-				/* Check the PID scrambling state */
-				int curr_pid;
-				for (curr_pid = 0; curr_pid < current->num_pids; curr_pid++)
-				{
-					if (current->pids_num_scrambled_packets[curr_pid]>0)
-						current->pids_scrambled[curr_pid]=1;
-					else
-						current->pids_scrambled[curr_pid]=0;
-					current->pids_num_scrambled_packets[curr_pid]=0;
-				}
+					params->chan_p->channels[curr_channel].traffic=0;
+				params->chan_p->channels[curr_channel].sent_data=0;
 				pthread_mutex_unlock(&current->stats_lock);
 			}
+		}
+
+		/*******************************************/
+		/*show the bandwidth measurement            */
+		/*******************************************/
+		if(params->stats_infos->show_traffic)
+		{
+			show_traffic(log_module,monitor_now, params->stats_infos->show_traffic_interval, params->chan_p);
+		}
 
 
-
-
-
-
-
-			/*******************************************/
-			/* Check if the channel stream state       */
-			/* has changed                             */
-			/*******************************************/
-			if(last_updown_check)
+		/*******************************************/
+		/* Show the statistics for the big buffer  */
+		/*******************************************/
+		if(params->stats_infos->show_buffer_stats)
+		{
+			if(!params->stats_infos->show_buffer_stats_time)
+				params->stats_infos->show_buffer_stats_time=monitor_now;
+			if((monitor_now-params->stats_infos->show_buffer_stats_time)>=params->stats_infos->show_buffer_stats_interval)
 			{
-				/* Check if the channel stream state has changed*/
-				for (curr_channel = 0; curr_channel < params->chan_p->number_of_channels; curr_channel++)
-				{
-					mumudvb_channel_t *current;
-					current=&params->chan_p->channels[curr_channel];
-					double packets_per_sec;
-					int num_scrambled;
-					pthread_mutex_lock(&current->stats_lock);
-					if(dont_send_scrambled) {
-						num_scrambled=current->num_scrambled_packets;
-					}
-					else
-						num_scrambled=0;
-					if (monitor_now>last_updown_check)
-						packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
-					else
-						packets_per_sec=0;
-					pthread_mutex_unlock(&current->stats_lock);
-					if( params->stats_infos->debug_updown)
-					{
-						log_message( log_module,  MSG_FLOOD,
-								"Channel \"%s\" streamed_channel %f packets/s\n",
-								current->name,packets_per_sec);
-					}
-					if ((packets_per_sec >= params->stats_infos->up_threshold) && (!current->streamed_channel))
-					{
-						log_message( log_module,  MSG_INFO,
-								"Channel \"%s\" back.Card %d\n",
-								current->name, params->tune_p->card);
-						current->streamed_channel = 1;  // update
-						if(params->sap_p->sap == OPTION_ON)
-							sap_update(&params->chan_p->channels[curr_channel], params->sap_p, curr_channel, *params->multi_p); //Channel status changed, we update the sap announces
-					}
-					else if ((current->streamed_channel) && (packets_per_sec < params->stats_infos->down_threshold))
-					{
-						log_message( log_module,  MSG_INFO,
-								"Channel \"%s\" down.Card %d\n",
-								current->name, params->tune_p->card);
-						current->streamed_channel = 0;  // update
-						if(params->sap_p->sap == OPTION_ON)
-							sap_update(&params->chan_p->channels[curr_channel], params->sap_p, curr_channel, *params->multi_p); //Channel status changed, we update the sap announces
-					}
-				}
+				params->stats_infos->show_buffer_stats_time=monitor_now;
+				if (params->stats_infos->stats_num_reads!=0)
+					log_message( log_module,  MSG_DETAIL, "Average packets in the buffer %d\n", params->stats_infos->stats_num_packets_received/params->stats_infos->stats_num_reads);
+				else
+					log_message( log_module,  MSG_DETAIL, "Average packets in the buffer cannot be calculated - No packets read!\n");
+				params->stats_infos->stats_num_packets_received=0;
+				params->stats_infos->stats_num_reads=0;
+				num_big_buffer_show++;
+				if(num_big_buffer_show==10)
+					params->stats_infos->show_buffer_stats=0;
 			}
-			/* reinit */
+		}
+
+		/*******************************************/
+		/* Periodically flush the logs if asked  */
+		/*******************************************/
+		if((log_params.log_file) && (log_params.log_flush_interval !=-1))
+		{
+			if(!last_flush_time)
+			{
+				last_flush_time=monitor_now;
+				fflush(log_params.log_file);
+			}
+			if((monitor_now-last_flush_time)>=log_params.log_flush_interval)
+			{
+				log_message( log_module,  MSG_FLOOD, "Flushing logs\n");
+				fflush(log_params.log_file);
+				last_flush_time=monitor_now;
+			}
+		}
+
+		/*******************************************/
+		/* Check if the channel scrambling state    */
+		/* has changed                             */
+		/*******************************************/
+		// Current thresholds for calculation
+		// (<2%) FULLY_UNSCRAMBLED
+		// (5%<=ratio<=75%) PARTIALLY_UNSCRAMBLED
+		// (>80%) HIGHLY_SCRAMBLED
+		// The gap is an hysteresis to avoid excessive jumping between states
+		for (curr_channel = 0; curr_channel < params->chan_p->number_of_channels; curr_channel++)
+		{
+			mumudvb_channel_t *current;
+			current=&params->chan_p->channels[curr_channel];
+			if(current->channel_ready<READY)
+				continue;
+			pthread_mutex_lock(&current->stats_lock);
+			/* Calculation of the ratio (percentage) of scrambled packets received*/
+			if (current->num_packet >0 && current->num_scrambled_packets>10)
+				current->ratio_scrambled = (int)(current->num_scrambled_packets*100/(current->num_packet));
+			else
+				current->ratio_scrambled = 0;
+
+			/* Test if we have only unscrambled packets (<2%) - scrambled_channel=FULLY_UNSCRAMBLED : fully unscrambled*/
+			if ((current->ratio_scrambled < 2) && (current->scrambled_channel != FULLY_UNSCRAMBLED))
+			{
+				log_message( log_module,  MSG_INFO,
+						"Channel \"%s\" is now fully unscrambled (%d%% of scrambled packets). Card %d\n",
+						current->name, current->ratio_scrambled, params->tune_p->card);
+				current->scrambled_channel = FULLY_UNSCRAMBLED;// update
+			}
+			/* Test if we have partially unscrambled packets (5%<=ratio<=75%) - scrambled_channel=PARTIALLY_UNSCRAMBLED : partially unscrambled*/
+			if ((current->ratio_scrambled >= 5) && (current->ratio_scrambled <= 75) && (current->scrambled_channel != PARTIALLY_UNSCRAMBLED))
+			{
+				log_message( log_module,  MSG_INFO,
+						"Channel \"%s\" is now partially unscrambled (%d%% of scrambled packets). Card %d\n",
+						current->name, current->ratio_scrambled, params->tune_p->card);
+				current->scrambled_channel = PARTIALLY_UNSCRAMBLED;// update
+			}
+			/* Test if we have nearly only scrambled packets (>80%) - scrambled_channel=HIGHLY_SCRAMBLED : highly scrambled*/
+			if ((current->ratio_scrambled > 80) && current->scrambled_channel != HIGHLY_SCRAMBLED)
+			{
+				log_message( log_module,  MSG_INFO,
+						"Channel \"%s\" is now highly scrambled (%d%% of scrambled packets). Card %d\n",
+						current->name, current->ratio_scrambled, params->tune_p->card);
+				current->scrambled_channel = HIGHLY_SCRAMBLED;// update
+			}
+			/* Check the PID scrambling state */
+			int curr_pid;
+			for (curr_pid = 0; curr_pid < current->pid_i.num_pids; curr_pid++)
+			{
+				if (current->pid_i.pids_num_scrambled_packets[curr_pid]>0)
+					current->pid_i.pids_scrambled[curr_pid]=1;
+				else
+					current->pid_i.pids_scrambled[curr_pid]=0;
+				current->pid_i.pids_num_scrambled_packets[curr_pid]=0;
+			}
+			pthread_mutex_unlock(&current->stats_lock);
+		}
+
+
+
+
+
+
+
+		/*******************************************/
+		/* Check if the channel stream state       */
+		/* has changed                             */
+		/*******************************************/
+		if(last_updown_check)
+		{
+			/* Check if the channel stream state has changed*/
 			for (curr_channel = 0; curr_channel < params->chan_p->number_of_channels; curr_channel++)
 			{
 				mumudvb_channel_t *current;
 				current=&params->chan_p->channels[curr_channel];
+				if(current->channel_ready<READY)
+					continue;
+				double packets_per_sec;
+				int num_scrambled;
 				pthread_mutex_lock(&current->stats_lock);
-				params->chan_p->channels[curr_channel].num_packet = 0;
-				params->chan_p->channels[curr_channel].num_scrambled_packets = 0;
+				if(dont_send_scrambled) {
+					num_scrambled=current->num_scrambled_packets;
+				}
+				else
+					num_scrambled=0;
+				if (monitor_now>last_updown_check)
+					packets_per_sec=((double)current->num_packet-num_scrambled)/(monitor_now-last_updown_check);
+				else
+					packets_per_sec=0;
 				pthread_mutex_unlock(&current->stats_lock);
+				if( params->stats_infos->debug_updown)
+				{
+					log_message( log_module,  MSG_FLOOD,
+							"Channel \"%s\" streamed_channel %f packets/s\n",
+							current->name,packets_per_sec);
+				}
+				if ((packets_per_sec >= params->stats_infos->up_threshold) && (!current->has_traffic))
+				{
+					log_message( log_module,  MSG_INFO,
+							"Channel \"%s\" back.Card %d\n",
+							current->name, params->tune_p->card);
+					current->has_traffic = 1;  // update
+				}
+				else if ((current->has_traffic) && (packets_per_sec < params->stats_infos->down_threshold))
+				{
+					log_message( log_module,  MSG_INFO,
+							"Channel \"%s\" down.Card %d\n",
+							current->name, params->tune_p->card);
+					current->has_traffic = 0;  // update
+				}
 			}
-			last_updown_check=monitor_now;
+		}
+		/* reinit */
+		for (curr_channel = 0; curr_channel < params->chan_p->number_of_channels; curr_channel++)
+		{
+			mumudvb_channel_t *current;
+			current=&params->chan_p->channels[curr_channel];
+			if(current->channel_ready<READY)
+				continue;
+			pthread_mutex_lock(&current->stats_lock);
+			params->chan_p->channels[curr_channel].num_packet = 0;
+			params->chan_p->channels[curr_channel].num_scrambled_packets = 0;
+			pthread_mutex_unlock(&current->stats_lock);
+		}
+		last_updown_check=monitor_now;
 
 
 
 
 
-			/*******************************************/
-			/* we count active channels                */
-			/*******************************************/
-			int count_of_active_channels=0;
-			for (curr_channel = 0; curr_channel < params->chan_p->number_of_channels; curr_channel++)
-				if (params->chan_p->channels[curr_channel].streamed_channel)
-					count_of_active_channels++;
+		/*******************************************/
+		/* we count active channels                */
+		/*******************************************/
+		int count_of_active_channels=0;
+		for (curr_channel = 0; curr_channel < params->chan_p->number_of_channels; curr_channel++)
+			if (params->chan_p->channels[curr_channel].has_traffic && params->chan_p->channels[curr_channel].channel_ready>=READY )
+				count_of_active_channels++;
 
-			/*Time no diff is the time when we got 0 active channels*/
-			/*if we have active channels, we reinit this counter*/
-			if(count_of_active_channels)
-				time_no_diff=0;
-			/*If we don't have active channels and this is the first time, we store the time*/
-			else if(!time_no_diff)
-				time_no_diff=(long)monitor_now;
+		/*Time no diff is the time when we got 0 active channels*/
+		/*if we have active channels, we reinit this counter*/
+		if(count_of_active_channels)
+			time_no_diff=0;
+		/*If we don't have active channels and this is the first time, we store the time*/
+		else if(!time_no_diff)
+			time_no_diff=(long)monitor_now;
 
 
 
-			/*******************************************/
-			/* If we don't stream data for             */
-			/* a too long time, we exit                */
-			/*******************************************/
-			if((timeout_no_diff)&& (time_no_diff&&((monitor_now-time_no_diff)>timeout_no_diff)))
-			{
-				log_message( log_module,  MSG_ERROR,
-						"No data from card %d in %ds, exiting.\n",
-						params->tune_p->card, timeout_no_diff);
-				set_interrupted(ERROR_NO_DIFF<<8); //the <<8 is to make difference beetween signals and errors
-			}
+		/*******************************************/
+		/* If we don't stream data for             */
+		/* a too long time, we exit                */
+		/*******************************************/
+		if((timeout_no_diff)&& (time_no_diff&&((monitor_now-time_no_diff)>timeout_no_diff)))
+		{
+			log_message( log_module,  MSG_ERROR,
+					"No data from card %d in %ds, exiting.\n",
+					params->tune_p->card, timeout_no_diff);
+			set_interrupted(ERROR_NO_DIFF<<8); //the <<8 is to make difference between signals and errors
+		}
 
 
 #ifdef ENABLE_SCAM_SUPPORT
-			if (scam_vars->scam_support) {
-				/*******************************************/
-				/* we check num of packets in ring buffer                */
-				/*******************************************/
-				for (curr_channel = 0; curr_channel < params->chan_p->number_of_channels; curr_channel++) {
-					mumudvb_channel_t *channel = &params->chan_p->channels[curr_channel];
-					if (channel->scam_support) {
-						//send capmt if needed
-						if (channel->need_scam_ask==CAM_NEED_ASK) {
-						        if (channel->scam_support) {
-                                                            pthread_mutex_lock(&channel->scam_pmt_packet->packetmutex);
-                                                            if (channel->scam_pmt_packet->len_full != 0 ) {
-                                                                    if (!scam_send_capmt(channel, scam_vars,params->tune_p->card))
-                                                                    {
-                                                                            channel->need_scam_ask=CAM_ASKED;
-                                                                    }
-                                                            }
-                                                            pthread_mutex_unlock(&channel->scam_pmt_packet->packetmutex);
-						        }
-						}
-						unsigned int ring_buffer_num_packets = 0;
-						unsigned int to_descramble = 0;
-						unsigned int to_send = 0;
+		if (scam_vars->scam_support) {
+			/*******************************************/
+			/* we check num of packets in ring buffer                */
+			/*******************************************/
+			for (curr_channel = 0; curr_channel < params->chan_p->number_of_channels; curr_channel++) {
+				mumudvb_channel_t *channel = &params->chan_p->channels[curr_channel];
+				if (channel->scam_support && channel->channel_ready>=READY) {
+					unsigned int ring_buffer_num_packets = 0;
+					unsigned int to_descramble = 0;
+					unsigned int to_send = 0;
 
-						if (channel->ring_buf) {
-							pthread_mutex_lock(&channel->ring_buf->lock);
-							to_descramble = channel->ring_buf->to_descramble;
-							to_send = channel->ring_buf->to_send;
-							ring_buffer_num_packets = to_descramble + to_send;
-							pthread_mutex_unlock(&channel->ring_buf->lock);
-						}
-						if (ring_buffer_num_packets>=channel->ring_buffer_size)
-							log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %llu\n",channel->name, ring_buffer_num_packets, (long long unsigned int)channel->ring_buffer_size);
-						else
-							log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %llu, to descramble %u, to send %u\n",channel->name, ring_buffer_num_packets, (long long unsigned int)channel->ring_buffer_size, to_descramble, to_send);
+					if (channel->ring_buf) {
+						pthread_mutex_lock(&channel->ring_buf->lock);
+						to_descramble = channel->ring_buf->to_descramble;
+						to_send = channel->ring_buf->to_send;
+						ring_buffer_num_packets = to_descramble + to_send;
+						pthread_mutex_unlock(&channel->ring_buf->lock);
 					}
+					if (ring_buffer_num_packets>=channel->ring_buffer_size)
+						log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %llu\n",channel->name, ring_buffer_num_packets, (long long unsigned int)channel->ring_buffer_size);
+					else
+						log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %llu, to descramble %u, to send %u\n",channel->name, ring_buffer_num_packets, (long long unsigned int)channel->ring_buffer_size, to_descramble, to_send);
 				}
 			}
+		}
 
 #endif
 
 
 
-			/*******************************************/
-			/* generation of the file which says       */
-			/* the streamed channels                   */
-			/*******************************************/
-			if (write_streamed_channels)
-				gen_file_streamed_channels(params->filename_channels_streamed, params->filename_channels_not_streamed, params->chan_p->number_of_channels, params->chan_p->channels);
+		/*******************************************/
+		/* generation of the file which says       */
+		/* the streamed channels                   */
+		/*******************************************/
+		if (write_streamed_channels)
+			gen_file_streamed_channels(params->filename_channels_streamed, params->filename_channels_not_streamed, params->chan_p->number_of_channels, params->chan_p->channels);
 
 
-		}
+
 		pthread_mutex_unlock(&params->chan_p->lock);
 
 		for(i=0;i<params->wait_time && !params->threadshutdown;i++)

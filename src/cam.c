@@ -62,6 +62,8 @@
 
 static char *log_module="CAM: ";
 
+int check_pmt_service_id(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel); // in ts.c
+
 /*****************************************************************************
  * Code for dealing with cam using libdvben50221
  *****************************************************************************/
@@ -156,7 +158,7 @@ void init_cam_v(cam_p_t *cam_p)
 /** @brief Read a line of the configuration file to check if there is a cam parameter
  *
  */
-int read_cam_configuration(cam_p_t *cam_p, mumudvb_channel_t *current_channel, int ip_ok, char *substring)
+int read_cam_configuration(cam_p_t *cam_p, mumudvb_channel_t *c_chan, char *substring)
 {
 	char delimiteurs[] = CONFIG_FILE_SEPARATOR;
 	if (!strcmp (substring, "cam_support"))
@@ -165,8 +167,8 @@ int read_cam_configuration(cam_p_t *cam_p, mumudvb_channel_t *current_channel, i
 		cam_p->cam_support = atoi (substring);
 		if(cam_p->cam_support)
 		{
-			log_message( log_module,  MSG_WARN,
-					"You have enabled the support for conditionnal acces modules (scrambled channels). Please report any bug/comment\n");
+			log_message( log_module,  MSG_INFO,
+					"You have enabled the support for conditional access modules (scrambled channels).");
 		}
 	}
 	else if (!strcmp (substring, "cam_reask_interval"))
@@ -200,23 +202,27 @@ int read_cam_configuration(cam_p_t *cam_p, mumudvb_channel_t *current_channel, i
 		substring = strtok (NULL, delimiteurs);
 		cam_p->cam_pmt_follow = atoi (substring);
 	}
-	else if (!strcmp (substring, "cam_pmt_pid"))
+	else if (!strcmp (substring, "cam_ask"))
 	{
-		if ( ip_ok == 0)
+		if ( c_chan == NULL)
 		{
 			log_message( log_module,  MSG_ERROR,
-					"cam_pmt_pid : You have to start a channel first (using ip= or channel_next)\n");
+					"cam_ask : You have to start a channel first (using channel_next)\n");
 			return -1;
 		}
-		substring = strtok (NULL, delimiteurs);
-		current_channel->pmt_pid = atoi (substring);
-		if (current_channel->pmt_pid < 10 || current_channel->pmt_pid > 8191){
+		c_chan->need_cam_ask=CAM_NEED_ASK;
+		MU_F(c_chan->need_cam_ask)=F_USER;
+	}
+	else if (!strcmp (substring, "cam_no_ask"))
+	{
+		if ( c_chan == NULL)
+		{
 			log_message( log_module,  MSG_ERROR,
-					"Configuration issue in pids, given pid : %d\n",
-					current_channel->pmt_pid);
+					"cam_no_ask : You have to start a channel first (using channel_next)\n");
 			return -1;
 		}
-		current_channel->need_cam_ask=CAM_NEED_ASK;
+		c_chan->need_cam_ask=CAM_NO_ASK;
+		MU_F(c_chan->need_cam_ask)=F_USER;
 	}
 	else
 		return 0; //Nothing concerning cam, we return 0 to explore the other possibilities
@@ -470,11 +476,14 @@ static void *camthread_func(void* arg)
 				for (int curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++)
 				{
 					// Check if new asking (ie sending a CAM PMT UPDATE) is needed. IE channel highly/partially scrambled or down and asked a while ago
-					if((chan_p->channels[curr_channel].scrambled_channel == HIGHLY_SCRAMBLED || chan_p->channels[curr_channel].scrambled_channel == PARTIALLY_UNSCRAMBLED || chan_p->channels[curr_channel].streamed_channel == 0)&&
+					if((chan_p->channels[curr_channel].scrambled_channel == HIGHLY_SCRAMBLED ||
+							chan_p->channels[curr_channel].scrambled_channel == PARTIALLY_UNSCRAMBLED ||
+							chan_p->channels[curr_channel].has_traffic == 0)&&
 							(chan_p->channels[curr_channel].need_cam_ask==CAM_ASKED)&&
+							(chan_p->channels[curr_channel].channel_ready>=READY)&&
 							((tv.tv_sec-chan_p->channels[curr_channel].cam_asking_time)>cam_p->cam_reask_interval))
 					{
-						chan_p->channels[curr_channel].need_cam_ask=CAM_NEED_UPDATE; //No race condition because need_cam_ask is not changed when it is at the value CAM_ASKED
+						chan_p->channels[curr_channel].need_cam_ask=CAM_NEED_UPDATE; //TODO : lock
 						log_message( log_module,  MSG_DETAIL,
 								"Channel \"%s\" highly scrambled for more than %ds. We ask the CAM to update.\n",
 								chan_p->channels[curr_channel].name,cam_p->cam_reask_interval);
@@ -1091,22 +1100,22 @@ static int mumudvb_cam_mmi_enq_callback(void *arg, uint8_t slot_id, uint16_t ses
 }
 
 /** @brief This function is called when a new PMT packet is there */
-int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, cam_p_t *cam_p, mumudvb_channel_t *actual_channel)
+int cam_new_packet(int pid, int curr_channel, cam_p_t *cam_p, mumudvb_channel_t *actual_channel)
 {
 	int iRet;
 	int ret=0;
 	struct timeval tv;
 	gettimeofday (&tv, (struct timezone *) NULL);
 
-	if (((actual_channel->need_cam_ask==CAM_NEED_ASK)||(actual_channel->need_cam_ask==CAM_NEED_UPDATE))&& (actual_channel->pmt_pid == pid))
+	if (((actual_channel->need_cam_ask==CAM_NEED_ASK)||(actual_channel->need_cam_ask==CAM_NEED_UPDATE))&& (actual_channel->pid_i.pmt_pid == pid))
 	{
-		while(get_ts_packet(ts_packet,actual_channel->cam_pmt_packet))
+		//If we have a full and ok PMT, this PMT is updated commonly for autoconf and CAM
+		if(actual_channel->pmt_packet->len_full>0 && !actual_channel->pmt_need_update)
 		{
-			ts_packet=NULL; // next call we only POP packets from the stack
 			//We check the transport stream id of the packet
-			if(check_pmt_service_id(actual_channel->cam_pmt_packet, actual_channel))
+			if(check_pmt_service_id(actual_channel->pmt_packet, actual_channel))
 			{
-				iRet=mumudvb_cam_new_pmt(cam_p, actual_channel->cam_pmt_packet,actual_channel->need_cam_ask);
+				iRet=mumudvb_cam_new_pmt(cam_p, actual_channel->pmt_packet,actual_channel->need_cam_ask);
 				if(iRet==1)
 				{
 					if(actual_channel->need_cam_ask==CAM_NEED_UPDATE)
@@ -1124,69 +1133,10 @@ int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, cam_p_t 
 					log_message( log_module,  MSG_DETAIL,"Problem sending CA PMT for channel %d : \"%s\"\n", curr_channel, actual_channel->name );
 				}
 			}
-			//else //The service_id is bad, we will try to get another PMT packet
 		}
+		else //we force update of the PMT packet
+			actual_channel->pmt_need_update=1;
 	}
 	return ret;
 }
-
-
-
-
-
-
-
-/*************************************************************************************************************************************
-  This part of the code is a bit particular, it allows the PMT to be followed for non autoconfigurated channels
- *************************************************************************************************************************************/
-
-
-//from autoconf_pmt.c
-void update_pmt_version(mumudvb_channel_t *channel);
-int pmt_need_update(mumudvb_channel_t *channel, unsigned char *packet);
-
-/** @brief This function is called when a new PMT packet is there and we asked to check if there is updates*/
-void cam_pmt_follow(unsigned char *ts_packet,  mumudvb_channel_t *actual_channel)
-{
-	/*Note : the pmt version is initialized during autoconfiguration*/
-	/*Check the version stored in the channel*/
-	if(!actual_channel->pmt_needs_update)
-	{
-		//Checking without crc32, it there is a change we get the full packet for crc32 checking
-		actual_channel->pmt_needs_update=pmt_need_update(actual_channel,get_ts_begin(ts_packet));
-
-	}
-	/*We need to update the full packet, we download it*/
-	if(actual_channel->pmt_needs_update)
-	{
-		while(get_ts_packet(ts_packet,actual_channel->pmt_packet))
-		{
-			ts_packet=NULL; // next call we only POP packets from the stack
-			if(pmt_need_update(actual_channel,actual_channel->pmt_packet->data_full))
-			{
-				log_message( log_module, MSG_DETAIL,"PMT packet updated, we now ask the CAM to update it\n");
-				log_message( log_module, MSG_WARN,"The PMT version has changed but the PIDs are configured manually, use autoconfiguration if possible. If not, please tell me why so I can improve it\n");
-				/*We've got the FULL PMT packet*/
-				pmt_t *header;
-				header=(pmt_t *)(actual_channel->pmt_packet->data_full);
-				if(header->current_next_indicator == 0)
-				{
-					log_message( log_module, MSG_DEBUG,"The current_next_indicator is set to 0, this PMT is not valid for the current stream\n");
-				}else{
-					actual_channel->need_cam_ask=CAM_NEED_UPDATE; //We we send again this packet to the CAM
-					update_pmt_version(actual_channel);
-					actual_channel->pmt_needs_update=0;
-				}
-			}
-			else
-			{
-				log_message( log_module, MSG_DEBUG,"False alert, nothing to do\n");
-				actual_channel->pmt_needs_update=0;
-			}
-		}
-	}
-}
-
-
-
 

@@ -64,7 +64,7 @@ void init_sap_v(sap_p_t *sap_p)
  * @param sap_p the sap parameters
  * @param substring The currrent line
  */
-int read_sap_configuration(sap_p_t *sap_p, mumudvb_channel_t *current_channel, int ip_ok, char *substring)
+int read_sap_configuration(sap_p_t *sap_p, mumudvb_channel_t *c_chan, char *substring)
 {
 	char delimiteurs[] = CONFIG_FILE_SEPARATOR;
 	if (!strcmp (substring, "sap"))
@@ -132,10 +132,10 @@ int read_sap_configuration(sap_p_t *sap_p, mumudvb_channel_t *current_channel, i
 	}
 	else if (!strcmp (substring, "sap_group"))
 	{
-		if ( ip_ok == 0)
+		if ( c_chan == NULL)
 		{
 			log_message( log_module,  MSG_ERROR,
-					"sap_group : this is a channel option, You have to start a channel first (using ip= or channel_next)\n");
+					"sap_group : this is a channel option, You have to start a channel first (using or channel_next)\n");
 			return -1;
 		}
 
@@ -146,7 +146,8 @@ int read_sap_configuration(sap_p_t *sap_p, mumudvb_channel_t *current_channel, i
 					"The sap group is too long\n");
 			return -1;
 		}
-		strcpy (current_channel->sap_group, substring);
+		strcpy (c_chan->sap_group, substring);
+		MU_F(c_chan->sap_group)=F_USER;
 	}
 	else if (!strcmp (substring, "sap_default_group"))
 	{
@@ -249,6 +250,8 @@ void sap_send(sap_p_t *sap_p, int num_messages)
 int sap_update(mumudvb_channel_t *channel, sap_p_t *sap_p, int curr_channel, multi_p_t multi_p)
 {
 	/** @todo check PACKET Size < MTU*/
+	log_message( log_module, MSG_DEBUG,"sap update channel SID %d name \"%s\"",channel->service_id,channel->name);
+
 	//This function is called when the channel changes so it increases the version and update the packet
 	char temp_string[256];
 
@@ -258,6 +261,7 @@ int sap_update(mumudvb_channel_t *channel, sap_p_t *sap_p, int curr_channel, mul
 	struct in6_addr ip6;
 	mumudvb_sap_message_t *sap_message4=NULL;
 	mumudvb_sap_message_t *sap_message6=NULL;
+
 	if(channel->socketOut4)
 	{
 		sap_message4=&(sap_p->sap_messages4[curr_channel]);
@@ -362,6 +366,8 @@ int sap_update(mumudvb_channel_t *channel, sap_p_t *sap_p, int curr_channel, mul
 		sap_message6->buf[2]=(((crc32>>24) & 0xff)+((crc32>>16) & 0xff)) & 0xff;
 		sap_message6->buf[3]=(((crc32>>8) & 0xff)+(crc32 & 0xff)) & 0xff;
 	}
+
+	channel->sap_need_update=0;
 	return 0;
 
 }
@@ -389,8 +395,11 @@ int sap_add_program(mumudvb_channel_t *channel, sap_p_t *sap_p, mumudvb_sap_mess
 	if(channel->socketOut6)
 		sap_message6->to_be_sent=0;
 	//we check if it's an alive channel
-	if(!channel->streamed_channel)
+	if(channel->channel_ready<READY)
+	{
+		log_message( log_module, MSG_DEBUG,"Channel not ready");
 		return 1;
+	}
 
 	//Now we write the sdp part, in two times to avoid heavy code
 	/** @section payload
@@ -520,7 +529,7 @@ int sap_add_program(mumudvb_channel_t *channel, sap_p_t *sap_p, mumudvb_sap_mess
 		{
 			int len=SAP_GROUP_LENGTH;
 			strcpy(channel->sap_group,sap_p->sap_default_group);
-			mumu_string_replace(channel->sap_group,&len,0,"%type",simple_service_type_to_str(channel->channel_type) );
+			mumu_string_replace(channel->sap_group,&len,0,"%type",simple_service_type_to_str(channel->service_type) );
 		}
 		if(channel->socketOut4)
 			mumu_string_append(&payload4,"a=cat:%s\r\n", channel->sap_group);
@@ -616,7 +625,7 @@ int sap_add_program(mumudvb_channel_t *channel, sap_p_t *sap_p, mumudvb_sap_mess
 void sap_poll(sap_p_t *sap_p,int number_of_channels,mumudvb_channel_t  *channels, multi_p_t multi_p, long now)
 {
 	int curr_channel;
-	//we check if SAP is initialised
+	//we check if SAP is initialized
 	if(sap_p->sap_messages4==NULL && sap_p->sap_messages6==NULL)
 		return;
 	if(sap_p->sap == OPTION_ON)
@@ -625,9 +634,13 @@ void sap_poll(sap_p_t *sap_p,int number_of_channels,mumudvb_channel_t  *channels
 		{
 			// it's the first time we are here, we initialize all the channels
 			for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-				sap_update(&channels[curr_channel], sap_p, curr_channel, multi_p);
+				if(channels[curr_channel].channel_ready>=READY)
+					sap_update(&channels[curr_channel], sap_p, curr_channel, multi_p);
 			sap_p->sap_last_time_sent=now-sap_p->sap_interval-1;
 		}
+		for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+			if(channels[curr_channel].sap_need_update && (channels[curr_channel].channel_ready>=READY))
+				sap_update(&channels[curr_channel], sap_p, curr_channel, multi_p);
 		if((now-sap_p->sap_last_time_sent)>=sap_p->sap_interval)
 		{
 			sap_send(sap_p, number_of_channels);

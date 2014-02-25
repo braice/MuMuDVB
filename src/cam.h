@@ -141,8 +141,8 @@ int convert_desc(struct ca_info *cai, uint8_t *out, uint8_t *buf, int dslen, uin
 int convert_pmt(struct ca_info *cai, mumudvb_ts_packet_t *pmt, uint8_t list, uint8_t cmd,int quiet);
 int cam_start(cam_p_t *, int, mumu_chan_p_t *);
 void cam_stop(cam_p_t *);
-int read_cam_configuration(cam_p_t *cam_p, mumudvb_channel_t *current_channel, int ip_ok, char *substring);
-int cam_new_packet(int pid, int curr_channel, unsigned char *ts_packet, cam_p_t *cam_p, mumudvb_channel_t *actual_channel);
+int read_cam_configuration(cam_p_t *cam_p, mumudvb_channel_t *c_chan, char *substring);
+int cam_new_packet(int pid, int curr_channel, cam_p_t *cam_p, mumudvb_channel_t *actual_channel);
 
 void cam_pmt_follow(unsigned char *ts_packet,  mumudvb_channel_t *actual_channel);
 #endif

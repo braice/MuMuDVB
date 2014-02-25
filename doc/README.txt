@@ -1,7 +1,7 @@
 MuMuDVB - README
 ================
 Brice Dubost <mumudvb@braice.net>
-Version 1.7.3
+Version 2.0.0
 
 [NOTE]
 An HTML version of this file is availaible on http://mumudvb.braice.net[MuMuDVB's website].
@@ -14,18 +14,18 @@ Presentation
 Description
 ~~~~~~~~~~~
 
-MuMuDVB (Multi Multicast DVB) is originally a modification of dvbstream that http://www.crans.org[cr@ns] made. We have decided to redistribute it.
+MuMuDVB (Multi Multicast DVB) is a program that redistributes streams from DVB or ATSC (Digital Television) on a network (also called IPTV) using
+multicasting or HTTP unicast.It supports satellite, terrestrial and cable TV, in clear or scrambled channels and run on PC as well as several embedded platforms.
+It is intended to multicast (the stream is sent once and the network equipments split the data for the different clients) a whole DVB transponder (set of channels sent on the same carrier frequency) by assigning
+each channel a different multicast group. It detects the different services present as well as their important parameters for streaming, rewrite the main DVB tables to show clients only the right stream in each group. 
 
-Now, it's a standalone project.
+History : MuMuDVB is originally a modification of dvbstream that http://www.crans.org[cr@ns] made to stream TV in a few hundred rooms.
 
-MuMuDVB is a program that redistributes streams from DVB (Digital Television) on a network (also called IPTV) using
-multicasting or HTTP unicast. It can multicast a whole DVB transponder by assigning
-each channel a different multicast IP. It detects the different services present, rewrite the main DVB tables to show clients only the right stream in each group.
 
 Website
 ~~~~~~~
 
-http://mumudvb.braice.net[Mumudvb main site]
+http://mumudvb.braice.net[MuMuDVB main site]
 
 
 Authors and contacts
@@ -38,14 +38,14 @@ Authors and contacts
 - mailto:manu@REMOVEMEcrans.ens-cachan.fr[Manuel Sabban] (getopt)
 - mailto:glondu@REMOVEMEcrans.ens-cachan.fr[Stéphane Glondu] (man page, debian package)
 - Special thanks to Dave Chapman (dvbstream author and contributor)
-- Pierre Gronlier, Sébastien Raillard, Ludovic Boué, Romolo Manfredini
+- Pierre Gronlier, Sébastien Raillard, Ludovic Boué, Romolo Manfredini, Matthias Šubik, Krzysztof Ostrowski
 
 .Mailing list:
-- mailto:mumudvb-dev@REMOVEMElists.crans.org[MuMuDVB dev]
-- https://lists.crans.org/listinfo/mumudvb-dev[MuMuDVB dev list information and subscription]
+- mailto:mumudvb-dev@REMOVEMElists.crans.org[MuMuDVB mailing list]
+- https://lists.crans.org/listinfo/mumudvb-dev[MuMuDVB mailing list information and subscription]
 
 [NOTE]
-When contacting about an issue, please join the config file used and the output of MuMuDVB in verbose mode ( -vvv on the command line) and any other information that could be useful.
+When contacting about an issue, please join the output of MuMuDVB in verbose mode ("-vvv" on the command line) and any other information that could be useful.
 
 
 Contents and features
@@ -56,7 +56,7 @@ Features overview
 
 - Stream channels from a transponder on different multicast IPs
 - Support for scrambled channels (if you don't have a CAM you can use sasc-ng, but check if it's allowed in you country/by your broadcaster)
-- Support for automatic configuration i.e channels discovery, see <<autoconfiguration,Autoconfiguration>> section
+- Support for automatic configuration i.e channels discovery and follow changes, see <<autoconfiguration,Autoconfiguration>> section
 - Generation of SAP announces, see <<sap,SAP>> section
 - Support of DVB-S2, DVB-S, DVB-C, DVB-T and ATSC
 - Possibility to partially rewrite the stream for better compatibility with set-top boxes and some clients. See <<pat_rewrite,PAT Rewrite>> and <<sdt_rewrite,SDT Rewrite>> sections.
@@ -64,38 +64,8 @@ Features overview
 - Support for RTP headers (only for multicast)
 - CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.txt and CAM_menu_interface.png for screenshot)
 - Software descrambling through oscam dvbapi and libdvbcsa
+- Flexible configuration mechanism using templates
 
-
-Detailled feature list
-~~~~~~~~~~~~~~~~~~~~~~
-
-- Can show reception level when streaming
-- Show if channels are successfully descrambled by the CAM
-- Makes a list of streamed and down channels in real time
-- Can deamonize and write his own process id in a file
-- Supports standard and universals LNBs
-- Can stop himself if it receives no data from the card after a defined timeout
-- Stops trying tuning after a configurable timeout
-- The mandatory pids are always sent with all channels : 
-  * PAT (0): Program Association Table
-  * CAT (1): Conditionnal Access Table
-  * NIT (16): Network Information Table: intended to provide information about the physical network.
-  * SDT (17): Service Description Table: data describing the services in the system e.g. names of services, the service provider, etc.
-  * EIT (18): Event Information Table: data concerning events or programmes such as event name, start time, duration, etc.
-  * TDT (20): Time and Date Table: information related to the present time and date.This information is given in a separate table due to the frequent updating of this information.
-- Can suscribe to all multicast groups (IGMP membership request) in order to avoid some switches to broadcast all channels see <<problems_hp,problems with HP switches>>.
-- Supports autoconfiguration, see <<autoconfiguration,Autoconfiguration>> section
-  * In autoconfiguration mode, MuMuDVB follow the changes in the PIDs and update itself while running.
-- Debian flavor initialisation scripts
-- The buffer size can be tuned to reduce CPU usage, see <<reduce_cpu,reduce MuMuDVB CPU usage>> section.
-- Can avoid the sending of scrambled packets
-- Automatically detect the scrambling status of a channel
-- Can reset the CAM module in case of a bad initialisation
-- Can sort the EIT PID to send only the ones corresponding to the current channel
-- Data reading can be done using a thread, see <<threaded_read, thread reading>> section.
-- Playlist generation, see <<playlist, playlist>>
-- Templates support
-- Simple webservice exposing detailed streaming status (see WEBSERVICES.txt)
 
 Installation
 ------------
@@ -145,7 +115,7 @@ $ ./configure --help
 
 [NOTE]
 The CAM support depends on libdvben50221, libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of these libraries and deactivate the CAM support if one of them is not present.
-In the case of fedora, the dvb-apps package does not contains the headers, you have to install it manually follwing the instructions here : http://www.linuxtv.org/wiki/index.php/LinuxTV_dvb-apps 
+In the case of fedora, the dvb-apps package does not contains the headers, you have to install it manually following the instructions here : http://www.linuxtv.org/wiki/index.php/LinuxTV_dvb-apps[LinuxTv DVB-apps page] 
 
 [NOTE]
 The SCAM support depends on libdvbcsa from videolan. The configure script will detect automatically the presence of these libraries and deactivate the SCAM support if one of them is not present. It needs also trunk version of oscam to get control words. Oscam configuration is described below in section concerning software descrambling v2 inside mumudvb. 
@@ -235,15 +205,18 @@ Signal: (see kill(1))
 Autoconfiguration
 -----------------
 
-MuMuDVB is able to find the channels in the transponder and their PIDs (Program IDentifiers).
+MuMuDVB is able to find the channels in the transponder, their PIDs (Program IDentifiers), names, and Logical channel numbers.
 
 Without autoconfiguration, you have to set the transponder parameters, and for each channel, the multicast ip, the name and the PIDs (PMT, audio, video, teletext etc...)
 
-If the PIDs are changed, MuMuDVB will automatically update the channels except if you put `autoconf_pid_update=0` in your configuration file.
+If the channel list or the PIDs are changed, MuMuDVB will automatically update the channels.
 
-MuMuDVB is able to do two kinds of autoconfiguration:
+In autoconfiguration MuMuDVB will try to detect everything and keep the user set parameters fixed. So you can tune manually only things which are relevant for your usage like the multicast IP.
+You can also use templates to generate multicast IP or other parameters.
 
-Full autoconfiguration
+We will review autoconfiguration starting without personalization then the cases when you want to change specific parameters for a (several) channel(s).
+
+Pure autoconfiguration 
 ~~~~~~~~~~~~~~~~~~~~~~
 
 This is the easiest way to use MuMuDVB.
@@ -251,11 +224,11 @@ This is the easiest way to use MuMuDVB.
 Use this when you want to stream a full transponder or a subset of a transponder (using autoconf_sid_list).
 
 [NOTE]
-You don't have to specify any channel using this mode
+You don't have to specify any channel in autoconfiguration except if you need to specify special parameters.
 
 In this mode, MuMuDVB will find for you the different channels, their name and their PIDs (PMT, PCR, Audio, Video, Subtitle, Teletext and AC3).
 
-In order to use this mode you have to:
+In order to use autoconfiguration you have to:
 - Set the tuning parameters to your config file
 - Add `autoconfiguration=full` to your config file
 - You don't have to set any channels
@@ -275,19 +248,22 @@ The channels will be streamed over the multicasts ip adresses 239.100.c.n where 
 If you don't use the common_port directive, MuMuDVB will use the port 1234.
 
 [NOTE]
-By default, SAP announces are activated if you use this autoconfiguration mode. To deactivate them put `sap=0` in your config file.
-By default, SDT rewriting is activated if you use this autoconfiguration mode. To deactivate it put `rewrite_sdt=0` in your config file.
-By default, PAT rewriting is activated if you use this autoconfiguration mode. To deactivate it put `rewrite_pat=0` in your config file.
+By default, SAP announces are activated if you use autoconfiguration. To disable them put `sap=0` in your config file.
+By default, SDT rewriting is activated if you use autoconfiguration. To disable it put `rewrite_sdt=0` in your config file.
+By default, PAT rewriting is activated if you use autoconfiguration. To disable it put `rewrite_pat=0` in your config file.
 
 
 [NOTE]
-If you want to select the services to stream, you can use the `autoconf_sid_list` option.
+If you want to select the services to stream, you can use the `autoconf_sid_list` option which allows to specify the service identifier of the channels you want to be configured.
 
 [NOTE]
 A detailled, documented example configuration file can be found in `doc/configuration_examples/autoconf_full.conf`
 
-Name templates and autoconfiguration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Templates and autoconfiguration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Name
+++++
 
 By default the name of the channel will be the name of the service defined by the provider. If you want more flexibility you can use a template.
 
@@ -315,39 +291,79 @@ There is different keywords available:
 |%sid_lo| The channel service id. The two lower bits (between 0 and 255)
 |==================================================================================================================
 
-Please refer to `doc/README_CONF.txt` (link:README_CONF.html[HTML version]) to see which options accept which templates
 
-Other keywords can be easily added if necessary.
+Other options: Ip, port
++++++++++++++++++++++++
 
-
-
-[[autoconfiguration_simple]]
-Simple autoconfiguration
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-[NOTE]
-This autoconfiguration mode will soon disapear. If you absolutely need it except for setting the channel names and their IP adresses, please contact.
-
-Use this when you want to control the name of the channels, and their IPs better than using the templates.
+You can also use templates for specifying the ip addresses or the port, for example if you want to use the service identifier (unique channel number in the transponder) in your ip address, you can use `autoconf_ip4=239.42.%sid_hi.%sid_lo`.
+Maybe you will notice different transponders having different channels with the same service identifier, you can then use other template to make your IP unique `autoconf_ip4=239.10*%server+%card.%sid_hi.%sid_lo`.
 
 
-- You have to add 'autoconfiguration=partial' in the head of your config file.
-- For each channel, you have to set:
- * the Ip adress (except if you use unicast)
- * the name
- * the PMT PID
+Please refer to `doc/README_CONF.txt` (link:README_CONF.html[HTML version]) in the section "Autoconfiguration parameters" to see which options accept which templates
+
+Other keywords can be easily added if necessary, please contact if you have particular needs.
 
 
-MuMuDVB will find the audio, video, PCR, teletext, subtitling and AC3 PIDs for you before streaming.
 
-[NOTE]
-If you put more than one PID for a channel, MuMuDVB will deactivate autoconfiguration for this channel.
+Advanced autoconfiguration
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[NOTE]
-A detailled, documented example configuration file can be found in `doc/configuration_examples/autoconf_partial.conf`
+If the autodection mechanisms of Autoconfiguration are not suiting your needs, for example you need special IP for your channels or special names, you can force manually all channel parameters. The channel parameters specified by the user will not be overriden by autoconfiguration.
 
-[NOTE]
-Simple autoconfiguration can fail finding the good pids if a PMT pid is shared within multiples channels. In this case you have to add the `service_id` option to the channel to specify the service id.
+The channels are identified in DVB by their service identifier (SID), so you will need to specify this number to allow MuMuDVB know which channel you are refering too.
+
+Some examples to show you the possibilities: 
+
+Specific IP
+^^^^^^^^^^^
+
+For example you need to specify a particular IP address for the channel with the service identifier 517, you can use the following configuration file
+
+-------------------------------------
+freq=506000
+autoconfiguration=full
+
+new_channel
+service_id=517
+ip=239.42.42.42
+-------------------------------------
+
+The IP address of all the other channels will be attributed using the default scheme, or the template you can define using autoconf_ip4,autoconf_ip6
+
+Extra channels
+^^^^^^^^^^^^^^
+
+You can also use this personalization to add specific channels, with the following example you will obtain all detected channels plus one extra which is the one you specified.
+
+-------------------------------------
+freq=506000
+autoconfiguration=full
+
+new_channel
+name=my dump channel
+ip=239.42.42.42
+pids=8192
+-------------------------------------
+
+Specific channels with specific IP
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This mode can be combined with autoconf_sid_list if you want to restrict the channels autodetected, in the following example we want to stream two channels and specify their IPs
+
+-------------------------------------
+freq=506000
+autoconfiguration=full
+autoconf_sid_list=516 517
+
+new_channel
+service_id=516
+ip=239.42.42.1
+
+new_channel
+service_id=517
+ip=239.42.42.2
+-------------------------------------
+
 
 [[sap]]
 SAP announces
@@ -379,18 +395,28 @@ If you put `sap_default_group=%type`, you will get two sap groups: Television an
 Configuring the client to get the SAP announces
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-VLC > 0.8.2
+
+VLC > 2.0.0
 ^^^^^^^^^^^
+
+SAP announces are enabled by default, you will find them in the local network left submenu of the playlist
+
+VLC < 2.0.0
+^^^^^^^^^^^
+
+Click on the "Settings" menu, then on "add interface" and choose SAP playlist. Then open you playlist, the SAP announces should appear automatically.
+
+
+
+
+VLC > 0.8.2 && VLC < 2.0.0
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 You have to enter the settings, choose advanced settings. The SAP announces are in playlist->service discovery.
 
 Don't forget to save the settings.
 
 You should have now a SAP section in your playlist.
 
-VLC < 0.8.2
-^^^^^^^^^^^
-
-Click on the "Settings" menu, then on "add interface" and choose SAP playlist. Then open you playlist, the SAP announces should appear automatically.
 
 
 
@@ -576,16 +602,14 @@ http://article.gmane.org/gmane.linux.drivers.video-input-infrastructure/29866[Li
 How to ask MuMuDVB for descrambling?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.You are using full autoconfiguration :
+.You are using autoconfiguration :
 
 Just add `cam_support=1` to your config file
 
-.You are using partial autoconfiguration or no autoconfiguration
+.You are not using autoconfiguration
  * Add `cam_support=1` to your config file (before the channels)
- * For each scrambled channel add the `cam_pmt_pid` option. This option is made for MuMuDVB to know wich PID is the PMT PID wich will be used to ask for descrambling
+ * For each scrambled channel add the `pmt_pid` option. This option is made for MuMuDVB to know wich PID is the PMT PID wich will be used to ask for descrambling
 
-[NOTE]
-You have an example of CAM support in doc/configuration_examples/autoconf_partial.conf
 
 
 Hardware CAM issues
@@ -601,7 +625,7 @@ We always use cards and hardware from Digital Devices(http://www.digitaldevices.
         - Octopus CI
         - Cine S2 V6.5
 
-After a lot of problem with mumudvb and the ci card we found out, that the hardware wasn't detected by mumudvb.
+After a lot of problem with MuMuDVB and the CI card we found out, that the hardware wasn't detected by MuMuDVB.
 The folder /dev/dvb looked like :
 
 ----------------------------------------
@@ -841,23 +865,9 @@ To "enjoy" multicasting you need a switch which supports the http://en.wikipedia
 
 IPv6 use extensively the concept of http://en.wikipedia.org/wiki/Multicast_address[scoping]. By default MuMuDVB uses the scope "site-local" (ie multicast addresses starting with FF05) the SAP announcements are also sent with this scope. If you need to have more flexibility on this side, please contact.
 
-For more details, please consult the http://mumudvb.braice.net/mumudrupal/node/52[IPv6 page] on MuMuDVB's website
+For more details, please consult the http://mumudvb.net/node/52[IPv6 page] on MuMuDVB's website
 
 
-Technical details (not sorted)
-------------------------------
-
- * CPU consuming: MuMuDVB takes 15% CPU of a celeron 2.6GHz with an Hauppauge card and linux version 2.6.9 when streaming a full transponder (about 30MBit/s)
-
- * Try to avoid old via or nForce chipsets and in general ultra low cost motherboards. They can't deal with a lot of data on the PCI bus.
-
- * When the program starts, he writes the channel list in the file `/var/run/mumudvb/channels_streamed_adapter%d_tuner%d` (where %d are the card number and the tuner number). This file contains streamed channels (updated every 5 seconds) in the form: "name:ip:port:Scramblingstatus"
-
- * MuMuDVB is able to support as many cards as the operating system does. Old versions of udev+glibc were not able to support more than 4 cards but this problem is solved using relatively recent versions (udev > 104 and libc6 > 2.7)
-
- * When daemonized, MuMuDVB writes its process identifier in `/var/run/mumudvb/mumudvb_adapter%d_tuner%d.pid`, where %d is replaced by the card number and the tuner number
-
- * MuMuDVB supports satellite in the Ku band, with universal or standard LNBs. The support of satellites in the S or C band is implemented via the use of the lo_frequency option. See `doc/README_CONF.txt` (link:README_CONF.html[HTML version]).
 
 MuMuDVB Logs
 ------------
@@ -873,6 +883,28 @@ For more detail about these features see `doc/README_CONF.txt` (link:README_CONF
 
 Known issues
 ------------
+
+What limits the number of transponders I can stream ?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+MuMuDVB have a low CPU footage, so except on embedded systems, the CPU will not be the limitting factor. You will be limitted usually by your network or the capacities of the PCI/PCIE bus.
+
+
+Cards not available
+~~~~~~~~~~~~~~~~~~~
+
+MuMuDVB is able to support as many cards as the operating system does. To know which cards MuMuDVB see, use `mumudvb -lv`. 
+
+Special satellite Bands
+~~~~~~~~~~~~~~~~~~~~~~~
+
+MuMuDVB supports satellite in the Ku band, with universal or standard LNBs. The support of satellites in the S or C band is implemented via the use of the lo_frequency option. See `doc/README_CONF.txt` (link:README_CONF.html[HTML version]).
+
+System wide Freezes
+~~~~~~~~~~~~~~~~~~~
+
+Try to avoid ultra low cost motherboards. They can crash when dealing with large data streams.
+
 
 VLC can't read the stream but it is fine with xine or mplayer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -905,11 +937,6 @@ The set-top box display a blank screen
 
  * If the stream is working well when reading it with a computer and not with your set-top box, this is probably because your set-top box needs the PAT PID to be rewritten. To do this add `rewrite_pat=1` to your config file.
 
-Simple autoconfiguration fails finding the right pids
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
- * This can happend if a PMT PIDs is shared among multiple channels, see <<autoconfiguration_simple,simple autoconfiguration>> section for more details.
-
 The CAM is complaining about locked channels
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -924,7 +951,7 @@ You also have to rewrite the SDT PID using the `rewrite_sdt` option
 
 
 [[problems_hp]]
-HELP ! my multicast traffic is flooded (I have a HP procurve switch)
+My multicast traffic is flooded (I have an "old" HP procurve switch)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The best explanation is found in the HP multicast routing guide.
@@ -971,12 +998,12 @@ To reduce the cpu usage, see <<reduce_cpu,reduce MuMuDVB CPU usage>> section. In
 The reception is working but all the channels are down
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If the signal is good but MuMuDVB tells you that all the channels are down and you are sure about your pids it can be due to your CAM module if you have one. Try after unplugging your CAM module.
+If the signal is good but MuMuDVB tells you that all the channels are down and you are sure about your PIDs it can be due to your CAM module if you have one. Try after unplugging your CAM module.
 
 I want to stream from several cards
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The solution is simple: just launch a MuMuDVB process for each card.
+You need to launch a MuMuDVB process for each card.
 
 I want to stream the whole transponder on one "channel"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
