@@ -1015,7 +1015,7 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
 	if (iRet < 0)
 	{
 		log_message( log_module,  MSG_ERROR,"getsockname failed : %s while making HTTP reply", strerror(errno));
-		if (0 != unicast_reply_free(reply)) {
+		if (0 != unicast_reply_free(reply))
 			log_message( log_module, MSG_INFO,"Error when releasing the HTTP reply");
 		return -1;
 	}
