@@ -150,10 +150,12 @@ void chan_new_pmt(unsigned char *ts_packet, mumu_chan_p_t *chan_p, int pid)
 				chan_pmt_need_update(&chan_p->channels[ichan],ts_packet);
 			if(chan_p->channels[ichan].pmt_need_update)
 				log_message( log_module, MSG_DEBUG,"We update the PMT for channel %d sid %d", ichan,chan_p->channels[ichan].service_id);
-
-			while(chan_p->channels[ichan].pmt_need_update && get_ts_packet(ts_packet,chan_p->channels[ichan].pmt_packet))
+			//since we are looping on channels and modifing the packet pointer we need to copy it
+			unsigned char *curr_ts_packet;
+			curr_ts_packet=ts_packet;
+			while(chan_p->channels[ichan].pmt_need_update && get_ts_packet(curr_ts_packet,chan_p->channels[ichan].pmt_packet))
 			{
-				ts_packet=NULL; // next call we only POP packets from the stack
+				curr_ts_packet=NULL; // next call we only POP packets from the stack
 				//If everything ok, we set the proper flags
 				if(chan_pmt_ok(&chan_p->channels[ichan], chan_p->channels[ichan].pmt_packet))
 				{
