@@ -352,7 +352,7 @@ void autoconf_update_chan_status(auto_p_t *auto_p,mumu_chan_p_t *chan_p)
 			continue;
 
 
-		if(auto_p->autoconf_scrambled && chan_p->channels[ichan].free_ca_mode)
+		if(!auto_p->autoconf_scrambled && chan_p->channels[ichan].free_ca_mode)
 		{
 				log_message( log_module, MSG_DETAIL,"Channel scrambled, no CAM support and no autoconf_scrambled, we skip. Name \"%s\"",
 						chan_p->channels[ichan].name);

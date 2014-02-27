@@ -400,6 +400,8 @@ typedef struct mumu_chan_t{
 	/** Says if we've got first cw for channel.
 	 * NOTE: This is _not_ under cw_lock, but under the regular chan_p lock. */
 	int got_cw_started;
+    /** Says if we've started scam threads. */
+	int scam_started;
 #endif
 
 

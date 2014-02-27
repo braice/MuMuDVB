@@ -168,7 +168,6 @@ void chan_new_pmt(unsigned char *ts_packet, mumu_chan_p_t *chan_p, int pid)
 			//if we still need update, we had a fake detection
 			if(chan_p->channels[ichan].pmt_need_update)
 			{
-				chan_p->channels[ichan].pmt_need_update=0;
 				log_message( log_module, MSG_DEBUG,"False PMT update alarm for channel %d sid %d", ichan,chan_p->channels[ichan].service_id);
 			}
 		}
@@ -211,6 +210,10 @@ void chan_update_CAM(mumu_chan_p_t *chan_p, auto_p_t *auto_p,  void *scam_vars_v
 			chan_p->channels[ichan].ring_buffer_size=scam_vars->ring_buffer_default_size;
 			chan_p->channels[ichan].decsa_delay=scam_vars->decsa_default_delay;
 			chan_p->channels[ichan].send_delay=scam_vars->send_default_delay;
+			if (!chan_p->channels[ichan].scam_started) {
+			    set_interrupted(scam_channel_start(&chan_p->channels[ichan]));
+			    chan_p->channels[ichan].scam_started = 1;
+			}
 		}
 #endif
 	}

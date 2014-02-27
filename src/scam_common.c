@@ -199,8 +199,6 @@ int scam_init_no_autoconf(scam_parameters_t *scam_vars, mumudvb_channel_t *chann
     		  channels[curr_channel].pid_i.pids_type[0]=PID_PMT;
     		  snprintf(channels[curr_channel].pid_i.pids_language[0],4,"%s","---");
     	  }
-        ++scam_vars->need_pmt_get;
-        channels[curr_channel].need_pmt_get=1;
       }
     }
   }
