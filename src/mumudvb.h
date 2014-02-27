@@ -205,17 +205,17 @@ typedef struct {
 	/** A mutex protecting all the other members. */
 	pthread_mutex_t lock;
 	/** Buffer with dvb packets*/
-	unsigned char ** data;
+	unsigned char *data;
 	/** Write index of buffer */
 	unsigned int write_idx;
 	/** Buffer with descrambling timestamps*/
-	uint64_t * time_decsa;
+	uint64_t *time_decsa;
 	/** Number of packets left to descramble*/
 	unsigned int to_descramble;
 	/** Read index of buffer for descrambling thread */
 	unsigned int read_decsa_idx;
 	/** Buffer with sending timestamps*/
-	uint64_t * time_send;
+	uint64_t *time_send;
 	/** Number of packets left to send*/
 	unsigned int to_send;
 	/** Read index of buffer for sending thread */
