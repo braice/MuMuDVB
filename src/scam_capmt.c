@@ -75,11 +75,12 @@ int scam_send_capmt(mumudvb_channel_t *channel, int adapter)
   caPMT[14] = 0x02; //length
   caPMT[15] = 0x00; //demux id
   caPMT[16] = (char) adapter; //adapter id
-  caPMT[10] = (*(channel->pmt_packet)).data_full[10]; //reserved+program_info_length
-  caPMT[11] = (*(channel->pmt_packet)).data_full[11] + 1 + 4; //reserved+program_info_length (+1 for ca_pmt_cmd_id, +4 for above CAPMT_DESC_DEMUX)
+  caPMT[10] = (*(channel->scam_pmt_packet)).data_full[10]; //reserved+program_info_length
+  caPMT[11] = (*(channel->scam_pmt_packet)).data_full[11] + 1 + 4; //reserved+program_info_length (+1 for ca_pmt_cmd_id, +4 for above CAPMT_DESC_DEMUX)
  
-  memcpy(caPMT + 17, (*(channel->pmt_packet)).data_full + 12, (*(channel->pmt_packet)).len_full -12 - 4);
-  length_field = 17 + ((*(channel->pmt_packet)).len_full - 11 - 4) - 6;
+  memcpy(caPMT + 17, (*(channel->scam_pmt_packet)).data_full + 12, (*(channel->scam_pmt_packet)).len_full -12 - 4);
+  length_field = 17 + ((*(channel->scam_pmt_packet)).len_full - 11 - 4) - 6;
+
   caPMT[4] = length_field >> 8;
   caPMT[5] = length_field & 0xff;
   toWrite = length_field + 6;

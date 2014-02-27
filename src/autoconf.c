@@ -600,6 +600,14 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, auto_p_t *auto_p, fds
 						update_chan_filters(chan_p, tune_p->card_dev_path, tune_p->tuner, fds);
 						log_message( log_module, MSG_INFO,"We update the channel CAM support");
 						chan_update_CAM(chan_p, auto_p,  scam_vars);
+#ifdef ENABLE_SCAM_SUPPORT
+						if (chan_p->channels[ichan].scam_support) {
+							pthread_mutex_lock(&chan_p->channels[ichan].scam_pmt_packet->packetmutex);
+							chan_p->channels[ichan].scam_pmt_packet->len_full = chan_p->channels[ichan].pmt_packet->len_full;
+							memcpy(chan_p->channels[ichan].scam_pmt_packet->data_full, chan_p->channels[ichan].pmt_packet->data_full, chan_p->channels[ichan].pmt_packet->len_full);
+							pthread_mutex_unlock(&chan_p->channels[ichan].scam_pmt_packet->packetmutex);
+						}
+#endif
 						channel_updated=1;
 					}
 				}

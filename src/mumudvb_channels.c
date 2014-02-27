@@ -68,6 +68,22 @@ int mumu_init_chan(mumudvb_channel_t *chan)
 
 	}
 
+#ifdef ENABLE_SCAM_SUPPORT
+	if(chan->scam_pmt_packet==NULL)
+	{
+		chan->scam_pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
+		if(chan->scam_pmt_packet==NULL)
+		{
+			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+			set_interrupted(ERROR_MEMORY<<8);
+			return -1;
+		}
+		memset (chan->scam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+		pthread_mutex_init(&chan->scam_pmt_packet->packetmutex,NULL);
+
+	}
+#endif
+
 	//Add pmt pid to pid list if not done
 	if(MU_F(chan->pid_i.pmt_pid)==F_USER)
 	{

@@ -1759,6 +1759,10 @@ int mumudvb_close(int no_daemon,
 
 
 #ifdef ENABLE_SCAM_SUPPORT
+		if(chan_p->channels[curr_channel].scam_pmt_packet)
+			free(chan_p->channels[curr_channel].scam_pmt_packet);
+		chan_p->channels[curr_channel].scam_pmt_packet=NULL;
+
 		if (chan_p->channels[curr_channel].scam_support && scam_vars->scam_support) {
 			scam_channel_stop(&chan_p->channels[curr_channel]);
 		}
