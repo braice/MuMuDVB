@@ -39,6 +39,7 @@ Authors and contacts
 - mailto:glondu@REMOVEMEcrans.ens-cachan.fr[Stéphane Glondu] (man page, debian package)
 - Special thanks to Dave Chapman (dvbstream author and contributor)
 - Pierre Gronlier, Sébastien Raillard, Ludovic Boué, Romolo Manfredini
+- Others, please see git logs
 
 .Mailing list:
 - mailto:mumudvb-dev@REMOVEMElists.crans.org[MuMuDVB dev]
@@ -64,7 +65,7 @@ Features overview
 - Support for RTP headers (only for multicast)
 - CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.txt and CAM_menu_interface.png for screenshot)
 - Software descrambling through oscam dvbapi and libdvbcsa
-
+- Support for embedded platforms based on UCLIBC and ANDROID
 
 Detailled feature list
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -132,6 +133,7 @@ The `[configure options]` specific to MuMuDVB are:
   --enable-scam-support   SCAM support (default enabled) (see note below)
   --enable-coverage       build for test coverage (default disabled)
   --enable-duma           Debbuging DUMA library (default disabled)
+  --enable-android        Support for Android (default disabled)
 ---------------------------------------------------------------------
 
 [NOTE]
