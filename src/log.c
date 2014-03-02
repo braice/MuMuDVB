@@ -1071,6 +1071,14 @@ int convert_en300468_string(char *string, int max_len)
 	iconv_t cd;
 	//we open the conversion table
 	cd = iconv_open( "UTF8", encodings_en300468[encoding_control_char] );
+	if (cd == (iconv_t) -1) {
+	  log_message( log_module, MSG_DETAIL, "\t\t UTF8 encoding not supported by iconv. Trying UTF-8.\n");
+	  cd = iconv_open( "UTF-8", encodings_en300468[8]);
+	  if (cd == (iconv_t) -1) {
+	    log_message( log_module, MSG_DETAIL, "\t\t Neither UTF8 or UTF-8 encoding supported by iconv. No name encoding conversion.\n");
+	    goto exit_iconv;
+	  }
+	}
 
 	size_t inSize, outSize=max_len;
 	inSize=len;
@@ -1086,6 +1094,7 @@ int convert_en300468_string(char *string, int max_len)
 	log_message( log_module, MSG_DETAIL, "Iconv not present, no name encoding conversion \n");
 #endif
 
+exit_iconv:
 	log_message( log_module, MSG_FLOOD, "Converted text : \"%s\" (text encoding : %s)\n", string,encodings_en300468[encoding_control_char]);
 	return encoding_control_char;
 
