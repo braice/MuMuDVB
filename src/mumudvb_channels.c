@@ -94,6 +94,7 @@ void chan_pmt_need_update( mumudvb_channel_t *chan, unsigned char *buf)
 {
 	pmt_t       *pmt=(pmt_t*)(get_ts_begin(buf));
 	if(pmt) //It's the beginning of a new packet
+	{
 		if(pmt->version_number!=chan->pmt_version && (pmt->table_id==0x02) && !chan->pmt_need_update)
 		{
 			/*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
@@ -104,8 +105,14 @@ void chan_pmt_need_update( mumudvb_channel_t *chan, unsigned char *buf)
 				return;
 			}
 			log_message( log_module, MSG_DEBUG,"PMT Need update. stored version : %d, new: %d\n",chan->pmt_version,pmt->version_number);
+			//We check if the PMT belongs to this channel
+			if(chan->service_id && (chan->service_id != HILO(pmt->program_number)) )
+			{
+				return;
+			}
 			chan->pmt_need_update=1;
 		}
+	}
 }
 
 
@@ -129,6 +136,17 @@ int chan_pmt_ok(mumudvb_channel_t *channel, mumudvb_ts_packet_t *pmt)
 		return 0;
 	}
 
+
+	//If everything seems fine we set update to 0 maybe a false alarm before
+	if(header->version_number==channel->pmt_version &&
+			channel->pmt_need_update)
+	{
+		channel->pmt_need_update=0;
+		log_message( log_module, MSG_DETAIL,"False PMT update alarm for channel \"%s\" sid %d", channel->name,channel->service_id);
+		return 0;
+	}
+	else//We update the PMT version stored
+		channel->pmt_version=header->version_number;
 
 	return 1;
 }
@@ -166,12 +184,6 @@ void chan_new_pmt(unsigned char *ts_packet, mumu_chan_p_t *chan_p, int pid)
 					if(chan_p->channels[ichan].need_cam_ask==CAM_ASKED)
 						chan_p->channels[ichan].need_cam_ask=CAM_NEED_UPDATE; //We we send again this packet to the CAM
 				}
-			}
-			//if we still need update, we had a fake detection
-			if(chan_p->channels[ichan].pmt_need_update)
-			{
-				chan_p->channels[ichan].pmt_need_update=0;
-				log_message( log_module, MSG_DEBUG,"False PMT update alarm for channel %d sid %d", ichan,chan_p->channels[ichan].service_id);
 			}
 		}
 

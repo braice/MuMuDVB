@@ -293,7 +293,7 @@ void autoconf_get_pmt_pids(mumudvb_ts_packet_t *pmt, int *pids, int *num_pids, i
 
 /** @brief Reads the program map table
  *
- * It's used to get the differents "useful" pids of the channel
+ * It's used to get the different "useful" pids of the channel
  * @param pmt the pmt packet
  * @param channel the associated channel
  */
@@ -303,20 +303,12 @@ int autoconf_read_pmt(mumudvb_channel_t *channel, mumudvb_ts_packet_t *pmt)
 
 	header=(pmt_t *)pmt->data_full;
 
-	if(header->version_number!=channel->pmt_version)
+	if(channel->service_id && (channel->service_id != HILO(header->program_number)) )
 	{
-		//New version
-		channel->pmt_version=header->version_number;
-		if(channel->pmt_version!=-1)
-			log_message( log_module, MSG_INFO,"The PMT version changed, channels PIDs could have changed");
-
-	}
-	else
-	{
-		log_message( log_module, MSG_DEBUG,"The PMT version did not changed, (BAD CRC ?)");
-		channel->autoconf_pmt_need_update=0;
+		log_message( log_module,  MSG_DETAIL,"The PMT %d does not belongs to channel \"%s\"\n", pmt->pid, channel->name);
 		return 0;
 	}
+
 
 
 
