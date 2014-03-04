@@ -32,6 +32,8 @@
 
 #include <sys/types.h>
 #include <stdint.h>
+#include <pthread.h>
+#include <endian.h>
 
 #include "config.h"
 
