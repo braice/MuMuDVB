@@ -242,6 +242,7 @@ int scam_channel_start(mumudvb_channel_t *channel)
   pthread_mutex_init(&channel->ring_buf->lock, NULL);
   scam_send_start(channel);
   scam_decsa_start(channel);
+  channel->scam_started = 1;
   return 0;
 }
 

@@ -121,7 +121,7 @@ static void *getcwthread_func(void* arg)
               log_message(log_module, MSG_ERROR,"channel %s: unsuccessful epoll_ctl EPOLL_CTL_DEL", channel->name);
               set_interrupted(ERROR_NETWORK<<8);
               free(getcw_params);
-              return 0;
+              return;
             }
             close(channel->camd_socket);
             channel->camd_socket=-1;

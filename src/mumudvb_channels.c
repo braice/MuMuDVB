@@ -199,6 +199,14 @@ void chan_new_pmt(unsigned char *ts_packet, mumu_chan_p_t *chan_p, int pid)
 					//We tell the CAM a new PMT is here
 					if(chan_p->channels[ichan].need_cam_ask==CAM_ASKED)
 						chan_p->channels[ichan].need_cam_ask=CAM_NEED_UPDATE; //We we send again this packet to the CAM
+#ifdef ENABLE_SCAM_SUPPORT
+					if (chan_p->channels[ichan].scam_support) {
+						pthread_mutex_lock(&chan_p->channels[ichan].scam_pmt_packet->packetmutex);
+						chan_p->channels[ichan].scam_pmt_packet->len_full = chan_p->channels[ichan].pmt_packet->len_full;
+						memcpy(chan_p->channels[ichan].scam_pmt_packet->data_full, chan_p->channels[ichan].pmt_packet->data_full, chan_p->channels[ichan].pmt_packet->len_full);
+						pthread_mutex_unlock(&chan_p->channels[ichan].scam_pmt_packet->packetmutex);
+					}
+#endif
 				}
 			}
 		}
@@ -235,12 +243,13 @@ void chan_update_CAM(mumu_chan_p_t *chan_p, auto_p_t *auto_p,  void *scam_vars_v
 
 
 #ifdef ENABLE_SCAM_SUPPORT
-		if (chan_p->channels[ichan].free_ca_mode && scam_vars->scam_support) {
+		if (chan_p->channels[ichan].free_ca_mode && scam_vars->scam_support && !chan_p->channels[ichan].scam_started) {
 			chan_p->channels[ichan].scam_support=1;
 			chan_p->channels[ichan].need_scam_ask=CAM_NEED_ASK;
 			chan_p->channels[ichan].ring_buffer_size=scam_vars->ring_buffer_default_size;
 			chan_p->channels[ichan].decsa_delay=scam_vars->decsa_default_delay;
 			chan_p->channels[ichan].send_delay=scam_vars->send_default_delay;
+			set_interrupted(scam_channel_start(&chan_p->channels[ichan]));
 		}
 #endif
 	}

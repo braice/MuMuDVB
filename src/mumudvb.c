@@ -1484,6 +1484,22 @@ main (int argc, char **argv)
 			/******************************************************/
 
 			/******************************************************/
+			//   SCAM START PART
+			/******************************************************/
+#ifdef ENABLE_SCAM_SUPPORT
+			if(!scam_threads_started) {
+				for (ichan = 0; ichan < chan_p.number_of_channels; ichan++) {
+					if (!chan_p.channels[ichan].scam_started && chan_p.channels[ichan].scam_support && scam_vars.scam_support) {
+						set_interrupted(scam_channel_start(&chan_p.channels[ichan]));
+					}
+				}
+				scam_threads_started=1;
+			}
+#endif
+			/******************************************************/
+			//   SCAM START PART FINISHED
+			/******************************************************/
+			/******************************************************/
 			//Pat rewrite
 			/******************************************************/
 			if( (pid == 0) && //This is a PAT PID
