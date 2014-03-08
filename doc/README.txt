@@ -118,6 +118,9 @@ Then you have a source which can be installed as a release package.
 From a release package
 ^^^^^^^^^^^^^^^^^^^^^^
 
+[NOTE]
+If you want to compile for OpenWRT, please follow http://ocsovszki-dorian.blogspot.co.uk/2014/01/tl-wdr4900-openwrt-dvb-t-with-ite9135.html[OpenWRT tutorial]
+
 In order to install MuMuDVB type:
 
 ---------------------------------
