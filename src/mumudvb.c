@@ -444,13 +444,16 @@ main (int argc, char **argv)
 
 	//paranoya we clear all the content of all the channels
 	memset (&chan_p.channels, 0, sizeof (mumudvb_channel_t)*MAX_CHANNELS);
-#ifdef ENABLE_SCAM_SUPPORT
 	for (int i = 0; i < MAX_CHANNELS; ++i) {
           pthread_mutex_init(&chan_p.channels[i].stats_lock, NULL);
+#ifdef ENABLE_SCAM_SUPPORT
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
           pthread_mutex_init(&chan_p.channels[i].cw_lock, NULL);
-          chan_p.channels[i].camd_socket = -1;
-	}
 #endif
+          chan_p.channels[i].camd_socket = -1;
+#endif
+	}
+
 
 
 	/******************************************************/
@@ -2400,6 +2403,7 @@ void *monitor_func(void* arg)
                                                             pthread_mutex_unlock(&channel->scam_pmt_packet->packetmutex);
 						        }
 						}
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
 						unsigned int ring_buffer_num_packets = 0;
 						unsigned int to_descramble = 0;
 						unsigned int to_send = 0;
@@ -2415,6 +2419,7 @@ void *monitor_func(void* arg)
 							log_message( log_module,  MSG_ERROR, "%s: ring buffer overflow, packets in ring buffer %u, ring buffer size %llu\n",channel->name, ring_buffer_num_packets, (long long unsigned int)channel->ring_buffer_size);
 						else
 							log_message( log_module,  MSG_DEBUG, "%s: packets in ring buffer %u, ring buffer size %llu, to descramble %u, to send %u\n",channel->name, ring_buffer_num_packets, (long long unsigned int)channel->ring_buffer_size, to_descramble, to_send);
+#endif
 					}
 				}
 			}

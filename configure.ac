@@ -60,20 +60,37 @@ dnl scam support
 dnl
 AC_ARG_ENABLE(scam_support,
   [  --enable-scam-support          SCAM support (default enabled)],,[enable_scam_support="yes"])
+AC_ARG_ENABLE(scam_descrambler_support,
+  [  --enable-scam-descrambler-support          SCAM descrambler support (default enabled)],,[enable_scam_descrambler_support="yes"])
 
-if test "${enable_scam_support}" = "yes"
+if test "${enable_scam_descrambler_support}" = "yes"
 then
-  AC_CHECK_LIB([dvbcsa], [dvbcsa_bs_decrypt],[], [enable_scam_support="no"])
-  if test "${enable_scam_support}" != "no"
+  if test "${enable_scam_support}" = "yes"
+  then
+    AC_CHECK_LIB([dvbcsa], [dvbcsa_bs_decrypt],[], [enable_scam_support="no"])
+    if test "${enable_scam_support}" != "no"
+    then
+      AC_DEFINE(ENABLE_SCAM_SUPPORT, 1, Define if you want the SCAM support)
+      AC_DEFINE(ENABLE_SCAM_DESCRAMBLER_SUPPORT, 1, Define if you want the SCAM descrambler support)
+    else
+      enable_scam_descrambler_support="no"
+      AC_MSG_WARN([libdvbcsa is needed for SCAM support])
+    fi
+  else
+    enable_scam_support="no"
+    enable_scam_descrambler_support="no"
+  fi
+else
+  enable_scam_descrambler_support="no"
+  if test "${enable_scam_support}" = "yes"
   then
     AC_DEFINE(ENABLE_SCAM_SUPPORT, 1, Define if you want the SCAM support)
   else
-    AC_MSG_WARN([libdvbcsa are needed for SCAM support])
+    enable_scam_support="yes"
   fi
-else
-  enable_scam_support="no"
 fi
 AM_CONDITIONAL(BUILD_SCAMSUPPORT, [test "${enable_scam_support}" != "no"])
+AM_CONDITIONAL(BUILD_SCAMDESCRAMBLERSUPPORT, [test "${enable_scam_descrambler_support}" != "no"])
 
 dnl
 dnl  Test coverage
@@ -143,6 +160,12 @@ if test "${enable_scam_support}" != "no" ; then
         echo "Build with SCAM support:                            yes"
 else
         echo "Build with SCAM support:                             no"
+fi
+
+if test "${enable_scam_descrambler_support}" != "no" ; then
+        echo "Build with SCAM descrambler support:                yes"
+else
+        echo "Build with SCAM descrambler support:                 no"
 fi
 
 if test "${atsc_long_names}" = "yes" ; then

@@ -95,8 +95,10 @@ static void *getcwthread_func(void* arg)
   scam_params=getcw_params->scam_params;
   chan_p=getcw_params->chan_p;
   int curr_channel = 0;
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
   unsigned char buff[1 + sizeof(int) + sizeof(ca_descr_t)];
   int cRead, *request;
+#endif
   struct epoll_event events[MAX_CHANNELS];
   int num_of_events;
   int i;
@@ -126,11 +128,14 @@ static void *getcwthread_func(void* arg)
             close(channel->camd_socket);
             channel->camd_socket=-1;
             channel->need_scam_ask=CAM_NEED_ASK;
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
             pthread_mutex_lock(&channel->cw_lock);
             channel->ca_idx_refcnt = 0;
             channel->ca_idx = 0;
             pthread_mutex_unlock(&channel->cw_lock);
+#endif
           } else {
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
             cRead = recv(channel->camd_socket, &buff, sizeof(buff), 0);
             if (cRead <= 0) {
               log_message(log_module, MSG_ERROR,"channel: %s recv", channel->name);
@@ -179,6 +184,9 @@ static void *getcwthread_func(void* arg)
                 pthread_mutex_unlock(&channel->cw_lock);
               }
             }
+#else
+            log_message( log_module,  MSG_INFO, "Got unhandled event on channel %s\n", channel->name);
+#endif
           }
           break;
         }

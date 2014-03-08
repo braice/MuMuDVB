@@ -184,7 +184,7 @@ typedef struct {
 	int pfdsnum;
 }fds_t;
 
-#ifdef ENABLE_SCAM_SUPPORT
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
 /**@brief Structure containing ring buffer*/
 typedef struct {
 	/** A mutex protecting all the other members. */
@@ -312,12 +312,13 @@ typedef struct mumudvb_channel_t{
 #ifdef ENABLE_SCAM_SUPPORT
         /** The PMT packet for SCAM purposes*/
         mumudvb_ts_packet_t *scam_pmt_packet;
-	/** The camd socket for SCAM*/
-	int camd_socket;
 	/** Say if we need to ask this channel to the oscam*/
 	int need_scam_ask;
 	/** Say if this channel should be descrambled using scam*/
 	int scam_support;
+        /** The camd socket for SCAM*/
+        int camd_socket;
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
 	/** Mutex for odd_cw and even_cw. */
 	pthread_mutex_t cw_lock;
 	/** Odd control word for descrambling */
@@ -353,6 +354,7 @@ typedef struct mumudvb_channel_t{
 	uint64_t decsa_delay;
 	/** Delay of sending in us*/
 	uint64_t send_delay;
+#endif
 	/** Says if we need to get pmt for this channel on scam own*/
 	int need_pmt_get;
 	/** Says if we've got first cw for channel.

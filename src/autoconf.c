@@ -80,7 +80,6 @@
 #include "scam_capmt.h"
 #include "scam_common.h"
 #include "scam_getcw.h"
-#include "scam_decsa.h"
 #endif
 
 static char *log_module="Autoconf: ";
@@ -834,9 +833,11 @@ int autoconf_services_to_channels(const auto_p_t *parameters, mumudvb_channel_t 
 				if (service->free_ca_mode && scam_vars->scam_support) {
 					channels[iChan].scam_support=1;
 					channels[iChan].need_scam_ask=CAM_NEED_ASK;
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
 					channels[iChan].ring_buffer_size=scam_vars->ring_buffer_default_size;
 					channels[iChan].decsa_delay=scam_vars->decsa_default_delay;
 					channels[iChan].send_delay=scam_vars->send_default_delay;
+#endif
 				}
 #endif
 				iChan++;

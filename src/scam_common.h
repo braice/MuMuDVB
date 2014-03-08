@@ -36,7 +36,9 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <sys/ioctl.h>
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
 #include <linux/dvb/ca.h>
+#endif
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <sys/time.h>
@@ -67,9 +69,11 @@ typedef struct scam_parameters_t{
   int need_pmt_get;
   pthread_t getcwthread;
   int getcwthread_shutdown;
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
   ca_descr_t ca_descr;
   ca_pid_t ca_pid;
   uint64_t ring_buffer_default_size,decsa_default_delay,send_default_delay;
+#endif
   int epfd;
 }scam_parameters_t;  
 

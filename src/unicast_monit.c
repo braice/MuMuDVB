@@ -43,8 +43,10 @@
 #ifdef ENABLE_SCAM_SUPPORT
 #include "scam_capmt.h"
 #include "scam_common.h"
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
 #include "scam_getcw.h"
 #include "scam_decsa.h"
+#endif
 #endif
 
 static char *log_module="Unicast : ";
@@ -320,6 +322,10 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 	// SCAM information
 #ifdef ENABLE_SCAM_SUPPORT
 	unicast_reply_write(reply, "\t<scam_support>%d</scam_support>\n",scam_vars->scam_support);
+#else
+        unicast_reply_write(reply, "\t<scam_support>%d</scam_support>\n",0);
+#endif
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
 	if (scam_vars->scam_support) {
 		unicast_reply_write(reply, "\t<ring_buffer_default_size>%u</ring_buffer_default_size>\n",scam_vars->ring_buffer_default_size);
 		unicast_reply_write(reply, "\t<decsa_default_delay>%u</decsa_default_delay>\n",scam_vars->decsa_default_delay);
@@ -331,7 +337,6 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 		unicast_reply_write(reply, "\t<send_default_delay>%u</send_default_delay>\n",0);
 	}
 #else
-	unicast_reply_write(reply, "\t<scam_support>%d</scam_support>\n",0);
 	unicast_reply_write(reply, "\t<ring_buffer_default_size>%u</ring_buffer_default_size>\n",0);
 	unicast_reply_write(reply, "\t<decsa_default_delay>%u</decsa_default_delay>\n",0);
 	unicast_reply_write(reply, "\t<send_default_delay>%u</send_default_delay>\n",0);
@@ -361,6 +366,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 #ifdef ENABLE_SCAM_SUPPORT
 		if (scam_vars->scam_support) {
 			unicast_reply_write(reply, "\t\t<scam descrambled=\"%d\">\n",channels[curr_channel].scam_support);
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
 			if (channels[curr_channel].scam_support) {
 				unsigned int ring_buffer_num_packets = 0;
 
@@ -375,6 +381,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 				unicast_reply_write(reply, "\t\t\t<send_delay>%u</send_delay>\n",channels[curr_channel].send_delay);
 				unicast_reply_write(reply, "\t\t\t<num_packets>%u</num_packets>\n",ring_buffer_num_packets);
 			}
+#endif
 			unicast_reply_write(reply, "\t\t</scam>\n");
 		}
 #endif

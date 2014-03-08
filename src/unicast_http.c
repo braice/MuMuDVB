@@ -62,8 +62,10 @@
 #ifdef ENABLE_SCAM_SUPPORT
 #include "scam_capmt.h"
 #include "scam_common.h"
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
 #include "scam_getcw.h"
 #include "scam_decsa.h"
+#endif
 #endif
 
 static char *log_module="Unicast : ";
