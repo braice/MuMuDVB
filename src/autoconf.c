@@ -77,9 +77,7 @@
 #include "rtp.h"
 #include "log.h"
 #ifdef ENABLE_SCAM_SUPPORT
-#include "scam_capmt.h"
 #include "scam_common.h"
-#include "scam_getcw.h"
 #endif
 
 static char *log_module="Autoconf: ";

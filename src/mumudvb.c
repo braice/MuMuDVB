@@ -120,7 +120,6 @@
 #include "scam_capmt.h"
 #include "scam_common.h"
 #include "scam_getcw.h"
-#include "scam_decsa.h"
 #endif
 #include "ts.h"
 #include "errors.h"
