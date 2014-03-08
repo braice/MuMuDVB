@@ -36,9 +36,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <sys/ioctl.h>
-#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
 #include <linux/dvb/ca.h>
-#endif
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <sys/time.h>
