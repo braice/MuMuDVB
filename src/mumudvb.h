@@ -205,17 +205,17 @@ typedef struct {
 	/** A mutex protecting all the other members. */
 	pthread_mutex_t lock;
 	/** Buffer with dvb packets*/
-	unsigned char ** data;
+	unsigned char *data;
 	/** Write index of buffer */
 	unsigned int write_idx;
 	/** Buffer with descrambling timestamps*/
-	uint64_t * time_decsa;
+	uint64_t *time_decsa;
 	/** Number of packets left to descramble*/
 	unsigned int to_descramble;
 	/** Read index of buffer for descrambling thread */
 	unsigned int read_decsa_idx;
 	/** Buffer with sending timestamps*/
-	uint64_t * time_send;
+	uint64_t *time_send;
 	/** Number of packets left to send*/
 	unsigned int to_send;
 	/** Read index of buffer for sending thread */
@@ -354,6 +354,8 @@ typedef struct mumu_chan_t{
 
 
 #ifdef ENABLE_SCAM_SUPPORT
+	/** The PMT packet for SCAM purposes*/
+	mumudvb_ts_packet_t *scam_pmt_packet;
 	/** The camd socket for SCAM*/
 	int camd_socket;
 	/** Say if we need to ask this channel to the oscam*/
@@ -400,6 +402,8 @@ typedef struct mumu_chan_t{
 	/** Says if we've got first cw for channel.
 	 * NOTE: This is _not_ under cw_lock, but under the regular chan_p lock. */
 	int got_cw_started;
+    /** Says if we've started scam threads. */
+	int scam_started;
 #endif
 
 

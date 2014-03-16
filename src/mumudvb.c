@@ -120,6 +120,7 @@
 #include "cam.h"
 #endif
 #ifdef ENABLE_SCAM_SUPPORT
+#include <sys/epoll.h>
 #include "scam_capmt.h"
 #include "scam_common.h"
 #include "scam_getcw.h"
@@ -254,6 +255,7 @@ main (int argc, char **argv)
 			.scam_support = 0,
 			.getcwthread_shutdown=0,
 	};
+	scam_vars.epfd = epoll_create(MAX_CHANNELS);
 	scam_parameters_t *scam_vars_ptr=&scam_vars;
 	int scam_threads_started=0;
 #else
@@ -1101,7 +1103,7 @@ main (int argc, char **argv)
 
 #ifdef ENABLE_SCAM_SUPPORT
 	if(scam_vars.scam_support){
-		if(scam_getcw_start(scam_vars_ptr,tune_p.card,&chan_p))
+		if(scam_getcw_start(scam_vars_ptr,&chan_p))
 		{
 			log_message("SCAM_GETCW: ", MSG_ERROR,"Cannot initalise scam\n");
 			scam_vars.scam_support=0;
@@ -1493,8 +1495,9 @@ main (int argc, char **argv)
 #ifdef ENABLE_SCAM_SUPPORT
 			if(!scam_threads_started) {
 				for (ichan = 0; ichan < chan_p.number_of_channels; ichan++) {
-					if (chan_p.channels[ichan].scam_support && scam_vars.scam_support)
+					if (!chan_p.channels[ichan].scam_started && chan_p.channels[ichan].scam_support && scam_vars.scam_support) {
 						set_interrupted(scam_channel_start(&chan_p.channels[ichan]));
+					}
 				}
 				scam_threads_started=1;
 			}
@@ -1574,25 +1577,6 @@ main (int argc, char **argv)
 				{
 					if(cam_new_packet(pid, ichan, &cam_p, &chan_p.channels[ichan]))
 						cam_p.cam_pmt_send_time=now; //A packet was sent to the CAM
-				}
-#endif
-
-				/******************************************************/
-				//scam support
-				// sending capmt to oscam
-				/******************************************************/
-#ifdef ENABLE_SCAM_SUPPORT
-				if (scam_vars.scam_support &&(chan_p.channels[ichan].need_scam_ask==CAM_NEED_ASK))
-				{
-					if (chan_p.channels[ichan].scam_support && chan_p.channels[ichan].pmt_packet->len_full != 0 ) {
-						iRet=scam_send_capmt(&chan_p.channels[ichan],tune_p.card);
-						if(iRet)
-						{
-							set_interrupted(ERROR_GENERIC<<8);
-							goto mumudvb_close_goto;
-						}
-					}
-					chan_p.channels[ichan].need_scam_ask=CAM_ASKED;
 				}
 #endif
 
@@ -1779,6 +1763,10 @@ int mumudvb_close(int no_daemon,
 
 
 #ifdef ENABLE_SCAM_SUPPORT
+		if(chan_p->channels[curr_channel].scam_pmt_packet)
+			free(chan_p->channels[curr_channel].scam_pmt_packet);
+		chan_p->channels[curr_channel].scam_pmt_packet=NULL;
+
 		if (chan_p->channels[curr_channel].scam_support && scam_vars->scam_support) {
 			scam_channel_stop(&chan_p->channels[curr_channel]);
 		}
@@ -2233,6 +2221,19 @@ void *monitor_func(void* arg)
 			for (curr_channel = 0; curr_channel < params->chan_p->number_of_channels; curr_channel++) {
 				mumudvb_channel_t *channel = &params->chan_p->channels[curr_channel];
 				if (channel->scam_support && channel->channel_ready>=READY) {
+					//send capmt if needed
+					if (channel->need_scam_ask==CAM_NEED_ASK) {
+						if (channel->scam_support) {
+							pthread_mutex_lock(&channel->scam_pmt_packet->packetmutex);
+							if (channel->scam_pmt_packet->len_full != 0 ) {
+								if (!scam_send_capmt(channel, scam_vars,params->tune_p->card))
+								{
+										channel->need_scam_ask=CAM_ASKED;
+								}
+							}
+							pthread_mutex_unlock(&channel->scam_pmt_packet->packetmutex);
+						}
+					}
 					unsigned int ring_buffer_num_packets = 0;
 					unsigned int to_descramble = 0;
 					unsigned int to_send = 0;
