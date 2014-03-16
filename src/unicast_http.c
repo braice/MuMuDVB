@@ -78,6 +78,8 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
 int
 unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *host);
 int
+unicast_send_index_page  (int Socket);
+int
 unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int perport);
 int
 unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t* channels, int Socket, int vlc);
@@ -514,7 +516,10 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 	if(received_len>0)
 	{
 		if(client->bufferpos==0)
-			log_message( log_module, MSG_FLOOD,"beginning of buffer %c%c%c%c%c\n",client->buffer[0],client->buffer[1],client->buffer[2],client->buffer[3],client->buffer[4]);
+		{
+			log_message( log_module, MSG_FLOOD,"beginning of buffer %c%c%c%c%c%c\n",client->buffer[0],client->buffer[1],client->buffer[2],client->buffer[3],client->buffer[4],client->buffer[5]);
+			log_message( log_module, MSG_FLOOD,"beginning of buffer %d %d %d %d %d %d\n",client->buffer[0],client->buffer[1],client->buffer[2],client->buffer[3],client->buffer[4],client->buffer[5]);
+		}
 		client->bufferpos+=received_len;
 		log_message( log_module, MSG_FLOOD,"We received %d, buffer len %d new buffer pos %d\n",received_len,client->buffersize, client->bufferpos);
 	}
@@ -726,7 +731,14 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 				unicast_send_cam_action(client->Socket,client->buffer+pos, cam_p);
 				return -2; //We close the connection afterwards
 			}
-
+			else if((strstr(client->buffer +pos ,"/index.html")==(client->buffer +pos))||
+					(strstr(client->buffer +pos ,"/index.htm")==(client->buffer +pos))||
+					(strstr(client->buffer +pos ,"/ ")==(client->buffer +pos)))
+			{
+				log_message( log_module, MSG_DETAIL,"Index page\n");
+				unicast_send_index_page(client->Socket);
+				return -2; //We close the connection afterwards
+			}
 			//Not implemented path --> 404
 			else
 				err404=1;
@@ -1052,6 +1064,60 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
 
 	return 0;
 }
+
+/** @brief Send a basic index.html
+ *
+ * @param number_of_channels the number of channels
+ * @param channels the channels array
+ * @param Socket the socket on wich the information have to be sent
+ * @param perport says if the channel have to be given by the url /bysid or by their port
+ */
+int
+unicast_send_index_page (int Socket)
+{
+	struct unicast_reply* reply = unicast_reply_init();
+	if (NULL == reply) {
+		log_message( log_module, MSG_INFO,"Error when creating the HTTP reply\n");
+		return -1;
+	}
+
+	unicast_reply_write(reply, HTTP_INDEX_REPLY_START);
+
+
+	unicast_reply_write(reply, "<br>Channels by number : /bynumber/[channel number]<br><br>\r\n");
+	unicast_reply_write(reply, "<br>Channels by service identifier : /bysid/[channel sid]<br><br>\r\n");
+	unicast_reply_write(reply, "<br>Channels by number : /byname/[channel name]<br><br>\r\n");
+
+
+	unicast_reply_write(reply, "<br>  <a href=\"/channels_list.html\">Channels list</a><br><br>\r\n");
+	unicast_reply_write(reply, "<br>  <a href=\"/playlist.m3u\">Playlist (m3u)</a><br><br>\r\n");
+	unicast_reply_write(reply, "<br>  <a href=\"/playlist_port.m3u\">Playlist by port(m3u)</a><br><br>\r\n");
+	unicast_reply_write(reply, "<br>  <a href=\"/playlist_multicast.m3u\">Playlist multicast (m3u)</a><br><br>\r\n");
+	unicast_reply_write(reply, "<br>  <a href=\"/playlist_multicast_vlc.m3u\">Playlist multicast for VLC(m3u)</a><br><br>\r\n");
+
+	unicast_reply_write(reply, "<br>  <a href=\"/channels_list.json\">Channels list (json)</a><br><br>\r\n");
+	unicast_reply_write(reply, "<br>  <a href=\"/monitor/signal_power.json\">Signal strength (json)</a><br><br>\r\n");
+	unicast_reply_write(reply, "<br>  <a href=\"/monitor/channels_traffic.json\">Channels traffic (json)</a><br><br>\r\n");
+	unicast_reply_write(reply, "<br>  <a href=\"/monitor/state.xml\">Server state : channel list, pids, traffic (XML)</a><br><br>\r\n");
+	unicast_reply_write(reply, "<br>  <a href=\"/cam/menu.xml\">CAM menu</a><br><br>\r\n");
+	unicast_reply_write(reply, "<br> make an action on the cam menu : /cam/action.xml?key=<br><br>\r\n");
+
+
+
+	unicast_reply_write(reply, HTTP_INDEX_REPLY_END);
+
+	unicast_reply_send(reply, Socket, 200, "text/html");
+
+	if (0 != unicast_reply_free(reply)) {
+		log_message( log_module, MSG_INFO,"Error when releasing the HTTP reply after sendinf it\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
+
 
 /** @brief Send a basic text file containig the playlist
  *
