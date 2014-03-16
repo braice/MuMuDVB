@@ -98,7 +98,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
+#ifdef ANDROID
+#include <limits.h>
+#else
 #include <values.h>
+#endif
 #include <string.h>
 #include <syslog.h>
 #include <getopt.h>
@@ -130,7 +134,7 @@
 #include "rtp.h"
 #include "log.h"
 
-#ifdef __UCLIBC__
+#if defined __UCLIBC__ || defined ANDROID
 #define program_invocation_short_name "mumudvb"
 #else
 extern char *program_invocation_short_name;
@@ -1332,7 +1336,9 @@ main (int argc, char **argv)
 			free(dump_filename);
 		}
 	}
+#ifndef ANDROID
 	mlockall(MCL_CURRENT | MCL_FUTURE);
+#endif
 	/******************************************************/
 	//Main loop where we get the packets and send them
 	/******************************************************/
@@ -1724,7 +1730,7 @@ int mumudvb_close(int no_daemon,
 	{
 		log_message(log_module,MSG_DEBUG,"Signal/power Thread closing\n");
 		*strengththreadshutdown=1;
-#ifndef __UCLIBC__
+#if !defined __UCLIBC__ && !defined ANDROID
 		clock_gettime(CLOCK_REALTIME, &ts);
 		ts.tv_sec += 5;
 		iRet=pthread_timedjoin_np(signalpowerthread, NULL, &ts);
@@ -1747,7 +1753,7 @@ int mumudvb_close(int no_daemon,
 	{
 		log_message(log_module,MSG_DEBUG,"Monitor Thread closing\n");
 		monitor_thread_params->threadshutdown=1;
-#ifndef __UCLIBC__
+#if !defined __UCLIBC__ && !defined ANDROID
 		clock_gettime(CLOCK_REALTIME, &ts);
 		ts.tv_sec += 5;
 		iRet=pthread_timedjoin_np(monitorthread, NULL, &ts);
@@ -1882,8 +1888,9 @@ int mumudvb_close(int no_daemon,
 	}
 	if(log_params.log_header!=NULL)
 		free(log_params.log_header);
+#ifndef ANDROID
 	munlockall();
-
+#endif
 	// End
 	return(ExitCode);
 

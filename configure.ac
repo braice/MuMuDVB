@@ -105,6 +105,13 @@ then
   fi
 fi
 
+AC_ARG_ENABLE(android,
+  [  --enable-android          Build for android (default disabled)],,[enable_android="no"])
+
+if test "${enable_android}" = "yes"
+then
+  AC_DEFINE(ANDROID, 1, Define if you want build for android)
+fi
 
 # Checks for header files.
 AC_HEADER_RESOLV
@@ -149,6 +156,12 @@ if test "${atsc_long_names}" = "yes" ; then
         echo "Build with ATSC long names support:                 yes"
 else
         echo "Build with ATSC long names support:                  no"
+fi
+
+if test "${enable_android}" = "yes" ; then
+        echo "Build with compatibility for android:               yes"
+else
+        echo "Build with compatibility for android:                no"
 fi
 
 echo ""
