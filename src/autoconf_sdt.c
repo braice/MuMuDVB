@@ -59,7 +59,7 @@ void autoconf_sdt_need_update(auto_p_t *auto_p, unsigned char *buf)
 	sdt_t       *sdt=(sdt_t*)(get_ts_begin(buf));
 	if(sdt) //It's the beginning of a new packet
 	{
-		if(sdt->version_number!=auto_p->sdt_version)
+		if((sdt->version_number!=auto_p->sdt_version) && (sdt->table_id==0x42))
 		{
 			/*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
         sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
