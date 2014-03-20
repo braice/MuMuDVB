@@ -281,22 +281,40 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 			tuneparams->bandwidth=BANDWIDTH_AUTO;
 		// DVB-T2
 		// @See https://patchwork.kernel.org/patch/761652/
-#ifdef BANDWIDTH_5_MHZ
 		else if (!strcmp (substring, "5MHz"))
+#ifdef BANDWIDTH_5_MHZ
 			tuneparams->bandwidth=BANDWIDTH_5_MHZ;
+#else
+		{
+			log_message( log_module,  MSG_ERROR,
+					"Config issue: 5MHz bandwidth is not supported on your system please check your drivers installation");
+			return -1;
+		}
 #endif
-#ifdef BANDWIDTH_10_MHZ
 		else if (!strcmp (substring, "10MHz"))
+#ifdef BANDWIDTH_10_MHZ
 			tuneparams->bandwidth=BANDWIDTH_10_MHZ;
+#else
+		{
+			log_message( log_module,  MSG_ERROR,
+					"Config issue: 10MHz bandwidth is not supported on your system please check your drivers installation");
+			return -1;
+		}
 #endif
-#ifdef BANDWIDTH_1_712_MHZ
 		else if (!strcmp (substring, "1.712MHz"))
+#ifdef BANDWIDTH_1_712_MHZ
 			tuneparams->bandwidth=BANDWIDTH_1_712_MHZ;
+#else
+		{
+			log_message( log_module,  MSG_ERROR,
+					"Config issue: 1.712MHz bandwidth is not supported on your system please check your drivers installation");
+			return -1;
+		}
 #endif
 		else
 		{
 			log_message( log_module,  MSG_ERROR,
-					"Config issue : bandwidth\n");
+					"Config issue: bandwidth");
 			return -1;
 		}
 	}
