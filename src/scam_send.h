@@ -48,4 +48,12 @@ void scam_send_start(mumudvb_channel_t *channel);
 void scam_send_stop(mumudvb_channel_t *channel);
 void *sendthread_func(void* arg); 
 
+#if 0
+typedef struct scam_sendthread_p_t{
+	mumudvb_channel_t *channel
+	struct unicast_parameters_t *unicast_vars, fds_t *fds
+}scam_sendthread_p_t;
+#endif
+
+
 #endif

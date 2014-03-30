@@ -211,7 +211,7 @@ static void *decsathread_func(void* arg)
         pthread_mutex_lock(&channel->cw_lock);
         if (channel->got_key_even) {
           dvbcsa_bs_key_set(channel->even_cw, even_key);
-          log_message( log_module, MSG_DEBUG, "%016llx even key %02x %02x %02x %02x %02x %02x %02x %02x, channel %s\n", now_time, channel->even_cw[0], channel->even_cw[1], channel->even_cw[2], channel->even_cw[3], channel->even_cw[4], channel->even_cw[5], channel->even_cw[6], channel->even_cw[7],channel->name);
+          log_message( log_module, MSG_DEBUG, "%016llx even key %02x %02x %02x %02x %02x %02x %02x %02x, channel %s\n", (long long unsigned int)now_time, channel->even_cw[0], channel->even_cw[1], channel->even_cw[2], channel->even_cw[3], channel->even_cw[4], channel->even_cw[5], channel->even_cw[6], channel->even_cw[7],channel->name);
           channel->got_key_even = 0;
           got_first_even_key = 1;
         }
@@ -221,7 +221,7 @@ static void *decsathread_func(void* arg)
         pthread_mutex_lock(&channel->cw_lock);
         if (channel->got_key_odd) {
           dvbcsa_bs_key_set(channel->odd_cw, odd_key);
-          log_message( log_module, MSG_DEBUG, " %016llx odd key %02x %02x %02x %02x %02x %02x %02x %02x, channel %s\n",now_time, channel->odd_cw[0], channel->odd_cw[1], channel->odd_cw[2], channel->odd_cw[3], channel->odd_cw[4], channel->odd_cw[5], channel->odd_cw[6], channel->odd_cw[7], channel->name);
+          log_message( log_module, MSG_DEBUG, " %016llx odd key %02x %02x %02x %02x %02x %02x %02x %02x, channel %s\n",(long long unsigned int)now_time, channel->odd_cw[0], channel->odd_cw[1], channel->odd_cw[2], channel->odd_cw[3], channel->odd_cw[4], channel->odd_cw[5], channel->odd_cw[6], channel->odd_cw[7], channel->name);
           channel->got_key_odd = 0;
           got_first_odd_key = 1;
         }

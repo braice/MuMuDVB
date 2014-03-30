@@ -105,7 +105,6 @@ void init_aconf_v(auto_p_t *aconf_p)
 
 	//Since we have 'memsetted' the structure we only set non zero values
 	*aconf_p=(auto_p_t){
-		.autoconf_pid_update=1,
 		.autoconf_ip4="239.100.%card.%number",
 		.autoconf_ip6="FF15:4242::%server:%card:%number",
 		.transport_stream_id=-1,
@@ -131,11 +130,6 @@ int read_autoconfiguration_configuration(auto_p_t *auto_p, char *substring)
 	{
 		substring = strtok (NULL, delimiteurs);
 		auto_p->autoconf_scrambled = atoi (substring);
-	}
-	else if (!strcmp (substring, "autoconf_pid_update"))
-	{
-		substring = strtok (NULL, delimiteurs);
-		auto_p->autoconf_pid_update = atoi (substring);
 	}
 	else if (!strcmp (substring, "autoconfiguration"))
 	{

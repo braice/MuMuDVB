@@ -403,7 +403,8 @@ typedef struct mumu_chan_t{
 #endif
 
 
-
+	//Do we send with RTP
+	int rtp;
 	/**the RTP header (just before the buffer so it can be sended together)*/
 	unsigned char buf_with_rtp_header[RTP_HEADER_LEN];
 	/**the buffer wich will be sent once it's full*/
@@ -563,8 +564,8 @@ int mumudvb_poll(fds_t *fds);
 char *mumu_string_replace(char *source, int *length, int can_realloc, char *toreplace, char *replacement);
 int string_comput(char *string);
 uint64_t get_time(void);
-void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, multi_p_t *multi_p, void *scam_vars_v, fds_t *fds);
-void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, multi_p_t *multi_p, fds_t *fds);
+void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, void *scam_vars_v, fds_t *fds);
+void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, fds_t *fds);
 
 int mumu_init_chan(mumudvb_channel_t *chan);
 void chan_update_CAM(mumu_chan_p_t *chan_p, struct auto_p_t *auto_p,  void *scam_vars_v);

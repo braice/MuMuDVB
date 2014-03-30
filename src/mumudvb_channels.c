@@ -280,6 +280,8 @@ void chan_update_net(mumu_chan_p_t *chan_p, auto_p_t *auto_p, multi_p_t *multi_p
 			char number[10];
 			char ip[80];
 			int len=80;
+			//We store if we send this channel with RTP, later it can be made channel dependent.
+			chan_p->channels[ichan].rtp=multi_p->rtp_header;
 
 			if(auto_p->autoconfiguration && strlen(auto_p->autoconf_multicast_port) && MU_F(chan_p->channels[ichan].portOut)!=F_USER)
 			{
@@ -367,21 +369,21 @@ void chan_update_net(mumu_chan_p_t *chan_p, auto_p_t *auto_p, multi_p_t *multi_p
 
 
 		//Open the multicast socket for the new channel which don't have them opened
-		if(multi_p->multicast_ipv4 && (chan_p->channels[ichan].socketOut4 <=0))
+		if(multi_p->multicast && multi_p->multicast_ipv4 && (chan_p->channels[ichan].socketOut4 <=0))
 		{
 			log_message( log_module, MSG_INFO,"We open the channel %d multicast IPv4 socket address %s:%d\n",
 								ichan,
 								chan_p->channels[ichan].ip4Out,
 								chan_p->channels[ichan].portOut);
 
-			if(multi_p->multicast && multi_p->auto_join) //See the README for the reason of this option
+			if(multi_p->auto_join) //See the README for the reason of this option
 				chan_p->channels[ichan].socketOut4 =
 						makeclientsocket (chan_p->channels[ichan].ip4Out,
 								chan_p->channels[ichan].portOut,
 								multi_p->ttl,
 								multi_p->iface4,
 								&chan_p->channels[ichan].sOut4);
-			else if(multi_p->multicast)
+			else
 				chan_p->channels[ichan].socketOut4 =
 						makesocket (chan_p->channels[ichan].ip4Out,
 								chan_p->channels[ichan].portOut,
@@ -390,21 +392,21 @@ void chan_update_net(mumu_chan_p_t *chan_p, auto_p_t *auto_p, multi_p_t *multi_p
 								&chan_p->channels[ichan].sOut4);
 
 		}
-		if(multi_p->multicast_ipv6 && (chan_p->channels[ichan].socketOut6 <=0))
+		if(multi_p->multicast && multi_p->multicast_ipv6 && (chan_p->channels[ichan].socketOut6 <=0))
 		{
 			log_message( log_module, MSG_INFO,"We open the channel %d multicast IPv6 socket address %s:%d\n",
 								ichan,
 								chan_p->channels[ichan].ip6Out,
 								chan_p->channels[ichan].portOut);
 
-			if(multi_p->multicast && multi_p->auto_join) //See the README for the reason of this option
+			if(multi_p->auto_join) //See the README for the reason of this option
 				chan_p->channels[ichan].socketOut6 =
 						makeclientsocket6 (chan_p->channels[ichan].ip6Out,
 								chan_p->channels[ichan].portOut,
 								multi_p->ttl,
 								multi_p->iface6,
 								&chan_p->channels[ichan].sOut6);
-			else if(multi_p->multicast)
+			else
 				chan_p->channels[ichan].socketOut6 =
 						makesocket6 (chan_p->channels[ichan].ip6Out,
 								chan_p->channels[ichan].portOut,

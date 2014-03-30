@@ -103,9 +103,24 @@ int unicast_handle_message(unicast_parameters_t* unicast_vars, unicast_client_t*
 #define REPLY_SIZE_STEP 256
 
 
+/** Initialize unicast variables*/
+void init_unicast_v(unicast_parameters_t *unicast_vars)
+{
+	memset(unicast_vars,0,sizeof(unicast_parameters_t));
+	 *unicast_vars=(unicast_parameters_t){
+				.unicast=0,
+				.ipOut="0.0.0.0",
+				.portOut=4242,
+				.portOut_str=NULL,
+				.consecutive_errors_timeout=UNICAST_CONSECUTIVE_ERROR_TIMEOUT,
+				.max_clients=-1,
+				.queue_max_size=UNICAST_DEFAULT_QUEUE_MAX,
+				.socket_sendbuf_size=0,
+				.flush_on_eagain=0,
+		};
 
+}
 
-/**@todo : deal with the RTP over http case ie implement RTSP*/
 
 
 /** @brief Read a line of the configuration file to check if there is a unicast parameter
@@ -684,13 +699,13 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 			else if(strstr(client->buffer +pos ,"/playlist_multicast.m3u ")==(client->buffer +pos))
 			{
 				log_message( log_module, MSG_DETAIL,"play list\n");
-				unicast_send_play_list_multicast (number_of_channels, channels, client->Socket, 0 );
+				unicast_send_play_list_multicast (number_of_channels, channels, client->Socket, 0);
 				return -2; //We close the connection afterwards
 			}
 			else if(strstr(client->buffer +pos ,"/playlist_multicast_vlc.m3u ")==(client->buffer +pos))
 			{
 				log_message( log_module, MSG_DETAIL,"play list\n");
-				unicast_send_play_list_multicast (number_of_channels, channels, client->Socket, 1 );
+				unicast_send_play_list_multicast (number_of_channels, channels, client->Socket, 1);
 				return -2; //We close the connection afterwards
 			}
 			//statistics, text version
@@ -1131,7 +1146,7 @@ unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t *cha
 	int curr_channel;
 	char urlheader[4];
 	char vlcchar[2];
-	extern multi_p_t multi_p;
+
 
 	struct unicast_reply* reply = unicast_reply_init();
 	if (NULL == reply) {
@@ -1146,15 +1161,16 @@ unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t *cha
 	else
 		vlcchar[0]='\0';
 
-	if(multi_p.rtp_header)
-		strcpy(urlheader,"rtp");
-	else
-		strcpy(urlheader,"udp");
 
 	//"#EXTINF:0,title\r\nURL"
 	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 		if (channels[curr_channel].channel_ready>=READY)
 		{
+			if(channels[curr_channel].rtp)
+				strcpy(urlheader,"rtp");
+			else
+				strcpy(urlheader,"udp");
+
 			unicast_reply_write(reply, "#EXTINF:0,%s\r\n%s://%s%s:%d\r\n",
 					channels[curr_channel].name,
 					urlheader,

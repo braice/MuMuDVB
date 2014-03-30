@@ -82,8 +82,6 @@ Possible values for this variable
 	int transport_stream_id;
 	/** Do we autoconfigure scrambled channels ? */
 	int autoconf_scrambled;
-	/** Do we follow pmt changes*/
-	int autoconf_pid_update;
 	//Different packets used by autoconfiguration
 	mumudvb_ts_packet_t *autoconf_temp_pat;
 	int pat_need_update;

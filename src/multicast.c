@@ -33,6 +33,26 @@
 #include <net/if.h>
 static char *log_module="Multicast: ";
 
+
+/** Initialize multicast variables*/
+void init_multicast_v(multi_p_t *multi_p)
+{
+	memset(multi_p,0,sizeof(multi_p_t));
+	 *multi_p=(multi_p_t){
+	 		.multicast=1,
+	 		.multicast_ipv6=0,
+	 		.multicast_ipv4=1,
+	 		.ttl=DEFAULT_TTL,
+	 		.common_port = 1234,
+	 		.auto_join=0,
+	 		.rtp_header = 0,
+	 		.iface4="\0",
+	 		.iface6="\0",
+	 };
+
+}
+
+
  /** @brief Read a line of the configuration file to check if there is a cam parameter
  *
  * @param multi_p the multicast parameters

@@ -63,7 +63,7 @@ static char *log_module="Tune: ";
 void init_tune_v(tune_p_t *tune_p)
 {
 	 * tune_p=(tune_p_t){
-				.card = 0,
+				.card = -1,
 				.tuner = 0,
 				.card_dev_path=DVB_DEV_PATH,
 				.card_tuned = 0,
@@ -213,7 +213,15 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 	else if (!strcmp (substring, "card"))
 	{
 		substring = strtok (NULL, delimiteurs);
-		tuneparams->card = atoi (substring);
+		if(tuneparams->card!=-1)
+		{
+					log_message( log_module,  MSG_ERROR,
+							"Card defined on the command line: %d, overrides conf file %d",tuneparams->card,atoi (substring));
+		}
+		else
+		{
+			tuneparams->card = atoi (substring);
+		}
 	}
 	else if (!strcmp (substring, "check_status"))
 	{

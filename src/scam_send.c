@@ -67,7 +67,6 @@ void *sendthread_func(void* arg)
   int curr_pid = 0;
   int send_packet = 0;
   extern unicast_parameters_t unicast_vars;
-  extern multi_p_t multi_p;
   extern int dont_send_scrambled;
   extern fds_t fds;
   mumudvb_channel_t *channel;
@@ -150,10 +149,10 @@ void *sendthread_func(void* arg)
     pthread_mutex_unlock(&channel->ring_buf->lock);
 
     //The buffer is full, we send it
-    if ((!multi_p.rtp_header && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
-      ||(multi_p.rtp_header && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
+    if ((!channel->rtp && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
+      ||(channel->rtp && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
     {
-      send_func(channel, send_time, &unicast_vars, &multi_p, &fds);
+      send_func(channel, send_time, &unicast_vars, &fds);
     }
   }
   return 0;

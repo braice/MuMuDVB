@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.61])
-AC_INIT([MuMuDVB], [2.0.0_20140224_mumudvb2], [mumudvb@braice.net])
+AC_INIT([MuMuDVB], [2.0.0_20140330_mumudvb2], [mumudvb@braice.net])
 AC_CONFIG_SRCDIR([src/mumudvb.c])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([src/config.h])
@@ -113,6 +113,7 @@ then
   AC_DEFINE(ANDROID, 1, Define if you want build for android)
 fi
 
+
 # Checks for header files.
 AC_HEADER_RESOLV
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h syslog.h unistd.h values.h])
@@ -148,6 +149,7 @@ fi
 
 if test "${enable_scam_support}" != "no" ; then
         echo "Build with SCAM support:                            yes"
+    	echo "SCAM is not yet working for MuMuDVB v2, work is in progress"
 else
         echo "Build with SCAM support:                             no"
 fi
@@ -179,4 +181,3 @@ if test "${enable_duma}" = "yes" ; then
 else
         echo "Build with debugging DUMA library                    no"
 fi
-
