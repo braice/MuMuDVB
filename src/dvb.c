@@ -292,11 +292,19 @@ close_card_fd(fds_t *fds)
 
 	for(curr_pid=0;curr_pid<8193;curr_pid++)
 	{
-		close(fds->fd_demuxer[curr_pid]);
+		if(fds->fd_demuxer[curr_pid])
+		{
+			close(fds->fd_demuxer[curr_pid]);
+			fds->fd_demuxer[curr_pid]=0;
+		}
 	}
 
-	close (fds->fd_dvr);
-	close (fds->fd_frontend);
+	if(fds->fd_dvr)
+		close (fds->fd_dvr);
+	fds->fd_dvr=0;
+	if(fds->fd_frontend)
+		close (fds->fd_frontend);
+	fds->fd_frontend=0;
 
 }
 

@@ -178,12 +178,14 @@ main (int argc, char **argv)
 {
 	// file descriptors
 	fds_t fds; /** File descriptors associated with the card */
+	memset(&fds,0,sizeof(fds_t));
 
 	//Thread information
-	pthread_t signalpowerthread;
+	pthread_t signalpowerthread=0;
 	pthread_t cardthread;
 	pthread_t monitorthread=0;
 	card_thread_parameters_t cardthreadparams;
+	memset(&cardthreadparams,0,sizeof(card_thread_parameters_t));
 
 	//Channel information
 	mumu_chan_p_t chan_p;

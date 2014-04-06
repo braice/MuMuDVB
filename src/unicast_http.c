@@ -126,6 +126,7 @@ void init_unicast_v(unicast_parameters_t *unicast_vars)
 	 {
 		 log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 		 set_interrupted(ERROR_MEMORY<<8);
+		 return;
 	 }
 	 unicast_vars->pfds[0].fd = 0;
 	 unicast_vars->pfds[0].events = POLLIN | POLLPRI;
