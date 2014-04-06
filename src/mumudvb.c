@@ -182,7 +182,7 @@ main (int argc, char **argv)
 	//Thread information
 	pthread_t signalpowerthread;
 	pthread_t cardthread;
-	pthread_t monitorthread;
+	pthread_t monitorthread=0;
 	card_thread_parameters_t cardthreadparams;
 
 	//Channel information
@@ -231,7 +231,6 @@ main (int argc, char **argv)
 			.getcwthread_shutdown=0,
 	};
 	scam_parameters_t *scam_vars_ptr=&scam_vars;
-	int scam_threads_started=0;
 #else
 	void *scam_vars_ptr=NULL;
 #endif
@@ -326,13 +325,6 @@ main (int argc, char **argv)
 	//Display general information
 	print_info ();
 
-#ifdef ENABLE_SCAM_SUPPORT
-	for (int i = 0; i < MAX_CHANNELS; ++i) {
-          pthread_mutex_init(&chan_p.channels[i].stats_lock, NULL);
-          pthread_mutex_init(&chan_p.channels[i].cw_lock, NULL);
-          chan_p.channels[i].camd_socket = -1;
-	}
-#endif
 
 	// configuration file parsing
 	int ichan = 0;
@@ -450,7 +442,7 @@ main (int argc, char **argv)
 		}
 #endif
 #ifdef ENABLE_SCAM_SUPPORT
-		else if((iRet=read_scam_configuration(scam_vars_ptr, c_chan, substring))) //Read the line concerning the cam parameters
+		else if((iRet=read_scam_configuration(scam_vars_ptr, c_chan, substring))) //Read the line concerning the software cam parameters
 		{
 			if(iRet==-1)
 				exit(ERROR_CONF);
@@ -991,7 +983,7 @@ main (int argc, char **argv)
 	if(scam_vars.scam_support){
 		if(scam_getcw_start(scam_vars_ptr,tune_p.card,&chan_p))
 		{
-			log_message("SCAM_GETCW: ", MSG_ERROR,"Cannot initalise scam\n");
+			log_message("SCAM_GETCW: ", MSG_ERROR,"Cannot initialize scam");
 			scam_vars.scam_support=0;
 		}
 		else
@@ -1039,14 +1031,7 @@ main (int argc, char **argv)
 	//scam
 	/*****************************************************/
 	if (auto_p.autoconfiguration==AUTOCONF_MODE_NONE)
-	{
-		iRet=scam_init_no_autoconf(scam_vars_ptr, chan_p.channels,chan_p.number_of_channels);
-		if(iRet)
-		{
-			set_interrupted(ERROR_GENERIC<<8);
-			goto mumudvb_close_goto;
-		}
-	}
+		scam_init_no_autoconf(scam_vars_ptr, chan_p.channels,chan_p.number_of_channels);
 
 #endif
 	/*****************************************************/
@@ -1126,7 +1111,6 @@ main (int argc, char **argv)
 	}
 
 	//We fill the file descriptor information structure. the first one is irrelevant
-	//(file descriptor associated to the DVB card) but we allocate it for consistency
 	unic_p.fd_info=NULL;
 	unic_p.fd_info=realloc(unic_p.fd_info,(fds.pfdsnum)*sizeof(unicast_fd_info_t));
 	if (unic_p.fd_info==NULL)
@@ -1154,9 +1138,9 @@ main (int argc, char **argv)
 	if(unic_p.unicast)
 	{
 		log_message("Unicast: ", MSG_INFO,"We open the Master http socket for address %s:%d\n",unic_p.ipOut, unic_p.portOut);
-		unicast_create_listening_socket(UNICAST_MASTER, -1, unic_p.ipOut, unic_p.portOut, &unic_p.sIn, &unic_p.socketIn, &fds, &unic_p);
+		unicast_create_listening_socket(UNICAST_MASTER, -1, unic_p.ipOut, unic_p.portOut, &unic_p.sIn, &unic_p.socketIn, &unic_p);
 	}
-	chan_update_net(&chan_p, &auto_p, &multi_p, &unic_p, server_id, tune_p.card, tune_p.tuner,&fds);
+	update_chan_net(&chan_p, &auto_p, &multi_p, &unic_p, server_id, tune_p.card, tune_p.tuner);
 
 
 
@@ -1237,7 +1221,7 @@ main (int argc, char **argv)
 	{
 		if(card_buffer.threaded_read)
 		{
-			if(!card_buffer.bytes_in_write_buffer && !cardthreadparams.unicast_data)
+			if(!card_buffer.bytes_in_write_buffer)
 			{
 				pthread_mutex_lock(&cardthreadparams.carddatamutex);
 				cardthreadparams.main_waiting=1;
@@ -1265,25 +1249,27 @@ main (int argc, char **argv)
 				card_buffer.bytes_in_write_buffer=0;
 			}
 			pthread_mutex_unlock(&cardthreadparams.carddatamutex);
-			if(cardthreadparams.unicast_data)
+			/**************************************************************/
+			/* UNICAST HTTP                                               */
+			/**************************************************************/
+			if(unic_p.pfdsnum)
 			{
-				iRet=unicast_handle_fd_event(&unic_p, &fds, chan_p.channels, chan_p.number_of_channels, &strengthparams, &auto_p, cam_p_ptr, scam_vars_ptr);
-				if(iRet)
+				if(mumudvb_poll(unic_p.pfds,unic_p.pfdsnum,0)>0)
 				{
-					set_interrupted(iRet);
-					continue;
+					iRet=unicast_handle_fd_event(&unic_p, chan_p.channels, chan_p.number_of_channels, &strengthparams, &auto_p, cam_p_ptr, scam_vars_ptr);
+					if(iRet)
+						set_interrupted(iRet);
 				}
-				pthread_mutex_lock(&cardthreadparams.carddatamutex);
-				cardthreadparams.unicast_data=0;
-				pthread_mutex_unlock(&cardthreadparams.carddatamutex);
-
 			}
+			/**************************************************************/
+			/* END OF UNICAST HTTP                                        */
+			/**************************************************************/
 		}
 		else
 		{
 			/* Poll the open file descriptors : we wait for data*/
-			poll_ret=mumudvb_poll(&fds);
-			if(poll_ret)
+			poll_ret=mumudvb_poll(fds.pfds,fds.pfdsnum,DVB_POLL_TIMEOUT);
+			if(poll_ret<0)
 			{
 				set_interrupted(poll_ret);
 				continue;
@@ -1291,21 +1277,29 @@ main (int argc, char **argv)
 			/**************************************************************/
 			/* UNICAST HTTP                                               */
 			/**************************************************************/
-			if((!(fds.pfds[0].revents&POLLIN)) && (!(fds.pfds[0].revents&POLLPRI))) //Priority to the DVB packets so if there is dvb packets and something else, we look first to dvb packets
+			if(unic_p.pfdsnum)
 			{
-				iRet=unicast_handle_fd_event(&unic_p, &fds, chan_p.channels, chan_p.number_of_channels, &strengthparams, &auto_p, cam_p_ptr, scam_vars_ptr);
-				if(iRet)
-					set_interrupted(iRet);
-				//no DVB packet, we continue
-				continue;
+				poll_ret=mumudvb_poll(unic_p.pfds,unic_p.pfdsnum,0);
+				if(poll_ret>0)
+				{
+					iRet=unicast_handle_fd_event(&unic_p, chan_p.channels, chan_p.number_of_channels, &strengthparams, &auto_p, cam_p_ptr, scam_vars_ptr);
+					if(iRet)
+						set_interrupted(iRet);
+				}
 			}
 			/**************************************************************/
 			/* END OF UNICAST HTTP                                        */
 			/**************************************************************/
-
 			if((card_buffer.bytes_read=card_read(fds.fd_dvr,  card_buffer.reading_buffer, &card_buffer))==0)
 				continue;
 		}
+
+
+
+
+
+
+
 
 		if(card_buffer.dvr_buffer_size!=1 && stats_infos.show_buffer_stats)
 		{
@@ -1375,21 +1369,6 @@ main (int argc, char **argv)
 			//   AUTOCONFIGURATION PART FINISHED
 			/******************************************************/
 
-			/******************************************************/
-			//   SCAM START PART
-			/******************************************************/
-#ifdef ENABLE_SCAM_SUPPORT
-			if(!scam_threads_started) {
-				for (ichan = 0; ichan < chan_p.number_of_channels; ichan++) {
-					if (chan_p.channels[ichan].scam_support && scam_vars.scam_support)
-						set_interrupted(scam_channel_start(&chan_p.channels[ichan]));
-				}
-				scam_threads_started=1;
-			}
-#endif
-			/******************************************************/
-			//   SCAM START PART FINISHED
-			/******************************************************/
 			/******************************************************/
 			//Pat rewrite
 			/******************************************************/
@@ -1510,7 +1489,7 @@ main (int argc, char **argv)
 						rewrite_vars.rewrite_eit == OPTION_ON) //AND we asked for EIT sorting
 				{
 					eit_rewrite_new_channel_packet(actual_ts_packet, &rewrite_vars, &chan_p.channels[ichan],
-							&unic_p, scam_vars_ptr, &fds);
+							&unic_p, scam_vars_ptr);
 					send_packet=0; //for EIT it is sent by the rewrite function itself
 				}
 
@@ -1531,7 +1510,7 @@ main (int argc, char **argv)
 				/******************************************************/
 				if(send_packet==1)
 				{
-					buffer_func(channel, actual_ts_packet, &unic_p, scam_vars_ptr, &fds);
+					buffer_func(channel, actual_ts_packet, &unic_p, scam_vars_ptr);
 				}
 
 			}

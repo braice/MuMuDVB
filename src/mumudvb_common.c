@@ -45,53 +45,56 @@
 static char *log_module="Common: ";
 
 
-/** @brief : poll the file descriptors fds with a limit in the number of errors
- *
- * @param fds : the file descriptors
+/** @brief : poll the file descriptors fds with a limit in the number of errors and timeout
  */
-int mumudvb_poll(fds_t *fds)
+int mumudvb_poll(struct pollfd *pfds, int pfdsnum,int timeout)
 {
-	int poll_try;
+	int poll_try,poll_ret;
 	int poll_eintr=0;
 	int last_poll_error;
 	int Interrupted;
 
+	poll_ret=0;
 	poll_try=0;
 	poll_eintr=0;
 	last_poll_error=0;
-	while((poll (fds->pfds, fds->pfdsnum, 500)<0)&&(poll_try<MAX_POLL_TRIES))
+	do
 	{
-		if(errno != EINTR) //EINTR means Interrupted System Call, it normally shouldn't matter so much so we don't count it for our Poll tries
+		poll_ret=poll (pfds, pfdsnum, timeout);
+		if(poll_ret<0)
 		{
-			poll_try++;
-			last_poll_error=errno;
-		}
-		else
-		{
-			poll_eintr++;
-			if(poll_eintr==10)
+			if(errno != EINTR) //EINTR means Interrupted System Call, it normally shouldn't matter so much so we don't count it for our Poll tries
 			{
-				log_message( log_module, MSG_DEBUG, "Poll : 10 successive EINTR\n");
-				poll_eintr=0;
+				poll_try++;
+				last_poll_error=errno;
+			}
+			else
+			{
+				poll_eintr++;
+				if(poll_eintr==10)
+				{
+					log_message( log_module, MSG_DEBUG, "Poll : 10 successive EINTR\n");
+					poll_eintr=0;
+				}
 			}
 		}
 		/**@todo : put a maximum number of interrupted system calls per unit time*/
-	}
+	}while(( poll_ret<0 )&&(poll_try<MAX_POLL_TRIES));
 
 	if(poll_try==MAX_POLL_TRIES)
 	{
 		log_message( log_module, MSG_ERROR, "Poll : We reach the maximum number of polling tries\n\tLast error when polling: %s\n", strerror (errno));
 		Interrupted=errno<<8; //the <<8 is to make difference beetween signals and errors;
-		return Interrupted;
+		return -Interrupted;
 	}
 	else if(poll_try)
 	{
 		log_message( log_module, MSG_WARN, "Poll : Warning : error when polling: %s\n", strerror (last_poll_error));
 	}
-	return 0;
+	return poll_ret;
 }
 
-/** @brief replace a tring by another
+/** @brief replace a string by another
  * @param source
  * @param length the length of the source buffer (including '\0')
  * @param can_realloc Is the source string allocated by a malloc or fixed. The realloc is done only when the dest is bigger
@@ -298,7 +301,7 @@ uint64_t get_time(void) {
 }
 /** @brief function for buffering demultiplexed data.
  */
-void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, void *scam_vars_v, fds_t *fds)
+void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, void *scam_vars_v)
 {
 	int pid;			/** pid of the current mpeg2 packet */
 	int ScramblingControl;
@@ -361,7 +364,7 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 		if ((!channel->rtp && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
 				||(channel->rtp && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE))) {
 			now_time=get_time();
-			send_func(channel, now_time, unicast_vars, fds);
+			send_func(channel, now_time, unicast_vars);
 		}
 
 	}
@@ -372,7 +375,7 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 
 /** @brief function for sending demultiplexed data.
  */
-void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, fds_t *fds)
+void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars)
 {
 	//For bandwith measurement (traffic)
 	pthread_mutex_lock(&channel->stats_lock);
@@ -411,7 +414,7 @@ void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_pa
 						data_len);
 		}
 	/*********** UNICAST **************/
-	unicast_data_send(channel, fds, unicast_vars);
+	unicast_data_send(channel, unicast_vars);
 	/********* END of UNICAST **********/
 	channel->nb_bytes = 0;
 

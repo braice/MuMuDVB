@@ -73,7 +73,7 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *channel);
 
 unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, int socketIn);
-void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, int Socket);
+void unicast_close_connection(unicast_parameters_t *unicast_vars, int Socket);
 
 int
 unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *channels, int Socket, char *host);
@@ -117,7 +117,19 @@ void init_unicast_v(unicast_parameters_t *unicast_vars)
 				.queue_max_size=UNICAST_DEFAULT_QUEUE_MAX,
 				.socket_sendbuf_size=0,
 				.flush_on_eagain=0,
-		};
+				.pfdsnum=0,
+	 };
+	 unicast_vars->pfds=NULL;
+	 //+1 for closing the pfd list, see man poll
+	 unicast_vars->pfds=malloc(sizeof(struct pollfd));
+	 if (unicast_vars->pfds==NULL)
+	 {
+		 log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+		 set_interrupted(ERROR_MEMORY<<8);
+	 }
+	 unicast_vars->pfds[0].fd = 0;
+	 unicast_vars->pfds[0].events = POLLIN | POLLPRI;
+	 unicast_vars->pfds[0].revents = 0;
 
 }
 
@@ -224,37 +236,37 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
  *
  *
  */
-int unicast_create_listening_socket(int socket_type, int socket_channel, char *ipOut, int port, struct sockaddr_in *sIn, int *socketIn, fds_t *fds, unicast_parameters_t *unicast_vars)
+int unicast_create_listening_socket(int socket_type, int socket_channel, char *ipOut, int port, struct sockaddr_in *sIn, int *socketIn, unicast_parameters_t *unicast_vars)
 {
 	*socketIn= makeTCPclientsocket(ipOut, port, sIn);
 	//We add them to the poll descriptors
 	if(*socketIn>0)
 	{
-		fds->pfdsnum++;
-		log_message( log_module, MSG_DEBUG, "unicast : fds->pfdsnum : %d\n", fds->pfdsnum);
-		fds->pfds=realloc(fds->pfds,(fds->pfdsnum+1)*sizeof(struct pollfd));
-		if (fds->pfds==NULL)
+		unicast_vars->pfdsnum++;
+		log_message( log_module, MSG_DEBUG, "unicast : unicast_vars->pfdsnum : %d\n", unicast_vars->pfdsnum);
+		unicast_vars->pfds=realloc(unicast_vars->pfds,(unicast_vars->pfdsnum+1)*sizeof(struct pollfd));
+		if (unicast_vars->pfds==NULL)
 		{
 			log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 			return -1;
 		}
-		fds->pfds[fds->pfdsnum-1].fd = *socketIn;
-		fds->pfds[fds->pfdsnum-1].events = POLLIN | POLLPRI;
-		fds->pfds[fds->pfdsnum-1].revents = 0;
-		fds->pfds[fds->pfdsnum].fd = 0;
-		fds->pfds[fds->pfdsnum].events = POLLIN | POLLPRI;
-		fds->pfds[fds->pfdsnum].revents = 0;
+		unicast_vars->pfds[unicast_vars->pfdsnum-1].fd = *socketIn;
+		unicast_vars->pfds[unicast_vars->pfdsnum-1].events = POLLIN | POLLPRI;
+		unicast_vars->pfds[unicast_vars->pfdsnum-1].revents = 0;
+		unicast_vars->pfds[unicast_vars->pfdsnum].fd = 0;
+		unicast_vars->pfds[unicast_vars->pfdsnum].events = POLLIN | POLLPRI;
+		unicast_vars->pfds[unicast_vars->pfdsnum].revents = 0;
 		//Information about the descriptor
-		unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
+		unicast_vars->fd_info=realloc(unicast_vars->fd_info,(unicast_vars->pfdsnum)*sizeof(unicast_fd_info_t));
 		if (unicast_vars->fd_info==NULL)
 		{
 			log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 			return -1;
 		}
 		//Master connection
-		unicast_vars->fd_info[fds->pfdsnum-1].type=socket_type;
-		unicast_vars->fd_info[fds->pfdsnum-1].channel=socket_channel;
-		unicast_vars->fd_info[fds->pfdsnum-1].client=NULL;
+		unicast_vars->fd_info[unicast_vars->pfdsnum-1].type=socket_type;
+		unicast_vars->fd_info[unicast_vars->pfdsnum-1].channel=socket_channel;
+		unicast_vars->fd_info[unicast_vars->pfdsnum-1].client=NULL;
 	}
 	else
 	{
@@ -272,58 +284,59 @@ int unicast_create_listening_socket(int socket_type, int socket_channel, char *i
  * If the event is on a channel specific socket, it accepts the new connection and starts streaming
  *
  */
-int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels, strength_parameters_t *strengthparams, auto_p_t *auto_p, void *cam_p, void *scam_vars)
+int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, mumudvb_channel_t *channels, int number_of_channels, strength_parameters_t *strengthparams, auto_p_t *auto_p, void *cam_p, void *scam_vars)
 {
 	int iRet;
 	//We look what happened for which connection
 	int actual_fd;
 
 
-	for(actual_fd=1;actual_fd<fds->pfdsnum;actual_fd++)
+	for(actual_fd=0;actual_fd<unicast_vars->pfdsnum;actual_fd++)
 	{
 		iRet=0;
-		if((fds->pfds[actual_fd].revents&POLLHUP)&&(unicast_vars->fd_info[actual_fd].type==UNICAST_CLIENT))
+		if(((unicast_vars->pfds[actual_fd].revents&POLLHUP)||(unicast_vars->pfds[actual_fd].revents&POLLERR))
+				&&(unicast_vars->fd_info[actual_fd].type==UNICAST_CLIENT))
 		{
-			log_message( log_module, MSG_DEBUG,"We've got a POLLHUP. Actual_fd %d socket %d we close the connection \n", actual_fd, fds->pfds[actual_fd].fd );
-			unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd);
-			//We check if we hage to parse fds->pfds[actual_fd].revents (the last fd moved to the actual one)
-			if(fds->pfds[actual_fd].revents)
+			log_message( log_module, MSG_DEBUG,"We've got a POLLHUP or POLLERR. Actual_fd %d socket %d we close the connection \n", actual_fd, unicast_vars->pfds[actual_fd].fd );
+			unicast_close_connection(unicast_vars,unicast_vars->pfds[actual_fd].fd);
+			//We check if we have to parse unicast_vars->pfds[actual_fd].revents (the last fd moved to the actual one)
+			if(unicast_vars->pfds[actual_fd].revents)
 				actual_fd--;//Yes, we force the loop to see it
 		}
-		if((fds->pfds[actual_fd].revents&POLLIN)||(fds->pfds[actual_fd].revents&POLLPRI))
+		if((unicast_vars->pfds[actual_fd].revents&POLLIN)||(unicast_vars->pfds[actual_fd].revents&POLLPRI))
 		{
 			if((unicast_vars->fd_info[actual_fd].type==UNICAST_MASTER)||
 					(unicast_vars->fd_info[actual_fd].type==UNICAST_LISTEN_CHANNEL))
 			{
-				//Event on the master connection or listenin channel
+				//Event on the master connection or listening channel
 				//New connection, we accept the connection
 				log_message( log_module, MSG_FLOOD,"New client\n");
 				int tempSocket;
 				unicast_client_t *tempClient;
 				//we accept the incoming connection
-				tempClient=unicast_accept_connection(unicast_vars, fds->pfds[actual_fd].fd);
+				tempClient=unicast_accept_connection(unicast_vars, unicast_vars->pfds[actual_fd].fd);
 
 				if(tempClient!=NULL)
 				{
 					tempSocket=tempClient->Socket;
-					fds->pfdsnum++;
-					fds->pfds=realloc(fds->pfds,(fds->pfdsnum+1)*sizeof(struct pollfd));
-					if (fds->pfds==NULL)
+					unicast_vars->pfdsnum++;
+					unicast_vars->pfds=realloc(unicast_vars->pfds,(unicast_vars->pfdsnum+1)*sizeof(struct pollfd));
+					if (unicast_vars->pfds==NULL)
 					{
 						log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 						set_interrupted(ERROR_MEMORY<<8);
 						return -1;
 					}
 					//We poll the new socket
-					fds->pfds[fds->pfdsnum-1].fd = tempSocket;
-					fds->pfds[fds->pfdsnum-1].events = POLLIN | POLLPRI | POLLHUP; //We also poll the deconnections
-					fds->pfds[fds->pfdsnum-1].revents = 0;
-					fds->pfds[fds->pfdsnum].fd = 0;
-					fds->pfds[fds->pfdsnum].events = POLLIN | POLLPRI;
-					fds->pfds[fds->pfdsnum].revents = 0;
+					unicast_vars->pfds[unicast_vars->pfdsnum-1].fd = tempSocket;
+					unicast_vars->pfds[unicast_vars->pfdsnum-1].events = POLLIN | POLLPRI | POLLHUP | POLLERR; //We also poll the deconnections
+					unicast_vars->pfds[unicast_vars->pfdsnum-1].revents = 0;
+					unicast_vars->pfds[unicast_vars->pfdsnum].fd = 0;
+					unicast_vars->pfds[unicast_vars->pfdsnum].events = POLLIN | POLLPRI;
+					unicast_vars->pfds[unicast_vars->pfdsnum].revents = 0;
 
 					//Information about the descriptor
-					unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
+					unicast_vars->fd_info=realloc(unicast_vars->fd_info,(unicast_vars->pfdsnum)*sizeof(unicast_fd_info_t));
 					if (unicast_vars->fd_info==NULL)
 					{
 						log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
@@ -331,9 +344,9 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
 						return -1;
 					}
 					//client connection
-					unicast_vars->fd_info[fds->pfdsnum-1].type=UNICAST_CLIENT;
-					unicast_vars->fd_info[fds->pfdsnum-1].channel=-1;
-					unicast_vars->fd_info[fds->pfdsnum-1].client=tempClient;
+					unicast_vars->fd_info[unicast_vars->pfdsnum-1].type=UNICAST_CLIENT;
+					unicast_vars->fd_info[unicast_vars->pfdsnum-1].channel=-1;
+					unicast_vars->fd_info[unicast_vars->pfdsnum-1].client=tempClient;
 
 
 					log_message( log_module, MSG_FLOOD,"Number of clients : %d\n", unicast_vars->client_number);
@@ -349,14 +362,14 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumu
 			}
 			else if(unicast_vars->fd_info[actual_fd].type==UNICAST_CLIENT)
 			{
-				//Event on a client connectio i.e. the client asked something
-				log_message( log_module, MSG_FLOOD,"New message for socket %d\n", fds->pfds[actual_fd].fd);
+				//Event on a client connection i.e. the client asked something
+				log_message( log_module, MSG_FLOOD,"New message for socket %d\n", unicast_vars->pfds[actual_fd].fd);
 				iRet=unicast_handle_message(unicast_vars,unicast_vars->fd_info[actual_fd].client, channels, number_of_channels, strengthparams, auto_p, cam_p, scam_vars);
 				if (iRet==-2 ) //iRet==-2 --> 0 received data or error, we close the connection
 				{
-					unicast_close_connection(unicast_vars,fds,fds->pfds[actual_fd].fd);
-					//We check if we hage to parse fds->pfds[actual_fd].revents (the last fd moved to the actual one)
-					if(fds->pfds[actual_fd].revents)
+					unicast_close_connection(unicast_vars,unicast_vars->pfds[actual_fd].fd);
+					//We check if we have to parse unicast_vars->pfds[actual_fd].revents (the last fd moved to the actual one)
+					if(unicast_vars->pfds[actual_fd].revents)
 						actual_fd--;//Yes, we force the loop to see it again
 				}
 			}
@@ -442,23 +455,23 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
  * @param fds The polling file descriptors
  * @param Socket The socket of the client we want to disconnect
  */
-void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, int Socket)
+void unicast_close_connection(unicast_parameters_t *unicast_vars, int Socket)
 {
 
 	int actual_fd;
 	actual_fd=0;
 	//We find the FD correspondig to this client
-	while((actual_fd<fds->pfdsnum) && (fds->pfds[actual_fd].fd!=Socket))
+	while((actual_fd<unicast_vars->pfdsnum) && (unicast_vars->pfds[actual_fd].fd!=Socket))
 		actual_fd++;
 
-	if(actual_fd==fds->pfdsnum)
+	if(actual_fd==unicast_vars->pfdsnum)
 	{
 		log_message( log_module, MSG_ERROR,"close connection : we did't find the file descriptor this should never happend, please contact\n");
 		actual_fd=0;
 		//We find the FD correspondig to this client
-		while(actual_fd<fds->pfdsnum)
+		while(actual_fd<unicast_vars->pfdsnum)
 		{
-			log_message( log_module, MSG_ERROR,"fds->pfds[actual_fd].fd %d Socket %d \n", fds->pfds[actual_fd].fd,Socket);
+			log_message( log_module, MSG_ERROR,"unicast_vars->pfds[actual_fd].fd %d Socket %d \n", unicast_vars->pfds[actual_fd].fd,Socket);
 			actual_fd++;
 		}
 		return;
@@ -468,23 +481,23 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, fds_t *fds, in
 	//We delete the client
 	unicast_del_client(unicast_vars, unicast_vars->fd_info[actual_fd].client);
 	//We move the last fd to the actual/deleted one, and decrease the number of fds by one
-	fds->pfds[actual_fd].fd = fds->pfds[fds->pfdsnum-1].fd;
-	fds->pfds[actual_fd].events = fds->pfds[fds->pfdsnum-1].events;
-	fds->pfds[actual_fd].revents = fds->pfds[fds->pfdsnum-1].revents;
+	unicast_vars->pfds[actual_fd].fd = unicast_vars->pfds[unicast_vars->pfdsnum-1].fd;
+	unicast_vars->pfds[actual_fd].events = unicast_vars->pfds[unicast_vars->pfdsnum-1].events;
+	unicast_vars->pfds[actual_fd].revents = unicast_vars->pfds[unicast_vars->pfdsnum-1].revents;
 	//we move the file descriptor information
-	unicast_vars->fd_info[actual_fd] = unicast_vars->fd_info[fds->pfdsnum-1];
+	unicast_vars->fd_info[actual_fd] = unicast_vars->fd_info[unicast_vars->pfdsnum-1];
 	//last one set to 0 for poll()
-	fds->pfds[fds->pfdsnum-1].fd=0;
-	fds->pfds[fds->pfdsnum-1].events=POLLIN|POLLPRI;
-	fds->pfds[fds->pfdsnum-1].revents=0; //We clear it to avoid nasty bugs ...
-	fds->pfdsnum--;
-	fds->pfds=realloc(fds->pfds,(fds->pfdsnum+1)*sizeof(struct pollfd));
-	if (fds->pfds==NULL)
+	unicast_vars->pfds[unicast_vars->pfdsnum-1].fd=0;
+	unicast_vars->pfds[unicast_vars->pfdsnum-1].events=POLLIN|POLLPRI;
+	unicast_vars->pfds[unicast_vars->pfdsnum-1].revents=0; //We clear it to avoid nasty bugs ...
+	unicast_vars->pfdsnum--;
+	unicast_vars->pfds=realloc(unicast_vars->pfds,(unicast_vars->pfdsnum+1)*sizeof(struct pollfd));
+	if (unicast_vars->pfds==NULL)
 	{
 		log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 		set_interrupted(ERROR_MEMORY<<8);
 	}
-	unicast_vars->fd_info=realloc(unicast_vars->fd_info,(fds->pfdsnum)*sizeof(unicast_fd_info_t));
+	unicast_vars->fd_info=realloc(unicast_vars->fd_info,(unicast_vars->pfdsnum)*sizeof(unicast_fd_info_t));
 	if (unicast_vars->fd_info==NULL)
 	{
 		log_message( log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);

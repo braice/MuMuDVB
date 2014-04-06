@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <sys/time.h>
+#include "unicast_http.h"
 
 /**@file
  * @brief scam support
@@ -44,16 +45,10 @@
  * Header file for code concerning software descrambling
  */
 
-void scam_send_start(mumudvb_channel_t *channel);
+void scam_send_start(mumudvb_channel_t *channel, unicast_parameters_t *unicast_vars);
 void scam_send_stop(mumudvb_channel_t *channel);
 void *sendthread_func(void* arg); 
 
-#if 0
-typedef struct scam_sendthread_p_t{
-	mumudvb_channel_t *channel
-	struct unicast_parameters_t *unicast_vars, fds_t *fds
-}scam_sendthread_p_t;
-#endif
 
 
 #endif

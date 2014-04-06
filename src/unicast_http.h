@@ -183,16 +183,20 @@ typedef struct unicast_parameters_t{
   int client_number;
   /** The maximum number of simultaneous clients allowed*/
   int max_clients;
-  /** The timeout before disconnecting a client wich does only errors*/
+  /** The timeout before disconnecting a client which does only errors*/
   int consecutive_errors_timeout;
-  /** The information on the file descriptors : ie the type of FD, the client associated if it's a client fd, the channel if it's a channel fd */
-  unicast_fd_info_t *fd_info;
   /** The maximum size of the queue */
   int queue_max_size;
   /** The socket SO_SNDBUF size*/
   int socket_sendbuf_size;
   /** Debug : do we flush the queue when we get eagain errors ? */
   int flush_on_eagain;
+  /** The information on the file descriptors : ie the type of FD, the client associated if it's a client fd, the channel if it's a channel fd */
+  unicast_fd_info_t *fd_info;
+  /**File descriptors for pooling*/
+  struct pollfd *pfds;	//unicast http clients
+  int pfdsnum;
+
 }unicast_parameters_t;
 
 
@@ -210,10 +214,10 @@ struct unicast_reply {
  int unicast_reply_write(struct unicast_reply *reply, const char* msg, ...);
  int unicast_reply_send(struct unicast_reply *reply, int socket, int code, const char* content_type);
 
-int unicast_create_listening_socket(int socket_type, int socket_channel, char *ipOut, int port, struct sockaddr_in *sIn, int *socketIn, fds_t *fds, unicast_parameters_t *unicast_vars);
+int unicast_create_listening_socket(int socket_type, int socket_channel, char *ipOut, int port, struct sockaddr_in *sIn, int *socketIn, unicast_parameters_t *unicast_vars);
 
 struct strength_parameters_t; //just to avoid including dvb.h for one structure
-int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, fds_t *fds, mumudvb_channel_t *channels, int number_of_channels, struct strength_parameters_t *strengthparams, struct auto_p_t *auto_p, void *cam_vars, void *scam_vars);
+int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, mumudvb_channel_t *channels, int number_of_channels, struct strength_parameters_t *strengthparams, struct auto_p_t *auto_p, void *cam_vars, void *scam_vars);
 
 int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *client);
 
@@ -223,7 +227,7 @@ void unicast_freeing(unicast_parameters_t *unicast_vars);
 
 int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_channel_t *c_chan, char *substring);
 
-void unicast_data_send(mumudvb_channel_t *actual_channel,  fds_t *fds, unicast_parameters_t *unicast_vars);
+void unicast_data_send(mumudvb_channel_t *actual_channel,  unicast_parameters_t *unicast_vars);
 
 void init_unicast_v(unicast_parameters_t *unicast_vars);
 

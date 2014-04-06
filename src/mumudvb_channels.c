@@ -84,6 +84,13 @@ int mumu_init_chan(mumudvb_channel_t *chan)
 			chan->pid_i.num_pids++;
 		}
 	}
+
+#ifdef ENABLE_SCAM_SUPPORT
+	pthread_mutex_init(&chan->stats_lock, NULL);
+	pthread_mutex_init(&chan->cw_lock, NULL);
+	chan->camd_socket = -1;
+
+#endif
 	return 0;
 }
 
@@ -237,7 +244,7 @@ void chan_update_CAM(mumu_chan_p_t *chan_p, auto_p_t *auto_p,  void *scam_vars_v
 
 /** @brief Set the networking for the channels almost ready
  */
-void chan_update_net(mumu_chan_p_t *chan_p, auto_p_t *auto_p, multi_p_t *multi_p, unicast_parameters_t *unicast_vars, int server_id, int card, int tuner, fds_t *fds)
+void update_chan_net(mumu_chan_p_t *chan_p, auto_p_t *auto_p, multi_p_t *multi_p, unicast_parameters_t *unicast_vars, int server_id, int card, int tuner)
 {
 	pthread_mutex_lock(&chan_p->lock);
 	int ichan;
@@ -363,7 +370,6 @@ void chan_update_net(mumu_chan_p_t *chan_p, auto_p_t *auto_p, multi_p_t *multi_p
 					chan_p->channels[ichan].unicast_port,
 					&chan_p->channels[ichan].sIn,
 					&chan_p->channels[ichan].socketIn,
-					fds,
 					unicast_vars);
 		}
 
@@ -414,7 +420,25 @@ void chan_update_net(mumu_chan_p_t *chan_p, auto_p_t *auto_p, multi_p_t *multi_p
 								multi_p->iface6,
 								&chan_p->channels[ichan].sOut6);
 		}
+
+		/******************************************************/
+		//   SCAM START PART
+		/******************************************************/
+#ifdef ENABLE_SCAM_SUPPORT
+		if (chan_p->channels[ichan].scam_support && !chan_p->channels[ichan].scam_support_started)
+		{
+			set_interrupted(scam_channel_start(&chan_p->channels[ichan], unicast_vars));
+			chan_p->channels[ichan].scam_support_started=1;
+		}
+#endif
+		/******************************************************/
+		//   SCAM START PART FINISHED
+		/******************************************************/
+
+
 	}
+
+
 	pthread_mutex_unlock(&chan_p->lock);
 
 }

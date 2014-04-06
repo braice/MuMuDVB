@@ -54,6 +54,9 @@
 #define DEMUX_DEV_NAME    "demux"
 #define DVR_DEV_NAME      "dvr"
 
+//The timeout for DVB polling, must exist otherwise the program would block without data on the card
+#define DVB_POLL_TIMEOUT 100
+
 enum
 {
 	PID_NOT_ASKED=0,
@@ -87,7 +90,6 @@ typedef struct card_thread_parameters_t{
 	int thread_running;
 	/** Is main waiting ?*/
 	int main_waiting;
-	int unicast_data;
 }card_thread_parameters_t;
 
 void *read_card_thread_func(void* arg);

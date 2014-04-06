@@ -53,6 +53,7 @@
 #include "scam_decsa.h"
 #include "scam_send.h"
 
+
 /**@file
  * @brief scam support
  * 
@@ -194,13 +195,9 @@ int scam_init_no_autoconf(scam_parameters_t *scam_vars, mumudvb_channel_t *chann
     	  if(!channels[curr_channel].pid_i.pmt_pid)
     	  {
     		  log_message( log_module,  MSG_WARN,
-    		                     "channel %d with SCAM support and no PMT set, assuming first PID (%d) as PMT",curr_channel,channels[curr_channel].pid_i.pids[0]);
-    		  channels[curr_channel].pid_i.pmt_pid=channels[curr_channel].pid_i.pids[0];
-    		  channels[curr_channel].pid_i.pids_type[0]=PID_PMT;
-    		  snprintf(channels[curr_channel].pid_i.pids_language[0],4,"%s","---");
+    		                     "channel %d with SCAM support and no PMT set I disable SCAM support for this channel",curr_channel);
+    		  channels[curr_channel].scam_support=0;
     	  }
-        ++scam_vars->need_pmt_get;
-        channels[curr_channel].need_pmt_get=1;
       }
     }
   }
@@ -214,7 +211,7 @@ int scam_init_no_autoconf(scam_parameters_t *scam_vars, mumudvb_channel_t *chann
 /** @brief create ring buffer and threads for sending and descrambling
  *
  */
-int scam_channel_start(mumudvb_channel_t *channel)
+int scam_channel_start(mumudvb_channel_t *channel, unicast_parameters_t *unicast_vars)
 {
   unsigned int i;
 
@@ -252,7 +249,7 @@ int scam_channel_start(mumudvb_channel_t *channel)
   memset (channel->ring_buf->time_decsa, 0, channel->ring_buffer_size * sizeof(uint64_t));//we clear it
 
   pthread_mutex_init(&channel->ring_buf->lock, NULL);
-  scam_send_start(channel);
+  scam_send_start(channel, unicast_vars);
   scam_decsa_start(channel);
   return 0;
 }

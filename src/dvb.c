@@ -310,41 +310,26 @@ void *read_card_thread_func(void* arg)
 	card_thread_parameters_t  *threadparams;
 	threadparams= (card_thread_parameters_t  *) arg;
 
-	struct pollfd pfds[2];	// Local poll file descriptors containing DVR device
 	int poll_ret;
-	fds_t fds;
 	pthread_mutex_lock(&threadparams->carddatamutex);
 	threadparams->card_buffer->bytes_in_write_buffer=0;
 	pthread_mutex_unlock(&threadparams->carddatamutex);
 	int throwing_packets=0;
-	//File descriptor for polling the DVB card
-	pfds[0].fd = threadparams->fds->fd_dvr;
-	//POLLIN : data available for read
-	pfds[0].events = POLLIN | POLLPRI;
-	pfds[1].fd = 0;
-	pfds[1].events = POLLIN | POLLPRI;
-	fds.pfds=pfds;
-	fds.pfdsnum=1;
 	log_message( log_module,  MSG_DEBUG, "Reading thread start\n");
 
 	usleep(100000); //some waiting to be sure the main program is waiting //it is probably useless
-	threadparams->unicast_data=0;
 	while(!threadparams->threadshutdown&& !get_interrupted())
 	{
-		//If we know that there is unicast data waiting, we don't poll the unicast file descriptors
-		if(threadparams->unicast_data)
-			poll_ret=mumudvb_poll(&fds);
-		else
-			poll_ret=mumudvb_poll(threadparams->fds);
-		if(poll_ret)
+		//Poll the DVB descriptors
+		poll_ret=mumudvb_poll(threadparams->fds->pfds,threadparams->fds->pfdsnum,DVB_POLL_TIMEOUT);
+		if(poll_ret<0)
 		{
-			set_interrupted(poll_ret);
+			set_interrupted(-poll_ret);
 			log_message( log_module,  MSG_WARN, "Thread polling issue\n");
 			return NULL;
 		}
-		if((!(threadparams->fds->pfds[0].revents&POLLIN)) && (!(threadparams->fds->pfds[0].revents&POLLPRI))) //Unicast information
+		if((!(threadparams->fds->pfds[0].revents&POLLIN)) && (!(threadparams->fds->pfds[0].revents&POLLPRI))) //Timeout, we give the ball back to the main for unicast polling
 		{
-			threadparams->unicast_data=1;
 			if(threadparams->main_waiting)
 			{
 				pthread_cond_signal(&threadparams->threadcond);

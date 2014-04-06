@@ -29,7 +29,6 @@
 #include <stdio.h>
 #include <time.h>
 
-
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -66,11 +65,16 @@ void *sendthread_func(void* arg)
   int ScramblingControl;
   int curr_pid = 0;
   int send_packet = 0;
-  extern unicast_parameters_t unicast_vars;
+
   extern int dont_send_scrambled;
-  extern fds_t fds;
+
+  scam_sendthread_p_t *params;
+  params = ((scam_sendthread_p_t *) arg);
   mumudvb_channel_t *channel;
-  channel = ((mumudvb_channel_t *) arg);
+  channel = params->channel;
+  unicast_parameters_t *unicast_vars;
+  unicast_vars=params->unicast_vars;
+
   uint64_t res_time;
   struct timespec r_time;
   int first_run = 1;
@@ -152,7 +156,7 @@ void *sendthread_func(void* arg)
     if ((!channel->rtp && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
       ||(channel->rtp && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE)))
     {
-      send_func(channel, send_time, &unicast_vars, &fds);
+      send_func(channel, send_time, unicast_vars);
     }
   }
   return 0;
@@ -162,7 +166,7 @@ void *sendthread_func(void* arg)
 
 
 
-void scam_send_start(mumudvb_channel_t *channel)
+void scam_send_start(mumudvb_channel_t *channel, unicast_parameters_t *unicast_vars)
 {
   pthread_attr_t attr;
   struct sched_param param;
@@ -174,8 +178,10 @@ void scam_send_start(mumudvb_channel_t *channel)
   param.sched_priority = sched_get_priority_max(SCHED_RR);
   pthread_attr_setschedparam(&attr, &param);
   pthread_attr_setstacksize (&attr, stacksize);
-
-  pthread_create(&(channel->sendthread), &attr, sendthread_func, channel);
+  scam_sendthread_p_t thread_params;
+  thread_params.channel=channel;
+  thread_params.unicast_vars=unicast_vars;
+  pthread_create(&(channel->sendthread), &attr, sendthread_func, &thread_params);
   log_message(log_module, MSG_DEBUG,"Send thread started, channel %s\n",channel->name);
   pthread_attr_destroy(&attr);
 }

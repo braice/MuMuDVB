@@ -195,7 +195,7 @@ typedef struct {
 	/** demuxer file descriptors */
 	int fd_demuxer[8193];
 	/** poll file descriptors */
-	struct pollfd *pfds;	//  DVR device + unicast http clients
+	struct pollfd *pfds;	//  DVR device
 	int pfdsnum;
 }fds_t;
 
@@ -360,6 +360,8 @@ typedef struct mumu_chan_t{
 	int need_scam_ask;
 	/** Say if this channel should be descrambled using scam*/
 	int scam_support;
+	/** Say if we started the threads for oscam */
+	int scam_support_started;
 	/** Mutex for odd_cw and even_cw. */
 	pthread_mutex_t cw_lock;
 	/** Odd control word for descrambling */
@@ -395,8 +397,6 @@ typedef struct mumu_chan_t{
 	uint64_t decsa_delay;
 	/** Delay of sending in us*/
 	uint64_t send_delay;
-	/** Says if we need to get pmt for this channel on scam own*/
-	int need_pmt_get;
 	/** Says if we've got first cw for channel.
 	 * NOTE: This is _not_ under cw_lock, but under the regular chan_p lock. */
 	int got_cw_started;
@@ -560,16 +560,16 @@ int mumu_string_append(mumu_string_t *string, const char *psz_format, ...);
 void mumu_free_string(mumu_string_t *string);
 
 
-int mumudvb_poll(fds_t *fds);
+int mumudvb_poll(struct pollfd *, int , int );
 char *mumu_string_replace(char *source, int *length, int can_realloc, char *toreplace, char *replacement);
 int string_comput(char *string);
 uint64_t get_time(void);
-void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, void *scam_vars_v, fds_t *fds);
-void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars, fds_t *fds);
+void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, void *scam_vars_v);
+void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars);
 
 int mumu_init_chan(mumudvb_channel_t *chan);
 void chan_update_CAM(mumu_chan_p_t *chan_p, struct auto_p_t *auto_p,  void *scam_vars_v);
-void chan_update_net(mumu_chan_p_t *chan_p, struct auto_p_t *auto_p, multi_p_t *multi_p, struct unicast_parameters_t *unicast_vars, int server_id, int card, int tuner, fds_t *fds);
+void update_chan_net(mumu_chan_p_t *chan_p, struct auto_p_t *auto_p, multi_p_t *multi_p, struct unicast_parameters_t *unicast_vars, int server_id, int card, int tuner);
 void update_chan_filters(mumu_chan_p_t *chan_p, char *card_base_path, int tuner, fds_t *fds);
 long int mumu_timing();
 

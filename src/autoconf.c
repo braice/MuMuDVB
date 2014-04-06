@@ -507,7 +507,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, auto_p_t *auto_p, fds
 	{
 		if(pid==0) //PAT : contains the services identifiers and the PMT PID for each service
 		{
-			if((auto_p->autoconfiguration==AUTOCONF_MODE_FULL))
+			if(auto_p->autoconfiguration==AUTOCONF_MODE_FULL)
 			{
 				//In case of wrong CRC32, at the next call it will go to 0
 				autoconf_pat_need_update(auto_p,ts_packet);
@@ -572,7 +572,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, auto_p_t *auto_p, fds
 			log_message( log_module, MSG_INFO,"We update the channel filters");
 			update_chan_filters(chan_p, tune_p->card_dev_path, tune_p->tuner, fds);
 			log_message( log_module, MSG_INFO,"We update the channel networking");
-			chan_update_net(chan_p, auto_p, multi_p, unicast_vars, server_id, tune_p->card, tune_p->tuner,fds);
+			update_chan_net(chan_p, auto_p, multi_p, unicast_vars, server_id, tune_p->card, tune_p->tuner);
 			auto_p->need_filter_chan_update=0;
 		}
 		//PMT PID analysis, only for channels being marked as ready
