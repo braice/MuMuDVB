@@ -113,6 +113,13 @@ then
   AC_DEFINE(ANDROID, 1, Define if you want build for android)
 fi
 
+AC_ARG_ENABLE(tune_old,
+  [  --enable-tune_old          Use old code for tuning (default disabled)],,[enable_tune_old="no"])
+
+if test "${enable_tune_old}" = "yes"
+then
+  AC_DEFINE(TUNE_OLD, 1, Define if you want the old code for tuning)
+fi
 
 # Checks for header files.
 AC_HEADER_RESOLV
@@ -164,6 +171,10 @@ if test "${enable_android}" = "yes" ; then
         echo "Build with compatibility for android:               yes"
 else
         echo "Build with compatibility for android:                no"
+fi
+
+if test "${enable_tune_old}" = "yes" ; then
+        echo "Build with old tuning code:                         yes"
 fi
 
 echo ""

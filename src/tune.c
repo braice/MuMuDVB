@@ -779,12 +779,14 @@ static int do_diseqc(int fd, unsigned char sat_no,  unsigned char switch_no, cha
 }
 
 /** @brief Check the status of the card
- *@todo document
+
  */
 int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_strength)
 {
 	int32_t strength;
 	fe_status_t festatus;
+	//We keep the old tuning compatibility just in case, as the new one should work it is done via the configure
+#if TUNE_OLD
 	struct dvb_frontend_event event;
 	struct pollfd pfd[1];
 	int status;
@@ -862,6 +864,82 @@ int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_str
 		log_message( log_module,  MSG_ERROR, "Not able to lock to the signal on the given frequency\n");
 		return -1;
 	}
+#else
+	struct dvb_frontend_parameters parameters;
+
+	do
+	{
+		log_message( log_module, MSG_DETAIL, "polling....\n");
+		if (ioctl(fd_frontend, FE_READ_STATUS, &festatus) < 0){
+			if (errno == EINTR) {
+				continue;
+			}
+			log_message( log_module,  MSG_ERROR, "FE_READ_STATUS %s\n", strerror(errno));
+			return -1;
+		}
+		print_status(festatus);
+		if(display_strength)
+		{
+			strength=0;
+			if(ioctl(fd_frontend,FE_READ_SIGNAL_STRENGTH,&strength) >= 0)
+				log_message( log_module,  MSG_INFO, "Strength: %10d\n",strength);
+			strength=0;
+			if(ioctl(fd_frontend,FE_READ_SNR,&strength) >= 0)
+				log_message( log_module,  MSG_INFO, "SNR: %10d\n",strength);
+		}
+		sleep(1);
+	} while ((festatus & (FE_TIMEDOUT|FE_HAS_LOCK))==0);
+
+	if (festatus & FE_HAS_LOCK) {
+		int status;
+		do {
+			status = ioctl(fd_frontend, FE_GET_FRONTEND, &parameters);
+		} while (status == -1 && errno == EINTR);
+
+		if (status < 0) {
+			log_message( log_module,  MSG_ERROR, "FE_GET_FRONTEND %s\n", strerror(errno));
+			return -1;
+		}
+		switch(type) {
+		case FE_OFDM:
+			log_message( log_module,  MSG_INFO, "Event:  Frequency: %d\n",parameters.frequency);
+			break;
+		case FE_QPSK:
+			log_message( log_module,  MSG_INFO, "Event:  Frequency: %d (or %d)\n",(unsigned int)((parameters.frequency)+lo_frequency),(unsigned int) abs((parameters.frequency)-lo_frequency));
+			log_message( log_module,  MSG_INFO, "        SymbolRate: %d\n",parameters.u.qpsk.symbol_rate);
+			log_message( log_module,  MSG_INFO, "        FEC_inner:  %d\n",parameters.u.qpsk.fec_inner);
+			break;
+		case FE_QAM:
+			log_message( log_module,  MSG_INFO, "Event:  Frequency: %d\n",parameters.frequency);
+			log_message( log_module,  MSG_INFO, "        SymbolRate: %d\n",parameters.u.qpsk.symbol_rate);
+			log_message( log_module,  MSG_INFO, "        FEC_inner:  %d\n",parameters.u.qpsk.fec_inner);
+			break;
+#ifdef ATSC
+		case FE_ATSC:
+			log_message( log_module,  MSG_INFO, "Event:  Frequency: %d\n",parameters.frequency);
+			break;
+#endif
+		default:
+			break;
+		}
+
+		strength=0;
+		if(ioctl(fd_frontend,FE_READ_BER,&strength) >= 0)
+			log_message( log_module,  MSG_INFO, "Bit error rate: %d\n",strength);
+
+		strength=0;
+		if(ioctl(fd_frontend,FE_READ_SIGNAL_STRENGTH,&strength) >= 0)
+			log_message( log_module,  MSG_INFO, "Signal strength: %d\n",strength);
+
+		strength=0;
+		if(ioctl(fd_frontend,FE_READ_SNR,&strength) >= 0)
+			log_message( log_module,  MSG_INFO, "SNR: %d\n",strength);
+	} else {
+		log_message( log_module,  MSG_ERROR, "Not able to lock to the signal on the given frequency\n");
+		return -1;
+	}
+
+#endif
 	return 0;
 }
 
