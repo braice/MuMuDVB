@@ -509,7 +509,7 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
 
 	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 		//We store the old to be sure that we store only channels over the minimum packets limit
-		if (channels[curr_channel].has_traffic)
+		if (channels[curr_channel].has_traffic && (channels[curr_channel].channel_ready>=READY))
 		{
 			fprintf (file_streamed_channels, "%s:%d:%s", channels[curr_channel].ip4Out, channels[curr_channel].portOut, channels[curr_channel].name);
 			if (channels[curr_channel].scrambled_channel == FULLY_UNSCRAMBLED)
