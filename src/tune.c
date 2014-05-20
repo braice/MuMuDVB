@@ -898,29 +898,31 @@ int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_str
 
 		if (status < 0) {
 			log_message( log_module,  MSG_ERROR, "FE_GET_FRONTEND %s\n", strerror(errno));
-			return -1;
 		}
-		switch(type) {
-		case FE_OFDM:
-			log_message( log_module,  MSG_INFO, "Event:  Frequency: %d\n",parameters.frequency);
-			break;
-		case FE_QPSK:
-			log_message( log_module,  MSG_INFO, "Event:  Frequency: %d (or %d)\n",(unsigned int)((parameters.frequency)+lo_frequency),(unsigned int) abs((parameters.frequency)-lo_frequency));
-			log_message( log_module,  MSG_INFO, "        SymbolRate: %d\n",parameters.u.qpsk.symbol_rate);
-			log_message( log_module,  MSG_INFO, "        FEC_inner:  %d\n",parameters.u.qpsk.fec_inner);
-			break;
-		case FE_QAM:
-			log_message( log_module,  MSG_INFO, "Event:  Frequency: %d\n",parameters.frequency);
-			log_message( log_module,  MSG_INFO, "        SymbolRate: %d\n",parameters.u.qpsk.symbol_rate);
-			log_message( log_module,  MSG_INFO, "        FEC_inner:  %d\n",parameters.u.qpsk.fec_inner);
-			break;
+		else
+		{
+			switch(type) {
+			case FE_OFDM:
+				log_message( log_module,  MSG_INFO, "Event:  Frequency: %d\n",parameters.frequency);
+				break;
+			case FE_QPSK:
+				log_message( log_module,  MSG_INFO, "Event:  Frequency: %d (or %d)\n",(unsigned int)((parameters.frequency)+lo_frequency),(unsigned int) abs((parameters.frequency)-lo_frequency));
+				log_message( log_module,  MSG_INFO, "        SymbolRate: %d\n",parameters.u.qpsk.symbol_rate);
+				log_message( log_module,  MSG_INFO, "        FEC_inner:  %d\n",parameters.u.qpsk.fec_inner);
+				break;
+			case FE_QAM:
+				log_message( log_module,  MSG_INFO, "Event:  Frequency: %d\n",parameters.frequency);
+				log_message( log_module,  MSG_INFO, "        SymbolRate: %d\n",parameters.u.qpsk.symbol_rate);
+				log_message( log_module,  MSG_INFO, "        FEC_inner:  %d\n",parameters.u.qpsk.fec_inner);
+				break;
 #ifdef ATSC
-		case FE_ATSC:
-			log_message( log_module,  MSG_INFO, "Event:  Frequency: %d\n",parameters.frequency);
-			break;
+			case FE_ATSC:
+				log_message( log_module,  MSG_INFO, "Event:  Frequency: %d\n",parameters.frequency);
+				break;
 #endif
-		default:
-			break;
+			default:
+				break;
+			}
 		}
 
 		strength=0;
