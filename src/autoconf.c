@@ -108,6 +108,10 @@ void init_aconf_v(auto_p_t *aconf_p)
 		.autoconf_ip4="239.100.%card.%number",
 		.autoconf_ip6="FF15:4242::%server:%card:%number",
 		.transport_stream_id=-1,
+		// see  http://www.etsi.org/deliver/etsi_ts/102600_102699/10261102/01.02.01_60/ts_10261102v010201p.pdf p14
+		// see http://www.etsi.org/deliver/etsi_ts/101100_101199/101162/01.07.01_60/ts_101162v010701p.pdf p18 p19
+		.network_id=-1,
+		.original_network_id=-1,
 		.pat_version=-1,
 		.sdt_version=-1,
 		.nit_version=-1,

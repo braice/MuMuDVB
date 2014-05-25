@@ -44,7 +44,7 @@
 
 static char *log_module="Autoconf: ";
 
-void parse_nit_ts_descriptor(unsigned char *buf,int ts_descriptors_loop_len, mumudvb_channel_t *channels, int number_of_channels);
+void parse_nit_ts_descriptor(unsigned char *buf,int ts_descriptors_loop_len, mumudvb_channel_t *channels, int number_of_channels, int pat_tsid);
 void parse_lcn_descriptor(unsigned char *buf, mumudvb_channel_t *channels, int number_of_channels);
 
 
@@ -129,8 +129,11 @@ int autoconf_read_nit(auto_p_t *auto_p, mumu_chan_p_t *chan_p)
 
 	log_message( log_module, MSG_FLOOD, "-- NIT : Network Information Table --\n");
 
-	log_message( log_module, MSG_FLOOD, "Network id 0x%02x\n", HILO(header->network_id));
+	log_message( log_module, MSG_FLOOD, "Network id 0x%02x see \"http://www.dvbservices.com/identifiers/export/network_id\"\n", HILO(header->network_id));
+	//We store the network ID
+	auto_p->network_id=HILO(header->network_id);
 	int network_descriptors_length = HILO(header->network_descriptor_length);
+
 
 	//Loop over different descriptors in the NIT
 	buf+=NIT_LEN;
@@ -141,7 +144,7 @@ int autoconf_read_nit(auto_p_t *auto_p, mumu_chan_p_t *chan_p)
 	nit_mid_t *middle=(nit_mid_t *)buf;
 	int ts_loop_length=HILO(middle->transport_stream_loop_length);
 	buf +=SIZE_NIT_MID;
-	parse_nit_ts_descriptor(buf,ts_loop_length, chan_p->channels, chan_p->number_of_channels);
+	parse_nit_ts_descriptor(buf,ts_loop_length, chan_p->channels, chan_p->number_of_channels, auto_p->transport_stream_id);
 
 
 	int sections_missing=0;
@@ -167,18 +170,22 @@ int autoconf_read_nit(auto_p_t *auto_p, mumu_chan_p_t *chan_p)
 }
 
 
-void parse_nit_ts_descriptor(unsigned char* buf, int ts_descriptors_loop_len, mumudvb_channel_t* channels, int number_of_channels)
+void parse_nit_ts_descriptor(unsigned char* buf, int ts_descriptors_loop_len, mumudvb_channel_t* channels, int number_of_channels, int pat_tsid)
 {
 	int descriptors_loop_len;
 	nit_ts_t *descr_header;
-	int ts_id;
+	int ts_id,orig_network_id;
 	while (ts_descriptors_loop_len > 0)
 	{
 		descr_header=(nit_ts_t *)(buf);
 		descriptors_loop_len=HILO(descr_header->transport_descriptors_length);
 		log_message( log_module, MSG_FLOOD, " --- NIT ts_descriptors_loop_len %d descriptors_loop_len %d\n", ts_descriptors_loop_len, descriptors_loop_len);
+		orig_network_id=HILO(descr_header->original_network_id);
+		log_message( log_module, MSG_FLOOD, " --- NIT descriptor concerning the network id 0x%04x\n", orig_network_id);
 		ts_id=HILO(descr_header->transport_stream_id);
-		log_message( log_module, MSG_FLOOD, " --- NIT descriptor concerning the multiplex %d\n", ts_id);
+		log_message( log_module, MSG_FLOOD, " --- NIT descriptor concerning the multiplex 0x%04x our multiplex 0x%04x\n", ts_id, pat_tsid);
+		if(ts_id != pat_tsid)
+			log_message( log_module, MSG_FLOOD, " ---   Other multiplex, we skip");
 		buf +=NIT_TS_LEN;
 		ts_descriptors_loop_len -= (descriptors_loop_len+NIT_TS_LEN);
 		while (descriptors_loop_len > 0)
@@ -191,21 +198,25 @@ void parse_nit_ts_descriptor(unsigned char* buf, int ts_descriptors_loop_len, mu
 				log_message( log_module, MSG_FLOOD, " --- NIT descriptor --- descriptor_tag == 0x%02x, len is 0\n", descriptor_tag);
 				break;
 			}
-			if(descriptor_tag==0x83)
+			//We parse only descriptors with the right transport_stream_id
+			if(pat_tsid==ts_id)
 			{
-				ts_display_lcn_descriptor(log_module, buf);
-				parse_lcn_descriptor(buf, channels, number_of_channels);
+				if(descriptor_tag==0x83)
+				{
+					ts_display_lcn_descriptor(log_module, buf);
+					parse_lcn_descriptor(buf, channels, number_of_channels);
+				}
+				else if(descriptor_tag==0x41)
+					ts_display_service_list_descriptor(log_module, buf);
+				else if(descriptor_tag==0x43)
+					ts_display_satellite_delivery_system_descriptor(log_module, buf);
+				else if(descriptor_tag==0x5A)
+					ts_display_terrestrial_delivery_system_descriptor(log_module, buf);
+				else if(descriptor_tag==0x62)
+					ts_display_frequency_list_descriptor(log_module, buf);
+				else
+					log_message( log_module, MSG_FLOOD, " --- NIT TS descriptor --- descriptor_tag == 0x%02x len %d descriptors_loop_len %d ------------\n", descriptor_tag, descriptor_len, descriptors_loop_len);
 			}
-			else if(descriptor_tag==0x41)
-				ts_display_service_list_descriptor(log_module, buf);
-			else if(descriptor_tag==0x43)
-				ts_display_satellite_delivery_system_descriptor(log_module, buf);
-			else if(descriptor_tag==0x5A)
-				ts_display_terrestrial_delivery_system_descriptor(log_module, buf);
-			else if(descriptor_tag==0x62)
-				ts_display_frequency_list_descriptor(log_module, buf);
-			else
-				log_message( log_module, MSG_FLOOD, " --- NIT TS descriptor --- descriptor_tag == 0x%02x len %d descriptors_loop_len %d ------------\n", descriptor_tag, descriptor_len, descriptors_loop_len);
 			buf += descriptor_len;
 			descriptors_loop_len -= descriptor_len;
 		}

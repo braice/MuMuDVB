@@ -78,8 +78,11 @@ Possible values for this variable
 	char autoconf_ip6[80];
 	/**When did we started autoconfiguration ?*/
 	long time_start_autoconfiguration;
-	/**The transport stream id (used to read ATSC PSIP tables)*/
+	/**The transport stream id (used to read ATSC PSIP tables and for webservices)*/
 	int transport_stream_id;
+	/**The network id (used for webservices)*/
+	int network_id;
+	int original_network_id;
 	/** Do we autoconfigure scrambled channels ? */
 	int autoconf_scrambled;
 	//Different packets used by autoconfiguration
