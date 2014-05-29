@@ -58,6 +58,7 @@ static char *log_module="Unicast : ";
  */
 int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_channel_t *channels, int Socket)
 {
+	/***************************** PLEASE KEEP IN SYNC WITH THE XML VERSIONS ************************/
 	int curr_channel;
 	unicast_client_t *unicast_client=NULL;
 	int clients=0;
@@ -186,6 +187,7 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
 int
 unicast_send_json_state ( int Socket, strength_parameters_t *strengthparams, auto_p_t *auto_p, void *cam_p_v, void *scam_vars_v)
 {
+	/***************************** PLEASE KEEP IN SYNC WITH THE XML VERSIONS ************************/
 #ifndef ENABLE_CAM_SUPPORT
 	(void) cam_p_v; //to make compiler happy
 #else
@@ -389,6 +391,8 @@ unicast_send_json_state ( int Socket, strength_parameters_t *strengthparams, aut
 int
 unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int Socket, strength_parameters_t *strengthparams, auto_p_t *auto_p, void *cam_p_v, void *scam_vars_v)
 {
+
+	/***************************** PLEASE KEEP IN SYNC WITH THE JSON VERSIONS ************************/
 #ifndef ENABLE_CAM_SUPPORT
 	(void) cam_p_v; //to make compiler happy
 #else
