@@ -19,13 +19,14 @@ Status monitoring :
 -------------------
 
 There is no input parameters.
-URL : http://ip_http:port_http/monitor/state.xml
+URL : http://ip_http:port_http/monitor/state.xml 
 
 Example of response with comments:
 
 ----------------
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <mumudvb card="5" frontend="0">                                          => adapter and frontend devices
+	<card_path>/dev/dvb/adapter5</card_path>                             => card device path
 	<global_version><![CDATA[1.6.1b_20101101]]></global_version>         => MuMuDVB version
 	<global_pid>19574</global_pid>                                       => process PID
 	<global_uptime>45</global_uptime>                                    => process uptime in seconds
@@ -39,7 +40,17 @@ Example of response with comments:
 	<frontend_ber>0</frontend_ber>                                       => RAW BER value from driver (unsigned 16-bits integer)
 	<frontend_signal>56955</frontend_signal>                             => RAW Signal level value from driver (unsigned 16-bits integer)
 	<frontend_snr>54759</frontend_snr>                                   => RAW Signal to noise ratio from driver (unsigned 16-bits integer)
-	<autoconf_end>1</autoconf_end>                                       => 0 if not autoconfiguration or autoconfiguration in progress, 1 if autoconfiguration is finished
+	<autoconfiguration>2</autoconfiguration>                             => Autoconfiguration status 0: none, 2: full 
+	<autoconfiguration_detected_parameters>                              => Part displayed only when autoconfiguration is enabled
+		<transport_stream_id>2</transport_stream_id>                     => Transport stream id
+		<network_id>8442</network_id>                                    => network id (see ts_10261102v010201p.pdf p14 and ts_101162v010701p.pdf p18 p19)
+		<original_network_id>8442</original_network_id>                  => original network id (see ts_10261102v010201p.pdf p14 and ts_101162v010701p.pdf p18 p19)
+		<pat_version>19</pat_version>                                    => Version of the PAT PID
+		<sdt_version>2</sdt_version>                                     => Version of the SDT PID
+		<nit_version>28</nit_version>                                    => Version of the NIT PID
+		<psip_version>0</psip_version>                                   => Version of the PSIP PID (ATSC only)
+	</autoconfiguration_detected_parameters>                             => 
+	<autoconfiguration_finished>1</autoconfiguration_finished>			 => 0 if not autoconfiguration or autoconfiguration in progress, 1 if autoconfiguration is finished
 	<cam_support>1</cam_support>                                         => 0 if no CAM support asked, 1 if CAM support was asked
 	<cam_number>0</cam_number>                                           => CAM slot number
 	<cam_menustring><![CDATA[Not retrieved]]></cam_menustring>           => When CAM is initialized, CAM model
@@ -83,6 +94,7 @@ You can get similar information in the JSON files
 * `http://ip_http:port_http/channels_list.json`
 * `http://ip_http:port_http/monitor/signal_power.json`
 * `http://ip_http:port_http/channels_traffic.json`
+* `http://ip_http:port_http/monitor/state.json`
 
 
 Access to the CAM menu:

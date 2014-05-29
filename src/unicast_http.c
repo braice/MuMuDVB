@@ -90,6 +90,8 @@ unicast_send_signal_power_js (int Socket, strength_parameters_t *strengthparams)
 int
 unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *channels, int Socket);
 int
+unicast_send_json_state (int Socket, strength_parameters_t* strengthparams, auto_p_t* auto_p, void* cam_p_v, void* scam_vars_v);
+int
 unicast_send_xml_state (int number_of_channels, mumudvb_channel_t* channels, int Socket, strength_parameters_t* strengthparams, auto_p_t* auto_p, void* cam_p_v, void* scam_vars_v);
 int
 unicast_send_cam_menu (int Socket, void *cam_p);
@@ -729,6 +731,12 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 				unicast_send_streamed_channels_list_js (number_of_channels, channels, client->Socket);
 				return -2; //We close the connection afterwards
 			}
+			else if(strstr(client->buffer +pos ,"/monitor/state.json ")==(client->buffer +pos))
+			{
+				log_message( log_module, MSG_DETAIL,"HTTP request for state in Json\n");
+				unicast_send_json_state(client->Socket, strengthparams, auto_p, cam_p, scam_vars);
+				return -2; //We close the connection afterwards
+			}
 			else if(strstr(client->buffer +pos ,"/monitor/signal_power.json ")==(client->buffer +pos))
 			{
 				log_message( log_module, MSG_DETAIL,"Signal power json\n");
@@ -1128,6 +1136,7 @@ unicast_send_index_page (int Socket)
 	unicast_reply_write(reply, "<br>  <a href=\"/monitor/signal_power.json\">Signal strength (json)</a><br><br>\r\n");
 	unicast_reply_write(reply, "<br>  <a href=\"/monitor/channels_traffic.json\">Channels traffic (json)</a><br><br>\r\n");
 	unicast_reply_write(reply, "<br>  <a href=\"/monitor/state.xml\">Server state : channel list, pids, traffic (XML)</a><br><br>\r\n");
+	unicast_reply_write(reply, "<br>  <a href=\"/monitor/state.json\">Server state : channel list, pids, traffic (json)</a><br><br>\r\n");
 	unicast_reply_write(reply, "<br>  <a href=\"/cam/menu.xml\">CAM menu</a><br><br>\r\n");
 	unicast_reply_write(reply, "<br> make an action on the cam menu : /cam/action.xml?key=<br><br>\r\n");
 
