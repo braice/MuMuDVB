@@ -121,7 +121,7 @@ typedef struct tune_p_t{
   /**The satellite number ie the LNB number*/
   unsigned char sat_number;
   /** The switch input */
-  unsigned char switch_no;
+  int switch_no;
   /**The type of switch U uncommitted C committed*/
   char switch_type;
   /** The kind of modulation */

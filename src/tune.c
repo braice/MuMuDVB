@@ -78,6 +78,7 @@ void init_tune_v(tune_p_t *tune_p)
 				.lnb_lof_low=DEFAULT_LOF1_UNIVERSAL,
 				.lnb_lof_high=DEFAULT_LOF2_UNIVERSAL,
 				.sat_number = 0,
+				.switch_no = -1,
 				.switch_type = 'C',
 				.modulation_set = 0,
 				.display_strenght = 0,
@@ -685,7 +686,7 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
  * @param hi_lo : the band for a dual band lnb
  * @param lnb_voltage_off : if one, force the 13/18V voltage to be 0 independantly of polarization
  */
-static int do_diseqc(int fd, unsigned char sat_no,  unsigned char switch_no, char switch_type, int pol_v_r, int hi_lo, int lnb_voltage_off)
+static int do_diseqc(int fd, unsigned char sat_no,  int switch_no, char switch_type, int pol_v_r, int hi_lo, int lnb_voltage_off)
 {
 
 	fe_sec_voltage_t lnb_voltage;
@@ -711,7 +712,7 @@ static int do_diseqc(int fd, unsigned char sat_no,  unsigned char switch_no, cha
 	}
 
 	//Diseqc compliant hardware
-	if((sat_no != 0)||(switch_no!=0))
+	if((sat_no != 0)||(switch_no!=-1))
 	{
 		cmd[0]=malloc(sizeof(struct diseqc_cmd));
 		if(cmd[0]==NULL)
@@ -735,7 +736,7 @@ static int do_diseqc(int fd, unsigned char sat_no,  unsigned char switch_no, cha
 		 * bits are: option, position, polarization, band */
 		cmd[0]->cmd.msg[3] =
 				0xf0 | ((((sat_no-1) * 4) & 0x0f) | (pol_v_r ? 0 : 2) | (hi_lo ? 1 : 0));
-		if(switch_no)
+		if(switch_no != -1)
 		{
 			log_message( log_module,  MSG_INFO ,"Diseqc switch position specified, we force switch input to %d\n",switch_no);
 			cmd[0]->cmd.msg[3] = 0xf0 | (switch_no& 0x0f);
