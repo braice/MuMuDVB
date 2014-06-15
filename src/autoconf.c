@@ -427,6 +427,7 @@ void autoconf_update_chan_name(mumu_chan_p_t *chan_p, auto_p_t *auto_p)
 	//TODO: this function is a duplicate of what is done at the init of the global program : merge it
 	for (int ichan = 0; ichan < chan_p->number_of_channels; ichan++)
 	{
+		int has_lcn;
 		//We copy the good variable to the current channel name depending is this was user set or not
 		if(strlen(auto_p->name_template) && MU_F(chan_p->channels[ichan].name)!=F_USER)
 		{
@@ -449,6 +450,11 @@ void autoconf_update_chan_name(mumu_chan_p_t *chan_p, auto_p_t *auto_p)
 		mumu_string_replace(chan_p->channels[ichan].name,&len,0,"%number",number);
 
 		char lcn[4];
+		//We store if the lcn is in the template
+		if((strstr(chan_p->channels[ichan].name, "%lcn") != NULL) || (strstr(chan_p->channels[ichan].name, "%2lcn") != NULL))
+			has_lcn=1;
+		else
+			has_lcn=0;
 		if(chan_p->channels[ichan].logical_channel_number)
 		{
 			sprintf(lcn,"%03d",chan_p->channels[ichan].logical_channel_number);
@@ -495,6 +501,18 @@ void autoconf_update_chan_name(mumu_chan_p_t *chan_p, auto_p_t *auto_p)
 		 * SAP update
 		 **************************/
 		chan_p->channels[ichan].sap_need_update=1;
+
+		//We check if the NIT has been read before sending SAP
+		if(has_lcn && ! auto_p->nit_all_sections_seen)
+		{
+			log_message( log_module, MSG_FLOOD, "Channel name: \"%s\" LCN asked but the NIT has not been seen yet, we delay SAP announces for this channel",
+							chan_p->channels[ichan].name);
+			chan_p->channels[ichan].sap_need_update=0;
+		}
+		else
+			log_message( log_module, MSG_FLOOD, "Channel name: \"%s\" LCN asked and the NIT has been seen, SAP will be sent for this channel",
+							chan_p->channels[ichan].name);
+
 	}
 }
 
