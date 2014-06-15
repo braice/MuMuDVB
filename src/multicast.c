@@ -92,7 +92,7 @@ int read_multicast_configuration(multi_p_t *multi_p, mumudvb_channel_t *c_chan, 
 	if ( c_chan == NULL)
     {
       log_message( log_module,  MSG_ERROR,
-                   "ip : You have to start a channel first (using channel_next)\n");
+                   "ip : You have to start a channel first (using new_channel)\n");
       return -1;
     }
 
@@ -111,7 +111,7 @@ int read_multicast_configuration(multi_p_t *multi_p, mumudvb_channel_t *c_chan, 
 	if ( c_chan == NULL)
     {
       log_message( log_module,  MSG_ERROR,
-                   "ip6 : You have to start a channel first (using channel_next)\n");
+                   "ip6 : You have to start a channel first (using new_channel)\n");
       return -1;
     }
 
@@ -131,7 +131,7 @@ int read_multicast_configuration(multi_p_t *multi_p, mumudvb_channel_t *c_chan, 
 	if ( c_chan == NULL)
     {
       log_message( log_module,  MSG_ERROR,
-                   "port : You have to start a channel first (using channel_next)\n");
+                   "port : You have to start a channel first (using new_channel)\n");
       return -1;
     }
     substring = strtok (NULL, delimiteurs);

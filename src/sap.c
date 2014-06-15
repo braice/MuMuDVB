@@ -135,7 +135,7 @@ int read_sap_configuration(sap_p_t *sap_p, mumudvb_channel_t *c_chan, char *subs
 		if ( c_chan == NULL)
 		{
 			log_message( log_module,  MSG_ERROR,
-					"sap_group : this is a channel option, You have to start a channel first (using or channel_next)\n");
+					"sap_group : this is a channel option, You have to start a channel first (using new_channel)\n");
 			return -1;
 		}
 

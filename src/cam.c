@@ -207,7 +207,7 @@ int read_cam_configuration(cam_p_t *cam_p, mumudvb_channel_t *c_chan, char *subs
 		if ( c_chan == NULL)
 		{
 			log_message( log_module,  MSG_ERROR,
-					"cam_ask : You have to start a channel first (using channel_next)\n");
+					"cam_ask : You have to start a channel first (using new_channel)\n");
 			return -1;
 		}
 		c_chan->need_cam_ask=CAM_NEED_ASK;
@@ -218,7 +218,7 @@ int read_cam_configuration(cam_p_t *cam_p, mumudvb_channel_t *c_chan, char *subs
 		if ( c_chan == NULL)
 		{
 			log_message( log_module,  MSG_ERROR,
-					"cam_no_ask : You have to start a channel first (using channel_next)\n");
+					"cam_no_ask : You have to start a channel first (using new_channel)\n");
 			return -1;
 		}
 		c_chan->need_cam_ask=CAM_NO_ASK;

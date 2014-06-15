@@ -206,7 +206,7 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
 		if ( c_chan == NULL )
 		{
 			log_message( log_module,  MSG_ERROR,
-					"unicast_port : You have to start a channel first (using channel_next)\n");
+					"unicast_port : You have to start a channel first (using new_channel)\n");
 			exit(ERROR_CONF);
 		}
 		substring = strtok (NULL, delimiteurs);
