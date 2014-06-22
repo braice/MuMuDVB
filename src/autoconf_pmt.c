@@ -596,6 +596,8 @@ int pmt_need_update(mumudvb_channel_t *channel, unsigned char *packet)
 	if(pmt->table_id==0x02)
 		if(pmt->version_number!=channel->pmt_version)
 		{
+			if(channel->service_id && (channel->service_id != HILO(pmt->program_number)) )
+			  return 0;
 			log_message( log_module, MSG_DEBUG,"PMT version changed, channel %s . stored version : %d, new: %d.\n",channel->name,channel->pmt_version,pmt->version_number);
 			return 1;
 		}
