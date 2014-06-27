@@ -56,6 +56,7 @@
 #include "dvb.h"
 #include "tune.h"
 #include "autoconf.h"
+#include "rewrite.h"
 #ifdef ENABLE_CAM_SUPPORT
 #include "cam.h"
 #endif
@@ -97,8 +98,19 @@ int
 unicast_send_cam_menu (int Socket, void *cam_p);
 int
 unicast_send_cam_action (int Socket, char *Key, void *cam_p);
+int
+unicast_send_EIT (eit_packet_t *eit_packets, int Socket);
 
-int unicast_handle_message(unicast_parameters_t* unicast_vars, unicast_client_t* client, mumudvb_channel_t* channels, int number_of_channels, strength_parameters_t* strengthparams, auto_p_t* auto_p, void* cam_p, void* scam_vars);
+
+int unicast_handle_message(unicast_parameters_t* unicast_vars,
+		unicast_client_t* client,
+		mumudvb_channel_t* channels,
+		int number_of_channels,
+		strength_parameters_t* strengthparams,
+		auto_p_t* auto_p,
+		void* cam_p,
+		void* scam_vars,
+		eit_packet_t *eit_packets);
 
 #define REPLY_HEADER 0
 #define REPLY_BODY 1
@@ -287,7 +299,14 @@ int unicast_create_listening_socket(int socket_type, int socket_channel, char *i
  * If the event is on a channel specific socket, it accepts the new connection and starts streaming
  *
  */
-int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, mumudvb_channel_t *channels, int number_of_channels, strength_parameters_t *strengthparams, auto_p_t *auto_p, void *cam_p, void *scam_vars)
+int unicast_handle_fd_event(unicast_parameters_t *unicast_vars,
+		mumudvb_channel_t *channels,
+		int number_of_channels,
+		strength_parameters_t *strengthparams,
+		auto_p_t *auto_p,
+		void *cam_p,
+		void *scam_vars,
+		eit_packet_t *eit_packets)
 {
 	int iRet;
 	//We look what happened for which connection
@@ -367,7 +386,7 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars, mumudvb_channel_
 			{
 				//Event on a client connection i.e. the client asked something
 				log_message( log_module, MSG_FLOOD,"New message for socket %d\n", unicast_vars->pfds[actual_fd].fd);
-				iRet=unicast_handle_message(unicast_vars,unicast_vars->fd_info[actual_fd].client, channels, number_of_channels, strengthparams, auto_p, cam_p, scam_vars);
+				iRet=unicast_handle_message(unicast_vars,unicast_vars->fd_info[actual_fd].client, channels, number_of_channels, strengthparams, auto_p, cam_p, scam_vars,eit_packets);
 				if (iRet==-2 ) //iRet==-2 --> 0 received data or error, we close the connection
 				{
 					unicast_close_connection(unicast_vars,unicast_vars->pfds[actual_fd].fd);
@@ -522,7 +541,15 @@ void unicast_close_connection(unicast_parameters_t *unicast_vars, int Socket)
  * @param channels the channel array
  * @param number_of_channels quite explicit ...
  */
-int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t *client, mumudvb_channel_t *channels, int number_of_channels, strength_parameters_t *strengthparams, auto_p_t *auto_p, void *cam_p, void *scam_vars)
+int unicast_handle_message(unicast_parameters_t *unicast_vars,
+		unicast_client_t *client,
+		mumudvb_channel_t *channels,
+		int number_of_channels,
+		strength_parameters_t *strengthparams,
+		auto_p_t *auto_p,
+		void *cam_p,
+		void *scam_vars,
+		eit_packet_t *eit_packets)
 {
 	int received_len;
 	(void) unicast_vars;
@@ -755,6 +782,13 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 				unicast_send_xml_state(number_of_channels, channels, client->Socket, strengthparams, auto_p, cam_p, scam_vars);
 				return -2; //We close the connection afterwards
 			}
+			//statistics, text version
+			else if(strstr(client->buffer +pos ,"/monitor/EIT.json ")==(client->buffer +pos))
+			{
+				log_message( log_module, MSG_DETAIL,"EIT Json\n");
+				unicast_send_EIT (eit_packets,  client->Socket);
+				return -2; //We close the connection afterwards
+			}
 			else if(strstr(client->buffer +pos ,"/cam/menu.xml ")==(client->buffer +pos))
 			{
 				log_message( log_module, MSG_DETAIL,"HTTP request for CAM menu display \n");
@@ -969,7 +1003,7 @@ int unicast_reply_send(struct unicast_reply *reply, int socket, int code, const 
 		return 0;
 	}
 	unicast_reply_write(reply, "Server: mumudvb/" VERSION "\r\n");
-	unicast_reply_write(reply, "Content-type: %s\r\n", content_type);
+	unicast_reply_write(reply, "Content-type: %s; charset=utf-8\r\n", content_type);
 	unicast_reply_write(reply, "Content-length: %d\r\n", reply->used_body);
 	unicast_reply_write(reply, "\r\n"); /* end header */
 	//we merge the header and the body
@@ -1137,6 +1171,7 @@ unicast_send_index_page (int Socket)
 	unicast_reply_write(reply, "<br>  <a href=\"/monitor/channels_traffic.json\">Channels traffic (json)</a><br><br>\r\n");
 	unicast_reply_write(reply, "<br>  <a href=\"/monitor/state.xml\">Server state : channel list, pids, traffic (XML)</a><br><br>\r\n");
 	unicast_reply_write(reply, "<br>  <a href=\"/monitor/state.json\">Server state : channel list, pids, traffic (json)</a><br><br>\r\n");
+	unicast_reply_write(reply, "<br>  <a href=\"/monitor/EIT.json\">Contents of the EIT tables (json)</a><br><br>\r\n");
 	unicast_reply_write(reply, "<br>  <a href=\"/cam/menu.xml\">CAM menu</a><br><br>\r\n");
 	unicast_reply_write(reply, "<br> make an action on the cam menu : /cam/action.xml?key=<br><br>\r\n");
 

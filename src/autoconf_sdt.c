@@ -291,7 +291,7 @@ void parse_service_descriptor(unsigned char *buf, mumudvb_channel_t *chan)
 	//We store the channel name with the raw encoding
 	memcpy (chan->service_name, buf, len);
 	chan->service_name[len] = '\0';
-	encoding_control_char=convert_en300468_string(chan->service_name,MAX_NAME_LEN);
+	encoding_control_char=convert_en300468_string(chan->service_name,MAX_NAME_LEN,1);
 	if(encoding_control_char==-1)
 		return;
 	if(MU_F(chan->name)!=F_USER)

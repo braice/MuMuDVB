@@ -1258,7 +1258,7 @@ main (int argc, char **argv)
 			{
 				if(mumudvb_poll(unic_p.pfds,unic_p.pfdsnum,0)>0)
 				{
-					iRet=unicast_handle_fd_event(&unic_p, chan_p.channels, chan_p.number_of_channels, &strengthparams, &auto_p, cam_p_ptr, scam_vars_ptr);
+					iRet=unicast_handle_fd_event(&unic_p, chan_p.channels, chan_p.number_of_channels, &strengthparams, &auto_p, cam_p_ptr, scam_vars_ptr, rewrite_vars.eit_packets);
 					if(iRet)
 						set_interrupted(iRet);
 				}
@@ -1284,7 +1284,7 @@ main (int argc, char **argv)
 				poll_ret=mumudvb_poll(unic_p.pfds,unic_p.pfdsnum,0);
 				if(poll_ret>0)
 				{
-					iRet=unicast_handle_fd_event(&unic_p, chan_p.channels, chan_p.number_of_channels, &strengthparams, &auto_p, cam_p_ptr, scam_vars_ptr);
+					iRet=unicast_handle_fd_event(&unic_p, chan_p.channels, chan_p.number_of_channels, &strengthparams, &auto_p, cam_p_ptr, scam_vars_ptr,rewrite_vars.eit_packets);
 					if(iRet)
 						set_interrupted(iRet);
 				}
@@ -1397,7 +1397,8 @@ main (int argc, char **argv)
 			//EIT rewrite
 			/******************************************************/
 			if( (pid == 18) && //This is an EIT PID
-					rewrite_vars.rewrite_eit == OPTION_ON ) //AND we asked for rewrite
+					(rewrite_vars.rewrite_eit == OPTION_ON || //AND we asked for rewrite
+							rewrite_vars.store_eit == OPTION_ON )) //OR to store it
 			{
 				eit_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars);
 			}

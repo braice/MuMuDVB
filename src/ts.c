@@ -699,7 +699,7 @@ void ts_display_network_name_descriptor(char* log_module,unsigned char *buf)
 	dest=malloc(sizeof(char)*(descriptor_len+1));
 	memcpy (dest, buf, descriptor_len);
 	dest[descriptor_len] = '\0';
-	convert_en300468_string(dest,descriptor_len);
+	convert_en300468_string(dest,descriptor_len,0);
 	log_message( log_module, MSG_FLOOD, "network name : \"%s\"\n", dest);
 	free(dest);
 
@@ -744,7 +744,7 @@ void ts_display_multilingual_network_name_descriptor(char *log_module, unsigned 
 		memcpy (dest, buf, name_len);
 		dest[name_len] = '\0';
 		buf += name_len;
-		convert_en300468_string(dest,name_len);
+		convert_en300468_string(dest,name_len,0);
 		log_message( log_module, MSG_DEBUG, "lang code %s network name : \"%s\"\n",language_code, dest);
 		descriptor_len -= (name_len+4);
 		free(dest);

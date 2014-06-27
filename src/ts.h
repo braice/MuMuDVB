@@ -365,6 +365,33 @@ typedef struct {
   u_char segment_last_table_id                  :8;
 } eit_t;
 
+#define EIT_EVENT_LEN 12
+/**@brief  Event Information Table (EIT), descriptor header*/
+typedef struct {
+   u_char event_id_hi                            :8;
+   u_char event_id_lo                            :8;
+   u_char start_time_0                           :8;
+   u_char start_time_1                           :8;
+   u_char start_time_2                           :8;
+   u_char start_time_3                           :8;
+   u_char start_time_4                           :8;
+   u_char duration_0                             :8;
+   u_char duration_1                             :8;
+   u_char duration_2                             :8;
+#if BYTE_ORDER == BIG_ENDIAN
+   u_char running_status                         :3;
+   u_char free_ca_mode                           :1;
+   u_char descriptors_loop_length_hi             :4;
+#else
+   u_char descriptors_loop_length_hi             :4;
+   u_char free_ca_mode                           :1;
+   u_char running_status                         :3;
+#endif
+   u_char descriptors_loop_length_lo             :8;
+} eit_event_t;
+
+
+
 /*
  *
  *    5) Network Information Table (NIT):

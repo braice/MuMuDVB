@@ -113,6 +113,8 @@ typedef struct rewrite_parameters_t{
 
 	/** Do we sort the EIT PID ?*/
 	option_status_t rewrite_eit;
+	/** Do we just store EIT without sorting/rewriting */
+	option_status_t store_eit;
 	/**The actual version of the EIT pid*/
 	int eit_version;
 	/**Do the actual full EIT needs to be updated ?*/

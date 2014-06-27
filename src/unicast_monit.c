@@ -36,6 +36,7 @@
 #include "log.h"
 #include "dvb.h"
 #include "tune.h"
+#include "rewrite.h"
 #include "autoconf.h"
 #ifdef ENABLE_CAM_SUPPORT
 #include "cam.h"
@@ -121,6 +122,10 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
 }
 
 
+
+
+
+
 /** @brief Send a basic JSON file containig the reception power
  *
  * @param Socket the socket on wich the information have to be sent
@@ -141,6 +146,55 @@ unicast_send_signal_power_js (int Socket, strength_parameters_t *strengthparams)
 
 	if (0 != unicast_reply_free(reply)) {
 		log_message( log_module, MSG_INFO,"Error when releasing the HTTP reply after sendinf it\n");
+		return -1;
+	}
+	return 0;
+}
+
+//in unicast_EIT.c
+void
+unicast_send_EIT_section (mumudvb_ts_packet_t *eit_section, int num, struct unicast_reply* reply);
+
+
+int
+unicast_send_EIT (eit_packet_t *eit_packets, int Socket)
+{
+	struct unicast_reply* reply = unicast_reply_init();
+	if (NULL == reply)
+	{
+		log_message( log_module, MSG_INFO,"Error when creating the HTTP reply\n");
+		return -1;
+	}
+	// JSON header
+	unicast_reply_write(reply, "{\n");
+
+	eit_packet_t *actual_eit=eit_packets;
+	int i;
+	while(actual_eit!=NULL)
+	{
+		unicast_reply_write(reply, "\"EIT_table\":{\n");
+		unicast_reply_write(reply, "\t\"sid\" : \"%d\",\n",actual_eit->service_id);
+		unicast_reply_write(reply, "\t\"table_id\" : %d,\n",actual_eit->table_id);
+		unicast_reply_write(reply, "\t\"version\" : %d,\n",actual_eit->version);
+		unicast_reply_write(reply, "\t\"last_section_number\" : %d",actual_eit->last_section_number);
+		for(i=0;i<=actual_eit->last_section_number;i++)
+			if(actual_eit->sections_stored[i])
+			{
+				unicast_send_EIT_section(actual_eit->full_eit_sections[i],i ,reply);
+			}
+		unicast_reply_write(reply, "}");
+		actual_eit=actual_eit->next;
+		if(actual_eit!=NULL)
+			unicast_reply_write(reply, ",\n");
+	}
+
+	// Ending JSON content
+	unicast_reply_write(reply, "}\n");
+
+	unicast_reply_send(reply, Socket, 200, "application/json");
+
+	if (0 != unicast_reply_free(reply)) {
+		log_message( log_module, MSG_INFO,"Error when releasing the HTTP reply after sending it\n");
 		return -1;
 	}
 	return 0;

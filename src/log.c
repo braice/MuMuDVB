@@ -1028,7 +1028,7 @@ char *encodings_en300468[] ={
 /**@brief Convert text according to EN 300 468 annex A
  *
  */
-int convert_en300468_string(char *string, int max_len)
+int convert_en300468_string(char *string, int max_len, int debug)
 {
 
 	int encoding_control_char=8; //cf encodings_en300468
@@ -1059,11 +1059,10 @@ int convert_en300468_string(char *string, int max_len)
 		}
 		else if(*src <= 0x20)
 		{
-			log_message( log_module, MSG_FLOOD, "Encoding number 0x%02x, see EN 300 468 Annex A",*src);
+			if(debug) {log_message( log_module, MSG_FLOOD, "Encoding number 0x%02x, see EN 300 468 Annex A",*src);}
 			//control character recognition based on EN 300 468 v1.9.1 Annex A
-			if(*src<=0x0b){
-				encoding_control_char=(int) *src+4-1;
-			}
+			if(*src<=0x0b)
+				{encoding_control_char=(int) *src+4-1;}
 			else if(*src==0x10)
 			{ //ISO/IEC 8859 : See table A.4
 				src++;//we skip the current byte
@@ -1072,17 +1071,17 @@ int convert_en300468_string(char *string, int max_len)
 					encoding_control_char=(int) *src-1;
 			}
 			else if(*src==0x11)//ISO/IEC 10646 : Basic Multilingual Plane
-				encoding_control_char=15;
+				{encoding_control_char=15;}
 			else if(*src==0x12)//KSX1001-2004 : Korean Character Set
-				log_message( log_module, MSG_WARN, "\t\t Encoding KSX1001-2004 (korean character set) not implemented yet by iconv, we'll use the default encoding for service name\n");
+				{if(debug) {log_message( log_module, MSG_WARN, "\t\t Encoding KSX1001-2004 (korean character set) not implemented yet by iconv, we'll use the default encoding for service name\n");}}
 			else if(*src==0x13)//GB-2312-1980 : Simplified Chinese Character
-				encoding_control_char=16;
+				{encoding_control_char=16;}
 			else if(*src==0x14)//Big5 subset of ISO/IEC 10646 : Traditional Chinese
-				encoding_control_char=17;
+				{encoding_control_char=17;}
 			else if(*src==0x15)//UTF-8 encoding of ISO/IEC 10646 : Basic Multilingual Plane
-				encoding_control_char=18;
+				{encoding_control_char=18;}
 			else
-				log_message( log_module, MSG_WARN, "\t\t Encoding not implemented yet (0x%02x), we'll use the default encoding for service name\n",*src);
+				{if(debug) {log_message( log_module, MSG_WARN, "\t\t Encoding not implemented yet (0x%02x), we'll use the default encoding for service name\n",*src);}}
 		}
 		else if (*src >= 0x80 && *src <= 0x9f)
 		{
@@ -1090,15 +1089,15 @@ int convert_en300468_string(char *string, int max_len)
 			//but wh have to put it after iconv, it's a bit boring just for bold
 			//we drop them
 			if(*src==0x86)
-				log_message( log_module, MSG_DETAIL, "Control character \"Bold\", we drop");
+				{if(debug) {log_message( log_module, MSG_DETAIL, "Control character \"Bold\", we drop");}}
 			else if(*src==0x87)
-				log_message( log_module, MSG_DETAIL, "Control character \"UnBold\", we drop");
+				{if(debug) {log_message( log_module, MSG_DETAIL, "Control character \"UnBold\", we drop");}}
 			else if(*src==0x8a)
-				log_message( log_module, MSG_DETAIL, "Control character \"CR/LF\", we drop");
+				{if(debug) {log_message( log_module, MSG_DETAIL, "Control character \"CR/LF\", we drop");}}
 			else if(*src>=0x8b )
-				log_message( log_module, MSG_DETAIL, "Control character 0x%02x \"User defined\" at len %d. We drop",*src,len);
+				{if(debug) {log_message( log_module, MSG_DETAIL, "Control character 0x%02x \"User defined\" at len %d. We drop",*src,len);}}
 			else
-				log_message( log_module, MSG_DEBUG, "\tUnimplemented name control_character : %x \n", *src);
+				{if(debug) {log_message( log_module, MSG_DEBUG, "\tUnimplemented name control_character : %x \n", *src);}}
 		}
 	}
 #ifdef HAVE_ICONV
@@ -1107,10 +1106,10 @@ int convert_en300468_string(char *string, int max_len)
 	//we open the conversion table
 	cd = iconv_open( "UTF8", encodings_en300468[encoding_control_char] );
 	if (cd == (iconv_t) -1) {
-		log_message( log_module, MSG_DETAIL, "\t\t UTF8 encoding not supported by iconv. Trying UTF-8.\n");
+		if(debug) {log_message( log_module, MSG_DETAIL, "\t\t UTF8 encoding not supported by iconv. Trying UTF-8.\n");}
 		cd = iconv_open( "UTF-8", encodings_en300468[8]);
 		if (cd == (iconv_t) -1) {
-			log_message( log_module, MSG_DETAIL, "\t\t Neither UTF8 or UTF-8 encoding supported by iconv. No name encoding conversion.\n");
+			if(debug) {log_message( log_module, MSG_DETAIL, "\t\t Neither UTF8 or UTF-8 encoding supported by iconv. No name encoding conversion.\n");}
 			goto exit_iconv;
 		}
 	}
@@ -1125,10 +1124,10 @@ int convert_en300468_string(char *string, int max_len)
 	free(tempbuf);
 	iconv_close( cd );
 #else
-	log_message( log_module, MSG_DETAIL, "Iconv not present, no name encoding conversion \n");
+	if(debug) {log_message( log_module, MSG_DETAIL, "Iconv not present, no name encoding conversion \n");}
 #endif
 exit_iconv:
-	log_message( log_module, MSG_FLOOD, "Converted text : \"%s\" (text encoding : %s)\n", string,encodings_en300468[encoding_control_char]);
+	if(debug) {log_message( log_module, MSG_FLOOD, "Converted text : \"%s\" (text encoding : %s)\n", string,encodings_en300468[encoding_control_char]);}
 	return encoding_control_char;
 
 }

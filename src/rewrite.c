@@ -58,6 +58,7 @@ void init_rewr_v(rewrite_parameters_t *rewr_p)
 				.full_sdt_ok=0,
 				.sdt_continuity_counter=0,
 				.rewrite_eit=OPTION_UNDEFINED,
+				.store_eit=OPTION_UNDEFINED,
 				.eit_version=-1,
 				.full_eit=NULL,
 				.eit_needs_update=0,
@@ -112,7 +113,7 @@ int rewrite_init(rewrite_parameters_t *rewr_p)
 	//packet structures
 	/*****************************************************/
 
-	if(rewr_p->rewrite_eit == OPTION_ON)
+	if(rewr_p->rewrite_eit == OPTION_ON || rewr_p->store_eit == OPTION_ON)
 	{
 		rewr_p->full_eit=malloc(sizeof(mumudvb_ts_packet_t));
 		if(rewr_p->full_eit==NULL)
@@ -173,6 +174,18 @@ int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substri
 		}
 		else
 			rewrite_vars->rewrite_eit = OPTION_OFF;
+	}
+	else if ((!strcmp (substring, "store_eit")))
+	{
+		substring = strtok (NULL, delimiteurs);
+		if(atoi (substring))
+		{
+			rewrite_vars->store_eit = OPTION_ON;
+			log_message( log_module, MSG_INFO,
+					"You have enabled the EIT (EPG) storage for webservices");
+		}
+		else
+			rewrite_vars->store_eit = OPTION_OFF;
 	}
 	else if (!strcmp (substring, "sdt_force_eit"))
 	{
