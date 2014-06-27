@@ -137,6 +137,8 @@ void mumu_string_to_json(char *in, int lin, char *out, int lout)
 			c=in[offin]; if(! c ) break;
 			out[offout]=c; offout++; offin++;
 		}
+		else //Middle of byte sequence we don't copy
+			offin++;
 
 	}
 	if(offout<lout)
