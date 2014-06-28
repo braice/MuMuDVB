@@ -111,33 +111,37 @@ void mumu_string_to_json(char *in, int lin, char *out, int lout)
 
 			offin++;
 		}
-		else if((c & 0xE0) == 0xC0) //Two byte
+		else if(((c & 0xE0) == 0xC0) &&
+				((lout-offout)>3) &&
+				((lin-offin)>3) &&
+				((in[offin+1] & 0xC0) == 0x80) ) //Two byte (>3 for including the final '\0')
 		{
-			out[offout]=c; offout++; offin++;
-			c=in[offin]; if(! c ) break;
-			out[offout]=c; offout++; offin++;
-
+			out[offout]=in[offin]; offout++; offin++;
+			out[offout]=in[offin]; offout++; offin++;
 		}
-		else if((c & 0xF0) == 0xE0) //Three byte
+		else if(((c & 0xF0) == 0xE0) &&
+				((lout-offout)>4) &&
+				((lin-offin)>4) &&
+				((in[offin+1] & 0xC0) == 0x80) &&
+				((in[offin+2] & 0xC0) == 0x80) ) //Three byte
 		{
-			out[offout]=c; offout++; offin++;
-			c=in[offin]; if(! c ) break;
-			out[offout]=c; offout++; offin++;
-			c=in[offin]; if(! c ) break;
-			out[offout]=c; offout++; offin++;
-
+			out[offout]=in[offin]; offout++; offin++;
+			out[offout]=in[offin]; offout++; offin++;
+			out[offout]=in[offin]; offout++; offin++;
 		}
-		else if((c & 0xF8) == 0xF0) //four byte
+		else if(((c & 0xF8) == 0xF0) &&
+				((lout-offout)>5) &&
+				((lin-offin)>5) &&
+				((in[offin+1] & 0xC0) == 0x80) &&
+				((in[offin+2] & 0xC0) == 0x80) &&
+				((in[offin+3] & 0xC0) == 0x80) ) //four byte
 		{
-			out[offout]=c; offout++; offin++;
-			c=in[offin]; if(! c ) break;
-			out[offout]=c; offout++; offin++;
-			c=in[offin]; if(! c ) break;
-			out[offout]=c; offout++; offin++;
-			c=in[offin]; if(! c ) break;
-			out[offout]=c; offout++; offin++;
+			out[offout]=in[offin]; offout++; offin++;
+			out[offout]=in[offin]; offout++; offin++;
+			out[offout]=in[offin]; offout++; offin++;
+			out[offout]=in[offin]; offout++; offin++;
 		}
-		else //Middle of byte sequence we don't copy
+		else //Middle of byte sequence or invalid sequence we don't copy
 			offin++;
 
 	}
