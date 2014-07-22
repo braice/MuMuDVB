@@ -1461,8 +1461,8 @@ main (int argc, char **argv)
 							set_interrupted(ERROR_GENERIC<<8);
 							goto mumudvb_close_goto;
 						}
+						chan_p.channels[ichan].need_scam_ask=CAM_ASKED;
 					}
-					chan_p.channels[ichan].need_scam_ask=CAM_ASKED;
 				}
 #endif
 

@@ -316,7 +316,7 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 #endif
 	uint64_t now_time;
 #ifdef ENABLE_SCAM_SUPPORT
-	if (channel->scam_support && scam_vars->scam_support) {
+	if (channel->scam_support && channel->scam_support_started && scam_vars->scam_support) {
 		pthread_mutex_lock(&channel->ring_buf->lock);
 		memcpy(channel->ring_buf->data[channel->ring_buf->write_idx], ts_packet, TS_PACKET_SIZE);
 		now_time=get_time();
