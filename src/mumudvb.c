@@ -1452,16 +1452,20 @@ main (int argc, char **argv)
 				// sending capmt to oscam
 				/******************************************************/
 #ifdef ENABLE_SCAM_SUPPORT
-				if (scam_vars.scam_support &&(chan_p.channels[ichan].need_scam_ask==CAM_NEED_ASK))
+				if (scam_vars.scam_support && (chan_p.channels[ichan].need_scam_ask==CAM_NEED_ASK))
 				{
-					if (chan_p.channels[ichan].scam_support && chan_p.channels[ichan].pmt_packet->len_full != 0 ) {
-						iRet=scam_send_capmt(&chan_p.channels[ichan],tune_p.card);
-						if(iRet)
-						{
-							set_interrupted(ERROR_GENERIC<<8);
-							goto mumudvb_close_goto;
+					if (chan_p.channels[ichan].scam_support && chan_p.channels[ichan].scam_pmt_packet ) {
+						pthread_mutex_lock(&chan_p.channels[ichan].scam_pmt_packet->packetmutex);
+						if (chan_p.channels[ichan].scam_pmt_packet->len_full != 0) {
+							iRet=scam_send_capmt(&chan_p.channels[ichan],tune_p.card);
+							if(iRet)
+							{
+								set_interrupted(ERROR_GENERIC<<8);
+								goto mumudvb_close_goto;
+							}
+							chan_p.channels[ichan].need_scam_ask=CAM_ASKED;
 						}
-						chan_p.channels[ichan].need_scam_ask=CAM_ASKED;
+						pthread_mutex_unlock(&chan_p.channels[ichan].scam_pmt_packet->packetmutex);
 					}
 				}
 #endif
