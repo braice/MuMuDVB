@@ -244,10 +244,6 @@ void chan_update_CAM(mumu_chan_p_t *chan_p, auto_p_t *auto_p,  void *scam_vars_v
 				memset (chan_p->channels[ichan].scam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 				pthread_mutex_init(&chan_p->channels[ichan].scam_pmt_packet->packetmutex, NULL);
 			}
-			pthread_mutex_lock(&chan_p->channels[ichan].scam_pmt_packet->packetmutex);
-			chan_p->channels[ichan].scam_pmt_packet->len_full = chan_p->channels[ichan].pmt_packet->len_full;
-			memcpy(chan_p->channels[ichan].scam_pmt_packet->data_full, chan_p->channels[ichan].pmt_packet->data_full, chan_p->channels[ichan].pmt_packet->len_full);
-			pthread_mutex_unlock(&chan_p->channels[ichan].scam_pmt_packet->packetmutex);
 		}
 
 #endif
