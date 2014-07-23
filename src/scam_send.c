@@ -117,8 +117,8 @@ void *sendthread_func(void* arg)
 
     pthread_mutex_lock(&channel->ring_buf->lock);
 
-    pid = ((channel->ring_buf->data[channel->ring_buf->read_send_idx][1] & 0x1f) << 8) | (channel->ring_buf->data[channel->ring_buf->read_send_idx][2]);
-    ScramblingControl = (channel->ring_buf->data[channel->ring_buf->read_send_idx][3] & 0xc0) >> 6;
+    pid = ((*(channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->read_send_idx+1) & 0x1f) << 8) | *(channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->read_send_idx+2);
+    ScramblingControl = (*(channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->read_send_idx+3) & 0xc0) >> 6;
 
     pthread_mutex_lock(&channel->stats_lock);
     for (curr_pid = 0; (curr_pid < channel->pid_i.num_pids); curr_pid++)
@@ -143,7 +143,7 @@ void *sendthread_func(void* arg)
 
     if (send_packet) {
       // we fill the channel buffer
-      memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data[channel->ring_buf->read_send_idx], TS_PACKET_SIZE);
+      memcpy(channel->buf + channel->nb_bytes, channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->read_send_idx, TS_PACKET_SIZE);
       channel->nb_bytes += TS_PACKET_SIZE;
     }
     ++channel->ring_buf->read_send_idx;

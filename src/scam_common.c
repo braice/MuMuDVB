@@ -213,8 +213,6 @@ int scam_init_no_autoconf(scam_parameters_t *scam_vars, mumudvb_channel_t *chann
  */
 int scam_channel_start(mumudvb_channel_t *channel, unicast_parameters_t *unicast_vars)
 {
-  unsigned int i;
-
   channel->ring_buf=malloc(sizeof(ring_buffer_t));
   if (channel->ring_buf == NULL) {
     log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
@@ -222,18 +220,10 @@ int scam_channel_start(mumudvb_channel_t *channel, unicast_parameters_t *unicast
   }
   memset (channel->ring_buf, 0, sizeof( ring_buffer_t));//we clear it
   
-  channel->ring_buf->data=malloc(channel->ring_buffer_size*sizeof(char *));
+  channel->ring_buf->data=malloc(channel->ring_buffer_size*TS_PACKET_SIZE);
   if (channel->ring_buf->data == NULL) {
     log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     return ERROR_MEMORY<<8;
-  }
-  for ( i = 0; i< channel->ring_buffer_size; i++)
-  {
-    channel->ring_buf->data[i]=malloc(TS_PACKET_SIZE*sizeof(char));
-    if (channel->ring_buf->data[i] == NULL) {
-      log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      return ERROR_MEMORY<<8;
-    }
   }
   channel->ring_buf->time_send=malloc(channel->ring_buffer_size * sizeof(uint64_t));
   if (channel->ring_buf->time_send == NULL) {
@@ -256,13 +246,8 @@ int scam_channel_start(mumudvb_channel_t *channel, unicast_parameters_t *unicast
 
 void scam_channel_stop(mumudvb_channel_t *channel)
 {
-  uint64_t i;
   scam_send_stop(channel);
   scam_decsa_stop(channel);
-  for ( i = 0; i< channel->ring_buffer_size; i++)
-  {
-    free(channel->ring_buf->data[i]);
-  }
   free(channel->ring_buf->data);
   free(channel->ring_buf->time_send);
   free(channel->ring_buf->time_decsa);
