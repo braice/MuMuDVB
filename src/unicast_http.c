@@ -88,7 +88,7 @@ unicast_send_signal_power_js (int Socket, strength_parameters_t *strengthparams)
 int
 unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *channels, int Socket);
 int
-unicast_send_xml_state (int number_of_channels, mumudvb_channel_t* channels, int Socket, strength_parameters_t* strengthparams, auto_p_t* auto_p, void* cam_p_v, void* scam_vars_v);
+unicast_send_xml_state (unicast_parameters_t* unicast_vars, int number_of_channels, mumudvb_channel_t* channels, int Socket, strength_parameters_t* strengthparams, auto_p_t* auto_p, void* cam_p_v, void* scam_vars_v);
 int
 unicast_send_cam_menu (int Socket, void *cam_p);
 int
@@ -709,7 +709,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars, unicast_client_t 
 			else if(strstr(client->buffer +pos ,"/monitor/state.xml ")==(client->buffer +pos))
 			{
 				log_message( log_module, MSG_DETAIL,"HTTP request for XML State\n");
-				unicast_send_xml_state(number_of_channels, channels, client->Socket, strengthparams, auto_p, cam_p, scam_vars);
+				unicast_send_xml_state(unicast_vars, number_of_channels, channels, client->Socket, strengthparams, auto_p, cam_p, scam_vars);
 				return -2; //We close the connection afterwards
 			}
 			else if(strstr(client->buffer +pos ,"/cam/menu.xml ")==(client->buffer +pos))

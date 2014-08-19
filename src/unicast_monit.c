@@ -192,7 +192,7 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
  * @param fds the frontend device structure
  */
 int
-unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int Socket, strength_parameters_t *strengthparams, auto_p_t *auto_p, void *cam_p_v, void *scam_vars_v)
+unicast_send_xml_state (unicast_parameters_t* unicast_vars, int number_of_channels, mumudvb_channel_t* channels, int Socket, strength_parameters_t* strengthparams, auto_p_t* auto_p, void* cam_p_v, void* scam_vars_v)
 {
 #ifndef ENABLE_CAM_SUPPORT
 	(void) cam_p_v; //to make compiler happy
@@ -389,6 +389,16 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 		unicast_reply_write(reply, "\t\t</pids>\n");
 		unicast_reply_write(reply, "\t</channel>\n");
 	}
+
+
+  unicast_reply_write(reply, "\t<users count=\"%d\">\n", (unicast_vars?unicast_vars->client_number:0));
+  unicast_client_t *client=unicast_vars->clients;
+  while(client!=NULL) {
+      unicast_reply_write(reply, "\t<user socket=\"%d\" ip=\"%s:%d\" asked_channel=\"%d\" sid=\"%d\" channel_name=\"%s\">\n", client->Socket, inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port, client->askedChannel, (client->chan_ptr?client->chan_ptr->service_id:-1), (client->chan_ptr?client->chan_ptr->name:"NA"));
+      unicast_reply_write(reply, "\t</user>\n");
+      client=client->next;
+  }
+  unicast_reply_write(reply, "\t</users>\n");
 
 	// Ending XML content
 	unicast_reply_write(reply, "</mumudvb>\n");
