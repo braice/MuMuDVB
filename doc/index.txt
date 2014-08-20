@@ -4,6 +4,8 @@ Brice Dubost <mumudvb@braice.net>
 
 link:QUICKSTART.html[QUICKSTART guide]
 
+link:FAQ.html[FAQ]
+
 link:README.html[README]
 
 link:README_CONF.html[README concerning the configuration file]

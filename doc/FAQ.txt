@@ -1,0 +1,318 @@
+MuMuDVB - FAQ (Frequently asked questions)
+==========================================
+Brice Dubost <mumudvb@braice.net>
+Version 2.0.0
+
+[NOTE]
+An HTML version of this file is availaible on http://www.mumudvb.net[MuMuDVB's website].
+
+
+
+
+
+What limits the number of transponders I can stream ?
+-----------------------------------------------------
+
+MuMuDVB have a low CPU footage, so except on embedded systems, the CPU will not be the limitting factor. You will be limitted usually by your network or the capacities of the PCI/PCI-E bus.
+
+
+Cards not available
+-------------------
+
+MuMuDVB is able to support as many cards as the operating system does. To know which cards MuMuDVB see, use `mumudvb -lv`. 
+
+Special satellite Bands
+-----------------------
+
+MuMuDVB supports satellite in the Ku band, with universal or standard LNBs. The support of satellites in the S or C band is implemented via the use of the lo_frequency option. See `doc/README_CONF.txt` (link:README_CONF.html[HTML version]).
+
+System wide Freezes
+-------------------
+
+Try to avoid ultra low cost motherboards. They can crash when dealing with large data streams.
+
+
+VLC can't read the stream but it is fine with xine or mplayer
+-------------------------------------------------------------
+
+ * For VLC, you must specify the PMT PID besides audio and video PIDs. The best solution is to use autoconfiguration so MuMuDVB will discover the PIDs for you.
+
+If you want to stick in manual mode, you can use the verbose mode of VLC (`vlc -v`) and you'll see a ligne like: `[00000269] ts demuxer debug:   * number=1025 pid=110` you'll have the PMT PID associated with your program number, you can also use dvbsnoop, or see how to get pids in `doc/README_CONF.txt` (link:README_CONF.html[HTML version]).
+
+VLC reads the video but no audio
+--------------------------------
+
+ * This problem can happend if the PCR (i.e. clock) information is not carried with the video. In this case you have to check if the PCR PID is in the PIDs list. See above answer on how to get PIDs
+
+MuMuDVB can't deamonize
+-----------------------
+
+ * In order to deamonize, MuMuDVB needs the directory `/var/run/mumudvb/` to be writable, in order to write his process identifier and the channel list.
+
+
+Tuning issues with DVB-T
+------------------------
+
+ * You must check tuning settings, knowing that auto bandwidth usually does not work.
+
+What is the meaning of BER,SNR and Strength ?
+---------------------------------------------
+
+ * BER: Bit Error Rate
+ * SNR: Signal to noise ratio
+ * Strength: Strength of the signal received by the card.
+
+These values are reported to MuMuDVB by the card driver, the unit will depend on the card, the driver and the options of the driver module.
+
+TBS cards
+~~~~~~~~~
+
+For TBS card you can have the signal to noise reported in Es/N0: ETSI (European Telecommunications Standards Institute) specification for  DVB-S/S2 states dB of the signal (measured in Es/N0 dB) that is the minimum needed for error-free reception, that's called "Es/N0 Threshold"
+
+To activate SNR in Es/N0, you have to specify in `/etc/modprobe.d/tbs.conf`
+
+-------------------------------
+options tbsfe esno=1
+options isl6423 esno=1
+-------------------------------
+
+The SNR will be in 0.1dB EsN0 (a value of 100 is 10dB Es/N0)
+
+You can also activate the signal strength in dBm by specifying
+
+-------------------------------
+options tbsfe dbm=1
+options isl6423 dbm=1
+-------------------------------
+
+The signal strength will be in '-1dB'  (a value of 42 is -42dBm)
+
+
+The set-top box display a blank screen
+--------------------------------------
+
+ * If the stream is working well when reading it with a computer and not with your set-top box, this is probably because your set-top box needs the PAT PID to be rewritten. To do this add `rewrite_pat=1` to your config file.
+
+The CAM is complaining about locked channels
+--------------------------------------------
+
+ * Some viaccess CAMs can have a lock for "mature" channels. To deactivate this lock go on the CAM menu using "gnutv -cammenu" for example (from linuxtv dvb-apps).
+
+You have to set the maturity rating to maximum and unlock Maturity rating in Bolts submenu.
+
+VLC doesn't select the good program even with PAT rewriting
+-----------------------------------------------------------
+
+You also have to rewrite the SDT PID using the `rewrite_sdt` option
+
+
+[[problems_hp]]
+My multicast traffic is flooded (I have a "very old" HP procurve switch)
+------------------------------------------------------------------------
+
+The best explanation is found in the HP multicast routing guide.
+
+On switches that do not support Data-Driven IGMP, unregistered multicast
+groups are flooded to the VLAN rather than pruned. In this scenario, Fast-Leave IGMP can actually increase the problem of multicast flooding by removing the IGMP group filter before the Querier has recognized the IGMP leave. The Querier will continue to transmit the multicast group during this short time, and because the group is no longer registered the switch will then flood the multicast group to all ports.
+
+On ProCurve switches that do support Data-Driven IGMP (“Smart” IGMP),
+when unregistered multicasts are received the switch automatically filters (drops) them. Thus, the sooner the IGMP Leave is processed, the sooner this multicast traffic stops flowing.
+
+Switches without problems (supporting data driven igmp): 
+
+ * Switch 6400cl
+ * Switch 6200yl
+ * Switch 5400zl
+ * Switch 5300xl
+ * Switch 4200vl
+ * Switch 3500yl
+ * Switch 3400cl
+ * Switch 2900
+ * Switch 2800
+ * Switch 2500
+
+
+Switches WITH problems (NOT supporting data driven igmp): 
+
+ * Switch 2600
+ * Switch 2600-PWR
+ * Switch 4100gl
+ * Switch 6108
+
+So if you have one of the above switches this is "normal". The workaround is to make MuMuDVB join the multicast group. For this put `multicast_auto_join=1` in your configuration file.
+
+MuMuDVB is eating a lot of CPU with sasc-ng !
+---------------------------------------------
+
+If you use sasc-ng + dvbloopback, MuMuDVB will eat more CPU than needed.
+
+A part of this CPU time is used to descramble the channels, another part is due to the way dvbloopback is implemented and the way MuMuDVB ask the card.
+
+To reduce the cpu usage, see <<reduce_cpu,reduce MuMuDVB CPU usage>> section. In the case of using MuMuDVB with sasc-ng this improvement can be quite large. Or you can use oscam.
+
+
+The reception is working but all the channels are down
+------------------------------------------------------
+
+If the signal is good but MuMuDVB tells you that all the channels are down and you are sure about your PIDs it can be due to your CAM module if you have one. Try after unplugging your CAM module. To check deeper you can look to the traffic sent to each channel with the WEBSERVICES or the command line flag. 
+
+I want to stream from several cards
+-----------------------------------
+
+You need to launch a MuMuDVB process for each card.
+
+I want to stream the whole transponder on one "channel"
+-------------------------------------------------------
+
+MuMuDVB can stream all the data received by the card to one "channel" (multicast or unicast). In order to do this you have to use the put the PID 8192 in the channel PID list.
+
+I have several network interfaces and I want to choose on which interface the multicast traffic will go
+-------------------------------------------------------------------------------------------------------
+
+In order to specify the interface, you can specify a route for the multicast traffic like : 
+
+---------------------------------------------------
+route add -net 224.0.0.0 netmask 240.0.0.0 dev eth2
+---------------------------------------------------
+
+or use multicast_iface4 and multicast_iface6 options
+
+What does the MuMuDVB error code means ?
+----------------------------------------
+
+Here's a short description of the error codes
+
+------------------------------
+    ERROR_ARGS=1,
+    ERROR_CONF_FILE,
+    ERROR_CONF,
+    ERROR_TOO_CHANNELS,
+    ERROR_CREATE_FILE,
+    ERROR_DEL_FILE,
+    ERROR_TUNE,
+    ERROR_NO_DIFF,
+    ERROR_MEMORY,
+    ERROR_NETWORK,
+    ERROR_CAM,
+    ERROR_GENERIC,
+    ERROR_NO_CAM_INIT,
+------------------------------
+
+I get the message "DVR Read Error: Value too large for defined data type" what does it mean ?
+---------------------------------------------------------------------------------------------
+
+This message means that an overflow append in the card drivers buffer. I.e MuMuDVB was not able to get the packets sufficiently fast. This issue can have various causes, anything which an slow down (a lot) MuMuDVB an create this message.
+To avoid it you can try threaded_read see <<threaded_read, thread reading>> section.
+
+Faulty network switch
+~~~~~~~~~~~~~~~~~~~~~
+
+I experienced the "DVR Read Error..." message very often on my  Streaming Server (ia64 Madison 1.3Ghz) (with errors in the video).
+I could solve the problem by exchanging the network switch. The old  switch was limiting multicast traffic to 10Mb/s per port. This limit  is not documented.
+
+I have tested the limit the programm dd and mnc (Multicast netcat,  http://code.google.com/p/mnc/)
+
+dd if=/dev/zero bs=188 count=1000000 | ./mnc-bin 239.10.0.3
+
+I looked with "iftop" at the current network statistics and with my  old switch i saw the limit at 10Mb/s with another switch I was able to  transmit 92Mb/s ~ 100% of the avaiable bandwith.
+
+Thanks to Jan-Philipp Hülshoff for the report
+
+Flow control issues
+~~~~~~~~~~~~~~~~~~~
+
+Switch: Alcatel Omniswitch 6850E
+
+The problem turned out to be the network: Even though the interface was
+at 1GB/s, the switch it is connected to uses 'flow control'. This, is,
+for multicasts, generally a bad idea.
+In this case, one of the machines that received the multicast negotiated
+their port to 100MBit.
+Since the switch couldn't deliver the multicast packets fast enough, it
+applied "back pressure" via ethernet flow control in order to throttle
+the data rate.
+This causes the 'sendto' call in MuMuDVB to block, delaying reads from
+the DVB interface, causing buffer overflows inside the DVB driver.
+
+The giveaway was, even though I configured all 8 input to multicast
+everything they have, data rate did not increase beyond 97MBit. It
+should have been around 400MBit.
+
+Another giveaway, if you know where to look:
+ethtool -S p1p1
+    ...
+    rx_flow_control_xon: 4028153
+    rx_flow_control_xoff: 4028155
+    ...
+
+tells you that there is 'backpressure' from ethernet, at least the Intel
+e1000 driver does.
+
+Lesson:
+ - Don't trust the network
+ - Don't use ethernet flow control with multicast
+
+
+(Report from Mathias) This is interesting, we found flow control INCREASE the perceived quality of IPTV on access ports as this allows consumer grade STBs to cope with high bandwidth channels.
+This might be highly vendor dependent support of IEEE 802.3x, as most equipment only supplies a "flow control on/off"-switch, but it should provide "honor received pause-frames", "send pause-frames" switches in configuration (or at least clarify what kind of support is implemented).
+
+
+Thanks to Johannes Deisenhofer 
+
+
+I have an issue which is not reported above
+-------------------------------------------
+
+Please report it to the 
+
+
+.Mailing list:
+- mailto:mumudvb-dev@REMOVEMElists.crans.org[MuMuDVB mailing list]
+- https://lists.crans.org/listinfo/mumudvb-dev[MuMuDVB mailing list information and subscription]
+
+
+With as much information as possible, like full verbose logs, hardware, description.
+
+If it is a crash please report also a gdb backtrace, for this do
+
+----------------------------------------------
+(in your shell) gdb mumudvb
+(in GDB) run [your usual command line options]
+(MuMuDVB Runs as usual an crash)
+(in GDB) bt
+----------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
