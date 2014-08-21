@@ -62,7 +62,7 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
 	/***************************** PLEASE KEEP IN SYNC WITH THE XML VERSIONS ************************/
 	int curr_channel;
 	unicast_client_t *unicast_client=NULL;
-	int clients=0;
+	int client=0;
 
 	struct unicast_reply* reply = unicast_reply_init();
 	if (NULL == reply) {
@@ -73,13 +73,6 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
 	unicast_reply_write(reply, "[");
 	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	{
-		clients=0;
-		unicast_client=channels[curr_channel].clients;
-		while(unicast_client!=NULL)
-		{
-			unicast_client=unicast_client->chan_next;
-			clients++;
-		}
 		unicast_reply_write(reply, "{\"number\":%d, \"lcn\":%d, \"name\":\"%s\", \"sap_group\":\"%s\", \"ip_multicast\":\"%s\", \"port_multicast\":%d, \"num_clients\":%d, \"scrambling_ratio\":%d, \"is_up\":%d, \"pcr_pid\":%d, \"pmt_version\":%d, ",
 				curr_channel+1,
 				channels[curr_channel].logical_channel_number,
@@ -87,7 +80,7 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
 				channels[curr_channel].sap_group,
 				channels[curr_channel].ip4Out,
 				channels[curr_channel].portOut,
-				clients,
+				channels[curr_channel].num_clients,
 				channels[curr_channel].ratio_scrambled,
 				channels[curr_channel].has_traffic,
 				channels[curr_channel].pid_i.pcr_pid,
@@ -104,7 +97,24 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
 					channels[curr_channel].pid_i.pids[i],
 					pid_type_to_str(channels[curr_channel].pid_i.pids_type[i]),
 					channels[curr_channel].pid_i.pids_language[i]);
-		reply->used_body -= 2; // dirty hack to erase the last comma
+		unicast_reply_write(reply, "\"clients\":[");
+		unicast_client=channels[curr_channel].clients;
+		while(unicast_client!=NULL)
+		{
+			unicast_reply_write(reply, "{\"number\":%d, \"remote_address\":\"%s\", \"buffer_size\":%d, \"consecutive_errors\":%d, \"first_error_time\":%d, \"last_error_time\":%d },\n",
+								client,
+								inet_ntoa(unicast_client->SocketAddr.sin_addr),
+								unicast_client->buffersize,
+								unicast_client->consecutive_errors,
+								unicast_client->first_error_time,
+								unicast_client->last_write_error);
+			unicast_client=unicast_client->chan_next;
+			client++;
+		}
+		if(channels[curr_channel].num_clients)
+			reply->used_body -= 2; // dirty hack to erase the last comma
+		else 
+			unicast_reply_write(reply, "{}");
 		unicast_reply_write(reply, "]");
 		unicast_reply_write(reply, "},\n");
 
