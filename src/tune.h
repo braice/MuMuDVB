@@ -122,6 +122,8 @@ typedef struct tune_p_t{
   unsigned char switch_no;
   /**The type of switch U uncommitted C committed*/
   char switch_type;
+  /** Do we repeat DiseQC messages ? */
+  int diseqc_repeat;
   /** The kind of modulation */
   fe_modulation_t modulation;
   int modulation_set;

@@ -79,6 +79,7 @@ void init_tune_v(tune_p_t *tune_p)
 				.lnb_lof_high=DEFAULT_LOF2_UNIVERSAL,
 				.sat_number = 0,
 				.switch_type = 'C',
+				.diseqc_repeat = 0,
 				.modulation_set = 0,
 				.display_strenght = 0,
 				.check_status = 1,
@@ -522,6 +523,11 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 			return -1;
 		}
 	}
+	else if (!strcmp (substring, "diseqc_repeat"))
+	{
+		substring = strtok (NULL, delimiteurs);
+		tuneparams->diseqc_repeat = atoi (substring);
+	}
 	else if (!strcmp (substring, "stream_id"))
 	{
 #ifdef STREAM_ID
@@ -588,7 +594,7 @@ static inline void msleep(uint32_t msec)
  * As defined in the DiseqC norm, we stop the 22kHz tone, we set the voltage. Wait. send the command. Wait. put back the 22kHz tone
  *
  */
-static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, fe_sec_tone_mode_t t, fe_sec_mini_cmd_t b)
+static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, fe_sec_tone_mode_t t, fe_sec_mini_cmd_t b, int diseqc_repeat)
 {
 	int err;
 	if((err = ioctl(fd, FE_SET_TONE, SEC_TONE_OFF)))
@@ -613,19 +619,25 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
 			log_message( log_module,  MSG_WARN, "problem sending the DiseqC message\n");
 			return -1;
 		}
-		msleep(15);
-		//Framing byte : Command from master, no reply required, repeated transmission : 0xe1
-		cmd[0]->cmd.msg[0] = 0xe1;
-		//cmd.msg[0] = 0xe1; /* framing: master, no reply, repeated TX */
-		log_message( log_module,  MSG_DETAIL ,"Sending repeated Diseqc message %02x %02x %02x %02x %02x %02x len %d\n",
-				(*cmd)->cmd.msg[0],(*cmd)->cmd.msg[1],(*cmd)->cmd.msg[2],(*cmd)->cmd.msg[3],(*cmd)->cmd.msg[4],(*cmd)->cmd.msg[5],
-				(*cmd)->cmd.msg_len);
-		if((err = ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &(*cmd)->cmd)))
-		{
-			log_message( log_module,  MSG_WARN, "problem sending the repeated DiseqC message\n");
-			return -1;
-		}
 		msleep((*cmd)->wait);
+		msleep(15);
+
+		if(diseqc_repeat)
+		{
+			msleep(100);
+			//Framing byte : Command from master, no reply required, repeated transmission : 0xe1
+			cmd[0]->cmd.msg[0] = 0xe1;
+			//cmd.msg[0] = 0xe1; /* framing: master, no reply, repeated TX */
+			log_message( log_module,  MSG_DETAIL ,"Sending repeated Diseqc message %02x %02x %02x %02x %02x %02x len %d\n",
+					(*cmd)->cmd.msg[0],(*cmd)->cmd.msg[1],(*cmd)->cmd.msg[2],(*cmd)->cmd.msg[3],(*cmd)->cmd.msg[4],(*cmd)->cmd.msg[5],
+					(*cmd)->cmd.msg_len);
+			if((err = ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &(*cmd)->cmd)))
+			{
+				log_message( log_module,  MSG_WARN, "problem sending the repeated DiseqC message\n");
+				return -1;
+			}
+			msleep((*cmd)->wait);
+		}
 		cmd++;
 	}
 
@@ -659,7 +671,7 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
  * @param hi_lo : the band for a dual band lnb
  * @param lnb_voltage_off : if one, force the 13/18V voltage to be 0 independantly of polarization
  */
-static int do_diseqc(int fd, unsigned char sat_no,  unsigned char switch_no, char switch_type, int pol_v_r, int hi_lo, int lnb_voltage_off)
+static int do_diseqc(int fd, unsigned char sat_no,  unsigned char switch_no, char switch_type, int pol_v_r, int hi_lo, int lnb_voltage_off, int diseqc_repeat)
 {
 
 	fe_sec_voltage_t lnb_voltage;
@@ -726,7 +738,7 @@ static int do_diseqc(int fd, unsigned char sat_no,  unsigned char switch_no, cha
 				lnb_voltage,
 				cmd,
 				hi_lo ? SEC_TONE_ON : SEC_TONE_OFF,
-						(sat_no) % 2 ? SEC_MINI_B : SEC_MINI_A);
+						(sat_no) % 2 ? SEC_MINI_B : SEC_MINI_A, diseqc_repeat);
 		if(ret)
 		{
 			log_message( log_module,  MSG_WARN, "problem sending the DiseqC message or setting tone/voltage\n");
@@ -1048,7 +1060,8 @@ default:
 					tuneparams->switch_type,
 					(tuneparams->pol == 'V' ? 1 : 0) + (tuneparams->pol == 'R' ? 1 : 0),
 					hi_lo,
-					tuneparams->lnb_voltage_off) == 0)
+					tuneparams->lnb_voltage_off,
+					tuneparams->diseqc_repeat) == 0)
 				log_message( log_module,  MSG_INFO, "DISEQC SETTING SUCCEDED\n");
 			else  {
 				log_message( log_module,  MSG_WARN, "DISEQC SETTING FAILED\n");
