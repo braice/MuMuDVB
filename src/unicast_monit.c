@@ -98,7 +98,6 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
 					pid_type_to_str(channels[curr_channel].pid_i.pids_type[i]),
 					channels[curr_channel].pid_i.pids_language[i]);
 		reply->used_body -= 2;
-//		unicast_reply_write(reply, "], \"clients\": [{}]},\n");
 		unicast_reply_write(reply, "], \"clients\": [\n");
 
 		unicast_client=channels[curr_channel].clients;
