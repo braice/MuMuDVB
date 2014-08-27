@@ -1039,8 +1039,26 @@ int convert_en300468_string(char *string, int max_len, int debug)
 	//If no channel encoding is specified, it seems that most of the broadcasters
 	//uses ISO/IEC 8859-9. But the norm (EN 300 468) said that it should be Latin-1 (ISO/IEC 6937 + euro)
 
-	//temporary buffers allocation
-	tempdest=tempbuf=malloc(sizeof(char)*2*strlen(string));
+        //temporary buffers allocation                                                                                                                                   
+        int lenstring=0;
+        //We count the len needed for the temporary buffer.
+	//Due to the special structure of an EN300468 string a \0 can be present in the string
+	//So we cannot use strlen                                                                                 
+        for (src = (unsigned char *) string; *src; src++)
+        {
+                if (*src >= 0x20 && (*src < 0x80 || *src > 0x9f))
+                        //One character                                                                                                                                  
+                        lenstring++;
+                else if(*src==0x10)
+                  { //Encoding ISO/IEC 8859                                                                                                                       
+                    src++;//we skip the current byte                                                                                                                     
+                    src++;//This one is always set to 0                                                                                                                  
+                  }
+        }
+
+
+        tempdest=tempbuf=malloc(sizeof(char)*lenstring+1);
+
 	if(tempdest==NULL)
 	{
 		log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
