@@ -97,7 +97,10 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
 					channels[curr_channel].pid_i.pids[i],
 					pid_type_to_str(channels[curr_channel].pid_i.pids_type[i]),
 					channels[curr_channel].pid_i.pids_language[i]);
-		unicast_reply_write(reply, "\"clients\":[");
+		reply->used_body -= 2;
+//		unicast_reply_write(reply, "], \"clients\": [{}]},\n");
+		unicast_reply_write(reply, "], \"clients\": [\n");
+
 		unicast_client=channels[curr_channel].clients;
 		while(unicast_client!=NULL)
 		{
@@ -115,9 +118,7 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
 			reply->used_body -= 2; // dirty hack to erase the last comma
 		else 
 			unicast_reply_write(reply, "{}");
-		unicast_reply_write(reply, "]");
-		unicast_reply_write(reply, "},\n");
-
+		unicast_reply_write(reply, "]},\n"); 
 	}
 	reply->used_body -= 2; // dirty hack to erase the last comma
 	unicast_reply_write(reply, "]\n");
