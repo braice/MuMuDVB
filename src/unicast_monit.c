@@ -55,7 +55,7 @@ static char *log_module="Unicast : ";
  */
 int unicast_send_client_list_js (unicast_client_t *unicast_client, struct unicast_reply *reply)
 {
-	int client;
+	int client = 0;
 	while(unicast_client!=NULL)
 	{
 		unicast_reply_write(reply, "{\t\t\"number\": %d, \"remote_address\": \"%s\", \"port\": %d \"buffer_size\": %d, \"consecutive_errors\":%d, \"first_error_time\":%d, \"last_error_time\":%d },\n",
@@ -512,7 +512,7 @@ unicast_send_json_state (int number_of_channels, mumudvb_channel_t *channels, in
  */
 int unicast_send_client_list_xml (unicast_client_t *unicast_client, struct unicast_reply *reply)
 {
-	int client;
+	int client = 0;
 	while(unicast_client!=NULL)
 	{
 		unicast_reply_write(reply, "\t\t\t<client number=\"%d\" socket=\"%d\" ip=\"%s:%d\" >\n",
@@ -525,7 +525,7 @@ int unicast_send_client_list_xml (unicast_client_t *unicast_client, struct unica
 		unicast_client=unicast_client->chan_next;
 		client++;
 	}
-
+	return 0;
 }
 
 
@@ -549,8 +549,6 @@ int unicast_send_channel_list_xml (int number_of_channels, mumudvb_channel_t *ch
 	
 	// Channels list
 	int curr_channel;
-	unicast_client_t *unicast_client=NULL;
-	int client=0;
 	
 	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	{
