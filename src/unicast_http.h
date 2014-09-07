@@ -123,7 +123,7 @@ typedef struct unicast_client_t{
   int bufferpos;
   /**Is there consecutive errors ?*/
   int consecutive_errors;
-  /**When the first consecutive error happeard*/
+  /**When the first consecutive error happened*/
   long first_error_time;
   /**Channel : NULL if not associated yet*/
   mumudvb_channel_t *chan_ptr;

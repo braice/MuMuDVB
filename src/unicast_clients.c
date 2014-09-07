@@ -196,7 +196,9 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *cli
 	if(client->chan_ptr!=NULL)
 	{
 		log_message( log_module, MSG_DEBUG,"We remove the client from the channel \"%s\"\n",client->chan_ptr->name);
-
+		// decrement the number of client connections
+        client->chan_ptr->num_clients--;
+		
 		if(client->chan_prev==NULL)
 		{
 			client->chan_ptr->clients=client->chan_next;
@@ -245,7 +247,9 @@ int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *chann
 	}
 
 	client->chan_next=NULL;
-
+	// Increment the number of client connections
+    channel->num_clients++;
+	
 	if(channel->clients==NULL)
 	{
 		channel->clients=client;

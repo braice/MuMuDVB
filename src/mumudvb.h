@@ -438,6 +438,8 @@ typedef struct mumu_chan_t{
 
 	/**Unicast clients*/
 	struct unicast_client_t *clients;
+	/**Count of unicast clients*/
+	int num_clients;
 	/**Unicast port (listening socket per channel) */
 	MU_F_V(int,unicast_port)
 	/**Unicast listening socket*/

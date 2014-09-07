@@ -280,8 +280,9 @@ void update_chan_net(mumu_chan_p_t *chan_p, auto_p_t *auto_p, multi_p_t *multi_p
 			chan_p->channels[ichan].unicast_port=string_comput(tempstring);
 			log_message( log_module, MSG_DEBUG,"Channel (direct) unicast port  %d\n",chan_p->channels[ichan].unicast_port);
 		}
-
-
+		// Set the number of unicast clients to zero
+        chan_p->channels[ichan].num_clients = 0;
+		
 		if(multi_p->multicast)
 		{
 			char number[10];

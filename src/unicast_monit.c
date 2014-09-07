@@ -49,7 +49,104 @@
 #endif
 
 static char *log_module="Unicast : ";
+/**
+ * @brief Send a list of clients.
+ * @param unicast_client the client list to output
+ */
+int unicast_send_client_list_js (unicast_client_t *unicast_client, struct unicast_reply *reply)
+{
+	int client = 0;
+	while(unicast_client!=NULL)
+	{
+		unicast_reply_write(reply, "{\t\t\"number\": %d, \"remote_address\": \"%s\", \"port\": %d \"buffer_size\": %d, \"consecutive_errors\":%d, \"first_error_time\":%d, \"last_error_time\":%d },\n",
+							client,
+							inet_ntoa(unicast_client->SocketAddr.sin_addr),
+							unicast_client->SocketAddr.sin_port,
+							unicast_client->buffersize,
+							unicast_client->consecutive_errors,
+							unicast_client->first_error_time,
+							unicast_client->last_write_error);
+		unicast_client=unicast_client->chan_next;
+		client++;
+	}
+	return 0;
+}
+/**
+ * @brief Send the json channel list
+ * 
+ * @param number_of_channels the number of channels
+ * @param channels the channels array
+ * @param reply the unicast_reply where we will write the info.
+ * 
+ **/
+int unicast_send_channel_list_js (int number_of_channels, mumudvb_channel_t *channels, void *scam_vars_v, struct unicast_reply *reply)
+{
+	int curr_channel;
+#ifndef ENABLE_SCAM_SUPPORT
+    (void) scam_vars_v; //to make compiler happy
+#else
+	scam_parameters_t *scam_vars=(scam_parameters_t *)scam_vars_v;
+#endif
 
+	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+	{
+		                //We give only channels which are ready
+		if(channels[curr_channel].channel_ready<READY)
+			continue;
+		unicast_reply_write(reply, "\n\t{\n\t\"number\": %d,\n", curr_channel + 1);
+		unicast_reply_write(reply, "\t\"lcn\": %d,\n", channels[curr_channel].logical_channel_number);
+		unicast_reply_write(reply, "\t\"name\": \"%s\",\n", channels[curr_channel].name);
+		unicast_reply_write(reply, "\t\"sap_group\": \"%s\",\n", channels[curr_channel].sap_group);
+		unicast_reply_write(reply, "\t\"ip_multicast\": \"%s\",\n", (channels[curr_channel].ip4Out==0) ? "0.0.0.0" : channels[curr_channel].ip4Out);
+		unicast_reply_write(reply, "\t\"port_multicast\": %d,\n", channels[curr_channel].portOut);
+		unicast_reply_write(reply, "\t\"num_clients\": %d,\n", channels[curr_channel].num_clients);
+		unicast_reply_write(reply, "\t\"ratio_scrambled\": %d,\n", channels[curr_channel].ratio_scrambled);
+		unicast_reply_write(reply, "\t\"is_up\": %d,\n", channels[curr_channel].has_traffic);
+		unicast_reply_write(reply, "\t\"pcr_pid\": %d,\n", channels[curr_channel].pid_i.pcr_pid);
+		unicast_reply_write(reply, "\t\"pmt_version\": %d,\n", channels[curr_channel].pmt_version);
+		unicast_reply_write(reply, "\t\"unicast_port\": %d,\n", channels[curr_channel].unicast_port);
+		unicast_reply_write(reply, "\t\"service_id\": %d,\n", channels[curr_channel].service_id);
+		unicast_reply_write(reply, "\t\"service_type\": \"%s\",\n", service_type_to_str(channels[curr_channel].service_type));
+		unicast_reply_write(reply, "\t\"pids_num\": %d,\n", channels[curr_channel].pid_i.num_pids);
+		// SCAM information
+#ifdef ENABLE_SCAM_SUPPORT
+		if (scam_vars->scam_support) {
+			unicast_reply_write(reply, "\t\t\"scam\": {\n\t\t\t \"descrambled\": %d,\n",channels[curr_channel].scam_support);
+			if (channels[curr_channel].scam_support) {
+				unsigned int ring_buffer_num_packets = 0;
+
+				if (channels[curr_channel].ring_buf) {
+					pthread_mutex_lock(&channels[curr_channel].ring_buf->lock);
+					ring_buffer_num_packets = channels[curr_channel].ring_buf->to_descramble + channels[curr_channel].ring_buf->to_send;
+					pthread_mutex_unlock(&channels[curr_channel].ring_buf->lock);
+				}
+
+				unicast_reply_write(reply, "\t\t\t\"ring_buffer_size\": %u,\n",channels[curr_channel].ring_buffer_size);
+				unicast_reply_write(reply, "\t\t\t\"decsa_delay\": %u,\n",channels[curr_channel].decsa_delay);
+				unicast_reply_write(reply, "\t\t\t\"send_delay\": %u,\n",channels[curr_channel].send_delay);
+				unicast_reply_write(reply, "\t\t\t\"num_packets\": %u\n",ring_buffer_num_packets);
+			}
+			unicast_reply_write(reply, "\t\t},\n");
+		}
+#endif		
+		unicast_reply_write(reply, "\t\"pids\":[\n");
+		for(int i=0;i<channels[curr_channel].pid_i.num_pids;i++)
+			unicast_reply_write(reply, "\t\t{\n\t\t\t \"number\": %d,\n\t\t\t \"type\": \"%s\",\n\t\t\t \"language\": \"%s\"\n\t\t\t },\n",
+					channels[curr_channel].pid_i.pids[i],
+					pid_type_to_str(channels[curr_channel].pid_i.pids_type[i]),
+					channels[curr_channel].pid_i.pids_language[i]);
+		reply->used_body -= 2;
+		unicast_reply_write(reply, "\n\t\t],\n\t\"clients\": [\n");
+		unicast_send_client_list_js(channels[curr_channel].clients, reply);
+		if(channels[curr_channel].num_clients)
+			reply->used_body -= 2; // dirty hack to erase the last comma
+		else 
+			unicast_reply_write(reply, "\t\t{}\n");
+		unicast_reply_write(reply, "\t\t]\n\t},\n"); 
+	}
+	reply->used_body -= 2; // dirty hack to erase the last comma
+	return 0;
+}
 
 /** @brief Send a basic JSON file containig the list of streamed channels
  *
@@ -57,61 +154,29 @@ static char *log_module="Unicast : ";
  * @param channels the channels array
  * @param Socket the socket on wich the information have to be sent
  */
-int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_channel_t *channels, int Socket)
+int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_channel_t *channels, void *scam_vars_v, int Socket)
 {
+#ifndef ENABLE_SCAM_SUPPORT
+		(void) scam_vars_v; //to make compiler happy
+#else
+        scam_parameters_t *scam_vars=(scam_parameters_t *)scam_vars_v;
+#endif
+	
 	/***************************** PLEASE KEEP IN SYNC WITH THE XML VERSIONS ************************/
-	int curr_channel;
-	unicast_client_t *unicast_client=NULL;
-	int clients=0;
 
 	struct unicast_reply* reply = unicast_reply_init();
 	if (NULL == reply) {
 		log_message( log_module, MSG_INFO,"Error when creating the HTTP reply\n");
 		return -1;
 	}
-
-	unicast_reply_write(reply, "[");
-	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-	{
-		clients=0;
-		unicast_client=channels[curr_channel].clients;
-		while(unicast_client!=NULL)
-		{
-			unicast_client=unicast_client->chan_next;
-			clients++;
-		}
-		unicast_reply_write(reply, "{\"number\":%d, \"lcn\":%d, \"name\":\"%s\", \"sap_group\":\"%s\", \"ip_multicast\":\"%s\", \"port_multicast\":%d, \"num_clients\":%d, \"scrambling_ratio\":%d, \"is_up\":%d, \"pcr_pid\":%d, \"pmt_version\":%d, ",
-				curr_channel+1,
-				channels[curr_channel].logical_channel_number,
-				channels[curr_channel].name,
-				channels[curr_channel].sap_group,
-				channels[curr_channel].ip4Out,
-				channels[curr_channel].portOut,
-				clients,
-				channels[curr_channel].ratio_scrambled,
-				channels[curr_channel].has_traffic,
-				channels[curr_channel].pid_i.pcr_pid,
-				channels[curr_channel].pmt_version );
-
-		unicast_reply_write(reply, "\"unicast_port\":%d, \"service_id\":%d, \"service_type\":\"%s\", \"pids_num\":%d, \n",
-				channels[curr_channel].unicast_port,
-				channels[curr_channel].service_id,
-				service_type_to_str(channels[curr_channel].service_type),
-				channels[curr_channel].pid_i.num_pids);
-		unicast_reply_write(reply, "\"pids\":[");
-		for(int i=0;i<channels[curr_channel].pid_i.num_pids;i++)
-			unicast_reply_write(reply, "{\"number\":%d, \"type\":\"%s\", \"language\":\"%s\"},\n",
-					channels[curr_channel].pid_i.pids[i],
-					pid_type_to_str(channels[curr_channel].pid_i.pids_type[i]),
-					channels[curr_channel].pid_i.pids_language[i]);
-		reply->used_body -= 2; // dirty hack to erase the last comma
-		unicast_reply_write(reply, "]");
-		unicast_reply_write(reply, "},\n");
-
-	}
-	reply->used_body -= 2; // dirty hack to erase the last comma
+	unicast_reply_write(reply, "[\n");
+#ifndef ENABLE_SCAM_SUPPORT
+	unicast_send_channel_list_js (number_of_channels, channels, scam_vars_v, reply);
+#else
+	unicast_send_channel_list_js (number_of_channels, channels, scam_vars, reply);
+#endif	
 	unicast_reply_write(reply, "]\n");
-
+	
 	unicast_reply_send(reply, Socket, 200, "application/json");
 
 	if (0 != unicast_reply_free(reply)) {
@@ -120,11 +185,6 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
 	}
 	return 0;
 }
-
-
-
-
-
 
 /** @brief Send a basic JSON file containig the reception power
  *
@@ -238,8 +298,15 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
 	return 0;
 }
 
+/** @brief Send a full json state of the mumudvb instance
+ *
+ * @param number_of_channels the number of channels
+ * @param channels the channels array
+ * @param Socket the socket on wich the information have to be sent
+ * @param fds the frontend device structure
+ */
 int
-unicast_send_json_state ( int Socket, strength_parameters_t *strengthparams, auto_p_t *auto_p, void *cam_p_v, void *scam_vars_v)
+unicast_send_json_state (int number_of_channels, mumudvb_channel_t *channels, int Socket, strength_parameters_t *strengthparams, auto_p_t *auto_p, void *cam_p_v, void *scam_vars_v)
 {
 	/***************************** PLEASE KEEP IN SYNC WITH THE XML VERSIONS ************************/
 #ifndef ENABLE_CAM_SUPPORT
@@ -415,9 +482,16 @@ unicast_send_json_state ( int Socket, strength_parameters_t *strengthparams, aut
 	unicast_reply_write(reply, "\t\"decsa_default_delay\" : %u,\n",0);
 	unicast_reply_write(reply, "\t\"send_default_delay\" : %u\n",0);
 #endif
-	unicast_reply_write(reply, "}\n");
+	unicast_reply_write(reply, "},\n");
 
-
+	// Channels list
+	unicast_reply_write(reply,"\"channels\": [");
+#ifndef ENABLE_SCAM_SUPPORT
+	unicast_send_channel_list_js (number_of_channels, channels, scam_vars_v, reply);
+#else
+	unicast_send_channel_list_js (number_of_channels, channels, scam_vars, reply);
+#endif
+	unicast_reply_write(reply, "]\n");
 
 	// Ending JSON content
 	unicast_reply_write(reply, "}\n");
@@ -431,10 +505,111 @@ unicast_send_json_state ( int Socket, strength_parameters_t *strengthparams, aut
 	}
 	return 0;
 
-
-
-
 }
+/**
+ * @brief Send a list of clients.
+ * @param unicast_client the client list to output
+ */
+int unicast_send_client_list_xml (unicast_client_t *unicast_client, struct unicast_reply *reply)
+{
+	int client = 0;
+	while(unicast_client!=NULL)
+	{
+		unicast_reply_write(reply, "\t\t\t<client number=\"%d\" socket=\"%d\" ip=\"%s:%d\" >\n",
+							client,
+							unicast_client->Socket, inet_ntoa(unicast_client->SocketAddr.sin_addr),
+							unicast_client->SocketAddr.sin_port);
+		unicast_reply_write(reply, "\t\t\t\t<buffersize>%u</buffersize>\n",unicast_client->buffersize);
+		unicast_reply_write(reply, "\t\t\t\t<consecutive_errors>%d</consecutive_errors>\n", unicast_client->consecutive_errors);
+		unicast_reply_write(reply, "\t\t\t</client>\n");
+		unicast_client=unicast_client->chan_next;
+		client++;
+	}
+	return 0;
+}
+
+
+/**
+ * @brief send the channel list in xml
+ * 
+ * @param number_of_channels the number of channels
+ * @param channels the channels array
+ * @param reply the unicast_reply where we will write the info.
+ * 
+ **/
+int unicast_send_channel_list_xml (int number_of_channels, mumudvb_channel_t *channels, void *scam_vars_v, struct unicast_reply *reply)
+{
+
+#ifndef ENABLE_SCAM_SUPPORT
+        (void) scam_vars_v; //to make compiler happy
+		char *scam_vars;
+#else
+        scam_parameters_t *scam_vars=(scam_parameters_t *)scam_vars_v;
+#endif
+	
+	// Channels list
+	int curr_channel;
+	
+	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+	{
+		//We give only channels which are ready
+		if(channels[curr_channel].channel_ready<READY)
+			continue;
+		unicast_reply_write(reply, "\t<channel number=\"%d\" is_up=\"%d\">\n",curr_channel+1,channels[curr_channel].has_traffic);
+		unicast_reply_write(reply, "\t\t<lcn>%d</lcn>\n",channels[curr_channel].logical_channel_number);
+		unicast_reply_write(reply, "\t\t<name><![CDATA[%s]]></name>\n",channels[curr_channel].name);
+		unicast_reply_write(reply, "\t\t<service_type type=\"%d\"><![CDATA[%s]]></service_type>\n",channels[curr_channel].service_type,service_type_to_str(channels[curr_channel].service_type));
+		if (channels[curr_channel].portOut==0)
+			unicast_reply_write(reply, "\t\t<ip_multicast><![CDATA[0.0.0.0]]></ip_multicast>\n");
+		else
+			unicast_reply_write(reply, "\t\t<ip_multicast><![CDATA[%s]]></ip_multicast>\n",channels[curr_channel].ip4Out);
+		unicast_reply_write(reply, "\t\t<port_multicast>%d</port_multicast>\n",channels[curr_channel].portOut);
+		unicast_reply_write(reply, "\t\t<traffic>%.0f</traffic>\n",channels[curr_channel].traffic);
+		unicast_reply_write(reply, "\t\t<ratio_scrambled>%d</ratio_scrambled>\n",channels[curr_channel].ratio_scrambled);
+		unicast_reply_write(reply, "\t\t<service_id>%d</service_id>\n",channels[curr_channel].service_id);
+		unicast_reply_write(reply, "\t\t<pmt_pid>%d</pmt_pid>\n",channels[curr_channel].pid_i.pmt_pid);
+		unicast_reply_write(reply, "\t\t<pmt_version>%d</pmt_version>\n",channels[curr_channel].pmt_version);
+		unicast_reply_write(reply, "\t\t<pcr_pid>%d</pcr_pid>\n",channels[curr_channel].pid_i.pcr_pid);
+		unicast_reply_write(reply, "\t\t<unicast_port>%d</unicast_port>\n",channels[curr_channel].unicast_port);
+		unicast_reply_write(reply, "\t\t<unicast_client_count>%d</unicast_client_count>\n", channels[curr_channel].num_clients);
+		// SCAM information
+#ifdef ENABLE_SCAM_SUPPORT
+		if (scam_vars->scam_support) {
+			unicast_reply_write(reply, "\t\t<scam descrambled=\"%d\">\n",channels[curr_channel].scam_support);
+			if (channels[curr_channel].scam_support) {
+				unsigned int ring_buffer_num_packets = 0;
+
+				if (channels[curr_channel].ring_buf) {
+					pthread_mutex_lock(&channels[curr_channel].ring_buf->lock);
+					ring_buffer_num_packets = channels[curr_channel].ring_buf->to_descramble + channels[curr_channel].ring_buf->to_send;
+					pthread_mutex_unlock(&channels[curr_channel].ring_buf->lock);
+				}
+
+				unicast_reply_write(reply, "\t\t\t<ring_buffer_size>%u</ring_buffer_size>\n",channels[curr_channel].ring_buffer_size);
+				unicast_reply_write(reply, "\t\t\t<decsa_delay>%u</decsa_delay>\n",channels[curr_channel].decsa_delay);
+				unicast_reply_write(reply, "\t\t\t<send_delay>%u</send_delay>\n",channels[curr_channel].send_delay);
+				unicast_reply_write(reply, "\t\t\t<num_packets>%u</num_packets>\n",ring_buffer_num_packets);
+			}
+			unicast_reply_write(reply, "\t\t</scam>\n");
+		}
+#endif
+		unicast_reply_write(reply, "\t\t<ca_sys>\n");
+		for(int i=0;i<32;i++)
+			if(channels[curr_channel].ca_sys_id[i]!=0)
+				unicast_reply_write(reply, "\t\t\t<ca num=\"%d\"><![CDATA[%s]]></ca>\n",channels[curr_channel].ca_sys_id[i],ca_sys_id_to_str(channels[curr_channel].ca_sys_id[i]));
+		unicast_reply_write(reply, "\t\t</ca_sys>\n");
+		unicast_reply_write(reply, "\t\t<pids>\n");
+		for(int i=0;i<channels[curr_channel].pid_i.num_pids;i++)
+			unicast_reply_write(reply, "\t\t\t<pid number=\"%d\" language=\"%s\" scrambled=\"%d\"><![CDATA[%s]]></pid>\n", channels[curr_channel].pid_i.pids[i], channels[curr_channel].pid_i.pids_language[i], channels[curr_channel].pid_i.pids_scrambled[i], pid_type_to_str(channels[curr_channel].pid_i.pids_type[i]));
+		unicast_reply_write(reply, "\t\t</pids>\n");
+		unicast_reply_write(reply, "\t\t<clients count=\"%d\">\n", channels[curr_channel].num_clients);
+		unicast_send_client_list_xml(channels[curr_channel].clients, reply);
+		unicast_reply_write(reply, "\t\t</clients>\n");
+		unicast_reply_write(reply, "\t</channel>\n");
+	}
+	return 0;	
+}
+
 /** @brief Send a full XML state of the mumudvb instance
  *
  * @param number_of_channels the number of channels
@@ -603,61 +778,8 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 	unicast_reply_write(reply, "\t<send_default_delay>%u</send_default_delay>\n",0);
 #endif
 
-	// Channels list
-	int curr_channel;
-	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-	{
-		//We give only channels which are ready
-		if(channels[curr_channel].channel_ready<READY)
-			continue;
-		unicast_reply_write(reply, "\t<channel number=\"%d\" is_up=\"%d\">\n",curr_channel+1,channels[curr_channel].has_traffic);
-		unicast_reply_write(reply, "\t\t<lcn>%d</lcn>\n",channels[curr_channel].logical_channel_number);
-		unicast_reply_write(reply, "\t\t<name><![CDATA[%s]]></name>\n",channels[curr_channel].name);
-		unicast_reply_write(reply, "\t\t<service_type type=\"%d\"><![CDATA[%s]]></service_type>\n",channels[curr_channel].service_type,service_type_to_str(channels[curr_channel].service_type));
-		if (channels[curr_channel].portOut==0)
-			unicast_reply_write(reply, "\t\t<ip_multicast><![CDATA[0.0.0.0]]></ip_multicast>\n");
-		else
-			unicast_reply_write(reply, "\t\t<ip_multicast><![CDATA[%s]]></ip_multicast>\n",channels[curr_channel].ip4Out);
-		unicast_reply_write(reply, "\t\t<port_multicast>%d</port_multicast>\n",channels[curr_channel].portOut);
-		unicast_reply_write(reply, "\t\t<traffic>%.0f</traffic>\n",channels[curr_channel].traffic);
-		unicast_reply_write(reply, "\t\t<ratio_scrambled>%d</ratio_scrambled>\n",channels[curr_channel].ratio_scrambled);
-		unicast_reply_write(reply, "\t\t<service_id>%d</service_id>\n",channels[curr_channel].service_id);
-		unicast_reply_write(reply, "\t\t<pmt_pid>%d</pmt_pid>\n",channels[curr_channel].pid_i.pmt_pid);
-		unicast_reply_write(reply, "\t\t<pmt_version>%d</pmt_version>\n",channels[curr_channel].pmt_version);
-		unicast_reply_write(reply, "\t\t<pcr_pid>%d</pcr_pid>\n",channels[curr_channel].pid_i.pcr_pid);
-		unicast_reply_write(reply, "\t\t<unicast_port>%d</unicast_port>\n",channels[curr_channel].unicast_port);
-		// SCAM information
-#ifdef ENABLE_SCAM_SUPPORT
-		if (scam_vars->scam_support) {
-			unicast_reply_write(reply, "\t\t<scam descrambled=\"%d\">\n",channels[curr_channel].scam_support);
-			if (channels[curr_channel].scam_support) {
-				unsigned int ring_buffer_num_packets = 0;
-
-				if (channels[curr_channel].ring_buf) {
-					pthread_mutex_lock(&channels[curr_channel].ring_buf->lock);
-					ring_buffer_num_packets = channels[curr_channel].ring_buf->to_descramble + channels[curr_channel].ring_buf->to_send;
-					pthread_mutex_unlock(&channels[curr_channel].ring_buf->lock);
-				}
-
-				unicast_reply_write(reply, "\t\t\t<ring_buffer_size>%u</ring_buffer_size>\n",channels[curr_channel].ring_buffer_size);
-				unicast_reply_write(reply, "\t\t\t<decsa_delay>%u</decsa_delay>\n",channels[curr_channel].decsa_delay);
-				unicast_reply_write(reply, "\t\t\t<send_delay>%u</send_delay>\n",channels[curr_channel].send_delay);
-				unicast_reply_write(reply, "\t\t\t<num_packets>%u</num_packets>\n",ring_buffer_num_packets);
-			}
-			unicast_reply_write(reply, "\t\t</scam>\n");
-		}
-#endif
-		unicast_reply_write(reply, "\t\t<ca_sys>\n");
-		for(int i=0;i<32;i++)
-			if(channels[curr_channel].ca_sys_id[i]!=0)
-				unicast_reply_write(reply, "\t\t\t<ca num=\"%d\"><![CDATA[%s]]></ca>\n",channels[curr_channel].ca_sys_id[i],ca_sys_id_to_str(channels[curr_channel].ca_sys_id[i]));
-		unicast_reply_write(reply, "\t\t</ca_sys>\n");
-		unicast_reply_write(reply, "\t\t<pids>\n");
-		for(int i=0;i<channels[curr_channel].pid_i.num_pids;i++)
-			unicast_reply_write(reply, "\t\t\t<pid number=\"%d\" language=\"%s\" scrambled=\"%d\"><![CDATA[%s]]></pid>\n", channels[curr_channel].pid_i.pids[i], channels[curr_channel].pid_i.pids_language[i], channels[curr_channel].pid_i.pids_scrambled[i], pid_type_to_str(channels[curr_channel].pid_i.pids_type[i]));
-		unicast_reply_write(reply, "\t\t</pids>\n");
-		unicast_reply_write(reply, "\t</channel>\n");
-	}
+	// channel list
+	unicast_send_channel_list_xml (number_of_channels, channels, scam_vars_v, reply);
 
 	// Ending XML content
 	unicast_reply_write(reply, "</mumudvb>\n");
