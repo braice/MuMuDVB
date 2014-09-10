@@ -491,27 +491,28 @@ void eit_show_component_descr(unsigned char *buf, struct unicast_reply* reply)
 	delta=2;
 
 	unicast_reply_write(reply, "\t\t\"len\" : %d,\n",buf[1]&0xff);
-
-	//stream_content
-	// see EN 300 468 V1.13.1 table 26
-	unicast_reply_write(reply, "\t\t\"stream_content\" :%d,\n", buf[delta]&0x0F);
-	delta++;
-	// see EN 300 468 V1.13.1 table 26
-	unicast_reply_write(reply, "\t\t\"component_type\" :%d,\n", buf[delta]);
-	delta++;
-	unicast_reply_write(reply, "\t\t\"component_tag\" :%d,\n", buf[delta]);
-	delta++;
-	unicast_reply_write(reply, "\t\t\"language\" : \"%c%c%c\",\n",buf[0+delta],buf[1+delta],buf[2+delta]);
-	delta+=3;
-	int text_length;
-	char text[MAX_DESCR_LEN];
-	char text2[MAX_DESCR_LEN];
-	text_length=(buf[1])-5;
-	memcpy(text,buf+delta,text_length*sizeof(char));
-	text[text_length]='\0';
-	convert_en300468_string(text, MAX_DESCR_LEN,0);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
-	unicast_reply_write(reply, "\t\t\"text\" : \"%s\"\n", text2);
-
+	if(buf[1]&0xff>5)
+	{
+		//stream_content
+		// see EN 300 468 V1.13.1 table 26
+		unicast_reply_write(reply, "\t\t\"stream_content\" :%d,\n", buf[delta]&0x0F);
+		delta++;
+		// see EN 300 468 V1.13.1 table 26
+		unicast_reply_write(reply, "\t\t\"component_type\" :%d,\n", buf[delta]);
+		delta++;
+		unicast_reply_write(reply, "\t\t\"component_tag\" :%d,\n", buf[delta]);
+		delta++;
+		unicast_reply_write(reply, "\t\t\"language\" : \"%c%c%c\",\n",buf[0+delta],buf[1+delta],buf[2+delta]);
+		delta+=3;
+		int text_length;
+		char text[MAX_DESCR_LEN];
+		char text2[MAX_DESCR_LEN];
+		text_length=(buf[1])-5;
+		memcpy(text,buf+delta,text_length*sizeof(char));
+		text[text_length]='\0';
+		convert_en300468_string(text, MAX_DESCR_LEN,0);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
+		unicast_reply_write(reply, "\t\t\"text\" : \"%s\"\n", text2);
+	}
 
 }
 
