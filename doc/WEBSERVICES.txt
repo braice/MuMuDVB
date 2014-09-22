@@ -19,7 +19,7 @@ Status monitoring :
 -------------------
 
 There is no input parameters.
-URL : http://ip_http:port_http/monitor/state.xml 
+URL : http://ip_http:port_http/monitor/state.xml
 
 Example of response with comments:
 
@@ -36,11 +36,11 @@ Example of response with comments:
 	<frontend_polarization><![CDATA[V]]></frontend_polarization>         => "-" if polarization isn't applicable, or "V" (Vertical), "H" (Horizontal", "L" (Left), "R" (Right)
 	<frontend_symbolrate>27500000</frontend_symbolrate>                  => Satellite symbole rate in symbols per second (or 0 if not applicable)
 	<frontend_system><![CDATA[DVB-S]]></frontend_system>                 => System used : "DVB-C", "DVB-T", "DVB-S", "DVB-S2", "ATSC"
-	<frontend_status><![CDATA[SCVYL]]></frontend_status>                 => Tuner lock status: "S"/"-" (Signal), "C"/"-" (Carrier), "V"/"-" (Viterbi), "Y"/"-" (Synchro), "L"/"-" (Locked) 
+	<frontend_status><![CDATA[SCVYL]]></frontend_status>                 => Tuner lock status: "S"/"-" (Signal), "C"/"-" (Carrier), "V"/"-" (Viterbi), "Y"/"-" (Synchro), "L"/"-" (Locked)
 	<frontend_ber>0</frontend_ber>                                       => RAW BER value from driver (unsigned 16-bits integer)
 	<frontend_signal>56955</frontend_signal>                             => RAW Signal level value from driver (unsigned 16-bits integer)
 	<frontend_snr>54759</frontend_snr>                                   => RAW Signal to noise ratio from driver (unsigned 16-bits integer)
-	<autoconfiguration>2</autoconfiguration>                             => Autoconfiguration status 0: none, 2: full 
+	<autoconfiguration>2</autoconfiguration>                             => Autoconfiguration status 0: none, 2: full
 	<autoconfiguration_detected_parameters>                              => Part displayed only when autoconfiguration is enabled
 		<transport_stream_id>2</transport_stream_id>                     => Transport stream id
 		<network_id>8442</network_id>                                    => network id (see ts_10261102v010201p.pdf p14 and ts_101162v010701p.pdf p18 p19)
@@ -49,13 +49,13 @@ Example of response with comments:
 		<sdt_version>2</sdt_version>                                     => Version of the SDT PID
 		<nit_version>28</nit_version>                                    => Version of the NIT PID
 		<psip_version>0</psip_version>                                   => Version of the PSIP PID (ATSC only)
-	</autoconfiguration_detected_parameters>                             => 
+	</autoconfiguration_detected_parameters>                             =>
 	<autoconfiguration_finished>1</autoconfiguration_finished>			 => 0 if not autoconfiguration or autoconfiguration in progress, 1 if autoconfiguration is finished
 	<cam_support>1</cam_support>                                         => 0 if no CAM support asked, 1 if CAM support was asked
 	<cam_number>0</cam_number>                                           => CAM slot number
 	<cam_menustring><![CDATA[Not retrieved]]></cam_menustring>           => When CAM is initialized, CAM model
 	<cam_initialized>0</cam_initialized>                                 => 0 if CAM isn't initialized, 1 if CAM is initialized
-	
+
 	<channel number="1">                                                 => Loop over channels, one node per channel, with MuMuDVB internal id (starting at 1)
 		<lcn>0</lcn>                                                     => If present, Channel Logical Number (Channel number)
 		<name><![CDATA[CANAL+]]></name>                                  => Channel name
@@ -82,6 +82,17 @@ Example of response with comments:
 			<pid number="82" language="fra"><![CDATA[Audio (AC3)]]></pid>
 			<pid number="83" language="eng"><![CDATA[Audio (AC3)]]></pid>
 		</pids>                                                          => End of PID loop
+		<clients count="1">                                              => Loop over unicast clients
+		    <client number="0">                                          => Client Information
+			  <socket>80</socket>                                        => Local socket FD
+			  <remote_address><![CDATA[192.168.0.54]]></remote_address>  => Remote IP address of the client
+			  <remote_port>438754</remote_port>                          => Remote port
+			  <buffersize>0</buffersize>                                 => Client Buffer
+			  <consecutive_errors>0</consecutive_errors>                 => Count of consecutive errors when writing to this client
+			  <first_error_time>1411392479</first_error_time>            =>
+			  <last_error_time>0</last_error_time>                       =>
+			</client>                                                    => End of Client.
+		</clients>                                                       => End of clients loop
 	</channel>                                                           => End of channels loop
 </mumudvb>                                                               => End of response
 ----------------

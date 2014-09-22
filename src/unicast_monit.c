@@ -58,8 +58,9 @@ int unicast_send_client_list_js (unicast_client_t *unicast_client, struct unicas
 	int client = 0;
 	while(unicast_client!=NULL)
 	{
-		unicast_reply_write(reply, "{\t\t\"number\": %d, \"remote_address\": \"%s\", \"port\": %d \"buffer_size\": %d, \"consecutive_errors\":%d, \"first_error_time\":%d, \"last_error_time\":%d },\n",
+		unicast_reply_write(reply, "{\t\t\"client_number\": %d, \"socket\": %d, \"remote_address\": \"%s\", \"remote_port\": %d, \"buffer_size\": %d, \"consecutive_errors\":%d, \"first_error_time\":%d, \"last_error_time\":%d },\n",
 							client,
+							unicast_client->Socket,
 							inet_ntoa(unicast_client->SocketAddr.sin_addr),
 							unicast_client->SocketAddr.sin_port,
 							unicast_client->buffersize,
@@ -73,11 +74,11 @@ int unicast_send_client_list_js (unicast_client_t *unicast_client, struct unicas
 }
 /**
  * @brief Send the json channel list
- * 
+ *
  * @param number_of_channels the number of channels
  * @param channels the channels array
  * @param reply the unicast_reply where we will write the info.
- * 
+ *
  **/
 int unicast_send_channel_list_js (int number_of_channels, mumudvb_channel_t *channels, void *scam_vars_v, struct unicast_reply *reply)
 {
@@ -128,7 +129,7 @@ int unicast_send_channel_list_js (int number_of_channels, mumudvb_channel_t *cha
 			}
 			unicast_reply_write(reply, "\t\t},\n");
 		}
-#endif		
+#endif
 		unicast_reply_write(reply, "\t\"pids\":[\n");
 		for(int i=0;i<channels[curr_channel].pid_i.num_pids;i++)
 			unicast_reply_write(reply, "\t\t{\n\t\t\t \"number\": %d,\n\t\t\t \"type\": \"%s\",\n\t\t\t \"language\": \"%s\"\n\t\t\t },\n",
@@ -140,9 +141,9 @@ int unicast_send_channel_list_js (int number_of_channels, mumudvb_channel_t *cha
 		unicast_send_client_list_js(channels[curr_channel].clients, reply);
 		if(channels[curr_channel].num_clients)
 			reply->used_body -= 2; // dirty hack to erase the last comma
-		else 
+		else
 			unicast_reply_write(reply, "\t\t{}\n");
-		unicast_reply_write(reply, "\t\t]\n\t},\n"); 
+		unicast_reply_write(reply, "\t\t]\n\t},\n");
 	}
 	reply->used_body -= 2; // dirty hack to erase the last comma
 	return 0;
@@ -161,7 +162,7 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
 #else
         scam_parameters_t *scam_vars=(scam_parameters_t *)scam_vars_v;
 #endif
-	
+
 	/***************************** PLEASE KEEP IN SYNC WITH THE XML VERSIONS ************************/
 
 	struct unicast_reply* reply = unicast_reply_init();
@@ -174,9 +175,9 @@ int unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_chan
 	unicast_send_channel_list_js (number_of_channels, channels, scam_vars_v, reply);
 #else
 	unicast_send_channel_list_js (number_of_channels, channels, scam_vars, reply);
-#endif	
+#endif
 	unicast_reply_write(reply, "]\n");
-	
+
 	unicast_reply_send(reply, Socket, 200, "application/json");
 
 	if (0 != unicast_reply_free(reply)) {
@@ -515,12 +516,14 @@ int unicast_send_client_list_xml (unicast_client_t *unicast_client, struct unica
 	int client = 0;
 	while(unicast_client!=NULL)
 	{
-		unicast_reply_write(reply, "\t\t\t<client number=\"%d\" socket=\"%d\" ip=\"%s:%d\" >\n",
-							client,
-							unicast_client->Socket, inet_ntoa(unicast_client->SocketAddr.sin_addr),
-							unicast_client->SocketAddr.sin_port);
+		unicast_reply_write(reply, "\t\t\t<client number=\"%d\">\n", client);
+		unicast_reply_write(reply, "\t\t\t\t<socket>%d</socket>", unicast_client->Socket);
+		unicast_reply_write(reply, "\t\t\t\t<remote_address><![CDATA[%s]]></remote_address>\n", inet_ntoa(unicast_client->SocketAddr.sin_addr);
+		unicast_reply_write(reply, "\t\t\t\t<remote_port>%d</remote port>", unicast_client->SocketAddr.sin_port);
 		unicast_reply_write(reply, "\t\t\t\t<buffersize>%u</buffersize>\n",unicast_client->buffersize);
 		unicast_reply_write(reply, "\t\t\t\t<consecutive_errors>%d</consecutive_errors>\n", unicast_client->consecutive_errors);
+		unicast_reply_write(reply, "\t\t\t\t<first_error_time>%d</first_error_time>\n", unicast_client->first_error_time);
+		unicast_reply_write(reply, "\t\t\t\t<last_write_error>%d</last_write_error>\n", unicast_client->last_write_error);
 		unicast_reply_write(reply, "\t\t\t</client>\n");
 		unicast_client=unicast_client->chan_next;
 		client++;
@@ -531,11 +534,11 @@ int unicast_send_client_list_xml (unicast_client_t *unicast_client, struct unica
 
 /**
  * @brief send the channel list in xml
- * 
+ *
  * @param number_of_channels the number of channels
  * @param channels the channels array
  * @param reply the unicast_reply where we will write the info.
- * 
+ *
  **/
 int unicast_send_channel_list_xml (int number_of_channels, mumudvb_channel_t *channels, void *scam_vars_v, struct unicast_reply *reply)
 {
@@ -546,10 +549,10 @@ int unicast_send_channel_list_xml (int number_of_channels, mumudvb_channel_t *ch
 #else
         scam_parameters_t *scam_vars=(scam_parameters_t *)scam_vars_v;
 #endif
-	
+
 	// Channels list
 	int curr_channel;
-	
+
 	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 	{
 		//We give only channels which are ready
@@ -607,7 +610,7 @@ int unicast_send_channel_list_xml (int number_of_channels, mumudvb_channel_t *ch
 		unicast_reply_write(reply, "\t\t</clients>\n");
 		unicast_reply_write(reply, "\t</channel>\n");
 	}
-	return 0;	
+	return 0;
 }
 
 /** @brief Send a full XML state of the mumudvb instance
@@ -998,4 +1001,3 @@ unicast_send_cam_action (int Socket, char *Key, void *cam_p_v)
 	}
 	return 0;
 }
-
