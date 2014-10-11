@@ -4,7 +4,7 @@ Brice Dubost <mumudvb@braice.net>
 Version 2.0.0
 
 [NOTE]
-An HTML version of this file is availaible on http://www.mumudvb.net[MuMuDVB's website].
+An HTML version of this file is available on http://www.mumudvb.net[MuMuDVB's website].
 
 
 
@@ -13,61 +13,61 @@ An HTML version of this file is availaible on http://www.mumudvb.net[MuMuDVB's w
 What limits the number of transponders I can stream ?
 -----------------------------------------------------
 
-MuMuDVB have a low CPU footage, so except on embedded systems, the CPU will not be the limitting factor. You will be limitted usually by your network or the capacities of the PCI/PCI-E bus.
+MuMuDVB has a low CPU footprint, so except on embedded systems, the CPU will not be the limiting factor. You will usually be limited by your network or the capacity of the PCI/PCI-E bus.
 
 
 Cards not available
 -------------------
 
-MuMuDVB is able to support as many cards as the operating system does. To know which cards MuMuDVB see, use `mumudvb -lv`. 
+MuMuDVB is able to support as many cards as the operating system does. To know which cards MuMuDVB sees, use `mumudvb -lv`. 
 
 Special satellite Bands
 -----------------------
 
-MuMuDVB supports satellite in the Ku band, with universal or standard LNBs. The support of satellites in the S or C band is implemented via the use of the lo_frequency option. See `doc/README_CONF.txt` (link:README_CONF.html[HTML version]).
+MuMuDVB supports satellites in the Ku band, with universal or standard LNBs. Support for satellites in the S or C band is implemented via the use of the lo_frequency option. See `doc/README_CONF.txt` (link:README_CONF.html[HTML version]).
 
-System wide Freezes
+System wide freezes
 -------------------
 
 Try to avoid ultra low cost motherboards. They can crash when dealing with large data streams.
 
 
-VLC can't read the stream but it is fine with xine or mplayer
--------------------------------------------------------------
+VLC can't read the stream, but it is fine with xine or mplayer
+--------------------------------------------------------------
 
- * For VLC, you must specify the PMT PID besides audio and video PIDs. The best solution is to use autoconfiguration so MuMuDVB will discover the PIDs for you.
+ * For VLC, you must specify the PMT PID in addition to the audio and video PIDs. The best solution is to use autoconfiguration so MuMuDVB will discover the PIDs for you.
 
-If you want to stick in manual mode, you can use the verbose mode of VLC (`vlc -v`) and you'll see a ligne like: `[00000269] ts demuxer debug:   * number=1025 pid=110` you'll have the PMT PID associated with your program number, you can also use dvbsnoop, or see how to get pids in `doc/README_CONF.txt` (link:README_CONF.html[HTML version]).
+If you want to stick to manual mode, you can use the verbose mode of VLC (`vlc -v`) and you'll see a line like: `[00000269] ts demuxer debug:   * number=1025 pid=110` You'll have the PMT PID associated with your program number. You can also use dvbsnoop, or see how to find PIDs in `doc/README_CONF.txt` (link:README_CONF.html[HTML version]).
 
-VLC reads the video but no audio
+VLC shows the video but no audio
 --------------------------------
 
- * This problem can happend if the PCR (i.e. clock) information is not carried with the video. In this case you have to check if the PCR PID is in the PIDs list. See above answer on how to get PIDs
+ * This problem can happen if the PCR (i.e. clock) information is not carried with the video. In this case, you have to check if the PCR PID is in the list of PIDs. See above answer on how to get PIDs
 
-MuMuDVB can't deamonize
+MuMuDVB can't daemonize
 -----------------------
 
- * In order to deamonize, MuMuDVB needs the directory `/var/run/mumudvb/` to be writable, in order to write his process identifier and the channel list.
+ * So that it can daemonize, MuMuDVB needs the directory `/var/run/mumudvb/` to be writable, in order to write its process identifier and the channel list.
 
 
 Tuning issues with DVB-T
 ------------------------
 
- * You must check tuning settings, knowing that auto bandwidth usually does not work.
+ * You must check tuning settings. Keep in mind that auto bandwidth usually does not work.
 
-What is the meaning of BER,SNR and Strength ?
+What is the meaning of BER, SNR and Strength?
 ---------------------------------------------
 
  * BER: Bit Error Rate
  * SNR: Signal to noise ratio
  * Strength: Strength of the signal received by the card.
 
-These values are reported to MuMuDVB by the card driver, the unit will depend on the card, the driver and the options of the driver module.
+These values are reported to MuMuDVB by the card driver. The units will depend on the card, the driver and the options of the driver module.
 
 TBS cards
 ~~~~~~~~~
 
-For TBS card you can have the signal to noise reported in Es/N0: ETSI (European Telecommunications Standards Institute) specification for  DVB-S/S2 states dB of the signal (measured in Es/N0 dB) that is the minimum needed for error-free reception, that's called "Es/N0 Threshold"
+For TBS cards, you can have the signal to noise reported in Es/N0: ETSI (European Telecommunications Standards Institute) specification for  DVB-S/S2 states dB of the signal (measured in Es/N0 dB) that is the minimum needed for error-free reception, that's called "Es/N0 Threshold"
 
 To activate SNR in Es/N0, you have to specify in `/etc/modprobe.d/tbs.conf`
 
