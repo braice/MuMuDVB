@@ -181,6 +181,7 @@ Various parameters
 |filename_pid | Specify where MuMuDVB will write it's PID (Processus IDentifier) | /var/run/mumudvb/mumudvb_adapter%card_tuner%tuner.pid | | the templates %card %tuner and %server are allowed
 |check_cc | Do MuMuDVB check the discontibuities in the stream ? | 0 | | Displayed via the XML status pages or the signal display
 |store_eit | Do MuMuDVB store EIT (Electronic Program Guide) for the webservices ? | 0 | | beta, please report your results
+|debug_updown | Do MuMuDVB show debugging messages concerning up/down channel detection | 0 | | The threshold can be adjusted with up_threshold and down_threshold
 |==================================================================================================================
 
 Packets sending parameters
