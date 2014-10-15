@@ -106,6 +106,10 @@ void autoconf_get_pmt_pids(mumudvb_ts_packet_t *pmt, int *pids, int *num_pids, i
 			pid_type=PID_VIDEO_MPEG4_AVC;
 			log_message( log_module,  MSG_DEBUG,"  Video MPEG4-AVC \tPID %d\n",pid);
 			break;
+		case 0x24: /*HEVC video stream TODO: enter quote*/
+			pid_type=PID_VIDEO_MPEG4_HEVC;
+			log_message( log_module,  MSG_DEBUG,"  Video MPEG4-HVC \tPID %d\n",pid);
+			break;
 		case 0x03:
 			pid_type=PID_AUDIO_MPEG1;
 			log_message( log_module,  MSG_DEBUG,"  Audio MPEG1 \tPID %d\n",pid);
