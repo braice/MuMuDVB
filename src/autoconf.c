@@ -395,6 +395,7 @@ void autoconf_update_chan_status(auto_p_t *auto_p,mumu_chan_p_t *chan_p)
 				chan_p->channels[ichan].service_type==0x11||
 				chan_p->channels[ichan].service_type==0x16||
 				chan_p->channels[ichan].service_type==0x19||
+				chan_p->channels[ichan].service_type==0x1f||
 				chan_p->channels[ichan].service_type==0xc0)||
 				((chan_p->channels[ichan].service_type==0x02||
 						chan_p->channels[ichan].service_type==0x0a)&&auto_p->autoconf_radios))
