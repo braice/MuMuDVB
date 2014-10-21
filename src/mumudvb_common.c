@@ -309,13 +309,13 @@ void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct u
 	int send_packet = 0;
 	extern int dont_send_scrambled;
 
-#ifndef ENABLE_SCAM_SUPPORT
+#ifndef ENABLE_SCAM_DESCRAMBLER_SUPPORT
 	(void) scam_vars_v; //to make compiler happy
 #else
 	scam_parameters_t *scam_vars=(scam_parameters_t *)scam_vars_v;
 #endif
 	uint64_t now_time;
-#ifdef ENABLE_SCAM_SUPPORT
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
 	if (channel->scam_support && scam_vars->scam_support) {
 		pthread_mutex_lock(&channel->ring_buf->lock);
 		memcpy(channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->write_idx, ts_packet, TS_PACKET_SIZE);

@@ -60,10 +60,7 @@
 #include "cam.h"
 #endif
 #ifdef ENABLE_SCAM_SUPPORT
-#include "scam_capmt.h"
 #include "scam_common.h"
-#include "scam_getcw.h"
-#include "scam_decsa.h"
 #endif
 
 static char *log_module="Unicast : ";

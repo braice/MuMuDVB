@@ -50,9 +50,10 @@
 #include "log.h"
 #include "unicast_http.h"
 #include "rtp.h"
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
 #include "scam_decsa.h"
 #include "scam_send.h"
-
+#endif
 /**@file
  * @brief scam support
  * 
@@ -92,10 +93,13 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
       log_message( log_module,  MSG_WARN,
                    "You have enabled the support for software descrambling (scrambled channels). Please report any bug/comment\n");
     }
-  scam_vars->ring_buffer_default_size=RING_BUFFER_DEFAULT_SIZE;
-  scam_vars->decsa_default_delay=DECSA_DEFAULT_DELAY;
-  scam_vars->send_default_delay=SEND_DEFAULT_DELAY;
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
+    scam_vars->ring_buffer_default_size=RING_BUFFER_DEFAULT_SIZE;
+    scam_vars->decsa_default_delay=DECSA_DEFAULT_DELAY;
+    scam_vars->send_default_delay=SEND_DEFAULT_DELAY;
+#endif
   }
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
   else if (!strcmp (substring, "ring_buffer_default_size"))
   {
     substring = strtok (NULL, delimiteurs);
@@ -114,24 +118,6 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
   {
     substring = strtok (NULL, delimiteurs);
     scam_vars->send_default_delay = atoi (substring);
-  }
-
-  else if (!strcmp (substring, "oscam"))
-  {
-    if ( ip_ok == 0)
-    {
-      log_message( log_module,  MSG_ERROR,
-                   "oscam : You have to start a channel first (using ip= or channel_next)\n");
-      return -1;
-    }
-    substring = strtok (NULL, delimiteurs);
-    current_channel->scam_support = atoi (substring);
-  if (current_channel->scam_support) {
-    current_channel->need_scam_ask=CAM_NEED_ASK;
-    current_channel->ring_buffer_size=scam_vars->ring_buffer_default_size;
-    current_channel->decsa_delay=scam_vars->decsa_default_delay;
-    current_channel->send_delay=scam_vars->send_default_delay;
-  }
   }
   else if (!strcmp (substring, "ring_buffer_size"))
   {
@@ -168,10 +154,30 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *cur
     substring = strtok (NULL, delimiteurs);
     current_channel->send_delay = atoi (substring);
   }
+#endif
+  else if (!strcmp (substring, "oscam"))
+  {
+    if ( ip_ok == 0)
+    {
+      log_message( log_module,  MSG_ERROR,
+                   "oscam : You have to start a channel first (using ip= or channel_next)\n");
+      return -1;
+    }
+    substring = strtok (NULL, delimiteurs);
+    current_channel->scam_support = atoi (substring);
+    if (current_channel->scam_support) {
+      current_channel->need_scam_ask=CAM_NEED_ASK;
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
+      current_channel->ring_buffer_size=scam_vars->ring_buffer_default_size;
+      current_channel->decsa_delay=scam_vars->decsa_default_delay;
+      current_channel->send_delay=scam_vars->send_default_delay;
+#endif
+    }
+  }
   else
-    return 0; //Nothing concerning cam, we return 0 to explore the other possibilities
+    return 0; //Nothing concerning scam, we return 0 to explore the other possibilities
 
-  return 1;//We found something for cam, we tell main to go for the next line
+  return 1;//We found something for scam, we tell main to go for the next line
 
 }
 
@@ -241,8 +247,7 @@ int scam_new_packet(int pid, unsigned char *ts_packet, scam_parameters_t *scam_v
  */
 int scam_channel_start(mumudvb_channel_t *channel)
 {
-  unsigned int i;
-
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
   channel->ring_buf=malloc(sizeof(ring_buffer_t));
   if (channel->ring_buf == NULL) {
     log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
@@ -271,12 +276,13 @@ int scam_channel_start(mumudvb_channel_t *channel)
   pthread_mutex_init(&channel->ring_buf->lock, NULL);
   scam_send_start(channel);
   scam_decsa_start(channel);
+#endif
   return 0;
 }
 
 void scam_channel_stop(mumudvb_channel_t *channel)
 {
-  uint64_t i;
+#ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
   scam_send_stop(channel);
   scam_decsa_stop(channel);
   free(channel->ring_buf->data);
@@ -285,6 +291,7 @@ void scam_channel_stop(mumudvb_channel_t *channel)
 
   pthread_mutex_destroy(&channel->ring_buf->lock);
   free(channel->ring_buf);
+#endif
 }
 
 

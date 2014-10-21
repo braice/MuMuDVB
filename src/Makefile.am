@@ -38,6 +38,13 @@ SOURCES_scamsupport = \
 	scam_common.h \
         scam_getcw.c \
 	scam_getcw.h \
+        $(NULL)
+        
+if BUILD_SCAMDESCRAMBLERSUPPORT
+mumudvb_SOURCES += $(SOURCES_scamdescramblersupport)
+endif
+
+SOURCES_scamdescramblersupport = \
         scam_decsa.c \
 	scam_decsa.h \
         scam_send.c \
