@@ -37,12 +37,15 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <sys/epoll.h>
 
 
 #include "errors.h"
 #include "ts.h"
 #include "mumudvb.h"
 #include "log.h"
+#include "scam_common.h"
 
 /**@file
  * @brief scam support
@@ -54,9 +57,25 @@ static char *log_module="SCAM_CAPMT: ";
 
 
 /** @brief sending to oscam data to begin geting cw's for channel */
-int scam_send_capmt(mumudvb_channel_t *channel, int adapter)
+int scam_send_capmt(mumudvb_channel_t *channel, scam_parameters_t *scam_params, int adapter)
 {
-  char *caPMT = (char *) malloc(1024);
+  if (channel->camd_socket < 0)
+  {
+	channel->camd_socket = socket(AF_LOCAL, SOCK_STREAM, 0);
+	struct sockaddr_un serv_addr_un;
+	memset(&serv_addr_un, 0, sizeof(serv_addr_un));
+	serv_addr_un.sun_family = AF_LOCAL;
+	snprintf(serv_addr_un.sun_path, sizeof(serv_addr_un.sun_path), "/tmp/camd.socket");
+	if (connect(channel->camd_socket, (const struct sockaddr *) &serv_addr_un, sizeof(serv_addr_un)) != 0)
+	{
+	  log_message(log_module, MSG_DEBUG,"cannot connect to /tmp/camd.socket for channel %s. Do you have OSCam running?\n", channel->name);
+	  close(channel->camd_socket);
+	  channel->camd_socket = -1;
+	  return 1;
+	} else log_message(log_module,  MSG_DEBUG, "created socket for channel %s\n", channel->name);
+  }
+
+  char *caPMT = (char *) calloc(1024, 1);
   int length_field;
   int toWrite;
   caPMT[0] = 0x9F;
@@ -75,41 +94,57 @@ int scam_send_capmt(mumudvb_channel_t *channel, int adapter)
   caPMT[14] = 0x02; //length
   caPMT[15] = 0x00; //demux id
   caPMT[16] = (char) adapter; //adapter id
-  caPMT[10] = (*(channel->pmt_packet)).data_full[10]; //reserved+program_info_length
-  caPMT[11] = (*(channel->pmt_packet)).data_full[11] + 1 + 4; //reserved+program_info_length (+1 for ca_pmt_cmd_id, +4 for above CAPMT_DESC_DEMUX)
+
+  caPMT[10] = (*(channel->scam_pmt_packet)).data_full[10]; //reserved+program_info_length
+  caPMT[11] = (*(channel->scam_pmt_packet)).data_full[11] + 1 + 4; //reserved+program_info_length (+1 for ca_pmt_cmd_id, +4 for above CAPMT_DESC_DEMUX)
  
-  memcpy(caPMT + 17, (*(channel->pmt_packet)).data_full + 12, (*(channel->pmt_packet)).len_full -12 - 4);
-  length_field = 17 + ((*(channel->pmt_packet)).len_full - 11 - 4) - 6;
+  memcpy(caPMT + 17, (*(channel->scam_pmt_packet)).data_full + 12, (*(channel->scam_pmt_packet)).len_full -12 - 4);
+  length_field = 17 + ((*(channel->scam_pmt_packet)).len_full - 11 - 4) - 6;
+
   caPMT[4] = length_field >> 8;
   caPMT[5] = length_field & 0xff;
   toWrite = length_field + 6;
 
-  if (channel->camd_socket < 0)
-  {
-    channel->camd_socket = socket(AF_LOCAL, SOCK_STREAM, 0);
-    struct sockaddr_un serv_addr_un;
-    memset(&serv_addr_un, 0, sizeof(serv_addr_un));
-    serv_addr_un.sun_family = AF_LOCAL;
-    snprintf(serv_addr_un.sun_path, sizeof(serv_addr_un.sun_path), "/tmp/camd.socket");
-    if (connect(channel->camd_socket, (const struct sockaddr *) &serv_addr_un, sizeof(serv_addr_un)) != 0)
-    {
-      log_message(log_module, MSG_ERROR,"cannot connect to /tmp/camd.socket for channel %s. Do you have OSCam running?\n", channel->name);
-      close(channel->camd_socket);
-      channel->camd_socket = -1;
-      free(caPMT);
-      return 1;
-    } else log_message(log_module,  MSG_DEBUG, "created socket for channel %s\n", channel->name);
-  }
-
   int wrote = write(channel->camd_socket, caPMT, toWrite);
-  log_message( log_module,  MSG_DEBUG, "sent CAPMT message to socket for channel %s, toWrite=%d wrote=%d\n", channel->name, toWrite, wrote);
+  log_message( log_module,  MSG_INFO, "sent CAPMT message to socket for channel %s, toWrite=%d wrote=%d\n", channel->name, toWrite, wrote);
+  free(caPMT);
+
   if (wrote != toWrite)
   {
     log_message(log_module, MSG_ERROR,"channel %s:wrote != toWrite\n", channel->name);
     close(channel->camd_socket);
     channel->camd_socket = -1;
+    return 1;
   }
-  free(caPMT);
+
+  int flags, s;
+
+  flags = fcntl (channel->camd_socket, F_GETFL, 0);
+  if (flags == -1)
+  {
+    log_message(log_module, MSG_ERROR,"channel %s: unsuccessful fcntl F_GETFL", channel->name);
+    set_interrupted(ERROR_NETWORK<<8);
+    return 1;
+  }
+
+  flags |= O_NONBLOCK;
+  s = fcntl (channel->camd_socket, F_SETFL, flags);
+  if (s == -1)
+  {
+    log_message(log_module, MSG_ERROR,"channel %s: unsuccessful fcntl F_SETFL", channel->name);
+    set_interrupted(ERROR_NETWORK<<8);
+    return 1;
+  }
+  struct epoll_event event = { 0 };
+  event.data.fd = channel->camd_socket;
+  event.events = EPOLLIN | EPOLLPRI | EPOLLERR | EPOLLHUP;
+  s = epoll_ctl(scam_params->epfd, EPOLL_CTL_ADD, channel->camd_socket, &event);
+  if (s == -1)
+  {
+    log_message(log_module, MSG_ERROR,"channel %s: unsuccessful epoll_ctl EPOLL_CTL_ADD", channel->name);
+    set_interrupted(ERROR_NETWORK<<8);
+    return 1;
+  }
 
   return 0;
 }

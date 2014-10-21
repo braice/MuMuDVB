@@ -66,10 +66,10 @@ typedef struct scam_parameters_t{
   int scam_support;
   pthread_t getcwthread;
   int getcwthread_shutdown;
-  int net_socket_fd;
   ca_descr_t ca_descr;
   ca_pid_t ca_pid;
   uint64_t ring_buffer_default_size,decsa_default_delay,send_default_delay;
+  int epfd;
 }scam_parameters_t;  
 
 //The structure for argument passing to sendthread_func
@@ -81,7 +81,7 @@ typedef struct scam_sendthread_p_t{
 
 
 int scam_init_no_autoconf(scam_parameters_t *scam_vars, mumudvb_channel_t *channels, int number_of_channels);
-int scam_new_packet(int pid, unsigned char *ts_packet, scam_parameters_t *scam_vars, mumudvb_channel_t *channels);
+void scam_new_packet(int pid, mumudvb_channel_t *channels);
 int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *c_chan, char *substring);
 int scam_channel_start(mumudvb_channel_t *channel, unicast_parameters_t *unicast_vars);
 void scam_channel_stop(mumudvb_channel_t *channel);

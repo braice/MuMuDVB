@@ -132,6 +132,15 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *c_c
     c_chan->ring_buffer_size=scam_vars->ring_buffer_default_size;
     c_chan->decsa_delay=scam_vars->decsa_default_delay;
     c_chan->send_delay=scam_vars->send_default_delay;
+    c_chan->scam_pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
+	if(c_chan->scam_pmt_packet==NULL)
+	{
+		log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+		set_interrupted(ERROR_MEMORY<<8);
+		return -1;
+	}
+	memset (c_chan->scam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+	pthread_mutex_init(&c_chan->scam_pmt_packet->packetmutex, NULL);
   }
   }
   else if (!strcmp (substring, "ring_buffer_size"))
@@ -213,8 +222,6 @@ int scam_init_no_autoconf(scam_parameters_t *scam_vars, mumudvb_channel_t *chann
  */
 int scam_channel_start(mumudvb_channel_t *channel, unicast_parameters_t *unicast_vars)
 {
-  unsigned int i;
-
   channel->ring_buf=malloc(sizeof(ring_buffer_t));
   if (channel->ring_buf == NULL) {
     log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
@@ -222,18 +229,10 @@ int scam_channel_start(mumudvb_channel_t *channel, unicast_parameters_t *unicast
   }
   memset (channel->ring_buf, 0, sizeof( ring_buffer_t));//we clear it
   
-  channel->ring_buf->data=malloc(channel->ring_buffer_size*sizeof(char *));
+  channel->ring_buf->data=malloc(channel->ring_buffer_size*TS_PACKET_SIZE);
   if (channel->ring_buf->data == NULL) {
     log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
     return ERROR_MEMORY<<8;
-  }
-  for ( i = 0; i< channel->ring_buffer_size; i++)
-  {
-    channel->ring_buf->data[i]=malloc(TS_PACKET_SIZE*sizeof(char));
-    if (channel->ring_buf->data[i] == NULL) {
-      log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-      return ERROR_MEMORY<<8;
-    }
   }
   channel->ring_buf->time_send=malloc(channel->ring_buffer_size * sizeof(uint64_t));
   if (channel->ring_buf->time_send == NULL) {
@@ -256,19 +255,33 @@ int scam_channel_start(mumudvb_channel_t *channel, unicast_parameters_t *unicast
 
 void scam_channel_stop(mumudvb_channel_t *channel)
 {
-  uint64_t i;
   scam_send_stop(channel);
   scam_decsa_stop(channel);
-  for ( i = 0; i< channel->ring_buffer_size; i++)
-  {
-    free(channel->ring_buf->data[i]);
-  }
   free(channel->ring_buf->data);
   free(channel->ring_buf->time_send);
   free(channel->ring_buf->time_decsa);
 
   pthread_mutex_destroy(&channel->ring_buf->lock);
   free(channel->ring_buf);
+}
+
+/** @brief This function is called when a new PMT packet is there */
+void scam_new_packet(int pid, mumudvb_channel_t *actual_channel)
+{
+	if ((actual_channel->need_scam_ask==CAM_NEED_ASK) && (actual_channel->pid_i.pmt_pid == pid))
+	{
+		if(actual_channel->pmt_packet->len_full > 0)
+		{
+			//We check the transport stream id of the packet
+			if(check_pmt_service_id(actual_channel->pmt_packet, actual_channel))
+			{
+				pthread_mutex_lock(&actual_channel->scam_pmt_packet->packetmutex);
+				actual_channel->scam_pmt_packet->len_full = actual_channel->pmt_packet->len_full;
+				memcpy(actual_channel->scam_pmt_packet->data_full, actual_channel->pmt_packet->data_full, actual_channel->pmt_packet->len_full);
+				pthread_mutex_unlock(&actual_channel->scam_pmt_packet->packetmutex);
+			}
+		}
+	}
 }
 
 

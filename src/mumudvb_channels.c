@@ -227,12 +227,25 @@ void chan_update_CAM(mumu_chan_p_t *chan_p, auto_p_t *auto_p,  void *scam_vars_v
 
 #ifdef ENABLE_SCAM_SUPPORT
 		if (chan_p->channels[ichan].free_ca_mode && scam_vars->scam_support) {
-			chan_p->channels[ichan].scam_support=1;
-			chan_p->channels[ichan].need_scam_ask=CAM_NEED_ASK;
-			chan_p->channels[ichan].ring_buffer_size=scam_vars->ring_buffer_default_size;
-			chan_p->channels[ichan].decsa_delay=scam_vars->decsa_default_delay;
-			chan_p->channels[ichan].send_delay=scam_vars->send_default_delay;
+			if (chan_p->channels[ichan].scam_support == 0) {
+				auto_p->need_filter_chan_update = 1;
+				chan_p->channels[ichan].scam_support=1;
+				chan_p->channels[ichan].need_scam_ask=CAM_NEED_ASK;
+				chan_p->channels[ichan].ring_buffer_size=scam_vars->ring_buffer_default_size;
+				chan_p->channels[ichan].decsa_delay=scam_vars->decsa_default_delay;
+				chan_p->channels[ichan].send_delay=scam_vars->send_default_delay;
+				chan_p->channels[ichan].scam_pmt_packet=malloc(sizeof(mumudvb_ts_packet_t));
+				if(chan_p->channels[ichan].scam_pmt_packet==NULL)
+				{
+					log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+					set_interrupted(ERROR_MEMORY<<8);
+					return;
+				}
+				memset (chan_p->channels[ichan].scam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+				pthread_mutex_init(&chan_p->channels[ichan].scam_pmt_packet->packetmutex, NULL);
+			}
 		}
+
 #endif
 	}
 }

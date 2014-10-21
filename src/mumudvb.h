@@ -205,7 +205,7 @@ typedef struct {
 	/** A mutex protecting all the other members. */
 	pthread_mutex_t lock;
 	/** Buffer with dvb packets*/
-	unsigned char ** data;
+	unsigned char * data;
 	/** Write index of buffer */
 	unsigned int write_idx;
 	/** Buffer with descrambling timestamps*/
@@ -354,6 +354,8 @@ typedef struct mumu_chan_t{
 
 
 #ifdef ENABLE_SCAM_SUPPORT
+	/**The PMT packet copy for scam purposes*/
+	mumudvb_ts_packet_t *scam_pmt_packet;
 	/** The camd socket for SCAM*/
 	int camd_socket;
 	/** Say if we need to ask this channel to the oscam*/

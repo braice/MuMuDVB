@@ -1107,7 +1107,7 @@ int cam_new_packet(int pid, int curr_channel, cam_p_t *cam_p, mumudvb_channel_t 
 	struct timeval tv;
 	gettimeofday (&tv, (struct timezone *) NULL);
 
-	if (((actual_channel->need_cam_ask==CAM_NEED_ASK)||(actual_channel->need_cam_ask==CAM_NEED_UPDATE))&& (actual_channel->pid_i.pmt_pid == pid))
+	if (((actual_channel->need_cam_ask==CAM_NEED_ASK)||(actual_channel->need_cam_ask==CAM_NEED_UPDATE) || (actual_channel->need_scam_ask==CAM_NEED_ASK))&& (actual_channel->pid_i.pmt_pid == pid))
 	{
 		//If we have a full and ok PMT, this PMT is updated commonly for autoconf and CAM
 		if(actual_channel->pmt_packet->len_full>0 && !actual_channel->pmt_need_update)

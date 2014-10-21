@@ -92,6 +92,7 @@
 #include <ctype.h>
 #include <sys/time.h>
 #include <sys/poll.h>
+#include <sys/epoll.h>
 #include <sys/stat.h>
 #include <stdint.h>
 #include <resolv.h>
@@ -232,6 +233,7 @@ main (int argc, char **argv)
 			.scam_support = 0,
 			.getcwthread_shutdown=0,
 	};
+	scam_vars.epfd = epoll_create(MAX_CHANNELS);
 	scam_parameters_t *scam_vars_ptr=&scam_vars;
 #else
 	void *scam_vars_ptr=NULL;
@@ -953,7 +955,7 @@ main (int argc, char **argv)
 
 
 
-
+	printf("%s %p\n", __func__,  &chan_p);
 	/******************************************************/
 	// Monitor Thread
 	/******************************************************/
@@ -983,7 +985,7 @@ main (int argc, char **argv)
 
 #ifdef ENABLE_SCAM_SUPPORT
 	if(scam_vars.scam_support){
-		if(scam_getcw_start(scam_vars_ptr,tune_p.card,&chan_p))
+		if(scam_getcw_start(scam_vars_ptr, &chan_p))
 		{
 			log_message("SCAM_GETCW: ", MSG_ERROR,"Cannot initialize scam");
 			scam_vars.scam_support=0;
@@ -1448,21 +1450,13 @@ main (int argc, char **argv)
 #endif
 
 				/******************************************************/
-				//scam support
-				// sending capmt to oscam
+				//Scam support
+				// copy proper pmt to scam_pmt_packet
 				/******************************************************/
 #ifdef ENABLE_SCAM_SUPPORT
-				if (scam_vars.scam_support &&(chan_p.channels[ichan].need_scam_ask==CAM_NEED_ASK))
+				if (scam_vars.scam_support && send_packet==1)  //no need to check packets we don't send
 				{
-					if (chan_p.channels[ichan].scam_support && chan_p.channels[ichan].pmt_packet->len_full != 0 ) {
-						iRet=scam_send_capmt(&chan_p.channels[ichan],tune_p.card);
-						if(iRet)
-						{
-							set_interrupted(ERROR_GENERIC<<8);
-							goto mumudvb_close_goto;
-						}
-					}
-					chan_p.channels[ichan].need_scam_ask=CAM_ASKED;
+					scam_new_packet(pid, &chan_p.channels[ichan]);
 				}
 #endif
 
