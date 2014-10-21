@@ -796,6 +796,8 @@ char *pid_type_to_str(int type)
 		return "Video (MPEG4-ASP)";
 	case PID_VIDEO_MPEG4_AVC:
 		return "Video (MPEG4-AVC)";
+	case PID_VIDEO_MPEG4_HEVC:
+		return "Video (MPEG4-HVC)";
 	case PID_AUDIO_MPEG1:
 		return "Audio (MPEG1)";
 	case PID_AUDIO_MPEG2:
