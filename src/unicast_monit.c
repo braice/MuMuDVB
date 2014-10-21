@@ -98,7 +98,7 @@ int unicast_send_channel_list_js (int number_of_channels, mumudvb_channel_t *cha
 		unicast_reply_write(reply, "\t\"lcn\": %d,\n", channels[curr_channel].logical_channel_number);
 		unicast_reply_write(reply, "\t\"name\": \"%s\",\n", channels[curr_channel].name);
 		unicast_reply_write(reply, "\t\"sap_group\": \"%s\",\n", channels[curr_channel].sap_group);
-		unicast_reply_write(reply, "\t\"ip_multicast\": \"%s\",\n", (channels[curr_channel].ip4Out==0) ? "0.0.0.0" : channels[curr_channel].ip4Out);
+		unicast_reply_write(reply, "\t\"ip_multicast\": \"%s\",\n", (channels[curr_channel].ip4Out[0]==0) ? "0.0.0.0" : channels[curr_channel].ip4Out);
 		unicast_reply_write(reply, "\t\"port_multicast\": %d,\n", channels[curr_channel].portOut);
 		unicast_reply_write(reply, "\t\"num_clients\": %d,\n", channels[curr_channel].num_clients);
 		unicast_reply_write(reply, "\t\"ratio_scrambled\": %d,\n", channels[curr_channel].ratio_scrambled);
