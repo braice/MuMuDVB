@@ -110,8 +110,8 @@ static void *getcwthread_func(void* arg)
       set_interrupted(ERROR_NETWORK<<8);
       break;
     }
+    pthread_mutex_lock(&chan_p->lock);
     for (i = 0; i < num_of_events; i++) {
-      pthread_mutex_lock(&chan_p->lock);
       for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++) {
         mumudvb_channel_t *channel = &chan_p->channels[curr_channel];
         if (events[i].data.fd == channel->camd_socket) {
@@ -123,6 +123,7 @@ static void *getcwthread_func(void* arg)
               log_message(log_module, MSG_ERROR,"channel %s: unsuccessful epoll_ctl EPOLL_CTL_DEL", channel->name);
               set_interrupted(ERROR_NETWORK<<8);
               free(getcw_params);
+              pthread_mutex_unlock(&chan_p->lock);
               return 0;
             }
             close(channel->camd_socket);
@@ -141,6 +142,7 @@ static void *getcwthread_func(void* arg)
               log_message(log_module, MSG_ERROR,"channel: %s recv", channel->name);
               set_interrupted(ERROR_NETWORK<<8);
               free(getcw_params);
+              pthread_mutex_unlock(&chan_p->lock);
               return 0;
             }
 #ifdef ENABLE_SCAM_DESCRAMBLER_SUPPORT
@@ -168,7 +170,7 @@ static void *getcwthread_func(void* arg)
               memcpy((&(scam_params->ca_pid)), buff + 1 + sizeof(int), sizeof(ca_pid_t));
               log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request channel: %s, index: %d pid: %d\n", channel->name, scam_params->ca_pid.index, scam_params->ca_pid.pid);
               if(scam_params->ca_pid.index == -1) {
-                pthread_mutex_lock(&chan_p->lock);
+                pthread_mutex_lock(&channel->cw_lock);
                 --channel->ca_idx_refcnt;
                 if (!channel->ca_idx_refcnt) {
                   channel->ca_idx = 0;
@@ -192,8 +194,8 @@ static void *getcwthread_func(void* arg)
           break;
         }
       }
-      pthread_mutex_unlock(&chan_p->lock);
     }
+    pthread_mutex_unlock(&chan_p->lock);
   }
   free(getcw_params);
   return 0;
