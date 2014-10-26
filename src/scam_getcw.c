@@ -121,6 +121,7 @@ static void *getcwthread_func(void* arg)
               log_message(log_module, MSG_ERROR,"channel %s: unsuccessful epoll_ctl EPOLL_CTL_DEL", channel->name);
               set_interrupted(ERROR_NETWORK<<8);
               free(getcw_params);
+              pthread_mutex_unlock(&chan_p->lock);
               return 0;
             }
             close(channel->camd_socket);
@@ -136,6 +137,7 @@ static void *getcwthread_func(void* arg)
               log_message(log_module, MSG_ERROR,"channel: %s recv", channel->name);
               set_interrupted(ERROR_NETWORK<<8);
               free(getcw_params);
+              pthread_mutex_unlock(&chan_p->lock);
               return 0;
             }
             request = (int *) (buff + 1);
@@ -162,7 +164,7 @@ static void *getcwthread_func(void* arg)
               memcpy((&(scam_params->ca_pid)), buff + 1 + sizeof(int), sizeof(ca_pid_t));
               log_message( log_module,  MSG_DEBUG, "Got CA_SET_PID request channel: %s, index: %d pid: %d\n", channel->name, scam_params->ca_pid.index, scam_params->ca_pid.pid);
               if(scam_params->ca_pid.index == -1) {
-                pthread_mutex_lock(&chan_p->lock);
+                pthread_mutex_lock(&channel->cw_lock);
                 --channel->ca_idx_refcnt;
                 if (!channel->ca_idx_refcnt) {
                   channel->ca_idx = 0;
@@ -185,7 +187,6 @@ static void *getcwthread_func(void* arg)
       }
     }
     pthread_mutex_unlock(&chan_p->lock);
-
   }
   free(getcw_params);
   return 0;
