@@ -412,8 +412,8 @@ void autoconf_update_chan_status(auto_p_t *auto_p,mumu_chan_p_t *chan_p)
 		else if(chan_p->channels[ichan].service_type!=0) //0 is an empty service
 		{
 			//We show the service type
-			log_message( log_module, MSG_DETAIL,"No autoconfigure due to service type : %s. Name \"%s\"\n",
-					service_type_to_str(chan_p->channels[ichan].service_type),
+			log_message( log_module, MSG_DETAIL,"No autoconfiguration because of service type : 0x%x %s. Name \"%s\"\n",
+					chan_p->channels[ichan].service_type,service_type_to_str(chan_p->channels[ichan].service_type),
 					chan_p->channels[ichan].name);
 		}
 	}
