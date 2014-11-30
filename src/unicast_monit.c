@@ -136,7 +136,10 @@ int unicast_send_channel_list_js (int number_of_channels, mumudvb_channel_t *cha
 					channels[curr_channel].pid_i.pids[i],
 					pid_type_to_str(channels[curr_channel].pid_i.pids_type[i]),
 					channels[curr_channel].pid_i.pids_language[i]);
-		reply->used_body -= 2;
+		if(channels[curr_channel].pid_i.num_pids>0)
+			reply->used_body -= 2; // dirty hack to erase the last comma
+		else
+			unicast_reply_write(reply, "{}\n");
 		unicast_reply_write(reply, "\n\t\t],\n\t\"clients\": [\n");
 		unicast_send_client_list_js(channels[curr_channel].clients, reply);
 		if(channels[curr_channel].num_clients)
@@ -145,7 +148,10 @@ int unicast_send_channel_list_js (int number_of_channels, mumudvb_channel_t *cha
 			unicast_reply_write(reply, "\t\t{}\n");
 		unicast_reply_write(reply, "\t\t]\n\t},\n");
 	}
-	reply->used_body -= 2; // dirty hack to erase the last comma
+	if(number_of_channels>0)
+		reply->used_body -= 2; // dirty hack to erase the last comma
+	else
+		unicast_reply_write(reply, "{}\n");
 	return 0;
 }
 
@@ -286,7 +292,10 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
 		unicast_reply_write(reply, "[");
 		for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
 			unicast_reply_write(reply, "{\"number\":%d, \"name\":\"%s\", \"traffic\":%.2f},\n", curr_channel+1, channels[curr_channel].name, channels[curr_channel].traffic);
-		reply->used_body -= 2; // dirty hack to erase the last comma
+		if(number_of_channels>0)
+			reply->used_body -= 2; // dirty hack to erase the last comma
+		else
+			unicast_reply_write(reply, "{}\n");
 		unicast_reply_write(reply, "]\n");
 	}
 
