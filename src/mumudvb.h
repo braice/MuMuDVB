@@ -354,13 +354,13 @@ typedef struct mumu_chan_t{
 	int autoconf_pmt_need_update;
 
 
+	/** Say if we need to ask this channel to the oscam*/
+	int need_scam_ask;
 #ifdef ENABLE_SCAM_SUPPORT
 	/**The PMT packet copy for scam purposes*/
 	mumudvb_ts_packet_t *scam_pmt_packet;
 	/** The camd socket for SCAM*/
 	int camd_socket;
-	/** Say if we need to ask this channel to the oscam*/
-	int need_scam_ask;
 	/** Say if this channel should be descrambled using scam*/
 	int scam_support;
 	/** Say if we started the threads for oscam */

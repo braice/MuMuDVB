@@ -491,7 +491,7 @@ void eit_show_component_descr(unsigned char *buf, struct unicast_reply* reply)
 	delta=2;
 
 	unicast_reply_write(reply, "\t\t\"len\" : %d,\n",buf[1]&0xff);
-	if(buf[1]&0xff>5)
+	if((buf[1]&0xff)>5)
 	{
 		//stream_content
 		// see EN 300 468 V1.13.1 table 26

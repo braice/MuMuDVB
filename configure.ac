@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.61])
-AC_INIT([MuMuDVB], [2.0.0_20141119_mumudvb2], [mumudvb@braice.net])
+AC_INIT([MuMuDVB], [2.0.0_20141207_mumudvb2], [mumudvb@braice.net])
 AC_CONFIG_SRCDIR([src/mumudvb.c])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([src/config.h])
@@ -156,7 +156,6 @@ fi
 
 if test "${enable_scam_support}" != "no" ; then
         echo "Build with SCAM support:                            yes"
-    	echo "SCAM is not yet working for MuMuDVB v2, work is in progress"
 else
         echo "Build with SCAM support:                             no"
 fi
