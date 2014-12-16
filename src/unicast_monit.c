@@ -237,24 +237,33 @@ unicast_send_EIT (eit_packet_t *eit_packets, int Socket)
 
 	eit_packet_t *actual_eit=eit_packets;
 	int i;
+	unicast_reply_write(reply, "\"EIT_tables\":[\n");
 	while(actual_eit!=NULL)
 	{
-		unicast_reply_write(reply, "\"EIT_table\":{\n");
+		unicast_reply_write(reply, "{\n");
 		unicast_reply_write(reply, "\t\"sid\" : \"%d\",\n",actual_eit->service_id);
 		unicast_reply_write(reply, "\t\"table_id\" : %d,\n",actual_eit->table_id);
 		unicast_reply_write(reply, "\t\"version\" : %d,\n",actual_eit->version);
-		unicast_reply_write(reply, "\t\"last_section_number\" : %d",actual_eit->last_section_number);
+		unicast_reply_write(reply, "\t\"last_section_number\" : %d,\n",actual_eit->last_section_number);
+		int first_section;
+		first_section=1;
+		unicast_reply_write(reply, "\"EIT_sections\":[\n");
 		for(i=0;i<=actual_eit->last_section_number;i++)
 			if(actual_eit->sections_stored[i])
 			{
+				if(!first_section)
+					unicast_reply_write(reply, ",");
+				else
+					first_section=0;
 				unicast_send_EIT_section(actual_eit->full_eit_sections[i],i ,reply);
 			}
+		unicast_reply_write(reply, "]\n");
 		unicast_reply_write(reply, "}");
 		actual_eit=actual_eit->next;
 		if(actual_eit!=NULL)
 			unicast_reply_write(reply, ",\n");
 	}
-
+	unicast_reply_write(reply, "]\n");
 	// Ending JSON content
 	unicast_reply_write(reply, "}\n");
 

@@ -32,7 +32,7 @@ void
 unicast_send_EIT_section (mumudvb_ts_packet_t *eit_section, int num, struct unicast_reply* reply)
 {
 
-	unicast_reply_write(reply, ",\n\"EIT_section\":{\n");
+	unicast_reply_write(reply, "\n{\n");
 	unicast_reply_write(reply, "\t\"number\" : %d,\n",num);
 	eit_display_contents(eit_section, reply);
 	unicast_reply_write(reply, "}");
@@ -173,18 +173,24 @@ void eit_display_contents(mumudvb_ts_packet_t *full_eit, struct unicast_reply* r
 	unicast_reply_write(reply, "\t\"transport_stream_id\" :%d,\n",HILO(eit->transport_stream_id));
 	unicast_reply_write(reply, "\t\"original_network_id\" :%d,\n",HILO(eit->original_network_id));
 	unicast_reply_write(reply, "\t\"segment_last_section_number\" :%d,\n",eit->segment_last_section_number);
-	unicast_reply_write(reply, "\t\"segment_last_table_id\" :%d",eit->segment_last_table_id);
+	unicast_reply_write(reply, "\t\"segment_last_table_id\" :%d,\n",eit->segment_last_table_id);
 
 	//Loop over different events in the EIT
-	int len,delta;
+	int len,delta,first;
 	unsigned char *buf;
 	eit_event_t *event_header;
 	len=full_eit->len_full;
 	buf=full_eit->data_full;
 	delta=EIT_LEN;
+	first=1;
+	unicast_reply_write(reply, "\"EIT_events\":[\n");
 	while((len-delta)>=(4+EIT_EVENT_LEN))
 	{
-		unicast_reply_write(reply, ",\n\"EIT_event\":{\n");
+		if(!first)
+			unicast_reply_write(reply, ",");
+		else
+			first=0;
+		unicast_reply_write(reply, "{\n");
 
 		event_header=(eit_event_t *)(buf + delta );
 		unicast_reply_write(reply, "\t\t\"event_id\" :%d,\n",HILO(event_header->event_id));
@@ -227,14 +233,14 @@ void eit_display_contents(mumudvb_ts_packet_t *full_eit, struct unicast_reply* r
 
 
 
-		unicast_reply_write(reply, "\t\t\"descriptors_loop_length\" : %d\n",HILO(event_header->descriptors_loop_length));
+		unicast_reply_write(reply, "\t\t\"descriptors_loop_length\" : %d,\n",HILO(event_header->descriptors_loop_length));
 
 
 		eit_display_descriptor(buf+delta+EIT_EVENT_LEN,HILO(event_header->descriptors_loop_length),reply);
 		delta+=HILO(event_header->descriptors_loop_length)+EIT_EVENT_LEN;
 		unicast_reply_write(reply, "}");
 	}
-
+	unicast_reply_write(reply, "\n]\n");
 }
 
 
@@ -244,18 +250,24 @@ void eit_display_contents(mumudvb_ts_packet_t *full_eit, struct unicast_reply* r
 void eit_display_descriptor(unsigned char *buf,int descriptors_loop_len, struct unicast_reply* reply)
 {
 
+	int first;
+	first=1;
+	unicast_reply_write(reply, "\"EIT_descriptors\":[\n");
 	while (descriptors_loop_len > 0)
 	{
 		unsigned char descriptor_tag = buf[0];
 		unsigned char descriptor_len = buf[1] + 2;
-
-		unicast_reply_write(reply, ",\n\"EIT_descriptor\":{\n");
+		if(!first)
+			unicast_reply_write(reply, ",");
+		else
+			first=0;
+		unicast_reply_write(reply, "\n{\n");
 		unicast_reply_write(reply, "\t\t\"tag\" :%d,\n",descriptor_tag);
-		unicast_reply_write(reply, "\t\t\"len\" : %d,\n",	descriptor_len);
+		unicast_reply_write(reply, "\t\t\"len\" : %d",	descriptor_len);
 
 		if (!descriptor_len)
 		{
-			unicast_reply_write(reply, "}\n");
+			unicast_reply_write(reply, "\n}\n");
 			break;
 		}
 
@@ -263,70 +275,72 @@ void eit_display_descriptor(unsigned char *buf,int descriptors_loop_len, struct 
 		switch(descriptor_tag)
 		{
 		case 0x4d:
-			unicast_reply_write(reply, "\t\t\"descr\" : \"Short event descriptor\",\n");
+			unicast_reply_write(reply, ",\n\t\t\"descr\" : \"Short event descriptor\",\n");
 			unicast_reply_write(reply, "\t\t\"short_evt\":{\n");
 			eit_show_short_evt_descr(buf,reply);
 			unicast_reply_write(reply, "}\n");
 			break;
 		case 0x4e:
-			unicast_reply_write(reply, "\t\t\"descr\" : \"Extended event descriptor\",\n");
+			unicast_reply_write(reply, ",\n\t\t\"descr\" : \"Extended event descriptor\",\n");
 			unicast_reply_write(reply, "\t\t\"ext_evt\":{\n");
 			eit_show_ext_evt_descr(buf,reply);
 			unicast_reply_write(reply, "}\n");
 			break;
 		case 0x4f:
-			unicast_reply_write(reply, "\t\t\"descr\" : \"Time shifted event descriptor\"\n");
+			unicast_reply_write(reply, ",\n\t\t\"descr\" : \"Time shifted event descriptor\"\n");
 			break;
 		case 0x50:
-			unicast_reply_write(reply, "\t\t\"descr\" : \"Component descriptor\",\n");
+			unicast_reply_write(reply, ",\n\t\t\"descr\" : \"Component descriptor\",\n");
 			unicast_reply_write(reply, "\t\t\"component\":{\n");
 			eit_show_component_descr(buf,reply);
 			unicast_reply_write(reply, "}\n");
 			break;
 		case 0x53:
-			unicast_reply_write(reply, "\t\t\"descr\" : \"CA identifier descriptor\",\n");
+			unicast_reply_write(reply, ",\n\t\t\"descr\" : \"CA identifier descriptor\",\n");
 			unicast_reply_write(reply, "\t\t\"CA_identifier\":{\n");
 			eit_show_CA_identifier_descriptor(buf,reply);
 			unicast_reply_write(reply, "}\n");
 			break;
 		case 0x54:
-			unicast_reply_write(reply, "\t\t\"descr\" : \"Content descriptor (type of program cf tabl 28 EN 300 468 V1.13.1)\",\n");
+			unicast_reply_write(reply, ",\n\t\t\"descr\" : \"Content descriptor (type of program cf tabl 28 EN 300 468 V1.13.1)\",\n");
 			unicast_reply_write(reply, "\t\t\"content\":{\n");
 			eit_show_content_descriptor(buf,reply);
 			unicast_reply_write(reply, "}\n");
 			break;
 		case 0x55:
-			unicast_reply_write(reply, "\t\t\"descr\" : \"Parental rating descriptor\",\n");
+			unicast_reply_write(reply, ",\n\t\t\"descr\" : \"Parental rating descriptor\",\n");
 			unicast_reply_write(reply, "\t\t\"parental_rating\":{\n");
 			eit_show_parent_rating_descr(buf,reply);
 			unicast_reply_write(reply, "}\n");
 			break;
 		case 0x57:
-			unicast_reply_write(reply, "\t\t\"descr\" : \"Telephone descriptor\"\n");
+			unicast_reply_write(reply, ",\n\t\t\"descr\" : \"Telephone descriptor\"\n");
 			break;
 		case 0x5E:
-			unicast_reply_write(reply, "\t\t\"descr\" : \"Multilingual component descriptor\",\n");
+			unicast_reply_write(reply, ",\n\t\t\"descr\" : \"Multilingual component descriptor\",\n");
 			unicast_reply_write(reply, "\t\t\"multiling_component\":{\n");
 			eit_show_multiling_comp_descr(buf,reply);
 			unicast_reply_write(reply, "}\n");
 			break;
 		case 0x5F:
-			unicast_reply_write(reply, "\t\t\"descr\" : \"Private data specifier descriptor\"\n");
+			unicast_reply_write(reply, ",\n\t\t\"descr\" : \"Private data specifier descriptor\"\n");
 			break;
 		case 0x61:
-			unicast_reply_write(reply, "\t\t\"descr\" : \"Short smoothing buffer descriptor\"\n");
+			unicast_reply_write(reply, ",\n\t\t\"descr\" : \"Short smoothing buffer descriptor\"\n");
 			break;
 		case 0x69:
-			unicast_reply_write(reply, "\t\t\"descr\" : \"PDC descriptor\"\n");
+			unicast_reply_write(reply, ",\n\t\t\"descr\" : \"PDC descriptor\"\n");
 			break;
 		default: //0X42 0X4A 0X64 0X75 0X76 7D 7E 7F
+			unicast_reply_write(reply, ",\n\t\t\"descr\" : \"Unknown descriptor\"\n");
 			break;
 		}
 		buf += descriptor_len;
 		descriptors_loop_len -= descriptor_len;
 
-		unicast_reply_write(reply, "}\n");
+		unicast_reply_write(reply, "}");
 	}
+	unicast_reply_write(reply, "]\n");
 
 }
 
@@ -490,9 +504,10 @@ void eit_show_component_descr(unsigned char *buf, struct unicast_reply* reply)
 	int delta;
 	delta=2;
 
-	unicast_reply_write(reply, "\t\t\"len\" : %d,\n",buf[1]&0xff);
+	unicast_reply_write(reply, "\t\t\"len\" : %d",buf[1]&0xff);
 	if((buf[1]&0xff)>5)
 	{
+		unicast_reply_write(reply, ",\n");
 		//stream_content
 		// see EN 300 468 V1.13.1 table 26
 		unicast_reply_write(reply, "\t\t\"stream_content\" :%d,\n", buf[delta]&0x0F);
@@ -513,6 +528,8 @@ void eit_show_component_descr(unsigned char *buf, struct unicast_reply* reply)
 		convert_en300468_string(text, MAX_DESCR_LEN,0);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
 		unicast_reply_write(reply, "\t\t\"text\" : \"%s\"\n", text2);
 	}
+	else
+		unicast_reply_write(reply, "\n");
 
 }
 
