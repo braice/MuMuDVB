@@ -210,3 +210,27 @@ MuMuDVB compiled without CAM support:
 	<result><![CDATA[Compiled without CAM support]]></result>
 </action>
 ----------------
+
+
+Electronic program guide
+------------------------
+
+The content of the EIT table (electronic programs guide) is now available via the Webservices.
+
+To enable it, put `store_eit=1` in your configuration file and get the file: 
+
+* `http://ip_http:port_http/monitor/EIT.json`
+
+
+The structure follow the structure of the data descriptors of the DVB
+stream, so please consult the norm `EN 300 468` if you want to get more
+info see http://www.mumudvb.net/node/39[documentation].
+
+An example result is available http://www.mumudvb.net/doc/EIT/EIT_TNT_PARIS_20141209.json[here].
+
+
+
+
+
+
+
