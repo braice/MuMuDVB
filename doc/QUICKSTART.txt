@@ -5,7 +5,7 @@ Brice Dubost
 What is this quickstart guide ?
 -------------------------------
 
-It this guide I'll explain how to stream a full transponder (all the channels
+In this guide I'll explain how to stream a full transponder (all the channels
 multiplexed on the same carrier frequency) over a network, by assigning each
 channel to a different multicast IP. The SAP announces will automatically be generated.
 
@@ -13,7 +13,7 @@ For HTTP unicast or more advanced features, please refer to the full documentati
 
 I'll take an example for DVB-S (satellite) and DVB-T (terrestrial). DVB-C and ATSC are similar.
 
-I suppose you have one DVB card wich is already working, if you have more than
+I suppose you have one DVB card which is already working, if you have more than
 one card refer to the full documentation.
 
 If you don't know your transponder frequencies, have a look to the README_CONF
@@ -25,11 +25,11 @@ DVB-S
  * Use the debian package, or 
  * type `./configure` then `make` in the mumudvb directory and, as root, `make install`
 
-- You have to find wich transponder you want to stream.
+- You have to find which transponder you want to stream.
  * For European users you can use http://www.kingofsat.net/[King Of Sat]
- * You need : the frequency, the polarisation and the symbol rate (srate)
+ * You need: the frequency, the polarisation and the symbol rate (srate)
 
-- Now create a config file, wich contains : 
+- Now create a config file, which contains :
 
 ------------------------------------
 autoconfiguration=full
@@ -65,7 +65,7 @@ If you want to stream a subset of the transponder you can use autoconf_sid_list
 DVB-T
 -----
 
-- It's the same way as DVB-S excepted that you need other informations for
+- It's the same way as DVB-S except that you need other information on
 tuning your card.
 
 You can find these informations in : `/usr/share/doc/dvb-utils/examples/scan/dvb-t/` if you installed the dvb-utils
@@ -89,7 +89,7 @@ The SAP (session announcement protocol) announces will be sent automatically.
 Troubleshooting
 ---------------
 
-- Try adding one ore several `-v` to the mumudvb command line to have more detailled messages
+- Try adding one ore several `-v` to the mumudvb command line to have more detailed messages
 - If you experience tuning issues, try with other dvb software like scan or
 szap and check your parameters
 - If it still don't work, look at common issues in the README and you can
