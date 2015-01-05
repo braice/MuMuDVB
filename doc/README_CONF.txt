@@ -53,7 +53,7 @@ pids=272 256 257 258
 ---------------------------
 
 
-See <<channel_parameters,channel parameters>> section for a list of detailled parameters.
+See <<channel_parameters,channel parameters>> section for a list of detailed parameters.
 
 Example config files
 --------------------
@@ -78,10 +78,10 @@ In the following list, only the parameter `freq` is mandatory
 |==================================================================================================================
 |Parameter name |Description | Default value | Comments
 |freq | transponder's frequency in MHz  | | Mandatory
-|modulation | The kind of modulation used (can be : QPSK QAM16 QAM32 QAM64 QAM128 QAM256 QAMAUTO VSB8 VSB16 8PSK 16APSK 32APSK DQPSK)  | ATSC: VSB_8, cable/terrestrial: QAM_AUTO, satellite: QPSK | Optionnal most of the times
+|modulation | The kind of modulation used (can be : QPSK QAM16 QAM32 QAM64 QAM128 QAM256 QAMAUTO VSB8 VSB16 8PSK 16APSK 32APSK DQPSK)  | ATSC: VSB_8, cable/terrestrial: QAM_AUTO, satellite: QPSK | Optional most of the times
 |delivery_system | the delivery system used (can be DVBT DVBT2 DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC) | Undefined | Set it if you want to use the new tuning API (DVB API 5/S2API). Mandatory for DVB-S2 and DVB-T2
 |card | The DVB/ATSC card number | 0 | only limited by your OS
-|tuner | The tuner number | 0 | If you have a card with multiple tuners (ie there is several frontend* in /dev/dvb/adapter%card)
+|tuner | The tuner number | 0 | If you have a card with multiple tuners (ie there are several frontend* in /dev/dvb/adapter%card)
 |card_dev_path | The path of the DVB card devices. Use it if you have a personalised path like /dev/dvb/astra%card | /dev/dvb/adapter%card |  The template %card can be used
 |tuning_timeout |tuning timeout in seconds. | 300 | 0 = no timeout
 |timeout_no_diff |If no channels are streamed, MuMuDVB will kill himself after this time (specified in seconds) | 600 |  0 = infinite timeout
@@ -191,14 +191,14 @@ Packets sending parameters
 [width="80%",cols="2,8,1,2,3",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
-|dont_send_scrambled | If set to 1 don't send the packets detected as scrambled. this will also remove indirectly the sap announces for the scrambled channels |0 | |
+|dont_send_scrambled | If set to 1 don't send the packets detected as scrambled. This will also remove indirectly the sap announces for the scrambled channels |0 | |
 |filter_transport_error | If set to 1 don't send the packets tagged with errors by the demodulator. |0 | |
 |psi_tables_filtering | If set to 'pat', TS packets with PID from 0x01 to 0x1F are discarded. If set to 'pat_cat', TS packets with PID from 0x02 to 0x1F are discarded. | 'none' | Option to keep only mandatory PSI PID | 
 |rewrite_pat | Do we rewrite the PAT PID | 0, 1 in full autoconf | 0 or 1 | See README, important for some set top boxes 
 |rewrite_sdt | Do we rewrite the SDT PID | 0, 1 in full autoconf | 0 or 1 | See README 
 |rewrite_eit sort_eit | Do we rewrite/sort the EIT PID | 0 | 0 or 1 | See README 
-|sdt_force_eit | Do we force the EIT_schedule_flag and EIT_present_following_flag in SDT | 0 | 0 or 1 | Let to 0 if you don't understand
-|rtp_header | Send the stream with the rtp headers (execpt for HTTP unicast) | 0 | 0 or 1 | 
+|sdt_force_eit | Do we force the EIT_schedule_flag and EIT_present_following_flag in SDT | 0 | 0 or 1 | Set to 0 if you don't understand
+|rtp_header | Send the stream with the rtp headers (except for HTTP unicast) | 0 | 0 or 1 | 
 |==================================================================================================================
 
 Logs parameters
@@ -210,7 +210,7 @@ Logs parameters
 |log_header | specify the logging header | %priority:  %module  | | The implemented templates are %priority %module %timeepoch %date %pid
 |log_flush_interval | LogFile flushing interval (in seconds) | -1 : no periodic flushing  | |  
 |log_type | Where the log information will go | If neither this option and logfile are specified the log destination will be syslog if MuMuDVB run as a deamon, console otherwise  | syslog, console | The first time you specify a logging way, it replaces the default one. Then, each time you sepcify a logging channel, it is added to the previous
-|log_file | The file in wich the logs will be written to | no file log  |  | The following templates are allowed %card %tuner %server 
+|log_file | The file in which the logs will be written to | no file log  |  | The following templates are allowed %card %tuner %server 
 |==================================================================================================================
 
 Multicast parameters
@@ -276,12 +276,12 @@ SAP announces parameters
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |sap | Generation of SAP announces | 0 (1 if full autoconfiguration) | 0 or 1 | 
-|sap_organisation |Organisation field sent in the SAP announces | MuMuDVB | | Optionnal
-|sap_uri |URI  field sent in the SAP announces |  | | Optionnal
-|sap_sending_ip4 |The SAP sender IPv4 address | 0.0.0.0 | | Optionnal, not autodetected, if set, enable RFC 4570 SDP Source Filters field
-|sap_sending_ip6 |The SAP sender IPv6 address | :: | | Optionnal, not autodetected, if set, enable RFC 4570 SDP Source Filters field
+|sap_organisation |Organisation field sent in the SAP announces | MuMuDVB | | Optional
+|sap_uri |URI  field sent in the SAP announces |  | | Optional
+|sap_sending_ip4 |The SAP sender IPv4 address | 0.0.0.0 | | Optional, not autodetected, if set, enable RFC 4570 SDP Source Filters field
+|sap_sending_ip6 |The SAP sender IPv6 address | :: | | Optional, not autodetected, if set, enable RFC 4570 SDP Source Filters field
 |sap_interval |Interval in seconds between sap announces | 5 | positive integers | 
-|sap_default_group | The default playlist group for sap announces | | string | Optionnal. You can use the keyword %type, see README
+|sap_default_group | The default playlist group for sap announces | | string | Optional. You can use the keyword %type, see README
 |sap_ttl |The TTL for the multicast SAP packets | 255 |  | The RFC 2974 says "SAP announcements ... SHOULD be sent with an IP time-to-live of 255 (the use of TTL scoping for multicast is discouraged [RFC 2365])."
 |==================================================================================================================
 
@@ -293,7 +293,7 @@ HTTP unicast parameters
 |unicast |Set this option to one to activate HTTP unicast | 0  |   see the README for more details
 |ip_http |the listening ip for http unicast, if you want to listen to all interfaces put 0.0.0.0 | 0.0.0.0  |  see the README for more details
 |port_http | The listening port for http unicast | 4242 |  You can use mathematical expressions containing integers, * and +. You can use the `%card`, `%tuner` and %server template. Ex `port_http=2000+%card*100`
-|unicast_consecutive_errors_timeout | The timeout for disconnecting a client wich is not responding | 5 | A client will be disconnected if no data have been sucessfully sent during this interval. A value of 0 deactivate the timeout (unadvised).
+|unicast_consecutive_errors_timeout | The timeout for disconnecting a client which is not responding | 5 | A client will be disconnected if no data have been sucessfully sent during this interval. A value of 0 deactivate the timeout (unadvised).
 |unicast_max_clients | The limit on the number of connected clients | 0 | 0 : no limit.
 |unicast_queue_size | The maximum size of the buffering when writting to a client fails | 512kBytes | in Bytes.
 |==================================================================================================================
@@ -312,11 +312,11 @@ Concerning the PIDs see the <<getpids,getting the PIDs>> section
 [width="80%",cols="2,8,1,1,3",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
-|ip |multicast (can also be unicast, in raw UDP ) ipv4 where the chanel will be streamed | | | Optionnal if you set multicast=0 (if not used you must use channel_next)
-|ip6 |multicast (can also be unicast, in raw UDP ) ipv6 where the chanel will be streamed | | | Optionnal if you set multicast=0
+|ip |multicast (can also be unicast, in raw UDP ) ipv4 where the chanel will be streamed | | | Optional if you set multicast=0 (if not used you must use channel_next)
+|ip6 |multicast (can also be unicast, in raw UDP ) ipv6 where the chanel will be streamed | | | Optional if you set multicast=0
 |port | The port | 1234 or common_port | | Ports below 1024 needs root rights.
 |unicast_port | The HTTP unicast port for this channel | | | Ports below 1024 needs root rights. You need to activate HTTP unicast with `ip_http`
-|sap_group |The playlist group for SAP announces | | string | optionnal
+|sap_group |The playlist group for SAP announces | | string | optional
 |cam_pmt_pid |Only for scrambled channels. The PMT PID for CAM support | | | This option needs to be specified for descrambling the channel.
 |service_id |The service id (program number), olny for autoconfiguration, or rewrite (PAT or SDT) see README for more details | | | 
 |name | The name of the channel. Will be used for /var/run/mumudvb/channels_streamed_adapter%d_tuner%d, logging and SAP announces | | | Mandatory
@@ -366,7 +366,7 @@ You can find wscan in the http://wirbel.htpc-forum.de/w_scan/index2.html[w_scan 
 
 w_scan have one disavantage over dvb-apps scan: it takes (usually) more time. But it have several advantages: no need for initial tuning file, card autodection and deeper channel search. 
 
-Once you compiled it (optionnal for x86), launch it with the options needed (country is mandatory for terrestrial and cable. for DVB-S/S2 you need to specify your satellite)
+Once you compiled it (optional for x86), launch it with the options needed (country is mandatory for terrestrial and cable. for DVB-S/S2 you need to specify your satellite)
 
 [NOTE]
 Here's the main options for w_scan

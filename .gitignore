@@ -1,0 +1,15 @@
+Makefile
+Makefile.in
+config.*
+/aclocal.m4
+/compile
+/configure
+/depcomp
+/missing
+/autom4te.cache
+/install-sh
+/src/.deps/
+/src/mumudvb
+/src/stamp-h1
+*.o
+*.sw[po]
