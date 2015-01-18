@@ -502,8 +502,16 @@ will give you the channel with the service id 100, or a 404 error if there is no
 Get the channel by name
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-[NOTE]
-This is not implemented for the moment, it will be implemented in a future release
+You can ask the channel by the channel name.
+The search is case insensitive. If your channel name contains spaces, replace them by '-' character.
+
+If you server is listening on the ip 10.0.0.1 and the port 4242,
+
+----------------------------------------------------
+vlc http://10.0.0.1:4242/byname/your-tv-station-name
+----------------------------------------------------
+
+will give you the channel with name "Your TV station name". This works also with xine and mplayer.
 
 Get the channels list
 ^^^^^^^^^^^^^^^^^^^^^
