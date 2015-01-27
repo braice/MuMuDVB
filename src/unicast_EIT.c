@@ -309,9 +309,9 @@ void eit_display_descriptor(unsigned char *buf,int descriptors_loop_len, struct 
 			break;
 		case 0x55:
 			unicast_reply_write(reply, ",\n\t\t\"descr\" : \"Parental rating descriptor\",\n");
-			unicast_reply_write(reply, "\t\t\"parental_rating\":{\n");
+			unicast_reply_write(reply, "\t\t\"parental_rating\":[\n");
 			eit_show_parent_rating_descr(buf,reply);
-			unicast_reply_write(reply, "}\n");
+			unicast_reply_write(reply, "]\n");
 			break;
 		case 0x57:
 			unicast_reply_write(reply, ",\n\t\t\"descr\" : \"Telephone descriptor\"\n");
@@ -388,7 +388,9 @@ void eit_show_parent_rating_descr(unsigned char *buf, struct unicast_reply* repl
 	length=(buf[1]);
 	while(length>0)
 	{
-		unicast_reply_write(reply, "\t\t\"language\" : \"%c%c%c\",\n",buf[0+delta],buf[1+delta],buf[2+delta]);
+		if (delta>2)
+			unicast_reply_write(reply, ",\n");
+		unicast_reply_write(reply, "\t\t{\n\t\t\t\"language\" : \"%c%c%c\",\n",buf[0+delta],buf[1+delta],buf[2+delta]);
 		delta+=3;
 		if(buf[delta]==0)
 			unicast_reply_write(reply, "\t\t\"rating\" : \"undefined\"\n");
@@ -396,6 +398,7 @@ void eit_show_parent_rating_descr(unsigned char *buf, struct unicast_reply* repl
 			unicast_reply_write(reply, "\t\t\"rating\" : \"minimum age %d\"\n",buf[delta]+3);
 		else
 			unicast_reply_write(reply, "\t\t\"rating\" : \"defined by broadcaster\"\n");
+		unicast_reply_write(reply, "\t\t}");
 		delta++;
 		length-=4;
 	}
