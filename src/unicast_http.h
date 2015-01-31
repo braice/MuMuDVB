@@ -207,7 +207,7 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
 
 void unicast_data_send(mumudvb_channel_t *actual_channel,  fds_t *fds, unicast_parameters_t *unicast_vars);
 
-
+void process_channel_name(char *str);
 
 
 #endif
