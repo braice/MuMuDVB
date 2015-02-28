@@ -16,6 +16,18 @@ What limits the number of transponders I can stream ?
 MuMuDVB has a low CPU footprint, so except on embedded systems, the CPU will not be the limiting factor. You will usually be limited by your network or the capacity of the PCI/PCI-E bus.
 
 
+How can I stream to a large number of unicast clients ?
+-------------------------------------------------------
+
+If you need high unicast load, it is best to split the unicast distribution from the DVB demuxing. To do this you can use together with MuMuDVB, other software like http://git.sesse.net/?p=cubemap[cubemap].
+
+Such software can scale very well and use MuMuDVB stream as input with configuration like
+---------------------------------------------------------------------
+stream /udp.ts src=udp://@239.100.100.100:1234 backlog_size=10048576
+---------------------------------------------------------------------
+
+
+
 Cards not available
 -------------------
 
