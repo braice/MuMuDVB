@@ -354,17 +354,25 @@ void eit_show_CA_identifier_descriptor(unsigned char *buf, struct unicast_reply*
 	int length,i,ca_id;
 
 
-	unicast_reply_write(reply, "\t\t\"CA_system_id\":{\n");
+	unicast_reply_write(reply, "\t\t\"CA_system_id\":[\n");
 
 	length=buf[1];
 	buf+=2;
+	int first = 1;
 	for(i=0;i<length;i+=2)
 	{
+		if(first)
+		{
+			unicast_reply_write(reply, "{\n");
+			first = 0;
+		}
+		else
+			unicast_reply_write(reply, ",\n{\n");
 		ca_id=(buf[i]<<8)+buf[i+1];
 		unicast_reply_write(reply, "\t\t\t\"id\" :%d,\n",ca_id);
-		unicast_reply_write(reply, "\t\t\t\"descr\" : \"%s\"\n", ca_sys_id_to_str(ca_id));
+		unicast_reply_write(reply, "\t\t\t\"descr\" : \"%s\"}\n", ca_sys_id_to_str(ca_id));
 	}
-	unicast_reply_write(reply, "}\n");
+	unicast_reply_write(reply, "]\n");
 }
 
 
@@ -417,9 +425,17 @@ void eit_show_multiling_comp_descr(unsigned char *buf, struct unicast_reply* rep
 	length=(buf[1])-1;
 	unicast_reply_write(reply, "\t\t\"component_tag\" :%d,\n",buf[delta]);
 	delta++;
-	unicast_reply_write(reply, "\t\t\"component\":{\n");
+	unicast_reply_write(reply, "\t\t\"components\":[\n");
+	int first = 1;
 	while(length>0)
 	{
+		if(first)
+		{
+			unicast_reply_write(reply, "{\n");
+			first = 0;
+		}
+		else
+			unicast_reply_write(reply, ",\n{\n");
 		unicast_reply_write(reply, "\t\t\"language\" : \"%c%c%c\",\n",buf[0+delta],buf[1+delta],buf[2+delta]);
 		delta+=3;
 		length-=4;
@@ -428,11 +444,11 @@ void eit_show_multiling_comp_descr(unsigned char *buf, struct unicast_reply* rep
 		memcpy(text,buf+delta,text_length*sizeof(char));
 		text[text_length]='\0';
 		convert_en300468_string(text, MAX_DESCR_LEN,0);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
-		unicast_reply_write(reply, "\t\t\"text\" : \"%s\"\n", text);
+		unicast_reply_write(reply, "\t\t\"text\" : \"%s\"}", text);
 		delta+=text_length;
 		length-=text_length;
 	}
-	unicast_reply_write(reply, "}\n");
+	unicast_reply_write(reply, "]\n");
 }
 
 void eit_show_short_evt_descr(unsigned char *buf, struct unicast_reply* reply)
@@ -474,9 +490,17 @@ void eit_show_ext_evt_descr(unsigned char *buf, struct unicast_reply* reply)
 	char text[MAX_DESCR_LEN];
 	char text2[MAX_DESCR_LEN];
 
-	unicast_reply_write(reply, "\t\t\"items\":{\n");
+	unicast_reply_write(reply, "\t\t\"items\":[");
+	int first = 1;
 	while(length_of_items>0)
 	{
+		if(first)
+		{
+			unicast_reply_write(reply, "{\n");
+			first = 0;
+		}
+		else
+			unicast_reply_write(reply, ",\n{\n");
 		item_description_length=buf[delta]&0xff;
 		delta++;
 		memcpy(text,buf+delta,item_description_length*sizeof(char));
@@ -489,11 +513,11 @@ void eit_show_ext_evt_descr(unsigned char *buf, struct unicast_reply* reply)
 		memcpy(text,buf+delta,item_length*sizeof(char));
 		text[item_length]='\0';
 		convert_en300468_string(text, MAX_DESCR_LEN,0);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
-		unicast_reply_write(reply, "\t\t\"item\" : \"%s\",\n", text2);
+		unicast_reply_write(reply, "\t\t\"item\" : \"%s\"}\n", text2);
 		delta+=item_length;
 		length_of_items-=(2+item_description_length+item_length);
 	}
-	unicast_reply_write(reply, "},\n");
+	unicast_reply_write(reply, "],\n");
 	text_length=buf[delta]&0xff;
 	delta++;
 	memcpy(text,buf+delta,text_length*sizeof(char));
