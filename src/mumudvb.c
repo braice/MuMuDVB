@@ -1301,7 +1301,10 @@ main (int argc, char **argv)
 
 
 
-
+		if (unic_p.client_number == 0)  {
+			if (auto_p.sdt_all_sections_seen == 1) 
+				continue;
+		}
 
 
 

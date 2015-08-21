@@ -71,6 +71,34 @@ void autoconf_get_pmt_pids(mumudvb_ts_packet_t *pmt, int *pids, int *num_pids, i
 	char language[4]="";
 	int pos=0;
 
+	//For CAM debugging purposes, we look if we can find a CA descriptor to display CA system IDs
+	//Also find ECM pid...
+	while(pmt_find_descriptor(0x09,pmt->data_full+PMT_LEN,PMT_LEN+program_info_length,&pos))
+	{
+		descr_ca_t *ca_descriptor;
+		ca_descriptor=(descr_ca_t *)(pmt->data_full+PMT_LEN+pos);
+		pid=HILO(ca_descriptor->CA_PID);
+		pid_type=PID_ECM;
+		log_message( log_module,  MSG_DEBUG,"  ECM \tPID %d\n",pid);
+		pids[*num_pids]=pid;
+		pids_type[*num_pids]=pid_type;
+		snprintf(temp_pids_language[*num_pids],4,"%s",language);
+		(*num_pids)++;
+	
+		int casysid = 0;	
+		while(casysid<32 && ca_sys_id[casysid] && ca_sys_id[casysid]!=HILO(ca_descriptor->CA_type) )
+			casysid++;
+		if(casysid<32 && !ca_sys_id[casysid])
+		{
+			ca_sys_id[casysid]=HILO(ca_descriptor->CA_type);
+			log_message( log_module,  MSG_DETAIL,"CA system id 0x%04x : %s\n", HILO(ca_descriptor->CA_type), ca_sys_id_to_str(HILO(ca_descriptor->CA_type)));//we display it with the description
+		}
+		if(casysid==32)
+			log_message( log_module,  MSG_WARN,"Too much CA system id line %d file %s\n", __LINE__,__FILE__);
+		pos+=ca_descriptor->descriptor_length+2;
+	}
+
+	pos=0;
 	//we read the different descriptors included in the pmt
 	//for more information see ITU-T Rec. H.222.0 | ISO/IEC 13818 table 2-34
 	for (int i=program_info_length+PMT_LEN; i<=section_len-(PMT_INFO_LEN+4); i+=descr_section_len+PMT_INFO_LEN)
@@ -252,30 +280,6 @@ void autoconf_get_pmt_pids(mumudvb_ts_packet_t *pmt, int *pids, int *num_pids, i
 			language[3]=0;
 		}
 		log_message( log_module,  MSG_DEBUG,"  PID Language Code = %s\n",language);
-
-		//For CAM debugging purposes, we look if we can find a CA descriptor to display CA system IDs
-		if(descr_section_len)
-		{
-			int pos;
-			int casysid;
-			pos=0;
-			while(pmt_find_descriptor(0x09,pmt->data_full+i+PMT_INFO_LEN,descr_section_len,&pos))
-			{
-				descr_ca_t *ca_descriptor;
-				ca_descriptor=(descr_ca_t *)(pmt->data_full+i+PMT_INFO_LEN+pos);
-				casysid=0;
-				while(casysid<32 && ca_sys_id[casysid] && ca_sys_id[casysid]!=HILO(ca_descriptor->CA_type) )
-					casysid++;
-				if(casysid<32 && !ca_sys_id[casysid])
-				{
-					ca_sys_id[casysid]=HILO(ca_descriptor->CA_type);
-					log_message( log_module,  MSG_DETAIL,"CA system id 0x%04x : %s\n", HILO(ca_descriptor->CA_type), ca_sys_id_to_str(HILO(ca_descriptor->CA_type)));//we display it with the description
-				}
-				if(casysid==32)
-					log_message( log_module,  MSG_WARN,"Too much CA system id line %d file %s\n", __LINE__,__FILE__);
-				pos+=ca_descriptor->descriptor_length+2;
-			}
-		}
 
 
 		pids[*num_pids]=pid;
