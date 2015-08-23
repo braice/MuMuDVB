@@ -389,7 +389,7 @@ void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters
 	unsigned char send_buf[TS_PACKET_SIZE];
 	ts_header=(ts_header_t *)send_buf;
 	pkt_to_send=eit_pkt->full_eit_sections[channel->eit_section_to_send];
-	data_left_to_send=pkt_to_send->full_buffer_len;
+	data_left_to_send=pkt_to_send->len_full;
 	sent=0;
 	//log_message(log_module,MSG_FLOOD,"Sending EIT to channel %s (sid %d) section %d table_id 0x%02x data_len %d",
 	//		channel->name,
