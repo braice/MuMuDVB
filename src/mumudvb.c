@@ -1303,8 +1303,6 @@ main (int argc, char **argv)
 
 
 
-
-
 		if(card_buffer.dvr_buffer_size!=1 && stats_infos.show_buffer_stats)
 		{
 			stats_infos.stats_num_packets_received+=(int) card_buffer.bytes_read/TS_PACKET_SIZE;
