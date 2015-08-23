@@ -260,7 +260,6 @@ Autoconfiguration parameters
 |autoconf_ip6 |For autoconfiguration, the template for the ipv6 for streamed channel | FF15:4242::%server:%card:%number  | |  You can use the keywords `%card`, `%tuner`, `%server`, `%sid` (the SID will be in hexadecimal) and `%number`
 |autoconf_radios |Do we consider radios as valid channels during autoconfiguration ? | 0 | 0 or 1 | 
 |autoconf_scrambled |Do we consider scrambled channels valid channels during autoconfiguration ? | 0 | 0 or 1 | Automatic when cam_support=1 or scam_support=1. Sometimes a clear channel can be marked as scrambled. This option allows you to bypass the ckecking.
-|autoconf_pid_update |Do we follow the changes in the PIDs when the PMT is updated ? | 1 | 0 or 1 | 
 |autoconf_unicast_start_port |The unicast port for the first discovered channel |  |  | `autoconf_unicast_start_port=value` is equivalent to `autoconf_unicast_port=value + %number`
 |autoconf_unicast_port |The unicast port for each discovered channel. Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%tuner` `%server`, `%sid` and `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
 |autoconf_multicast_port |The multicast port for each discovered channel. Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%tuner` `%server`, `%sid` and `%number`. Ex : `autoconf_multicast_port=2000+100*%card+%number`
