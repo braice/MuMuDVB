@@ -252,11 +252,13 @@ void eit_display_descriptor(unsigned char *buf,int descriptors_loop_len, struct 
 
 	int first;
 	first=1;
+	int descriptor_len;
 	unicast_reply_write(reply, "\"EIT_descriptors\":[\n");
 	while (descriptors_loop_len > 0)
 	{
 		unsigned char descriptor_tag = buf[0];
-		unsigned char descriptor_len = buf[1] + 2;
+		unsigned char descriptor_len_u8 = buf[1];
+		descriptor_len = ((int)descriptor_len_u8) + 2;
 		if(!first)
 			unicast_reply_write(reply, ",");
 		else
