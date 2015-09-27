@@ -735,9 +735,10 @@ typedef struct {
 
 /** Enum to tell if the option is set*/
 typedef enum packet_status {
-  EMPTY,     //No data in the packet
-  STARTED,   //Some data are in the packet
-  VALID      //All the expected data are in the packet and the CRC32 is valid
+  EMPTY,          //No data in the packet
+  PARTIAL_HEADER, //An incomplete header is in the packet
+  STARTED,        //Some data are in the packet
+  VALID           //All the expected data are in the packet and the CRC32 is valid
 } packet_status_t;
 
 
