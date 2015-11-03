@@ -207,6 +207,17 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
 	else if (!strcmp (substring, "port_http"))
 	{
 		substring = strtok (NULL, "=");
+
+		// next we replace all the spaces as too many spaces are messing with the further parsing
+		// like: "     port_http            = 2000 + %card"
+		int len = strlen(substring)+1;
+		substring = mumu_string_replace(substring, &len, 1, " ", "");
+
+		// if the string is empty after the replacement, we need to tokenize one more time to get the actual setting
+		if (strlen(substring) == 0) {
+			substring = strtok(NULL, "=");
+		}
+
 		if((strchr(substring,'*')!=NULL)||(strchr(substring,'+')!=NULL)||(strchr(substring,'%')!=NULL))
 		{
 			unicast_vars->portOut_str=malloc(sizeof(char)*(strlen(substring)+1));
