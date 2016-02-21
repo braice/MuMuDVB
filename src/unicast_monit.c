@@ -538,7 +538,7 @@ int unicast_send_client_list_xml (unicast_client_t *unicast_client, struct unica
 		unicast_reply_write(reply, "\t\t\t<client number=\"%d\">\n", client);
 		unicast_reply_write(reply, "\t\t\t\t<socket>%d</socket>", unicast_client->Socket);
 		unicast_reply_write(reply, "\t\t\t\t<remote_address><![CDATA[%s]]></remote_address>\n", inet_ntoa(unicast_client->SocketAddr.sin_addr));
-		unicast_reply_write(reply, "\t\t\t\t<remote_port>%d</remote port>", unicast_client->SocketAddr.sin_port);
+		unicast_reply_write(reply, "\t\t\t\t<remote_port>%d</remote_port>", unicast_client->SocketAddr.sin_port);
 		unicast_reply_write(reply, "\t\t\t\t<buffersize>%u</buffersize>\n",unicast_client->buffersize);
 		unicast_reply_write(reply, "\t\t\t\t<consecutive_errors>%d</consecutive_errors>\n", unicast_client->consecutive_errors);
 		unicast_reply_write(reply, "\t\t\t\t<first_error_time>%d</first_error_time>\n", unicast_client->first_error_time);
