@@ -326,6 +326,7 @@ The column "Can be detected/autoset" specifies if this parameter can be ommitted
 |ring_buffer_size | number of ts packets in ring buffer (for software CAM) | 131072 |it gets rounded to the value that is power of 2 not lower than it|No |
 |decsa_delay | delay time in us between getting packet and descrambling (for software CAM) | 4500000 | max is 10000000 |No |
 |send_delay | delay time in us between getting packet and sending (for software CAM) | 7000000 |  mustn't be lower than decsa delay |No |
+| cam_ask | For CAM support, some providers announce scrambled channels as FTA, this parameter force asking the CAM to descramble | 0 | 0,1| No | 
 |==================================================================================================================
 
 
