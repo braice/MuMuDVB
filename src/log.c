@@ -1036,32 +1036,43 @@ int convert_en300468_string(char *string, int max_len, int debug)
 {
 
 	int encoding_control_char=8; //cf encodings_en300468
-	char *dest;
 	char *tempdest, *tempbuf;
+	unsigned char *realstart;
 	unsigned char *src;
 	/* remove control characters and convert to UTF-8 the channel name */
 	//If no channel encoding is specified, it seems that most of the broadcasters
 	//uses ISO/IEC 8859-9. But the norm (EN 300 468) said that it should be Latin-1 (ISO/IEC 6937 + euro)
 
-        //temporary buffers allocation                                                                                                                                   
-        int lenstring=0;
-        //We count the len needed for the temporary buffer.
+	//temporary buffers allocation
+	int lenstring=0;
+	//We count the len needed for the temporary buffer.
 	//Due to the special structure of an EN300468 string a \0 can be present in the string
 	//So we cannot use strlen                                                                                 
-        for (src = (unsigned char *) string; *src; src++)
-        {
-                if (*src >= 0x20 && (*src < 0x80 || *src > 0x9f))
-                        //One character                                                                                                                                  
-                        lenstring++;
-                else if(*src==0x10)
-                  { //Encoding ISO/IEC 8859                                                                                                                       
-                    src++;//we skip the current byte                                                                                                                     
-                    src++;//This one is always set to 0                                                                                                                  
-                  }
-        }
+	for (src = (unsigned char *) string; *src; src++)
+	{
+			if ((*src < 0x80 || *src > 0x9f))
+					//One character
+					lenstring++;
+			else if(*src==0x10)
+			  { //Encoding ISO/IEC 8859
+				src++;//we skip the current byte
+				src++;//This one is always set to 0
+			  }
+	}
+	//If the first byte is an encoding byte we remove it from the string
+	if(string && (*string < 0x20))
+	{
+		lenstring --;
+		if(*string == 0x1F)
+			lenstring --;
+		if(*string == 0x10)
+		{
+			lenstring --;
+			lenstring --;
+		}
+	}
 
-
-        tempdest=tempbuf=malloc(sizeof(char)*lenstring+1);
+    tempdest=tempbuf=malloc(sizeof(char)*lenstring+1);
 
 	if(tempdest==NULL)
 	{
@@ -1070,40 +1081,52 @@ int convert_en300468_string(char *string, int max_len, int debug)
 		return -1;
 	}
 
-	int len=0;
-	for (src = (unsigned char *) string; *src; src++)
+	realstart = (unsigned char *)string;
+	if(*realstart < 0x20)
 	{
-		if (*src >= 0x20 && (*src < 0x80 || *src > 0x9f))
+		if(debug) {log_message( log_module, MSG_FLOOD, "Encoding number 0x%02x, see EN 300 468 Annex A",*realstart);}
+		//control character recognition based on EN 300 468 v1.9.1 Annex A
+		if(*realstart<=0x0b)
+			{encoding_control_char=(int) *realstart+4-1;}
+		else if(*realstart==0x10)
+		{ //ISO/IEC 8859 : See table A.4
+			realstart++;//we skip the current byte
+			realstart++;//This one is always set to 0
+			if(*realstart >= 0x01 && *realstart <=0x0f)
+				encoding_control_char=(int) *realstart-1;
+		}
+		else if(*realstart==0x11)//ISO/IEC 10646 : Basic Multilingual Plane
+			{encoding_control_char=15;}
+		else if(*realstart==0x12)//KSX1001-2004 : Korean Character Set
+			{if(debug) {log_message( log_module, MSG_WARN, "\t\t Encoding KSX1001-2004 (korean character set) not implemented yet by iconv, we'll use the default encoding for service name\n");}}
+		else if(*realstart==0x13)//GB-2312-1980 : Simplified Chinese Character
+			{encoding_control_char=16;}
+		else if(*realstart==0x14)//Big5 subset of ISO/IEC 10646 : Traditional Chinese
+			{encoding_control_char=17;}
+		else if(*realstart==0x15)//UTF-8 encoding of ISO/IEC 10646 : Basic Multilingual Plane
+			{encoding_control_char=18;}
+		else if(*realstart==0x1f)
+		{
+			realstart++;
+			log_message( log_module, MSG_WARN, "\t\t Encoding 0x1F from TS 101 162 not implemented yet (0x%02x), we'll use the default encoding for service name\n",*realstart);
+		}
+		else
+		{
+			log_message( log_module, MSG_WARN, "\t\t Encoding not implemented yet (0x%02x), we'll use the default encoding for service name\n",*realstart);
+		}
+		//we skip the encoding character
+		realstart++;
+	}
+
+
+	int len=0;
+	for (src = (unsigned char *) realstart; *src; src++)
+	{
+		if ((*src < 0x80 || *src > 0x9f))
 		{
 			//We copy non-control characters
 			*tempdest++ = *src;
 			len++;
-		}
-		else if(*src <= 0x20)
-		{
-			if(debug) {log_message( log_module, MSG_FLOOD, "Encoding number 0x%02x, see EN 300 468 Annex A",*src);}
-			//control character recognition based on EN 300 468 v1.9.1 Annex A
-			if(*src<=0x0b)
-				{encoding_control_char=(int) *src+4-1;}
-			else if(*src==0x10)
-			{ //ISO/IEC 8859 : See table A.4
-				src++;//we skip the current byte
-				src++;//This one is always set to 0
-				if(*src >= 0x01 && *src <=0x0f)
-					encoding_control_char=(int) *src-1;
-			}
-			else if(*src==0x11)//ISO/IEC 10646 : Basic Multilingual Plane
-				{encoding_control_char=15;}
-			else if(*src==0x12)//KSX1001-2004 : Korean Character Set
-				{if(debug) {log_message( log_module, MSG_WARN, "\t\t Encoding KSX1001-2004 (korean character set) not implemented yet by iconv, we'll use the default encoding for service name\n");}}
-			else if(*src==0x13)//GB-2312-1980 : Simplified Chinese Character
-				{encoding_control_char=16;}
-			else if(*src==0x14)//Big5 subset of ISO/IEC 10646 : Traditional Chinese
-				{encoding_control_char=17;}
-			else if(*src==0x15)//UTF-8 encoding of ISO/IEC 10646 : Basic Multilingual Plane
-				{encoding_control_char=18;}
-			else
-				{if(debug) {log_message( log_module, MSG_WARN, "\t\t Encoding not implemented yet (0x%02x), we'll use the default encoding for service name\n",*src);}}
 		}
 		else if (*src >= 0x80 && *src <= 0x9f)
 		{
