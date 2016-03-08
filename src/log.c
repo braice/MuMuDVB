@@ -1037,6 +1037,7 @@ int convert_en300468_string(char *string, int max_len, int debug)
 
 	int encoding_control_char=8; //cf encodings_en300468
 	char *tempdest, *tempbuf;
+	char *dest;
 	unsigned char *realstart;
 	unsigned char *src;
 	/* remove control characters and convert to UTF-8 the channel name */
