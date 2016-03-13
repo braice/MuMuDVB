@@ -55,6 +55,7 @@
 #include "errors.h"
 #include "log.h"
 #include "dvb.h"
+#include "math.h"
 
 
 static char *log_module="Tune: ";
@@ -97,7 +98,9 @@ void init_tune_v(tune_p_t *tune_p)
 				.rolloff=ROLLOFF_35,
 	#endif
 	#if STREAM_ID
-				.stream_id=0,
+				.stream_id = 0,
+				.pls_code = 0,
+				.pls_type = PLS_ROOT,
 	#endif
 		};
 
@@ -560,16 +563,60 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 #ifdef STREAM_ID
 		substring = strtok (NULL, delimiteurs);
 		tuneparams->stream_id = atoi (substring);
-		if ((tuneparams->stream_id<0)||(tuneparams->stream_id>255))
+		if (tuneparams->stream_id<0)
 		{
 			log_message( log_module,  MSG_ERROR,
 					"Config issue : stream_id. wrong value : %d\n",tuneparams->stream_id);
 			tuneparams->stream_id=0;
 		}
+		log_message( log_module,  MSG_DEBUG, "MuMuDVB have been compiled with DTV_STREAM_ID = %d.",DTV_STREAM_ID);
+
 #else
 		log_message( log_module,  MSG_ERROR,
 				"Config issue : delivery_system. You are trying to set the stream_id but your MuMuDVB have not been built with DVB-S2/DVB API > 5.8 support.\n");
 		return -1;
+#endif
+	}
+	else if (!strcmp (substring, "pls_code"))
+	{
+#ifdef STREAM_ID
+		substring = strtok (NULL, delimiteurs);
+		tuneparams->pls_code = atoi (substring);
+		if (tuneparams->pls_code<0)
+		{
+			log_message( log_module,  MSG_ERROR,
+					"Config issue : pls_code. wrong value : %d\n",tuneparams->pls_code);
+			tuneparams->pls_code=0;
+		}
+#else
+		log_message( log_module,  MSG_ERROR,
+				"Config issue : delivery_system. You are trying to set the pls_code but your MuMuDVB have not been built with DVB-S2/DVB API > 5.8 support.\n");
+#endif
+	}
+	else if (!strcmp (substring, "pls_type"))
+	{
+#ifdef STREAM_ID
+		substring = strtok (NULL, delimiteurs);
+		if (!strcmp(substring, "root"))
+		{
+			tuneparams->pls_type = PLS_ROOT;
+		}
+		else if (!strcmp(substring, "gold"))
+		{
+			tuneparams->pls_type = PLS_GOLD;
+		}
+		else if (!strcmp(substring, "common"))
+		{
+			log_message( log_module,  MSG_ERROR, "Config issue : pls_type common not implemented, please contact");
+			tuneparams->pls_type = PLS_COMMON;
+		}
+		else
+		{
+			log_message( log_module,  MSG_ERROR, "Config issue : pls_type not valid %s \n",substring);
+		}
+#else
+                log_message( log_module,  MSG_ERROR,
+                                "Config issue : delivery_system. You are trying to set the pls_type but your MuMuDVB have not been built with DVB-S2/DVB API > 5.8 support.\n");
 #endif
 	}
 	else
@@ -1237,6 +1284,17 @@ default:
 			 */
 			//DVB api version 5 and delivery system defined, we do DVB-API-5 tuning
 			log_message( log_module,  MSG_INFO, "Tuning With DVB-API version 5. delivery system : %d\n",tuneparams->delivery_system);
+
+#ifdef STREAM_ID
+			int tune_stream_id;
+			tune_stream_id = tuneparams->stream_id;
+			if( tuneparams->pls_code )
+				tune_stream_id = tuneparams->stream_id+(256 * tuneparams->pls_code);
+			if( tuneparams->pls_type == PLS_GOLD)
+				tune_stream_id = tune_stream_id + pow( 2, (int) log2(tuneparams->pls_code)+10 );
+			log_message( log_module,  MSG_INFO,  "Stream_id = %d, stream id with PLS parameters %d",tuneparams->stream_id, tune_stream_id);
+#endif
+
 			struct dtv_property pclear[] = {
 					{ .cmd = DTV_CLEAR,},
 			};
@@ -1283,7 +1341,7 @@ default:
 				if(tuneparams->stream_id)
 				{
 					cmdseq->props[commandnum].cmd      = DTV_STREAM_ID;
-					cmdseq->props[commandnum++].u.data = tuneparams->stream_id;
+					cmdseq->props[commandnum++].u.data = tune_stream_id;
 				}
 #endif
 				cmdseq->props[commandnum++].cmd    = DTV_TUNE;
@@ -1317,7 +1375,7 @@ default:
 			if(tuneparams->stream_id)
 			{
 				cmdseq->props[commandnum].cmd      = DTV_STREAM_ID;
-				cmdseq->props[commandnum++].u.data = tuneparams->stream_id;
+				cmdseq->props[commandnum++].u.data = tune_stream_id;
 			}
 #endif
 			cmdseq->props[commandnum++].cmd    = DTV_TUNE;

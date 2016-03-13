@@ -87,6 +87,12 @@
 #define STREAM_ID 1
 #endif
 
+typedef enum pls_type {
+	PLS_ROOT		= 0x00,
+	PLS_GOLD		= 0x01,
+	PLS_COMMON		= 0x02,
+} pls_type_t;
+
 
 /** @brief Parameters for tuning the card*/
 typedef struct tune_p_t{
@@ -164,13 +170,23 @@ typedef struct tune_p_t{
 #if STREAM_ID
   /** The substream id */
   int stream_id;
+  /** The PLS code */
+  int pls_code;
+  /** The PLS type */
+  pls_type_t pls_type;
 #endif
 }tune_p_t;
+
+
+
 
 
 void init_tune_v(tune_p_t *);
 int tune_it(int, tune_p_t *);
 int read_tuning_configuration(tune_p_t *, char *);
 void print_status(fe_status_t festatus);
+
+
+
 
 #endif
