@@ -84,12 +84,12 @@ void mumu_string_to_json(char *in, int lin, char *out, int lout)
 		        switch(c)
 		        {
 		            case '\\': out[offout]='\\';offout++;out[offout]='\\';offout++; break;
-		            case '\"': out[offout]='\\';offout++;out[offout]='\"';offout++; break;
-		            case '\b': out[offout]='\\';offout++;out[offout]='\b';offout++; break;
-		            case '\f': out[offout]='\\';offout++;out[offout]='\f';offout++; break;
-		            case '\n': out[offout]='\\';offout++;out[offout]='\n';offout++; break;
-		            case '\r': out[offout]='\\';offout++;out[offout]='\r';offout++; break;
-		            case '\t': out[offout]='\\';offout++;out[offout]='\t';offout++; break;
+		            case '\"': out[offout]='\\';offout++;out[offout]='"';offout++; break;
+		            case '\b': out[offout]='\\';offout++;out[offout]='b';offout++; break;
+		            case '\f': out[offout]='\\';offout++;out[offout]='f';offout++; break;
+		            case '\n': out[offout]='\\';offout++;out[offout]='n';offout++; break;
+		            case '\r': out[offout]='\\';offout++;out[offout]='r';offout++; break;
+		            case '\t': out[offout]='\\';offout++;out[offout]='t';offout++; break;
 		            case '/':  out[offout]='\\';offout++;out[offout]='/'; offout++; break;
 		            default: //other control character
 		            {
