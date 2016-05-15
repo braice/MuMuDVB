@@ -1262,7 +1262,10 @@ main (int argc, char **argv)
 				{
 					iRet=unicast_handle_fd_event(&unic_p, chan_p.channels, chan_p.number_of_channels, &strengthparams, &auto_p, cam_p_ptr, scam_vars_ptr, rewrite_vars.eit_packets);
 					if(iRet)
+					{
+						log_message( log_module,  MSG_ERROR, "unicast fd error %d", iRet);
 						set_interrupted(iRet);
+					}
 				}
 			}
 			/**************************************************************/
@@ -1275,6 +1278,7 @@ main (int argc, char **argv)
 			poll_ret=mumudvb_poll(fds.pfds,fds.pfdsnum,DVB_POLL_TIMEOUT);
 			if(poll_ret<0)
 			{
+				log_message( log_module,  MSG_ERROR, "Poll error %d", poll_ret);
 				set_interrupted(poll_ret);
 				continue;
 			}
@@ -1288,7 +1292,10 @@ main (int argc, char **argv)
 				{
 					iRet=unicast_handle_fd_event(&unic_p, chan_p.channels, chan_p.number_of_channels, &strengthparams, &auto_p, cam_p_ptr, scam_vars_ptr,rewrite_vars.eit_packets);
 					if(iRet)
+					{
+						log_message( log_module,  MSG_ERROR, "unicast fd error %d", iRet);
 						set_interrupted(iRet);
+					}
 				}
 			}
 			/**************************************************************/
@@ -1364,7 +1371,10 @@ main (int argc, char **argv)
 			{
 				iRet = autoconf_new_packet(pid, actual_ts_packet, &auto_p,  &fds, &chan_p, &tune_p, &multi_p, &unic_p, server_id, scam_vars_ptr);
 				if(iRet)
+				{
+					log_message( log_module,  MSG_ERROR, "Autoconf error %d", iRet);
 					set_interrupted(iRet);
+				}
 			}
 
 			/******************************************************/
@@ -1581,6 +1591,7 @@ static void SignalHandler (int signum)
 	}
 	else if (signum != SIGPIPE)
 	{
+		log_message( log_module,  MSG_ERROR, "Caught signal %d", signum);
 		set_interrupted(signum);
 	}
 	signal (signum, SignalHandler);

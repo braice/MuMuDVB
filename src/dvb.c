@@ -332,8 +332,8 @@ void *read_card_thread_func(void* arg)
 		poll_ret=mumudvb_poll(threadparams->fds->pfds,threadparams->fds->pfdsnum,DVB_POLL_TIMEOUT);
 		if(poll_ret<0)
 		{
+			log_message( log_module,  MSG_ERROR, "Thread polling issue\n");
 			set_interrupted(-poll_ret);
-			log_message( log_module,  MSG_WARN, "Thread polling issue\n");
 			return NULL;
 		}
 		if((!(threadparams->fds->pfds[0].revents&POLLIN)) && (!(threadparams->fds->pfds[0].revents&POLLPRI))) //Timeout, we give the ball back to the main for unicast polling
