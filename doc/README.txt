@@ -250,7 +250,7 @@ srate=27500
 autoconfiguration=full
 ----------------------
 
-The channels will be streamed over the multicasts ip adresses 239.100.c.n where c is the card number (0 by default) and n is the channel number.
+The channels will be streamed over the multicasts ip addresses 239.100.c.n where c is the card number (0 by default) and n is the channel number.
 
 If you don't use the common_port directive, MuMuDVB will use the port 1234.
 
@@ -376,7 +376,7 @@ ip=239.42.42.2
 SAP announces
 -------------
 
-SAP (Session Announcement Protocol) announces are made for the client to know which channels are streamed and what is their name and adress. It avoids to give to the client the list of the multicast ip adresses.
+SAP (Session Announcement Protocol) announces are made for the client to know which channels are streamed and what is their name and address. It avoids to give to the client the list of the multicast ip addresses.
 
 VLC and most of set-top boxes are known to support them.
 
@@ -546,9 +546,9 @@ Get the channels list
 
 If you server is listening on the ip 10.0.1 and the port 4242,
 
-To get the channel list (in basic html) just enter the adress `http://10.0.0.1:4242/channels_list.html` in your web browser.
+To get the channel list (in basic html) just enter the address `http://10.0.0.1:4242/channels_list.html` in your web browser.
 
-To get the channel list (in JSON) just enter the adress `http://10.0.0.1:4242/channels_list.json` in your web browser.
+To get the channel list (in JSON) just enter the address `http://10.0.0.1:4242/channels_list.json` in your web browser.
 
 HTTP unicast and monitoring
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
