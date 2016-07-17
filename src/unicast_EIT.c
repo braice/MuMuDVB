@@ -445,7 +445,7 @@ void eit_show_multiling_comp_descr(unsigned char *buf, struct unicast_reply* rep
 		delta++;
 		memcpy(text,buf+delta,text_length*sizeof(char));
 		text[text_length]='\0';
-		convert_en300468_string(text, MAX_DESCR_LEN,0);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
+		convert_en300468_string(text, MAX_DESCR_LEN,1);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
 		unicast_reply_write(reply, "\t\t\"text\" : \"%s\"}", text);
 		delta+=text_length;
 		length-=text_length;
@@ -466,14 +466,14 @@ void eit_show_short_evt_descr(unsigned char *buf, struct unicast_reply* reply)
 	delta++;
 	memcpy(text,buf+delta,text_length*sizeof(char));
 	text[text_length]='\0';
-	convert_en300468_string(text, MAX_DESCR_LEN,0);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
+	convert_en300468_string(text, MAX_DESCR_LEN,1);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
 	unicast_reply_write(reply, "\t\t\"name\" : \"%s\",\n", text2);
 	delta+=text_length;
 	text_length=buf[delta]&0xff;
 	delta++;
 	memcpy(text,buf+delta,text_length*sizeof(char));
 	text[text_length]='\0';
-	convert_en300468_string(text, MAX_DESCR_LEN,0);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
+	convert_en300468_string(text, MAX_DESCR_LEN,1);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
 	unicast_reply_write(reply, "\t\t\"text\" : \"%s\"\n", text2);
 }
 
@@ -507,14 +507,14 @@ void eit_show_ext_evt_descr(unsigned char *buf, struct unicast_reply* reply)
 		delta++;
 		memcpy(text,buf+delta,item_description_length*sizeof(char));
 		text[item_description_length]='\0';
-		convert_en300468_string(text, MAX_DESCR_LEN,0);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
+		convert_en300468_string(text, MAX_DESCR_LEN,1);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
 		unicast_reply_write(reply, "\t\t\"item_descr\" : \"%s\",\n", text2);
 		delta+=item_description_length;
 		item_length=buf[delta]&0xff;
 		delta++;
 		memcpy(text,buf+delta,item_length*sizeof(char));
 		text[item_length]='\0';
-		convert_en300468_string(text, MAX_DESCR_LEN,0);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
+		convert_en300468_string(text, MAX_DESCR_LEN,1);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
 		unicast_reply_write(reply, "\t\t\"item\" : \"%s\"}\n", text2);
 		delta+=item_length;
 		length_of_items-=(2+item_description_length+item_length);
@@ -524,7 +524,7 @@ void eit_show_ext_evt_descr(unsigned char *buf, struct unicast_reply* reply)
 	delta++;
 	memcpy(text,buf+delta,text_length*sizeof(char));
 	text[text_length]='\0';
-	convert_en300468_string(text, MAX_DESCR_LEN,0);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
+	convert_en300468_string(text, MAX_DESCR_LEN,1);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
 	unicast_reply_write(reply, "\t\t\"text\": \"%s\"\n", text2);
 }
 
@@ -554,7 +554,7 @@ void eit_show_component_descr(unsigned char *buf, struct unicast_reply* reply)
 		text_length=(buf[1])-5;
 		memcpy(text,buf+delta,text_length*sizeof(char));
 		text[text_length]='\0';
-		convert_en300468_string(text, MAX_DESCR_LEN,0);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
+		convert_en300468_string(text, MAX_DESCR_LEN,1);mumu_string_to_json(text,MAX_DESCR_LEN,text2,MAX_DESCR_LEN);
 		unicast_reply_write(reply, "\t\t\"text\" : \"%s\"\n", text2);
 	}
 	else

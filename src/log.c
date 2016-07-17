@@ -1046,7 +1046,7 @@ int convert_en300468_string(char *string, int max_len, int debug)
 
 
 
-	log_message( log_module, MSG_FLOOD, "start 0x%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x ",string[0],string[1],string[2],string[3],string[4],string[5],string[6],string[7],string[8],string[9]);
+	log_message( log_module, MSG_FLOOD, "convert_en300468_string: String to be converted start 0x%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x ",string[0],string[1],string[2],string[3],string[4],string[5],string[6],string[7],string[8],string[9]);
 
 
 	realstart = (unsigned char *)string;
@@ -1127,7 +1127,11 @@ int convert_en300468_string(char *string, int max_len, int debug)
 			else if(*src==0x87)
 				{if(debug) {log_message( log_module, MSG_DETAIL, "Control character \"UnBold\", we drop");}}
 			else if(*src==0x8a)
-				{if(debug) {log_message( log_module, MSG_DETAIL, "Control character \"CR/LF\", we drop");}}
+			{
+				if(debug) {log_message( log_module, MSG_DETAIL, "Control character \"CR/LF\", we replace by a standard newline");}
+				*tempdest++ = '\n';
+				len++;
+			}
 			else if(*src>=0x8b )
 				{if(debug) {log_message( log_module, MSG_DETAIL, "Control character 0x%02x \"User defined\" at len %d. We drop",*src,len);}}
 			else
