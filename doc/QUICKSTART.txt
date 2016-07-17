@@ -54,7 +54,7 @@ mumudvb -d -c __path to config file__
 
 
 - That's all, you should get a list of the streamed channels with their IP
-adresses
+addresses
 
 [NOTE]
 The SAP (session announcement protocol) announces will be sent automatically.
