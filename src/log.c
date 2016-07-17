@@ -1046,9 +1046,13 @@ int convert_en300468_string(char *string, int max_len, int debug)
 
 
 
+	log_message( log_module, MSG_FLOOD, "start 0x%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x ",string[0],string[1],string[2],string[3],string[4],string[5],string[6],string[7],string[8],string[9]);
+
+
 	realstart = (unsigned char *)string;
 	if(*realstart < 0x20)
 	{
+		log_message( log_module, MSG_FLOOD, "starting with encoding character 0x%02x",*realstart);
 		if(debug) {log_message( log_module, MSG_FLOOD, "Encoding number 0x%02x, see EN 300 468 Annex A",*realstart);}
 		//control character recognition based on EN 300 468 v1.9.1 Annex A
 		if(*realstart<=0x0b)
@@ -1082,7 +1086,6 @@ int convert_en300468_string(char *string, int max_len, int debug)
 		//we skip the encoding character
 		realstart++;
 	}
-
 	//temporary buffers allocation
 	int lenstring=0;
 	//We count the len needed for the temporary buffer.
@@ -1131,6 +1134,8 @@ int convert_en300468_string(char *string, int max_len, int debug)
 				{if(debug) {log_message( log_module, MSG_DEBUG, "\tUnimplemented name control_character : %x \n", *src);}}
 		}
 	}
+    log_message( log_module, MSG_DEBUG,"String len before conversion %d ",len);
+
 	*tempdest = 0;
 #ifdef HAVE_ICONV
 	//Conversion to utf8
@@ -1151,15 +1156,18 @@ int convert_en300468_string(char *string, int max_len, int debug)
 	dest=string;
 	tempdest=tempbuf;
 	//conversion
-	iconv(cd, &tempdest, &inSize, &dest, &outSize );
+	size_t nonreversible;
+	nonreversible = iconv(cd, &tempdest, &inSize, &dest, &outSize );
 	*dest = '\0';
 	free(tempbuf);
 	iconv_close( cd );
+	log_message( log_module, MSG_FLOOD, "Converted text : \"%s\" (text encoding : %s)\nnonreversible conversions %ld", string,encodings_en300468[encoding_control_char],nonreversible);
 #else
 	if(debug) {log_message( log_module, MSG_DETAIL, "Iconv not present, no name encoding conversion \n");}
 #endif
 exit_iconv:
 	if(debug) {log_message( log_module, MSG_FLOOD, "Converted text : \"%s\" (text encoding : %s)\n", string,encodings_en300468[encoding_control_char]);}
+
 	return encoding_control_char;
 
 }
