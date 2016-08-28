@@ -192,7 +192,7 @@ static void *getcwthread_func(void* arg)
                 pthread_mutex_unlock(&channel->cw_lock);
               } else {
                 pthread_mutex_lock(&channel->cw_lock);
-                if(scam_params->ca_pid.index != -1 && !channel->ca_idx_refcnt) {
+                if(!channel->ca_idx_refcnt) {
                   channel->ca_idx = scam_params->ca_pid.index+1;
                   log_message( log_module,  MSG_INFO, "Got CA_SET_PID with pid: %d setting channel %s ca_idx %d\n", scam_params->ca_pid.pid, channel->name, scam_params->ca_pid.index+1);
                 }
