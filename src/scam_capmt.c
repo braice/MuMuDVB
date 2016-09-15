@@ -73,6 +73,36 @@ int scam_send_capmt(mumudvb_channel_t *channel, scam_parameters_t *scam_params, 
 	  channel->camd_socket = -1;
 	  return 1;
 	} else log_message(log_module,  MSG_DEBUG, "created socket for channel %s\n", channel->name);
+	
+	//moved this into this block since PMTs will now be sent more than once and this would cause errors with EPOLL_CTL_ADD
+	int flags, s;
+	
+	flags = fcntl (channel->camd_socket, F_GETFL, 0);
+	if (flags == -1)
+	{
+	  log_message(log_module, MSG_ERROR,"channel %s: unsuccessful fcntl F_GETFL", channel->name);
+	  set_interrupted(ERROR_NETWORK<<8);
+	  return 1;
+	}
+	
+	flags |= O_NONBLOCK;
+	s = fcntl (channel->camd_socket, F_SETFL, flags);
+	if (s == -1)
+	{
+	  log_message(log_module, MSG_ERROR,"channel %s: unsuccessful fcntl F_SETFL", channel->name);
+	  set_interrupted(ERROR_NETWORK<<8);
+	  return 1;
+	}
+	struct epoll_event event = { 0 };
+	event.data.fd = channel->camd_socket;
+	event.events = EPOLLIN | EPOLLPRI | EPOLLERR | EPOLLHUP;
+	s = epoll_ctl(scam_params->epfd, EPOLL_CTL_ADD, channel->camd_socket, &event);
+	if (s == -1)
+	{
+	  log_message(log_module, MSG_ERROR,"channel %s: unsuccessful epoll_ctl EPOLL_CTL_ADD", channel->name);
+	  set_interrupted(ERROR_NETWORK<<8);
+	  return 1;
+	}
   }
 
   char *caPMT = (char *) calloc(1024, 1);
@@ -114,35 +144,6 @@ int scam_send_capmt(mumudvb_channel_t *channel, scam_parameters_t *scam_params, 
     log_message(log_module, MSG_ERROR,"channel %s:wrote != toWrite\n", channel->name);
     close(channel->camd_socket);
     channel->camd_socket = -1;
-    return 1;
-  }
-
-  int flags, s;
-
-  flags = fcntl (channel->camd_socket, F_GETFL, 0);
-  if (flags == -1)
-  {
-    log_message(log_module, MSG_ERROR,"channel %s: unsuccessful fcntl F_GETFL", channel->name);
-    set_interrupted(ERROR_NETWORK<<8);
-    return 1;
-  }
-
-  flags |= O_NONBLOCK;
-  s = fcntl (channel->camd_socket, F_SETFL, flags);
-  if (s == -1)
-  {
-    log_message(log_module, MSG_ERROR,"channel %s: unsuccessful fcntl F_SETFL", channel->name);
-    set_interrupted(ERROR_NETWORK<<8);
-    return 1;
-  }
-  struct epoll_event event = { 0 };
-  event.data.fd = channel->camd_socket;
-  event.events = EPOLLIN | EPOLLPRI | EPOLLERR | EPOLLHUP;
-  s = epoll_ctl(scam_params->epfd, EPOLL_CTL_ADD, channel->camd_socket, &event);
-  if (s == -1)
-  {
-    log_message(log_module, MSG_ERROR,"channel %s: unsuccessful epoll_ctl EPOLL_CTL_ADD", channel->name);
-    set_interrupted(ERROR_NETWORK<<8);
     return 1;
   }
 

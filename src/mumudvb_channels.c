@@ -243,7 +243,10 @@ void chan_update_CAM(mumu_chan_p_t *chan_p, auto_p_t *auto_p,  void *scam_vars_v
 				}
 				memset (chan_p->channels[ichan].scam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 				pthread_mutex_init(&chan_p->channels[ichan].scam_pmt_packet->packetmutex, NULL);
-			}
+			} 
+			// need to send the new PMT to Oscam
+			else if(chan_p->channels[ichan].need_scam_ask==CAM_ASKED)
+				chan_p->channels[ichan].need_scam_ask=CAM_NEED_ASK;
 		}
 
 #endif
