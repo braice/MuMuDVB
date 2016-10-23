@@ -78,6 +78,7 @@ void init_tune_v(tune_p_t *tune_p)
 				.lnb_slof=DEFAULT_SLOF,
 				.lnb_lof_low=DEFAULT_LOF1_UNIVERSAL,
 				.lnb_lof_high=DEFAULT_LOF2_UNIVERSAL,
+				.uni_freq = 0,
 				.sat_number = 0,
 				.switch_no = -1,
 				.switch_type = 'C',
@@ -143,6 +144,13 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 		substring = strtok (NULL, delimiteurs);
 		temp_freq = atof (substring);
 		tuneparams->freq = (int)( 1000UL * temp_freq);
+	}
+	else if (!strcmp (substring, "uni_freq"))
+	{
+		double temp_freq;
+		substring = strtok (NULL, delimiteurs);
+		temp_freq = atof (substring);
+		tuneparams->uni_freq = (int)( temp_freq);
 	}
 	else if (!strcmp (substring, "pol"))
 	{
@@ -546,6 +554,10 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 		{
 			tuneparams->switch_type = 'C';
 		}
+		else if (tolower (substring[0]) == 'n')
+		{
+			tuneparams->switch_type = 'N';
+		}
 		else
 		{
 			log_message( log_module,  MSG_ERROR,
@@ -668,7 +680,7 @@ static inline void msleep(uint32_t msec)
  * As defined in the DiseqC norm, we stop the 22kHz tone, we set the voltage. Wait. send the command. Wait. put back the 22kHz tone
  *
  */
-static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, fe_sec_tone_mode_t t, fe_sec_mini_cmd_t b, int diseqc_repeat)
+static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, fe_sec_tone_mode_t t, fe_sec_mini_cmd_t b, int diseqc_repeat, char switch_type)
 {
 	int err;
 	if((err = ioctl(fd, FE_SET_TONE, SEC_TONE_OFF)))
@@ -676,7 +688,14 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
 		log_message( log_module,  MSG_WARN, "problem Setting the Tone OFF\n");
 		return -1;
 	}
-	if((err = ioctl(fd, FE_SET_VOLTAGE, v)))
+	if (switch_type=='N')
+	{
+		if((err = ioctl(fd, FE_SET_VOLTAGE, SEC_VOLTAGE_18)))
+		{
+			log_message( log_module,  MSG_WARN, "problem Setting the Voltage\n");
+			return -1;
+		}
+	} else if((err = ioctl(fd, FE_SET_VOLTAGE, v)))
 	{
 		log_message( log_module,  MSG_WARN, "problem Setting the Voltage\n");
 		return -1;
@@ -695,6 +714,15 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
 		}
 		msleep((*cmd)->wait);
 		msleep(15);
+
+		if (switch_type=='N')
+		{
+			if((err = ioctl(fd, FE_SET_VOLTAGE, SEC_VOLTAGE_13)))
+			{
+				log_message( log_module,  MSG_WARN, "problem Setting the Voltage\n");
+				return -1;
+			}
+		}
 
 		if(diseqc_repeat)
 		{
@@ -740,12 +768,12 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
  *
  * @param fd : the file descriptor of the frontend
  * @param sat_no : the satellite number (0 for non diseqc compliant hardware, 1 to 4 for diseqc compliant)
- * @param switch_type the switch type (commited or uncommited)
+ * @param switch_type the switch type (commited or uncommited or unicqbe)
  * @param pol_v_r : 1 : vertical or circular right, 0 : horizontal or circular left
  * @param hi_lo : the band for a dual band lnb
  * @param lnb_voltage_off : if one, force the 13/18V voltage to be 0 independantly of polarization
  */
-static int do_diseqc(int fd, unsigned char sat_no,  int switch_no, char switch_type, int pol_v_r, int hi_lo, int lnb_voltage_off, int diseqc_repeat)
+static int do_diseqc(int fd, unsigned char sat_no,  int switch_no, char switch_type, int pol_v_r, int hi_lo, int lnb_voltage_off, int diseqc_repeat, uint32_t *fefrequency, uint32_t uni_freq)
 {
 
 	fe_sec_voltage_t lnb_voltage;
@@ -771,8 +799,10 @@ static int do_diseqc(int fd, unsigned char sat_no,  int switch_no, char switch_t
 	}
 
 	//Diseqc compliant hardware
-	if((sat_no != 0)||(switch_no!=-1))
+	if((sat_no != 0)||(switch_no!=-1)||(switch_type=='N'))
 	{
+		if(sat_no == 0)
+			sat_no = 1;
 		cmd[0]=malloc(sizeof(struct diseqc_cmd));
 		if(cmd[0]==NULL)
 		{
@@ -787,8 +817,11 @@ static int do_diseqc(int fd, unsigned char sat_no,  int switch_no, char switch_t
 		cmd[0]->cmd.msg[1] = 0x10;
 		//Command byte : Write to port group 1 (Uncommited switches)
 		//Command byte : Write to port group 0 (Committed switches) 0x38
+		//Command byte : Unicable switch : 5A
 		if(switch_type=='U')
 			cmd[0]->cmd.msg[2] = 0x39;
+		else if (switch_type=='N')
+			cmd[0]->cmd.msg[2] = 0x5A;
 		else
 			cmd[0]->cmd.msg[2] = 0x38;
 		/* param: high nibble: reset bits, low nibble set bits,
@@ -803,16 +836,58 @@ static int do_diseqc(int fd, unsigned char sat_no,  int switch_no, char switch_t
 
 		//
 		cmd[0]->cmd.msg[4] = 0x00;
+		if (switch_type=='N')
+		{ //Unicable, we recompute the proper messages
+			//see https://patchwork.linuxtv.org/patch/7994/
+
+			log_message( log_module,  MSG_INFO, "SCR/UNICABLE message ");
+
+			//*fefrequency
+			uint8_t channel_byte_1, channel_byte_2;
+			channel_byte_1 = (uint8_t) (switch_no<<  5);
+			uint16_t t;
+
+			if (sat_no != 1)
+				channel_byte_1 |= (1<<  4);
+
+			if (!pol_v_r ) /* horizontal*/
+				channel_byte_1 |= (1<<  3);
+
+			if (hi_lo) /* high band*/
+				channel_byte_1 |= (1<<  2);
+			//https://code.mythtv.org/trac/attachment/ticket/9726/0001-libmythtv-Unicable-SCR-DIN-EN-50494.patch
+			//seems that we will have to tune to another frequency too and adjust the voltage
+			//Then we will have to tune the card to the SCR frequency as the LNB change it
+			//https://patchwork.linuxtv.org/patch/7994/
+
+			t = (uint16_t) ((((*fefrequency / 1000) + uni_freq + 2) / 4) - 350);
+			channel_byte_1 |= (((uint8_t) (t>>  8))&  0x03);
+			channel_byte_2 = (uint8_t) (t&  0x00FF);
+
+			if(t>1024)
+				log_message( log_module,  MSG_ERROR, "SCR/UNICABLE T out of range (is the Scr frequency valid ?) ");
+
+			log_message( log_module,  MSG_DEBUG, "Unicable tuning information : unicable freq %d lo_freq %d channel byte 0x%02x  0x%02x   t 0x%02x",
+					uni_freq, *fefrequency, channel_byte_1, channel_byte_2, t);
+
+			//We rewrite the frontend frequency
+			*fefrequency = uni_freq*1000UL;
+
+		}
 		cmd[0]->cmd.msg[5] = 0x00;
 		cmd[0]->cmd.msg_len=4;
 		log_message( log_module,  MSG_DETAIL ,"Test Diseqc message %02x %02x %02x %02x %02x %02x len %d\n",
 				cmd[0]->cmd.msg[0],cmd[0]->cmd.msg[1],cmd[0]->cmd.msg[2],cmd[0]->cmd.msg[3],cmd[0]->cmd.msg[4],cmd[0]->cmd.msg[5],
 				cmd[0]->cmd.msg_len);
+
+
 		ret = diseqc_send_msg(fd,
 				lnb_voltage,
 				cmd,
 				hi_lo ? SEC_TONE_ON : SEC_TONE_OFF,
-						(sat_no) % 2 ? SEC_MINI_B : SEC_MINI_A,diseqc_repeat);
+				(sat_no) % 2 ? SEC_MINI_B : SEC_MINI_A,
+				diseqc_repeat,
+				switch_type);
 		if(ret)
 		{
 			log_message( log_module,  MSG_WARN, "problem sending the DiseqC message or setting tone/voltage\n");
@@ -1215,7 +1290,9 @@ default:
 					(tuneparams->pol == 'V' ? 1 : 0) + (tuneparams->pol == 'R' ? 1 : 0),
 					hi_lo,
 					tuneparams->lnb_voltage_off,
-					tuneparams->diseqc_repeat) == 0)
+					tuneparams->diseqc_repeat,
+					&feparams.frequency,
+					tuneparams->uni_freq) == 0)
 				log_message( log_module,  MSG_INFO, "DISEQC SETTING SUCCEDED\n");
 			else  {
 				log_message( log_module,  MSG_WARN, "DISEQC SETTING FAILED\n");

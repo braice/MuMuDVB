@@ -132,6 +132,8 @@ typedef struct tune_p_t{
   char switch_type;
   /** Do we repeat DiseQC messages ? */
   int diseqc_repeat;
+  /** The frequency for SCR/unicable */
+  uint32_t uni_freq;
   /** The kind of modulation */
   fe_modulation_t modulation;
   int modulation_set;
