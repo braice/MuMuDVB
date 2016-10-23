@@ -1042,6 +1042,7 @@ int unicast_reply_send(struct unicast_reply *reply, int socket, int code, const 
 		log_message( log_module, MSG_ERROR,"reply send with bad code please contact\n");
 		return 0;
 	}
+	unicast_reply_write(reply, "Access-Control-Allow-Origin: *\r\n");
 	unicast_reply_write(reply, "Server: mumudvb/" VERSION "\r\n");
 	unicast_reply_write(reply, "Content-type: %s; charset=utf-8\r\n", content_type);
 	unicast_reply_write(reply, "Content-length: %d\r\n", reply->used_body);
