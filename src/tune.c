@@ -701,6 +701,8 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
 		return -1;
 	}
 	msleep(15);
+	if (switch_type=='N') //Extra time for Unicable
+		msleep(65);
 	//1.x compatible equipment
 	while (*cmd) {
 		(*cmd)->cmd.msg_len=4;
@@ -744,12 +746,16 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
 	}
 
 	msleep(15);
+	if (switch_type=='N') //Extra time for Unicable
+		msleep(65);
 	if ((err = ioctl(fd, FE_DISEQC_SEND_BURST, b)))
 	{
 		log_message( log_module,  MSG_WARN, "problem sending the Tone Burst\n");
 		return err;
 	}
 	msleep(15);
+	if (switch_type=='N') //Extra time for Unicable
+		msleep(65);
 
 	if(ioctl(fd, FE_SET_TONE, t) < 0)
 	{
@@ -876,6 +882,8 @@ static int do_diseqc(int fd, unsigned char sat_no,  int switch_no, char switch_t
 		}
 		cmd[0]->cmd.msg[5] = 0x00;
 		cmd[0]->cmd.msg_len=4;
+		if (switch_type=='N')
+			cmd[0]->cmd.msg_len=5;
 		log_message( log_module,  MSG_DETAIL ,"Test Diseqc message %02x %02x %02x %02x %02x %02x len %d\n",
 				cmd[0]->cmd.msg[0],cmd[0]->cmd.msg[1],cmd[0]->cmd.msg[2],cmd[0]->cmd.msg[3],cmd[0]->cmd.msg[4],cmd[0]->cmd.msg[5],
 				cmd[0]->cmd.msg_len);
