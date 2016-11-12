@@ -880,8 +880,59 @@ To "enjoy" multicasting you need a switch which supports the http://en.wikipedia
 
 IPv6 use extensively the concept of http://en.wikipedia.org/wiki/Multicast_address[scoping]. By default MuMuDVB uses the scope "site-local" (ie multicast addresses starting with FF05) the SAP announcements are also sent with this scope. If you need to have more flexibility on this side, please contact.
 
-For more details, please consult the http://mumudvb.net/node/52[IPv6 page] on MuMuDVB's website
+Here some documentation about IPv6 and multicasting
 
+http://www.cisco.com/en/US/technologies/tk648/tk872/technologies_white_paper0900aecd80260049.pdf[IPv6 Multicast at a Glance - Cisco]
+
+http://www.cisco.com/en/US/technologies/tk648/tk872/technologies_white_paper0900aecd8026003d.pdf[IPv6 Addressing at a Glance - Cisco]
+
+
+RFCs concerning IPv6 scopes and addressing
+
+http://tools.ietf.org/html/rfc4007[RFC4007]
+http://tools.ietf.org/html/rfc4291[RFC4291]
+
+What is MLD snooping (equivalent of IGMP in IPv6) and how to configure it on HP switches
+http://cdn.procurve.com/training/Manuals/2900-3500-5400-6200-8200-IPv6-Jan08-7-MLD.pdf[MLD snooping on Procurve]
+
+Support of IPv6 on Cisco switches
+http://www.cisco.com/en/US/technologies/collateral/tk648/tk872/tk373/technologies_white_paper_09186a00802219bc_ps6553_Products_White_Paper.html[IPV6 on cisco]
+
+Extract of the previous page
+----------------------------------------------------------------------------------
+Layer 2 Switches
+IPv6 traffic forwarding does not impact Layer 2 LAN switches, since these devices do not need to look at the Layer 3 header to forward an IPv6 frame; thus IPv6 hosts can be transparently attached to the following Cisco products. In addition, Layer 2 switches may integrate dedicated IPv6 features such as native IPv6 network management or MLD snooping (Cisco products marked with "*" in the list).
+• Cisco Catalyst Express 500 Series Switch
+• Cisco Catalyst 2900XL Series Switch
+• Cisco Catalyst 2960 Series (*)
+• Cisco Catalyst 3500XL Series Switch
+• Cisco Catalyst 3560, 3560-E, 3750 and 3750-E Series Switch (*)
+• Cisco Catalyst 4500 Series Switch
+• Cisco Catalyst 4500-E Series Switch (*)
+• Cisco Catalyst 5000 Series Switch
+• Cisco Catalyst 6500 Series Switch (*)
+----------------------------------------------------------------------------------
+
+Also
+Cisco introduced IPv6 Multicast in Cisco IOS Software Releases 12.0(26)S, 12 .2(18)S, and12.3(2)T. It has been deployed in numerous business-critical IPv6 Multicast networks.
+
+http://www.cisco.com/cisco/web/solutions/small_business/products/routers_switches/300_series_switches/index.html[IPV6 small business switch]
+
+Some useful commands for ipv6 multicast debugging under linux
+------------------------------------------
+Show the open sockets
+netstat -6tulp
+
+See the traffic (on iface eth0)
+tcpdump -ni eth0 ip6
+
+See the traffic to a particular address (here the SAP IPv6 announces)
+tcpdump -ni eth0 ip6 host FF05::2:7FFE
+
+Read an IPv6 stream with VLC (under linux)
+vlc -vvv --ipv6 udp://@\[ff15::1\]:1234
+
+------------------------------------------
 
 
 MuMuDVB Logs
