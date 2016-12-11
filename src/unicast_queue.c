@@ -43,6 +43,7 @@ static char *log_module="Unicast : ";
 
 int unicast_queue_remove_data(unicast_queue_header_t *header);
 int unicast_queue_add_data(unicast_queue_header_t *header, unsigned char *data, int data_len);
+int unicast_queue_requeue(unicast_queue_header_t *header, unsigned char *data, int data_len);
 unsigned char *unicast_queue_get_data(unicast_queue_header_t* , int* );
 void unicast_close_connection(unicast_parameters_t *unicast_vars, int Socket);
 
@@ -136,7 +137,7 @@ void unicast_data_send(mumudvb_channel_t *actual_channel, unicast_parameters_t *
 						else if(written_len > 0)
 						{
 							unicast_queue_remove_data(&actual_client->queue);
-							unicast_queue_add_data(&actual_client->queue, buffer+written_len, buffer_len-written_len);
+							unicast_queue_requeue(&actual_client->queue, buffer+written_len, buffer_len-written_len);
 							log_message( log_module, MSG_DEBUG,"We requeue the non sent data ... \n");
 						}
 					}else{
@@ -318,4 +319,40 @@ void unicast_queue_clear(unicast_queue_header_t *header)
 	while(header->packets_in_queue > 0)
 		unicast_queue_remove_data(header);
 }
+
+
+int unicast_queue_requeue(unicast_queue_header_t *header, unsigned char *data, int data_len)
+{
+	int last_pkt_size;
+	unicast_queue_data_t *dest;
+	unsigned char *tempbuf;
+
+	if(header->packets_in_queue == 0)
+	{
+		log_message(log_module, MSG_ERROR, "BUG: unicast_queue_requeue() called with no packets in the queue\n");
+		return -1;
+	}
+
+	tempbuf = malloc(sizeof(unsigned char)*data_len);
+	if(tempbuf == NULL)
+	{
+		log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+		return -1;
+	}
+	memcpy(tempbuf, data, data_len);
+
+	dest=header->first;
+	last_pkt_size = dest->data_length;
+
+	free(dest->data);
+	dest->data = tempbuf;
+
+	dest->data_length = data_len;
+	header->data_bytes_in_queue -= last_pkt_size;
+	header->data_bytes_in_queue += data_len;
+	return 0;
+}
+
+
+
 
