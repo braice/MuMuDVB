@@ -705,7 +705,10 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
 		msleep(65);
 	//1.x compatible equipment
 	while (*cmd) {
-		(*cmd)->cmd.msg_len=4;
+		if (switch_type=='N') //TODO: understand why the message len is reset here
+			(*cmd)->cmd.msg_len=5;
+		else
+			(*cmd)->cmd.msg_len=4;
 		log_message( log_module,  MSG_DETAIL ,"Sending first Diseqc message %02x %02x %02x %02x %02x %02x len %d\n",
 				(*cmd)->cmd.msg[0],(*cmd)->cmd.msg[1],(*cmd)->cmd.msg[2],(*cmd)->cmd.msg[3],(*cmd)->cmd.msg[4],(*cmd)->cmd.msg[5],
 				(*cmd)->cmd.msg_len);
@@ -870,11 +873,14 @@ static int do_diseqc(int fd, unsigned char sat_no,  int switch_no, char switch_t
 			channel_byte_1 |= (((uint8_t) (t>>  8))&  0x03);
 			channel_byte_2 = (uint8_t) (t&  0x00FF);
 
+
 			if(t>1024)
 				log_message( log_module,  MSG_ERROR, "SCR/UNICABLE T out of range (is the Scr frequency valid ?) ");
 
 			log_message( log_module,  MSG_DEBUG, "Unicable tuning information : unicable freq %d lo_freq %d channel byte 0x%02x  0x%02x   t 0x%02x",
 					uni_freq, *fefrequency, channel_byte_1, channel_byte_2, t);
+			cmd[0]->cmd.msg[3] = channel_byte_1;
+			cmd[0]->cmd.msg[4] = channel_byte_2;
 
 			//We rewrite the frontend frequency
 			*fefrequency = uni_freq*1000UL;
