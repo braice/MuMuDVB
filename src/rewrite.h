@@ -77,6 +77,9 @@ typedef struct eit_packet_t{
  * This structure contain the parameters needed for rewriting
  */
 typedef struct rewrite_parameters_t{
+	/**Do we rewrite the PMT pid ?*/
+	option_status_t rewrite_pmt;
+
 	/**Do we rewrite the PAT pid ?*/
 	option_status_t rewrite_pat;
 	/**The actual version of the PAT pid*/
@@ -130,6 +133,8 @@ typedef struct rewrite_parameters_t{
 void init_rewr_v(rewrite_parameters_t *rewr_p);
 int rewrite_init(rewrite_parameters_t *rewr_p);
 int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substring);
+
+int pmt_rewrite_new_channel_packet(unsigned char *ts_packet, unsigned char *pmt_ts_packet, mumudvb_channel_t *channel, int curr_channel);
 
 void pat_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars);
 int pat_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel, int curr_channel);
