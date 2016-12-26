@@ -379,12 +379,11 @@ void autoconf_update_chan_status(auto_p_t *auto_p,mumu_chan_p_t *chan_p)
 				chan_p->channels[ichan].channel_ready=NO_STREAMING;
 				continue;
 		}
-		int found_in_service_id_list;
 		//The service was autodetected, we check it's present in the SID list
 		if(auto_p->num_service_id)
 		{
 			int sid_i;
-			found_in_service_id_list=0;
+			int found_in_service_id_list=0;
 			for(sid_i=0;sid_i<auto_p->num_service_id && !found_in_service_id_list;sid_i++)
 			{
 				if(auto_p->service_id_list[sid_i]==chan_p->channels[ichan].service_id)
@@ -408,15 +407,15 @@ void autoconf_update_chan_status(auto_p_t *auto_p,mumu_chan_p_t *chan_p)
 		if(auto_p->num_service_id_ignore)
 		{
 			int sid_i;
-			found_in_service_id_list=1;
+			int found_in_service_id_ignore_list=0;
 			for(sid_i=0;sid_i<auto_p->num_service_id_ignore;sid_i++)
 			{
 				if(auto_p->service_id_list_ignore[sid_i]==chan_p->channels[ichan].service_id)
 				{
-					found_in_service_id_list=0;
+					found_in_service_id_ignore_list=1;
 				}
 			}
-			if(found_in_service_id_list==0)
+			if(found_in_service_id_ignore_list==1)
 			{
 				log_message( log_module, MSG_DETAIL,"Service in ignore list, we skip. Name \"%s\", id %d\n",
 						chan_p->channels[ichan].name,

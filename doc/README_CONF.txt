@@ -267,6 +267,7 @@ Autoconfiguration parameters
 |autoconf_unicast_port |The unicast port for each discovered channel. Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%tuner` `%server`, `%sid` and `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
 |autoconf_multicast_port |The multicast port for each discovered channel. Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%tuner` `%server`, `%sid` and `%number`. Ex : `autoconf_multicast_port=2000+100*%card+%number`
 |autoconf_sid_list | If you don't want to configure all the channels of the transponder in autoconfiguration mode, specify with this option the list of the service ids of the channels you want to autoconfigure. | empty |  | 
+|autoconf_sid_list_ignore | If you don't want to configure all the channels of the transponder in autoconfiguration mode, specify with this option the list of the service ids of the channels you want to exclude from autoconfiguration. | empty |  | 
 |autoconf_name_template | The template for the channel name, ex `%number-%name` | empty | | See README for more details
 |==================================================================================================================
 
