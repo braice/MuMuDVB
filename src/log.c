@@ -1100,7 +1100,7 @@ int convert_en300468_string(char *string, int max_len, int debug)
 
     tempdest=tempbuf=malloc(sizeof(char)*lenstring+1);
 
-    log_message( log_module, MSG_DEBUG,"String len %d offset %ld",lenstring, realstart-((unsigned char *)string));
+    log_message( log_module, MSG_DEBUG,"String len %d offset %zd",lenstring, realstart-((unsigned char *)string));
 	if(tempdest==NULL)
 	{
 		log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
@@ -1165,7 +1165,7 @@ int convert_en300468_string(char *string, int max_len, int debug)
 	*dest = '\0';
 	free(tempbuf);
 	iconv_close( cd );
-	log_message( log_module, MSG_FLOOD, "Converted text : \"%s\" (text encoding : %s)\nnonreversible conversions %ld", string,encodings_en300468[encoding_control_char],nonreversible);
+	log_message( log_module, MSG_FLOOD, "Converted text : \"%s\" (text encoding : %s)\nnonreversible conversions %zd", string,encodings_en300468[encoding_control_char],nonreversible);
 #else
 	if(debug) {log_message( log_module, MSG_DETAIL, "Iconv not present, no name encoding conversion \n");}
 #endif
