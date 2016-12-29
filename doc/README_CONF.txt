@@ -297,6 +297,7 @@ HTTP unicast parameters
 |unicast_consecutive_errors_timeout | The timeout for disconnecting a client which is not responding | 5 | A client will be disconnected if no data have been sucessfully sent during this interval. A value of 0 deactivate the timeout (unadvised).
 |unicast_max_clients | The limit on the number of connected clients | 0 | 0 : no limit.
 |unicast_queue_size | The maximum size of the buffering when writting to a client fails | 512kBytes | in Bytes.
+|playlist_ignore_dead | Do we include dead channels (no traffic) in playlist? | 0  | 0 or 1 |
 |==================================================================================================================
 
 

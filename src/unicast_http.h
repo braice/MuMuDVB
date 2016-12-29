@@ -196,6 +196,7 @@ typedef struct unicast_parameters_t{
   /**File descriptors for pooling*/
   struct pollfd *pfds;	//unicast http clients
   int pfdsnum;
+  int playlist_ignore_dead;
 
 }unicast_parameters_t;
 
