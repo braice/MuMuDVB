@@ -120,6 +120,12 @@ Possible values for this variable
 	int service_id_list[MAX_CHANNELS];
 	/**number of SID*/
 	int num_service_id;
+
+	/**the list of ignored SID for full autoconfiguration*/
+	int service_id_list_ignore[MAX_CHANNELS];
+	/**number of SID*/
+	int num_service_id_ignore;
+
 	/** the template for the channel name*/
 	char name_template[MAX_NAME_LEN];
 

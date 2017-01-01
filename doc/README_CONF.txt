@@ -267,6 +267,7 @@ Autoconfiguration parameters
 |autoconf_unicast_port |The unicast port for each discovered channel. Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%tuner` `%server`, `%sid` and `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
 |autoconf_multicast_port |The multicast port for each discovered channel. Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%tuner` `%server`, `%sid` and `%number`. Ex : `autoconf_multicast_port=2000+100*%card+%number`
 |autoconf_sid_list | If you don't want to configure all the channels of the transponder in autoconfiguration mode, specify with this option the list of the service ids of the channels you want to autoconfigure. | empty |  | 
+|autoconf_sid_list_ignore | If you don't want to configure all the channels of the transponder in autoconfiguration mode, specify with this option the list of the service ids of the channels you want to exclude from autoconfiguration. | empty |  | 
 |autoconf_name_template | The template for the channel name, ex `%number-%name` | empty | | See README for more details
 |==================================================================================================================
 
@@ -296,6 +297,7 @@ HTTP unicast parameters
 |unicast_consecutive_errors_timeout | The timeout for disconnecting a client which is not responding | 5 | A client will be disconnected if no data have been sucessfully sent during this interval. A value of 0 deactivate the timeout (unadvised).
 |unicast_max_clients | The limit on the number of connected clients | 0 | 0 : no limit.
 |unicast_queue_size | The maximum size of the buffering when writting to a client fails | 512kBytes | in Bytes.
+|playlist_ignore_dead | Do we exclude dead channels (no traffic) from playlist? | 0  | 0 or 1 | Exclude dead and include alive channels on each playlist request.
 |==================================================================================================================
 
 

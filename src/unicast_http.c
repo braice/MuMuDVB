@@ -83,9 +83,9 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
 int
 unicast_send_index_page  (int Socket);
 int
-unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int perport);
+unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int perport, unicast_parameters_t *unicast_vars);
 int
-unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t* channels, int Socket, int vlc);
+unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t* channels, int Socket, int vlc, unicast_parameters_t *unicast_vars);
 int
 unicast_send_streamed_channels_list_js (int number_of_channels, mumudvb_channel_t *channels, void* cam_p_v, int Socket);
 int
@@ -134,6 +134,7 @@ void init_unicast_v(unicast_parameters_t *unicast_vars)
 				.socket_sendbuf_size=0,
 				.flush_on_eagain=0,
 				.pfdsnum=0,
+				.playlist_ignore_dead=0,
 	 };
 	 unicast_vars->pfds=NULL;
 	 //+1 for closing the pfd list, see man poll
@@ -249,6 +250,11 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
 		unicast_vars->flush_on_eagain = atoi (substring);
 		if(unicast_vars->flush_on_eagain)
 			log_message( log_module,  MSG_INFO, "The unicast data WILL be dropped on eagain errors\n");
+	}
+	else if (!strcmp (substring, "playlist_ignore_dead"))
+	{
+		substring = strtok (NULL, delimiteurs);
+		unicast_vars->playlist_ignore_dead = atoi (substring);
 	}
 	else
 		return 0; //Nothing concerning tuning, we return 0 to explore the other possibilities
@@ -769,26 +775,26 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars,
 			else if(strstr(client->buffer +pos ,"/playlist.m3u ")==(client->buffer +pos))
 			{
 				log_message( log_module, MSG_DETAIL,"play list\n");
-				unicast_send_play_list_unicast (number_of_channels, channels, client->Socket, unicast_vars->portOut, 0 );
+				unicast_send_play_list_unicast (number_of_channels, channels, client->Socket, unicast_vars->portOut, 0, unicast_vars );
 				return -2; //We close the connection afterwards
 			}
 			//playlist, m3u
 			else if(strstr(client->buffer +pos ,"/playlist_port.m3u ")==(client->buffer +pos))
 			{
 				log_message( log_module, MSG_DETAIL,"play list\n");
-				unicast_send_play_list_unicast (number_of_channels, channels, client->Socket, unicast_vars->portOut, 1 );
+				unicast_send_play_list_unicast (number_of_channels, channels, client->Socket, unicast_vars->portOut, 1, unicast_vars );
 				return -2; //We close the connection afterwards
 			}
 			else if(strstr(client->buffer +pos ,"/playlist_multicast.m3u ")==(client->buffer +pos))
 			{
 				log_message( log_module, MSG_DETAIL,"play list\n");
-				unicast_send_play_list_multicast (number_of_channels, channels, client->Socket, 0);
+				unicast_send_play_list_multicast (number_of_channels, channels, client->Socket, 0, unicast_vars );
 				return -2; //We close the connection afterwards
 			}
 			else if(strstr(client->buffer +pos ,"/playlist_multicast_vlc.m3u ")==(client->buffer +pos))
 			{
 				log_message( log_module, MSG_DETAIL,"play list\n");
-				unicast_send_play_list_multicast (number_of_channels, channels, client->Socket, 1);
+				unicast_send_play_list_multicast (number_of_channels, channels, client->Socket, 1, unicast_vars );
 				return -2; //We close the connection afterwards
 			}
 			//statistics, text version
@@ -1124,7 +1130,7 @@ unicast_send_streamed_channels_list (int number_of_channels, mumudvb_channel_t *
  * @param perport says if the channel have to be given by the url /bysid or by their port
  */
 int
-unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int perport)
+unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int perport, unicast_parameters_t *unicast_vars)
 {
 	int curr_channel,iRet;
 
@@ -1151,7 +1157,7 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
 
 	//"#EXTINF:0,title\r\nURL"
 	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-		if (channels[curr_channel].channel_ready>=READY)
+		if (channels[curr_channel].channel_ready>=READY && (channels[curr_channel].has_traffic == 1 || unicast_vars->playlist_ignore_dead == 0))
 		{
 			if(!perport)
 			{
@@ -1243,7 +1249,7 @@ unicast_send_index_page (int Socket)
  * @param Socket the socket on wich the information have to be sent
  */
 int
-unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int vlc)
+unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int vlc, unicast_parameters_t *unicast_vars)
 {
 	int curr_channel;
 	char urlheader[4];
@@ -1266,7 +1272,7 @@ unicast_send_play_list_multicast (int number_of_channels, mumudvb_channel_t *cha
 
 	//"#EXTINF:0,title\r\nURL"
 	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-		if (channels[curr_channel].channel_ready>=READY)
+		if (channels[curr_channel].channel_ready>=READY && (channels[curr_channel].has_traffic == 1 || unicast_vars->playlist_ignore_dead == 0))
 		{
 			if(channels[curr_channel].rtp)
 				strcpy(urlheader,"rtp");
