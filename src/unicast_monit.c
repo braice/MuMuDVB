@@ -446,9 +446,10 @@ unicast_send_json_state (int number_of_channels, mumudvb_channel_t *channels, in
 	// ****************** AUTOCONF ************************
 	unicast_reply_write(reply, "\"autoconfiguration\":{\n");
 	// Autoconfiguration state
-	unicast_reply_write(reply, "\t\"enabled\" : %d,\n",auto_p->autoconfiguration);
+	unicast_reply_write(reply, "\t\"enabled\" : %d",auto_p->autoconfiguration);
 	if(auto_p->autoconfiguration)
 	{
+	  	unicast_reply_write(reply, ",\n");
 		unicast_reply_write(reply, "\t\"transport_stream_id\" : %d,\n",auto_p->transport_stream_id);
 		unicast_reply_write(reply, "\t\"network_id\" : %d,\n",auto_p->network_id);
 		unicast_reply_write(reply, "\t\"original_network_id\" : %d,\n",auto_p->original_network_id);
@@ -456,11 +457,11 @@ unicast_send_json_state (int number_of_channels, mumudvb_channel_t *channels, in
 		unicast_reply_write(reply, "\t\"sdt_version\" : %d,\n",auto_p->sdt_version);
 		unicast_reply_write(reply, "\t\"nit_version\" : %d,\n",auto_p->nit_version);
 		unicast_reply_write(reply, "\t\"psip_version\" : %d,\n",auto_p->psip_version);
-		unicast_reply_write(reply, "\t\"finished\" : %d\n",
+		unicast_reply_write(reply, "\t\"finished\" : %d",
 				auto_p->pat_all_sections_seen && (auto_p->sdt_all_sections_seen || auto_p->psip_all_sections_seen) && auto_p->nit_all_sections_seen);
 
 	}
-	unicast_reply_write(reply, "},\n");
+	unicast_reply_write(reply, "\n},\n");
 
 
 	// ****************** CAM ************************
