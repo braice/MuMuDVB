@@ -251,6 +251,8 @@ typedef struct card_buffer_t{
 	int overflow_number;
 	/**The maximum size of the thread buffer (in packets)*/
 	int max_thread_buffer_size;
+	/* t2-mi demux buffer */
+	unsigned char *t2mi_buffer;
 }card_buffer_t;
 
 
@@ -532,6 +534,9 @@ typedef struct mumu_chan_p_t{
 	/** The number of TS discontinuities per PID **/
 	int16_t continuity_counter_pid[8193]; //on 16 bits for storing the initial -1
 	uint8_t check_cc;
+	/** t2mi demux parameters **/
+	int t2mi_pid;
+	uint8_t t2mi_plp;
 }mumu_chan_p_t;
 
 

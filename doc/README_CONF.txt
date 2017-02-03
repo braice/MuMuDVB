@@ -185,6 +185,8 @@ Various parameters
 |check_cc | Do MuMuDVB check the discontibuities in the stream ? | 0 | | Displayed via the XML status pages or the signal display
 |store_eit | Do MuMuDVB store EIT (Electronic Program Guide) for the webservices ? | 0 | | beta, please report your results
 |debug_updown | Do MuMuDVB show debugging messages concerning up/down channel detection | 0 | | The threshold can be adjusted with up_threshold and down_threshold
+|t2mi_pid | Use T2-MI demux for input traffic | 0 | 1-8192 | You can get pid by running dvbtraffic or dvbsnoop, but most networks use pid 4096. 0 = disable demux. T2-MI packet is larger than TS, so use large dvb input buffers (40 packets or more).
+|t2mi_plp | Select PLP in input stream | 0 | 0-255 | Any signle PLP supported for now.
 |==================================================================================================================
 
 Packets sending parameters
