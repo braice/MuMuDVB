@@ -1321,13 +1321,17 @@ main (int argc, char **argv)
 		card_buffer.reading_buffer=card_buffer.buffer1;
 		card_buffer.writing_buffer=card_buffer.buffer2;
 		cardthreadparams.main_waiting=0;
-		card_buffer.t2mi_buffer=malloc(sizeof(unsigned char)*card_buffer.write_buffer_size*2);
+		if (chan_p.t2mi_pid > 0) {
+		    card_buffer.t2mi_buffer=malloc(sizeof(unsigned char)*card_buffer.write_buffer_size*2);
+		}
 		
 	}else
 	{
 		//We alloc the buffer
 		card_buffer.reading_buffer=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*card_buffer.dvr_buffer_size);
-		card_buffer.t2mi_buffer=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*card_buffer.dvr_buffer_size*2);
+		if (chan_p.t2mi_pid > 0) {
+		    card_buffer.t2mi_buffer=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*card_buffer.dvr_buffer_size*2);
+		}
 	}
 
 
@@ -1437,7 +1441,9 @@ main (int argc, char **argv)
 			if((card_buffer.bytes_read=card_read(fds.fd_dvr, card_buffer.reading_buffer, &card_buffer))==0) {
 				continue;
 			}
-			else if (chan_p.t2mi_pid > 0) {
+		}
+
+		if (chan_p.t2mi_pid > 0 && card_buffer.bytes_read > 0) {
 				/* t2mi code begin */
 				int processed = 0;
 
@@ -1489,7 +1495,6 @@ main (int argc, char **argv)
             			}
 				*/
 				/* t2mi code end */
-			}
 		}
 
 		if(card_buffer.dvr_buffer_size!=1 && stats_infos.show_buffer_stats)
@@ -1505,12 +1510,14 @@ main (int argc, char **argv)
 			  (card_buffer.t2mi_buffer[TS_PACKET_SIZE * 2] == TS_SYNC_BYTE) &&
 			  (card_buffer.t2mi_buffer[TS_PACKET_SIZE * 3] == TS_SYNC_BYTE)) ) {
 
-			/* frames unaligned, reset demux */
-		    	log_message( log_module, MSG_INFO,"T2-MI buffer out of sync: %02x, %02x, %02x, %02x\n",
-		    	card_buffer.t2mi_buffer[TS_PACKET_SIZE * 0],
-		    	card_buffer.t2mi_buffer[TS_PACKET_SIZE * 1],
-		    	card_buffer.t2mi_buffer[TS_PACKET_SIZE * 2],
-		    	card_buffer.t2mi_buffer[TS_PACKET_SIZE * 3]);
+			/* frames unaligned, reset demux / TODO: align frames without resetting */
+		    	log_message( log_module, MSG_INFO,"T2-MI buffer out of sync: %02x, %02x, %02x, %02x; next sync = %d\n",
+		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 0],
+		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 1],
+		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 2],
+		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 3],
+		    	    (int)memchr(card_buffer.t2mi_buffer + TS_PACKET_SIZE + 1, TS_SYNC_BYTE, TS_PACKET_SIZE * 4 - 1) - (int)card_buffer.t2mi_buffer
+		    	);
 		    	t2mi_active=false;
 			t2mi_first=true;
 		    	continue;
