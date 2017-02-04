@@ -73,6 +73,8 @@
 /**Size of an MPEG2-TS packet*/
 #define TS_PACKET_SIZE 188
 
+#define TS_SYNC_BYTE 0x47
+
 /**Default Maximum Number of TS packets in the TS buffer*/
 #define DEFAULT_TS_BUFFER_SIZE 20
 

@@ -175,7 +175,7 @@ void init_multicast_v(multi_p_t *multi_p); //in multicast.c
 void chan_new_pmt(unsigned char *ts_packet, mumu_chan_p_t *chan_p, int pid);
 
 #ifndef __cplusplus
-    typedef enum { false, true } bool;
+    typedef enum { false = 0, true = !false } bool;
 #endif
 
 bool t2mi_active=false;
@@ -185,7 +185,6 @@ int t2_partial_size=0;
 
 /* rewritten by [anp/hsw], original code taken from https://github.com/newspaperman/t2-mi */
 int processt2(unsigned char* input_buf, int start_offset, int packet_idx, unsigned char* output_buf, uint8_t plpId) {
-        char syncB = 0x47;
         char t2packet[0x5009];
 
         int t2packetsize=0;
@@ -235,13 +234,13 @@ int processt2(unsigned char* input_buf, int start_offset, int packet_idx, unsign
                                         t2mi_first=false;
                                         int j=19+syncd;
                                         for(; j< upl - 187; j+=(187+dnp)) {
-                                                memcpy(output_buf + output_bytes, &syncB, 1);
+                                                output_buf[output_bytes] = TS_SYNC_BYTE;
                                                 output_bytes++;
                                                 memcpy(output_buf + output_bytes, &t2packet[j], 187);
                                                 output_bytes+=187;
                                         }
                                         if(j< upl )  {
-                                                memcpy(output_buf + output_bytes, &syncB, 1);
+                                                output_buf[output_bytes] = TS_SYNC_BYTE;
                                                 output_bytes++;
                                                 memcpy(output_buf + output_bytes, &t2packet[j], upl-j);
                                                 output_bytes+=(upl-j);
@@ -1470,7 +1469,7 @@ main (int argc, char **argv)
                             	    processed += processt2(card_buffer.reading_buffer, start, card_buffer.read_buff_pos, card_buffer.t2mi_buffer + t2_partial_size + processed, chan_p.t2mi_plp);
             			}
 
-				//fprintf(stderr, "t2mi read: %u, write: %u, delta :%d\n", card_buffer.bytes_read, processed, card_buffer.bytes_read - processed);
+//				fprintf(stderr, "t2mi read: %u, write: %u, delta :%d\n", card_buffer.bytes_read, processed, card_buffer.bytes_read - processed);
 
 				/* we got no data from demux */
 				if (processed + t2_partial_size == 0) {
@@ -1497,6 +1496,25 @@ main (int argc, char **argv)
 		{
 			stats_infos.stats_num_packets_received+=(int) card_buffer.bytes_read/TS_PACKET_SIZE;
 			stats_infos.stats_num_reads++;
+		}
+
+		if (chan_p.t2mi_pid > 0 && card_buffer.dvr_buffer_size >= 4) {
+		    /* frames may go unaligned from demux, we must detect sync bytes */
+		    if (!((card_buffer.t2mi_buffer[TS_PACKET_SIZE * 0] == TS_SYNC_BYTE) &&
+			  (card_buffer.t2mi_buffer[TS_PACKET_SIZE * 1] == TS_SYNC_BYTE) &&
+			  (card_buffer.t2mi_buffer[TS_PACKET_SIZE * 2] == TS_SYNC_BYTE) &&
+			  (card_buffer.t2mi_buffer[TS_PACKET_SIZE * 3] == TS_SYNC_BYTE)) ) {
+
+			/* frames unaligned, reset demux */
+		    	log_message( log_module, MSG_INFO,"T2-MI buffer out of sync: %02x, %02x, %02x, %02x\n",
+		    	card_buffer.t2mi_buffer[TS_PACKET_SIZE * 0],
+		    	card_buffer.t2mi_buffer[TS_PACKET_SIZE * 1],
+		    	card_buffer.t2mi_buffer[TS_PACKET_SIZE * 2],
+		    	card_buffer.t2mi_buffer[TS_PACKET_SIZE * 3]);
+		    	t2mi_active=false;
+			t2mi_first=true;
+		    	continue;
+		    }
 		}
 
 		for(card_buffer.read_buff_pos=0;
@@ -1717,7 +1735,7 @@ main (int argc, char **argv)
 		    /* we will overlap if buffer is 1 packet in size! */
 		    memcpy(card_buffer.t2mi_buffer, card_buffer.t2mi_buffer + card_buffer.read_buff_pos, t2_partial_size);
 
-		    //fprintf(stderr, "size: %u position: %u\n", card_buffer.bytes_read, card_buffer.read_buff_pos);
+//		    fprintf(stderr, "size: %u unread size: %u\n", card_buffer.bytes_read, t2_partial_size);
 		} else {
 		    t2_partial_size = 0;
 		}
