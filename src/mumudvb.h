@@ -96,7 +96,7 @@ We cannot discover easily the MTU with unconnected UDP
 #define MAX_UDP_SIZE 1320
 
 /**the max mandatory pid number*/
-#define MAX_MANDATORY_PID_NUMBER   32
+#define MAX_MANDATORY_PID_NUMBER   8192
 /**config line length*/
 #define CONF_LINELEN 	        512
 #define MAX_NAME_LEN			512

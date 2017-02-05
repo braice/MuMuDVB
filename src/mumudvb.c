@@ -249,18 +249,13 @@ int processt2(unsigned char* input_buf, int start_offset, int packet_idx, unsign
                         }
                         t2mi_active=false;
                 }
-/*
-                fprintf(stderr, "art: ");
-                int k;
-                for(k=0;k<128;k++)
-                fprintf(stderr, "%02x ",(unsigned char)buf[offset+k]);
-                fprintf(stderr, "\n");
-*/
+
                 if((buf[offset])==0x0) { //Baseband Frame
                         t2packetsize= (unsigned char) buf[offset+4];
                         t2packetsize<<=8;
                         t2packetsize|= (unsigned char) (buf[offset+5]);
 
+			//TODO: padding
                         //int pad=0;
                         if((t2packetsize&0x07) !=0x00) {
                             t2packetsize>>=3;
@@ -1227,6 +1222,12 @@ main (int argc, char **argv)
 	if(tune_p.fe_type==FE_ATSC)
 		chan_p.asked_pid[PSIP_PID]=PID_ASKED;
 
+	// T2-MI source pid may not belong to any streamed pid, force it.
+	if (chan_p.t2mi_pid > 0) {
+		mandatory_pid[chan_p.t2mi_pid]=1;
+		chan_p.asked_pid[chan_p.t2mi_pid]=PID_ASKED;
+	}
+
 	/*****************************************************/
 	//Set the filters
 	/*****************************************************/
@@ -1516,7 +1517,7 @@ main (int argc, char **argv)
 		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 1],
 		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 2],
 		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 3],
-		    	    (int)memchr(card_buffer.t2mi_buffer + TS_PACKET_SIZE + 1, TS_SYNC_BYTE, TS_PACKET_SIZE * 4 - 1) - (int)card_buffer.t2mi_buffer
+		    	    (int)memchr(card_buffer.t2mi_buffer + TS_PACKET_SIZE + 1, TS_SYNC_BYTE, TS_PACKET_SIZE * 3 - 1) - (int)card_buffer.t2mi_buffer
 		    	);
 		    	t2mi_active=false;
 			t2mi_first=true;
