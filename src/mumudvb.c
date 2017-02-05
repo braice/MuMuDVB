@@ -1222,12 +1222,6 @@ main (int argc, char **argv)
 	if(tune_p.fe_type==FE_ATSC)
 		chan_p.asked_pid[PSIP_PID]=PID_ASKED;
 
-	// T2-MI source pid may not belong to any streamed pid, force it.
-	if (chan_p.t2mi_pid > 0) {
-		mandatory_pid[chan_p.t2mi_pid]=1;
-		chan_p.asked_pid[chan_p.t2mi_pid]=PID_ASKED;
-	}
-
 	/*****************************************************/
 	//Set the filters
 	/*****************************************************/

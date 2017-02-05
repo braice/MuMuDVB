@@ -483,6 +483,10 @@ void update_chan_filters(mumu_chan_p_t *chan_p, char *card_base_path, int tuner,
 			}
 	}
 
+	// T2-MI source pid may not belong to any streamed pid, force it.
+	if (chan_p->t2mi_pid > 0) {
+	    asked_pid[chan_p->t2mi_pid]=PID_ASKED;
+	}
 
 	//Now we compare with the ones for the channels
 	for (int ipid = MAX_MANDATORY_PID_NUMBER; ipid < 8193; ipid++)
