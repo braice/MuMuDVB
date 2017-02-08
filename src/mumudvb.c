@@ -558,6 +558,8 @@ main (int argc, char **argv)
 			}
 			//Pids are now user set, they won't be overwritten by autoconfiguration
 			c_chan->pid_i.pid_f=F_USER;
+			//Enable PMT rewrite
+			c_chan->pmt_rewrite = 1;
 			while ((substring = strtok (NULL, delimiteurs)) != NULL)
 			{
 				c_chan->pid_i.pids[ipid] = atoi (substring);
@@ -597,18 +599,6 @@ main (int argc, char **argv)
 				return -1;
 			}
 			MU_F(c_chan->pid_i.pmt_pid)=F_USER;
-		}
-		else if (!strcmp (substring, "skip_pmt_rewrite"))
-		{
-			if ( c_chan == NULL)
-			{
-				log_message( log_module,  MSG_ERROR,
-					"skip_pmt_rewrite : You have to start a channel first (using new_channel)\n");
-				return -1;
-			}
-			log_message(log_module, MSG_INFO, "PMT rewrite skipped on channel %d", ichan);
-			substring = strtok (NULL, delimiteurs);
-			c_chan->skip_pmt_rewrite = atoi (substring);
 		}
 		else if (!strcmp (substring, "name"))
 		{
@@ -1489,7 +1479,7 @@ main (int argc, char **argv)
 						(pid == chan_p.channels[ichan].pid_i.pmt_pid) && //This is a PMT PID
 						(chan_p.channels[ichan].pid_i.pmt_pid) && //we have the pmt_pid
 						(rewrite_vars.rewrite_pmt == OPTION_ON ) && //AND we asked for rewrite
-						(chan_p.channels[ichan].skip_pmt_rewrite != 1))  //AND we didn't specify skipping
+						(chan_p.channels[ichan].pmt_rewrite == 1))  //AND this channel's PMT shouldn't be skipped
 				{
 					send_packet=pmt_rewrite_new_channel_packet(actual_ts_packet, pmt_ts_packet, &chan_p.channels[ichan], ichan);
 				}
@@ -1542,7 +1532,7 @@ main (int argc, char **argv)
 				if(send_packet==1)
 				{
 					/**Special PMT case*/
-					if(pid == chan_p.channels[ichan].pid_i.pmt_pid)
+					if((pid == chan_p.channels[ichan].pid_i.pmt_pid) && (rewrite_vars.rewrite_pmt == OPTION_ON ) && (chan_p.channels[ichan].pmt_rewrite == 1))
 						buffer_func(channel, pmt_ts_packet, &unic_p, scam_vars_ptr);
 					else
 						buffer_func(channel, actual_ts_packet, &unic_p, scam_vars_ptr);

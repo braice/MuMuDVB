@@ -459,8 +459,8 @@ typedef struct mumu_chan_t{
 
 	/**The generated PMT to be sent*/
 	unsigned char generated_pmt[TS_PACKET_SIZE];
-	/** Do we skip PMT rewrite for this channel? */
-	int skip_pmt_rewrite;
+	/** Do we rewrite PMT for this channel? */
+	int pmt_rewrite;
 	/** The version of the generated pmt */
 	int generated_pmt_version;
 	/** The continuity counter for pmt packets */
