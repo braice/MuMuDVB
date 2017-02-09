@@ -37,6 +37,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "mumudvb.h"
 #include "ts.h"
@@ -51,17 +52,49 @@ static char *log_module = "PMT rewrite: ";
  * @brief Check the streamed PMT version and compare to the stored PMT.
  * @param ts_packet
  * @param channel
- * @return return 1 if update is needed
+ * @return return 1 if update is needed, 2 if multi-part PMT is being assembled
  */
 int pmt_need_update(unsigned char *ts_packet, mumudvb_channel_t *channel) {
 	pmt_t *pmt = (pmt_t *) (ts_packet + TS_HEADER_LEN);
-	if (pmt->version_number != channel->generated_pmt_version) {
-		log_message(log_module, MSG_DEBUG, "PMT changed, old version: %d, new version: %d, rewriting...",
-					channel->generated_pmt_version, pmt->version_number);
-		return 1;
+
+	if (pmt->table_id == 0x02) {
+		if (channel->original_pmt_ready) {
+			if (pmt->version_number != channel->generated_pmt_version) {
+				log_message(log_module, MSG_DEBUG, "PMT changed, old version: %d, new version: %d, rewriting...", channel->generated_pmt_version, pmt->version_number);
+				channel->original_pmt_ready = 0;
+			} else {
+				return 0;
+			}
+		}
+		if (!channel->original_pmt_ready) {
+			float pmt_length = HILO(pmt->section_length) + 3;
+			channel->pmt_part_num = (int) ceil(pmt_length/TS_PACKET_SIZE) - 1;
+			channel->pmt_part_count = 0;
+			memcpy(channel->original_pmt + (TS_PACKET_SIZE*channel->pmt_part_count), ts_packet, TS_PACKET_SIZE);
+			if (channel->pmt_part_num == 0) {
+				channel->original_pmt_ready = 1;
+				return 1;
+			} else {
+				return 2;
+			}
+		}
 	} else {
+		if (!channel->original_pmt_ready && channel->pmt_part_num > 0) {
+			channel->pmt_part_count++;
+			log_message(log_module, MSG_DETAIL, "Got part %i of PMT", channel->pmt_part_count + 1);
+			memcpy(channel->original_pmt + (TS_PACKET_SIZE*channel->pmt_part_count), ts_packet + 4, TS_PACKET_SIZE);
+			if (channel->pmt_part_count == channel->pmt_part_num) {
+				channel->original_pmt_ready = 1;
+				return 1;
+			} else {
+				return 2;
+			}
+		} else if (!channel->original_pmt_ready && channel->pmt_part_num == 0) {
+			log_message(log_module, MSG_DETAIL, "We didn't get the good PMT yet (wrong table ID 0x%02X), search for a new one", pmt->table_id);
+		}
 		return 0;
 	}
+	return 0;
 }
 
 /** @brief Main function for PMT rewrite.
@@ -69,17 +102,16 @@ int pmt_need_update(unsigned char *ts_packet, mumudvb_channel_t *channel) {
  * By default it contains all PIDs which confuses players if we don't actually stream all of them.
  * The PMT is read and the list of PIDs is compared to user-specified PID list for the channel.
  * If there is a match, PID is copied to generated PMT.
- * @param ts_packet
  * @param channel
  * @return 0
  */
-int pmt_channel_rewrite(unsigned char *ts_packet, mumudvb_channel_t *channel) {
+int pmt_channel_rewrite(mumudvb_channel_t *channel) {
+	unsigned char *ts_packet = channel->original_pmt;
 	ts_header_t *ts_header = (ts_header_t *) ts_packet;
 	pmt_t *pmt = (pmt_t *) (ts_packet + TS_HEADER_LEN);
 
 	if (pmt->table_id != 0x02) {
-		log_message(log_module, MSG_DETAIL, "We didn't get the good PMT (wrong table ID 0x%02X), search for a new one",
-					pmt->table_id);
+		log_message(log_module, MSG_DETAIL, "We didn't get the good PMT (wrong table ID 0x%02X), search for a new one", pmt->table_id);
 		return 0;
 	}
 
@@ -96,8 +128,7 @@ int pmt_channel_rewrite(unsigned char *ts_packet, mumudvb_channel_t *channel) {
 
 	int i = 0, j = 0;
 
-	log_message(log_module, MSG_DEBUG, "PMT pid = %d; channel name = \"%s\"\n", channel->pmt_packet->pid,
-				channel->name);
+	log_message(log_module, MSG_DEBUG, "PMT pid = %d; channel name = \"%s\"\n", channel->pmt_packet->pid, channel->name);
 
 	section_length = HILO(pmt->section_length) + 3;
 
@@ -183,16 +214,38 @@ int pmt_channel_rewrite(unsigned char *ts_packet, mumudvb_channel_t *channel) {
 	return 1;
 }
 
-int pmt_rewrite_new_channel_packet(unsigned char *ts_packet, unsigned char *pmt_ts_packet, mumudvb_channel_t *channel, int curr_channel) {
-	if (channel->channel_ready >= READY && pmt_need_update(ts_packet, channel))
-		if (!pmt_channel_rewrite(ts_packet, channel)) {
-			log_message(log_module, MSG_DEBUG, "Cannot rewrite (for the moment) the PMT for the channel %d : \"%s\"\n",
-						curr_channel, channel->name);
-			return 0;
-		}
+int pmt_send_packet(unsigned char *pmt_ts_packet, mumudvb_channel_t *channel) {
+	//Everything is good, send the generated packet
 	channel->pmt_continuity_counter++;
 	channel->pmt_continuity_counter = channel->pmt_continuity_counter % 32;
 	memcpy(pmt_ts_packet, channel->generated_pmt, TS_PACKET_SIZE);
 	set_continuity_counter(pmt_ts_packet, channel->pmt_continuity_counter);
 	return 1;
+}
+
+int pmt_rewrite_new_channel_packet(unsigned char *ts_packet, unsigned char *pmt_ts_packet, mumudvb_channel_t *channel, int curr_channel) {
+	if (channel->channel_ready >= READY) {
+		int need_update = pmt_need_update(ts_packet, channel);
+		if (need_update == 0) {
+			return pmt_send_packet(pmt_ts_packet, channel);
+		} else if (need_update == 1) {
+			//Needs update, call rewrite function
+			if (!pmt_channel_rewrite(channel)) {
+				log_message(log_module, MSG_DEBUG, "Cannot rewrite (for the moment) the PMT for the channel %d : \"%s\"\n", curr_channel, channel->name);
+				//In case of an error, send the previously generated PMT, if any, or skip sending
+				if (channel->generated_pmt_version) {
+					return pmt_send_packet(pmt_ts_packet, channel);
+				} else {
+					return 0;
+				}
+			} else {
+				return 1;
+			}
+		} else if (need_update == 2) {
+			//Multi-part PMT, we have to assemble it before processing
+			log_message(log_module, MSG_DEBUG, "Assembling multi-part PMT for the channel %d : \"%s\"...\n", curr_channel, channel->name);
+			return 0;
+		}
+	}
+	return 0;
 }
