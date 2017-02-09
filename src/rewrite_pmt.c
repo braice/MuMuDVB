@@ -127,10 +127,20 @@ int pmt_channel_rewrite(unsigned char *ts_packet, mumudvb_channel_t *channel) {
 		pmt_info = (pmt_info_t *) ((char *) pmt + PMT_LEN + i);
 		elem_pid = HILO(pmt_info->elementary_PID);
 		es_info_len = HILO(pmt_info->ES_info_length);
+		//Prevent read overflow
+		if (i + PMT_LEN + 4 + PMT_INFO_LEN + es_info_len >= 184) {
+			log_message(log_module, MSG_ERROR, " Read overflow detected, aborting parsing");
+			break;
+		}
 		for (j = 0; j < channel->pid_i.num_pids; j++) {
 			if (elem_pid == channel->pid_i.pids[j]) {
 				new_es_info_len += PMT_INFO_LEN + es_info_len;
 				log_message(log_module, MSG_DEBUG, " PID %d found, copy to new PMT\n", channel->pid_i.pids[j]);
+				//Prevent write overflow
+				if(buf_dest_pos + PMT_INFO_LEN + es_info_len >= 184) {
+					log_message(log_module, MSG_DEBUG, "  Write overflow detected, aborting copy");
+					break;
+				}
 				memcpy(buf_dest + buf_dest_pos, pmt_info, PMT_INFO_LEN + es_info_len);
 				buf_dest_pos += PMT_INFO_LEN + es_info_len;
 			}
