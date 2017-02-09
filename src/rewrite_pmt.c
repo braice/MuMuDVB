@@ -175,6 +175,7 @@ int pmt_channel_rewrite(unsigned char *ts_packet, mumudvb_channel_t *channel) {
 	memset(buf_dest + buf_dest_pos, 0xFF, TS_PACKET_SIZE - buf_dest_pos);
 
 	//update generated PMT version (matches the original PMT version)
+	log_message(log_module, MSG_DEBUG, "PMT rewritten\n");
 	channel->generated_pmt_version = pmt->version_number;
 	memcpy(channel->generated_pmt, buf_dest, TS_PACKET_SIZE);
 
