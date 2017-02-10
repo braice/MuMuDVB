@@ -181,65 +181,101 @@ void chan_new_pmt(unsigned char *ts_packet, mumu_chan_p_t *chan_p, int pid);
 bool t2mi_active=false;
 bool t2mi_first=true;
 int t2packetpos=0;
+int t2packetsize=0;
+
 int t2_partial_size=0;
+char t2packet[65536 + 10]; //Maximal T2 payload + header
 
 /* rewritten by [anp/hsw], original code taken from https://github.com/newspaperman/t2-mi */
-int processt2(unsigned char* input_buf, int start_offset, int packet_idx, unsigned char* output_buf, uint8_t plpId) {
-        char t2packet[0x5009];
+int processt2(unsigned char* input_buf, int input_buf_offset, unsigned char* output_buf, int output_buf_offset, uint8_t plpId) {
 
-        int t2packetsize=0;
+	if(input_buf[input_buf_offset]!=TS_SYNC_BYTE) {
+            log_message(log_module, MSG_FLOOD, "T2-MI: no sync byte at beginning of packet, buf offset %d\n", input_buf_offset);	
+	    return 0;
+	}
 
-        unsigned char* buf = input_buf + packet_idx + 4 + start_offset;
-        int len = 184 - start_offset;
+	unsigned int payload_start_offset=0;
+	output_buf+=output_buf_offset;
+
+	/* lookup for adaptation field control bits in TS input stream */
+        switch(((input_buf[input_buf_offset + 3])&0x30)>>4) {
+    	    case 0x03:	/* 11b = adaptation field followed by payload */
+		/* number of bytes in AF, following this byte */
+                payload_start_offset=(uint8_t)(input_buf[input_buf_offset + 4]) + 1;
+                if(payload_start_offset > 183) {
+            		log_message(log_module, MSG_FLOOD, "T2-MI: wrong AF len in input stream: %d\n", payload_start_offset);
+                        return 0;
+                }
+            break;
+
+            case 0x02:	/* 10b = adaptation field only, no payload */
+                return 0;
+            break;
+
+            case 0x00:	/* 00b = reserved! */
+            	log_message(log_module, MSG_FLOOD, "T2-MI: wrong AF (00) in input stream, accepting as ordinary packet\n");
+            break;
+	}
+
+	/* source buffer pointer to beginning of payload in packet */
+        unsigned char* buf = input_buf + input_buf_offset + 4 + payload_start_offset;
+        unsigned int len = TS_PACKET_SIZE - 4 - payload_start_offset;
 
         int output_bytes=0;
 
-        if((((input_buf[packet_idx+1])&0x40)>>4)==0x04) {
+	/* check for payload unit start indicator */
+        if((((input_buf[input_buf_offset + 1])&0x40)>>4)==0x04) {
                 unsigned int offset=1;
-                offset+=(unsigned char)(buf[0]);
-//                        fprintf(stderr, "offset:%u\n",offset);
-//                        fprintf(stderr, "packetspos:%i\n",t2packetpos);
+                offset+=(uint8_t)(buf[0]);
                 if(t2mi_active) {
-                        if(offset>1) {
+                        if( 1 < offset && offset < 184) {
                                 memcpy(&t2packet[t2packetpos],&buf[1],offset-1);
+                        } else if (offset >= 184) {
+            			log_message(log_module, MSG_FLOOD, "T2-MI: invalid payload offset: %u\n", offset);
+            			return 0;
                         }
-//                        fprintf(stderr,"plpId:%02x\n",t2packet[7]);
+                        
+			/* select source PLP */
                         if(t2packet[7]==plpId) {
-//                                fprintf(stderr,"%02x %02x<>\n",(unsigned char)(t2packet[9]),(unsigned char)(t2packet[10]));
-                                int syncd = (unsigned char) t2packet[16];
-                                syncd<<=8;
-                                syncd |= (unsigned char) (t2packet[17]);
+                    		/* extract TS packet from T2-MI payload */
+				/* Sync distance (bits) in the BB header then points to the first CRC-8 present in the data field */
+                                int syncd = ((uint8_t)(t2packet[16]) << 8) + (uint8_t)(t2packet[17]);
                                 syncd >>= 3;
-                                int upl = (unsigned char) t2packet[13];
-                                upl <<=8;
-                                upl |= (unsigned char) (t2packet[14]);
+
+				/* user packet len (bits) = sync byte + payload, CRC-8 of payload replaces next sync byte */
+                                int upl = ((uint8_t)(t2packet[13]) << 8) + (uint8_t)(t2packet[14]);
                                 upl >>= 3;
                                 upl+=19;
 
                                 int dnp=0;
 
-                                if(t2packet[9]&0x4) dnp=1;
-                                if(syncd==0xFFFF ) {
-//                                        fprintf(stderr, "SYNC\n");
+                                if(t2packet[9]&0x4) {
+                        	    dnp=1; // Deleted Null Packet
+                        	}
+                                if(syncd==0x1FFF ) { /* maximal sync value (in bytes) */
+            				log_message(log_module, MSG_FLOOD, "T2-MI: sync value 0x1FFF!\n");
                                         if(upl >19) {
                                                 memcpy(output_buf + output_bytes, &t2packet[19], upl-19);
                                                 output_bytes+=(upl-19);
                                         }
 
                                 } else {
-                                        if(!t2mi_first && syncd>0) {
+                                        if(!t2mi_first && syncd > 0) {
                                             memcpy(output_buf + output_bytes, &t2packet[19], syncd-dnp);
                                             output_bytes+=(syncd-dnp);
                                         }
                                         t2mi_first=false;
                                         int j=19+syncd;
+                                        /* copy T2-MI packet payload to output, add sync bytes */
                                         for(; j< upl - 187; j+=(187+dnp)) {
+                                    		/* fullsize TS frame */
                                                 output_buf[output_bytes] = TS_SYNC_BYTE;
                                                 output_bytes++;
                                                 memcpy(output_buf + output_bytes, &t2packet[j], 187);
                                                 output_bytes+=187;
                                         }
                                         if(j< upl )  {
+                                    		/* partial TS frame */
                                                 output_buf[output_bytes] = TS_SYNC_BYTE;
                                                 output_bytes++;
                                                 memcpy(output_buf + output_bytes, &t2packet[j], upl-j);
@@ -251,23 +287,19 @@ int processt2(unsigned char* input_buf, int start_offset, int packet_idx, unsign
                 }
 
                 if((buf[offset])==0x0) { //Baseband Frame
+			/*	TODO: padding
+				pad (pad_len bits) shall be filled with between 0 and 7 bits of padding such that the T2-MI packet is always an integer
+				number of bytes in length, i.e. payload_len+pad_len shall be a multiple of 8. Each padding bit shall have the value 0. 
+			*/
+			/*
                         t2packetsize= (unsigned char) buf[offset+4];
                         t2packetsize<<=8;
                         t2packetsize|= (unsigned char) (buf[offset+5]);
 
-			//TODO: padding
-                        //int pad=0;
-                        if((t2packetsize&0x07) !=0x00) {
-                            t2packetsize>>=3;
-                            t2packetsize+=6;
-                        //    pad=1;
-                        } else {
-                            t2packetsize>>=3;
-                            t2packetsize+=6;
-                        //    pad=0;
-                        }
-
-                        if( (len - offset) >0) {
+                        int pad=t2packetsize % 8;
+                        t2packetsize+=pad;
+			*/
+                        if(len > offset) {
                                 memcpy(t2packet,&buf[offset],len-offset);
                                 t2packetpos=len-offset;
                                 t2mi_active=true;
@@ -1447,7 +1479,6 @@ main (int argc, char **argv)
 				    card_buffer.read_buff_pos+=TS_PACKET_SIZE)//we loop on the subpackets
 				{
 
-                            	    int start=0;
                             	    int mpid=(unsigned char)(card_buffer.reading_buffer[card_buffer.read_buff_pos+1]);
                             	    mpid&=0x01F;
                             	    mpid<<=8;
@@ -1457,17 +1488,7 @@ main (int argc, char **argv)
                             	    if(mpid!=chan_p.t2mi_pid) {
                                         continue;
                             	    }
-                            	    if((((card_buffer.reading_buffer[card_buffer.read_buff_pos+3])&0x30)>>4)==0x03) {
-                                        start++;
-                                        start+=(unsigned char)(card_buffer.reading_buffer[card_buffer.read_buff_pos+4]); //adaption + payload, offset addieren
-                                        if(start> 183) {
-                                                continue;
-                                        }
-                            	    }
-                            	    else if(((((card_buffer.reading_buffer[card_buffer.read_buff_pos + 3])&0x30)>>4)==0x02)) {
-                                        continue; // nur adaption field
-                            	    }
-                            	    processed += processt2(card_buffer.reading_buffer, start, card_buffer.read_buff_pos, card_buffer.t2mi_buffer + t2_partial_size + processed, chan_p.t2mi_plp);
+                            	    processed += processt2(card_buffer.reading_buffer, card_buffer.read_buff_pos, card_buffer.t2mi_buffer, t2_partial_size + processed, chan_p.t2mi_plp);
             			}
 
 //				fprintf(stderr, "t2mi read: %u, write: %u, delta :%d\n", card_buffer.bytes_read, processed, card_buffer.bytes_read - processed);
@@ -1480,8 +1501,8 @@ main (int argc, char **argv)
 
 				card_buffer.bytes_read = processed + t2_partial_size;
 //				fprintf(stderr, "part read: %u\n", t2_partial_size);
+		    		t2_partial_size=0;
 
-				t2_partial_size=0;
 
             			/* fully demuxed stream goes here, try it! */
             			/*
@@ -1506,13 +1527,13 @@ main (int argc, char **argv)
 			  (card_buffer.t2mi_buffer[TS_PACKET_SIZE * 3] == TS_SYNC_BYTE)) ) {
 
 			/* frames unaligned, reset demux / TODO: align frames without resetting */
-		    	log_message( log_module, MSG_INFO,"T2-MI buffer out of sync: %02x, %02x, %02x, %02x; next sync = %d\n",
+		    	log_message( log_module, MSG_INFO,"T2-MI buffer out of sync: %02x, %02x, %02x, %02x\n",
 		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 0],
 		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 1],
 		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 2],
-		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 3],
-		    	    (int)memchr(card_buffer.t2mi_buffer + TS_PACKET_SIZE + 1, TS_SYNC_BYTE, TS_PACKET_SIZE * 3 - 1) - (int)card_buffer.t2mi_buffer
+		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 3]
 		    	);
+
 		    	t2mi_active=false;
 			t2mi_first=true;
 		    	continue;
@@ -1533,7 +1554,6 @@ main (int argc, char **argv)
 			if(dump_file)
 				if(fwrite(actual_ts_packet,sizeof(unsigned char),TS_PACKET_SIZE,dump_file)<TS_PACKET_SIZE)
 					log_message( log_module,MSG_WARN,"Error while writing the dump : %s", strerror(errno));
-
 			// Test if the error bit is set in the TS packet received
 			if ((actual_ts_packet[1] & 0x80) == 0x80)
 			{
