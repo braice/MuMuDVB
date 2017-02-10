@@ -854,12 +854,21 @@ main (int argc, char **argv)
 					"Autoconfiguration, we activate SDT rewriting. if you want to disable it see the README.\n");
 		}
 	}
+
+	if(chan_p.t2mi_pid > 0 && card_buffer.dvr_buffer_size < 20)
+	{
+		log_message( log_module,  MSG_WARN,
+				"Warning : You set a DVR buffer size too low to accept T2-MI frames, I increase your dvr_buffer_size to 20 ...\n");
+		card_buffer.dvr_buffer_size=20;
+	}
+
 	if(card_buffer.max_thread_buffer_size<card_buffer.dvr_buffer_size)
 	{
 		log_message( log_module,  MSG_WARN,
 				"Warning : You set a thread buffer size lower than your DVR buffer size, it's not possible to use such values. I increase your dvr_thread_buffer_size ...\n");
 		card_buffer.max_thread_buffer_size=card_buffer.dvr_buffer_size;
 	}
+
 
 
 
@@ -1465,9 +1474,8 @@ main (int argc, char **argv)
 			/**************************************************************/
 			/* END OF UNICAST HTTP                                        */
 			/**************************************************************/
-			if((card_buffer.bytes_read=card_read(fds.fd_dvr, card_buffer.reading_buffer, &card_buffer))==0) {
+			if((card_buffer.bytes_read=card_read(fds.fd_dvr,  card_buffer.reading_buffer, &card_buffer))==0)
 				continue;
-			}
 		}
 
 		if (chan_p.t2mi_pid > 0 && card_buffer.bytes_read > 0) {
@@ -1554,6 +1562,7 @@ main (int argc, char **argv)
 			if(dump_file)
 				if(fwrite(actual_ts_packet,sizeof(unsigned char),TS_PACKET_SIZE,dump_file)<TS_PACKET_SIZE)
 					log_message( log_module,MSG_WARN,"Error while writing the dump : %s", strerror(errno));
+
 			// Test if the error bit is set in the TS packet received
 			if ((actual_ts_packet[1] & 0x80) == 0x80)
 			{
