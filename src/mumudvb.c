@@ -181,7 +181,6 @@ void chan_new_pmt(unsigned char *ts_packet, mumu_chan_p_t *chan_p, int pid);
 bool t2mi_active=false;
 bool t2mi_first=true;
 int t2packetpos=0;
-int t2packetsize=0;
 
 int t2_partial_size=0;
 char t2packet[65536 + 10]; //Maximal T2 payload + header
@@ -239,11 +238,11 @@ int processt2(unsigned char* input_buf, int input_buf_offset, unsigned char* out
                         if(t2packet[7]==plpId) {
                     		/* extract TS packet from T2-MI payload */
 				/* Sync distance (bits) in the BB header then points to the first CRC-8 present in the data field */
-                                int syncd = ((uint8_t)(t2packet[16]) << 8) + (uint8_t)(t2packet[17]);
+                                unsigned int syncd = ((uint8_t)(t2packet[16]) << 8) + (uint8_t)(t2packet[17]);
                                 syncd >>= 3;
 
 				/* user packet len (bits) = sync byte + payload, CRC-8 of payload replaces next sync byte */
-                                int upl = ((uint8_t)(t2packet[13]) << 8) + (uint8_t)(t2packet[14]);
+                                unsigned int upl = ((uint8_t)(t2packet[13]) << 8) + (uint8_t)(t2packet[14]);
                                 upl >>= 3;
                                 upl+=19;
 
@@ -261,43 +260,59 @@ int processt2(unsigned char* input_buf, int input_buf_offset, unsigned char* out
 
                                 } else {
                                         if(!t2mi_first && syncd > 0) {
+                                            if (syncd-dnp > (sizeof(t2packet)-19)) {
+	                                	    log_message(log_module, MSG_FLOOD, "T2-MI: position (syncd) out of buffer bounds: %d\n", syncd-dnp);
+	                                	    goto t2_copy_end;
+                                            }
                                             memcpy(output_buf + output_bytes, &t2packet[19], syncd-dnp);
                                             output_bytes+=(syncd-dnp);
                                         }
+
+					/* detect unaligned packet in buffer */
+                                        unsigned int output_part = (output_buf_offset + output_bytes) % TS_PACKET_SIZE;
+                                        
+                                        if (output_part > 0) {
+                                    	    log_message(log_module, MSG_FLOOD, "T2-MI: unaligned packet in buffer pos %d/%d\n", output_buf_offset, output_bytes);
+                                    	    output_bytes -= output_part; /* drop packet; TODO: check if we can add padding instead of dropping */
+                                        }
+
                                         t2mi_first=false;
-                                        int j=19+syncd;
+                                        unsigned int t2_copy_pos=19+syncd;
+
                                         /* copy T2-MI packet payload to output, add sync bytes */
-                                        for(; j< upl - 187; j+=(187+dnp)) {
+                                        for(; t2_copy_pos < upl - 187; t2_copy_pos+=(187+dnp)) {
                                     		/* fullsize TS frame */
+                                                if (t2_copy_pos > ((sizeof(t2packet) - TS_PACKET_SIZE))) {
+                                        	    log_message(log_module, MSG_FLOOD, "T2-MI: position (full TS) out of buffer bounds: %d\n", t2_copy_pos);
+                                        	    goto t2_copy_end;
+                                                }
                                                 output_buf[output_bytes] = TS_SYNC_BYTE;
                                                 output_bytes++;
-                                                memcpy(output_buf + output_bytes, &t2packet[j], 187);
+                                                memcpy(output_buf + output_bytes, &t2packet[t2_copy_pos], 187);
                                                 output_bytes+=187;
                                         }
-                                        if(j< upl )  {
-                                    		/* partial TS frame */
+                                        if(t2_copy_pos < upl )  {
+                                    		/* partial TS frame, we will fill rest of frame at next call */
+                                                if (t2_copy_pos > (sizeof(t2packet)-((upl-t2_copy_pos)+1))) {
+                                        	    log_message(log_module, MSG_FLOOD, "T2-MI: position (part TS) out of buffer bounds: %d\n", t2_copy_pos);
+                                        	    goto t2_copy_end;
+                                                }
                                                 output_buf[output_bytes] = TS_SYNC_BYTE;
                                                 output_bytes++;
-                                                memcpy(output_buf + output_bytes, &t2packet[j], upl-j);
-                                                output_bytes+=(upl-j);
+                                                memcpy(output_buf + output_bytes, &t2packet[t2_copy_pos], upl-t2_copy_pos);
+                                                output_bytes+=(upl-t2_copy_pos);
                                         }
+                                        t2_copy_end: ;
                                 }
                         }
                         t2mi_active=false;
+                        memset(&t2packet, 0, sizeof(t2packet)); // end of processing t2-mi packet, clear it
                 }
 
                 if((buf[offset])==0x0) { //Baseband Frame
 			/*	TODO: padding
 				pad (pad_len bits) shall be filled with between 0 and 7 bits of padding such that the T2-MI packet is always an integer
 				number of bytes in length, i.e. payload_len+pad_len shall be a multiple of 8. Each padding bit shall have the value 0. 
-			*/
-			/*
-                        t2packetsize= (unsigned char) buf[offset+4];
-                        t2packetsize<<=8;
-                        t2packetsize|= (unsigned char) (buf[offset+5]);
-
-                        int pad=t2packetsize % 8;
-                        t2packetsize+=pad;
 			*/
                         if(len > offset) {
                                 memcpy(t2packet,&buf[offset],len-offset);
@@ -1479,7 +1494,6 @@ main (int argc, char **argv)
 		}
 
 		if (chan_p.t2mi_pid > 0 && card_buffer.bytes_read > 0) {
-				/* t2mi code begin */
 				int processed = 0;
 
 				for(card_buffer.read_buff_pos=0;
@@ -1487,10 +1501,10 @@ main (int argc, char **argv)
 				    card_buffer.read_buff_pos+=TS_PACKET_SIZE)//we loop on the subpackets
 				{
 
-                            	    int mpid=(unsigned char)(card_buffer.reading_buffer[card_buffer.read_buff_pos+1]);
-                            	    mpid&=0x01F;
-                            	    mpid<<=8;
-                            	    mpid|=(unsigned char)(card_buffer.reading_buffer[card_buffer.read_buff_pos+2]);
+				    int mpid=(unsigned char)(card_buffer.reading_buffer[card_buffer.read_buff_pos+1]);
+				    mpid&=0x01F;
+				    mpid<<=8;
+				    mpid|=(unsigned char)(card_buffer.reading_buffer[card_buffer.read_buff_pos+2]);
 				    
 				    /* target t2mi stream pid */
                             	    if(mpid!=chan_p.t2mi_pid) {
@@ -1499,8 +1513,6 @@ main (int argc, char **argv)
                             	    processed += processt2(card_buffer.reading_buffer, card_buffer.read_buff_pos, card_buffer.t2mi_buffer, t2_partial_size + processed, chan_p.t2mi_plp);
             			}
 
-//				fprintf(stderr, "t2mi read: %u, write: %u, delta :%d\n", card_buffer.bytes_read, processed, card_buffer.bytes_read - processed);
-
 				/* we got no data from demux */
 				if (processed + t2_partial_size == 0) {
 				    card_buffer.bytes_read = 0;
@@ -1508,17 +1520,7 @@ main (int argc, char **argv)
 				}
 
 				card_buffer.bytes_read = processed + t2_partial_size;
-//				fprintf(stderr, "part read: %u\n", t2_partial_size);
 		    		t2_partial_size=0;
-
-
-            			/* fully demuxed stream goes here, try it! */
-            			/*
-            			if (processed > 0) {
-                		    write(STDOUT_FILENO,card_buffer.reading_buffer,processed);
-            			}
-				*/
-				/* t2mi code end */
 		}
 
 		if(card_buffer.dvr_buffer_size!=1 && stats_infos.show_buffer_stats)
@@ -1528,14 +1530,13 @@ main (int argc, char **argv)
 		}
 
 		if (chan_p.t2mi_pid > 0 && card_buffer.dvr_buffer_size >= 4) {
-		    /* frames may go unaligned from demux, we must detect sync bytes */
+		    /* if buffer is damaged, reset demux */
 		    if (!((card_buffer.t2mi_buffer[TS_PACKET_SIZE * 0] == TS_SYNC_BYTE) &&
 			  (card_buffer.t2mi_buffer[TS_PACKET_SIZE * 1] == TS_SYNC_BYTE) &&
 			  (card_buffer.t2mi_buffer[TS_PACKET_SIZE * 2] == TS_SYNC_BYTE) &&
 			  (card_buffer.t2mi_buffer[TS_PACKET_SIZE * 3] == TS_SYNC_BYTE)) ) {
 
-			/* frames unaligned, reset demux / TODO: align frames without resetting */
-		    	log_message( log_module, MSG_INFO,"T2-MI buffer out of sync: %02x, %02x, %02x, %02x\n",
+		    	log_message( log_module, MSG_INFO,"T2-MI: buffer out of sync: %02x, %02x, %02x, %02x\n",
 		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 0],
 		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 1],
 		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 2],
@@ -1586,7 +1587,6 @@ main (int argc, char **argv)
 			//Software filtering in case the card doesn't have hardware filtering
 			if(chan_p.asked_pid[8192]==PID_NOT_ASKED && chan_p.asked_pid[pid]==PID_NOT_ASKED && chan_p.t2mi_pid == 0)
 				continue;
-//			fprintf(stderr, "seen pid: %04X, %u\n", pid, pid);
 
 			ScramblingControl = (actual_ts_packet[3] & 0xc0) >> 6;
 			/* 0 = Not scrambled
