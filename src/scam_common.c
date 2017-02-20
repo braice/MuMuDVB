@@ -63,6 +63,8 @@
 
 static char *log_module="SCAM_COMMON: ";
 
+int check_pmt_service_id(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel); // in ts.c
+
 /* See http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2. */
 int round_up(int x)
 {
