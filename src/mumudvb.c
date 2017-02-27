@@ -277,7 +277,7 @@ int processt2(unsigned char* input_buf, int input_buf_offset, unsigned char* out
                                         /* copy T2-MI packet payload to output, add sync bytes */
                                         for(; t2_copy_pos < upl - 187; t2_copy_pos+=(187+dnp)) {
                                     		/* fullsize TS frame */
-                                                if (t2_copy_pos > ((sizeof(t2packet) - TS_PACKET_SIZE))) {
+                                                if (t2_copy_pos > ((sizeof(t2packet) - 187))) {
                                         	    log_message(log_module, MSG_DEBUG, "T2-MI: position (full TS) out of buffer bounds: %d\n", t2_copy_pos);
                                         	    goto t2_copy_end;
                                                 }
@@ -1495,6 +1495,7 @@ main (int argc, char **argv)
 
 		if (chan_p.t2mi_pid > 0 && card_buffer.bytes_read > 0) {
 			int processed = 0;
+			int errorcounter = 0;
 
 			for(card_buffer.read_buff_pos=0;
 			    (card_buffer.read_buff_pos+TS_PACKET_SIZE)<=card_buffer.bytes_read;
@@ -1505,7 +1506,8 @@ main (int argc, char **argv)
 				(card_buffer.reading_buffer[card_buffer.read_buff_pos+1] & 0x80) == 0x80) &&
 				chan_p.filter_transport_error > 0)
 			    {
-        			log_message(log_module, MSG_DEBUG, "T2-MI: input TS packet damaged, buf offset %d\n", card_buffer.read_buff_pos);
+        			log_message(log_module, MSG_FLOOD, "T2-MI: input TS packet damaged, buf offset %d\n", card_buffer.read_buff_pos);
+        			errorcounter++;
 				continue;
 			    }
 			    /* target t2mi stream pid */
@@ -1514,6 +1516,18 @@ main (int argc, char **argv)
                     	    }
                     	    processed += processt2(card_buffer.reading_buffer, card_buffer.read_buff_pos, card_buffer.t2mi_buffer, t2_partial_size + processed, chan_p.t2mi_plp);
     			}
+
+			/* in case we got too much errors */
+			if (errorcounter * 100 > card_buffer.dvr_buffer_size * 50) {
+		    	    log_message(log_module, MSG_DEBUG,"T2-MI: too many errors in input buffer (%d/%d)\n", errorcounter, card_buffer.dvr_buffer_size);
+
+		    	    t2_partial_size=0;
+			    card_buffer.bytes_read=0;
+
+		    	    t2mi_active=false;
+			    t2mi_first=true;
+		    	    continue;
+			}
 
 			/* we got no data from demux */
 			if (processed + t2_partial_size == 0) {
@@ -1558,10 +1572,10 @@ main (int argc, char **argv)
 				if(fwrite(actual_ts_packet,sizeof(unsigned char),TS_PACKET_SIZE,dump_file)<TS_PACKET_SIZE)
 					log_message( log_module,MSG_WARN,"Error while writing the dump : %s", strerror(errno));
 
-			// Test if the error bit is set in the TS packet received
-			if ((actual_ts_packet[1] & 0x80) == 0x80)
+			/* check for sync byte and transport error bit if requested */
+			if ((actual_ts_packet[0] != TS_SYNC_BYTE || actual_ts_packet[1] & 0x80) == 0x80)
 			{
-				log_message( log_module, MSG_FLOOD,"Error bit set in TS packet!\n");
+				log_message( log_module, MSG_FLOOD,"Error bit set or no sync in TS packet!\n");
 				// Test if we discard the packets with error bit set
 				if (chan_p.filter_transport_error>0) continue;
 			}
