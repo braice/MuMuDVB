@@ -59,6 +59,29 @@ static char *log_module="SCAM_CAPMT: ";
 /** @brief sending to oscam data to begin geting cw's for channel */
 int scam_send_capmt(mumudvb_channel_t *channel, scam_parameters_t *scam_params, int adapter)
 {
+ /* find biss key for current channel */
+ int chanid = 0;
+ if (scam_params->const_key_count > 0) {
+    for (; chanid < scam_params->const_key_count; chanid++) {
+	if (channel->service_id == scam_params->const_sid[chanid]) {
+	    log_message(log_module, MSG_DEBUG,"found static key %d in list for channel %s", chanid, channel->name);
+	    break;
+	}
+    }
+ }
+ if (channel->service_id == scam_params->const_sid[chanid] && scam_params->const_key_count > 0)
+ {
+    pthread_mutex_lock(&channel->cw_lock);
+    memcpy(channel->odd_cw,&scam_params->const_key_odd[chanid],8);
+    channel->got_key_odd=1;
+    memcpy(channel->even_cw,&scam_params->const_key_even[chanid],8);
+    channel->got_key_even=1;
+
+    channel->ca_idx = scam_params->ca_pid.index+1;
+    if (channel->ca_idx_refcnt == 0) channel->ca_idx_refcnt = 1;
+
+    pthread_mutex_unlock(&channel->cw_lock);
+ } else {
   if (channel->camd_socket < 0)
   {
 	channel->camd_socket = socket(AF_LOCAL, SOCK_STREAM, 0);
@@ -146,7 +169,7 @@ int scam_send_capmt(mumudvb_channel_t *channel, scam_parameters_t *scam_params, 
     channel->camd_socket = -1;
     return 1;
   }
-
+ }
   return 0;
 }
 

@@ -253,6 +253,7 @@ SCAM support parameters
 |ring_buffer_default_size | default number of ts packets in ring buffer (when not specified by channel specific config) | 32768 |it gets rounded to the value that is power of 2 not lower than it|
 |decsa_default_delay | default delay time in us between getting packet and descrambling (when not specified by channel specific config) | 500000 |  max is 10000000 |
 |send_default_delay | default delay time in us between getting packet and sending (when not specified by channel specific config) | 1500000 | mustn't be lower than decsa delay |
+|scam_const_key | set static key (BISS), skip access scam socket for such SIDs | | example (SID, odd key, even key): scam_const_key=103,11:22:33:44:55:66:77:88,11:22:33:44:55:66:77:88|
 |==================================================================================================================
 
 Autoconfiguration parameters

@@ -599,7 +599,7 @@ int check_pmt_service_id(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 		return 0;
 	}
 	else if(channel->service_id)
-		log_message( log_module,  MSG_DETAIL,"GOOD service_id for PMT %d and channel \"%s\"\n", pmt->pid, channel->name);
+		log_message( log_module,  MSG_DEBUG,"GOOD service_id for PMT %d and channel \"%s\"\n", pmt->pid, channel->name);
 
 	if(!channel->service_id)
 		log_message( log_module,  MSG_DEBUG,"no service_id information for channel \"%s\"\n", channel->name);

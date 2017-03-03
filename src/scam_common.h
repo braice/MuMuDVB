@@ -59,6 +59,8 @@
 #define DECSA_DEFAULT_DELAY 500000
 #define SEND_DEFAULT_DELAY 1500000
 
+#define MAX_STATIC_KEYS 24
+
 /** @brief the parameters for the scam
  * This structure contain the parameters needed for the SCAM
  */
@@ -70,6 +72,11 @@ typedef struct scam_parameters_t{
   ca_pid_t ca_pid;
   uint64_t ring_buffer_default_size,decsa_default_delay,send_default_delay;
   int epfd;
+  /* biss key */
+  unsigned char const_key_odd[MAX_STATIC_KEYS][8];
+  unsigned char const_key_even[MAX_STATIC_KEYS][8];
+  int const_sid[MAX_STATIC_KEYS];
+  int const_key_count; 
 }scam_parameters_t;  
 
 //The structure for argument passing to sendthread_func

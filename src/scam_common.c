@@ -118,6 +118,35 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *c_c
     substring = strtok (NULL, delimiteurs);
     scam_vars->send_default_delay = atoi (substring);
   }
+  else if (!strcmp (substring, "scam_const_key"))
+  {
+    while ((substring = strtok (NULL, delimiteurs)) != NULL)
+    {
+        if(sscanf(substring, "%d,%hhx:%hhx:%hhx:%hhx:%hhx:%hhx:%hhx:%hhx,%hhx:%hhx:%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
+    		&scam_vars->const_sid[scam_vars->const_key_count],
+    		&scam_vars->const_key_odd[scam_vars->const_key_count][0],
+    		&scam_vars->const_key_odd[scam_vars->const_key_count][1],
+    		&scam_vars->const_key_odd[scam_vars->const_key_count][2],
+    		&scam_vars->const_key_odd[scam_vars->const_key_count][3],
+    		&scam_vars->const_key_odd[scam_vars->const_key_count][4],
+    		&scam_vars->const_key_odd[scam_vars->const_key_count][5],
+    		&scam_vars->const_key_odd[scam_vars->const_key_count][6],
+    		&scam_vars->const_key_odd[scam_vars->const_key_count][7],
+    		&scam_vars->const_key_even[scam_vars->const_key_count][0],
+    		&scam_vars->const_key_even[scam_vars->const_key_count][1],
+    		&scam_vars->const_key_even[scam_vars->const_key_count][2],
+    		&scam_vars->const_key_even[scam_vars->const_key_count][3],
+    		&scam_vars->const_key_even[scam_vars->const_key_count][4],
+    		&scam_vars->const_key_even[scam_vars->const_key_count][5],
+    		&scam_vars->const_key_even[scam_vars->const_key_count][6],
+    		&scam_vars->const_key_even[scam_vars->const_key_count][7]
+    	) == 17) {
+	    scam_vars->const_key_count++;
+    	} else {
+    	    log_message( log_module,  MSG_ERROR, "invalid static key \"%s\"\n", substring);
+    	}
+    }
+  }
 
   else if (!strcmp (substring, "oscam"))
   {
