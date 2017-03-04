@@ -142,6 +142,7 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *c_c
     		&scam_vars->const_key_even[scam_vars->const_key_count][7]
     	) == 17) {
 	    scam_vars->const_key_count++;
+    	    if (scam_vars->const_key_count == MAX_STATIC_KEYS) break;
     	} else {
     	    log_message( log_module,  MSG_ERROR, "invalid static key \"%s\"\n", substring);
     	}
