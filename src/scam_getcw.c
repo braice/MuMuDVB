@@ -114,7 +114,6 @@ static void *getcwthread_func(void* arg)
       break;
     }
     pthread_mutex_lock(&chan_p->lock);
-
     for (i = 0; i < num_of_events; i++) {
       for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++) {
         mumudvb_channel_t *channel = &chan_p->channels[curr_channel];
@@ -158,7 +157,6 @@ static void *getcwthread_func(void* arg)
               return 0;
             }
             request = (int *) (buff + 1);
-
             if (*request == CA_SET_DESCR)
             {
                 //read upt to DVBAPI_CA_SET_DESCR_LEN
@@ -191,7 +189,6 @@ static void *getcwthread_func(void* arg)
                 log_message( log_module,  MSG_DEBUG, "Got CA_SET_DESCR removal request, ignoring");
               }
             }
-
             if (*request == CA_SET_PID)
             {
               memcpy((&(scam_params->ca_pid)), buff + 1 + sizeof(int), sizeof(ca_pid_t));

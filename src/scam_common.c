@@ -122,7 +122,11 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *c_c
   {
     while ((substring = strtok (NULL, delimiteurs)) != NULL)
     {
-        if(sscanf(substring, "%d,%hhx:%hhx:%hhx:%hhx:%hhx:%hhx:%hhx:%hhx,%hhx:%hhx:%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
+    	if (scam_vars->const_key_count == MAX_STATIC_KEYS) {
+    		log_message( log_module,  MSG_ERROR, "maximum static keys count (%d) is reached!\n", MAX_STATIC_KEYS);
+    		break;
+    	}
+        if (sscanf(substring, "%d,%hhx:%hhx:%hhx:%hhx:%hhx:%hhx:%hhx:%hhx,%hhx:%hhx:%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
     		&scam_vars->const_sid[scam_vars->const_key_count],
     		&scam_vars->const_key_odd[scam_vars->const_key_count][0],
     		&scam_vars->const_key_odd[scam_vars->const_key_count][1],
@@ -142,7 +146,6 @@ int read_scam_configuration(scam_parameters_t *scam_vars, mumudvb_channel_t *c_c
     		&scam_vars->const_key_even[scam_vars->const_key_count][7]
     	) == 17) {
 	    scam_vars->const_key_count++;
-    	    if (scam_vars->const_key_count == MAX_STATIC_KEYS) break;
     	} else {
     	    log_message( log_module,  MSG_ERROR, "invalid static key \"%s\"\n", substring);
     	}
