@@ -174,6 +174,114 @@ void init_multicast_v(multi_p_t *multi_p); //in multicast.c
 
 void chan_new_pmt(unsigned char *ts_packet, mumu_chan_p_t *chan_p, int pid);
 
+#ifndef __cplusplus
+    typedef enum { false = 0, true = !false } bool;
+#endif
+
+bool t2mi_active=false;
+bool t2mi_first=true;
+int t2packetpos=0;
+int t2_partial_size=0;
+
+/* rewritten by [anp/hsw], original code taken from https://github.com/newspaperman/t2-mi */
+int processt2(unsigned char* input_buf, int start_offset, int packet_idx, unsigned char* output_buf, uint8_t plpId) {
+        char t2packet[0x5009];
+
+        int t2packetsize=0;
+
+        unsigned char* buf = input_buf + packet_idx + 4 + start_offset;
+        int len = 184 - start_offset;
+
+        int output_bytes=0;
+
+        if((((input_buf[packet_idx+1])&0x40)>>4)==0x04) {
+                unsigned int offset=1;
+                offset+=(unsigned char)(buf[0]);
+//                        fprintf(stderr, "offset:%u\n",offset);
+//                        fprintf(stderr, "packetspos:%i\n",t2packetpos);
+                if(t2mi_active) {
+                        if(offset>1) {
+                                memcpy(&t2packet[t2packetpos],&buf[1],offset-1);
+                        }
+//                        fprintf(stderr,"plpId:%02x\n",t2packet[7]);
+                        if(t2packet[7]==plpId) {
+//                                fprintf(stderr,"%02x %02x<>\n",(unsigned char)(t2packet[9]),(unsigned char)(t2packet[10]));
+                                int syncd = (unsigned char) t2packet[16];
+                                syncd<<=8;
+                                syncd |= (unsigned char) (t2packet[17]);
+                                syncd >>= 3;
+                                int upl = (unsigned char) t2packet[13];
+                                upl <<=8;
+                                upl |= (unsigned char) (t2packet[14]);
+                                upl >>= 3;
+                                upl+=19;
+
+                                int dnp=0;
+
+                                if(t2packet[9]&0x4) dnp=1;
+                                if(syncd==0xFFFF ) {
+//                                        fprintf(stderr, "SYNC\n");
+                                        if(upl >19) {
+                                                memcpy(output_buf + output_bytes, &t2packet[19], upl-19);
+                                                output_bytes+=(upl-19);
+                                        }
+
+                                } else {
+                                        if(!t2mi_first && syncd>0) {
+                                            memcpy(output_buf + output_bytes, &t2packet[19], syncd-dnp);
+                                            output_bytes+=(syncd-dnp);
+                                        }
+                                        t2mi_first=false;
+                                        int j=19+syncd;
+                                        for(; j< upl - 187; j+=(187+dnp)) {
+                                                output_buf[output_bytes] = TS_SYNC_BYTE;
+                                                output_bytes++;
+                                                memcpy(output_buf + output_bytes, &t2packet[j], 187);
+                                                output_bytes+=187;
+                                        }
+                                        if(j< upl )  {
+                                                output_buf[output_bytes] = TS_SYNC_BYTE;
+                                                output_bytes++;
+                                                memcpy(output_buf + output_bytes, &t2packet[j], upl-j);
+                                                output_bytes+=(upl-j);
+                                        }
+                                }
+                        }
+                        t2mi_active=false;
+                }
+
+                if((buf[offset])==0x0) { //Baseband Frame
+                        t2packetsize= (unsigned char) buf[offset+4];
+                        t2packetsize<<=8;
+                        t2packetsize|= (unsigned char) (buf[offset+5]);
+
+			//TODO: padding
+                        //int pad=0;
+                        if((t2packetsize&0x07) !=0x00) {
+                            t2packetsize>>=3;
+                            t2packetsize+=6;
+                        //    pad=1;
+                        } else {
+                            t2packetsize>>=3;
+                            t2packetsize+=6;
+                        //    pad=0;
+                        }
+
+                        if( (len - offset) >0) {
+                                memcpy(t2packet,&buf[offset],len-offset);
+                                t2packetpos=len-offset;
+                                t2mi_active=true;
+                        }
+                }
+        } else if(t2mi_active) {
+                memcpy(t2packet+t2packetpos,buf,len);
+                t2packetpos+=len;
+        }
+        return output_bytes;
+}
+
+
+
 int
 main (int argc, char **argv)
 {
@@ -640,6 +748,23 @@ main (int argc, char **argv)
 			substring = strtok (NULL, delimiteurs);
 			chan_p.check_cc = atoi (substring);
 		}
+		else if (!strcmp (substring, "t2mi_pid"))
+		{
+			substring = strtok (NULL, delimiteurs);
+			chan_p.t2mi_pid = atoi (substring);
+			log_message(log_module,MSG_INFO,"Demuxing T2-MI stream on pid %d as input\n", chan_p.t2mi_pid);
+			if(chan_p.t2mi_pid < 1 || chan_p.t2mi_pid > 8192)
+			{
+				log_message(log_module,MSG_WARN,"wrong t2mi pid, forced to 4096\n");
+				chan_p.t2mi_pid=4096;
+			}
+		}
+		else if (!strcmp (substring, "t2mi_plp"))
+		{
+			substring = strtok (NULL, delimiteurs);
+			chan_p.t2mi_plp = atoi (substring);
+		}
+
 		else
 		{
 			if(strlen (current_line) > 1)
@@ -1108,6 +1233,12 @@ main (int argc, char **argv)
 	if(tune_p.fe_type==FE_ATSC)
 		chan_p.asked_pid[PSIP_PID]=PID_ASKED;
 
+	// T2-MI source pid may not belong to any streamed pid, force it.
+	if (chan_p.t2mi_pid > 0) {
+		mandatory_pid[chan_p.t2mi_pid]=1;
+		chan_p.asked_pid[chan_p.t2mi_pid]=PID_ASKED;
+	}
+
 	/*****************************************************/
 	//Set the filters
 	/*****************************************************/
@@ -1202,10 +1333,17 @@ main (int argc, char **argv)
 		card_buffer.reading_buffer=card_buffer.buffer1;
 		card_buffer.writing_buffer=card_buffer.buffer2;
 		cardthreadparams.main_waiting=0;
+		if (chan_p.t2mi_pid > 0) {
+		    card_buffer.t2mi_buffer=malloc(sizeof(unsigned char)*card_buffer.write_buffer_size*2);
+		}
+		
 	}else
 	{
 		//We alloc the buffer
 		card_buffer.reading_buffer=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*card_buffer.dvr_buffer_size);
+		if (chan_p.t2mi_pid > 0) {
+		    card_buffer.t2mi_buffer=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*card_buffer.dvr_buffer_size*2);
+		}
 	}
 
 
@@ -1314,14 +1452,64 @@ main (int argc, char **argv)
 			/**************************************************************/
 			/* END OF UNICAST HTTP                                        */
 			/**************************************************************/
-			if((card_buffer.bytes_read=card_read(fds.fd_dvr,  card_buffer.reading_buffer, &card_buffer))==0)
+			if((card_buffer.bytes_read=card_read(fds.fd_dvr, card_buffer.reading_buffer, &card_buffer))==0) {
 				continue;
+			}
 		}
 
+		if (chan_p.t2mi_pid > 0 && card_buffer.bytes_read > 0) {
+				/* t2mi code begin */
+				int processed = 0;
 
+				for(card_buffer.read_buff_pos=0;
+				    (card_buffer.read_buff_pos+TS_PACKET_SIZE)<=card_buffer.bytes_read;
+				    card_buffer.read_buff_pos+=TS_PACKET_SIZE)//we loop on the subpackets
+				{
 
+                            	    int start=0;
+                            	    int mpid=(unsigned char)(card_buffer.reading_buffer[card_buffer.read_buff_pos+1]);
+                            	    mpid&=0x01F;
+                            	    mpid<<=8;
+                            	    mpid|=(unsigned char)(card_buffer.reading_buffer[card_buffer.read_buff_pos+2]);
+				    
+				    /* target t2mi stream pid */
+                            	    if(mpid!=chan_p.t2mi_pid) {
+                                        continue;
+                            	    }
+                            	    if((((card_buffer.reading_buffer[card_buffer.read_buff_pos+3])&0x30)>>4)==0x03) {
+                                        start++;
+                                        start+=(unsigned char)(card_buffer.reading_buffer[card_buffer.read_buff_pos+4]); //adaption + payload, offset addieren
+                                        if(start> 183) {
+                                                continue;
+                                        }
+                            	    }
+                            	    else if(((((card_buffer.reading_buffer[card_buffer.read_buff_pos + 3])&0x30)>>4)==0x02)) {
+                                        continue; // nur adaption field
+                            	    }
+                            	    processed += processt2(card_buffer.reading_buffer, start, card_buffer.read_buff_pos, card_buffer.t2mi_buffer + t2_partial_size + processed, chan_p.t2mi_plp);
+            			}
 
+//				fprintf(stderr, "t2mi read: %u, write: %u, delta :%d\n", card_buffer.bytes_read, processed, card_buffer.bytes_read - processed);
 
+				/* we got no data from demux */
+				if (processed + t2_partial_size == 0) {
+				    card_buffer.bytes_read = 0;
+				    continue;
+				}
+
+				card_buffer.bytes_read = processed + t2_partial_size;
+//				fprintf(stderr, "part read: %u\n", t2_partial_size);
+
+				t2_partial_size=0;
+
+            			/* fully demuxed stream goes here, try it! */
+            			/*
+            			if (processed > 0) {
+                		    write(STDOUT_FILENO,card_buffer.reading_buffer,processed);
+            			}
+				*/
+				/* t2mi code end */
+		}
 
 		if(card_buffer.dvr_buffer_size!=1 && stats_infos.show_buffer_stats)
 		{
@@ -1329,11 +1517,36 @@ main (int argc, char **argv)
 			stats_infos.stats_num_reads++;
 		}
 
+		if (chan_p.t2mi_pid > 0 && card_buffer.dvr_buffer_size >= 4) {
+		    /* frames may go unaligned from demux, we must detect sync bytes */
+		    if (!((card_buffer.t2mi_buffer[TS_PACKET_SIZE * 0] == TS_SYNC_BYTE) &&
+			  (card_buffer.t2mi_buffer[TS_PACKET_SIZE * 1] == TS_SYNC_BYTE) &&
+			  (card_buffer.t2mi_buffer[TS_PACKET_SIZE * 2] == TS_SYNC_BYTE) &&
+			  (card_buffer.t2mi_buffer[TS_PACKET_SIZE * 3] == TS_SYNC_BYTE)) ) {
+
+			/* frames unaligned, reset demux / TODO: align frames without resetting */
+		    	log_message( log_module, MSG_INFO,"T2-MI buffer out of sync: %02x, %02x, %02x, %02x; next sync = %d\n",
+		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 0],
+		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 1],
+		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 2],
+		    	    card_buffer.t2mi_buffer[TS_PACKET_SIZE * 3],
+		    	    (int)memchr(card_buffer.t2mi_buffer + TS_PACKET_SIZE + 1, TS_SYNC_BYTE, TS_PACKET_SIZE * 3 - 1) - (int)card_buffer.t2mi_buffer
+		    	);
+		    	t2mi_active=false;
+			t2mi_first=true;
+		    	continue;
+		    }
+		}
+
 		for(card_buffer.read_buff_pos=0;
 				(card_buffer.read_buff_pos+TS_PACKET_SIZE)<=card_buffer.bytes_read;
 				card_buffer.read_buff_pos+=TS_PACKET_SIZE)//we loop on the subpackets
 		{
-			actual_ts_packet=card_buffer.reading_buffer+card_buffer.read_buff_pos;
+			if (chan_p.t2mi_pid > 0) {
+			    actual_ts_packet=card_buffer.t2mi_buffer+card_buffer.read_buff_pos;
+			} else {
+			    actual_ts_packet=card_buffer.reading_buffer+card_buffer.read_buff_pos;
+			}
 
 			//If the user asked to dump the streams it's here that it should be done
 			if(dump_file)
@@ -1361,8 +1574,9 @@ main (int argc, char **argv)
 			}
 
 			//Software filtering in case the card doesn't have hardware filtering
-			if(chan_p.asked_pid[8192]==PID_NOT_ASKED && chan_p.asked_pid[pid]==PID_NOT_ASKED)
+			if(chan_p.asked_pid[8192]==PID_NOT_ASKED && chan_p.asked_pid[pid]==PID_NOT_ASKED && chan_p.t2mi_pid == 0)
 				continue;
+//			fprintf(stderr, "seen pid: %04X, %u\n", pid, pid);
 
 			ScramblingControl = (actual_ts_packet[3] & 0xc0) >> 6;
 			/* 0 = Not scrambled
@@ -1550,6 +1764,19 @@ main (int argc, char **argv)
 			}
 			pthread_mutex_unlock(&chan_p.lock);
 		}
+
+		/* in case we got partial packet from t2mi demux, save it */
+		if (chan_p.t2mi_pid > 0 && card_buffer.bytes_read > card_buffer.read_buff_pos) {
+		    t2_partial_size = card_buffer.bytes_read - card_buffer.read_buff_pos;
+		    
+		    /* we will overlap if buffer is 1 packet in size! */
+		    memcpy(card_buffer.t2mi_buffer, card_buffer.t2mi_buffer + card_buffer.read_buff_pos, t2_partial_size);
+
+//		    fprintf(stderr, "size: %u unread size: %u\n", card_buffer.bytes_read, t2_partial_size);
+		} else {
+		    t2_partial_size = 0;
+		}
+		
 	}
 	/******************************************************/
 	//End of main loop

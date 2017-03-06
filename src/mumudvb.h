@@ -74,6 +74,8 @@
 /**Size of an MPEG2-TS packet*/
 #define TS_PACKET_SIZE 188
 
+#define TS_SYNC_BYTE 0x47
+
 /**Default Maximum Number of TS packets in the TS buffer*/
 #define DEFAULT_TS_BUFFER_SIZE 20
 
@@ -95,7 +97,7 @@ We cannot discover easily the MTU with unconnected UDP
 #define MAX_UDP_SIZE 1320
 
 /**the max mandatory pid number*/
-#define MAX_MANDATORY_PID_NUMBER   32
+#define MAX_MANDATORY_PID_NUMBER   8192
 /**config line length*/
 #define CONF_LINELEN 	        512
 #define MAX_NAME_LEN			512
@@ -252,6 +254,8 @@ typedef struct card_buffer_t{
 	int overflow_number;
 	/**The maximum size of the thread buffer (in packets)*/
 	int max_thread_buffer_size;
+	/* t2-mi demux buffer */
+	unsigned char *t2mi_buffer;
 }card_buffer_t;
 
 
@@ -546,6 +550,9 @@ typedef struct mumu_chan_p_t{
 	/** The number of TS discontinuities per PID **/
 	int16_t continuity_counter_pid[8193]; //on 16 bits for storing the initial -1
 	uint8_t check_cc;
+	/** t2mi demux parameters **/
+	int t2mi_pid;
+	uint8_t t2mi_plp;
 }mumu_chan_p_t;
 
 
