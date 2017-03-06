@@ -61,7 +61,7 @@ Features overview
 - Support for automatic configuration i.e channels discovery and follow changes, see <<autoconfiguration,Autoconfiguration>> section
 - Generation of SAP announces, see <<sap,SAP>> section
 - Support of DVB-S2, DVB-S, DVB-C, DVB-T and ATSC
-- Possibility to partially rewrite the stream for better compatibility with set-top boxes and some clients. See <<pat_rewrite,PAT Rewrite>> and <<sdt_rewrite,SDT Rewrite>> sections.
+- Possibility to partially rewrite the stream for better compatibility with set-top boxes and some clients. See <<pat_rewrite,PAT Rewrite>>, <<sdt_rewrite,SDT Rewrite>> and <<pmt_rewrite,PMT rewrite>> sections.
 - Support for HTTP unicast see <<unicast,http unicast>> section
 - Support for RTP headers (only for multicast)
 - CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.txt and CAM_menu_interface.png for screenshot)
@@ -825,6 +825,19 @@ To enable SDT rewriting, add `rewrite_sdt=1` to your config file. This feature c
 
 [NOTE]
 If you don't use full autoconfiguration, SDT rewrite needs the `service_id` option for each channel to specify the service id.
+
+[[pmt_rewrite]]
+PMT (Program Map Table) Rewriting
+-----------------------------------------
+
+This option must be used if you don't stream all PIDs for a channel. It's useful for separating one channel with multiple audio streams (multiple languages) into separate channels.
+
+Without PMT rewrite, players can get confused due to missing streams, especially if the first PID in the table is not streamed, and the playback may fail. However, teletext PID can usually be dropped safely without rewriting PMT, as it's the last PID in the table.
+
+To enable PMT rewriting, add `rewrite_pmt=1` to your config file.
+
+[NOTE]
+PMT rewrite will work only if PIDs are set manually. If they are autodetected, everything will be streamed so there's no need to rewrite the PMT.
 
 
 

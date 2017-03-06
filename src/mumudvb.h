@@ -457,6 +457,19 @@ typedef struct mumu_chan_t{
 	//do we need to update the SAP announce (typically a name change)
 	int sap_need_update;
 
+	/**The generated PMT to be sent*/
+	unsigned char generated_pmt[TS_PACKET_SIZE];
+	/** Do we rewrite PMT for this channel? */
+	int pmt_rewrite;
+	/** PMT can span over multiple TS packets */
+	int pmt_part_num;
+	int pmt_part_count;
+	unsigned char original_pmt[TS_PACKET_SIZE*10];
+	int original_pmt_ready;
+	/** The version of the generated pmt */
+	int generated_pmt_version;
+	/** The continuity counter for pmt packets */
+	int pmt_continuity_counter;
 	/**The generated pat to be sent*/
 	unsigned char generated_pat[TS_PACKET_SIZE];
 	/** The version of the generated pat */
