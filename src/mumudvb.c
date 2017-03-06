@@ -861,7 +861,12 @@ main (int argc, char **argv)
 	// We tune the card
 	iRet =-1;
 
-	if (open_fe (&fds.fd_frontend, tune_p.card_dev_path, tune_p.tuner,1))
+
+	if(strlen(tune_p.read_file_path))
+		iRet = open_fe (&fds.fd_frontend, tune_p.read_file_path, tune_p.tuner,1,1);
+	else
+		iRet = open_fe (&fds.fd_frontend, tune_p.card_dev_path, tune_p.tuner,1,0);
+	if (iRet)
 	{
 
 		/*****************************************************/
@@ -891,10 +896,14 @@ main (int argc, char **argv)
 			fclose (pidfile);
 		}
 
-
-		iRet =
+		if(strlen(tune_p.read_file_path))
+			iRet = 1; //no tuning if file input
+		else
+			iRet =
 				tune_it (fds.fd_frontend, &tune_p);
 	}
+	else
+		iRet =-1;
 
 	if (iRet < 0)
 	{

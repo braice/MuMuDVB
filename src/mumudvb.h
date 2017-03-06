@@ -38,6 +38,7 @@
 #include <pthread.h>
 #include <net/if.h>
 
+#define MAX_FILENAME_LEN 256
 
 #define IPV6_CHAR_LEN 64
 

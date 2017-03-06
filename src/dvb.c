@@ -50,13 +50,16 @@ static char *log_module="DVB: ";
  * @param card the card number 
  */
 int
-open_fe (int *fd_frontend, char *base_path, int tuner, int rw)
+open_fe (int *fd_frontend, char *base_path, int tuner, int rw, int full_path)
 {
 
 	char *frontend_name=NULL;
 	int asprintf_ret;
 	int rw_flag;
-	asprintf_ret=asprintf(&frontend_name,"%s/%s%d",base_path,FRONTEND_DEV_NAME,tuner);
+	if(full_path) //used for pipe input
+		asprintf_ret=asprintf(&frontend_name,"%s",base_path);
+	else
+		asprintf_ret=asprintf(&frontend_name,"%s/%s%d",base_path,FRONTEND_DEV_NAME,tuner);
 	if(asprintf_ret==-1)
 		return -1;
 	if(rw)
@@ -434,7 +437,7 @@ void show_card_capabilities( int card, int tuner )
 	int l=sizeof(card_dev_path);
 	mumu_string_replace(card_dev_path,&l,0,"%card",number);
 	//Open the frontend
-	if(!open_fe (&frontend_fd, card_dev_path, tuner,0)) // we open the card readonly so we can get the capabilities event when used
+	if(!open_fe (&frontend_fd, card_dev_path, tuner,0,0)) // we open the card readonly so we can get the capabilities event when used
 		return;
 
 	//get frontend info
