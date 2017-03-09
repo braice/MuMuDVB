@@ -197,6 +197,7 @@ typedef struct unicast_parameters_t{
   struct pollfd *pfds;	//unicast http clients
   int pfdsnum;
   int playlist_ignore_dead;
+  int playlist_ignore_scrambled_ratio;
 
 }unicast_parameters_t;
 

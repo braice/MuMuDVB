@@ -301,6 +301,7 @@ HTTP unicast parameters
 |unicast_max_clients | The limit on the number of connected clients | 0 | 0 : no limit.
 |unicast_queue_size | The maximum size of the buffering when writting to a client fails | 512kBytes | in Bytes.
 |playlist_ignore_dead | Do we exclude dead channels (no traffic) from playlist? | 0  | 0 or 1 | Exclude dead and include alive channels on each playlist request.
+|playlist_ignore_scrambled_ratio | Do we exclude overscrambled from playlist? | 0  | 0(off), 1-100 | Exclude channels with percent of scrambled packets more than specified.
 |==================================================================================================================
 
 
