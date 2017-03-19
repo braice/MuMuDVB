@@ -750,7 +750,8 @@ void ts_display_network_name_descriptor(char* log_module,unsigned char *buf)
 
 	log_message( log_module, MSG_FLOOD, "NIT network name descriptor \n");
 	log_message( log_module, MSG_FLOOD, "NIT network descriptor_len %d\n",descriptor_len);
-	dest=malloc(sizeof(char)*(descriptor_len+1));
+	dest=malloc(sizeof(char)*(descriptor_len+1)); //TODO: take some margin for conversions that would increase number of characters ?
+	//FIXME: Check DEST value
 	memcpy (dest, buf, descriptor_len);
 	dest[descriptor_len] = '\0';
 	convert_en300468_string(dest,descriptor_len,0);

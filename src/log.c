@@ -1046,7 +1046,7 @@ int convert_en300468_string(char *string, int max_len, int debug)
 
 
 
-	log_message( log_module, MSG_FLOOD, "convert_en300468_string: String to be converted start 0x%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x ",string[0],string[1],string[2],string[3],string[4],string[5],string[6],string[7],string[8],string[9]);
+	//log_message( log_module, MSG_FLOOD, "convert_en300468_string: String to be converted start 0x%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x ",string[0],string[1],string[2],string[3],string[4],string[5],string[6],string[7],string[8],string[9]);
 
 
 	realstart = (unsigned char *)string;
@@ -1089,16 +1089,17 @@ int convert_en300468_string(char *string, int max_len, int debug)
 	//temporary buffers allocation
 	int lenstring=0;
 	//We count the len needed for the temporary buffer.
-	//Due to the special structure of an EN300468 string a \0 can be present in the string
-	//So we cannot use strlen
+	//Due to the special structure of an EN300468 string we have to manage control characters
 	for (src = realstart; *src; src++)
 	{
 			if ((*src < 0x80 || *src > 0x9f))
 					//One character
 					lenstring++;
+			if(*src==0x8a) //Control character \"CR/LF\", we replace by a standard newline
+				lenstring++;
 	}
 
-    tempdest=tempbuf=malloc(sizeof(char)*lenstring+1);
+    tempdest=tempbuf=malloc(sizeof(char)*(lenstring+1));
 
     log_message( log_module, MSG_DEBUG,"String len %d offset %zd",lenstring, realstart-((unsigned char *)string));
 	if(tempdest==NULL)
@@ -1138,7 +1139,7 @@ int convert_en300468_string(char *string, int max_len, int debug)
 				{if(debug) {log_message( log_module, MSG_DEBUG, "\tUnimplemented name control_character : %x \n", *src);}}
 		}
 	}
-    log_message( log_module, MSG_DEBUG,"String len before conversion %d ",len);
+    log_message( log_module, MSG_DEBUG,"String len before conversion %d (DEBUG lenstring is %d )",len,lenstring);
 
 	*tempdest = 0;
 #ifdef HAVE_ICONV
