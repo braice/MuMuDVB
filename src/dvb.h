@@ -96,7 +96,7 @@ void *read_card_thread_func(void* arg);
 
 
 
-int open_fe (int *fd_frontend, char *base_path, int tuner, int rw);
+int open_fe (int *fd_frontend, char *base_path, int tuner, int rw, int full_path);
 void set_ts_filt (int fd,uint16_t pid);
 int create_card_fd(char *base_path, int tuner, uint8_t *asked_pid, fds_t *fds);
 void set_filters(uint8_t *asked_pid, fds_t *fds);

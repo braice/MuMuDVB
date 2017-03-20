@@ -45,6 +45,7 @@ static char *log_module="Rewrite: ";
 void init_rewr_v(rewrite_parameters_t *rewr_p)
 {
 	*rewr_p=(rewrite_parameters_t){
+				.rewrite_pmt = OPTION_UNDEFINED,
 				.rewrite_pat = OPTION_UNDEFINED,
 				.pat_version=-1,
 				.full_pat=NULL,
@@ -138,7 +139,19 @@ return 0;
 int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substring)
 {
 	char delimiteurs[] = CONFIG_FILE_SEPARATOR;
-	if (!strcmp (substring, "rewrite_pat"))
+	if (!strcmp (substring, "rewrite_pmt"))
+	{
+		substring = strtok (NULL, delimiteurs);
+		if(atoi (substring))
+		{
+			rewrite_vars->rewrite_pmt = OPTION_ON;
+			log_message( log_module, MSG_INFO,
+					"You have enabled the PMT Rewriting\n");
+		}
+		else
+			rewrite_vars->rewrite_pmt = OPTION_OFF;
+	}
+	else if (!strcmp (substring, "rewrite_pat"))
 	{
 		substring = strtok (NULL, delimiteurs);
 		if(atoi (substring))

@@ -199,6 +199,7 @@ Packets sending parameters
 |psi_tables_filtering | If set to 'pat', TS packets with PID from 0x01 to 0x1F are discarded. If set to 'pat_cat', TS packets with PID from 0x02 to 0x1F are discarded. | 'none' | Option to keep only mandatory PSI PID | 
 |rewrite_pat | Do we rewrite the PAT PID | 0, 1 in autoconf | 0 or 1 | See README, important for some set top boxes 
 |rewrite_sdt | Do we rewrite the SDT PID | 0, 1 in autoconf | 0 or 1 | See README 
+|rewrite_pmt | Do we rewrite the PMT PID | 0 | 0 or 1 | See README, important if you don't stream all PIDs
 |rewrite_eit sort_eit | Do we rewrite/sort the EIT PID | 0 | 0 or 1 | See README 
 |sdt_force_eit | Do we force the EIT_schedule_flag and EIT_present_following_flag in SDT | 0 | 0 or 1 | Set to 0 if you don't understand
 |rtp_header | Send the stream with the rtp headers (except for HTTP unicast) | 0 | 0 or 1 | 

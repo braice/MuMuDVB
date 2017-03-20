@@ -708,6 +708,8 @@ main (int argc, char **argv)
 			}
 			//Pids are now user set, they won't be overwritten by autoconfiguration
 			c_chan->pid_i.pid_f=F_USER;
+			//Enable PMT rewrite
+			c_chan->pmt_rewrite = 1;
 			while ((substring = strtok (NULL, delimiteurs)) != NULL)
 			{
 				c_chan->pid_i.pids[ipid] = atoi (substring);
@@ -1034,7 +1036,12 @@ main (int argc, char **argv)
 	// We tune the card
 	iRet =-1;
 
-	if (open_fe (&fds.fd_frontend, tune_p.card_dev_path, tune_p.tuner,1))
+
+	if(strlen(tune_p.read_file_path))
+		iRet = open_fe (&fds.fd_frontend, tune_p.read_file_path, tune_p.tuner,1,1);
+	else
+		iRet = open_fe (&fds.fd_frontend, tune_p.card_dev_path, tune_p.tuner,1,0);
+	if (iRet)
 	{
 
 		/*****************************************************/
@@ -1064,10 +1071,14 @@ main (int argc, char **argv)
 			fclose (pidfile);
 		}
 
-
-		iRet =
+		if(strlen(tune_p.read_file_path))
+			iRet = 1; //no tuning if file input
+		else
+			iRet =
 				tune_it (fds.fd_frontend, &tune_p);
 	}
+	else
+		iRet =-1;
 
 	if (iRet < 0)
 	{
@@ -1403,6 +1414,8 @@ main (int argc, char **argv)
 	int poll_ret;
 	/**Buffer containing one packet*/
 	unsigned char *actual_ts_packet;
+	/**We must get a little bit special for PMT rewrite*/
+	unsigned char pmt_ts_packet[TS_PACKET_SIZE];
 	while (!get_interrupted())
 	{
 		if(card_buffer.threaded_read)
@@ -1714,6 +1727,18 @@ main (int argc, char **argv)
 #endif
 
 				/******************************************************/
+				//Rewrite PMT
+				/******************************************************/
+				if((send_packet==1) && //no need to check packets we don't send
+						(pid == chan_p.channels[ichan].pid_i.pmt_pid) && //This is a PMT PID
+						(chan_p.channels[ichan].pid_i.pmt_pid) && //we have the pmt_pid
+						(rewrite_vars.rewrite_pmt == OPTION_ON ) && //AND we asked for rewrite
+						(chan_p.channels[ichan].pmt_rewrite == 1))  //AND this channel's PMT shouldn't be skipped
+				{
+					send_packet=pmt_rewrite_new_channel_packet(actual_ts_packet, pmt_ts_packet, &chan_p.channels[ichan], ichan);
+				}
+
+				/******************************************************/
 				//Rewrite PAT
 				/******************************************************/
 				if((send_packet==1) && //no need to check packets we don't send
@@ -1760,7 +1785,11 @@ main (int argc, char **argv)
 				/******************************************************/
 				if(send_packet==1)
 				{
-					buffer_func(channel, actual_ts_packet, &unic_p, scam_vars_ptr);
+					/**Special PMT case*/
+					if((pid == chan_p.channels[ichan].pid_i.pmt_pid) && (rewrite_vars.rewrite_pmt == OPTION_ON ) && (chan_p.channels[ichan].pmt_rewrite == 1))
+						buffer_func(channel, pmt_ts_packet, &unic_p, scam_vars_ptr);
+					else
+						buffer_func(channel, actual_ts_packet, &unic_p, scam_vars_ptr);
 				}
 
 			}

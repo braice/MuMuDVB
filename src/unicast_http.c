@@ -733,7 +733,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars,
                 char *substring = client->buffer+pos;
                 char *end = strstr(substring, " HTTP"); // find end of channel name (this way channel name can contain spaces)
                 
-                if(substring == NULL) {
+                if(*substring == 0) {
 					err404=1;
                 }
                 else if(end == NULL) {
@@ -746,7 +746,8 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars,
 
                     char requested_channel_name[MAX_NAME_LEN];
                     char current_channel_name[MAX_NAME_LEN];
-                    strcpy(requested_channel_name, substring);
+                    strncpy(requested_channel_name, substring,MAX_NAME_LEN);
+                    requested_channel_name[MAX_NAME_LEN-1] = '\0';
                     process_channel_name(requested_channel_name);
                     
                     for(int current_channel=0; current_channel<number_of_channels;current_channel++)

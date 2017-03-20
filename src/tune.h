@@ -177,6 +177,8 @@ typedef struct tune_p_t{
   /** The PLS type */
   pls_type_t pls_type;
 #endif
+  /** If we read directly from a file */
+  char read_file_path[256];
 }tune_p_t;
 
 

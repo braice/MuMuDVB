@@ -103,6 +103,7 @@ void init_tune_v(tune_p_t *tune_p)
 				.pls_code = 0,
 				.pls_type = PLS_ROOT,
 	#endif
+				.read_file_path = '\0'
 		};
 
 }
@@ -630,6 +631,15 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
                 log_message( log_module,  MSG_ERROR,
                                 "Config issue : delivery_system. You are trying to set the pls_type but your MuMuDVB have not been built with DVB-S2/DVB API > 5.8 support.\n");
 #endif
+	}
+	else if (!strcmp (substring, "read_file_path"))
+	{
+		// other substring extraction method in order to keep spaces
+		substring = strtok (NULL, "=");
+		strncpy(tuneparams->read_file_path,strtok(substring,"\n"),MAX_FILENAME_LEN-1);
+		tuneparams->read_file_path[MAX_FILENAME_LEN-1]='\0';
+		if (strlen (substring) >= MAX_NAME_LEN - 1)
+			log_message( log_module,  MSG_WARN,"File name too long\n");
 	}
 	else
 		return 0; //Nothing concerning tuning, we return 0 to explore the other possibilities
