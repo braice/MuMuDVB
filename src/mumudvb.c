@@ -1799,8 +1799,9 @@ main (int argc, char **argv)
 		/* in case we got partial packet from t2mi demux, save it */
 		if (chan_p.t2mi_pid > 0 && card_buffer.bytes_read > card_buffer.read_buff_pos) {
 		    t2_partial_size = card_buffer.bytes_read - card_buffer.read_buff_pos;
-		    /* we will overlap if buffer is 1 packet in size! */
-		    memcpy(card_buffer.t2mi_buffer, card_buffer.t2mi_buffer + card_buffer.read_buff_pos, t2_partial_size);
+		    if (card_buffer.read_buff_pos > 0) {
+			memcpy(card_buffer.t2mi_buffer, card_buffer.t2mi_buffer + card_buffer.read_buff_pos, t2_partial_size);
+		    }
 		} else {
 		    t2_partial_size = 0;
 		}
