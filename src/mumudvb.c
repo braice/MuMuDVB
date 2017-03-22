@@ -1709,6 +1709,11 @@ main (int argc, char **argv)
 
 						}
 
+				// Do not send TS padding pid (confuses scam)
+				if (pid == TS_PADDING_PID) {
+				    send_packet=0;
+				}
+				
 				/******************************************************/
 				//cam support
 				// If we send the packet, we look if it's a cam pmt pid

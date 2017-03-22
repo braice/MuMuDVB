@@ -73,6 +73,8 @@
 
 /**Size of an MPEG2-TS packet*/
 #define TS_PACKET_SIZE 188
+/**Null PID used for bandwith padding**/
+#define TS_PADDING_PID 8191
 
 #define TS_SYNC_BYTE 0x47
 
