@@ -103,7 +103,7 @@ void init_tune_v(tune_p_t *tune_p)
 				.pls_code = 0,
 				.pls_type = PLS_ROOT,
 	#endif
-				.read_file_path = '\0'
+				.read_file_path = {'\0'}
 		};
 
 }
