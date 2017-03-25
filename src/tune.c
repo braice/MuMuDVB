@@ -1390,9 +1390,9 @@ default:
 			int tune_stream_id;
 			tune_stream_id = tuneparams->stream_id;
 			if( tuneparams->pls_code )
-				tune_stream_id = tuneparams->stream_id+(256 * tuneparams->pls_code);
+				tune_stream_id = tuneparams->stream_id+((tuneparams->pls_code & 0x3FFFF)<<8);
 			if( tuneparams->pls_type == PLS_GOLD)
-				tune_stream_id = tune_stream_id + pow( 2, (int) log2(tuneparams->pls_code)+10 );
+				tune_stream_id = tune_stream_id | ( 1<<26 );
 			log_message( log_module,  MSG_INFO,  "Stream_id = %d, stream id with PLS parameters %d",tuneparams->stream_id, tune_stream_id);
 #endif
 
