@@ -400,7 +400,12 @@ void ts_move_part_to_full(mumudvb_ts_packet_t *pkt)
 	}
 	if((pkt->full_buffer_len+pkt->len_partial)>=FULL_BUFFER_SIZE)
 	{
-		log_message(log_module, MSG_WARN, "Too much data, in full packets (%d), we skip one size %d",pkt->full_buffer_len,pkt->len_partial);
+		log_message(log_module, MSG_WARN, "Too much data, in full packets (%d), dropping TS buffers",pkt->full_buffer_len);
+		/* unrecoverable error, restart TS processing */
+		pkt->full_buffer_len=0;
+		pkt->full_number=0;
+		pkt->len_partial=0;
+		pkt->status_partial=EMPTY;
 		return;
 	}
 	memcpy(pkt->buffer_full+pkt->full_buffer_len,pkt->data_partial,pkt->len_partial);
@@ -594,7 +599,7 @@ int check_pmt_service_id(mumudvb_ts_packet_t *pmt, mumudvb_channel_t *channel)
 		return 0;
 	}
 	else if(channel->service_id)
-		log_message( log_module,  MSG_DETAIL,"GOOD service_id for PMT %d and channel \"%s\"\n", pmt->pid, channel->name);
+		log_message( log_module,  MSG_DEBUG,"GOOD service_id for PMT %d and channel \"%s\"\n", pmt->pid, channel->name);
 
 	if(!channel->service_id)
 		log_message( log_module,  MSG_DEBUG,"no service_id information for channel \"%s\"\n", channel->name);

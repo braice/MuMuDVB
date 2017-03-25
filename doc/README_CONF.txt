@@ -185,6 +185,8 @@ Various parameters
 |check_cc | Do MuMuDVB check the discontibuities in the stream ? | 0 | | Displayed via the XML status pages or the signal display
 |store_eit | Do MuMuDVB store EIT (Electronic Program Guide) for the webservices ? | 0 | | beta, please report your results
 |debug_updown | Do MuMuDVB show debugging messages concerning up/down channel detection | 0 | | The threshold can be adjusted with up_threshold and down_threshold
+|t2mi_pid | Use T2-MI demux for input traffic | 0 | 1-8192 | You can get pid by running dvbtraffic or dvbsnoop, but most networks use pid 4096. 0 = disable demux. T2-MI packet is larger than TS, so use large dvb input buffers (40 packets or more).
+|t2mi_plp | Select PLP in input stream | 0 | 0-255 | Any signle PLP supported for now.
 |==================================================================================================================
 
 Packets sending parameters
@@ -252,6 +254,7 @@ SCAM support parameters
 |ring_buffer_default_size | default number of ts packets in ring buffer (when not specified by channel specific config) | 32768 |it gets rounded to the value that is power of 2 not lower than it|
 |decsa_default_delay | default delay time in us between getting packet and descrambling (when not specified by channel specific config) | 500000 |  max is 10000000 |
 |send_default_delay | default delay time in us between getting packet and sending (when not specified by channel specific config) | 1500000 | mustn't be lower than decsa delay |
+|scam_const_key | set static key (BISS), skip access scam socket for such SIDs | | example (SID, odd key, even key): scam_const_key=103,11:22:33:44:55:66:77:88,11:22:33:44:55:66:77:88|
 |==================================================================================================================
 
 Autoconfiguration parameters
@@ -299,6 +302,7 @@ HTTP unicast parameters
 |unicast_max_clients | The limit on the number of connected clients | 0 | 0 : no limit.
 |unicast_queue_size | The maximum size of the buffering when writting to a client fails | 512kBytes | in Bytes.
 |playlist_ignore_dead | Do we exclude dead channels (no traffic) from playlist? | 0  | 0 or 1 | Exclude dead and include alive channels on each playlist request.
+|playlist_ignore_scrambled_ratio | Do we exclude overscrambled from playlist? | 0  | 0(off), 1-100 | Exclude channels with percent of scrambled packets more than specified.
 |==================================================================================================================
 
 

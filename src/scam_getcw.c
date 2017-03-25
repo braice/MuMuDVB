@@ -117,7 +117,18 @@ static void *getcwthread_func(void* arg)
     for (i = 0; i < num_of_events; i++) {
       for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++) {
         mumudvb_channel_t *channel = &chan_p->channels[curr_channel];
-        if (events[i].data.fd == channel->camd_socket) {
+
+	/* find biss key for current channel */
+	int chanid = 0;
+	if (scam_params->const_key_count > 0) {
+	    for (; chanid < scam_params->const_key_count; chanid++) {
+    		if (channel->service_id == scam_params->const_sid[chanid]) {
+        	    log_message(log_module, MSG_DEBUG,"found static key %d in list for channel %s", chanid, channel->name);
+        	    break;
+    		}
+	    }
+	 }
+        else if (events[i].data.fd == channel->camd_socket && !(channel->service_id == scam_params->const_sid[chanid] && scam_params->const_key_count > 0)) {
           if (events[i].events & EPOLLERR || events[i].events & EPOLLHUP) {
             log_message(log_module, MSG_INFO,"channel %s socket not alive, will try to reconnect\n", channel->name);
             int s = epoll_ctl(scam_params->epfd, EPOLL_CTL_DEL, channel->camd_socket, &events[i]);

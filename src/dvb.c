@@ -89,6 +89,8 @@ set_ts_filt (int fd, uint16_t pid)
 	struct dmx_pes_filter_params pesFilterParams;
 
 	log_message( log_module,  MSG_DEBUG, "Setting filter for PID %d\n", pid);
+
+	memset(&pesFilterParams, 0, sizeof(pesFilterParams));
 	pesFilterParams.pid = pid;
 	pesFilterParams.input = DMX_IN_FRONTEND;
 	pesFilterParams.output = DMX_OUT_TS_TAP;

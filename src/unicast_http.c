@@ -135,6 +135,7 @@ void init_unicast_v(unicast_parameters_t *unicast_vars)
 				.flush_on_eagain=0,
 				.pfdsnum=0,
 				.playlist_ignore_dead=0,
+				.playlist_ignore_scrambled_ratio=0,
 	 };
 	 unicast_vars->pfds=NULL;
 	 //+1 for closing the pfd list, see man poll
@@ -256,6 +257,17 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
 		substring = strtok (NULL, delimiteurs);
 		unicast_vars->playlist_ignore_dead = atoi (substring);
 	}
+	else if (!strcmp (substring, "playlist_ignore_scrambled_ratio"))
+	{
+		substring = strtok (NULL, delimiteurs);
+		unicast_vars->playlist_ignore_scrambled_ratio = atoi (substring);
+		if (unicast_vars->playlist_ignore_scrambled_ratio > 100) {
+                        log_message( log_module,  MSG_WARN,"Scrambled ignore ratio \"%d\" is over 100 percent, forcing to 100!\n", unicast_vars->playlist_ignore_scrambled_ratio);
+                        unicast_vars->playlist_ignore_scrambled_ratio = 100;
+                }
+
+	}
+
 	else
 		return 0; //Nothing concerning tuning, we return 0 to explore the other possibilities
 
@@ -1158,7 +1170,10 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
 
 	//"#EXTINF:0,title\r\nURL"
 	for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
-		if (channels[curr_channel].channel_ready>=READY && (channels[curr_channel].has_traffic == 1 || unicast_vars->playlist_ignore_dead == 0))
+		if (channels[curr_channel].channel_ready>=READY
+		    && (channels[curr_channel].has_traffic == 1 || unicast_vars->playlist_ignore_dead == 0)
+		    && (channels[curr_channel].ratio_scrambled < unicast_vars->playlist_ignore_scrambled_ratio || unicast_vars->playlist_ignore_scrambled_ratio == 0)
+		)
 		{
 			if(!perport)
 			{
