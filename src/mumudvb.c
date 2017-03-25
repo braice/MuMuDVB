@@ -1594,7 +1594,7 @@ main (int argc, char **argv)
 					log_message( log_module,MSG_WARN,"Error while writing the dump : %s", strerror(errno));
 
 			/* check for sync byte and transport error bit if requested */
-			if ((actual_ts_packet[0] != TS_SYNC_BYTE || actual_ts_packet[1] & 0x80) == 0x80)
+			if (((actual_ts_packet[0] != TS_SYNC_BYTE) || (actual_ts_packet[1] & 0x80) == 0x80))
 			{
 				log_message( log_module, MSG_FLOOD,"Error bit set or no sync in TS packet!\n");
 				// Test if we discard the packets with error bit set
