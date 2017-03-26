@@ -125,7 +125,10 @@ We cannot discover easily the MTU with unconnected UDP
 
 #define SAP_GROUP_LENGTH 20
 
-
+/** define bool for plain C code **/
+#ifndef __cplusplus
+    typedef enum { false = 0, true = !false } bool;
+#endif
 
 enum
 {
@@ -584,6 +587,11 @@ typedef struct mumu_string_t{
 }mumu_string_t;
 
 #define EMPTY_STRING {NULL,0}
+
+/** global scope variables for T2-MI processiong **/
+extern bool t2mi_active;
+extern bool t2mi_first;
+extern int t2_partial_size;
 
 int mumu_string_append(mumu_string_t *string, const char *psz_format, ...);
 void mumu_free_string(mumu_string_t *string);
