@@ -4,11 +4,6 @@
  * 
  * (C) 2004-2013 Brice DUBOST
  * 
- * Code for dealing with libdvben50221 inspired from zap_ca
- * Copyright (C) 2004, 2005 Manu Abraham <abraham.manu@gmail.com>
- * Copyright (C) 2006 Andrew de Quincey (adq_dvb@lidskialf.net)
- * 
- *
  * The latest version can be found at http://mumudvb.braice.net
  * 
  * Copyright notice:
