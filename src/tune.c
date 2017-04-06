@@ -1166,7 +1166,8 @@ int tune_it(int fd_frontend, tune_p_t *tuneparams)
 	memset(&feparams, 0, sizeof (struct dvb_frontend_parameters));
 	hi_lo = 0;
 
-	if ( (res = ioctl(fd_frontend,FE_GET_INFO, &fe_info) < 0)){
+	res = ioctl(fd_frontend,FE_GET_INFO, &fe_info);
+	if (res < 0){
 		log_message( log_module,  MSG_ERROR, "FE_GET_INFO: %s \n", strerror(errno));
 		return -1;
 	}
