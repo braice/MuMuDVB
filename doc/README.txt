@@ -171,10 +171,10 @@ Possible options are:
 
 ------------------------------------------------------------------
 -d, --debug
-	Don't deamonize and print messages on the standard output.
+	Don't daemonize and print messages on the standard output.
 
 -s, --signal
-	Print signal strenght every 5 seconds
+	Print signal strength every 5 seconds
 
 -t, --traffic
 	Print the traffic of the channels every 10 seconds
@@ -203,7 +203,7 @@ Possible options are:
 
 Signal: (see kill(1))
 ------------------------------------------------------------------
-    SIGUSR1: switch the signal strenght printing
+    SIGUSR1: switch the signal strength printing
     SIGUSR2: switch the traffic printing
     SIGHUP: flush the log files
 ------------------------------------------------------------------
@@ -264,7 +264,7 @@ By default, PAT rewriting is activated if you use autoconfiguration. To disable 
 If you want to select the services to stream, you can use the `autoconf_sid_list` option which allows to specify the service identifier of the channels you want to be configured.
 
 [NOTE]
-A detailled, documented example configuration file can be found in `doc/configuration_examples/autoconf_full.conf`
+A detailed, documented example configuration file can be found in `doc/configuration_examples/autoconf_full.conf`
 
 Templates and autoconfiguration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -438,7 +438,7 @@ There is one listening connection, the channel is selected via the HTTP path, se
 And you can have listening sockets per channel, in this case the client will always get the same channel independantly of the path.
 
 [NOTE]
-Be careful with unicast, it can eat a lot of bandwith. Think about limitting the number of clients.
+Be careful with unicast, it can eat a lot of bandwidth. Think about limitting the number of clients.
 
 [NOTE]
 If you don't want the (always here) multicast traffic to go on your network set `multicast=0`
@@ -611,7 +611,7 @@ ID_CA_Supported=0500
 ----------------------------------------------------
 
 [NOTE]
-In case of issues with some king of CAMs the libdvben50221 could have to be patched:
+In case of issues with some kinds of CAMs the libdvben50221 could have to be patched:
 http://article.gmane.org/gmane.linux.drivers.video-input-infrastructure/29866[Link to the patch]
 
 How to ask MuMuDVB for descrambling?
@@ -623,7 +623,7 @@ Just add `cam_support=1` to your config file
 
 .You are not using autoconfiguration
  * Add `cam_support=1` to your config file (before the channels)
- * For each scrambled channel add the `pmt_pid` option. This option is made for MuMuDVB to know wich PID is the PMT PID wich will be used to ask for descrambling
+ * For each scrambled channel add the `pmt_pid` option. This option is made for MuMuDVB to know which PID is the PMT PID which will be used to ask for descrambling
 
 
 
