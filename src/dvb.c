@@ -444,7 +444,8 @@ void show_card_capabilities( int card, int tuner )
 
 	//get frontend info
 	struct dvb_frontend_info fe_info;
-	if ( (i_ret = ioctl(frontend_fd,FE_GET_INFO, &fe_info) < 0)){
+	i_ret = ioctl(frontend_fd,FE_GET_INFO, &fe_info);
+	if (i_ret < 0){
 		log_message( log_module,  MSG_ERROR, "FE_GET_INFO: %s \n", strerror(errno));
 		close (frontend_fd);
 		return;

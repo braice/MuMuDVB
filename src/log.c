@@ -958,7 +958,11 @@ void print_info ()
 			"Released under the GPL.\n"
 			"Latest version available from http://mumudvb.braice.net/\n"
 			"Project from the cr@ns (http://www.crans.org)\n"
-			"by Brice DUBOST (mumudvb@braice.net)\n\n", DVB_API_VERSION,DVB_API_VERSION_MINOR);
+			"by Brice DUBOST (mumudvb@braice.net)\n\n"
+#if DVB_API_VERSION >= 5
+			,DVB_API_VERSION,DVB_API_VERSION_MINOR
+#endif			
+			);
 
 }
 

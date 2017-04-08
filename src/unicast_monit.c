@@ -394,7 +394,7 @@ unicast_send_json_state (int number_of_channels, mumudvb_channel_t *channels, in
 	unicast_reply_write(reply, "\t\"frontend_symbolrate\" : %d,\n",strengthparams->tune_p->srate);
 
 	// Frontend type
-	char fetype[10]="Unkonwn";
+	char fetype[10]="Unknown";
 	if (strengthparams->tune_p->fe_type==FE_OFDM)
 #ifdef DVBT2
 		if (strengthparams->tune_p->delivery_system==SYS_DVBT2)
@@ -703,7 +703,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 	unicast_reply_write(reply, "\t<frontend_symbolrate>%d</frontend_symbolrate>\n",strengthparams->tune_p->srate);
 
 	// Frontend type
-	char fetype[10]="Unkonwn";
+	char fetype[10]="Unknown";
 	if (strengthparams->tune_p->fe_type==FE_OFDM)
 #ifdef DVBT2
 		if (strengthparams->tune_p->delivery_system==SYS_DVBT2)
