@@ -187,7 +187,8 @@ int mumudvb_close(int no_daemon,
 		pthread_t *signalpowerthread,
 		pthread_t *monitorthread,
 		card_thread_parameters_t *cardthreadparams,
-		fds_t *fds)
+		fds_t *fds,
+		card_buffer_t *card_buffer)
 {
 
 	int curr_channel;
@@ -354,6 +355,17 @@ int mumudvb_close(int no_daemon,
 		}
 	}
 
+	/*free packet buffers*/
+	if (card_buffer->threaded_read) {
+    	    if (card_buffer->buffer1) free(card_buffer->buffer1);
+    	    if (card_buffer->buffer2) free(card_buffer->buffer2);
+    	} else {
+    	    if (card_buffer->reading_buffer) free(card_buffer->reading_buffer);
+    	}
+
+        if (chan_p->t2mi_pid > 0) {
+    	    if (card_buffer->t2mi_buffer) free(card_buffer->t2mi_buffer);
+        }
 
 	/*free the file descriptors*/
 	if(fds->pfds)

@@ -1705,8 +1705,8 @@ main (int argc, char **argv)
 					&signalpowerthread,
 					&monitorthread,
 					&cardthreadparams,
-					&fds);
-
+					&fds,
+					&card_buffer);
 }
 
 

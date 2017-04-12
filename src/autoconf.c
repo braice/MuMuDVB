@@ -326,6 +326,11 @@ int autoconf_init(auto_p_t *auto_p)
  */
 void autoconf_freeing(auto_p_t *auto_p)
 {
+	if(auto_p->autoconf_temp_nit)
+	{
+		free(auto_p->autoconf_temp_nit);
+		auto_p->autoconf_temp_nit=NULL;
+	}
 	if(auto_p->autoconf_temp_sdt)
 	{
 		free(auto_p->autoconf_temp_sdt);
