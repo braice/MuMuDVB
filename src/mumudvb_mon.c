@@ -328,6 +328,10 @@ int mumudvb_close(int no_daemon,
 	if(rewrite_vars->full_sdt)
 		free(rewrite_vars->full_sdt);
 
+	//EIT rewrite freeing
+	if(rewrite_vars->full_eit)
+		free(rewrite_vars->full_eit);
+
 	if (strlen(filename_channels_streamed) && (write_streamed_channels)&&remove (filename_channels_streamed))
 	{
 		log_message( log_module,  MSG_WARN,
