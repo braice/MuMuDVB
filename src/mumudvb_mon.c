@@ -301,8 +301,8 @@ int mumudvb_close(int no_daemon,
 					cam_p->filename_cam_info, strerror (errno));
 		}
 		mumu_free_string(&cam_p->cam_menulist_str);
-		mumu_free_string(&cam_p->cam_menu_string);
 	}
+	mumu_free_string(&cam_p->cam_menu_string); /* string is allocated in init_cam_v() even with cam support disabled */
 #endif
 #ifdef ENABLE_SCAM_SUPPORT
 	if(scam_vars->scam_support)
@@ -372,12 +372,18 @@ int mumudvb_close(int no_daemon,
         }
 
 	/*free the file descriptors*/
-	if(fds->pfds)
+	if(fds->pfds) {
 		free(fds->pfds);
-	fds->pfds=NULL;
-	if(unicast_vars->fd_info)
+		fds->pfds=NULL;
+	}
+	if(unicast_vars->fd_info) {
 		free(unicast_vars->fd_info);
-	unicast_vars->fd_info=NULL;
+		unicast_vars->fd_info=NULL;
+	}
+	if(unicast_vars->pfds) {
+		free(unicast_vars->pfds);
+		unicast_vars->pfds=NULL;
+	}
 
 	// Format ExitCode (normal exit)
 	int ExitCode;
