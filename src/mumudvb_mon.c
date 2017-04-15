@@ -157,6 +157,8 @@ void parse_cmd_line(int argc, char **argv,char *(*conf_filename),tune_p_t *tune_
 			strncpy (*dump_filename, optarg, strlen (optarg) + 1);
 			log_message( log_module, MSG_WARN,"You've decided to dump the received stream into %s. Be warned, it can grow quite fast", *dump_filename);
 			break;
+		default: /* -Wswitch-default */
+			break;
 		}
 	}
 	if (optind < argc)

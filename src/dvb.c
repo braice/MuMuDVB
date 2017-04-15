@@ -469,6 +469,9 @@ void show_card_capabilities( int card, int tuner )
 	case FE_ATSC:
 		log_message( log_module,  MSG_INFO, " ATSC card\n");
 		break;
+	default:
+		log_message( log_module,  MSG_INFO, " UNKNOWN card (0x%x)\n", fe_info.type);
+		break;
 	}
 	if(fe_info.type==FE_QPSK)
 		frequency_factor=1000;
