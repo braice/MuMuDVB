@@ -67,8 +67,8 @@ int pmt_need_update(unsigned char *ts_packet, mumudvb_channel_t *channel) {
 			}
 		}
 		if (!channel->original_pmt_ready) {
-			float pmt_length = HILO(pmt->section_length) + 3;
-			channel->pmt_part_num = (int) ceil(pmt_length/TS_PACKET_SIZE) - 1;
+			int pmt_length = HILO(pmt->section_length) + 3;
+			channel->pmt_part_num =	((pmt_length + TS_PACKET_SIZE) % TS_PACKET_SIZE) ? (pmt_length / TS_PACKET_SIZE) : ((pmt_length / TS_PACKET_SIZE) - 1); /* exact ceil() simulation */
 			channel->pmt_part_count = 0;
 			memcpy(channel->original_pmt + (TS_PACKET_SIZE*channel->pmt_part_count), ts_packet, TS_PACKET_SIZE);
 			if (channel->pmt_part_num == 0) {
