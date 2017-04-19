@@ -331,7 +331,28 @@ int mumudvb_close(int no_daemon,
 		free(rewrite_vars->full_sdt);
 
 	//EIT rewrite freeing
-	if(rewrite_vars->full_eit)
+	if (rewrite_vars->eit_packets)
+	{
+		struct eit_packet_t *eit_packet, *eit_next_packet;
+		eit_packet = rewrite_vars->eit_packets;
+		/* recursive free of eit packet storage */
+		while (eit_packet) {
+
+		    for(int i=0;i<MAX_EIT_SECTIONS;i++)
+            		if(eit_packet->full_eit_sections[i]!=NULL)
+                    	    free(eit_packet->full_eit_sections[i]);
+
+		    if (eit_packet->next) {
+			eit_next_packet = eit_packet->next;
+			free (eit_packet);
+			eit_packet = eit_next_packet;
+		    } else {
+			free (eit_packet);
+			break;
+		    }
+		}
+	}
+	if (rewrite_vars->full_eit)
 		free(rewrite_vars->full_eit);
 
 	if (strlen(filename_channels_streamed) && (write_streamed_channels)&&remove (filename_channels_streamed))

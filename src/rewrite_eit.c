@@ -105,7 +105,7 @@ uint8_t eit_next_table_id(uint8_t table_id)
 void eit_free_packet_contents(eit_packet_t *eit_packet)
 {
 	//free the different packets
-	for(int i=0;i<256;i++)
+	for(int i=0;i<MAX_EIT_SECTIONS;i++)
 		if(eit_packet->full_eit_sections[i]!=NULL)
 			free(eit_packet->full_eit_sections[i]);
 

@@ -68,10 +68,9 @@ int processt2(unsigned char* input_buf, int input_buf_offset, unsigned char* out
             case 0x00:	/* 00b = reserved! */
             	log_message(log_module, MSG_DEBUG, "T2-MI: wrong AF (00) in input stream, accepting as ordinary packet\n");
             break;
-
-            default:	/* -Wswitch-default */
-        	return 0;
-    	    break;
+            
+            default: /* -Wswitch-default */
+            break;
 	}
 
 	/* source buffer pointer to beginning of payload in packet */
