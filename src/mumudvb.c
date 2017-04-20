@@ -1230,8 +1230,8 @@ main (int argc, char **argv)
 		card_buffer.writing_buffer=card_buffer.buffer2;
 		cardthreadparams.main_waiting=0;
 		if (chan_p.t2mi_pid > 0) {
-		    if (card_buffer.write_buffer_size < 65536) {
-			card_buffer.t2mi_buffer=malloc(sizeof(unsigned char)*65536); /* we must hold at least one t2mi frame! */
+		    if (card_buffer.write_buffer_size < TS_PACKET_SIZE*349) {
+			card_buffer.t2mi_buffer=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*349); /* we must hold at least one t2mi frame! */
 		    } else {
 			card_buffer.t2mi_buffer=malloc(sizeof(unsigned char)*card_buffer.write_buffer_size*2);
 		    }
@@ -1242,8 +1242,8 @@ main (int argc, char **argv)
 		//We alloc the buffer
 		card_buffer.reading_buffer=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*card_buffer.dvr_buffer_size);
 		if (chan_p.t2mi_pid > 0) {
-		    if (card_buffer.dvr_buffer_size < 348) {
-		        card_buffer.t2mi_buffer=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*348); /* we must hold at least one t2mi frame! */
+		    if (card_buffer.dvr_buffer_size < 349) {
+		        card_buffer.t2mi_buffer=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*349); /* we must hold at least one t2mi frame! */
 		    } else {
 		        card_buffer.t2mi_buffer=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*card_buffer.dvr_buffer_size*2);
 		    }

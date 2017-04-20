@@ -42,7 +42,7 @@ bool t2mi_first=true;
 int t2_partial_size=0;
 
 int t2packetpos=0;
-char t2packet[65536 + 10]; //Maximal T2 payload + header
+char t2packet[TS_PACKET_SIZE*349]; /* will fit Maximal T2 payload + header */
 
 /* rewritten by [anp/hsw], original code taken from https://github.com/newspaperman/t2-mi */
 int processt2(unsigned char* input_buf, int input_buf_offset, unsigned char* output_buf, int output_buf_offset, uint8_t plpId) {
