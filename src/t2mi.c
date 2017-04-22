@@ -45,7 +45,7 @@ int t2packetpos=0;
 char t2packet[TS_PACKET_SIZE*349]; /* will fit Maximal T2 payload + header */
 
 /* rewritten by [anp/hsw], original code taken from https://github.com/newspaperman/t2-mi */
-int processt2(unsigned char* input_buf, int input_buf_offset, unsigned char* output_buf, int output_buf_offset, uint8_t plpId) {
+int processt2(unsigned char* input_buf, int input_buf_offset, unsigned char* output_buf, int output_buf_offset, unsigned int output_buf_size, uint8_t plpId) {
 
 	unsigned int payload_start_offset=0;
 	output_buf+=output_buf_offset;
@@ -77,7 +77,7 @@ int processt2(unsigned char* input_buf, int input_buf_offset, unsigned char* out
         unsigned char* buf = input_buf + input_buf_offset + 4 + payload_start_offset;
         unsigned int len = TS_PACKET_SIZE - 4 - payload_start_offset;
 
-        int output_bytes=0;
+        unsigned int output_bytes=0;
 
 	/* check for payload unit start indicator */
         if((((input_buf[input_buf_offset + 1])&0x40)>>4)==0x04) {
@@ -110,24 +110,31 @@ int processt2(unsigned char* input_buf, int input_buf_offset, unsigned char* out
                         	}
                                 if(syncd==0x1FFF ) { /* maximal sync value (in bytes) */
             				log_message(log_module, MSG_DEBUG, "sync value 0x1FFF!\n");
-                                        if(upl >19) {
-                                                memcpy(output_buf + output_bytes, &t2packet[19], upl-19);
-                                                output_bytes+=(upl-19);
+					unsigned int maxsync = upl - 19;
+                                        if (output_bytes + maxsync > output_buf_size) {
+	                            		log_message(log_module, MSG_DEBUG, "position (max sync) out of buffer bounds: %d + %d > %d\n",
+	                            								    output_bytes, maxsync, output_buf_size);
+	                                	goto t2_copy_end;
+                                        }
+                                        else if (upl > 19) {
+                                                memcpy(output_buf + output_bytes, &t2packet[19], maxsync);
+                                                output_bytes+=maxsync;
                                         }
 
                                 } else {
-                                        if(!t2mi_first && syncd > 0) {
-                                            if (syncd-dnp > (sizeof(t2packet)-19)) {
-	                                	    log_message(log_module, MSG_DEBUG, "position (syncd) out of buffer bounds: %d\n", syncd-dnp);
+                                        if (!t2mi_first && syncd > 0) {
+                                    	    unsigned int syncd_size = syncd - dnp;
+                                            if (syncd_size > (sizeof(t2packet)-19) || output_bytes + syncd_size > output_buf_size) {
+	                                	    log_message(log_module, MSG_DEBUG, "position (syncd) out of buffer bounds: %d + %d > %d\n",
+	                                							    output_bytes, syncd_size, output_buf_size);
 	                                	    goto t2_copy_end;
                                             }
-                                            memcpy(output_buf + output_bytes, &t2packet[19], syncd-dnp);
-                                            output_bytes+=(syncd-dnp);
+                                            memcpy(output_buf + output_bytes, &t2packet[19], syncd_size);
+                                            output_bytes+=syncd_size;
                                         }
 
 					/* detect unaligned packet in buffer */
                                         unsigned int output_part = (output_buf_offset + output_bytes) % TS_PACKET_SIZE;
-                                        
                                         if (output_part > 0) {
                                     	    log_message(log_module, MSG_DETAIL, "unaligned packet in buffer pos %d/%d\n", output_buf_offset, output_bytes);
                                     	    output_bytes -= output_part; /* drop packet; TODO: check if we can add padding instead of dropping */
@@ -139,8 +146,9 @@ int processt2(unsigned char* input_buf, int input_buf_offset, unsigned char* out
                                         /* copy T2-MI packet payload to output, add sync bytes */
                                         for(; t2_copy_pos < upl - 187; t2_copy_pos+=(187+dnp)) {
                                     		/* fullsize TS frame */
-                                                if (t2_copy_pos > ((sizeof(t2packet) - 187))) {
-                                        	    log_message(log_module, MSG_DEBUG, "position (full TS) out of buffer bounds: %d\n", t2_copy_pos);
+                                                if (t2_copy_pos > ((sizeof(t2packet) - 187)) || output_bytes + TS_PACKET_SIZE > output_buf_size) {
+                                        	    log_message(log_module, MSG_DEBUG, "position (full TS) out of buffer bounds: in %d, out %d + %d > %d\n",
+                                        							    t2_copy_pos, output_bytes, TS_PACKET_SIZE, output_buf_size);
                                         	    goto t2_copy_end;
                                                 }
                                                 output_buf[output_bytes] = TS_SYNC_BYTE;
@@ -150,17 +158,19 @@ int processt2(unsigned char* input_buf, int input_buf_offset, unsigned char* out
                                         }
                                         if(t2_copy_pos < upl )  {
                                     		/* partial TS frame, we will fill rest of frame at next call */
-                                                if (t2_copy_pos > (sizeof(t2packet)-((upl-t2_copy_pos)+1))) {
-                                        	    log_message(log_module, MSG_DEBUG, "position (part TS) out of buffer bounds: %d\n", t2_copy_pos);
+                                    		unsigned int part_size = upl - t2_copy_pos;
+                                                if (t2_copy_pos > (sizeof(t2packet)-(part_size+1)) || output_bytes + part_size + 1 > output_buf_size) {
+                                        	    log_message(log_module, MSG_DEBUG, "position (part TS) out of buffer bounds: in %d, out %d + %d > %d\n",
+                                        							    t2_copy_pos, output_bytes, part_size + 1, output_buf_size);
                                         	    goto t2_copy_end;
                                                 }
                                                 output_buf[output_bytes] = TS_SYNC_BYTE;
                                                 output_bytes++;
-                                                memcpy(output_buf + output_bytes, &t2packet[t2_copy_pos], upl-t2_copy_pos);
-                                                output_bytes+=(upl-t2_copy_pos);
+                                                memcpy(output_buf + output_bytes, &t2packet[t2_copy_pos], part_size);
+                                                output_bytes+=part_size;
                                         }
-                                        t2_copy_end: ;
                                 }
+                                t2_copy_end: ;
                         }
                         t2mi_active=false;
                         memset(&t2packet, 0, sizeof(t2packet)); // end of processing t2-mi packet, clear it
