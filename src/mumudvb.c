@@ -174,7 +174,7 @@ void init_multicast_v(multi_p_t *multi_p); //in multicast.c
 
 void chan_new_pmt(unsigned char *ts_packet, mumu_chan_p_t *chan_p, int pid);
 
-int processt2(unsigned char* input_buf, int input_buf_offset, unsigned char* output_buf, int output_buf_offset, unsigned int output_buf_size, uint8_t plpId);
+int processt2(unsigned char* input_buf, unsigned int input_buf_offset, unsigned char* output_buf, unsigned int output_buf_offset, unsigned int output_buf_size, uint8_t plpId);
 
 int
 main (int argc, char **argv)
