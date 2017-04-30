@@ -4,7 +4,7 @@
  * 
  * (C) 2004-2011 Brice DUBOST <mumudvb@braice.net>
  *
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  *
  * Code inspired by libdvben50221 examples from dvb apps
  * Copyright (C) 2004, 2005 Manu Abraham <abraham.manu@gmail.com>

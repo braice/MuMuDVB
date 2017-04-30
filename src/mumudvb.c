@@ -9,7 +9,7 @@
  * Copyright (C) 2006 Andrew de Quincey (adq_dvb@lidskialf.net)
  * 
  *
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  * 
  * Copyright notice:
  * 

@@ -1,7 +1,7 @@
 /* MuMuDVB - Stream a DVB transport stream.
  * File for tuning DVB cards
  *
- * last version availaible from http://mumudvb.braice.net/
+ * last version availaible from http://mumudvb.net/
  *
  * Copyright (C) 2004-2013 Brice DUBOST
  * Copyright (C) Dave Chapman 2001,2002

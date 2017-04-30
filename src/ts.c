@@ -3,7 +3,7 @@
  *
  * (C) 2004-2011 Brice DUBOST <mumudvb@braice.net>
  *
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  *
  * Copyright notice:
  *

@@ -4,7 +4,7 @@
  *
  * (C) 2010 Brice DUBOST <mumudvb@braice.net>
  *
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  *
  * Copyright notice:
  *
@@ -25,7 +25,7 @@
 
 
 /* The test files can be found here :
-http://mumudvb.braice.net/mumudvb/test/
+http://mumudvb.net/mumudvb/test/
 */
 
 // To compile this code, run "make check"
