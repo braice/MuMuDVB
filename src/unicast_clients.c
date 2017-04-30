@@ -75,7 +75,7 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 	if(unicast_vars->clients==NULL)
 	{
 		log_message( log_module, MSG_FLOOD,"first client\n");
-		client=unicast_vars->clients=malloc(sizeof(unicast_client_t));
+		client=unicast_vars->clients=calloc(1, sizeof(unicast_client_t));
 		prev_client=NULL;
 	}
 	else
@@ -84,7 +84,7 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 		client=unicast_vars->clients;
 		while(client->next!=NULL)
 			client=client->next;
-		client->next=malloc(sizeof(unicast_client_t));
+		client->next=calloc(1, sizeof(unicast_client_t));
 		prev_client=client;
 		client=client->next;
 	}
