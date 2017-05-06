@@ -8,7 +8,7 @@
  * by Brice DUBOST
  * Libdvb part : Copyright (C) 2000 Klaus Schmidinger
  *
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  *
  * Copyright notice:
  *

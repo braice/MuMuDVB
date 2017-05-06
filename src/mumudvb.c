@@ -9,7 +9,7 @@
  * Copyright (C) 2006 Andrew de Quincey (adq_dvb@lidskialf.net)
  * 
  *
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  * 
  * Copyright notice:
  * 
@@ -174,7 +174,7 @@ void init_multicast_v(multi_p_t *multi_p); //in multicast.c
 
 void chan_new_pmt(unsigned char *ts_packet, mumu_chan_p_t *chan_p, int pid);
 
-int processt2(unsigned char* input_buf, int input_buf_offset, unsigned char* output_buf, int output_buf_offset, uint8_t plpId);
+int processt2(unsigned char* input_buf, unsigned int input_buf_offset, unsigned char* output_buf, unsigned int output_buf_offset, unsigned int output_buf_size, uint8_t plpId);
 
 int
 main (int argc, char **argv)
@@ -270,6 +270,7 @@ main (int argc, char **argv)
 	memset (&card_buffer, 0, sizeof (card_buffer_t));
 	card_buffer.dvr_buffer_size=DEFAULT_TS_BUFFER_SIZE;
 	card_buffer.max_thread_buffer_size=DEFAULT_THREAD_BUFFER_SIZE;
+	unsigned int t2mi_buf_size = 0;
 	/** List of mandatory pids */
 	uint8_t mandatory_pid[MAX_MANDATORY_PID_NUMBER];
 
@@ -1230,11 +1231,12 @@ main (int argc, char **argv)
 		card_buffer.writing_buffer=card_buffer.buffer2;
 		cardthreadparams.main_waiting=0;
 		if (chan_p.t2mi_pid > 0) {
-		    if (card_buffer.write_buffer_size < 65536) {
-			card_buffer.t2mi_buffer=malloc(sizeof(unsigned char)*65536); /* we must hold at least one t2mi frame! */
+		    if (card_buffer.write_buffer_size < TS_PACKET_SIZE*349) {
+			t2mi_buf_size = sizeof(unsigned char)*TS_PACKET_SIZE*349; /* we must hold at least one t2mi frame! */
 		    } else {
-			card_buffer.t2mi_buffer=malloc(sizeof(unsigned char)*card_buffer.write_buffer_size*2);
+			t2mi_buf_size = sizeof(unsigned char)*card_buffer.write_buffer_size*2;
 		    }
+		    card_buffer.t2mi_buffer=malloc(t2mi_buf_size);
 		}
 		
 	}else
@@ -1242,11 +1244,12 @@ main (int argc, char **argv)
 		//We alloc the buffer
 		card_buffer.reading_buffer=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*card_buffer.dvr_buffer_size);
 		if (chan_p.t2mi_pid > 0) {
-		    if (card_buffer.dvr_buffer_size < 348) {
-		        card_buffer.t2mi_buffer=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*348); /* we must hold at least one t2mi frame! */
+		    if (card_buffer.dvr_buffer_size < 349) {
+			t2mi_buf_size = sizeof(unsigned char)*TS_PACKET_SIZE*349; /* we must hold at least one t2mi frame! */
 		    } else {
-		        card_buffer.t2mi_buffer=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*card_buffer.dvr_buffer_size*2);
+			t2mi_buf_size = sizeof(unsigned char)*TS_PACKET_SIZE*card_buffer.dvr_buffer_size*2;
 		    }
+		    card_buffer.t2mi_buffer=malloc(t2mi_buf_size);
 		}
 	}
 
@@ -1387,7 +1390,7 @@ main (int argc, char **argv)
                     	    if(chan_p.t2mi_pid != (((card_buffer.reading_buffer[card_buffer.read_buff_pos+1] & 0x1f) << 8) | (card_buffer.reading_buffer[card_buffer.read_buff_pos+2]))) {
                                 continue;
                     	    }
-                    	    processed += processt2(card_buffer.reading_buffer, card_buffer.read_buff_pos, card_buffer.t2mi_buffer, t2_partial_size + processed, chan_p.t2mi_plp);
+                    	    processed += processt2(card_buffer.reading_buffer, card_buffer.read_buff_pos, card_buffer.t2mi_buffer, t2_partial_size + processed, t2mi_buf_size, chan_p.t2mi_plp);
     			}
 
 			/* in case we got too much errors */
@@ -1705,8 +1708,8 @@ main (int argc, char **argv)
 					&signalpowerthread,
 					&monitorthread,
 					&cardthreadparams,
-					&fds);
-
+					&fds,
+					&card_buffer);
 }
 
 

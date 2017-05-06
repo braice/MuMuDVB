@@ -8,7 +8,7 @@
  * by Brice DUBOST
  * Libdvb part : Copyright (C) 2000 Klaus Schmidinger
  *
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  *
  * Copyright notice:
  *
@@ -326,6 +326,11 @@ int autoconf_init(auto_p_t *auto_p)
  */
 void autoconf_freeing(auto_p_t *auto_p)
 {
+	if(auto_p->autoconf_temp_nit)
+	{
+		free(auto_p->autoconf_temp_nit);
+		auto_p->autoconf_temp_nit=NULL;
+	}
 	if(auto_p->autoconf_temp_sdt)
 	{
 		free(auto_p->autoconf_temp_sdt);

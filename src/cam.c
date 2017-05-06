@@ -4,7 +4,7 @@
  * 
  * (C) 2004-2011 Brice DUBOST <mumudvb@braice.net>
  *
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  *
  * Code inspired by libdvben50221 examples from dvb apps
  * Copyright (C) 2004, 2005 Manu Abraham <abraham.manu@gmail.com>
@@ -387,6 +387,8 @@ int cam_start(cam_p_t *cam_p, int adapter_id,mumu_chan_p_t *chan_p)
 	case DVBCA_INTERFACE_HLCI:
 		log_message( log_module,  MSG_DETAIL,  "CAM type : HIGH level interface\n");
 		break;
+	default:
+		log_message( log_module,  MSG_DETAIL,  "CAM type : UNKNOWN (0x%x)\n", cam_p->cam_type);
 	}
 
 	// start the cam thread
@@ -585,7 +587,8 @@ static void *camthread_func(void* arg)
 					log_message( log_module,  MSG_DEBUG,  "cam state : DVBCA_CAMSTATE_INITIALISING\n");
 					break;
 				case -1:
-					log_message( log_module,  MSG_DEBUG,  "cam state : Eroor during the query\n");
+				default:
+					log_message( log_module,  MSG_DEBUG,  "cam state : Error during the query (0x%x)\n", camstate);
 					break;
 				}
 				usleep(10000);

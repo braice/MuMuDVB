@@ -43,6 +43,7 @@
 #include "unicast_http.h"
 #include <stdint.h>
 
+#define MAX_EIT_SECTIONS 256
 
 /** @brief the structure for storing an EIT PID for a particular SID
  * This structure contains the packet and several flags around
@@ -65,7 +66,7 @@ typedef struct eit_packet_t{
 	/**Do the full EIT is ok ?*/
 	int full_eit_ok;
 	/** The Complete EIT PID  for each section*/
-	mumudvb_ts_packet_t* full_eit_sections[256];
+	mumudvb_ts_packet_t* full_eit_sections[MAX_EIT_SECTIONS];
 	/** The continuity counter of the sent EIT*/
 	int continuity_counter;
 	/** Pointer to the next one */

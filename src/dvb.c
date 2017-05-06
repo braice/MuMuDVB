@@ -4,7 +4,7 @@
  * (C) 2004-2013 Brice DUBOST
  * (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  * 
  * Copyright notice:
  * 
@@ -468,6 +468,9 @@ void show_card_capabilities( int card, int tuner )
 		break;
 	case FE_ATSC:
 		log_message( log_module,  MSG_INFO, " ATSC card\n");
+		break;
+	default:
+		log_message( log_module,  MSG_INFO, " UNKNOWN card (0x%x)\n", fe_info.type);
 		break;
 	}
 	if(fe_info.type==FE_QPSK)

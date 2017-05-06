@@ -4,7 +4,7 @@
  * 
  * (C) 2004-2013 Brice DUBOST
  * 
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  * 
  * Copyright notice:
  * 
@@ -956,7 +956,7 @@ void print_info ()
 			"---------\n"
 			"Originally based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
 			"Released under the GPL.\n"
-			"Latest version available from http://mumudvb.braice.net/\n"
+			"Latest version available from http://mumudvb.net/\n"
 			"Project from the cr@ns (http://www.crans.org)\n"
 			"by Brice DUBOST (mumudvb@braice.net)\n\n"
 #if DVB_API_VERSION >= 5

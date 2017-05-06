@@ -1,7 +1,7 @@
 /* MuMuDVB - Stream a DVB transport stream.
  * File for tuning DVB cards
  *
- * last version availaible from http://mumudvb.braice.net/
+ * last version availaible from http://mumudvb.net/
  *
  * Copyright (C) 2004-2013 Brice DUBOST
  * Copyright (C) Dave Chapman 2001,2002
@@ -1512,6 +1512,7 @@ default:
 		{
 			log_message( log_module,  MSG_ERROR, "Unsupported delivery system. Try tuning using DVB API 3 (do not set delivery_system). And please contact so it can be implemented.\n");
 			set_interrupted(ERROR_TUNE<<8);
+			free(cmdseq->props);
 			free(cmdseq);
 			return -1;
 		}
@@ -1520,6 +1521,7 @@ default:
 		if ((ioctl(fd_frontend, FE_SET_PROPERTY, &cmdclear)) == -1) {
 			log_message( log_module,  MSG_ERROR,"FE_SET_PROPERTY clear failed : %s\n", strerror(errno));
 			set_interrupted(ERROR_TUNE<<8);
+			free(cmdseq->props);
 			free(cmdseq);
 			return -1;
 		}
@@ -1527,9 +1529,11 @@ default:
 		if ((ioctl(fd_frontend, FE_SET_PROPERTY, cmdseq)) == -1) {
 			log_message( log_module,  MSG_ERROR,"FE_SET_PROPERTY failed : %s\n", strerror(errno));
 			set_interrupted(ERROR_TUNE<<8);
+			free(cmdseq->props);
 			free(cmdseq);
 			return -1;
 		}
+		free(cmdseq->props);
 		free(cmdseq);
 
 		}
