@@ -233,7 +233,8 @@ main (int argc, char **argv)
 	//SCAM (software conditionnal Access Modules : for scrambled channels)
 	scam_parameters_t scam_vars={
 			.scam_support = 0,
-			.getcwthread_shutdown=0,
+			.getcwthread = 0,
+			.getcwthread_shutdown = 0,
 	};
 	scam_vars.epfd = epoll_create(MAX_CHANNELS);
 	scam_parameters_t *scam_vars_ptr=&scam_vars;

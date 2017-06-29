@@ -86,8 +86,12 @@ void scam_getcw_stop(scam_parameters_t *scam_params)
 
   // shutdown the getcw thread
   scam_params->getcwthread_shutdown = 1;
-  pthread_cancel(scam_params->getcwthread);
-  log_message( log_module,  MSG_DEBUG,  "Getcw thread stopped\n");
+  if (scam_params->getcwthread) {
+    pthread_cancel(scam_params->getcwthread);
+    log_message( log_module,  MSG_DEBUG,  "Getcw thread stopped\n");
+  } else {
+    log_message( log_module,  MSG_DEBUG,  "Getcw thread not found\n");
+  }
 }
 
 /** @brief The thread function for getting cw's from oscam */
