@@ -208,7 +208,7 @@ void eit_display_contents(mumudvb_ts_packet_t *full_eit, struct unicast_reply* r
 		Y=YY+K+1900;
 		M=MM-1-K*12;
 
-		unicast_reply_write(reply, "\t\t\"start_time day \" : \"%d-%02d-%02d (yy-mm-dd)\",\n",
+		unicast_reply_write(reply, "\t\t\"start_date\" : \"%d-%02d-%02d\",\n",
 						Y,M,D);
 		//compute hours
 		int hh,mm,ss;
