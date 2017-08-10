@@ -44,4 +44,6 @@ SOURCES_scamsupport = \
 	scam_decsa.h \
         scam_send.c \
 	scam_send.h \
+	$(NULL)
+
   
