@@ -587,7 +587,6 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, auto_p_t *auto_p, fds
 {
 	if(auto_p->autoconfiguration==AUTOCONF_MODE_FULL) //Full autoconfiguration, we search the channels and their names
 	{
-
 		if(pid==0) //PAT : contains the services identifiers and the PMT PID for each service
 		{
 			if(auto_p->autoconfiguration==AUTOCONF_MODE_FULL)
