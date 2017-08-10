@@ -45,4 +45,3 @@ SOURCES_scamsupport = \
         scam_send.c \
 	scam_send.h \
         $(NULL)
-  
