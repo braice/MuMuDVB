@@ -49,27 +49,27 @@ int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_le
 
 void autoconf_cat_need_update(auto_p_t *auto_p, unsigned char *buf)
 {
-	cat_t       *cat=(cat_t*)(get_ts_begin(buf));
-	if(cat) //It's the beginning of a new packet
-	{
-		if(cat->version_number!=auto_p->cat_version)
-		{
-			/*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
-        sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
-        and shall be the next table to become valid.*/
-			if(cat->current_next_indicator == 0)
-			{
-				return;
-			}
-			log_message( log_module, MSG_DEBUG,"CAT Need update. stored version : %d, new: %d\n",auto_p->cat_version,cat->version_number);
-			auto_p->cat_need_update=1;
-		}
-		else if(auto_p->cat_all_sections_seen && auto_p->cat_need_update==1) //We can have a wrong need update if the packet was broken (the CRC32 is checked only if we think it's good)
-		{
-			log_message( log_module, MSG_DEBUG,"CAT Not needing update anymore (wrong CRC ?)");
-			auto_p->cat_need_update=0;
-		}
-	}
+    cat_t       *cat=(cat_t*)(get_ts_begin(buf));
+    if(cat) //It's the beginning of a new packet
+    {
+        if(cat->version_number!=auto_p->cat_version)
+        {
+            /*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
+            sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+            and shall be the next table to become valid.*/
+            if(cat->current_next_indicator == 0)
+            {
+                return;
+            }
+            log_message( log_module, MSG_DEBUG,"CAT Need update. stored version : %d, new: %d\n",auto_p->cat_version,cat->version_number);
+            auto_p->cat_need_update=1;
+        }
+        else if(auto_p->cat_all_sections_seen && auto_p->cat_need_update==1) //We can have a wrong need update if the packet was broken (the CRC32 is checked only if we think it's good)
+        {
+            log_message( log_module, MSG_DEBUG,"CAT Not needing update anymore (wrong CRC ?)");
+            auto_p->cat_need_update=0;
+        }
+    }
 }
 
 /** @brief clears the ca_system_list
