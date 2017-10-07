@@ -122,6 +122,45 @@ typedef struct {
 } pat_prog_t;
 
 
+/**
+ * @brief Conditional Access Table (CAT):
+ *
+ *       - contains the CA system ID to EMM PID mapping
+ *
+ */
+
+#define CAT_LEN 8
+
+/** @brief Conditional Access Table (CAT):*/
+typedef struct {
+    u_char table_id                               :8;
+#if BYTE_ORDER == BIG_ENDIAN
+    u_char section_syntax_indicator               :1;
+   u_char dummy                                  :1;        // has to be 0
+   u_char                                        :2;
+   u_char section_length_hi                      :4;
+#else
+    u_char section_length_hi                      :4;
+    u_char                                        :2;
+    u_char dummy                                  :1;        // has to be 0
+    u_char section_syntax_indicator               :1;
+#endif
+    u_char section_length_lo                      :8;
+    u_char transport_stream_id_hi                 :8;
+    u_char transport_stream_id_lo                 :8;
+#if BYTE_ORDER == BIG_ENDIAN
+    u_char                                        :2;
+    u_char version_number                         :5;
+    u_char current_next_indicator                 :1;
+#else
+    u_char current_next_indicator                 :1;
+    u_char version_number                         :5;
+    u_char                                        :2;
+#endif
+    u_char section_number                         :8;
+    u_char last_section_number                    :8;
+} cat_t;
+
 //Used to generate the CA_PMT message and for autoconfiguration
 /** @brief Mpeg2-TS header*/
 typedef struct {

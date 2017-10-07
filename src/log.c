@@ -825,7 +825,9 @@ char *pid_type_to_str(int type)
 	case PID_EXTRA_SUBTITLE:
 		return "Subtitling";
 	case PID_ECM:
-		return "CA information (ECM,EMM)";
+		return "CA information (ECM)";
+	case PID_EMM:
+		return "CA information (EMM)";
 	case PID_UNKNOW:
 	default:
 		return "Unknown";

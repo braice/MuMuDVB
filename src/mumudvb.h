@@ -71,6 +71,9 @@
 /**the maximum channel number*/
 #define MAX_CHANNELS		128
 
+/**the maximum number of CA systems*/
+#define MAX_CA_SYSTEMS		32
+
 /**Size of an MPEG2-TS packet*/
 #define TS_PACKET_SIZE 188
 /**Null PID used for bandwith padding**/
@@ -193,7 +196,8 @@ enum
 	PID_EXTRA_VBITELETEXT,
 	PID_EXTRA_TELETEXT,
 	PID_EXTRA_SUBTITLE,
-	PID_ECM
+	PID_ECM,
+	PID_EMM
 };
 
 /**@brief file descriptors*/
