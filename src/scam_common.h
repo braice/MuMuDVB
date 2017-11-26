@@ -61,6 +61,18 @@
 
 #define MAX_STATIC_KEYS 24
 
+//Quick hack around the removal of ca_pid_t and CA_GET_PID in recent kernels
+//https://github.com/torvalds/linux/commit/833ff5e7feda1a042b83e82208cef3d212ca0ef1
+#ifndef CA_SET_PID
+typedef struct ca_pid {
+	unsigned int pid;
+	int index;      /* -1 == disable*/
+	} ca_pid_t;
+//We should not be able to get it so a number that is unlikely to happen
+#define CA_SET_PID 42424242
+#endif
+
+
 /** @brief the parameters for the scam
  * This structure contain the parameters needed for the SCAM
  */
