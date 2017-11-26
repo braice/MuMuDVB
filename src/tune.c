@@ -555,6 +555,10 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 		{
 			tuneparams->switch_type = 'C';
 		}
+		else if (tolower (substring[0]) == 'b')
+		{
+			tuneparams->switch_type = 'B';
+		}
 		else if (tolower (substring[0]) == 'n')
 		{
 			tuneparams->switch_type = 'N';
@@ -787,7 +791,7 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
  *
  * @param fd : the file descriptor of the frontend
  * @param sat_no : the satellite number (0 for non diseqc compliant hardware, 1 to 4 for diseqc compliant)
- * @param switch_type the switch type (commited or uncommited or unicqbe)
+ * @param switch_type the switch type (commited or uncommited or unicable)
  * @param pol_v_r : 1 : vertical or circular right, 0 : horizontal or circular left
  * @param hi_lo : the band for a dual band lnb
  * @param lnb_voltage_off : if one, force the 13/18V voltage to be 0 independantly of polarization
@@ -1307,6 +1311,30 @@ default:
 			feparams.u.qpsk.fec_inner=tuneparams->HP_CodeRate;
 			dfd = fd_frontend;
 
+			//Test sending both messages for uncommited then commited switch
+			if(tuneparams->switch_type == 'B')
+			{
+				log_message( log_module,  MSG_INFO, "DiseqC Switch: Sending Uncommitted and Committed messages");
+				tuneparams->switch_type = 'U';
+				//For diseqc vertical==circular right and horizontal == circular left
+				if(do_diseqc( dfd,
+						tuneparams->sat_number,
+						tuneparams->switch_no,
+						tuneparams->switch_type,
+						(tuneparams->pol == 'V' ? 1 : 0) + (tuneparams->pol == 'R' ? 1 : 0),
+						hi_lo,
+						tuneparams->lnb_voltage_off,
+						tuneparams->diseqc_repeat,
+						&feparams.frequency,
+						tuneparams->uni_freq) == 0)
+					log_message( log_module,  MSG_INFO, "DISEQC SETTING SUCCEDED\n");
+				else  {
+					log_message( log_module,  MSG_WARN, "DISEQC SETTING FAILED\n");
+					return -1;
+				}
+				tuneparams->switch_type = 'C';
+
+			}
 			//For diseqc vertical==circular right and horizontal == circular left
 			if(do_diseqc( dfd,
 					tuneparams->sat_number,
