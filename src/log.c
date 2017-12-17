@@ -1056,6 +1056,14 @@ int convert_en300468_string(char *string, int max_len, int debug)
 
 
 	realstart = (unsigned char *)string;
+
+	if(string[0] == '\0')
+	{
+		log_message( log_module, MSG_FLOOD, "Empty string, I leave");
+		return 0;
+	}
+
+
 	if(*realstart < 0x20)
 	{
 		log_message( log_module, MSG_FLOOD, "starting with encoding character 0x%02x",*realstart);

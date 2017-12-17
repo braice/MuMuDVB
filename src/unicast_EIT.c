@@ -74,6 +74,13 @@ void mumu_string_to_json(char *in, int lin, char *out, int lout)
 	offin=0;
 	offout=0;
 
+	//manage empty strings
+	if(in[0] == '\0')
+	{
+		out[0] = '\0';
+		return;
+	}
+
 	while((offin<lin) && (offout<lout) && (c=in[offin]))
 	{
 		if((c & 0x80) == 0) //ASCII bit
