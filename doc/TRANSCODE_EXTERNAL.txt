@@ -29,7 +29,7 @@ you have multiple choices to configure MuMuDVB, please refer to the main documen
 
  
 
-An example configuration is provided here for "Almajd channels" on BadrSat (26.0E):
+An example configuration is provided here for "example channels" on SomeSat (26.0E):
 
  
 -------------------------
@@ -89,26 +89,26 @@ MaxClients 200
 #max bandwith to process
 MaxBandwidth 1000000
 CustomLog -
-#almajd01 channel feed configuration
-<Feed almajd01.ffm>
+#tvfeed01 channel feed configuration
+<Feed tvfeed01.ffm>
 #specify the temporary file to use to dump the stream to FFserver
-File /tmp/almajd01.ffm
+File /tmp/tvfeed01.ffm
 FileMaxSize 1000K
 </Feed>
 #all others feed's is similar;
-<Feed almajd02.ffm>
-File /tmp/almajd02.ffm
+<Feed tvfeed02.ffm>
+File /tmp/tvfeed02.ffm
 FileMaxSize 1000K
 </Feed>
-<Feed almajd03.ffm>
-File /tmp/almajd03.ffm
+<Feed tvfeed03.ffm>
+File /tmp/tvfeed03.ffm
 FileMaxSize 1000K
 </Feed>
-#Almajd01 Stream Definition
+#Tvfeed01 Stream Definition
 #note the .asf reference, we're encapsulating our stream in ASF format. please check FFmpeg documentation for other formats.
-<Stream almajd01.asf>
-#referencing the previously defined feed, Almajd01
-Feed almajd01.ffm
+<Stream tvfeed01.asf>
+#referencing the previously defined feed, Tvfeed01
+Feed tvfeed01.ffm
 #specify the streaming format
 Format asf
 #prevent looping on a live channel, this is a continuous stream and not a file.
@@ -129,8 +129,8 @@ AudioChannels 2
 AudioSampleRate 24000
 </Stream>
 #all others stream is similar.
-<Stream almajd02.asf>
-Feed almajd02.ffm
+<Stream tvfeed02.asf>
+Feed tvfeed02.ffm
 Format asf
 NoLoop
 VideoCodec mpeg4
@@ -146,8 +146,8 @@ AudioBitRate 48
 AudioChannels 2
 AudioSampleRate 24000
 </Stream>
-<Stream almajd03.asf>
-Feed almajd03.ffm
+<Stream tvfeed03.asf>
+Feed tvfeed03.ffm
 Format asf
 NoLoop
 VideoCodec mpeg4
@@ -193,7 +193,7 @@ For the moment, FFserver have no data to process, we need to push the data from 
 after starting the FFserver, run the following:
 
 ------------------------------------------------------------------------------------
-ffmpeg -i udp://@239.100.0.0:1234 http://192.168.100.100/almajd01.ffm
+ffmpeg -i udp://@239.100.0.0:1234 http://192.168.100.100/tvfeed01.ffm
 ------------------------------------------------------------------------------------
 
  
@@ -208,7 +208,7 @@ Note that you can auto start FFMpeg per feed by adding the following inside your
 launch `ffmpeg -i udp://@X.X.X.X:1234`
 where X.X.X.X is your Multicast group.
  
-Now the channels can be accessed in unicast on URLs like `http://192.168.100.100/almajd01.asf`
+Now the channels can be accessed in unicast on URLs like `http://192.168.100.100/tvfeed01.asf`
 
 Example AAC/H.264 transcoded stream inside a FLV container:
 ------------------------------------------------------------------------------------
@@ -218,15 +218,15 @@ MaxHTTPConnections 20000
 MaxClients 10000
 MaxBandwidth 1000000
 CustomLog -
-<Feed al-quds.ffm>
-File /tmp/al-quds.ffm
+<Feed other-tvfeed.ffm>
+File /tmp/other-tvfeed.ffm
 FileMaxSize 100M
 ACL allow 127.0.0.1
 launch ffmpeg -i udp://@239.100.1.13:1234
 </Feed>
 
-<Stream al-quds.flv>
-Feed al-quds.ffm
+<Stream other-tvfeed.flv>
+Feed other-tvfeed.ffm
 Format flv 
 AudioBitRate 64 
 AudioChannels 2
@@ -261,9 +261,9 @@ AVOptionVideo directpred 1
 AVOptionVideo trellis 1
 AVOptionVideo wpredp 0
 AVOptionVideo flags +global_header
-Title 'Al-quds tv'
-comment 'Al-quds Islamic jihad tv channel'
-author 'Islamic Jihad'
+Title 'Some Great tv'
+comment 'Great tv channel'
+author 'Humanity'
 StartSendOnKey
 </Stream>
 <Stream stat.html>
@@ -278,9 +278,9 @@ Acknowledgements
 
 thank you Brice and Matthias for helping me all the time it is very appreciated
 
-thank to everyone that helped me getting my home brew IPTV up and running, i can watch everywhere, anywhere.
+thank to everyone that helped me getting my home brew IPTV up and running, I can watch everywhere, anywhere.
 
-thank to Georgeus roger for helping me with Oscam setup so now i have my channels descrambled.
+thank to Georgeus roger for helping me with Oscam setup so now I have my channels descrambled.
 
 if you need any help please don't hesitate to contact me on the mailing list!
 
