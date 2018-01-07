@@ -1,7 +1,7 @@
 MuMuDVB - README
 ================
 Brice Dubost <mumudvb@braice.net>
-Version 2.0.0
+Version 2.1.0
 
 [NOTE]
 An HTML version of this file is availaible on http://www.mumudvb.net[MuMuDVB's website].
