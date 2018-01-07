@@ -6,7 +6,7 @@ Version 2.1.0
 [NOTE]
 An HTML version of this file is availaible on http://www.mumudvb.net[MuMuDVB's website].
 
-image::http://www.mumudvb.net/sites/default/files/logo.png[caption="logo MuMuDVB"]
+image::http://mumudvb.net/logo.png[caption="logo MuMuDVB"]
 
 Presentation
 ------------
