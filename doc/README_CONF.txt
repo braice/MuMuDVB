@@ -80,7 +80,7 @@ In the following list, only the parameter `freq` is mandatory
 |Parameter name |Description | Default value | Comments
 |freq | transponder's frequency in MHz  | | Mandatory
 |modulation | The kind of modulation used (can be : QPSK QAM16 QAM32 QAM64 QAM128 QAM256 QAMAUTO VSB8 VSB16 8PSK 16APSK 32APSK DQPSK)  | ATSC: VSB_8, cable/terrestrial: QAM_AUTO, satellite: QPSK | Optional most of the times
-|delivery_system | the delivery system used (can be DVBT DVBT2 DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC) | Undefined | Set it if you want to use the new tuning API (DVB API 5/S2API). Mandatory for DVB-S2 and DVB-T2
+|delivery_system | the delivery system used (can be DVBT DVBT2 DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC ISDBT) | Undefined | Set it if you want to use the new tuning API (DVB API 5/S2API). Mandatory for DVB-S2 and DVB-T2
 |card | The DVB/ATSC card number | 0 | only limited by your OS
 |tuner | The tuner number | 0 | If you have a card with multiple tuners (ie there are several frontend* in /dev/dvb/adapter%card)
 |card_dev_path | The path of the DVB card devices. Use it if you have a personalised path like /dev/dvb/astra%card | /dev/dvb/adapter%card |  The template %card can be used

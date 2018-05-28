@@ -67,6 +67,9 @@
 /* ATSC */
 #define ATSC_MODULATION_DEFAULT     VSB_8
 
+/* ISDB-T */
+
+
 /* The lnb type*/
 #define LNB_UNIVERSAL 0
 #define LNB_STANDARD 1
@@ -179,6 +182,19 @@ typedef struct tune_p_t{
 #endif
   /** If we read directly from a file */
   char read_file_path[256];
+
+  //ISDB T
+  /** ISDBT */
+  int isdbt_partial_reception;
+  /** ISDBT */
+  int isdbt_sound_broadcasting;
+  /** ISDBT */
+  int isdbt_sb_subchanel_id;
+  /** ISDBT */
+  int isdbt_layer_enabled;
+  /** Spectral inversion */
+  fe_spectral_inversion_t inversion;
+
 }tune_p_t;
 
 

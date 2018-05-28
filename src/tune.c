@@ -94,6 +94,12 @@ void init_tune_v(tune_p_t *tune_p)
 				.bandwidth = BANDWIDTH_DEFAULT,
 				.hier = HIERARCHY_DEFAULT,
 				.fe_type=FE_QPSK, //sat by default
+				// ISDB-T https://01.org/linuxgraphics/gfx-docs/drm/media/uapi/dvb/fe_property_parameters.html
+				.isdbt_partial_reception = -1, //AUTO If need to configure please request
+				.isdbt_sound_broadcasting = -1, //AUTO If need to configure please request
+				.isdbt_sb_subchanel_id = -1, //AUTO If need to configure please request
+				.isdbt_layer_enabled = 7, //All layers
+				.inversion = INVERSION_AUTO,
 	#if DVB_API_VERSION >= 5
 				.delivery_system=SYS_UNDEFINED,
 				.rolloff=ROLLOFF_35,
@@ -1510,6 +1516,30 @@ default:
 #endif
 			cmdseq->props[commandnum++].cmd    = DTV_TUNE;
 		}
+
+#ifdef SYS_ISDBT
+		else if((tuneparams->delivery_system==SYS_ISDBT))
+
+		{
+			cmdseq->props[commandnum].cmd      = DTV_DELIVERY_SYSTEM;
+			cmdseq->props[commandnum++].u.data = tuneparams->delivery_system;
+			cmdseq->props[commandnum].cmd      = DTV_FREQUENCY;
+			cmdseq->props[commandnum++].u.data = feparams.frequency;
+			cmdseq->props[commandnum].cmd      = DTV_ISDBT_PARTIAL_RECEPTION;
+			cmdseq->props[commandnum++].u.data = tuneparams->isdbt_partial_reception;
+			cmdseq->props[commandnum].cmd      = DTV_ISDBT_SOUND_BROADCASTING;
+			cmdseq->props[commandnum++].u.data = tuneparams->isdbt_sound_broadcasting;
+			cmdseq->props[commandnum].cmd      = DTV_ISDBT_SB_SUBCHANNEL_ID;
+			cmdseq->props[commandnum++].u.data = tuneparams->isdbt_sb_subchanel_id;
+			cmdseq->props[commandnum].cmd      = DTV_ISDBT_LAYER_ENABLED;
+			cmdseq->props[commandnum++].u.data = tuneparams->isdbt_layer_enabled;
+			cmdseq->props[commandnum].cmd      = DTV_BANDWIDTH_HZ;
+			cmdseq->props[commandnum++].u.data = dvbt_bandwidth;
+			cmdseq->props[commandnum].cmd      = DTV_INVERSION;
+			cmdseq->props[commandnum++].u.data = tuneparams->inversion;
+			cmdseq->props[commandnum++].cmd    = DTV_TUNE;
+		}
+#endif
 		else if((tuneparams->delivery_system==SYS_DVBC_ANNEX_AC)||(tuneparams->delivery_system==SYS_DVBC_ANNEX_B))
 		{
 			cmdseq->props[commandnum].cmd      = DTV_DELIVERY_SYSTEM;
