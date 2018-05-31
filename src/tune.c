@@ -1198,14 +1198,14 @@ int tune_it(int fd_frontend, tune_p_t *tuneparams)
 	int change_deliv=0;
 	switch(fe_info.type) {
 	case FE_OFDM: //DVB-T
-		if((tuneparams->delivery_system!=SYS_UNDEFINED)&&(tuneparams->delivery_system!=SYS_DVBT)
+		if((tuneparams->delivery_system!=SYS_UNDEFINED)&&(tuneparams->delivery_system!=SYS_DVBT)&&(tuneparams->delivery_system!=SYS_ISDBT)
 #ifdef DVBT2
 				&&(tuneparams->delivery_system!=SYS_DVBT2))
 #else
 		)
 #endif
 		{
-			log_message( log_module,  MSG_WARN, "The delivery system does not fit with the card frontend type (DVB-T/T2).");
+			log_message( log_module,  MSG_WARN, "The delivery system does not fit with the card frontend type (DVB-T/T2 ISDBT).");
 			change_deliv=1;
 		}
 		break;
