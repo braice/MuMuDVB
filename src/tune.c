@@ -94,12 +94,14 @@ void init_tune_v(tune_p_t *tune_p)
 				.bandwidth = BANDWIDTH_DEFAULT,
 				.hier = HIERARCHY_DEFAULT,
 				.fe_type=FE_QPSK, //sat by default
+#if ISDBT
 				// ISDB-T https://01.org/linuxgraphics/gfx-docs/drm/media/uapi/dvb/fe_property_parameters.html
 				.isdbt_partial_reception = -1, //AUTO If need to configure please request
 				.isdbt_sound_broadcasting = -1, //AUTO If need to configure please request
 				.isdbt_sb_subchanel_id = -1, //AUTO If need to configure please request
 				.isdbt_layer_enabled = 7, //All layers
 				.inversion = INVERSION_AUTO,
+#endif
 	#if DVB_API_VERSION >= 5
 				.delivery_system=SYS_UNDEFINED,
 				.rolloff=ROLLOFF_35,
@@ -275,7 +277,7 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 			tuneparams->TransmissionMode=TRANSMISSION_MODE_8K;
 		else if (!strcmp (substring, "auto"))
 			tuneparams->TransmissionMode=TRANSMISSION_MODE_AUTO;
-#ifdef TRANSMISSION_MODE_4K //DVB-T2
+#ifdef TRANSMISSION_MODE_4K //DVB-T2 ISBT
 		else if (!strcmp (substring, "4k"))
 			tuneparams->TransmissionMode=TRANSMISSION_MODE_4K;
 #endif
@@ -444,6 +446,7 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 			tuneparams->delivery_system=SYS_DVBS2;
 		else if (!strcmp (substring, "DVBH"))
 			tuneparams->delivery_system=SYS_DVBH;
+#if ISDBT
 		else if (!strcmp (substring, "ISDBT"))
 			tuneparams->delivery_system=SYS_ISDBT;
 		else if (!strcmp (substring, "ISDBS"))
@@ -452,6 +455,7 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 			tuneparams->delivery_system=SYS_ISDBS;
 		else if (!strcmp (substring, "ISDBC"))
 			tuneparams->delivery_system=SYS_ISDBC;
+#endif
 		else if (!strcmp (substring, "ATSC"))
 			tuneparams->delivery_system=SYS_ATSC;
 		else if (!strcmp (substring, "ATSCMH"))
@@ -1198,7 +1202,10 @@ int tune_it(int fd_frontend, tune_p_t *tuneparams)
 	int change_deliv=0;
 	switch(fe_info.type) {
 	case FE_OFDM: //DVB-T
-		if((tuneparams->delivery_system!=SYS_UNDEFINED)&&(tuneparams->delivery_system!=SYS_DVBT)&&(tuneparams->delivery_system!=SYS_ISDBT)
+		if((tuneparams->delivery_system!=SYS_UNDEFINED)&&(tuneparams->delivery_system!=SYS_DVBT)
+#if ISDBT
+				&&(tuneparams->delivery_system!=SYS_ISDBT)
+#endif
 #ifdef DVBT2
 				&&(tuneparams->delivery_system!=SYS_DVBT2))
 #else
@@ -1516,10 +1523,8 @@ default:
 #endif
 			cmdseq->props[commandnum++].cmd    = DTV_TUNE;
 		}
-
-#ifdef SYS_ISDBT
+#if ISDBT
 		else if((tuneparams->delivery_system==SYS_ISDBT))
-
 		{
 			cmdseq->props[commandnum].cmd      = DTV_DELIVERY_SYSTEM;
 			cmdseq->props[commandnum++].u.data = tuneparams->delivery_system;
@@ -1533,10 +1538,12 @@ default:
 			cmdseq->props[commandnum++].u.data = tuneparams->isdbt_sb_subchanel_id;
 			cmdseq->props[commandnum].cmd      = DTV_ISDBT_LAYER_ENABLED;
 			cmdseq->props[commandnum++].u.data = tuneparams->isdbt_layer_enabled;
-			cmdseq->props[commandnum].cmd      = DTV_BANDWIDTH_HZ;
-			cmdseq->props[commandnum++].u.data = dvbt_bandwidth;
+			cmdseq->props[commandnum].cmd      = DTV_BANDWIDTH_HZ;//https://www.linuxtv.org/downloads/v4l-dvb-apis-old/frontend-properties.html
+			cmdseq->props[commandnum++].u.data = 6000000; //1) For ISDB-T it should be always 6000000Hz (6MHz)
 			cmdseq->props[commandnum].cmd      = DTV_INVERSION;
 			cmdseq->props[commandnum++].u.data = tuneparams->inversion;
+			cmdseq->props[commandnum].cmd      = DTV_TRANSMISSION_MODE;
+			cmdseq->props[commandnum++].u.data = tuneparams->TransmissionMode;
 			cmdseq->props[commandnum++].cmd    = DTV_TUNE;
 		}
 #endif

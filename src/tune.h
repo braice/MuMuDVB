@@ -90,6 +90,17 @@
 #define STREAM_ID 1
 #endif
 
+#undef ISDBT
+#if defined(DVB_API_VERSION_MINOR)
+#if DVB_API_VERSION == 5 && DVB_API_VERSION_MINOR >= 1
+#define ISDBT 1
+#endif
+#endif
+#if DVB_API_VERSION >= 6
+#define ISDBT 1
+#endif
+
+
 typedef enum pls_type {
 	PLS_ROOT		= 0x00,
 	PLS_GOLD		= 0x01,
@@ -182,7 +193,7 @@ typedef struct tune_p_t{
 #endif
   /** If we read directly from a file */
   char read_file_path[256];
-
+#if ISDBT
   //ISDB T
   /** ISDBT */
   int isdbt_partial_reception;
@@ -192,6 +203,7 @@ typedef struct tune_p_t{
   int isdbt_sb_subchanel_id;
   /** ISDBT */
   int isdbt_layer_enabled;
+#endif
   /** Spectral inversion */
   fe_spectral_inversion_t inversion;
 
