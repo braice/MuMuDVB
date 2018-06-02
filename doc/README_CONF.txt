@@ -78,7 +78,7 @@ In the following list, only the parameter `freq` is mandatory
 [width="80%",cols="2,7,2,3",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Comments
-|freq | transponder's frequency in MHz  | | Mandatory
+|freq | transponder's frequency (in MHz for satellite). For cable and terrestrial you can use Hz,kHz or MHz | | Mandatory unless other freq is specified
 |modulation | The kind of modulation used (can be : QPSK QAM16 QAM32 QAM64 QAM128 QAM256 QAMAUTO VSB8 VSB16 8PSK 16APSK 32APSK DQPSK)  | ATSC: VSB_8, cable/terrestrial: QAM_AUTO, satellite: QPSK | Optional most of the times
 |delivery_system | the delivery system used (can be DVBT DVBT2 DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC ISDBT) | Undefined | Set it if you want to use the new tuning API (DVB API 5/S2API). Mandatory for DVB-S2 and DVB-T2
 |card | The DVB/ATSC card number | 0 | only limited by your OS

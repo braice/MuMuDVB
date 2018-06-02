@@ -152,7 +152,10 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 		double temp_freq;
 		substring = strtok (NULL, delimiteurs);
 		temp_freq = atof (substring);
-		tuneparams->freq = (int)( 1000UL * temp_freq);
+		//If we did not entered the frequency in Hz (Cable and Terrestrial) we go to kHz or Hz, and for satellite we go in kHz (we expect MHz)
+		if(temp_freq < 1000000)
+			temp_freq *= 1000;
+		tuneparams->freq = (temp_freq);
 	}
 	else if (!strcmp (substring, "uni_freq"))
 	{
@@ -1284,8 +1287,10 @@ default:
 
 	switch(fe_info.type) {
 	case FE_OFDM: //DVB-T
-		if (tuneparams->freq < 1000000) tuneparams->freq*=1000UL;
-		feparams.frequency=tuneparams->freq;
+		//Terrestrial want frequency in Hz and it is at least 1Mhz
+		if (tuneparams->freq < 1000000)
+			tuneparams->freq*=1000;
+		feparams.frequency=(int)tuneparams->freq;
 		feparams.u.ofdm.bandwidth=tuneparams->bandwidth;
 		feparams.u.ofdm.code_rate_HP=tuneparams->HP_CodeRate;
 		feparams.u.ofdm.code_rate_LP=tuneparams->LP_CodeRate;
@@ -1389,8 +1394,11 @@ default:
 			}
 			break;
 		case FE_QAM: //DVB-C
-			log_message( log_module,  MSG_INFO, "tuning DVB-C to %d Hz, srate=%d\n",tuneparams->freq,tuneparams->srate);
-			feparams.frequency=tuneparams->freq;
+			//If the user entered in MHz, we are right now in kHz
+			if (tuneparams->freq < 1000000)
+				tuneparams->freq*=1000;
+			log_message( log_module,  MSG_INFO, "tuning DVB-C to %d Hz, srate=%d\n",(int)tuneparams->freq,tuneparams->srate);
+			feparams.frequency=(int)tuneparams->freq;
 			feparams.inversion=INVERSION_OFF;
 			feparams.u.qam.symbol_rate = tuneparams->srate;
 			feparams.u.qam.fec_inner = tuneparams->HP_CodeRate;
@@ -1400,8 +1408,11 @@ default:
 			break;
 #ifdef ATSC
 		case FE_ATSC: //ATSC
+			//If the user entered in MHz, we are right now in kHz
+			if (tuneparams->freq < 1000000)
+				tuneparams->freq*=1000;
 			log_message( log_module,  MSG_INFO, "tuning ATSC to %d Hz, modulation=%d\n",tuneparams->freq,tuneparams->modulation);
-			feparams.frequency=tuneparams->freq;
+			feparams.frequency=(int)tuneparams->freq;
 			if(!tuneparams->modulation_set)
 				tuneparams->modulation=ATSC_MODULATION_DEFAULT;
 			feparams.u.vsb.modulation = tuneparams->modulation;

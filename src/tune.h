@@ -126,8 +126,8 @@ typedef struct tune_p_t{
   int card_tuned;
   /**The timeout for tuninh the card*/
   int tuning_timeout;
-  /** the frequency (in MHz for dvb-s in kHz for dvb-t) */
-  uint32_t freq;
+  /** the frequency (in MHz for dvb-s in kHz, MHz or Hz for all others) */
+  double freq;
   /** The symbol rate (QPSK and QAM modulation ie cable and satellite) in symbols per second*/
   unsigned int srate;
   /**The polarisation H, V, L or R (for satellite)*/
