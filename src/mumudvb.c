@@ -865,7 +865,7 @@ main (int argc, char **argv)
 #endif
 
 
-	log_message( log_module,  MSG_INFO, "Streaming. Freq %d\n",
+	log_message( log_module,  MSG_INFO, "Streaming. Freq %f\n",
 			tune_p.freq);
 
 

@@ -1411,7 +1411,7 @@ default:
 			//If the user entered in MHz, we are right now in kHz
 			if (tuneparams->freq < 1000000)
 				tuneparams->freq*=1000;
-			log_message( log_module,  MSG_INFO, "tuning ATSC to %d Hz, modulation=%d\n",tuneparams->freq,tuneparams->modulation);
+			log_message( log_module,  MSG_INFO, "tuning ATSC to %d Hz, modulation=%d\n",(int)tuneparams->freq,tuneparams->modulation);
 			feparams.frequency=(int)tuneparams->freq;
 			if(!tuneparams->modulation_set)
 				tuneparams->modulation=ATSC_MODULATION_DEFAULT;
