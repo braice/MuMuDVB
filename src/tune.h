@@ -108,6 +108,12 @@ typedef enum pls_type {
 } pls_type_t;
 
 
+#define ISDBT_LAYER_ALL 7
+#define ISDBT_LAYER_A 1
+#define ISDBT_LAYER_B 2
+#define ISDBT_LAYER_C 4
+
+
 /** @brief Parameters for tuning the card*/
 typedef struct tune_p_t{
   /**The card number*/
@@ -202,7 +208,7 @@ typedef struct tune_p_t{
   /** ISDBT */
   int isdbt_sb_subchanel_id;
   /** ISDBT */
-  int isdbt_layer_enabled;
+  int isdbt_layer;
 #endif
   /** Spectral inversion */
   fe_spectral_inversion_t inversion;

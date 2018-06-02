@@ -99,7 +99,7 @@ void init_tune_v(tune_p_t *tune_p)
 				.isdbt_partial_reception = -1, //AUTO If need to configure please request
 				.isdbt_sound_broadcasting = -1, //AUTO If need to configure please request
 				.isdbt_sb_subchanel_id = -1, //AUTO If need to configure please request
-				.isdbt_layer_enabled = 7, //All layers
+				.isdbt_layer = 0, //Undef
 				.inversion = INVERSION_AUTO,
 #endif
 	#if DVB_API_VERSION >= 5
@@ -654,6 +654,31 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 		tuneparams->read_file_path[MAX_FILENAME_LEN-1]='\0';
 		if (strlen (substring) >= MAX_NAME_LEN - 1)
 			log_message( log_module,  MSG_WARN,"File name too long\n");
+	}
+	else if (!strcmp (substring, "isdbt_layer"))
+	{
+#if DVB_API_VERSION >= 5
+		substring = strtok (NULL, delimiteurs);
+		sscanf (substring, "%s\n", substring);
+		if (!strcmp(substring, "A") || !strcmp (substring, "a"))
+			tuneparams->isdbt_layer |= ISDBT_LAYER_A;
+		else if (!strcmp(substring, "B") || !strcmp (substring, "b"))
+			tuneparams->isdbt_layer |= ISDBT_LAYER_B;
+		else if (!strcmp(substring, "C") || !strcmp (substring, "c"))
+			tuneparams->isdbt_layer |= ISDBT_LAYER_C;
+		else if (!strcmp (substring, "ALL") || !strcmp (substring, "all"))
+			tuneparams->isdbt_layer = ISDBT_LAYER_ALL;
+		else
+		{
+			log_message( log_module,  MSG_ERROR,
+					"Config issue : isdbt_layer. Unknown isdbt_layer : %s\n",substring);
+			return -1;
+		}
+#else
+		log_message( log_module,  MSG_ERROR,
+				"Config issue : isdbt_layer. You are trying to set the isdbt_layer but your MuMuDVB have not been built with DVB-S2/DVB API 5 support.\n");
+		return -1;
+#endif
 	}
 	else
 		return 0; //Nothing concerning tuning, we return 0 to explore the other possibilities
@@ -1526,6 +1551,18 @@ default:
 #if ISDBT
 		else if((tuneparams->delivery_system==SYS_ISDBT))
 		{
+			if(tuneparams->isdbt_layer)
+			{
+				if(tuneparams->isdbt_layer & ISDBT_LAYER_A)
+					log_message( log_module,  MSG_INFO, "ISDBT Layer A enabled");
+				if(tuneparams->isdbt_layer & ISDBT_LAYER_B)
+					log_message( log_module,  MSG_INFO, "ISDBT Layer B enabled");
+				if(tuneparams->isdbt_layer & ISDBT_LAYER_C)
+					log_message( log_module,  MSG_INFO, "ISDBT Layer C enabled");
+			}
+			else
+				tuneparams->isdbt_layer = ISDBT_LAYER_ALL;
+
 			cmdseq->props[commandnum].cmd      = DTV_DELIVERY_SYSTEM;
 			cmdseq->props[commandnum++].u.data = tuneparams->delivery_system;
 			cmdseq->props[commandnum].cmd      = DTV_FREQUENCY;
@@ -1537,7 +1574,7 @@ default:
 			cmdseq->props[commandnum].cmd      = DTV_ISDBT_SB_SUBCHANNEL_ID;
 			cmdseq->props[commandnum++].u.data = tuneparams->isdbt_sb_subchanel_id;
 			cmdseq->props[commandnum].cmd      = DTV_ISDBT_LAYER_ENABLED;
-			cmdseq->props[commandnum++].u.data = tuneparams->isdbt_layer_enabled;
+			cmdseq->props[commandnum++].u.data = tuneparams->isdbt_layer;
 			cmdseq->props[commandnum].cmd      = DTV_BANDWIDTH_HZ;//https://www.linuxtv.org/downloads/v4l-dvb-apis-old/frontend-properties.html
 			cmdseq->props[commandnum++].u.data = 6000000; //1) For ISDB-T it should be always 6000000Hz (6MHz)
 			cmdseq->props[commandnum].cmd      = DTV_INVERSION;

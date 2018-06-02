@@ -139,7 +139,8 @@ Parameters specific to terrestrial (DVB-T)
 |trans_mode |transmission mode | auto | 2k, 8k, auto (DVB-T2: 4k, 16k, 32k) 
 |guardinterval |guard interval | auto |  1/32, 1/16, 1/8, 1/4, auto (DVB-T2 : 1/128, 19/128, 19/256) 
 |coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto 
-|stream_id | the id of the substream for DVB-T2 | 0 | 0 to 255 |
+|stream_id | the id of the substream for DVB-T2 | 0 | 0 to 255 
+|isdbt_layer | the sublayer for ISDBT (can be called several times for several layers) | ALL | A,B,C or ALL
 |==================================================================================================================
 
 Parameters specific to cable (DVB-C)
