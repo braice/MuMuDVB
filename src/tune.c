@@ -496,14 +496,12 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 		else
 		{
 			log_message( log_module,  MSG_ERROR,
-					"Config issue : delivery_system. Unknown delivery_system : %s\n",substring);
+					"Config issue : rolloff. Unknown rolloff : %s\n",substring);
 			return -1;
 		}
-		log_message( log_module,  MSG_INFO,
-				"You will use DVB API version 5 for tuning your card.\n");
 #else
 		log_message( log_module,  MSG_ERROR,
-				"Config issue : delivery_system. You are trying to set the rolloff but your MuMuDVB have not been built with DVB-S2/DVB API 5 support.\n");
+				"Config issue : rolloff. You are trying to set the rolloff but your MuMuDVB have not been built with DVB-S2/DVB API 5 support.\n");
 		return -1;
 #endif
 	}
@@ -600,7 +598,7 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 
 #else
 		log_message( log_module,  MSG_ERROR,
-				"Config issue : delivery_system. You are trying to set the stream_id but your MuMuDVB have not been built with DVB-S2/DVB API > 5.8 support.\n");
+				"Config issue : stream_id. You are trying to set the stream_id but your MuMuDVB have not been built with DVB-S2/DVB API > 5.8 support.\n");
 		return -1;
 #endif
 	}
@@ -617,7 +615,7 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 		}
 #else
 		log_message( log_module,  MSG_ERROR,
-				"Config issue : delivery_system. You are trying to set the pls_code but your MuMuDVB have not been built with DVB-S2/DVB API > 5.8 support.\n");
+				"Config issue : pls_code. You are trying to set the pls_code but your MuMuDVB have not been built with DVB-S2/DVB API > 5.8 support.\n");
 #endif
 	}
 	else if (!strcmp (substring, "pls_type"))
@@ -643,7 +641,7 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 		}
 #else
                 log_message( log_module,  MSG_ERROR,
-                                "Config issue : delivery_system. You are trying to set the pls_type but your MuMuDVB have not been built with DVB-S2/DVB API > 5.8 support.\n");
+                                "Config issue : pls_type. You are trying to set the pls_type but your MuMuDVB have not been built with DVB-S2/DVB API > 5.8 support.\n");
 #endif
 	}
 	else if (!strcmp (substring, "read_file_path"))
@@ -1313,7 +1311,7 @@ default:
 			dvbt_bandwidth=0;
 			break;
 		}
-		log_message( log_module,  MSG_INFO, "Tuning DVB-T to %d Hz, Bandwidth: %d\n", tuneparams->freq,dvbt_bandwidth);
+		log_message( log_module,  MSG_INFO, "Tuning Terrestrial to %d Hz, Bandwidth: %d\n", (int)tuneparams->freq,dvbt_bandwidth);
 		break;
 		case FE_QPSK: //DVB-S
 			if(!tuneparams->modulation_set)
@@ -1460,7 +1458,8 @@ default:
 				tune_stream_id = tuneparams->stream_id+((tuneparams->pls_code & 0x3FFFF)<<8);
 			if( tuneparams->pls_type == PLS_GOLD)
 				tune_stream_id = tune_stream_id | ( 1<<26 );
-			log_message( log_module,  MSG_INFO,  "Stream_id = %d, stream id with PLS parameters %d",tuneparams->stream_id, tune_stream_id);
+			if(tuneparams->stream_id || tune_stream_id)
+				log_message( log_module,  MSG_INFO,  "Stream_id = %d, stream id with PLS parameters %d",tuneparams->stream_id, tune_stream_id);
 #endif
 
 			struct dtv_property pclear[] = {

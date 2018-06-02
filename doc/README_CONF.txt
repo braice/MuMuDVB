@@ -126,8 +126,8 @@ Local oscillator frequencies :
 - Ku Band : this is the default band for MuMuDVB, you don't have to set the LO frequency. For information : Hi band : 10600, Low band : 9750, Single : 10750
 
 
-Parameters specific to terrestrial (DVB-T)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Parameters specific to terrestrial (DVB-T/T2 ISDBT)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [NOTE]
 `auto` usually works fine for all the parameters except `bandwidth`
