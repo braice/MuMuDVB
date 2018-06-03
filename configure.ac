@@ -113,14 +113,6 @@ then
   AC_DEFINE(ANDROID, 1, Define if you want build for android)
 fi
 
-AC_ARG_ENABLE(tune_old,
-  [  --enable-tune_old          Use old code for tuning (default disabled)],,[enable_tune_old="no"])
-
-if test "${enable_tune_old}" = "yes"
-then
-  AC_DEFINE(TUNE_OLD, 1, Define if you want the old code for tuning)
-fi
-
 # Checks for header files.
 AC_HEADER_RESOLV
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h syslog.h unistd.h values.h])

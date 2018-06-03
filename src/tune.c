@@ -984,85 +984,7 @@ int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_str
 	int32_t strength;
 	fe_status_t festatus;
 	//We keep the old tuning compatibility just in case, as the new one should work it is done via the configure
-#if TUNE_OLD
-	struct dvb_frontend_event event;
-	struct pollfd pfd[1];
-	int status;
 
-	pfd[0].fd = fd_frontend;
-	pfd[0].events = POLLPRI;
-
-	event.status=0;
-	while (((event.status & FE_HAS_LOCK)==0)) {
-		log_message( log_module,  MSG_DETAIL, "polling....\n");
-		if (poll(pfd,1,5000) > 0){
-			if (pfd[0].revents & POLLPRI){
-				log_message( log_module,  MSG_DETAIL, "Getting frontend event\n");
-				if ((status = ioctl(fd_frontend, FE_GET_EVENT, &event)) < 0){
-					if (errno != EOVERFLOW) {
-						log_message( log_module,  MSG_ERROR, "FE_GET_EVENT %s. status = %d\n", strerror(errno), status);
-						return -1;
-					}
-					else log_message( log_module,  MSG_WARN, "Overflow error, trying again (status = %d, errno = %d)\n", status, errno);
-				}
-			}
-			print_status(event.status);
-		}
-		if(display_strength)
-		{
-			strength=0;
-			if(ioctl(fd_frontend,FE_READ_SIGNAL_STRENGTH,&strength) >= 0)
-				log_message( log_module,  MSG_INFO, "Strength: %10d\n",strength);
-			strength=0;
-			if(ioctl(fd_frontend,FE_READ_SNR,&strength) >= 0)
-				log_message( log_module,  MSG_INFO, "SNR: %10d\n",strength);
-		}
-	}
-
-	if (event.status & FE_HAS_LOCK) {
-		switch(type) {
-		case FE_OFDM:
-			log_message( log_module,  MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);
-			break;
-		case FE_QPSK:
-			log_message( log_module,  MSG_INFO, "Event:  Frequency: %d (or %d)\n",(unsigned int)((event.parameters.frequency)+lo_frequency),(unsigned int) abs((event.parameters.frequency)-lo_frequency));
-			log_message( log_module,  MSG_INFO, "        SymbolRate: %d\n",event.parameters.u.qpsk.symbol_rate);
-			log_message( log_module,  MSG_INFO, "        FEC_inner:  %d\n",event.parameters.u.qpsk.fec_inner);
-			break;
-		case FE_QAM:
-			log_message( log_module,  MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);
-			log_message( log_module,  MSG_INFO, "        SymbolRate: %d\n",event.parameters.u.qpsk.symbol_rate);
-			log_message( log_module,  MSG_INFO, "        FEC_inner:  %d\n",event.parameters.u.qpsk.fec_inner);
-			break;
-#ifdef ATSC
-		case FE_ATSC:
-			log_message( log_module,  MSG_INFO, "Event:  Frequency: %d\n",event.parameters.frequency);
-			break;
-#endif
-		default:
-			break;
-		}
-
-		strength=0;
-		if(ioctl(fd_frontend,FE_READ_BER,&strength) >= 0)
-			log_message( log_module,  MSG_INFO, "Bit error rate: %d\n",strength);
-
-		strength=0;
-		if(ioctl(fd_frontend,FE_READ_SIGNAL_STRENGTH,&strength) >= 0)
-			log_message( log_module,  MSG_INFO, "Signal strength: %d\n",strength);
-
-		strength=0;
-		if(ioctl(fd_frontend,FE_READ_SNR,&strength) >= 0)
-			log_message( log_module,  MSG_INFO, "SNR: %d\n",strength);
-
-		festatus=0;
-		if(ioctl(fd_frontend,FE_READ_STATUS,&festatus) >= 0)
-			print_status(festatus);
-	} else {
-		log_message( log_module,  MSG_ERROR, "Not able to lock to the signal on the given frequency\n");
-		return -1;
-	}
-#else
 	struct dvb_frontend_parameters parameters;
 
 	do
@@ -1139,7 +1061,7 @@ int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_str
 		return -1;
 	}
 
-#endif
+
 	return 0;
 }
 
