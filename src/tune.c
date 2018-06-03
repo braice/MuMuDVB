@@ -1596,17 +1596,24 @@ default:
 			cmdseq->props[commandnum].cmd      = DTV_BANDWIDTH_HZ;//https://www.linuxtv.org/downloads/v4l-dvb-apis-old/frontend-properties.html
 			cmdseq->props[commandnum++].u.data = 6000000; //1) For ISDB-T it should be always 6000000Hz (6MHz)
 			log_message( log_module,  MSG_DEBUG,  "IDSBT tuning DTV_BANDWIDTH_HZ %d ",cmdseq->props[commandnum-1].u.data);
-/*			cmdseq->props[commandnum].cmd      = DTV_TRANSMISSION_MODE;
-			cmdseq->props[commandnum++].u.data = tuneparams->TransmissionMode;
-			cmdseq->props[commandnum].cmd      = DTV_ISDBT_LAYERA_MODULATION;
-			cmdseq->props[commandnum++].u.data = tuneparams->modulation;
-			cmdseq->props[commandnum].cmd      = DTV_ISDBT_LAYERB_MODULATION;
-			cmdseq->props[commandnum++].u.data = tuneparams->modulation;
-			cmdseq->props[commandnum].cmd      = DTV_ISDBT_LAYERC_MODULATION;
-			cmdseq->props[commandnum++].u.data = tuneparams->modulation;
-			*/
-
-
+			cmdseq->props[commandnum].cmd      = DTV_INVERSION;
+			cmdseq->props[commandnum++].u.data = INVERSION_AUTO;
+			log_message( log_module,  MSG_DEBUG,  "IDSBT tuning DTV_INVERSION %d ",cmdseq->props[commandnum-1].u.data);
+			cmdseq->props[commandnum].cmd      = DTV_GUARD_INTERVAL;
+			cmdseq->props[commandnum++].u.data = GUARD_INTERVAL_AUTO;
+			log_message( log_module,  MSG_DEBUG,  "IDSBT tuning DTV_GUARD_INTERVAL %d ",cmdseq->props[commandnum-1].u.data);
+			cmdseq->props[commandnum].cmd      = DTV_TRANSMISSION_MODE;
+			cmdseq->props[commandnum++].u.data = TRANSMISSION_MODE_AUTO;
+			log_message( log_module,  MSG_DEBUG,  "IDSBT tuning DTV_TRANSMISSION_MODE %d ",cmdseq->props[commandnum-1].u.data);
+			cmdseq->props[commandnum].cmd      = DTV_ISDBT_SB_SUBCHANNEL_ID;
+			cmdseq->props[commandnum++].u.data = 0;
+			log_message( log_module,  MSG_DEBUG,  "IDSBT tuning DTV_ISDBT_SB_SUBCHANNEL_ID %d ",cmdseq->props[commandnum-1].u.data);
+			cmdseq->props[commandnum].cmd      = DTV_ISDBT_SB_SEGMENT_IDX;
+			cmdseq->props[commandnum++].u.data = 0;
+			log_message( log_module,  MSG_DEBUG,  "IDSBT tuning DTV_ISDBT_SB_SEGMENT_IDX %d ",cmdseq->props[commandnum-1].u.data);
+			cmdseq->props[commandnum].cmd      = DTV_ISDBT_SB_SEGMENT_COUNT;
+			cmdseq->props[commandnum++].u.data = 0;
+			log_message( log_module,  MSG_DEBUG,  "IDSBT tuning DTV_ISDBT_SB_SEGMENT_COUNT %d ",cmdseq->props[commandnum-1].u.data);
 
 			cmdseq->props[commandnum++].cmd    = DTV_TUNE;
 		}
