@@ -703,7 +703,7 @@ void print_status(fe_status_t festatus) {
 	if (festatus & FE_HAS_VITERBI) log_message( log_module,  MSG_INFO, "     FE_HAS_VITERBI : FEC is stable\n");
 	if (festatus & FE_HAS_SYNC) log_message( log_module,  MSG_INFO, "     FE_HAS_SYNC : found sync bytes\n");
 	if (festatus & FE_HAS_LOCK) log_message( log_module,  MSG_INFO, "     FE_HAS_LOCK : everything's working... \n");
-	if (festatus & FE_TIMEDOUT) log_message( log_module,  MSG_INFO, "     FE_TIMEDOUT : no lock within the last ... seconds\n");
+	if (festatus & FE_TIMEDOUT) log_message( log_module,  MSG_INFO, "     FE_TIMEDOUT : no lock within the last about 2 seconds\n");
 	if (festatus & FE_REINIT) log_message( log_module,  MSG_INFO, "     FE_REINIT : frontend was reinitialized\n");
 }
 
@@ -993,7 +993,7 @@ int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_str
 	pfd[0].events = POLLPRI;
 
 	event.status=0;
-	while (((event.status & FE_TIMEDOUT)==0) && ((event.status & FE_HAS_LOCK)==0)) {
+	while (((event.status & FE_HAS_LOCK)==0)) {
 		log_message( log_module,  MSG_DETAIL, "polling....\n");
 		if (poll(pfd,1,5000) > 0){
 			if (pfd[0].revents & POLLPRI){
@@ -1086,7 +1086,7 @@ int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_str
 				log_message( log_module,  MSG_INFO, "SNR: %10d\n",strength);
 		}
 		sleep(1);
-	} while ((festatus & (FE_TIMEDOUT|FE_HAS_LOCK))==0);
+	} while ((festatus & (FE_HAS_LOCK))==0);
 
 	if (festatus & FE_HAS_LOCK) {
 		int status;
