@@ -96,7 +96,6 @@ void init_tune_v(tune_p_t *tune_p)
 				.fe_type=FE_QPSK, //sat by default
 #if ISDBT
 				// ISDB-T https://01.org/linuxgraphics/gfx-docs/drm/media/uapi/dvb/fe_property_parameters.html
-				.isdbt_partial_reception = -1, //AUTO If need to configure please request
 				.isdbt_sound_broadcasting = -1, //AUTO If need to configure please request
 				.isdbt_sb_subchanel_id = -1, //AUTO If need to configure please request
 				.isdbt_layer = 0, //Undef
@@ -1561,6 +1560,8 @@ default:
 #if ISDBT
 		else if((tuneparams->delivery_system==SYS_ISDBT))
 		{
+			int isdbt_partial_reception = 0;
+
 			if(tuneparams->isdbt_layer)
 			{
 				if(tuneparams->isdbt_layer & ISDBT_LAYER_A)
@@ -1569,28 +1570,44 @@ default:
 					log_message( log_module,  MSG_INFO, "ISDBT Layer B enabled");
 				if(tuneparams->isdbt_layer & ISDBT_LAYER_C)
 					log_message( log_module,  MSG_INFO, "ISDBT Layer C enabled");
+				if(tuneparams->isdbt_layer != ISDBT_LAYER_ALL)
+					isdbt_partial_reception = 1;
 			}
 			else
 				tuneparams->isdbt_layer = ISDBT_LAYER_ALL;
+			log_message( log_module,  MSG_INFO,  "IDSBT tuning");
+
 
 			cmdseq->props[commandnum].cmd      = DTV_DELIVERY_SYSTEM;
 			cmdseq->props[commandnum++].u.data = tuneparams->delivery_system;
+			log_message( log_module,  MSG_DEBUG,  "IDSBT tuning DTV_DELIVERY_SYSTEM %d ",cmdseq->props[commandnum-1].u.data);
 			cmdseq->props[commandnum].cmd      = DTV_FREQUENCY;
 			cmdseq->props[commandnum++].u.data = feparams.frequency;
+			log_message( log_module,  MSG_DEBUG,  "IDSBT tuning DTV_FREQUENCY %d ",cmdseq->props[commandnum-1].u.data);
 			cmdseq->props[commandnum].cmd      = DTV_ISDBT_PARTIAL_RECEPTION;
-			cmdseq->props[commandnum++].u.data = tuneparams->isdbt_partial_reception;
+			cmdseq->props[commandnum++].u.data = isdbt_partial_reception;
+			log_message( log_module,  MSG_DEBUG,  "IDSBT tuning DTV_ISDBT_PARTIAL_RECEPTION %d ",cmdseq->props[commandnum-1].u.data);
 			cmdseq->props[commandnum].cmd      = DTV_ISDBT_SOUND_BROADCASTING;
-			cmdseq->props[commandnum++].u.data = tuneparams->isdbt_sound_broadcasting;
-			cmdseq->props[commandnum].cmd      = DTV_ISDBT_SB_SUBCHANNEL_ID;
-			cmdseq->props[commandnum++].u.data = tuneparams->isdbt_sb_subchanel_id;
+			cmdseq->props[commandnum++].u.data = 0;
+			log_message( log_module,  MSG_DEBUG,  "IDSBT tuning DTV_ISDBT_SOUND_BROADCASTING %d ",cmdseq->props[commandnum-1].u.data);
 			cmdseq->props[commandnum].cmd      = DTV_ISDBT_LAYER_ENABLED;
 			cmdseq->props[commandnum++].u.data = tuneparams->isdbt_layer;
+			log_message( log_module,  MSG_DEBUG,  "IDSBT tuning DTV_ISDBT_LAYER_ENABLED %d ",cmdseq->props[commandnum-1].u.data);
 			cmdseq->props[commandnum].cmd      = DTV_BANDWIDTH_HZ;//https://www.linuxtv.org/downloads/v4l-dvb-apis-old/frontend-properties.html
 			cmdseq->props[commandnum++].u.data = 6000000; //1) For ISDB-T it should be always 6000000Hz (6MHz)
-			cmdseq->props[commandnum].cmd      = DTV_INVERSION;
-			cmdseq->props[commandnum++].u.data = tuneparams->inversion;
-			cmdseq->props[commandnum].cmd      = DTV_TRANSMISSION_MODE;
+			log_message( log_module,  MSG_DEBUG,  "IDSBT tuning DTV_BANDWIDTH_HZ %d ",cmdseq->props[commandnum-1].u.data);
+/*			cmdseq->props[commandnum].cmd      = DTV_TRANSMISSION_MODE;
 			cmdseq->props[commandnum++].u.data = tuneparams->TransmissionMode;
+			cmdseq->props[commandnum].cmd      = DTV_ISDBT_LAYERA_MODULATION;
+			cmdseq->props[commandnum++].u.data = tuneparams->modulation;
+			cmdseq->props[commandnum].cmd      = DTV_ISDBT_LAYERB_MODULATION;
+			cmdseq->props[commandnum++].u.data = tuneparams->modulation;
+			cmdseq->props[commandnum].cmd      = DTV_ISDBT_LAYERC_MODULATION;
+			cmdseq->props[commandnum++].u.data = tuneparams->modulation;
+			*/
+
+
+
 			cmdseq->props[commandnum++].cmd    = DTV_TUNE;
 		}
 #endif
