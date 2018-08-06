@@ -105,11 +105,11 @@ Parameters specific to satellite
 |lnb_slof |The switching frequency frequency of the LNB (define the two bands). Valid when lnb_type=universal | 11700 |  | In MHz, see below.
 |lnb_lof_low |The frequency of the LNB's local oscillator for the low band. Valid when lnb_type=universal | 9750 |  | In MHz, see below.
 |lnb_lof_high |The frequency of the LNB's local oscillator for the high band. Valid when lnb_type=universal | 10600 |  | In MHz, see below.
-|sat_number |The satellite number in case you have multiples lnb, no effect if 0 (only 22kHz tone and 13/18V), send a diseqc message if non 0 | 0 | 1 to 4 | If you have equipment which support more, please contact. For Unicable 0,1 : position A, 2 position B
-|switch_input |The switch input number in case you have multiples lnb, overrides sat_number, send a diseqc message if non 0, for unicable, this is the unicable ID | 0 | 0 to 15| If you have equipment which support more, please contact
-|switch_type | The DiSEqC switch type: Committed (C), Uncommitted (N), both (B) or uNicable (N) | C | C, c, U, u,B,b N or n | 
+|sat_number |The satellite number in case you have multiples lnb, no effect if 0 (only 22kHz tone and 13/18V), send a diseqc message if non 0 | 0 | 1 to 4 | If you have equipment which support more, please contact. For Unicable 0,1 : position A, 2 position B. Additionaly with JESS/Unicable_II, 3 : position C, 4 : position D.
+|switch_input |The switch input number in case you have multiples lnb, overrides sat_number, send a diseqc message if non 0, for unicable, this is the unicable ID | 0 | 0 to 31| If you have equipment which support more, please contact
+|switch_type | The DiSEqC switch type: Committed (C), Uncommitted (N), both (B), uNicable (N), JESS/Unicable_II (J) | C | C, c, U, u,B,b N,n,J,j | 
 |diseqc_repeat | Do we repeat the DiSEqC message (useful for some switches) | 0 | 0 or 1 | 
-|uni_freq | For SCR/unicable: the translated frequency in MHz  | | | Optional: needed if switch_type N
+|uni_freq | For SCR/unicable: the translated frequency in MHz  | | | Optional: needed if switch_type N or J
 |lnb_voltage_off |Force the LNB voltage to be 0V (instead of 13V or 18V). This is useful when your LNB have it's own power supply. | 0 | 0 or 1 | 
 |coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto |
 |rolloff  |rolloff important only for DVB-S2 | 35 | 35, 20, 25, auto | The default value should work most of the times
