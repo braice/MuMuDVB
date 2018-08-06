@@ -139,10 +139,10 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 	{
 		substring = strtok (NULL, delimiteurs);
 		tuneparams->switch_no = atoi (substring);
-		if (tuneparams->switch_no > 15)
+		if (tuneparams->switch_no > 31)
 		{
 			log_message( log_module,  MSG_ERROR,
-					"Configuration issue : switch_input. The diseqc switch input number must be between 0 and 15.\n");
+					"Configuration issue : switch_input. The diseqc switch input number must be between 0 and 31.\n");
 			return -1;
 		}
 	}
@@ -573,6 +573,10 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 		{
 			tuneparams->switch_type = 'N';
 		}
+                else if (tolower (substring[0]) == 'j')
+                {
+                        tuneparams->switch_type = 'J';
+                }
 		else
 		{
 			log_message( log_module,  MSG_ERROR,
@@ -870,7 +874,10 @@ static int do_diseqc(int fd, unsigned char sat_no,  int switch_no, char switch_t
 		}
 		cmd[0]->wait=0;
 		//Framing byte : Command from master, no reply required, first transmission : 0xe0
-		cmd[0]->cmd.msg[0] = 0xe0;
+		if(switch_type=='J')
+			cmd[0]->cmd.msg[0] = 0x70;
+		else
+			cmd[0]->cmd.msg[0] = 0xe0;
 		//Address byte : Any LNB, switcher or SMATV
 		cmd[0]->cmd.msg[1] = 0x10;
 		//Command byte : Write to port group 1 (Uncommited switches)
@@ -934,6 +941,31 @@ static int do_diseqc(int fd, unsigned char sat_no,  int switch_no, char switch_t
 			//We rewrite the frontend frequency
 			*fefrequency = uni_freq*1000UL;
 
+		}
+		else if(switch_type=='J')
+		{ //JESS or UNICABLE II, we recompute the proper messages
+			log_message( log_module,  MSG_INFO, "SCR/JESS_UNICABLE_II message ");	
+
+			uint8_t channel_byte_1, channel_byte_2, channel_byte_3;
+			uint16_t t;
+			
+			t = (uint16_t) ((*fefrequency / 1000) - 100);
+
+			channel_byte_1 = (switch_no & 0x1f) << 3;
+			channel_byte_1 |= (t >> 8) & 7;
+                        channel_byte_2 = t & 0xff;
+                        channel_byte_3  = ((sat_no-1) & 0x3f) << 2;
+                        channel_byte_3 |= (!pol_v_r & 1) << 1;
+                        channel_byte_3 |= hi_lo & 1;
+
+                        log_message( log_module,  MSG_DEBUG, "JESS / Unicable II tuning information : JESS / unicable_II freq %d lo_freq %d channel byte 0x%02x  0x%02x 0x%02x t 0x%02x",
+                                        uni_freq, *fefrequency, channel_byte_1, channel_byte_2, channel_byte_3,t);
+
+                        cmd[0]->cmd.msg[1] = channel_byte_1;
+                        cmd[0]->cmd.msg[2] = channel_byte_2;
+                        cmd[0]->cmd.msg[3] = channel_byte_3;
+
+			*fefrequency = uni_freq*1000UL;
 		}
 		cmd[0]->cmd.msg[5] = 0x00;
 		cmd[0]->cmd.msg_len=4;
