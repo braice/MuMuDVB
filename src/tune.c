@@ -741,7 +741,7 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
 		log_message( log_module,  MSG_WARN, "problem Setting the Tone OFF\n");
 		return -1;
 	}
-	if (switch_type=='N')
+	if (switch_type=='N'||switch_type=='J')
 	{
 		if((err = ioctl(fd, FE_SET_VOLTAGE, SEC_VOLTAGE_18)))
 		{
@@ -754,7 +754,7 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
 		return -1;
 	}
 	msleep(15);
-	if (switch_type=='N') //Extra time for Unicable
+	if (switch_type=='N'||switch_type=='J') //Extra time for Unicable
 		msleep(65);
 	//1.x compatible equipment
 	while (*cmd) {
@@ -781,6 +781,14 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
 				return -1;
 			}
 		}
+                else if (switch_type=='J')
+                {
+                        if((err = ioctl(fd, FE_SET_VOLTAGE, SEC_VOLTAGE_OFF)))
+                        {
+                                log_message( log_module,  MSG_WARN, "problem Setting the Voltage\n");
+                                return -1;
+                        }
+                }
 
 		if(diseqc_repeat)
 		{
@@ -802,7 +810,7 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
 	}
 
 	msleep(15);
-	if (switch_type=='N') //Extra time for Unicable
+	if (switch_type=='N'||switch_type=='J') //Extra time for Unicable
 		msleep(65);
 	if ((err = ioctl(fd, FE_DISEQC_SEND_BURST, b)))
 	{
@@ -810,7 +818,7 @@ static int diseqc_send_msg(int fd, fe_sec_voltage_t v, struct diseqc_cmd **cmd, 
 		return err;
 	}
 	msleep(15);
-	if (switch_type=='N') //Extra time for Unicable
+	if (switch_type=='N'||switch_type=='J') //Extra time for Unicable
 		msleep(65);
 
 	if(ioctl(fd, FE_SET_TONE, t) < 0)
