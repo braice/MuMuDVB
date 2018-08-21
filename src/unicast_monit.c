@@ -382,7 +382,7 @@ unicast_send_json_state (int number_of_channels, mumudvb_channel_t *channels, in
 	unicast_reply_write(reply, "\t\"frontend_tuned\" : %d ,\n",strengthparams->tune_p->card_tuned);
 	if (strengthparams->tune_p->fe_type==FE_QPSK) // Do some test for always showing frequency in kHz
 	{
-		unicast_reply_write(reply, "\t\"frontend_frequency\" : %d,\n",strengthparams->tune_p->freq);
+		unicast_reply_write(reply, "\t\"frontend_frequency\" : %f,\n",strengthparams->tune_p->freq);
 		unicast_reply_write(reply, "\t\"frontend_satnumber\" : %d,\n",strengthparams->tune_p->sat_number);
 	}
 	else
