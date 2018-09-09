@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.61])
-AC_INIT([MuMuDVB], [2.1.0_20180602_mumudvb2], [mumudvb@braice.net])
+AC_INIT([MuMuDVB], [2.1.0_20180909_mumudvb2], [mumudvb@braice.net])
 AC_CONFIG_SRCDIR([src/mumudvb.c])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([src/config.h])
@@ -111,6 +111,14 @@ AC_ARG_ENABLE(android,
 if test "${enable_android}" = "yes"
 then
   AC_DEFINE(ANDROID, 1, Define if you want build for android)
+fi
+
+AC_ARG_ENABLE(tune_old,
+  [  --enable-tune_old          Use old code for tuning (default disabled)],,[enable_tune_old="no"])
+
+if test "${enable_tune_old}" = "yes"
+then
+  AC_DEFINE(TUNE_OLD, 1, Define if you want the old code for tuning)
 fi
 
 # Checks for header files.
