@@ -2,7 +2,7 @@
 
    part of MuMuDVB
 
-   last version availaible from http://mumudvb.braice.net/
+   last version availaible from http://mumudvb.net/
 
    Copyright (C) 2004-2010 Brice DUBOST
    Copyright (C) Dave Chapman 2001,2002
