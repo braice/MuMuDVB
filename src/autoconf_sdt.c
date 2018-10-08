@@ -105,6 +105,12 @@ int autoconf_read_sdt(auto_p_t *auto_p, mumu_chan_p_t *chan_p)
 
 	header=(sdt_t *)buf; //we map the packet over the header structure
 
+	if(header->table_id != 0x42)
+	{
+		log_message( log_module, MSG_FLOOD, "-- SDT: Service Description Table (id 0x%02x), not 0x42, we skip !",header->table_id);
+		return 0;
+	}
+
 	if(header->version_number==auto_p->sdt_version)
 	{
 		//check if we saw this section
