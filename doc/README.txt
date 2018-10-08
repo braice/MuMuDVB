@@ -25,7 +25,7 @@ History : MuMuDVB is originally a modification of dvbstream that http://www.cran
 Website
 ~~~~~~~
 
-http://mumudvb.braice.net[MuMuDVB main site]
+http://mumudvb.net/[MuMuDVB main site]
 
 
 Authors and contacts
