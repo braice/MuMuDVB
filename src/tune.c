@@ -658,6 +658,9 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 		tuneparams->read_file_path[MAX_FILENAME_LEN-1]='\0';
 		if (strlen (substring) >= MAX_NAME_LEN - 1)
 			log_message( log_module,  MSG_WARN,"File name too long\n");
+		log_message( log_module,  MSG_DEBUG,
+				"Overriding file from which we read the data %s", tuneparams->read_file_path);
+
 	}
 	else if (!strcmp (substring, "isdbt_layer"))
 	{
@@ -941,7 +944,7 @@ static int do_diseqc(int fd, unsigned char sat_no,  int switch_no, char switch_t
 			if(t>1024)
 				log_message( log_module,  MSG_ERROR, "SCR/UNICABLE T out of range (is the Scr frequency valid ?) ");
 
-			log_message( log_module,  MSG_DEBUG, "Unicable tuning information : unicable freq %d lo_freq %d channel byte 0x%02x  0x%02x   t 0x%02x",
+			log_message( log_module,  MSG_DEBUG, "Unicable tuning information : unicable freq %d lo_freq %d channel byte 0x%02x  0x%02x   t 0x%04x",
 					uni_freq, *fefrequency, channel_byte_1, channel_byte_2, t);
 			cmd[0]->cmd.msg[3] = channel_byte_1;
 			cmd[0]->cmd.msg[4] = channel_byte_2;

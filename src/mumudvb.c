@@ -892,10 +892,15 @@ main (int argc, char **argv)
 
 
 	if(strlen(tune_p.read_file_path))
+	{
+		log_message( log_module,  MSG_DEBUG,
+				"Opening source file %s", tune_p.read_file_path);
+
 		iRet = open_fe (&fds.fd_frontend, tune_p.read_file_path, tune_p.tuner,1,1);
+	}
 	else
 		iRet = open_fe (&fds.fd_frontend, tune_p.card_dev_path, tune_p.tuner,1,0);
-	if (iRet)
+	if (iRet>0)
 	{
 
 		/*****************************************************/

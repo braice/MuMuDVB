@@ -68,7 +68,7 @@ open_fe (int *fd_frontend, char *base_path, int tuner, int rw, int full_path)
 		rw_flag=O_RDONLY;
 	if ((*fd_frontend = open (frontend_name, rw_flag | O_NONBLOCK)) < 0)
 	{
-		log_message( log_module,  MSG_ERROR, "FRONTEND DEVICE: %s : %s\n", frontend_name, strerror(errno));
+		log_message( log_module,  MSG_ERROR, "FRONTEND DEVICE: \"%s\" : %s\n", frontend_name, strerror(errno));
 		free(frontend_name);
 		return -1;
 	}
