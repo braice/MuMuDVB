@@ -95,7 +95,10 @@ In the following list, only the parameter `freq` is mandatory
 Parameters specific to satellite
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[width="80%",cols="2,6,1,3,2",options="header"]
+I you want to understand the DiSEqC bytes, please refer to https://www.eutelsat.com/files/contributed/satellites/pdf/Diseqc/associated%20docs/update_recomm_for_implim.pdf[DiSEqC documentation]
+
+
+[width="80%",cols="2,5,1,2,4",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |pol |transponder's polarisation. One char. 'v' (vertical), 'h' (horizontal), 'l' (left circular), 'r' (right circular) | | h, H, v, V, l, L, r or R | Mandatory
@@ -105,8 +108,8 @@ Parameters specific to satellite
 |lnb_slof |The switching frequency frequency of the LNB (define the two bands). Valid when lnb_type=universal | 11700 |  | In MHz, see below.
 |lnb_lof_low |The frequency of the LNB's local oscillator for the low band. Valid when lnb_type=universal | 9750 |  | In MHz, see below.
 |lnb_lof_high |The frequency of the LNB's local oscillator for the high band. Valid when lnb_type=universal | 10600 |  | In MHz, see below.
-|sat_number |The satellite number in case you have multiples lnb, no effect if 0 (only 22kHz tone and 13/18V), send a diseqc message if non 0 | 0 | 1 to 4 | If you have equipment which support more, please contact. For Unicable 0,1 : position A, 2 position B. Additionaly with JESS/Unicable_II, 3 : position C, 4 : position D.
-|switch_input |The switch input number in case you have multiples lnb, overrides sat_number, send a diseqc message if non 0, for unicable, this is the unicable ID | 0 | 0 to 31| If you have equipment which support more, please contact
+|sat_number |The satellite number in case you have multiples lnb, no effect if 0 (only 22kHz tone and 13/18V), send a diseqc message if non 0 | 0 | 1 to 4 | If you have equipment which support more, please contact. For satellite 1: Position A Option A; 2: Position B option A; 3: Position A option B; 4: Position B, Option B. For Unicable 0,1 : position A, 2 position B. Additionaly with JESS/Unicable_II, 3 : position C, 4 : position D.
+|switch_input |The switch input number in case you have multiples lnb, overrides sat_number, send a diseqc message if set, for unicable, this is the unicable ID | 0 | 0 to 31| If you have equipment which support more, please contact
 |switch_type | The DiSEqC switch type: Committed (C), Uncommitted (N), both (B), uNicable (N), JESS/Unicable_II (J) | C | C, c, U, u,B,b N,n,J,j | 
 |diseqc_repeat | Do we repeat the DiSEqC message (useful for some switches) | 0 | 0 or 1 | 
 |uni_freq | For SCR/unicable: the translated frequency in MHz  | | | Optional: needed if switch_type N or J
