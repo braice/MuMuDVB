@@ -294,7 +294,7 @@ typedef struct {
 
 
 /** length of the SDT header */
-#define SDT_LEN 11
+#define SDT_LEN 99
 
 /** @brief Service Description Table (SDT):
  *
