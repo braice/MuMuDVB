@@ -511,7 +511,7 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
 		//We store the old to be sure that we store only channels over the minimum packets limit
 		if (channels[curr_channel].has_traffic && (channels[curr_channel].channel_ready>=READY))
 		{
-			fprintf (file_streamed_channels, "%s:%d:%s", channels[curr_channel].ip4Out, channels[curr_channel].portOut, channels[curr_channel].name);
+			fprintf (file_streamed_channels, "%s:%d:%s:%d", channels[curr_channel].ip4Out, channels[curr_channel].portOut, channels[curr_channel].name, channels[curr_channel].service_type);
 			if (channels[curr_channel].scrambled_channel == FULLY_UNSCRAMBLED)
 				fprintf (file_streamed_channels, ":FullyUnscrambled\n");
 			else if (channels[curr_channel].scrambled_channel == PARTIALLY_UNSCRAMBLED)
@@ -520,7 +520,7 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
 				fprintf (file_streamed_channels, ":HighlyScrambled\n");
 		}
 		else
-			fprintf (file_not_streamed_channels, "%s:%d:%s\n", channels[curr_channel].ip4Out, channels[curr_channel].portOut, channels[curr_channel].name);
+			fprintf (file_not_streamed_channels, "%s:%d:%s:%d\n", channels[curr_channel].ip4Out, channels[curr_channel].portOut, channels[curr_channel].name, channels[curr_channel].service_type);
 	fclose (file_streamed_channels);
 	fclose (file_not_streamed_channels);
 
