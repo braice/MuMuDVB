@@ -427,21 +427,35 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 		sscanf (substring, "%s\n", substring);
 		if (!strcmp (substring, "DVBC_ANNEX_AC"))
 			tuneparams->delivery_system=SYS_DVBC_ANNEX_AC;
+		else if (!strcmp (substring, "DVB-C"))
+			tuneparams->delivery_system=SYS_DVBC_ANNEX_AC;
+		else if (!strcmp (substring, "DVBC"))
+			tuneparams->delivery_system=SYS_DVBC_ANNEX_AC;
 		else if (!strcmp (substring, "DVBC_ANNEX_B"))
 			tuneparams->delivery_system=SYS_DVBC_ANNEX_B;
 		else if (!strcmp (substring, "DVBT"))
 			tuneparams->delivery_system=SYS_DVBT;
+		else if (!strcmp (substring, "DVB-T"))
+			tuneparams->delivery_system=SYS_DVBT;
 #ifdef DVBT2
 		else if (!strcmp (substring, "DVBT2"))
+			tuneparams->delivery_system=SYS_DVBT2;
+		else if (!strcmp (substring, "DVB-T2"))
 			tuneparams->delivery_system=SYS_DVBT2;
 #endif
 		else if (!strcmp (substring, "DSS"))
 			tuneparams->delivery_system=SYS_DSS;
 		else if (!strcmp (substring, "DVBS"))
 			tuneparams->delivery_system=SYS_DVBS;
+		else if (!strcmp (substring, "DVB-S"))
+			tuneparams->delivery_system=SYS_DVBS;
 		else if (!strcmp (substring, "DVBS2"))
 			tuneparams->delivery_system=SYS_DVBS2;
+		else if (!strcmp (substring, "DVB-S2"))
+			tuneparams->delivery_system=SYS_DVBS2;
 		else if (!strcmp (substring, "DVBH"))
+			tuneparams->delivery_system=SYS_DVBH;
+		else if (!strcmp (substring, "DVB-H"))
 			tuneparams->delivery_system=SYS_DVBH;
 #if ISDBT
 		else if (!strcmp (substring, "ISDBT"))
