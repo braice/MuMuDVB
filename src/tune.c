@@ -38,11 +38,6 @@
 #include <sys/poll.h>
 #include <unistd.h>
 #include "config.h"
-#ifdef ANDROID
-#include <err.h>
-#else
-#include <error.h>
-#endif
 #include <errno.h>
 #include <string.h>
 
