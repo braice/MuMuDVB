@@ -148,10 +148,14 @@ typedef struct tune_p_t{
   unsigned char sat_number;
   /** The switch input */
   int switch_no;
+  /** The pin no input */
+  int pin_no;
   /**The type of switch U uncommitted C committed*/
   char switch_type;
   /** Do we repeat DiseQC messages ? */
   int diseqc_repeat;
+  /** Wait (ms) for DiseQC messages ? */
+  int diseqc_time;
   /** The frequency for SCR/unicable */
   uint32_t uni_freq;
   /** The kind of modulation */
