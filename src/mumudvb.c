@@ -9,7 +9,7 @@
  * Copyright (C) 2006 Andrew de Quincey (adq_dvb@lidskialf.net)
  * 
  *
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  * 
  * Copyright notice:
  * 
@@ -174,6 +174,8 @@ void init_multicast_v(multi_p_t *multi_p); //in multicast.c
 
 void chan_new_pmt(unsigned char *ts_packet, mumu_chan_p_t *chan_p, int pid);
 
+int processt2(unsigned char* input_buf, unsigned int input_buf_offset, unsigned char* output_buf, unsigned int output_buf_offset, unsigned int output_buf_size, uint8_t plpId);
+
 int
 main (int argc, char **argv)
 {
@@ -231,7 +233,8 @@ main (int argc, char **argv)
 	//SCAM (software conditionnal Access Modules : for scrambled channels)
 	scam_parameters_t scam_vars={
 			.scam_support = 0,
-			.getcwthread_shutdown=0,
+			.getcwthread = 0,
+			.getcwthread_shutdown = 0,
 	};
 	scam_vars.epfd = epoll_create(MAX_CHANNELS);
 	scam_parameters_t *scam_vars_ptr=&scam_vars;
@@ -268,6 +271,7 @@ main (int argc, char **argv)
 	memset (&card_buffer, 0, sizeof (card_buffer_t));
 	card_buffer.dvr_buffer_size=DEFAULT_TS_BUFFER_SIZE;
 	card_buffer.max_thread_buffer_size=DEFAULT_THREAD_BUFFER_SIZE;
+	unsigned int t2mi_buf_size = 0;
 	/** List of mandatory pids */
 	uint8_t mandatory_pid[MAX_MANDATORY_PID_NUMBER];
 
@@ -558,6 +562,8 @@ main (int argc, char **argv)
 			}
 			//Pids are now user set, they won't be overwritten by autoconfiguration
 			c_chan->pid_i.pid_f=F_USER;
+			//Enable PMT rewrite
+			c_chan->pmt_rewrite = 1;
 			while ((substring = strtok (NULL, delimiteurs)) != NULL)
 			{
 				c_chan->pid_i.pids[ipid] = atoi (substring);
@@ -638,6 +644,23 @@ main (int argc, char **argv)
 			substring = strtok (NULL, delimiteurs);
 			chan_p.check_cc = atoi (substring);
 		}
+		else if (!strcmp (substring, "t2mi_pid"))
+		{
+			substring = strtok (NULL, delimiteurs);
+			chan_p.t2mi_pid = atoi (substring);
+			log_message(log_module,MSG_INFO,"Demuxing T2-MI stream on pid %d as input\n", chan_p.t2mi_pid);
+			if(chan_p.t2mi_pid < 1 || chan_p.t2mi_pid > 8192)
+			{
+				log_message(log_module,MSG_WARN,"wrong t2mi pid, forced to 4096\n");
+				chan_p.t2mi_pid=4096;
+			}
+		}
+		else if (!strcmp (substring, "t2mi_plp"))
+		{
+			substring = strtok (NULL, delimiteurs);
+			chan_p.t2mi_plp = atoi (substring);
+		}
+
 		else
 		{
 			if(strlen (current_line) > 1)
@@ -697,6 +720,14 @@ main (int argc, char **argv)
 					"Autoconfiguration, we activate SDT rewriting. if you want to disable it see the README.\n");
 		}
 	}
+
+	if(chan_p.t2mi_pid > 0 && card_buffer.dvr_buffer_size < 20)
+	{
+		log_message( log_module,  MSG_WARN,
+				"Warning : You set a DVR buffer size too low to accept T2-MI frames, I increase your dvr_buffer_size to 20 ...\n");
+		card_buffer.dvr_buffer_size=20;
+	}
+
 	if(card_buffer.max_thread_buffer_size<card_buffer.dvr_buffer_size)
 	{
 		log_message( log_module,  MSG_WARN,
@@ -834,7 +865,7 @@ main (int argc, char **argv)
 #endif
 
 
-	log_message( log_module,  MSG_INFO, "Streaming. Freq %d\n",
+	log_message( log_module,  MSG_INFO, "Streaming. Freq %f\n",
 			tune_p.freq);
 
 
@@ -859,7 +890,17 @@ main (int argc, char **argv)
 	// We tune the card
 	iRet =-1;
 
-	if (open_fe (&fds.fd_frontend, tune_p.card_dev_path, tune_p.tuner,1))
+
+	if(strlen(tune_p.read_file_path))
+	{
+		log_message( log_module,  MSG_DEBUG,
+				"Opening source file %s", tune_p.read_file_path);
+
+		iRet = open_fe (&fds.fd_frontend, tune_p.read_file_path, tune_p.tuner,1,1);
+	}
+	else
+		iRet = open_fe (&fds.fd_frontend, tune_p.card_dev_path, tune_p.tuner,1,0);
+	if (iRet>0)
 	{
 
 		/*****************************************************/
@@ -889,10 +930,14 @@ main (int argc, char **argv)
 			fclose (pidfile);
 		}
 
-
-		iRet =
+		if(strlen(tune_p.read_file_path))
+			iRet = 1; //no tuning if file input
+		else
+			iRet =
 				tune_it (fds.fd_frontend, &tune_p);
 	}
+	else
+		iRet =-1;
 
 	if (iRet < 0)
 	{
@@ -1191,10 +1236,27 @@ main (int argc, char **argv)
 		card_buffer.reading_buffer=card_buffer.buffer1;
 		card_buffer.writing_buffer=card_buffer.buffer2;
 		cardthreadparams.main_waiting=0;
+		if (chan_p.t2mi_pid > 0) {
+		    if (card_buffer.write_buffer_size < TS_PACKET_SIZE*349) {
+			t2mi_buf_size = sizeof(unsigned char)*TS_PACKET_SIZE*349; /* we must hold at least one t2mi frame! */
+		    } else {
+			t2mi_buf_size = sizeof(unsigned char)*card_buffer.write_buffer_size*2;
+		    }
+		    card_buffer.t2mi_buffer=malloc(t2mi_buf_size);
+		}
+		
 	}else
 	{
 		//We alloc the buffer
 		card_buffer.reading_buffer=malloc(sizeof(unsigned char)*TS_PACKET_SIZE*card_buffer.dvr_buffer_size);
+		if (chan_p.t2mi_pid > 0) {
+		    if (card_buffer.dvr_buffer_size < 349) {
+			t2mi_buf_size = sizeof(unsigned char)*TS_PACKET_SIZE*349; /* we must hold at least one t2mi frame! */
+		    } else {
+			t2mi_buf_size = sizeof(unsigned char)*TS_PACKET_SIZE*card_buffer.dvr_buffer_size*2;
+		    }
+		    card_buffer.t2mi_buffer=malloc(t2mi_buf_size);
+		}
 	}
 
 
@@ -1221,6 +1283,8 @@ main (int argc, char **argv)
 	int poll_ret;
 	/**Buffer containing one packet*/
 	unsigned char *actual_ts_packet;
+	/**We must get a little bit special for PMT rewrite*/
+	unsigned char pmt_ts_packet[TS_PACKET_SIZE];
 	while (!get_interrupted())
 	{
 		if(card_buffer.threaded_read)
@@ -1305,32 +1369,95 @@ main (int argc, char **argv)
 				continue;
 		}
 
-
-
-
-
-
 		if(card_buffer.dvr_buffer_size!=1 && stats_infos.show_buffer_stats)
 		{
 			stats_infos.stats_num_packets_received+=(int) card_buffer.bytes_read/TS_PACKET_SIZE;
 			stats_infos.stats_num_reads++;
 		}
 
+		if (chan_p.t2mi_pid > 0 && card_buffer.bytes_read > 0) {
+			int processed = 0;
+			int errorcounter = 0;
+
+			for(card_buffer.read_buff_pos=0;
+			    (card_buffer.read_buff_pos+TS_PACKET_SIZE)<=card_buffer.bytes_read;
+			    card_buffer.read_buff_pos+=TS_PACKET_SIZE)//we loop on the subpackets
+			{
+			    /* check for sync byte and transport error bit if requested */
+			    if((card_buffer.reading_buffer[card_buffer.read_buff_pos] != TS_SYNC_BYTE ||
+				(card_buffer.reading_buffer[card_buffer.read_buff_pos+1] & 0x80) == 0x80) &&
+				chan_p.filter_transport_error > 0)
+			    {
+        			log_message(log_module, MSG_FLOOD, "T2-MI: input TS packet damaged, buf offset %d\n", card_buffer.read_buff_pos);
+        			errorcounter++;
+				continue;
+			    }
+			    /* target t2mi stream pid */
+                    	    if(chan_p.t2mi_pid != (((card_buffer.reading_buffer[card_buffer.read_buff_pos+1] & 0x1f) << 8) | (card_buffer.reading_buffer[card_buffer.read_buff_pos+2]))) {
+                                continue;
+                    	    }
+                    	    processed += processt2(card_buffer.reading_buffer, card_buffer.read_buff_pos, card_buffer.t2mi_buffer, t2_partial_size + processed, t2mi_buf_size, chan_p.t2mi_plp);
+    			}
+
+			/* in case we got too much errors */
+			if (errorcounter * 100 > card_buffer.dvr_buffer_size * 50) {
+		    	    log_message(log_module, MSG_DEBUG,"T2-MI: too many errors in input buffer (%d/%d)\n", errorcounter, card_buffer.dvr_buffer_size);
+
+		    	    t2_partial_size=0;
+			    card_buffer.bytes_read=0;
+
+		    	    t2mi_active=false;
+			    t2mi_first=true;
+		    	    continue;
+			}
+
+			/* we got no data from demux */
+			if (processed + t2_partial_size == 0) {
+			    card_buffer.bytes_read = 0;
+			    continue;
+			}
+
+			card_buffer.bytes_read = processed + t2_partial_size;
+		    	t2_partial_size=0;
+		    
+			/* if buffer is damaged, reset demux */
+			if (!((card_buffer.t2mi_buffer[TS_PACKET_SIZE * 0] == TS_SYNC_BYTE) &&
+			      (card_buffer.t2mi_buffer[TS_PACKET_SIZE * 1] == TS_SYNC_BYTE) &&
+			      (card_buffer.t2mi_buffer[TS_PACKET_SIZE * 2] == TS_SYNC_BYTE) &&
+			      (card_buffer.t2mi_buffer[TS_PACKET_SIZE * 3] == TS_SYNC_BYTE)) ) {
+
+		    	    log_message( log_module, MSG_INFO,"T2-MI: buffer out of sync: %02x, %02x, %02x, %02x\n",
+		    		card_buffer.t2mi_buffer[TS_PACKET_SIZE * 0],
+		    		card_buffer.t2mi_buffer[TS_PACKET_SIZE * 1],
+		    		card_buffer.t2mi_buffer[TS_PACKET_SIZE * 2],
+		    		card_buffer.t2mi_buffer[TS_PACKET_SIZE * 3]
+		    	    );
+
+		    	    t2mi_active=false;
+			    t2mi_first=true;
+		    	    continue;
+			}
+		}
+
 		for(card_buffer.read_buff_pos=0;
 				(card_buffer.read_buff_pos+TS_PACKET_SIZE)<=card_buffer.bytes_read;
 				card_buffer.read_buff_pos+=TS_PACKET_SIZE)//we loop on the subpackets
 		{
-			actual_ts_packet=card_buffer.reading_buffer+card_buffer.read_buff_pos;
+			if (chan_p.t2mi_pid > 0) {
+			    actual_ts_packet=card_buffer.t2mi_buffer+card_buffer.read_buff_pos;
+			} else {
+			    actual_ts_packet=card_buffer.reading_buffer+card_buffer.read_buff_pos;
+			}
 
 			//If the user asked to dump the streams it's here that it should be done
 			if(dump_file)
 				if(fwrite(actual_ts_packet,sizeof(unsigned char),TS_PACKET_SIZE,dump_file)<TS_PACKET_SIZE)
 					log_message( log_module,MSG_WARN,"Error while writing the dump : %s", strerror(errno));
 
-			// Test if the error bit is set in the TS packet received
-			if ((actual_ts_packet[1] & 0x80) == 0x80)
+			/* check for sync byte and transport error bit if requested */
+			if (((actual_ts_packet[0] != TS_SYNC_BYTE) || (actual_ts_packet[1] & 0x80) == 0x80))
 			{
-				log_message( log_module, MSG_FLOOD,"Error bit set in TS packet!\n");
+				log_message( log_module, MSG_FLOOD,"Error bit set or no sync in TS packet!\n");
 				// Test if we discard the packets with error bit set
 				if (chan_p.filter_transport_error>0) continue;
 			}
@@ -1348,7 +1475,7 @@ main (int argc, char **argv)
 			}
 
 			//Software filtering in case the card doesn't have hardware filtering
-			if(chan_p.asked_pid[8192]==PID_NOT_ASKED && chan_p.asked_pid[pid]==PID_NOT_ASKED)
+			if(chan_p.asked_pid[8192]==PID_NOT_ASKED && chan_p.asked_pid[pid]==PID_NOT_ASKED && chan_p.t2mi_pid == 0)
 				continue;
 
 			ScramblingControl = (actual_ts_packet[3] & 0xc0) >> 6;
@@ -1443,6 +1570,11 @@ main (int argc, char **argv)
 
 						}
 
+				// Do not send TS padding pid (confuses scam)
+				if (pid == TS_PADDING_PID) {
+				    send_packet=0;
+				}
+				
 				/******************************************************/
 				//cam support
 				// If we send the packet, we look if it's a cam pmt pid
@@ -1467,6 +1599,18 @@ main (int argc, char **argv)
 					scam_new_packet(pid, &chan_p.channels[ichan]);
 				}
 #endif
+
+				/******************************************************/
+				//Rewrite PMT
+				/******************************************************/
+				if((send_packet==1) && //no need to check packets we don't send
+						(pid == chan_p.channels[ichan].pid_i.pmt_pid) && //This is a PMT PID
+						(chan_p.channels[ichan].pid_i.pmt_pid) && //we have the pmt_pid
+						(rewrite_vars.rewrite_pmt == OPTION_ON ) && //AND we asked for rewrite
+						(chan_p.channels[ichan].pmt_rewrite == 1))  //AND this channel's PMT shouldn't be skipped
+				{
+					send_packet=pmt_rewrite_new_channel_packet(actual_ts_packet, pmt_ts_packet, &chan_p.channels[ichan], ichan);
+				}
 
 				/******************************************************/
 				//Rewrite PAT
@@ -1515,12 +1659,27 @@ main (int argc, char **argv)
 				/******************************************************/
 				if(send_packet==1)
 				{
-					buffer_func(channel, actual_ts_packet, &unic_p, scam_vars_ptr);
+					/**Special PMT case*/
+					if((pid == chan_p.channels[ichan].pid_i.pmt_pid) && (rewrite_vars.rewrite_pmt == OPTION_ON ) && (chan_p.channels[ichan].pmt_rewrite == 1))
+						buffer_func(channel, pmt_ts_packet, &unic_p, scam_vars_ptr);
+					else
+						buffer_func(channel, actual_ts_packet, &unic_p, scam_vars_ptr);
 				}
 
 			}
 			pthread_mutex_unlock(&chan_p.lock);
 		}
+
+		/* in case we got partial packet from t2mi demux, save it */
+		if (chan_p.t2mi_pid > 0 && card_buffer.bytes_read > card_buffer.read_buff_pos) {
+		    t2_partial_size = card_buffer.bytes_read - card_buffer.read_buff_pos;
+		    if (card_buffer.read_buff_pos > 0) {
+			memcpy(card_buffer.t2mi_buffer, card_buffer.t2mi_buffer + card_buffer.read_buff_pos, t2_partial_size);
+		    }
+		} else {
+		    t2_partial_size = 0;
+		}
+		
 	}
 	/******************************************************/
 	//End of main loop
@@ -1555,8 +1714,8 @@ main (int argc, char **argv)
 					&signalpowerthread,
 					&monitorthread,
 					&cardthreadparams,
-					&fds);
-
+					&fds,
+					&card_buffer);
 }
 
 

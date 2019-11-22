@@ -4,7 +4,7 @@
  * 
  * (C) 2004-2010 Brice DUBOST
  *
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net/
  *
  * Code inspired by vdr plugin dvbapi
  * Copyright (C) 2011,2012 Mariusz Białończyk <manio@skyboo.net>
@@ -59,6 +59,20 @@
 #define DECSA_DEFAULT_DELAY 500000
 #define SEND_DEFAULT_DELAY 1500000
 
+#define MAX_STATIC_KEYS 24
+
+//Quick hack around the removal of ca_pid_t and CA_GET_PID in recent kernels
+//https://github.com/torvalds/linux/commit/833ff5e7feda1a042b83e82208cef3d212ca0ef1
+#ifndef CA_SET_PID
+typedef struct ca_pid {
+	unsigned int pid;
+	int index;      /* -1 == disable*/
+	} ca_pid_t;
+//We should not be able to get it so a number that is unlikely to happen
+#define CA_SET_PID 42424242
+#endif
+
+
 /** @brief the parameters for the scam
  * This structure contain the parameters needed for the SCAM
  */
@@ -70,6 +84,11 @@ typedef struct scam_parameters_t{
   ca_pid_t ca_pid;
   uint64_t ring_buffer_default_size,decsa_default_delay,send_default_delay;
   int epfd;
+  /* biss key */
+  unsigned char const_key_odd[MAX_STATIC_KEYS][8];
+  unsigned char const_key_even[MAX_STATIC_KEYS][8];
+  int const_sid[MAX_STATIC_KEYS];
+  int const_key_count; 
 }scam_parameters_t;  
 
 //The structure for argument passing to sendthread_func

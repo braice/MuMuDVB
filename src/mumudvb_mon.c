@@ -157,6 +157,8 @@ void parse_cmd_line(int argc, char **argv,char *(*conf_filename),tune_p_t *tune_
 			strncpy (*dump_filename, optarg, strlen (optarg) + 1);
 			log_message( log_module, MSG_WARN,"You've decided to dump the received stream into %s. Be warned, it can grow quite fast", *dump_filename);
 			break;
+		default: /* -Wswitch-default */
+			break;
 		}
 	}
 	if (optind < argc)
@@ -187,7 +189,8 @@ int mumudvb_close(int no_daemon,
 		pthread_t *signalpowerthread,
 		pthread_t *monitorthread,
 		card_thread_parameters_t *cardthreadparams,
-		fds_t *fds)
+		fds_t *fds,
+		card_buffer_t *card_buffer)
 {
 
 	int curr_channel;
@@ -300,8 +303,8 @@ int mumudvb_close(int no_daemon,
 					cam_p->filename_cam_info, strerror (errno));
 		}
 		mumu_free_string(&cam_p->cam_menulist_str);
-		mumu_free_string(&cam_p->cam_menu_string);
 	}
+	mumu_free_string(&cam_p->cam_menu_string); /* string is allocated in init_cam_v() even with cam support disabled */
 #endif
 #ifdef ENABLE_SCAM_SUPPORT
 	if(scam_vars->scam_support)
@@ -326,6 +329,31 @@ int mumudvb_close(int no_daemon,
 	//SDT rewrite freeing
 	if(rewrite_vars->full_sdt)
 		free(rewrite_vars->full_sdt);
+
+	//EIT rewrite freeing
+	if (rewrite_vars->eit_packets)
+	{
+		struct eit_packet_t *eit_packet, *eit_next_packet;
+		eit_packet = rewrite_vars->eit_packets;
+		/* recursive free of eit packet storage */
+		while (eit_packet) {
+
+		    for(int i=0;i<MAX_EIT_SECTIONS;i++)
+            		if(eit_packet->full_eit_sections[i]!=NULL)
+                    	    free(eit_packet->full_eit_sections[i]);
+
+		    if (eit_packet->next) {
+			eit_next_packet = eit_packet->next;
+			free (eit_packet);
+			eit_packet = eit_next_packet;
+		    } else {
+			free (eit_packet);
+			break;
+		    }
+		}
+	}
+	if (rewrite_vars->full_eit)
+		free(rewrite_vars->full_eit);
 
 	if (strlen(filename_channels_streamed) && (write_streamed_channels)&&remove (filename_channels_streamed))
 	{
@@ -354,14 +382,31 @@ int mumudvb_close(int no_daemon,
 		}
 	}
 
+	/*free packet buffers*/
+	if (card_buffer->threaded_read) {
+    	    if (card_buffer->buffer1) free(card_buffer->buffer1);
+    	    if (card_buffer->buffer2) free(card_buffer->buffer2);
+    	} else {
+    	    if (card_buffer->reading_buffer) free(card_buffer->reading_buffer);
+    	}
+
+        if (chan_p->t2mi_pid > 0) {
+    	    if (card_buffer->t2mi_buffer) free(card_buffer->t2mi_buffer);
+        }
 
 	/*free the file descriptors*/
-	if(fds->pfds)
+	if(fds->pfds) {
 		free(fds->pfds);
-	fds->pfds=NULL;
-	if(unicast_vars->fd_info)
+		fds->pfds=NULL;
+	}
+	if(unicast_vars->fd_info) {
 		free(unicast_vars->fd_info);
-	unicast_vars->fd_info=NULL;
+		unicast_vars->fd_info=NULL;
+	}
+	if(unicast_vars->pfds) {
+		free(unicast_vars->pfds);
+		unicast_vars->pfds=NULL;
+	}
 
 	// Format ExitCode (normal exit)
 	int ExitCode;

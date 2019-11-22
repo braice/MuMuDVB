@@ -4,7 +4,7 @@
  * 
  * (C) 2004-2014 Brice DUBOST
  * 
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  * 
  * Copyright notice:
  * 
@@ -130,12 +130,14 @@ char *mumu_string_replace(char *source, int *length, int can_realloc, char *tore
 	{
 		if(lengthreplacment>lengthpattern)
 		{
-			tempstring=realloc(tempstring,sizeof(char)*(lengthtempstring+lengthreplacment-lengthpattern+1));
-			if(tempstring==NULL)
+			reallocresult=realloc(tempstring,sizeof(char)*(lengthtempstring+lengthreplacment-lengthpattern+1));
+			if(reallocresult==NULL)
 			{
 				log_message(log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+				free(tempstring);
 				return NULL;
 			}
+			tempstring=reallocresult;
 			pospattern=strstr(tempstring,toreplace);
 		}
 		memmove(pospattern+lengthreplacment,pospattern+lengthpattern,lengthtempstring-((int)(pospattern-tempstring))-lengthpattern);
@@ -152,6 +154,7 @@ char *mumu_string_replace(char *source, int *length, int can_realloc, char *tore
 			if(reallocresult==NULL)
 			{
 				log_message(log_module, MSG_ERROR,"Problem with realloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+				free(tempstring);
 				return NULL;
 			}
 			source=reallocresult;

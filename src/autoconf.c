@@ -8,7 +8,7 @@
  * by Brice DUBOST
  * Libdvb part : Copyright (C) 2000 Klaus Schmidinger
  *
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  *
  * Copyright notice:
  *
@@ -88,14 +88,17 @@ static char *log_module="Autoconf: ";
 
 
 int autoconf_read_pat(auto_p_t *auto_p,mumu_chan_p_t *chan_p);
+int autoconf_read_cat(auto_p_t *auto_p,mumu_chan_p_t *chan_p);
 int autoconf_read_sdt(auto_p_t *auto_p,mumu_chan_p_t *chan_p);
 int autoconf_read_psip(auto_p_t *auto_p,mumu_chan_p_t *chan_p);
 int autoconf_read_nit(auto_p_t *parameters,mumu_chan_p_t *chan_p);
-int autoconf_read_pmt(mumudvb_channel_t *channel, mumudvb_ts_packet_t *pmt);
+int autoconf_read_pmt(auto_p_t *auto_p, mumudvb_channel_t *channel, mumudvb_ts_packet_t *pmt);
 int autoconf_pat_need_update(auto_p_t *auto_p, unsigned char *buf);
+int autoconf_cat_need_update(auto_p_t *auto_p, unsigned char *buf);
 void autoconf_sdt_need_update(auto_p_t *auto_p, unsigned char *buf);
 int autoconf_nit_need_update(auto_p_t *auto_p, unsigned char *buf);
 void autoconf_psip_need_update(auto_p_t *auto_p, unsigned char *buf);
+void autoconf_clear_ca_system_list(auto_p_t *auto_p);
 
 
 /** Initialize Autoconf variables*/
@@ -230,6 +233,21 @@ int read_autoconfiguration_configuration(auto_p_t *auto_p, char *substring)
 			auto_p->num_service_id++;
 		}
 	}
+	else if (!strcmp (substring, "autoconf_sid_list_ignore"))
+	{
+		while ((substring = strtok (NULL, delimiteurs)) != NULL)
+		{
+			if (auto_p->num_service_id_ignore >= MAX_CHANNELS)
+			{
+				log_message( log_module,  MSG_ERROR,
+						"Autoconfiguration : Too many ignored ts id : %d\n",
+						auto_p->num_service_id_ignore);
+				return -1;
+			}
+			auto_p->service_id_list_ignore[auto_p->num_service_id_ignore] = atoi (substring);
+			auto_p->num_service_id_ignore++;
+		}
+	}
 	else if (!strcmp (substring, "autoconf_name_template"))
 	{
 		// other substring extraction method in order to keep spaces
@@ -262,6 +280,15 @@ int autoconf_init(auto_p_t *auto_p)
 		}
 		memset (auto_p->autoconf_temp_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 		pthread_mutex_init(&auto_p->autoconf_temp_pat->packetmutex,NULL);
+		auto_p->autoconf_temp_cat=malloc(sizeof(mumudvb_ts_packet_t));
+		if(auto_p->autoconf_temp_cat==NULL)
+		{
+			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+			set_interrupted(ERROR_MEMORY<<8);
+			return -1;
+		}
+		memset (auto_p->autoconf_temp_cat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+		pthread_mutex_init(&auto_p->autoconf_temp_cat->packetmutex,NULL);
 		auto_p->autoconf_temp_sdt=malloc(sizeof(mumudvb_ts_packet_t));
 		if(auto_p->autoconf_temp_sdt==NULL)
 		{
@@ -291,6 +318,7 @@ int autoconf_init(auto_p_t *auto_p)
 		}
 		memset (auto_p->autoconf_temp_nit, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 		pthread_mutex_init(&auto_p->autoconf_temp_nit->packetmutex,NULL);
+		autoconf_clear_ca_system_list(auto_p);
 	}
 	return 0;
 
@@ -311,6 +339,11 @@ int autoconf_init(auto_p_t *auto_p)
  */
 void autoconf_freeing(auto_p_t *auto_p)
 {
+	if(auto_p->autoconf_temp_nit)
+	{
+		free(auto_p->autoconf_temp_nit);
+		auto_p->autoconf_temp_nit=NULL;
+	}
 	if(auto_p->autoconf_temp_sdt)
 	{
 		free(auto_p->autoconf_temp_sdt);
@@ -325,6 +358,11 @@ void autoconf_freeing(auto_p_t *auto_p)
 	{
 		free(auto_p->autoconf_temp_pat);
 		auto_p->autoconf_temp_pat=NULL;
+	}
+	if(auto_p->autoconf_temp_cat)
+	{
+		free(auto_p->autoconf_temp_cat);
+		auto_p->autoconf_temp_cat=NULL;
 	}
 }
 
@@ -386,8 +424,29 @@ void autoconf_update_chan_status(auto_p_t *auto_p,mumu_chan_p_t *chan_p)
 				chan_p->channels[ichan].channel_ready=NO_STREAMING;
 				continue;
 			}
-		}
 
+		}
+		//The service was autodetected, we check it's present in the ignore list
+		if(auto_p->num_service_id_ignore)
+		{
+			int sid_i;
+			int found_in_service_id_ignore_list=0;
+			for(sid_i=0;sid_i<auto_p->num_service_id_ignore;sid_i++)
+			{
+				if(auto_p->service_id_list_ignore[sid_i]==chan_p->channels[ichan].service_id)
+				{
+					found_in_service_id_ignore_list=1;
+				}
+			}
+			if(found_in_service_id_ignore_list==1)
+			{
+				log_message( log_module, MSG_DETAIL,"Service in ignore list, we skip. Name \"%s\", id %d\n",
+						chan_p->channels[ichan].name,
+						chan_p->channels[ichan].service_id);
+				chan_p->channels[ichan].channel_ready=NO_STREAMING;
+				continue;
+			}
+		}
 
 		//Cf EN 300 468 v1.9.1 Table 81
 		//Everything seems to be OK, we check if this is a radio or a TV channel
@@ -541,6 +600,15 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, auto_p_t *auto_p, fds
 				}
 			}
 		}
+		else if(pid==1) //CAT : contains the EMM PIDs for the CA systems
+		{
+			autoconf_cat_need_update(auto_p,ts_packet);
+			while(auto_p->cat_need_update && get_ts_packet(ts_packet,auto_p->autoconf_temp_cat))
+			{
+				ts_packet=NULL; // next call we only POP packets from the stack
+				autoconf_read_cat(auto_p,chan_p);
+			}
+		}
 		else if(pid==17) //SDT : contains the names of the services
 		{
 			if(auto_p->pat_all_sections_seen)
@@ -610,7 +678,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, auto_p_t *auto_p, fds
 						(chan_p->channels[ichan].channel_ready>=READY) &&
 						(chan_p->channels[ichan].autoconf_pmt_need_update))
 				{
-					if(autoconf_read_pmt(&chan_p->channels[ichan], chan_p->channels[ichan].pmt_packet))
+					if(autoconf_read_pmt(auto_p, &chan_p->channels[ichan], chan_p->channels[ichan].pmt_packet))
 					{
 						chan_p->channels[ichan].autoconf_pmt_need_update=0;
 						log_pids(log_module,&chan_p->channels[ichan],ichan);

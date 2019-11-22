@@ -4,7 +4,7 @@
  * 
  * (C) 2004-2010 Brice DUBOST
  * 
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net/
  * 
  * Copyright notice:
  * 
@@ -38,6 +38,7 @@
 #include <pthread.h>
 #include <net/if.h>
 
+#define MAX_FILENAME_LEN 256
 
 #define IPV6_CHAR_LEN 64
 
@@ -70,8 +71,15 @@
 /**the maximum channel number*/
 #define MAX_CHANNELS		128
 
+/**the maximum number of CA systems*/
+#define MAX_CA_SYSTEMS		32
+
 /**Size of an MPEG2-TS packet*/
 #define TS_PACKET_SIZE 188
+/**Null PID used for bandwith padding**/
+#define TS_PADDING_PID 8191
+
+#define TS_SYNC_BYTE 0x47
 
 /**Default Maximum Number of TS packets in the TS buffer*/
 #define DEFAULT_TS_BUFFER_SIZE 20
@@ -120,7 +128,10 @@ We cannot discover easily the MTU with unconnected UDP
 
 #define SAP_GROUP_LENGTH 20
 
-
+/** define bool for plain C code **/
+#ifndef __cplusplus
+    typedef enum { false = 0, true = !false } bool;
+#endif
 
 enum
 {
@@ -185,7 +196,8 @@ enum
 	PID_EXTRA_VBITELETEXT,
 	PID_EXTRA_TELETEXT,
 	PID_EXTRA_SUBTITLE,
-	PID_ECM
+	PID_ECM,
+	PID_EMM
 };
 
 /**@brief file descriptors*/
@@ -251,6 +263,8 @@ typedef struct card_buffer_t{
 	int overflow_number;
 	/**The maximum size of the thread buffer (in packets)*/
 	int max_thread_buffer_size;
+	/* t2-mi demux buffer */
+	unsigned char *t2mi_buffer;
 }card_buffer_t;
 
 
@@ -457,6 +471,19 @@ typedef struct mumu_chan_t{
 	//do we need to update the SAP announce (typically a name change)
 	int sap_need_update;
 
+	/**The generated PMT to be sent*/
+	unsigned char generated_pmt[TS_PACKET_SIZE];
+	/** Do we rewrite PMT for this channel? */
+	int pmt_rewrite;
+	/** PMT can span over multiple TS packets */
+	int pmt_part_num;
+	int pmt_part_count;
+	unsigned char original_pmt[TS_PACKET_SIZE*10];
+	int original_pmt_ready;
+	/** The version of the generated pmt */
+	int generated_pmt_version;
+	/** The continuity counter for pmt packets */
+	int pmt_continuity_counter;
 	/**The generated pat to be sent*/
 	unsigned char generated_pat[TS_PACKET_SIZE];
 	/** The version of the generated pat */
@@ -532,6 +559,9 @@ typedef struct mumu_chan_p_t{
 	/** The number of TS discontinuities per PID **/
 	int16_t continuity_counter_pid[8193]; //on 16 bits for storing the initial -1
 	uint8_t check_cc;
+	/** t2mi demux parameters **/
+	int t2mi_pid;
+	uint8_t t2mi_plp;
 }mumu_chan_p_t;
 
 
@@ -561,6 +591,11 @@ typedef struct mumu_string_t{
 }mumu_string_t;
 
 #define EMPTY_STRING {NULL,0}
+
+/** global scope variables for T2-MI processiong **/
+extern bool t2mi_active;
+extern bool t2mi_first;
+extern int t2_partial_size;
 
 int mumu_string_append(mumu_string_t *string, const char *psz_format, ...);
 void mumu_free_string(mumu_string_t *string);

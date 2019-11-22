@@ -3,7 +3,7 @@
  * 
  * (C) 2009 Brice DUBOST
  * 
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net/
  * 
  * Copyright notice:
  * 
@@ -59,7 +59,7 @@ enum
                             "<body>\r\n"\
                             "   <h1>404 Not found</h1>\r\n"\
                             "<hr />\r\n"\
-                            "<a href=\"http://mumudvb.braice.net\">MuMuDVB</a> version %s\r\n"\
+                            "<a href=\"http://mumudvb.net/\">MuMuDVB</a> version %s\r\n"\
                             "</body>\r\n"\
                             "</html>\r\n"\
                             "\r\n"
@@ -77,7 +77,7 @@ enum
                             "<hr />\r\n"\
 
 #define HTTP_INDEX_REPLY_END "<hr />\r\n"\
-                            "See <a href=\"http://mumudvb.braice.net\">MuMuDVB</a> website for more details.\r\n"\
+                            "See <a href=\"http://mumudvb.net/\">MuMuDVB</a> website for more details.\r\n"\
                             "</body>\r\n"\
                             "</html>\r\n"\
                             "\r\n"
@@ -94,7 +94,7 @@ enum
                             "<hr />\r\n"\
 
 #define HTTP_CHANNELS_REPLY_END "<hr />\r\n"\
-                            "See <a href=\"http://mumudvb.braice.net\">MuMuDVB</a> website for more details.\r\n"\
+                            "See <a href=\"http://mumudvb.net/\">MuMuDVB</a> website for more details.\r\n"\
                             "</body>\r\n"\
                             "</html>\r\n"\
                             "\r\n"
@@ -196,6 +196,8 @@ typedef struct unicast_parameters_t{
   /**File descriptors for pooling*/
   struct pollfd *pfds;	//unicast http clients
   int pfdsnum;
+  int playlist_ignore_dead;
+  int playlist_ignore_scrambled_ratio;
 
 }unicast_parameters_t;
 

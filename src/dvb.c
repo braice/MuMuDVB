@@ -4,7 +4,7 @@
  * (C) 2004-2013 Brice DUBOST
  * (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
  * 
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  * 
  * Copyright notice:
  * 
@@ -50,13 +50,16 @@ static char *log_module="DVB: ";
  * @param card the card number 
  */
 int
-open_fe (int *fd_frontend, char *base_path, int tuner, int rw)
+open_fe (int *fd_frontend, char *base_path, int tuner, int rw, int full_path)
 {
 
 	char *frontend_name=NULL;
 	int asprintf_ret;
 	int rw_flag;
-	asprintf_ret=asprintf(&frontend_name,"%s/%s%d",base_path,FRONTEND_DEV_NAME,tuner);
+	if(full_path) //used for pipe input
+		asprintf_ret=asprintf(&frontend_name,"%s",base_path);
+	else
+		asprintf_ret=asprintf(&frontend_name,"%s/%s%d",base_path,FRONTEND_DEV_NAME,tuner);
 	if(asprintf_ret==-1)
 		return -1;
 	if(rw)
@@ -65,7 +68,7 @@ open_fe (int *fd_frontend, char *base_path, int tuner, int rw)
 		rw_flag=O_RDONLY;
 	if ((*fd_frontend = open (frontend_name, rw_flag | O_NONBLOCK)) < 0)
 	{
-		log_message( log_module,  MSG_ERROR, "FRONTEND DEVICE: %s : %s\n", frontend_name, strerror(errno));
+		log_message( log_module,  MSG_ERROR, "FRONTEND DEVICE: \"%s\" : %s\n", frontend_name, strerror(errno));
 		free(frontend_name);
 		return -1;
 	}
@@ -86,6 +89,8 @@ set_ts_filt (int fd, uint16_t pid)
 	struct dmx_pes_filter_params pesFilterParams;
 
 	log_message( log_module,  MSG_DEBUG, "Setting filter for PID %d\n", pid);
+
+	memset(&pesFilterParams, 0, sizeof(pesFilterParams));
 	pesFilterParams.pid = pid;
 	pesFilterParams.input = DMX_IN_FRONTEND;
 	pesFilterParams.output = DMX_OUT_TS_TAP;
@@ -434,12 +439,13 @@ void show_card_capabilities( int card, int tuner )
 	int l=sizeof(card_dev_path);
 	mumu_string_replace(card_dev_path,&l,0,"%card",number);
 	//Open the frontend
-	if(!open_fe (&frontend_fd, card_dev_path, tuner,0)) // we open the card readonly so we can get the capabilities event when used
+	if(!open_fe (&frontend_fd, card_dev_path, tuner,0,0)) // we open the card readonly so we can get the capabilities event when used
 		return;
 
 	//get frontend info
 	struct dvb_frontend_info fe_info;
-	if ( (i_ret = ioctl(frontend_fd,FE_GET_INFO, &fe_info) < 0)){
+	i_ret = ioctl(frontend_fd,FE_GET_INFO, &fe_info);
+	if (i_ret < 0){
 		log_message( log_module,  MSG_ERROR, "FE_GET_INFO: %s \n", strerror(errno));
 		close (frontend_fd);
 		return;
@@ -462,6 +468,9 @@ void show_card_capabilities( int card, int tuner )
 		break;
 	case FE_ATSC:
 		log_message( log_module,  MSG_INFO, " ATSC card\n");
+		break;
+	default:
+		log_message( log_module,  MSG_INFO, " UNKNOWN card (0x%x)\n", fe_info.type);
 		break;
 	}
 	if(fe_info.type==FE_QPSK)

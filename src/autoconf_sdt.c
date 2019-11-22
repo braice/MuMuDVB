@@ -8,7 +8,7 @@
  * by Brice DUBOST 
  * Libdvb part : Copyright (C) 2000 Klaus Schmidinger
  * 
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  * 
  * Copyright notice:
  * 
@@ -105,6 +105,12 @@ int autoconf_read_sdt(auto_p_t *auto_p, mumu_chan_p_t *chan_p)
 
 	header=(sdt_t *)buf; //we map the packet over the header structure
 
+	if(header->table_id != 0x42)
+	{
+		log_message( log_module, MSG_FLOOD, "-- SDT: Service Description Table (id 0x%02x), not 0x42, we skip !",header->table_id);
+		return 0;
+	}
+
 	if(header->version_number==auto_p->sdt_version)
 	{
 		//check if we saw this section
@@ -170,6 +176,8 @@ int autoconf_read_sdt(auto_p_t *auto_p, mumu_chan_p_t *chan_p)
 				case 4:  log_message( log_module, MSG_FLOOD, "\trunning_status : running\n");  break; //too usual to be printed as debug
 				case 5:
 					log_message( log_module, MSG_DEBUG, "\trunning_status : service off-air\n");  break;
+				default:
+					log_message( log_module, MSG_DEBUG, "\trunning_status : unknown (0x%x)\n", descr_header->running_status);  break;
 				}
 				//we store the Free CA mode flag (tell if the channel is scrambled)
 				chan_p->channels[chan].free_ca_mode=descr_header->free_ca_mode;

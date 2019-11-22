@@ -4,7 +4,7 @@
  * 
  * (C) 2004-2013 Brice DUBOST
  * 
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  * 
  * Copyright notice:
  * 
@@ -511,7 +511,7 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
 		//We store the old to be sure that we store only channels over the minimum packets limit
 		if (channels[curr_channel].has_traffic && (channels[curr_channel].channel_ready>=READY))
 		{
-			fprintf (file_streamed_channels, "%s:%d:%s", channels[curr_channel].ip4Out, channels[curr_channel].portOut, channels[curr_channel].name);
+			fprintf (file_streamed_channels, "%s:%d:%s:%d", channels[curr_channel].ip4Out, channels[curr_channel].portOut, channels[curr_channel].name, channels[curr_channel].service_type);
 			if (channels[curr_channel].scrambled_channel == FULLY_UNSCRAMBLED)
 				fprintf (file_streamed_channels, ":FullyUnscrambled\n");
 			else if (channels[curr_channel].scrambled_channel == PARTIALLY_UNSCRAMBLED)
@@ -520,7 +520,7 @@ gen_file_streamed_channels (char *file_streamed_channels_filename, char *file_no
 				fprintf (file_streamed_channels, ":HighlyScrambled\n");
 		}
 		else
-			fprintf (file_not_streamed_channels, "%s:%d:%s\n", channels[curr_channel].ip4Out, channels[curr_channel].portOut, channels[curr_channel].name);
+			fprintf (file_not_streamed_channels, "%s:%d:%s:%d\n", channels[curr_channel].ip4Out, channels[curr_channel].portOut, channels[curr_channel].name, channels[curr_channel].service_type);
 	fclose (file_streamed_channels);
 	fclose (file_not_streamed_channels);
 
@@ -825,7 +825,9 @@ char *pid_type_to_str(int type)
 	case PID_EXTRA_SUBTITLE:
 		return "Subtitling";
 	case PID_ECM:
-		return "CA information (ECM,EMM)";
+		return "CA information (ECM)";
+	case PID_EMM:
+		return "CA information (EMM)";
 	case PID_UNKNOW:
 	default:
 		return "Unknown";
@@ -956,9 +958,13 @@ void print_info ()
 			"---------\n"
 			"Originally based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"
 			"Released under the GPL.\n"
-			"Latest version available from http://mumudvb.braice.net/\n"
+			"Latest version available from http://mumudvb.net/\n"
 			"Project from the cr@ns (http://www.crans.org)\n"
-			"by Brice DUBOST (mumudvb@braice.net)\n\n", DVB_API_VERSION,DVB_API_VERSION_MINOR);
+			"by Brice DUBOST (mumudvb@braice.net)\n\n"
+#if DVB_API_VERSION >= 5
+			,DVB_API_VERSION,DVB_API_VERSION_MINOR
+#endif			
+			);
 
 }
 
@@ -1046,10 +1052,18 @@ int convert_en300468_string(char *string, int max_len, int debug)
 
 
 
-	log_message( log_module, MSG_FLOOD, "convert_en300468_string: String to be converted start 0x%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x ",string[0],string[1],string[2],string[3],string[4],string[5],string[6],string[7],string[8],string[9]);
+	//log_message( log_module, MSG_FLOOD, "convert_en300468_string: String to be converted start 0x%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x ",string[0],string[1],string[2],string[3],string[4],string[5],string[6],string[7],string[8],string[9]);
 
 
 	realstart = (unsigned char *)string;
+
+	if(string[0] == '\0')
+	{
+		log_message( log_module, MSG_FLOOD, "Empty string, I leave");
+		return 0;
+	}
+
+
 	if(*realstart < 0x20)
 	{
 		log_message( log_module, MSG_FLOOD, "starting with encoding character 0x%02x",*realstart);
@@ -1089,18 +1103,19 @@ int convert_en300468_string(char *string, int max_len, int debug)
 	//temporary buffers allocation
 	int lenstring=0;
 	//We count the len needed for the temporary buffer.
-	//Due to the special structure of an EN300468 string a \0 can be present in the string
-	//So we cannot use strlen
+	//Due to the special structure of an EN300468 string we have to manage control characters
 	for (src = realstart; *src; src++)
 	{
 			if ((*src < 0x80 || *src > 0x9f))
 					//One character
 					lenstring++;
+			if(*src==0x8a) //Control character \"CR/LF\", we replace by a standard newline
+				lenstring++;
 	}
 
-    tempdest=tempbuf=malloc(sizeof(char)*lenstring+1);
+    tempdest=tempbuf=malloc(sizeof(char)*(lenstring+1));
 
-    log_message( log_module, MSG_DEBUG,"String len %d offset %ld",lenstring, realstart-((unsigned char *)string));
+    log_message( log_module, MSG_DEBUG,"String len %d offset %zd",lenstring, realstart-((unsigned char *)string));
 	if(tempdest==NULL)
 	{
 		log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
@@ -1138,7 +1153,7 @@ int convert_en300468_string(char *string, int max_len, int debug)
 				{if(debug) {log_message( log_module, MSG_DEBUG, "\tUnimplemented name control_character : %x \n", *src);}}
 		}
 	}
-    log_message( log_module, MSG_DEBUG,"String len before conversion %d ",len);
+    log_message( log_module, MSG_DEBUG,"String len before conversion %d (DEBUG lenstring is %d )",len,lenstring);
 
 	*tempdest = 0;
 #ifdef HAVE_ICONV
@@ -1165,7 +1180,7 @@ int convert_en300468_string(char *string, int max_len, int debug)
 	*dest = '\0';
 	free(tempbuf);
 	iconv_close( cd );
-	log_message( log_module, MSG_FLOOD, "Converted text : \"%s\" (text encoding : %s)\nnonreversible conversions %ld", string,encodings_en300468[encoding_control_char],nonreversible);
+	log_message( log_module, MSG_FLOOD, "Converted text : \"%s\" (text encoding : %s)\nnonreversible conversions %zd", string,encodings_en300468[encoding_control_char],nonreversible);
 #else
 	if(debug) {log_message( log_module, MSG_DETAIL, "Iconv not present, no name encoding conversion \n");}
 #endif

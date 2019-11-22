@@ -8,7 +8,7 @@
  * by Brice DUBOST
  * Libdvb part : Copyright (C) 2000 Klaus Schmidinger
  *
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  *
  * Copyright notice:
  *
@@ -258,8 +258,8 @@ int autoconf_pat_update_chan(pat_prog_t  *prog,int pat_version,mumu_chan_p_t *ch
 		chan_p->channels[chan_num].service_id=HILO(prog->program_number);
 		MU_F(chan_p->channels[chan_num].service_id)=F_DETECTED;
 		//NEW channel we clear some stuff
-		mumu_init_chan(&chan_p->channels[i]);
-		chan_p->channels[i].channel_ready=NOT_READY;
+		mumu_init_chan(&chan_p->channels[chan_num]);
+		chan_p->channels[chan_num].channel_ready=NOT_READY;
 	}
 	i=chan_num;
 

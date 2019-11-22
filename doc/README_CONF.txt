@@ -78,9 +78,9 @@ In the following list, only the parameter `freq` is mandatory
 [width="80%",cols="2,7,2,3",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Comments
-|freq | transponder's frequency in MHz  | | Mandatory
+|freq | transponder's frequency (in MHz for satellite). For cable and terrestrial you can use Hz,kHz or MHz | | Mandatory unless other freq is specified
 |modulation | The kind of modulation used (can be : QPSK QAM16 QAM32 QAM64 QAM128 QAM256 QAMAUTO VSB8 VSB16 8PSK 16APSK 32APSK DQPSK)  | ATSC: VSB_8, cable/terrestrial: QAM_AUTO, satellite: QPSK | Optional most of the times
-|delivery_system | the delivery system used (can be DVBT DVBT2 DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC) | Undefined | Set it if you want to use the new tuning API (DVB API 5/S2API). Mandatory for DVB-S2 and DVB-T2
+|delivery_system | the delivery system used (can be DVBT DVBT2 DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC ISDBT) | Undefined | Set it if you want to use the new tuning API (DVB API 5/S2API). Mandatory for DVB-S2 and DVB-T2
 |card | The DVB/ATSC card number | 0 | only limited by your OS
 |tuner | The tuner number | 0 | If you have a card with multiple tuners (ie there are several frontend* in /dev/dvb/adapter%card)
 |card_dev_path | The path of the DVB card devices. Use it if you have a personalised path like /dev/dvb/astra%card | /dev/dvb/adapter%card |  The template %card can be used
@@ -95,7 +95,10 @@ In the following list, only the parameter `freq` is mandatory
 Parameters specific to satellite
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[width="80%",cols="2,6,1,3,2",options="header"]
+I you want to understand the DiSEqC bytes, please refer to https://www.eutelsat.com/files/contributed/satellites/pdf/Diseqc/associated%20docs/update_recomm_for_implim.pdf[DiSEqC documentation]
+
+
+[width="80%",cols="2,5,1,2,4",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |pol |transponder's polarisation. One char. 'v' (vertical), 'h' (horizontal), 'l' (left circular), 'r' (right circular) | | h, H, v, V, l, L, r or R | Mandatory
@@ -105,11 +108,11 @@ Parameters specific to satellite
 |lnb_slof |The switching frequency frequency of the LNB (define the two bands). Valid when lnb_type=universal | 11700 |  | In MHz, see below.
 |lnb_lof_low |The frequency of the LNB's local oscillator for the low band. Valid when lnb_type=universal | 9750 |  | In MHz, see below.
 |lnb_lof_high |The frequency of the LNB's local oscillator for the high band. Valid when lnb_type=universal | 10600 |  | In MHz, see below.
-|sat_number |The satellite number in case you have multiples lnb, no effect if 0 (only 22kHz tone and 13/18V), send a diseqc message if non 0 | 0 | 1 to 4 | If you have equipment which support more, please contact. For Unicable 0,1 : position A, 2 position B
-|switch_input |The switch input number in case you have multiples lnb, overrides sat_number, send a diseqc message if non 0, for unicable, this is the unicable ID | 0 | 0 to 15| If you have equipment which support more, please contact
-|switch_type | The DiSEqC switch type: Committed (C), Uncommitted (N) or uNicable (N) | C | C, c, U, u, N or n | 
+|sat_number |The satellite number in case you have multiples lnb, no effect if 0 (only 22kHz tone and 13/18V), send a diseqc message if non 0 | 0 | 1 to 4 | If you have equipment which support more, please contact. For satellite 1: Position A Option A; 2: Position B option A; 3: Position A option B; 4: Position B, Option B. For Unicable 0,1 : position A, 2 position B. Additionaly with JESS/Unicable_II, 3 : position C, 4 : position D.
+|switch_input |The switch input number in case you have multiples lnb, overrides sat_number, send a diseqc message if set, for unicable, this is the unicable ID | 0 | 0 to 31| If you have equipment which support more, please contact
+|switch_type | The DiSEqC switch type: Committed (C), Uncommitted (N), both (B), uNicable (N), JESS/Unicable_II (J) | C | C, c, U, u,B,b N,n,J,j | 
 |diseqc_repeat | Do we repeat the DiSEqC message (useful for some switches) | 0 | 0 or 1 | 
-|uni_freq | For SCR/unicable: the translated frequency in MHz  | | | Optional: needed if switch_type N
+|uni_freq | For SCR/unicable: the translated frequency in MHz  | | | Optional: needed if switch_type N or J
 |lnb_voltage_off |Force the LNB voltage to be 0V (instead of 13V or 18V). This is useful when your LNB have it's own power supply. | 0 | 0 or 1 | 
 |coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto |
 |rolloff  |rolloff important only for DVB-S2 | 35 | 35, 20, 25, auto | The default value should work most of the times
@@ -126,8 +129,8 @@ Local oscillator frequencies :
 - Ku Band : this is the default band for MuMuDVB, you don't have to set the LO frequency. For information : Hi band : 10600, Low band : 9750, Single : 10750
 
 
-Parameters specific to terrestrial (DVB-T)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Parameters specific to terrestrial (DVB-T/T2 ISDBT)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [NOTE]
 `auto` usually works fine for all the parameters except `bandwidth`
@@ -139,7 +142,8 @@ Parameters specific to terrestrial (DVB-T)
 |trans_mode |transmission mode | auto | 2k, 8k, auto (DVB-T2: 4k, 16k, 32k) 
 |guardinterval |guard interval | auto |  1/32, 1/16, 1/8, 1/4, auto (DVB-T2 : 1/128, 19/128, 19/256) 
 |coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto 
-|stream_id | the id of the substream for DVB-T2 | 0 | 0 to 255 |
+|stream_id | the id of the substream for DVB-T2 | 0 | 0 to 255 
+|isdbt_layer | the sublayer for ISDBT (can be called several times for several layers) | ALL | A,B,C or ALL
 |==================================================================================================================
 
 Parameters specific to cable (DVB-C)
@@ -185,6 +189,8 @@ Various parameters
 |check_cc | Do MuMuDVB check the discontibuities in the stream ? | 0 | | Displayed via the XML status pages or the signal display
 |store_eit | Do MuMuDVB store EIT (Electronic Program Guide) for the webservices ? | 0 | | beta, please report your results
 |debug_updown | Do MuMuDVB show debugging messages concerning up/down channel detection | 0 | | The threshold can be adjusted with up_threshold and down_threshold
+|t2mi_pid | Use T2-MI demux for input traffic | 0 | 1-8192 | You can get pid by running dvbtraffic or dvbsnoop, but most networks use pid 4096. 0 = disable demux. T2-MI packet is larger than TS, so use large dvb input buffers (40 packets or more).
+|t2mi_plp | Select PLP in input stream | 0 | 0-255 | Any signle PLP supported for now.
 |==================================================================================================================
 
 Packets sending parameters
@@ -197,6 +203,7 @@ Packets sending parameters
 |psi_tables_filtering | If set to 'pat', TS packets with PID from 0x01 to 0x1F are discarded. If set to 'pat_cat', TS packets with PID from 0x02 to 0x1F are discarded. | 'none' | Option to keep only mandatory PSI PID | 
 |rewrite_pat | Do we rewrite the PAT PID | 0, 1 in autoconf | 0 or 1 | See README, important for some set top boxes 
 |rewrite_sdt | Do we rewrite the SDT PID | 0, 1 in autoconf | 0 or 1 | See README 
+|rewrite_pmt | Do we rewrite the PMT PID | 0 | 0 or 1 | See README, important if you don't stream all PIDs
 |rewrite_eit sort_eit | Do we rewrite/sort the EIT PID | 0 | 0 or 1 | See README 
 |sdt_force_eit | Do we force the EIT_schedule_flag and EIT_present_following_flag in SDT | 0 | 0 or 1 | Set to 0 if you don't understand
 |rtp_header | Send the stream with the rtp headers (except for HTTP unicast) | 0 | 0 or 1 | 
@@ -251,6 +258,7 @@ SCAM support parameters
 |ring_buffer_default_size | default number of ts packets in ring buffer (when not specified by channel specific config) | 32768 |it gets rounded to the value that is power of 2 not lower than it|
 |decsa_default_delay | default delay time in us between getting packet and descrambling (when not specified by channel specific config) | 500000 |  max is 10000000 |
 |send_default_delay | default delay time in us between getting packet and sending (when not specified by channel specific config) | 1500000 | mustn't be lower than decsa delay |
+|scam_const_key | set static key (BISS), skip access scam socket for such SIDs | | example (SID, odd key, even key): scam_const_key=103,11:22:33:44:55:66:77:88,11:22:33:44:55:66:77:88|
 |==================================================================================================================
 
 Autoconfiguration parameters
@@ -267,6 +275,7 @@ Autoconfiguration parameters
 |autoconf_unicast_port |The unicast port for each discovered channel. Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%tuner` `%server`, `%sid` and `%number`. Ex : `autoconf_unicast_port=2000+100*%card+%number`
 |autoconf_multicast_port |The multicast port for each discovered channel. Ex "2000+%number" |  |  | You can use expressions with `+` `*` `%card` `%tuner` `%server`, `%sid` and `%number`. Ex : `autoconf_multicast_port=2000+100*%card+%number`
 |autoconf_sid_list | If you don't want to configure all the channels of the transponder in autoconfiguration mode, specify with this option the list of the service ids of the channels you want to autoconfigure. | empty |  | 
+|autoconf_sid_list_ignore | If you don't want to configure all the channels of the transponder in autoconfiguration mode, specify with this option the list of the service ids of the channels you want to exclude from autoconfiguration. | empty |  | 
 |autoconf_name_template | The template for the channel name, ex `%number-%name` | empty | | See README for more details
 |==================================================================================================================
 
@@ -296,6 +305,8 @@ HTTP unicast parameters
 |unicast_consecutive_errors_timeout | The timeout for disconnecting a client which is not responding | 5 | A client will be disconnected if no data have been sucessfully sent during this interval. A value of 0 deactivate the timeout (unadvised).
 |unicast_max_clients | The limit on the number of connected clients | 0 | 0 : no limit.
 |unicast_queue_size | The maximum size of the buffering when writting to a client fails | 512kBytes | in Bytes.
+|playlist_ignore_dead | Do we exclude dead channels (no traffic) from playlist? | 0  | 0 or 1 | Exclude dead and include alive channels on each playlist request.
+|playlist_ignore_scrambled_ratio | Do we exclude overscrambled from playlist? | 0  | 0(off), 1-100 | Exclude channels with percent of scrambled packets more than specified.
 |==================================================================================================================
 
 

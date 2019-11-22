@@ -4,7 +4,7 @@
  * 
  * (C) 2004-2010 Brice DUBOST
  *
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net
  * 
  * Copyright notice:
  * 

@@ -2,21 +2,13 @@
 AM_CFLAGS = -Wall -Wextra
 AM_LDFLAGS =
 
-
-check_PROGRAMS = mumudvb_test
-mumudvb_test_SOURCES = mumudvb_test.c autoconf.c crc32.c dvb.h log.c log.h multicast.c mumudvb.h network.h rewrite.h \
-		  rtp.h sap.h ts.h tune.h unicast_http.h autoconf.h dvb.c errors.h \
-		  mumudvb_common.c network.c rewrite_pat.c rewrite.c rewrite_sdt.c rewrite_eit.c \
-		  rtp.c sap.c ts.c tune.c unicast_http.c unicast_queue.c autoconf_sdt.c autoconf_atsc.c \
-		  autoconf_pmt.c autoconf_nit.c unicast_clients.c
-
 bin_PROGRAMS = mumudvb
 mumudvb_SOURCES = autoconf.c crc32.c dvb.h log.c log.h multicast.c mumudvb.h network.h rewrite.h \
 		  rtp.h sap.h ts.h tune.h unicast_http.h autoconf.h dvb.c errors.h \
-		  mumudvb.c mumudvb_mon.c mumudvb_mon.h mumudvb_common.c network.c rewrite_pat.c rewrite.c rewrite_sdt.c rewrite_eit.c \
-		  rtp.c sap.c ts.c tune.c unicast_http.c unicast_queue.c unicast_EIT.c autoconf_sdt.c autoconf_atsc.c \
+		  mumudvb.c mumudvb_mon.c mumudvb_mon.h mumudvb_common.c network.c rewrite_pmt.c rewrite_pat.c rewrite.c rewrite_sdt.c rewrite_eit.c \
+		  rtp.c sap.c ts.c t2mi.c tune.c unicast_http.c unicast_queue.c unicast_EIT.c autoconf_sdt.c autoconf_atsc.c \
 		  autoconf_pmt.c autoconf_nit.c unicast_clients.c unicast_monit.c mumudvb_channels.c \
-		  autoconf_pat.c
+		  autoconf_pat.c autoconf_cat.c
 
 mumudvb_LDADD = -lm
 
