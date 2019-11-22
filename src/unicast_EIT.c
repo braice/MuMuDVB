@@ -74,6 +74,13 @@ void mumu_string_to_json(char *in, int lin, char *out, int lout)
 	offin=0;
 	offout=0;
 
+	//manage empty strings
+	if(in[0] == '\0')
+	{
+		out[0] = '\0';
+		return;
+	}
+
 	while((offin<lin) && (offout<lout) && (c=in[offin]))
 	{
 		if((c & 0x80) == 0) //ASCII bit
@@ -208,7 +215,7 @@ void eit_display_contents(mumudvb_ts_packet_t *full_eit, struct unicast_reply* r
 		Y=YY+K+1900;
 		M=MM-1-K*12;
 
-		unicast_reply_write(reply, "\t\t\"start_time day \" : \"%d-%02d-%02d (yy-mm-dd)\",\n",
+		unicast_reply_write(reply, "\t\t\"start_date\" : \"%d-%02d-%02d\",\n",
 						Y,M,D);
 		//compute hours
 		int hh,mm,ss;

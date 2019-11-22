@@ -46,12 +46,18 @@ static char *log_module="Autoconf: ";
 
 int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_len, int *pos);
 void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len);
+mumudvb_ca_system_t* autoconf_get_ca_system(auto_p_t *auto_p, int ca_system_id);
+
+
+
+
+
 
 /****************************************************************************/
 //Parts of this code (read of the pmt and read of the pat)
 // from libdvb, strongly modified, with commentaries added
 /****************************************************************************/
-void autoconf_get_pmt_pids(mumudvb_ts_packet_t *pmt, int *pids, int *num_pids, int *pids_type, char (*pids_language)[4], int *ca_sys_id)
+void autoconf_get_pmt_pids(auto_p_t *auto_p, mumudvb_ts_packet_t *pmt, int *pids, int *num_pids, int *pids_type, char (*pids_language)[4], int *ca_sys_id)
 {
 	*num_pids=0;
 
@@ -73,10 +79,42 @@ void autoconf_get_pmt_pids(mumudvb_ts_packet_t *pmt, int *pids, int *num_pids, i
 
 	//For CAM debugging purposes, we look if we can find a CA descriptor to display CA system IDs
 	//Also find ECM pid...
-	while(pmt_find_descriptor(0x09,pmt->data_full+PMT_LEN,PMT_LEN+program_info_length,&pos))
+	int pos_ca_descr[255];
+	int n_ca_descr;
+	int len;
+	n_ca_descr = 0;
+	//search in the main loop
+	while(len = pmt_find_descriptor(0x09,pmt->data_full+PMT_LEN,PMT_LEN+program_info_length,&pos),len)
+	{
+		log_message( log_module,  MSG_FLOOD,"  Found a CA descr in main loop at pos %d", pos);
+
+		pos_ca_descr[n_ca_descr] = pos+PMT_LEN;
+		pos+=len;
+		n_ca_descr ++;
+
+	}
+	//also search in the program loops
+	for (int i=program_info_length+PMT_LEN; i<=section_len-(PMT_INFO_LEN+4); i+=descr_section_len+PMT_INFO_LEN)
+	{
+		pos=0;
+		descr_header=(pmt_info_t *)(pmt->data_full+i);
+		//We get the length of the descriptor
+		descr_section_len=HILO(descr_header->ES_info_length);        //ES_info_length
+		while(len = pmt_find_descriptor(0x09,pmt->data_full+i+PMT_INFO_LEN,descr_section_len, &pos),len)
+		{
+			log_message( log_module,  MSG_FLOOD,"  Found a CA descr in program loop (%d) at relative pos %d", i, pos);
+			pos_ca_descr[n_ca_descr] = pos+i+PMT_INFO_LEN;
+			//we need to skip this descriptor
+			pos+=len;
+			n_ca_descr ++;
+		}
+	}
+	//now we can loop on the ca descriptors
+	for (int i=0; i<n_ca_descr; i++)
 	{
 		descr_ca_t *ca_descriptor;
-		ca_descriptor=(descr_ca_t *)(pmt->data_full+PMT_LEN+pos);
+		ca_descriptor=(descr_ca_t *)(pmt->data_full+pos_ca_descr[i]);
+		int ca_type = HILO(ca_descriptor->CA_type);
 		pid=HILO(ca_descriptor->CA_PID);
 		pid_type=PID_ECM;
 		log_message( log_module,  MSG_DEBUG,"  ECM \tPID %d\n",pid);
@@ -84,18 +122,46 @@ void autoconf_get_pmt_pids(mumudvb_ts_packet_t *pmt, int *pids, int *num_pids, i
 		pids_type[*num_pids]=pid_type;
 		snprintf(temp_pids_language[*num_pids],4,"%s",language);
 		(*num_pids)++;
+
+		// get the EMM PID
+		mumudvb_ca_system_t *ca_system;
+		ca_system = autoconf_get_ca_system(auto_p, ca_type);
+		if(ca_system != NULL)
+		{
+			log_message( log_module,  MSG_DEBUG,"  EMM \tPID %d\n", ca_system->emm_pid);
+			// The pid might be already added (the EMM pid might be used by different CA systems)
+			// Check if it was already added
+			int pid_already_added = 0;
+			for(int i = 0; i < *num_pids; i++)
+			{
+				if(pids[i] == ca_system->emm_pid)
+				{
+					pid_already_added = 1;
+					break;
+				}
+			}
+			if (pid_already_added == 0)
+			{
+				pids[*num_pids]=ca_system->emm_pid;
+				pids_type[*num_pids]=PID_EMM;
+				(*num_pids)++;
+			}
+		}
+		else if(auto_p->cat_version != -1)
+		{
+			log_message( log_module,  MSG_ERROR, "Couldn't find CAT CA system for id 0x%04x\n", ca_type);
+		}
 	
 		int casysid = 0;	
-		while(casysid<32 && ca_sys_id[casysid] && ca_sys_id[casysid]!=HILO(ca_descriptor->CA_type) )
+		while(casysid<32 && ca_sys_id[casysid] && ca_sys_id[casysid]!=ca_type)
 			casysid++;
 		if(casysid<32 && !ca_sys_id[casysid])
 		{
-			ca_sys_id[casysid]=HILO(ca_descriptor->CA_type);
-			log_message( log_module,  MSG_DETAIL,"CA system id 0x%04x : %s\n", HILO(ca_descriptor->CA_type), ca_sys_id_to_str(HILO(ca_descriptor->CA_type)));//we display it with the description
+			ca_sys_id[casysid]=ca_type;
+			log_message( log_module,  MSG_DETAIL,"CA system id 0x%04x : %s\n", ca_type, ca_sys_id_to_str(ca_type));//we display it with the description
 		}
 		if(casysid==32)
 			log_message( log_module,  MSG_WARN,"Too much CA system id line %d file %s\n", __LINE__,__FILE__);
-		pos+=ca_descriptor->descriptor_length+2;
 	}
 
 	pos=0;
@@ -162,7 +228,7 @@ void autoconf_get_pmt_pids(mumudvb_ts_packet_t *pmt, int *pids, int *num_pids, i
 
 
 		case 0x06: /* Descriptor defined in EN 300 468 */
-			if(descr_section_len) //If we have an accociated descriptor, we'll search inforation in it
+			if(descr_section_len) //If we have an associated descriptor, we'll search information in it
 			{
 				if(pmt_find_descriptor(0x45,pmt->data_full+i+PMT_INFO_LEN,descr_section_len, NULL)){
 					log_message( log_module,  MSG_DEBUG,"  VBI Data \tPID %d\n",pid);
@@ -305,7 +371,7 @@ void autoconf_get_pmt_pids(mumudvb_ts_packet_t *pmt, int *pids, int *num_pids, i
  * @param pmt the pmt packet
  * @param channel the associated channel
  */
-int autoconf_read_pmt(mumudvb_channel_t *channel, mumudvb_ts_packet_t *pmt)
+int autoconf_read_pmt(auto_p_t *auto_p, mumudvb_channel_t *channel, mumudvb_ts_packet_t *pmt)
 {
 	pmt_t *header;
 
@@ -321,11 +387,10 @@ int autoconf_read_pmt(mumudvb_channel_t *channel, mumudvb_ts_packet_t *pmt)
 
 
 	log_message( log_module,  MSG_DEBUG,"PMT (PID %d) read for configuration of channel \"%s\" with SID %d", pmt->pid, channel->name,channel->service_id);
-#ifdef ENABLE_CAM_SUPPORT
+
 	// Reset of the CA SYS saved for the channel
 	for (int i=0; i<32; i++)
 		channel->ca_sys_id[i]=0;
-#endif
 
 
 	int temp_pids[MAX_PIDS];
@@ -342,7 +407,7 @@ int autoconf_read_pmt(mumudvb_channel_t *channel, mumudvb_ts_packet_t *pmt)
 
 
 	//We get the PIDs contained in the PMT
-	autoconf_get_pmt_pids(pmt, temp_pids, &temp_num_pids, temp_pids_type, temp_pids_language, channel->ca_sys_id);
+	autoconf_get_pmt_pids(auto_p, pmt, temp_pids, &temp_num_pids, temp_pids_type, temp_pids_language, channel->ca_sys_id);
 
 
 
@@ -471,7 +536,7 @@ int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_le
 		unsigned char descriptor_len = buf[1] + 2;
 
 		if (tag == descriptor_tag)
-			return 1;
+			return descriptor_len;
 
 		if(pos!=NULL)
 			*pos += descriptor_len;

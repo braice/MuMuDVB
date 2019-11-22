@@ -78,9 +78,9 @@ In the following list, only the parameter `freq` is mandatory
 [width="80%",cols="2,7,2,3",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Comments
-|freq | transponder's frequency in MHz  | | Mandatory
+|freq | transponder's frequency (in MHz for satellite). For cable and terrestrial you can use Hz,kHz or MHz | | Mandatory unless other freq is specified
 |modulation | The kind of modulation used (can be : QPSK QAM16 QAM32 QAM64 QAM128 QAM256 QAMAUTO VSB8 VSB16 8PSK 16APSK 32APSK DQPSK)  | ATSC: VSB_8, cable/terrestrial: QAM_AUTO, satellite: QPSK | Optional most of the times
-|delivery_system | the delivery system used (can be DVBT DVBT2 DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC) | Undefined | Set it if you want to use the new tuning API (DVB API 5/S2API). Mandatory for DVB-S2 and DVB-T2
+|delivery_system | the delivery system used (can be DVBT DVBT2 DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC ISDBT) | Undefined | Set it if you want to use the new tuning API (DVB API 5/S2API). Mandatory for DVB-S2 and DVB-T2
 |card | The DVB/ATSC card number | 0 | only limited by your OS
 |tuner | The tuner number | 0 | If you have a card with multiple tuners (ie there are several frontend* in /dev/dvb/adapter%card)
 |card_dev_path | The path of the DVB card devices. Use it if you have a personalised path like /dev/dvb/astra%card | /dev/dvb/adapter%card |  The template %card can be used
@@ -95,7 +95,10 @@ In the following list, only the parameter `freq` is mandatory
 Parameters specific to satellite
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[width="80%",cols="2,6,1,3,2",options="header"]
+I you want to understand the DiSEqC bytes, please refer to https://www.eutelsat.com/files/contributed/satellites/pdf/Diseqc/associated%20docs/update_recomm_for_implim.pdf[DiSEqC documentation]
+
+
+[width="80%",cols="2,5,1,2,4",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |pol |transponder's polarisation. One char. 'v' (vertical), 'h' (horizontal), 'l' (left circular), 'r' (right circular) | | h, H, v, V, l, L, r or R | Mandatory
@@ -105,11 +108,11 @@ Parameters specific to satellite
 |lnb_slof |The switching frequency frequency of the LNB (define the two bands). Valid when lnb_type=universal | 11700 |  | In MHz, see below.
 |lnb_lof_low |The frequency of the LNB's local oscillator for the low band. Valid when lnb_type=universal | 9750 |  | In MHz, see below.
 |lnb_lof_high |The frequency of the LNB's local oscillator for the high band. Valid when lnb_type=universal | 10600 |  | In MHz, see below.
-|sat_number |The satellite number in case you have multiples lnb, no effect if 0 (only 22kHz tone and 13/18V), send a diseqc message if non 0 | 0 | 1 to 4 | If you have equipment which support more, please contact. For Unicable 0,1 : position A, 2 position B
-|switch_input |The switch input number in case you have multiples lnb, overrides sat_number, send a diseqc message if non 0, for unicable, this is the unicable ID | 0 | 0 to 15| If you have equipment which support more, please contact
-|switch_type | The DiSEqC switch type: Committed (C), Uncommitted (N) or uNicable (N) | C | C, c, U, u, N or n | 
+|sat_number |The satellite number in case you have multiples lnb, no effect if 0 (only 22kHz tone and 13/18V), send a diseqc message if non 0 | 0 | 1 to 4 | If you have equipment which support more, please contact. For satellite 1: Position A Option A; 2: Position B option A; 3: Position A option B; 4: Position B, Option B. For Unicable 0,1 : position A, 2 position B. Additionaly with JESS/Unicable_II, 3 : position C, 4 : position D.
+|switch_input |The switch input number in case you have multiples lnb, overrides sat_number, send a diseqc message if set, for unicable, this is the unicable ID | 0 | 0 to 31| If you have equipment which support more, please contact
+|switch_type | The DiSEqC switch type: Committed (C), Uncommitted (N), both (B), uNicable (N), JESS/Unicable_II (J) | C | C, c, U, u,B,b N,n,J,j | 
 |diseqc_repeat | Do we repeat the DiSEqC message (useful for some switches) | 0 | 0 or 1 | 
-|uni_freq | For SCR/unicable: the translated frequency in MHz  | | | Optional: needed if switch_type N
+|uni_freq | For SCR/unicable: the translated frequency in MHz  | | | Optional: needed if switch_type N or J
 |lnb_voltage_off |Force the LNB voltage to be 0V (instead of 13V or 18V). This is useful when your LNB have it's own power supply. | 0 | 0 or 1 | 
 |coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto |
 |rolloff  |rolloff important only for DVB-S2 | 35 | 35, 20, 25, auto | The default value should work most of the times
@@ -126,8 +129,8 @@ Local oscillator frequencies :
 - Ku Band : this is the default band for MuMuDVB, you don't have to set the LO frequency. For information : Hi band : 10600, Low band : 9750, Single : 10750
 
 
-Parameters specific to terrestrial (DVB-T)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Parameters specific to terrestrial (DVB-T/T2 ISDBT)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [NOTE]
 `auto` usually works fine for all the parameters except `bandwidth`
@@ -139,7 +142,8 @@ Parameters specific to terrestrial (DVB-T)
 |trans_mode |transmission mode | auto | 2k, 8k, auto (DVB-T2: 4k, 16k, 32k) 
 |guardinterval |guard interval | auto |  1/32, 1/16, 1/8, 1/4, auto (DVB-T2 : 1/128, 19/128, 19/256) 
 |coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto 
-|stream_id | the id of the substream for DVB-T2 | 0 | 0 to 255 |
+|stream_id | the id of the substream for DVB-T2 | 0 | 0 to 255 
+|isdbt_layer | the sublayer for ISDBT (can be called several times for several layers) | ALL | A,B,C or ALL
 |==================================================================================================================
 
 Parameters specific to cable (DVB-C)

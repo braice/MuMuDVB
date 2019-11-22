@@ -88,14 +88,17 @@ static char *log_module="Autoconf: ";
 
 
 int autoconf_read_pat(auto_p_t *auto_p,mumu_chan_p_t *chan_p);
+int autoconf_read_cat(auto_p_t *auto_p,mumu_chan_p_t *chan_p);
 int autoconf_read_sdt(auto_p_t *auto_p,mumu_chan_p_t *chan_p);
 int autoconf_read_psip(auto_p_t *auto_p,mumu_chan_p_t *chan_p);
 int autoconf_read_nit(auto_p_t *parameters,mumu_chan_p_t *chan_p);
-int autoconf_read_pmt(mumudvb_channel_t *channel, mumudvb_ts_packet_t *pmt);
+int autoconf_read_pmt(auto_p_t *auto_p, mumudvb_channel_t *channel, mumudvb_ts_packet_t *pmt);
 int autoconf_pat_need_update(auto_p_t *auto_p, unsigned char *buf);
+int autoconf_cat_need_update(auto_p_t *auto_p, unsigned char *buf);
 void autoconf_sdt_need_update(auto_p_t *auto_p, unsigned char *buf);
 int autoconf_nit_need_update(auto_p_t *auto_p, unsigned char *buf);
 void autoconf_psip_need_update(auto_p_t *auto_p, unsigned char *buf);
+void autoconf_clear_ca_system_list(auto_p_t *auto_p);
 
 
 /** Initialize Autoconf variables*/
@@ -277,6 +280,15 @@ int autoconf_init(auto_p_t *auto_p)
 		}
 		memset (auto_p->autoconf_temp_pat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 		pthread_mutex_init(&auto_p->autoconf_temp_pat->packetmutex,NULL);
+		auto_p->autoconf_temp_cat=malloc(sizeof(mumudvb_ts_packet_t));
+		if(auto_p->autoconf_temp_cat==NULL)
+		{
+			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+			set_interrupted(ERROR_MEMORY<<8);
+			return -1;
+		}
+		memset (auto_p->autoconf_temp_cat, 0, sizeof( mumudvb_ts_packet_t));//we clear it
+		pthread_mutex_init(&auto_p->autoconf_temp_cat->packetmutex,NULL);
 		auto_p->autoconf_temp_sdt=malloc(sizeof(mumudvb_ts_packet_t));
 		if(auto_p->autoconf_temp_sdt==NULL)
 		{
@@ -306,6 +318,7 @@ int autoconf_init(auto_p_t *auto_p)
 		}
 		memset (auto_p->autoconf_temp_nit, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 		pthread_mutex_init(&auto_p->autoconf_temp_nit->packetmutex,NULL);
+		autoconf_clear_ca_system_list(auto_p);
 	}
 	return 0;
 
@@ -345,6 +358,11 @@ void autoconf_freeing(auto_p_t *auto_p)
 	{
 		free(auto_p->autoconf_temp_pat);
 		auto_p->autoconf_temp_pat=NULL;
+	}
+	if(auto_p->autoconf_temp_cat)
+	{
+		free(auto_p->autoconf_temp_cat);
+		auto_p->autoconf_temp_cat=NULL;
 	}
 }
 
@@ -582,6 +600,15 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, auto_p_t *auto_p, fds
 				}
 			}
 		}
+		else if(pid==1) //CAT : contains the EMM PIDs for the CA systems
+		{
+			autoconf_cat_need_update(auto_p,ts_packet);
+			while(auto_p->cat_need_update && get_ts_packet(ts_packet,auto_p->autoconf_temp_cat))
+			{
+				ts_packet=NULL; // next call we only POP packets from the stack
+				autoconf_read_cat(auto_p,chan_p);
+			}
+		}
 		else if(pid==17) //SDT : contains the names of the services
 		{
 			if(auto_p->pat_all_sections_seen)
@@ -651,7 +678,7 @@ int autoconf_new_packet(int pid, unsigned char *ts_packet, auto_p_t *auto_p, fds
 						(chan_p->channels[ichan].channel_ready>=READY) &&
 						(chan_p->channels[ichan].autoconf_pmt_need_update))
 				{
-					if(autoconf_read_pmt(&chan_p->channels[ichan], chan_p->channels[ichan].pmt_packet))
+					if(autoconf_read_pmt(auto_p, &chan_p->channels[ichan], chan_p->channels[ichan].pmt_packet))
 					{
 						chan_p->channels[ichan].autoconf_pmt_need_update=0;
 						log_pids(log_module,&chan_p->channels[ichan],ichan);

@@ -2,7 +2,7 @@
 
    part of MuMuDVB
 
-   last version availaible from http://mumudvb.braice.net/
+   last version availaible from http://mumudvb.net/
 
    Copyright (C) 2004-2010 Brice DUBOST
    Copyright (C) Dave Chapman 2001,2002
@@ -67,6 +67,9 @@
 /* ATSC */
 #define ATSC_MODULATION_DEFAULT     VSB_8
 
+/* ISDB-T */
+
+
 /* The lnb type*/
 #define LNB_UNIVERSAL 0
 #define LNB_STANDARD 1
@@ -87,11 +90,28 @@
 #define STREAM_ID 1
 #endif
 
+#undef ISDBT
+#if defined(DVB_API_VERSION_MINOR)
+#if DVB_API_VERSION == 5 && DVB_API_VERSION_MINOR >= 1
+#define ISDBT 1
+#endif
+#endif
+#if DVB_API_VERSION >= 6
+#define ISDBT 1
+#endif
+
+
 typedef enum pls_type {
 	PLS_ROOT		= 0x00,
 	PLS_GOLD		= 0x01,
 	PLS_COMMON		= 0x02,
 } pls_type_t;
+
+
+#define ISDBT_LAYER_ALL 7
+#define ISDBT_LAYER_A 1
+#define ISDBT_LAYER_B 2
+#define ISDBT_LAYER_C 4
 
 
 /** @brief Parameters for tuning the card*/
@@ -106,8 +126,8 @@ typedef struct tune_p_t{
   int card_tuned;
   /**The timeout for tuninh the card*/
   int tuning_timeout;
-  /** the frequency (in MHz for dvb-s in kHz for dvb-t) */
-  uint32_t freq;
+  /** the frequency (in MHz for dvb-s in kHz, MHz or Hz for all others) */
+  double freq;
   /** The symbol rate (QPSK and QAM modulation ie cable and satellite) in symbols per second*/
   unsigned int srate;
   /**The polarisation H, V, L or R (for satellite)*/
@@ -179,6 +199,20 @@ typedef struct tune_p_t{
 #endif
   /** If we read directly from a file */
   char read_file_path[256];
+#if ISDBT
+  //ISDB T
+  /** ISDBT */
+  int isdbt_partial_reception;
+  /** ISDBT */
+  int isdbt_sound_broadcasting;
+  /** ISDBT */
+  int isdbt_sb_subchanel_id;
+  /** ISDBT */
+  int isdbt_layer;
+#endif
+  /** Spectral inversion */
+  fe_spectral_inversion_t inversion;
+
 }tune_p_t;
 
 

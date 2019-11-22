@@ -1,12 +1,12 @@
 MuMuDVB - README
 ================
 Brice Dubost <mumudvb@braice.net>
-Version 2.0.0
+Version 2.1.0
 
 [NOTE]
 An HTML version of this file is availaible on http://www.mumudvb.net[MuMuDVB's website].
 
-image::http://www.mumudvb.net/sites/default/files/logo.png[caption="logo MuMuDVB"]
+image::http://mumudvb.net/logo.png[caption="logo MuMuDVB"]
 
 Presentation
 ------------
@@ -25,7 +25,7 @@ History : MuMuDVB is originally a modification of dvbstream that http://www.cran
 Website
 ~~~~~~~
 
-http://mumudvb.braice.net[MuMuDVB main site]
+http://mumudvb.net/[MuMuDVB main site]
 
 
 Authors and contacts
@@ -38,7 +38,7 @@ Authors and contacts
 - mailto:manu@REMOVEMEcrans.ens-cachan.fr[Manuel Sabban] (getopt)
 - mailto:glondu@REMOVEMEcrans.ens-cachan.fr[Stéphane Glondu] (man page, debian package)
 - Special thanks to Dave Chapman (dvbstream author and contributor)
-- Pierre Gronlier, Sébastien Raillard, Ludovic Boué, Romolo Manfredini, Matthias Šubik, Krzysztof Ostrowski
+- Pierre Gronlier, Sébastien Raillard, Ludovic Boué, Romolo Manfredini, Matthias Šubik, Krzysztof Ostrowski, Frederik Kriewitz
 - Others, please see git logs
 
 

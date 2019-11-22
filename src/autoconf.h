@@ -3,7 +3,7 @@
  * 
  * (C) 2008-2010 Brice DUBOST
  * 
- * The latest version can be found at http://mumudvb.braice.net
+ * The latest version can be found at http://mumudvb.net/
  * 
  * Copyright notice:
  * 
@@ -64,6 +64,16 @@ typedef struct mumudvb_service_t{
 	struct mumudvb_service_t *next;
 }mumudvb_service_t;
 
+/**@brief list entry for CA systems
+ *
+ */
+typedef struct mumudvb_ca_system_t{
+	/**The CA system ID*/
+	int id;
+	/**The EMM pid of the CA system*/
+	int emm_pid;
+}mumudvb_ca_system_t;
+
 /**@brief The different parameters used for autoconfiguration*/
 typedef struct auto_p_t{
 	/**Do we use autoconfiguration ?
@@ -91,6 +101,11 @@ Possible values for this variable
 	int pat_version;
 	int pat_sections_seen[256];
 	int pat_all_sections_seen;
+	mumudvb_ts_packet_t *autoconf_temp_cat;
+	int cat_need_update;
+	int cat_version;
+	int cat_sections_seen[256];
+	int cat_all_sections_seen;
 	mumudvb_ts_packet_t *autoconf_temp_sdt;
 	int sdt_need_update;
 	int sdt_version;
@@ -129,6 +144,8 @@ Possible values for this variable
 	/** the template for the channel name*/
 	char name_template[MAX_NAME_LEN];
 
+	/** The CA systems */
+	mumudvb_ca_system_t ca_system_list[MAX_CA_SYSTEMS];
 }auto_p_t;
 
 

@@ -1074,8 +1074,13 @@ int unicast_reply_send(struct unicast_reply *reply, int socket, int code, const 
 	//now we write the data
 	while (size<reply->used_header){
 		temp_size = write(socket, reply->buffer_header+size, reply->used_header-size);
-		size += temp_size!=-1 ? temp_size : 0 ;
-
+		if (temp_size != -1) {
+			size += temp_size;
+		} else {
+			if (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
+				return -1;
+			}
+		}
 	}
 	return size;
 }
