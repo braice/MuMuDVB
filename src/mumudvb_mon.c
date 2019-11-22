@@ -73,6 +73,7 @@ extern log_params_t log_params;
 extern int dont_send_scrambled;
 extern int write_streamed_channels;
 extern int timeout_no_diff;
+extern int tuning_no_diff;
 
 
 
@@ -738,6 +739,19 @@ void *monitor_func(void* arg)
 			set_interrupted(ERROR_NO_DIFF<<8); //the <<8 is to make difference between signals and errors
 		}
 
+		/*******************************************/
+		/* If we don't stream data for             */
+		/* a too long time, we start tuning        */
+		/*******************************************/
+		if((tuning_no_diff)&& (time_no_diff && ((monitor_now-time_no_diff)>tuning_no_diff)) && !strlen(params->tune_p->read_file_path))
+		{
+			log_message( log_module,  MSG_ERROR,
+					"No data from card %d in %ds, start tuning loop.\n",
+					params->tune_p->card, tuning_no_diff);
+			// tune here
+                        tune_it(params->fds->fd_frontend, params->tune_p);
+                        time_no_diff=0;
+		}
 
 #ifdef ENABLE_SCAM_SUPPORT
 		if (scam_vars->scam_support) {
