@@ -975,7 +975,7 @@ static int do_diseqc(int fd, unsigned char sat_no,  int switch_no, char switch_t
 			channel_byte_1 |= (t >> 8) & 7;
                         channel_byte_2 = t & 0xff;
                         channel_byte_3  = ((sat_no-1) & 0x3f) << 2;
-                        channel_byte_3 |= (!pol_v_r & 1) << 1;
+                        channel_byte_3 |= ((!pol_v_r) & 1) << 1;
                         channel_byte_3 |= hi_lo & 1;
 
                         log_message( log_module,  MSG_DEBUG, "JESS / Unicable II tuning information : JESS / unicable_II freq %d lo_freq %d channel byte 0x%02x  0x%02x 0x%02x t 0x%02x",
