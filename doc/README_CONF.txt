@@ -86,6 +86,7 @@ In the following list, only the parameter `freq` is mandatory
 |card_dev_path | The path of the DVB card devices. Use it if you have a personalised path like /dev/dvb/astra%card | /dev/dvb/adapter%card |  The template %card can be used
 |tuning_timeout |tuning timeout in seconds. | 300 | 0 = no timeout
 |timeout_no_diff |If no channels are streamed, MuMuDVB will kill himself after this time (specified in seconds) | 600 |  0 = infinite timeout
+|tuning_no_diff |If no channels are streamed, MuMuDVB will start tuning loop after this time (specified in seconds) | 0 |  0 = do not start tuning
 |check_status | Do we check the card status and display a message if lock is lost | 1 |  0 = no check.
 |==================================================================================================================
 
