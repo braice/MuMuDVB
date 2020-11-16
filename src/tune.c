@@ -6,6 +6,7 @@
  * Copyright (C) 2004-2013 Brice DUBOST
  * Copyright (C) Dave Chapman 2001,2002
  * Part of this code from Romolo Manfredini
+ * Part of this code from Klaus Reinhard
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
