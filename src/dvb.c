@@ -39,8 +39,19 @@
 #include <sys/types.h>
 #include "log.h"
 #include <unistd.h>
+#include <sys/stat.h>
 
 static char *log_module="DVB: ";
+
+/**
+ * @brief Check the file exists and is readable
+ * Return 1 in case it exists, 0 otherwise
+ */
+static int file_exists(char *filename)
+{
+	struct stat   buffer;   
+	return (stat(filename, &buffer) == 0) ? 1 : 0;
+}
 
 /**
  * @brief Open the frontend associated with card
@@ -234,6 +245,13 @@ create_card_fd(char *base_path, int tuner, uint8_t *asked_pid, fds_t *fds)
 	if(asprintf_ret==-1)
 		return -1;
 
+	// if demux<tuner> not found, attempt to use demux0 (for cards with multiple frontends like CXD2837ER)
+	if (!file_exists(demuxdev_name) && tuner > 0) {
+		asprintf_ret=asprintf(&demuxdev_name,"%s/%s%d",base_path,DEMUX_DEV_NAME,0);
+		if(asprintf_ret==-1)
+			return -1;
+	}
+
 	for(curr_pid=0;curr_pid<8193;curr_pid++)
 		//file descriptors for the demuxer (used to set the filters)
 		//we check if we need to open the file descriptor (some cards are limited)
@@ -250,6 +268,14 @@ create_card_fd(char *base_path, int tuner, uint8_t *asked_pid, fds_t *fds)
 	asprintf_ret=asprintf(&dvrdev_name,"%s/%s%d",base_path,DVR_DEV_NAME,tuner);
 	if(asprintf_ret==-1)
 		return -1;
+
+	// if dvr<tuner> not found, attempt to use dvr0 (for cards with multiple frontends like CXD2837ER)
+	if (!file_exists(dvrdev_name) && tuner > 0) {
+		asprintf_ret=asprintf(&dvrdev_name,"%s/%s%d",base_path,DVR_DEV_NAME,0);
+		if(asprintf_ret==-1)
+			return -1;
+	}
+
 	if (fds->fd_dvr==0)  //this function can be called more than one time, we check if we opened it before
 		if ((fds->fd_dvr = open (dvrdev_name, O_RDONLY | O_NONBLOCK)) < 0)
 		{
