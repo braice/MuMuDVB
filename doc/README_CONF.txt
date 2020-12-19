@@ -111,7 +111,7 @@ I you want to understand the DiSEqC bytes, please refer to https://www.eutelsat.
 |lnb_lof_high |The frequency of the LNB's local oscillator for the high band. Valid when lnb_type=universal | 10600 |  | In MHz, see below.
 |sat_number |The satellite number in case you have multiples lnb, no effect if 0 (only 22kHz tone and 13/18V), send a diseqc message if non 0 | 0 | 1 to 4 | If you have equipment which support more, please contact. For satellite 1: Position A Option A; 2: Position B option A; 3: Position A option B; 4: Position B, Option B. For Unicable 0,1 : position A, 2 position B. Additionaly with JESS/Unicable_II, 3 : position C, 4 : position D.
 |switch_input |The switch input number in case you have multiples lnb, overrides sat_number, send a diseqc message if set, for unicable, this is the unicable ID | 0 | 0 to 31| If you have equipment which support more, please contact
-|switch_type | The DiSEqC switch type: Committed (C), Uncommitted (N), both (B), uNicable (N), JESS/Unicable_II (J) | C | C, c, U, u,B,b N,n,J,j | 
+|switch_type | The DiSEqC switch type: Committed (C), Uncommitted (U), both (B), uNicable (N), JESS/Unicable_II (J) | C | C, c, U, u,B,b N,n,J,j | 
 |pin_number | Pin number for Unicable switch to protect unicable frequency | -1 | 0 to 255, -1 = disabled | 
 |diseqc_timing | Wait time in ms between DiSEqC message (useful for some switches) | 15 | >0 | 
 |diseqc_repeat | Do we repeat the DiSEqC message (useful for some switches) | 0 | 0 or 1 | 
