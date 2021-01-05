@@ -227,9 +227,27 @@ void autoconf_get_pmt_pids(auto_p_t *auto_p, mumudvb_ts_packet_t *pmt, int *pids
 			pid_type=PID_AUDIO_ATSC;
 			log_message( log_module,  MSG_DEBUG,"  Audio ATSC A/53B \tPID %d\n",pid);
 			break;
-
-
-
+		case 0x05: /* ITU-T Rec. H.222.0 | ISO/IEC 13818-1 private_sections */
+			if(descr_section_len) //If we have an associated descriptor, we'll search information in it
+			{
+				if(pmt_find_descriptor(0x6f,pmt->data_full+i+PMT_INFO_LEN,descr_section_len, NULL)){ // application_signalling_descriptor (AIT/HbbTV)
+					log_message( log_module,  MSG_DEBUG,"  Application Signalling \tPID %d\n",pid);
+					pid_type=PID_EXTRA_APPLICATION_SIGNALLING;
+					break;
+				}else
+				{
+					log_message( log_module,  MSG_DEBUG,"Unknown descriptor for stream_type 0x05 see EN 300 468 v1.9.1 table 12, PID %d descriptor tags : ", pid);
+					pmt_print_descriptor_tags(pmt->data_full+i+PMT_INFO_LEN,descr_section_len);
+					log_message( log_module,  MSG_DEBUG,"\n");
+					continue;
+				}
+			}
+			else
+			{
+				log_message( log_module,  MSG_DEBUG,"PMT read : stream type 0x05 without descriptor\n");
+				continue;
+			}
+			break;
 		case 0x06: /* Descriptor defined in EN 300 468 */
 			if(descr_section_len) //If we have an associated descriptor, we'll search information in it
 			{
@@ -264,7 +282,7 @@ void autoconf_get_pmt_pids(auto_p_t *auto_p, mumudvb_ts_packet_t *pmt, int *pids
 					pid_type=PID_AUDIO_AAC;
 				}else
 				{
-					log_message( log_module,  MSG_DEBUG,"Unknown descriptor see EN 300 468 v1.9.1 table 12, PID %d descriptor tags : ", pid);
+					log_message( log_module,  MSG_DEBUG,"Unknown descriptor for stream_type 0x06 see EN 300 468 v1.9.1 table 12, PID %d descriptor tags : ", pid);
 					pmt_print_descriptor_tags(pmt->data_full+i+PMT_INFO_LEN,descr_section_len);
 					log_message( log_module,  MSG_DEBUG,"\n");
 					continue;
@@ -278,10 +296,6 @@ void autoconf_get_pmt_pids(auto_p_t *auto_p, mumudvb_ts_packet_t *pmt, int *pids
 			break;
 
 			//Now, the list of what we drop
-		case 0x05:
-			log_message( log_module,  MSG_DEBUG, "Dropped PID %d, type : 0x05, ITU-T Rec. H.222.0 | ISO/IEC 13818-1 private_sections \n",pid);
-			continue;
-			//Digital Storage Medium Command and Control (DSM-CC) cf H.222.0 | ISO/IEC 13818-1 annex B
 		case 0x0a:
 			log_message( log_module,  MSG_DEBUG, "Dropped PID %d, type : 0x0A ISO/IEC 13818-6 type A (DSM-CC)\n",pid);
 			continue;
