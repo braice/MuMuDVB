@@ -1,12 +1,7 @@
 MuMuDVB - FAQ (Frequently asked questions)
 ==========================================
 Brice Dubost <mumudvb@braice.net>
-Version 2.0.0
-
-[NOTE]
-An HTML version of this file is available on http://www.mumudvb.net[MuMuDVB's website].
-
-
+Version 2.1.0
 
 
 
@@ -36,7 +31,7 @@ MuMuDVB is able to support as many cards as the operating system does. To know w
 Special satellite Bands
 -----------------------
 
-MuMuDVB supports satellites in the Ku band, with universal or standard LNBs. Support for satellites in the S or C band is implemented via the use of the lo_frequency option. See `doc/README_CONF.txt` (link:README_CONF.html[HTML version]).
+MuMuDVB supports satellites in the Ku band, with universal or standard LNBs. Support for satellites in the S or C band is implemented via the use of the lo_frequency option. See `doc/README_CONF.asciidoc`.
 
 System wide freezes
 -------------------
@@ -49,7 +44,7 @@ VLC can't read the stream, but it is fine with xine or mplayer
 
  * For VLC, you must specify the PMT PID in addition to the audio and video PIDs. The best solution is to use autoconfiguration so MuMuDVB will discover the PIDs for you.
 
-If you want to stick to manual mode, you can use the verbose mode of VLC (`vlc -v`) and you'll see a line like: `[00000269] ts demuxer debug:   * number=1025 pid=110` You'll have the PMT PID associated with your program number. You can also use dvbsnoop, or see how to find PIDs in `doc/README_CONF.txt` (link:README_CONF.html[HTML version]).
+If you want to stick to manual mode, you can use the verbose mode of VLC (`vlc -v`) and you'll see a line like: `[00000269] ts demuxer debug:   * number=1025 pid=110` You'll have the PMT PID associated with your program number. You can also use dvbsnoop, or see how to find PIDs in `doc/README_CONF.asciidoc`.
 
 VLC shows the video but no audio
 --------------------------------
