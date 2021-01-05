@@ -878,7 +878,6 @@ static int unicable_send_msg(int fd, struct diseqc_cmd **cmd)
  * @param fd : the file descriptor of the frontend
  * @param sat_no : the satellite number (0 for non diseqc compliant hardware, 1 to 4 for diseqc compliant)
  * @param switch_no : the switch number (0 to 31 for diseqc compliant)
- * @param pin_no : the pin number (0 to 255 for diseqc compliant)
  * @param switch_type the switch type (commited or uncommited or unicable)
  * @param pol_v_r : 1 : vertical or circular right, 0 : horizontal or circular left
  * @param hi_lo : the band for a dual band lnb
