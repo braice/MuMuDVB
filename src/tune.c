@@ -151,7 +151,7 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 		if ((tuneparams->pin_no > 255) || (tuneparams->pin_no < 0))
 		{
 			log_message( log_module,  MSG_ERROR,
-					"Config issue : pin_no. The diseqc pin number must be between 0 and 255.\n");
+					"Config issue : pin_number. The diseqc pin number must be between 0 and 255.\n");
 			tuneparams->pin_no=-1;
 		}
 	}
