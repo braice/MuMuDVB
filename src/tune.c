@@ -152,7 +152,7 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 		{
 			log_message( log_module,  MSG_ERROR,
 					"Config issue : pin_no. The diseqc pin number must be between 0 and 255.\n");
-			tuneparams->pin_number=-1;
+			tuneparams->pin_no=-1;
 		}
 	}
 	else if (!strcmp (substring, "freq"))
