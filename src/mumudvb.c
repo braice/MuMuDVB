@@ -1109,7 +1109,10 @@ main (int argc, char **argv)
 	for (ichan = 0; ichan < chan_p.number_of_channels; ichan++)
 	{
 		if(mumu_init_chan(&chan_p.channels[ichan])<0)
+		{
+			pthread_mutex_unlock(&chan_p.lock);
 			goto mumudvb_close_goto;
+		}
 	}
 	pthread_mutex_unlock(&chan_p.lock);
 	//We initialize asked PID table
