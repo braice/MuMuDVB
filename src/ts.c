@@ -435,6 +435,10 @@ int ts_check_raw_crc32(unsigned char *data)
 	tbl_h_t *tbl_struct;
 	tbl_struct=(tbl_h_t *)data;
 
+    //StuffingtabledoesnothaveCRC
+    if(tbl_strcut->table_id==0x72)
+        return 1;
+
 	//the real length (it cannot overflow due to the way tbl_h_t is made)
 	len=HILO(tbl_struct->section_length)+BYTES_BFR_SEC_LEN;
 
