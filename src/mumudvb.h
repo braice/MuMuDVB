@@ -196,6 +196,7 @@ enum
 	PID_EXTRA_VBITELETEXT,
 	PID_EXTRA_TELETEXT,
 	PID_EXTRA_SUBTITLE,
+	PID_EXTRA_APPLICATION_SIGNALLING,
 	PID_ECM,
 	PID_EMM
 };
@@ -574,6 +575,7 @@ typedef struct monitor_parameters_t{
 	multi_p_t *multi_p;
 	struct unicast_parameters_t *unicast_vars;
 	struct tune_p_t *tune_p;
+	fds_t *fds;
 	struct stats_infos_t *stats_infos;
 	void *scam_vars_v;
 	int server_id;

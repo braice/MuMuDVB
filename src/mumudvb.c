@@ -154,6 +154,7 @@ int *card_tuned;  	  			//Pointer to the card_tuned information
 int received_signal = 0;
 
 int timeout_no_diff = ALARM_TIME_TIMEOUT_NO_DIFF;
+int tuning_no_diff = 0;
 
 int  write_streamed_channels=1;
 
@@ -486,6 +487,11 @@ main (int argc, char **argv)
 		{
 			substring = strtok (NULL, delimiteurs);
 			timeout_no_diff= atoi (substring);
+		}
+		else if (!strcmp (substring, "tuning_no_diff"))
+		{
+			substring = strtok (NULL, delimiteurs);
+			tuning_no_diff= atoi (substring);
 		}
 		else if (!strcmp (substring, "dont_send_scrambled"))
 		{
@@ -1013,6 +1019,7 @@ main (int argc, char **argv)
 			.multi_p=&multi_p,
 			.unicast_vars=&unic_p,
 			.tune_p=&tune_p,
+			.fds=&fds,
 			.stats_infos=&stats_infos,
 #ifdef ENABLE_SCAM_SUPPORT
 			.scam_vars_v=scam_vars_ptr,
@@ -1102,7 +1109,10 @@ main (int argc, char **argv)
 	for (ichan = 0; ichan < chan_p.number_of_channels; ichan++)
 	{
 		if(mumu_init_chan(&chan_p.channels[ichan])<0)
+		{
+			pthread_mutex_unlock(&chan_p.lock);
 			goto mumudvb_close_goto;
+		}
 	}
 	pthread_mutex_unlock(&chan_p.lock);
 	//We initialize asked PID table

@@ -3,8 +3,6 @@ MuMuDVB - README
 Brice Dubost <mumudvb@braice.net>
 Version 2.1.0
 
-[NOTE]
-An HTML version of this file is availaible on http://www.mumudvb.net[MuMuDVB's website].
 
 image::http://mumudvb.net/logo.png[caption="logo MuMuDVB"]
 
@@ -64,7 +62,7 @@ Features overview
 - Possibility to partially rewrite the stream for better compatibility with set-top boxes and some clients. See <<pat_rewrite,PAT Rewrite>>, <<sdt_rewrite,SDT Rewrite>> and <<pmt_rewrite,PMT rewrite>> sections.
 - Support for HTTP unicast see <<unicast,http unicast>> section
 - Support for RTP headers (only for multicast)
-- CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.txt and CAM_menu_interface.png for screenshot)
+- CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.asciidoc and CAM_menu_interface.png for screenshot)
 - Software descrambling through oscam dvbapi and libdvbcsa
 - Flexible configuration mechanism using templates
 - Support for embedded platforms based on UCLIBC and ANDROID
@@ -158,7 +156,7 @@ Otherwise you can use aptitude/synaptic as usual
 Usage
 -----
 
-The documentation for configuration file syntax is in `doc/README_CONF.txt` (link:README_CONF.html[HTML version]).
+The documentation for configuration file syntax is in `doc/README_CONF.asciidoc`.
 
 Usage:
 
@@ -306,7 +304,7 @@ You can also use templates for specifying the ip addresses or the port, for exam
 Maybe you will notice different transponders having different channels with the same service identifier, you can then use other template to make your IP unique `autoconf_ip4=239.10*%server+%card.%sid_hi.%sid_lo`.
 
 
-Please refer to `doc/README_CONF.txt` (link:README_CONF.html[HTML version]) in the section "Autoconfiguration parameters" to see which options accept which templates
+Please refer to `doc/README_CONF.asciidoc` in the section "Autoconfiguration parameters" to see which options accept which templates
 
 Other keywords can be easily added if necessary, please contact if you have particular needs.
 
@@ -388,7 +386,7 @@ The SAP announces will be only sent for alive channels. When a channel goes down
 Asking MuMuDVB to generate SAP announces
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For sending SAP announces you have to add `sap=1` to your config file. The other parameters concerning the sap announces are documented in the `doc/README_CONF.txt` file (link:README_CONF.html[HTML version]).
+For sending SAP announces you have to add `sap=1` to your config file. The other parameters concerning the sap announces are documented in the `doc/README_CONF.asciidoc` file.
 
 SAP announces and full autoconfiguration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -760,7 +758,7 @@ To enable you have to add to global options
 scam_support=1
 on program options add
 oscam=1
-Other setting are documented at `doc/README_CONF.txt` (link:README_CONF.html[HTML version]), there is also a configuration example available at `configuration_examples/oscam.conf`
+Other setting are documented at `doc/README_CONF.asciidoc`, there is also a configuration example available at `configuration_examples/oscam.conf`
 
 If channel has a lot of bandwidth it may be needed to extend ring buffer size. 
 
@@ -957,7 +955,7 @@ By default, the logs are sent to the console if not daemonized and via syslog ot
 
 If the logs are sent to a file, you can ask MuMuDVB to flush the file using the SIGHUP signal.
 
-For more detail about these features see `doc/README_CONF.txt` (link:README_CONF.html[HTML version]). 
+For more detail about these features see `doc/README_CONF.asciidoc`. 
 
 
 

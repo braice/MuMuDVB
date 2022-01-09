@@ -125,6 +125,7 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *pkt)
 	{
 		log_message( log_module,  MSG_DEBUG, "Read TS : Adaptation field \n");
 		offset += buf[offset] ;        // add adapt.field.len
+		offset += 1; // plus one for adaptation length byte
 		//we check if the adapt.field.len is valid
 		if(offset>=TS_PACKET_SIZE)
 		{
@@ -144,9 +145,9 @@ int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *pkt)
 			return (pkt->full_number > 0);
 		}
 	}
-	if (header->adaptation_field_control == 3)
+	if (header->adaptation_field_control == 2)
 	{
-		log_message( log_module,  MSG_DEBUG, "adaptation_field_control 3\n");
+		log_message( log_module,  MSG_DEBUG, "adaptation_field_control 2\n");
 		pthread_mutex_unlock(&pkt->packetmutex);
 		return (pkt->full_number > 0);
 	}
@@ -434,6 +435,10 @@ int ts_check_raw_crc32(unsigned char *data)
 	tbl_h_t *tbl_struct;
 	tbl_struct=(tbl_h_t *)data;
 
+	//StuffingtabledoesnothaveCRC
+	if(tbl_struct->table_id==0x72)
+		return 1;
+
 	//the real length (it cannot overflow due to the way tbl_h_t is made)
 	len=HILO(tbl_struct->section_length)+BYTES_BFR_SEC_LEN;
 
@@ -511,6 +516,7 @@ unsigned char *get_ts_begin(unsigned char *buf)
 			return NULL;
 		}
 		delta += buf[delta];        // add adapt.field.len
+		delta += 1; // plus one for adaptation length byte
 	}
 	if (header->adaptation_field_control & 0x1) //There is a payload
 	{
