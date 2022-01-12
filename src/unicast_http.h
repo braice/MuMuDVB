@@ -198,6 +198,9 @@ typedef struct unicast_parameters_t{
   int pfdsnum;
   int playlist_ignore_dead;
   int playlist_ignore_scrambled_ratio;
+  int hls;
+  int hls_rotate_time;
+  char *hls_storage_dir;
 
 }unicast_parameters_t;
 

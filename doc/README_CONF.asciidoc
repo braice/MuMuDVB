@@ -312,6 +312,16 @@ HTTP unicast parameters
 |playlist_ignore_scrambled_ratio | Do we exclude overscrambled from playlist? | 0  | 0(off), 1-100 | Exclude channels with percent of scrambled packets more than specified.
 |==================================================================================================================
 
+HLS parameters
+~~~~~~~~~~~~~~~~~~~~~~~
+[width="80%",cols="2,8,1,5",options="header"]
+|==================================================================================================================
+|Parameter name |Description | Default value |Comments
+|hls |Set this option to one to activate HLS in file mode | 0  |   If using manual channel configurations, service_id is required to work correctly
+|hls_storage_dir |Storage directory for HLS files and playlists | /  |  Any HTTP server can point to that dir and produce HLS stream
+|hls_rotate_time |HLS chunk duration in seconds| 10 |  First usable playlist will be generated in 2*X seconds after start
+|==================================================================================================================
+
 
 [[channel_parameters]]
 Channel parameters

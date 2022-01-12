@@ -136,6 +136,9 @@ void init_unicast_v(unicast_parameters_t *unicast_vars)
 				.pfdsnum=0,
 				.playlist_ignore_dead=0,
 				.playlist_ignore_scrambled_ratio=0,
+				.hls=0,
+				.hls_rotate_time=10,
+				.hls_storage_dir=NULL,
 	 };
 	 unicast_vars->pfds=NULL;
 	 //+1 for closing the pfd list, see man poll
@@ -267,6 +270,29 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
                 }
 
 	}
+	else if (!strcmp (substring, "hls"))
+	{
+		substring = strtok (NULL, delimiteurs);
+		unicast_vars->hls = atoi (substring);
+	}
+
+	else if (!strcmp (substring, "hls_rotate_time"))
+	{
+		substring = strtok (NULL, delimiteurs);
+		unicast_vars->hls_rotate_time = atoi (substring);
+		if (unicast_vars->hls_rotate_time < 1) {
+                        log_message( log_module,  MSG_WARN,"HLS rotate time \"%d\" is lower than 1, forcing to 1!\n", unicast_vars->hls_rotate_time);
+                        unicast_vars->hls_rotate_time = 1;
+                }
+	}
+
+    	else if (!strcmp (substring, "hls_storage_dir"))
+        {
+            	substring = strtok (NULL, delimiteurs);
+		unicast_vars->hls_storage_dir = malloc(MAX_NAME_LEN); // don't forget about free()!
+                strncpy(unicast_vars->hls_storage_dir,strtok(substring,"\n"),MAX_NAME_LEN-1);
+                unicast_vars->hls_storage_dir[MAX_NAME_LEN-1]='\0';
+        }
 
 	else
 		return 0; //Nothing concerning tuning, we return 0 to explore the other possibilities
