@@ -46,7 +46,11 @@ int mkpath(char* file_path, mode_t mode) {
     return 0;
 }
 
-
+int hls_sid_entry_compare(const void *pa, const void *pb) {
+	const int *a = pa;
+	const int *b = pb;
+	return a[0] - b[0];
+}
 
 int hls_entry_find(int service_id, hls_open_fds_t *hls_fds)
 {
@@ -167,7 +171,6 @@ int hls_entry_rotate(hls_open_fds_t *hls_entry, unicast_parameters_t *unicast_va
 	 	hls_entry->name_delete[0] = 0;
 	}
 
-	hls_entry->access_time = access_time;
 	hls_entry->rotate_time = access_time;
 	hls_entry->sequence++;
 
@@ -206,7 +209,8 @@ int hls_playlist_master(hls_open_fds_t *hls_fds, unicast_parameters_t *unicast_v
 
 	    char *outbuf = malloc((num_active + 1) * (LEN_MAX + 16)); // allocate memory for playlist
 
-	    // sort array here
+	    // packets arrive in chaotic order, so sort playlist by service_id here
+	    qsort(sids, num_active, sizeof(sids[0]), hls_sid_entry_compare);
 
 	    playlist_size = sprintf(outbuf, "#EXTM3U\n");
 
@@ -284,7 +288,8 @@ void hls_array_cleanup(hls_open_fds_t *hls_fds, unsigned int hls_rotate_time, un
 
 void *hls_periodic_task(void* arg)
 {
-	unsigned int cur_time, entry, master_playlist_checksum;
+	unsigned int cur_time, entry;
+	unsigned int master_playlist_checksum = 0;
 	unsigned int master_playlist_timestamp = 0;
 
         hls_thread_parameters_t *params = (hls_thread_parameters_t *) arg;
@@ -321,6 +326,7 @@ void *hls_periodic_task(void* arg)
 	    
 	    sleep(unicast_vars->hls_rotate_time);
 	}
+	log_message( log_module,  MSG_DEBUG,  "Periodic task stopped.\n");
 	return 0;
 }
 
