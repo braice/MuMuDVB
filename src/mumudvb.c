@@ -135,6 +135,7 @@
 #include "unicast_http.h"
 #include "rtp.h"
 #include "log.h"
+#include "hls.h"
 
 #if defined __UCLIBC__ || defined ANDROID
 #define program_invocation_short_name "mumudvb"
@@ -188,6 +189,8 @@ main (int argc, char **argv)
 	pthread_t signalpowerthread=0;
 	pthread_t cardthread;
 	pthread_t monitorthread=0;
+	pthread_t hlsthread;
+
 	card_thread_parameters_t cardthreadparams;
 	memset(&cardthreadparams,0,sizeof(card_thread_parameters_t));
 
@@ -814,9 +817,9 @@ main (int argc, char **argv)
 
 
 
-	if(!multi_p.multicast && !unic_p.unicast)
+	if(!multi_p.multicast && !unic_p.unicast && !unic_p.hls)
 	{
-		log_message( log_module,  MSG_ERROR, "NO Multicast AND NO unicast. No data can be send :(, Exciting ....\n");
+		log_message( log_module,  MSG_ERROR, "NO Multicast AND NO unicast or hls. No data can be send :(, Exciting ....\n");
 		set_interrupted(ERROR_CONF<<8);
 		goto mumudvb_close_goto;
 	}
@@ -1030,6 +1033,22 @@ main (int argc, char **argv)
 	};
 
 	pthread_create(&(monitorthread), NULL, monitor_func, &monitor_thread_params);
+
+
+	// HLS support
+    	hls_thread_parameters_t hls_thread_params ={
+                	.threadshutdown=0,
+                        .unicast_vars=&unic_p,
+    	};
+
+	if(unic_p.hls)
+	{
+		if (hls_start(&unic_p)) {
+			log_message( log_module,  MSG_ERROR, "HLS functions failed to inilialize!\n");
+			goto mumudvb_close_goto;
+		}
+    		pthread_create(&hlsthread, NULL, hls_periodic_task, &hls_thread_params);
+	}
 
 	/*****************************************************/
 	//scam_support
@@ -1725,7 +1744,9 @@ main (int argc, char **argv)
 					&monitorthread,
 					&cardthreadparams,
 					&fds,
-					&card_buffer);
+					&card_buffer,
+					&hls_thread_params,
+					&hlsthread);
 }
 
 

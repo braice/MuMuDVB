@@ -56,6 +56,7 @@
 #include "unicast_http.h"
 #include "rtp.h"
 #include "log.h"
+#include "hls.h"
 
 #if defined __UCLIBC__ || defined ANDROID
 #define program_invocation_short_name "mumudvb"
@@ -191,7 +192,9 @@ int mumudvb_close(int no_daemon,
 		pthread_t *monitorthread,
 		card_thread_parameters_t *cardthreadparams,
 		fds_t *fds,
-		card_buffer_t *card_buffer)
+		card_buffer_t *card_buffer,
+		hls_thread_parameters_t *hls_thread_params,
+		pthread_t *hlsthread)
 {
 
 	int curr_channel;
@@ -254,6 +257,14 @@ int mumudvb_close(int no_daemon,
 #endif
 		if(iRet)
 			log_message(log_module,MSG_WARN,"Monitor Thread badly closed: %s\n", strerror(iRet));
+	}
+
+	if(*hlsthread)
+	{
+		log_message(log_module,MSG_DEBUG,"HLS Thread closing\n");
+		hls_thread_params->threadshutdown=1;
+		hls_stop(unicast_vars);
+		free(unicast_vars->hls_storage_dir);
 	}
 
 	for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++)
@@ -407,6 +418,10 @@ int mumudvb_close(int no_daemon,
 	if(unicast_vars->pfds) {
 		free(unicast_vars->pfds);
 		unicast_vars->pfds=NULL;
+	}
+	if(unicast_vars->hls_storage_dir) {
+		free(unicast_vars->hls_storage_dir);
+		unicast_vars->hls_storage_dir=NULL;
 	}
 
 	// Format ExitCode (normal exit)

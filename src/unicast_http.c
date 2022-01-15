@@ -289,7 +289,7 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
     	else if (!strcmp (substring, "hls_storage_dir"))
         {
             	substring = strtok (NULL, delimiteurs);
-		unicast_vars->hls_storage_dir = malloc(MAX_NAME_LEN); // don't forget about free()!
+		unicast_vars->hls_storage_dir = malloc(MAX_NAME_LEN);
                 strncpy(unicast_vars->hls_storage_dir,strtok(substring,"\n"),MAX_NAME_LEN-1);
                 unicast_vars->hls_storage_dir[MAX_NAME_LEN-1]='\0';
         }

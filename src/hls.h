@@ -20,7 +20,14 @@ typedef struct hls_open_fds {
     FILE* stream;
 } hls_open_fds_t;
 
+typedef struct hls_thread_params {
+    volatile int threadshutdown;
+    unicast_parameters_t *unicast_vars;
+} hls_thread_parameters_t;
+
 void hls_data_send(mumudvb_channel_t *actual_channel, struct unicast_parameters_t *unicast_vars, uint64_t now_time);
-void hls_prepare_files();
+int hls_start(unicast_parameters_t *unicast_vars);
+void hls_stop(unicast_parameters_t *unicast_vars);
+void *hls_periodic_task(void* arg);
 
 #endif
