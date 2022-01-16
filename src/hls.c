@@ -16,8 +16,6 @@
 #include "unicast_http.h"
 #include "hls.h"
 
-#define	MASTER_NAME "playlist.m3u"
-
 static char *log_module="HLS : ";
 
 pthread_mutex_t hls_periodic_lock;
@@ -77,10 +75,13 @@ int hls_entry_find(int service_id, hls_open_fds_t *hls_fds)
 int hls_entry_initialize(mumudvb_channel_t *actual_channel, hls_open_fds_t *hls_entry, unicast_parameters_t *unicast_vars, unsigned int access_time)
 {
 	memset(hls_entry, 0, sizeof(*hls_entry));
+	hls_entry->filenames_num = unicast_vars->hls_rotate_count + 2; // names count for all chunks plus stream and delete names
+	hls_entry->filenames = calloc(1, hls_entry->filenames_num * sizeof(hls_file_t)); // allocate and clear
 
 	strncpy(hls_entry->path, unicast_vars->hls_storage_dir, LEN_MAX);
-	sprintf(hls_entry->name_stream, "%d_%u.ts", actual_channel->service_id, access_time);	// construct uniq filename here
-	sprintf(hls_entry->name_playlist, "%d.m3u", actual_channel->service_id);
+	sprintf(hls_entry->name_playlist, "%d.m3u8", actual_channel->service_id);
+
+	sprintf(hls_entry->filenames[0].name, "%d_%u.ts", actual_channel->service_id, access_time);	// construct uniq filename here
 
 	if (strlen(actual_channel->user_name)) {
 	    strncpy(hls_entry->name, actual_channel->user_name, LEN_MAX);
@@ -89,7 +90,7 @@ int hls_entry_initialize(mumudvb_channel_t *actual_channel, hls_open_fds_t *hls_
 	}
 
 	char path_stream[PATH_MAX];
-	snprintf(path_stream, sizeof(path_stream), "%s/%s", hls_entry->path, hls_entry->name_stream);
+	snprintf(path_stream, sizeof(path_stream), "%s/%s", hls_entry->path, hls_entry->filenames[0].name);
 
 	hls_entry->stream = fopen(path_stream, "wb");
 	if (hls_entry->stream == 0) {
@@ -97,10 +98,10 @@ int hls_entry_initialize(mumudvb_channel_t *actual_channel, hls_open_fds_t *hls_
 	    return -1;
 	}
 
-	hls_entry->initialized = 1;
 	hls_entry->service_id = actual_channel->service_id;
 	hls_entry->access_time = access_time;
 	hls_entry->rotate_time = access_time;
+	hls_entry->initialized = 1;
 
 	return 0;
 }
@@ -114,46 +115,59 @@ int hls_entry_rotate(hls_open_fds_t *hls_entry, unicast_parameters_t *unicast_va
 
 	if (hls_entry->stream) fclose(hls_entry->stream);
 
-	strncpy(hls_entry->name_delete, hls_entry->name_oldest, LEN_MAX);
-	strncpy(hls_entry->name_oldest, hls_entry->name_newest, LEN_MAX);
-	strncpy(hls_entry->name_newest, hls_entry->name_stream, LEN_MAX);
+	// shift names in array
+	memmove(&hls_entry->filenames[1], &hls_entry->filenames[0], sizeof(hls_entry->filenames[0]) * (hls_entry->filenames_num - 1));
+	snprintf(hls_entry->filenames[0].name, sizeof(hls_entry->filenames[0].name), "%d_%u.ts", hls_entry->service_id, access_time);	// construct uniq filename here
 
-	sprintf(hls_entry->name_stream, "%d_%u.ts", hls_entry->service_id, access_time);	// construct uniq filename here
-
-	if (hls_entry->sequence > 0) { // generate playlist if we have at least 2 chunks written
-
+	if (hls_entry->sequence >= hls_entry->filenames_num - 3) { // generate playlist only if we have all chunks written
+	    unsigned int playlist_size;
 	    char path_playlist[PATH_MAX];
 	    snprintf(path_playlist, sizeof(path_playlist), "%s/%s", hls_entry->path, hls_entry->name_playlist);
-	
-	    FILE *playlist = fopen(path_playlist, "wb");
-	    if (playlist == 0) {
-		perror("Cannot open output file for write");
-		return -1;
-	    }
 
-	    fseek(playlist, 0, SEEK_SET);
-	    int playlist_size = fprintf(
-		playlist,
+	    // allocate memory for all filenames and playlist text structure
+	    char *outbuf = malloc(1024 + hls_entry->filenames_num * (sizeof(hls_entry->filenames[0]) + 64));
+
+	    playlist_size = sprintf(
+		outbuf,
 		"#EXTM3U\n"
 		"#EXT-X-TARGETDURATION:%d\n"
 		"#EXT-X-VERSION:3\n"
-		"#EXT-X-MEDIA-SEQUENCE:%u\n"
-		"#EXTINF:%d.0,\n"
-		"%s\n"
-		"#EXTINF:%d.0,\n"
-		"%s\n",
-		unicast_vars->hls_rotate_time, hls_entry->sequence,
-		unicast_vars->hls_rotate_time, hls_entry->name_oldest,
-		unicast_vars->hls_rotate_time, hls_entry->name_newest
+		"#EXT-X-MEDIA-SEQUENCE:%u\n",
+		unicast_vars->hls_rotate_time, hls_entry->sequence
 	    );
+
+	    // cycle via all file entries excluding delete and stream
+	    unsigned int x;
+	    for (x = hls_entry->filenames_num - 2; x > 0; x--) {
+		if(*hls_entry->filenames[x].name) {
+		    playlist_size += sprintf(
+			outbuf + playlist_size,
+			"#EXTINF:%d.0,\n"
+			"%s\n",
+			unicast_vars->hls_rotate_time, hls_entry->filenames[x].name
+		    );
+		}
+	    }
+
+	    FILE *playlist = fopen(path_playlist, "wb");
+	    if (playlist == 0) {
+		perror("Cannot open output file for write");
+		free(outbuf);
+		return -1;
+
+	    }
+
+	    fwrite(outbuf, playlist_size, 1, playlist);
+	    
 	    ftruncate(fileno(playlist), playlist_size);
 	    fclose(playlist);
+	    free(outbuf);
 	}
 
-	log_message( log_module, MSG_FLOOD,"Rotate event for service_id %d, writing stream to \"%s\"\n", hls_entry->service_id, hls_entry->name_stream);
+	log_message( log_module, MSG_FLOOD,"Rotate event for service_id %d, writing stream to \"%s\"\n", hls_entry->service_id, hls_entry->filenames[0].name);
 
 	char path_stream[PATH_MAX];
-	snprintf(path_stream, sizeof(path_stream), "%s/%s", hls_entry->path, hls_entry->name_stream);
+	snprintf(path_stream, sizeof(path_stream), "%s/%s", hls_entry->path, hls_entry->filenames[0].name);
 	hls_entry->stream = fopen(path_stream, "wb");
 	
 	if (hls_entry->stream == 0) {
@@ -161,14 +175,15 @@ int hls_entry_rotate(hls_open_fds_t *hls_entry, unicast_parameters_t *unicast_va
 	    return -1;
 	}
 
-	if (strlen(hls_entry->name_delete)) {
+	int delete_pos = hls_entry->filenames_num - 1; //delete file at last array position
+	if (strlen(hls_entry->filenames[delete_pos].name)) {
 
 		char path_delete[PATH_MAX];
-		snprintf(path_delete, sizeof(path_delete), "%s/%s", hls_entry->path, hls_entry->name_delete);
+		snprintf(path_delete, sizeof(path_delete), "%s/%s", hls_entry->path, hls_entry->filenames[delete_pos].name);
 
 		log_message( log_module, MSG_FLOOD,"Removing file \"%s\"\n", path_delete);
 	 	remove(path_delete);
-	 	hls_entry->name_delete[0] = 0;
+	 	*hls_entry->filenames[delete_pos].name = 0;
 	}
 
 	hls_entry->rotate_time = access_time;
@@ -205,7 +220,7 @@ int hls_playlist_master(hls_open_fds_t *hls_fds, unicast_parameters_t *unicast_v
 	    int playlist_size;
 	    char path_playlist[PATH_MAX];
 
-	    snprintf(path_playlist, sizeof(path_playlist), "%s/%s", unicast_vars->hls_storage_dir, MASTER_NAME);
+	    snprintf(path_playlist, sizeof(path_playlist), "%s/%s", unicast_vars->hls_storage_dir, unicast_vars->hls_playlist_name);
 
 	    char *outbuf = malloc((num_active + 1) * (LEN_MAX + 16)); // allocate memory for playlist
 
@@ -249,22 +264,20 @@ void hls_cleanup_files(hls_open_fds_t *hls_entry)
 	if (hls_entry->stream) fclose(hls_entry->stream);
 
 	char path_delete[PATH_MAX];
-	char *files_delete[] = {
-	    hls_entry->name_stream,
-	    hls_entry->name_newest,
-	    hls_entry->name_oldest,
-	    hls_entry->name_delete,
-	    hls_entry->name_playlist,
-	};
 
 	unsigned int i;
-	for(i = 0; i < sizeof(files_delete) / sizeof(files_delete[0]); i++)
+	for(i = 0; i < hls_entry->filenames_num; i++)
 	{
-	    if (*files_delete[i]) {
-		snprintf(path_delete, sizeof(path_delete), "%s/%s", hls_entry->path, files_delete[i]);
+	    if (*hls_entry->filenames[i].name) {
+		snprintf(path_delete, sizeof(path_delete), "%s/%s", hls_entry->path, hls_entry->filenames[i].name);
 		log_message( log_module, MSG_FLOOD,"Removing file \"%s\"\n", path_delete);
 		remove(path_delete);
 	    }
+	}
+	if (*hls_entry->name_playlist) {
+	    snprintf(path_delete, sizeof(path_delete), "%s/%s", hls_entry->path, hls_entry->name_playlist);
+	    log_message( log_module, MSG_FLOOD,"Removing file \"%s\"\n", path_delete);
+	    remove(path_delete);
 	}
 }
 
@@ -272,6 +285,7 @@ void hls_cleanup_files(hls_open_fds_t *hls_entry)
 void hls_entry_destroy(hls_open_fds_t *hls_entry)
 {
 	hls_cleanup_files(hls_entry);
+	if (hls_entry->filenames) free(hls_entry->filenames);
 	memset(hls_entry, 0, sizeof(*hls_entry));
 }
 
@@ -380,7 +394,7 @@ void hls_stop(unicast_parameters_t *unicast_vars)
 	pthread_mutex_lock(&hls_periodic_lock);
 	hls_array_cleanup(&hls_fds[0], 0, ~0);		// pass maximum time value to ensure cleanup
 
-	snprintf(path_delete, sizeof(path_delete), "%s/%s", unicast_vars->hls_storage_dir, MASTER_NAME);
+	snprintf(path_delete, sizeof(path_delete), "%s/%s", unicast_vars->hls_storage_dir, unicast_vars->hls_playlist_name);
 	log_message( log_module, MSG_FLOOD,"Removing file \"%s\"\n", path_delete);
 	remove(path_delete);
 

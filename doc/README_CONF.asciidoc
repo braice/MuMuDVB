@@ -318,8 +318,10 @@ HLS parameters
 |==================================================================================================================
 |Parameter name |Description | Default value |Comments
 |hls |Set this option to one to activate HLS in file mode | 0  |   If using manual channel configurations, service_id is required to work correctly
-|hls_storage_dir |Storage directory for HLS files and playlists | /  |  Any HTTP server can point to that dir and produce HLS stream
-|hls_rotate_time |HLS chunk duration in seconds| 10 |  First usable playlist will be generated in 2*X seconds after start
+|hls_storage_dir |Storage directory for HLS files and playlists | /tmp  |  Any HTTP server can point to that dir and produce HLS stream
+|hls_playlist_name |Name of master playlist | playlist.m3u8  |  Can be used to run multiple instances in one storage dir
+|hls_rotate_count |HLS chunk count in playlist| 2 |  First usable playlist will be generated when all chunks are ready
+|hls_rotate_time |HLS chunk duration in seconds| 10 |
 |==================================================================================================================
 
 

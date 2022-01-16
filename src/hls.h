@@ -3,6 +3,10 @@
 
 #define LEN_MAX	64
 
+typedef struct hls_file {
+    char name[LEN_MAX];
+} hls_file_t;
+
 typedef struct hls_open_fds {
     int service_id;
     int has_traffic;
@@ -13,10 +17,8 @@ typedef struct hls_open_fds {
     char name[LEN_MAX];		// channel name for master playlist
     char path[LEN_MAX];		// path for all files
     char name_playlist[LEN_MAX];	// playlist filename
-    char name_stream[LEN_MAX];	// file writing right now
-    char name_newest[LEN_MAX];
-    char name_oldest[LEN_MAX];
-    char name_delete[LEN_MAX];	// filename to delete
+    hls_file_t *filenames;	// pointer to array of filenames: stream, newest ... oldest, delete
+    unsigned int filenames_num;
     FILE* stream;
 } hls_open_fds_t;
 

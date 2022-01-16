@@ -200,8 +200,9 @@ typedef struct unicast_parameters_t{
   int playlist_ignore_scrambled_ratio;
   int hls;
   int hls_rotate_time;
+  int hls_rotate_count;
   char *hls_storage_dir;
-
+  char *hls_playlist_name;
 }unicast_parameters_t;
 
 

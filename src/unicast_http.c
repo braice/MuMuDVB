@@ -138,7 +138,9 @@ void init_unicast_v(unicast_parameters_t *unicast_vars)
 				.playlist_ignore_scrambled_ratio=0,
 				.hls=0,
 				.hls_rotate_time=10,
+				.hls_rotate_count=2,
 				.hls_storage_dir=NULL,
+				.hls_playlist_name=NULL,
 	 };
 	 unicast_vars->pfds=NULL;
 	 //+1 for closing the pfd list, see man poll
@@ -153,6 +155,23 @@ void init_unicast_v(unicast_parameters_t *unicast_vars)
 	 unicast_vars->pfds[0].events = POLLIN | POLLPRI;
 	 unicast_vars->pfds[0].revents = 0;
 
+	 unicast_vars->hls_storage_dir = malloc(MAX_NAME_LEN);
+	 if (unicast_vars->hls_storage_dir==NULL)
+	 {
+		 log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+		 set_interrupted(ERROR_MEMORY<<8);
+		 return;
+	 }
+	 unicast_vars->hls_playlist_name = malloc(MAX_NAME_LEN);
+	 if (unicast_vars->hls_playlist_name==NULL)
+	 {
+		 log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+		 set_interrupted(ERROR_MEMORY<<8);
+		 return;
+	 }
+	 // initialize with defaults
+	 sprintf(unicast_vars->hls_storage_dir, "/tmp");
+	 sprintf(unicast_vars->hls_playlist_name, "playlist.m3u8");
 }
 
 
@@ -286,12 +305,28 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
                 }
 	}
 
+	else if (!strcmp (substring, "hls_rotate_count"))
+	{
+		substring = strtok (NULL, delimiteurs);
+		unicast_vars->hls_rotate_count = atoi (substring);
+		if (unicast_vars->hls_rotate_count < 1) {
+                        log_message( log_module,  MSG_WARN,"HLS rotate count \"%d\" is lower than 1, forcing to 1!\n", unicast_vars->hls_rotate_count);
+                        unicast_vars->hls_rotate_count = 1;
+                }
+	}
+
     	else if (!strcmp (substring, "hls_storage_dir"))
         {
             	substring = strtok (NULL, delimiteurs);
-		unicast_vars->hls_storage_dir = malloc(MAX_NAME_LEN);
                 strncpy(unicast_vars->hls_storage_dir,strtok(substring,"\n"),MAX_NAME_LEN-1);
                 unicast_vars->hls_storage_dir[MAX_NAME_LEN-1]='\0';
+        }
+
+    	else if (!strcmp (substring, "hls_playlist_name"))
+        {
+            	substring = strtok (NULL, delimiteurs);
+                strncpy(unicast_vars->hls_playlist_name,strtok(substring,"\n"),MAX_NAME_LEN-1);
+                unicast_vars->hls_playlist_name[MAX_NAME_LEN-1]='\0';
         }
 
 	else

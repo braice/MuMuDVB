@@ -264,7 +264,6 @@ int mumudvb_close(int no_daemon,
 		log_message(log_module,MSG_DEBUG,"HLS Thread closing\n");
 		hls_thread_params->threadshutdown=1;
 		hls_stop(unicast_vars);
-		free(unicast_vars->hls_storage_dir);
 	}
 
 	for (curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++)
@@ -422,6 +421,10 @@ int mumudvb_close(int no_daemon,
 	if(unicast_vars->hls_storage_dir) {
 		free(unicast_vars->hls_storage_dir);
 		unicast_vars->hls_storage_dir=NULL;
+	}
+	if(unicast_vars->hls_playlist_name) {
+		free(unicast_vars->hls_playlist_name);
+		unicast_vars->hls_playlist_name=NULL;
 	}
 
 	// Format ExitCode (normal exit)
