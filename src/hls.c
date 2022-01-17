@@ -15,6 +15,7 @@
 #include "log.h"
 #include "unicast_http.h"
 #include "hls.h"
+#include "ts.h"
 
 static char *log_module="HLS : ";
 
@@ -48,6 +49,47 @@ int hls_sid_entry_compare(const void *pa, const void *pb) {
 	const int *a = pa;
 	const int *b = pb;
 	return a[0] - b[0];
+}
+
+int hls_find_iframe(unsigned char *buf, unsigned int size) {
+	ts_header_t *header;
+	af_header_t *af;
+	unsigned char *h264_packet;
+
+	unsigned int pos = 0;
+
+	// TODO: detection code needs futher testing on various live traffic
+	for (; pos < size; pos += TS_PACKET_SIZE) {
+		header=(ts_header_t *)(buf + pos);
+
+		// MPEG-TS encoder signalling
+		// match 2 (af + no payload) or 3 (af + payload) + RAI = 1
+		af=(af_header_t *)(buf + pos + TS_HEADER_LEN);
+    		if (header->adaptation_field_control > 1 && af->random_access_indicator)
+    		{
+		    log_message( log_module, MSG_FLOOD,"MPEG-TS RAI found at %d\n", pos);
+        	    goto exit;
+    		}
+
+		// h264 stream
+		// match 1 (payload only)
+    		if (header->adaptation_field_control == 1) {
+		    h264_packet = buf + pos + TS_HEADER_LEN;
+    		    int fragment_type = h264_packet[0] & 0x1F;
+    		    int nal_type = h264_packet[1] & 0x1F;
+    		    int start_bit = h264_packet[1] & 0x80;
+
+    		    if (((fragment_type == 28 || fragment_type == 29) && nal_type == 5 && start_bit == 128) || fragment_type == 5)
+    		    {
+    		        log_message( log_module, MSG_FLOOD,"H264 I-Frame found at %d\n", pos);
+        		goto exit;
+    		    }
+    		}
+        }
+        return -1; // not found
+
+        exit:
+        return pos;
 }
 
 int hls_entry_find(int service_id, hls_open_fds_t *hls_fds)
@@ -187,6 +229,7 @@ int hls_entry_rotate(hls_open_fds_t *hls_entry, unicast_parameters_t *unicast_va
 	}
 
 	hls_entry->rotate_time = access_time;
+	hls_entry->need_rotate = 0;
 	hls_entry->sequence++;
 
 	return 0;
@@ -320,7 +363,12 @@ void *hls_periodic_task(void* arg)
 
 		    pthread_mutex_lock(&hls_periodic_lock);
 
-		    hls_entry_rotate(&hls_fds[entry], unicast_vars, cur_time);
+		    // if we waiting for I-frame, we can skip first rotate event, second will be run regardless of need_rotate state
+		    if (!hls_fds[entry].need_rotate && unicast_vars->hls_rotate_iframe) {
+			    hls_fds[entry].need_rotate = 1;
+		    } else {
+			    hls_entry_rotate(&hls_fds[entry], unicast_vars, cur_time);
+		    }
 
 		    pthread_mutex_unlock(&hls_periodic_lock);
 
@@ -363,7 +411,18 @@ int hls_worker_main(mumudvb_channel_t *actual_channel, unicast_parameters_t *uni
 	hls_fds[entry].access_time = cur_time;
 	hls_fds[entry].has_traffic = actual_channel->has_traffic;
 
-	written = fwrite(outbuf, output_size, 1, hls_fds[entry].stream);	// TODO: Split write by I-frame
+	// in case of I-frame rotate we intercept part of write and split it by I-frame
+	if (hls_fds[entry].need_rotate) {
+		int iframe_pos = hls_find_iframe(outbuf, output_size);
+		if (iframe_pos >= 0) {
+			written += fwrite(outbuf, iframe_pos, 1, hls_fds[entry].stream);
+			outbuf += iframe_pos;
+			output_size -= iframe_pos;
+			hls_entry_rotate(&hls_fds[entry], unicast_vars, cur_time);
+			hls_fds[entry].need_rotate = 0;
+		}
+	}
+	written += fwrite(outbuf, output_size, 1, hls_fds[entry].stream);
 
 	pthread_mutex_unlock(&hls_periodic_lock);
 

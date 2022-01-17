@@ -188,6 +188,32 @@ typedef struct {
 #endif
 } ts_header_t;
 
+typedef struct {
+  u_char adaptation_field_length		:8;
+#if BYTE_ORDER == BIG_ENDIAN
+  u_char adaptation_field_extension_flag	:1;
+  u_char transport_private_data_flag		:1;
+  u_char splicing_point_flag			:1;
+  u_char OPCR_flag				:1;
+  u_char PCR_flag				:1;
+  u_char elementary_stream_priority_indicator	:1;
+  u_char random_access_indicator		:1;
+  u_char discontinuity_indicator		:1;
+#else
+  u_char discontinuity_indicator		:1;
+  u_char random_access_indicator		:1;
+  u_char elementary_stream_priority_indicator	:1;
+  u_char PCR_flag				:1;
+  u_char OPCR_flag				:1;
+  u_char splicing_point_flag			:1;
+  u_char transport_private_data_flag		:1;
+  u_char adaptation_field_extension_flag	:1;
+#endif
+  char PCR[6];
+  char OPCR[6];
+  char splice_countdown				:8;
+  u_char transport_private_data_length		:8;
+} af_header_t;
 
 //For cam support and autoconfigure
 

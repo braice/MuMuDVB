@@ -139,6 +139,7 @@ void init_unicast_v(unicast_parameters_t *unicast_vars)
 				.hls=0,
 				.hls_rotate_time=10,
 				.hls_rotate_count=2,
+				.hls_rotate_iframe=0,
 				.hls_storage_dir=NULL,
 				.hls_playlist_name=NULL,
 	 };
@@ -312,6 +313,16 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
 		if (unicast_vars->hls_rotate_count < 1) {
                         log_message( log_module,  MSG_WARN,"HLS rotate count \"%d\" is lower than 1, forcing to 1!\n", unicast_vars->hls_rotate_count);
                         unicast_vars->hls_rotate_count = 1;
+                }
+	}
+
+	else if (!strcmp (substring, "hls_rotate_iframe"))
+	{
+		substring = strtok (NULL, delimiteurs);
+		unicast_vars->hls_rotate_iframe = atoi (substring);
+		if (unicast_vars->hls_rotate_iframe < 0) {
+                        log_message( log_module,  MSG_WARN,"HLS rotate iframe \"%d\" is lower than 0, forcing to 0!\n", unicast_vars->hls_rotate_count);
+                        unicast_vars->hls_rotate_iframe = 0;
                 }
 	}
 

@@ -14,6 +14,7 @@ typedef struct hls_open_fds {
     unsigned int access_time;
     unsigned int rotate_time;
     unsigned int sequence;	// HLS media sequence
+    unsigned int need_rotate;
     char name[LEN_MAX];		// channel name for master playlist
     char path[LEN_MAX];		// path for all files
     char name_playlist[LEN_MAX];	// playlist filename
