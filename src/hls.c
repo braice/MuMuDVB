@@ -21,6 +21,7 @@ static char *log_module="HLS : ";
 
 pthread_mutex_t hls_periodic_lock;
 hls_open_fds_t hls_fds[MAX_CHANNELS];
+extern int dont_send_scrambled;
 
 int mkpath(char* file_path, mode_t mode) {
     if (!file_path || !*file_path) return -1;
@@ -396,10 +397,17 @@ int hls_worker_main(mumudvb_channel_t *actual_channel, unicast_parameters_t *uni
 {
 	int written = 0;
 	int entry;
-    
+
 	int service_id = actual_channel->service_id;
 	unsigned char *outbuf = actual_channel->buf;
 	int output_size = actual_channel->nb_bytes;
+
+	// do not store scrambled traffic and exclude it from playlist if specified
+	if ((dont_send_scrambled && actual_channel->scrambled_channel == HIGHLY_SCRAMBLED) ||
+	    (unicast_vars->playlist_ignore_scrambled_ratio && unicast_vars->playlist_ignore_scrambled_ratio <= actual_channel->ratio_scrambled))
+	{
+		return output_size; // return as successfully processed
+	}
 
 	pthread_mutex_lock(&hls_periodic_lock);
 	
