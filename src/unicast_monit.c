@@ -527,6 +527,43 @@ unicast_send_json_state (int number_of_channels, mumudvb_channel_t *channels, in
 	return 0;
 
 }
+
+/** @brief Send a full prometheus export of the mumudvb instance
+ *
+ * @param number_of_channels the number of channels
+ * @param channels the channels array
+ * @param Socket the socket on wich the information have to be sent
+ * @param fds the frontend device structure
+ */
+int
+unicast_send_prometheus (int number_of_channels, mumudvb_channel_t *channels, int Socket)
+{
+    // Prepare the HTTP reply
+    struct unicast_reply* reply = unicast_reply_init();
+    if (NULL == reply) {
+        log_message( log_module, MSG_INFO,"Error when creating the HTTP reply\n");
+        return -1;
+    }
+
+    // Channels list
+    unicast_reply_write(reply, "# TYPE number_of_clients gauge\n");
+    for (curr_channel = 0; curr_channel < number_of_channels; curr_channel++)
+    {
+        //We give only channels which are ready
+        if(channels[curr_channel].channel_ready<READY)
+            continue;
+        unicast_reply_write(reply, "number_of_clients{%s} %d\n", channels[curr_channel].name, channels[curr_channel].num_clients);
+    }
+    unicast_reply_send(reply, Socket, 200, "text/plain");
+
+    // End of HTTP reply
+    if (0 != unicast_reply_free(reply)) {
+        log_message( log_module, MSG_INFO,"Error when releasing the HTTP reply after sendinf it\n");
+        return -1;
+    }
+    return 0;
+
+}
 /**
  * @brief Send a list of clients.
  * @param unicast_client the client list to output
