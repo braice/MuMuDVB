@@ -533,10 +533,10 @@ unicast_send_json_state (int number_of_channels, mumudvb_channel_t *channels, in
  * @param number_of_channels the number of channels
  * @param channels the channels array
  * @param Socket the socket on wich the information have to be sent
- * @param fds the frontend device structure
+ * @param strengthparams the structure for the strength params
  */
 int
-unicast_send_prometheus (int number_of_channels, mumudvb_channel_t *channels, int Socket)
+unicast_send_prometheus (int number_of_channels, mumudvb_channel_t *channels, int Socket, strength_parameters_t *strengthparams)
 {
     // Prepare the HTTP reply
     struct unicast_reply* reply = unicast_reply_init();
@@ -544,6 +544,14 @@ unicast_send_prometheus (int number_of_channels, mumudvb_channel_t *channels, in
         log_message( log_module, MSG_INFO,"Error when creating the HTTP reply\n");
         return -1;
     }
+
+    //Signal parameters
+    unicast_reply_write(reply, "# TYPE bit_error_rate gauge\n");
+    unicast_reply_write(reply, "bit_error_rate %d\n",strengthparams->ber);
+    unicast_reply_write(reply, "# TYPE signal_strength gauge\n");
+    unicast_reply_write(reply, "signal_strength %d\n",strengthparams->strength);
+    unicast_reply_write(reply, "# TYPE signal_to_noise_ratio gauge\n");
+    unicast_reply_write(reply, "signal_to_noise_ratio %d\n",strengthparams->snr);
 
     // Channels list
     unicast_reply_write(reply, "# TYPE number_of_clients gauge\n");
