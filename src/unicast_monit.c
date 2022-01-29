@@ -552,7 +552,7 @@ unicast_send_prometheus (int number_of_channels, mumudvb_channel_t *channels, in
         //We give only channels which are ready
         if(channels[curr_channel].channel_ready<READY)
             continue;
-        unicast_reply_write(reply, "number_of_clients{%s} %d\n", channels[curr_channel].name, channels[curr_channel].num_clients);
+        unicast_reply_write(reply, "number_of_clients{name=\"%s\"} %d\n", channels[curr_channel].name, channels[curr_channel].num_clients);
     }
     unicast_reply_send(reply, Socket, 200, "text/plain");
 
