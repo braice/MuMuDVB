@@ -95,7 +95,7 @@ unicast_send_channel_traffic_js (int number_of_channels, mumudvb_channel_t *chan
 int
 unicast_send_json_state (int number_of_channels, mumudvb_channel_t* channels, int Socket, strength_parameters_t* strengthparams, auto_p_t* auto_p, void* cam_p_v, void* scam_vars_v);
 int
-unicast_send_prometheus (int number_of_channels, mumudvb_channel_t* channels, int Socket);
+unicast_send_prometheus (int number_of_channels, mumudvb_channel_t* channels, int Socket, strength_parameters_t* strengthparams);
 int
 unicast_send_xml_state (int number_of_channels, mumudvb_channel_t* channels, int Socket, strength_parameters_t* strengthparams, auto_p_t* auto_p, void* cam_p_v, void* scam_vars_v);
 int
@@ -875,7 +875,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars,
             else if(strstr(client->buffer +pos ,"/metrics")==(client->buffer +pos))
             {
                 log_message( log_module, MSG_DETAIL,"HTTP request for prometheus data\n");
-                unicast_send_prometheus(number_of_channels, channels, client->Socket);
+                unicast_send_prometheus(number_of_channels, channels, client->Socket, strengthparams);
                 return -2; //We close the connection afterwards
             }
 			//Not implemented path --> 404
