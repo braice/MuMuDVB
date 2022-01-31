@@ -538,6 +538,7 @@ unicast_send_json_state (int number_of_channels, mumudvb_channel_t *channels, in
 int
 unicast_send_prometheus (int number_of_channels, mumudvb_channel_t *channels, int Socket, strength_parameters_t *strengthparams)
 {
+    int curr_channel;
     // Prepare the HTTP reply
     struct unicast_reply* reply = unicast_reply_init();
     if (NULL == reply) {
