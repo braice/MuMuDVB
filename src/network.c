@@ -1,28 +1,28 @@
-/* 
+/*
  * udp.h fonction in order to send a multicast stream
  * mumudvb - UDP-ize a DVB transport stream.
- * 
+ *
  * (C) 2004-2013 Brice DUBOST
  * (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
- * 
+ *
  *  The latest version can be found at http://mumudvb.net
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *     
+ *
  */
 
 /**@file
@@ -32,10 +32,12 @@
 #include "network.h"
 #include "errors.h"
 #include <string.h>
-#include <errno.h> 
+#include <errno.h>
 #include <fcntl.h>
 #include "log.h"
+#ifndef _WIN32
 #include <net/if.h>
+#endif
 #include <unistd.h>
 
 
@@ -74,8 +76,7 @@ sendudp6 (int fd, struct sockaddr_in6 *sSockAddr, unsigned char *data, int len)
  * Create a socket for sending data, the socket is multicast, udp, with the options REUSE_ADDR et MULTICAST_LOOP set to 1
  */
 int
-makesocket (char *szAddr, unsigned short port, int TTL, char *iface,
-		struct sockaddr_in *sSockAddr)
+makesocket (char *szAddr, unsigned short port, int TTL, char *iface, struct sockaddr_in *sSockAddr)
 {
 	int iRet, iLoop = 1;
 	struct sockaddr_in sin;
@@ -84,17 +85,17 @@ makesocket (char *szAddr, unsigned short port, int TTL, char *iface,
 
 	if (iSocket < 0)
 	{
-		log_message( log_module,  MSG_WARN, "socket() failed : %s\n",strerror(errno));
+		log_message( log_module,  MSG_WARN, "makesocket() socket() failed : %s\n",strerror(errno));
 		set_interrupted(ERROR_NETWORK<<8);
 		return -1;
 	}
 
 	sSockAddr->sin_family = sin.sin_family = AF_INET;
 	sSockAddr->sin_port = sin.sin_port = htons (port);
-	iRet=inet_aton (szAddr,&sSockAddr->sin_addr);
+	iRet = inet_pton(AF_INET, szAddr, &sSockAddr->sin_addr);
 	if (iRet == 0)
 	{
-		log_message( log_module,  MSG_ERROR,"inet_aton failed : %s\n", strerror(errno));
+		log_message( log_module,  MSG_ERROR,"inet_pton failed : %s\n", strerror(errno));
 		set_interrupted(ERROR_NETWORK<<8);
 		close(iSocket);
 		return -1;
@@ -135,11 +136,17 @@ makesocket (char *szAddr, unsigned short port, int TTL, char *iface,
 		if(iface_index)
 		{
 			log_message( log_module,  MSG_DEBUG, "Setting IPv4 multicast iface to %s, index %d",iface,iface_index);
+#ifdef _WIN32
+			struct ip_mreq iface_struct;
+#else
 			struct ip_mreqn iface_struct;
+#endif
 			iface_struct.imr_multiaddr.s_addr=INADDR_ANY;
+#ifndef _WIN32
 			iface_struct.imr_address.s_addr=INADDR_ANY;
 			iface_struct.imr_ifindex=iface_index;
-			iRet = setsockopt (iSocket, IPPROTO_IP, IP_MULTICAST_IF, &iface_struct, sizeof (struct ip_mreqn));
+#endif
+			iRet = setsockopt (iSocket, IPPROTO_IP, IP_MULTICAST_IF, &iface_struct, sizeof (iface_struct));
 			if (iRet < 0)
 			{
 				log_message( log_module,  MSG_ERROR,"setsockopt IP_MULTICAST_IF failed.  multicast in kernel? error : %s \n",strerror(errno));
@@ -160,8 +167,7 @@ makesocket (char *szAddr, unsigned short port, int TTL, char *iface,
  * Create a socket for sending data, the socket is multicast, udp, with the options REUSE_ADDR et MULTICAST_LOOP set to 1
  */
 int
-makesocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
-		struct sockaddr_in6 *sSockAddr)
+makesocket6 (char *szAddr, unsigned short port, int TTL, char *iface, struct sockaddr_in6 *sSockAddr)
 {
 	int iRet;
 	int iReuse=1;
@@ -228,15 +234,18 @@ makesocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
 	return iSocket;
 }
 
-/** @brief create a receiver socket, i.e. join the multicast group. 
+/** @brief create a receiver socket, i.e. join the multicast group.
  *@todo document
  */
 int
-makeclientsocket (char *szAddr, unsigned short port, int TTL, char *iface,
-		struct sockaddr_in *sSockAddr)
+makeclientsocket (char *szAddr, unsigned short port, int TTL, char *iface, struct sockaddr_in *sSockAddr)
 {
 	int socket;
+#ifdef _WIN32
+	struct ip_mreq blub;
+#else
 	struct ip_mreqn blub;
+#endif
 	struct sockaddr_in sin;
 	memset(&sin, 0, sizeof sin);
 	unsigned int tempaddr;
@@ -255,10 +264,12 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL, char *iface,
 	if ((ntohl (tempaddr) >> 28) == 0xe)
 	{
 		blub.imr_multiaddr.s_addr = inet_addr (szAddr);
+#ifndef _WIN32
 		if(strlen(iface))
 			blub.imr_ifindex=if_nametoindex(iface);
 		else
 			blub.imr_ifindex = 0;
+#endif
 		if (setsockopt (socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &blub, sizeof (blub)))
 		{
 			log_message( log_module,  MSG_ERROR, "setsockopt IP_ADD_MEMBERSHIP ipv4 failed (multicast kernel?) : %s\n", strerror(errno));
@@ -269,7 +280,7 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL, char *iface,
 }
 
 
-/** @brief create a receiver socket, i.e. join the multicast group. 
+/** @brief create a receiver socket, i.e. join the multicast group.
  *@todo document
  */
 int
@@ -331,7 +342,7 @@ makeclientsocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
  * Create a socket for waiting the HTTP connection
  */
 int
-makeTCPclientsocket (char *szAddr, unsigned short port, 
+makeTCPclientsocket (char *szAddr, unsigned short port,
 		struct sockaddr_in *sSockAddr)
 {
 	int iRet, iLoop = 1;
@@ -346,10 +357,10 @@ makeTCPclientsocket (char *szAddr, unsigned short port,
 
 	sSockAddr->sin_family = AF_INET;
 	sSockAddr->sin_port = htons (port);
-	iRet=inet_aton (szAddr,&sSockAddr->sin_addr);
+	iRet = inet_pton(AF_INET, szAddr, &sSockAddr->sin_addr);
 	if (iRet == 0)
 	{
-		log_message( log_module,  MSG_ERROR,"inet_aton failed : %s\n", strerror(errno));
+		log_message( log_module,  MSG_ERROR,"inet_pton failed : %s\n", strerror(errno));
 		close(iSocket);
 		return -1;
 	}
@@ -380,6 +391,7 @@ makeTCPclientsocket (char *szAddr, unsigned short port,
 
 	//Now we set this socket to be non blocking because we poll it
 	int flags;
+#ifndef _WIN32
 	flags = fcntl(iSocket, F_GETFL, 0);
 	flags |= O_NONBLOCK;
 	if (fcntl(iSocket, F_SETFL, flags) < 0)
@@ -388,7 +400,15 @@ makeTCPclientsocket (char *szAddr, unsigned short port,
 		close(iSocket);
 		return -1;
 	}
-
+#else
+	uint32_t iMode = 0;
+	flags = ioctlsocket(iSocket, FIONBIO, &iMode);
+	if (flags != NO_ERROR) {
+		log_message(log_module, MSG_ERROR, "Set non blocking failed : %s\n", strerror(errno));
+		close(iSocket);
+		return -1;
+	}
+#endif
 
 	return iSocket;
 }

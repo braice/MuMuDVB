@@ -395,6 +395,7 @@ unicast_send_json_state (int number_of_channels, mumudvb_channel_t *channels, in
 
 	// Frontend type
 	char fetype[10]="Unknown";
+#ifndef DISABLE_DVB_API
 	if (strengthparams->tune_p->fe_type==FE_OFDM)
 #ifdef DVBT2
 		if (strengthparams->tune_p->delivery_system==SYS_DVBT2)
@@ -421,9 +422,13 @@ unicast_send_json_state (int number_of_channels, mumudvb_channel_t *channels, in
 		snprintf(fetype,10,"DVB-S");
 #endif
 	}
+#else
+	snprintf(fetype, 10, "File");
+#endif
 	unicast_reply_write(reply, "\t\"frontend_system\" : \"%s\",\n",fetype);
 
 	// Frontend status
+#ifndef DISABLE_DVB_API
 	char SCVYL[6]="-----";
 	if (strengthparams->festatus & FE_HAS_SIGNAL)  SCVYL[0]=83; // S
 	if (strengthparams->festatus & FE_HAS_CARRIER) SCVYL[1]=67; // C
@@ -431,6 +436,9 @@ unicast_send_json_state (int number_of_channels, mumudvb_channel_t *channels, in
 	if (strengthparams->festatus & FE_HAS_SYNC)    SCVYL[3]=89; // Y
 	if (strengthparams->festatus & FE_HAS_LOCK)    SCVYL[4]=76; // L
 	SCVYL[5]=0;
+#else
+	char SCVYL[6] = "SCVYL";
+#endif
 	unicast_reply_write(reply, "\t\"frontend_status\": \"%s\",\n",SCVYL);
 
 	// Frontend signal
@@ -750,6 +758,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 
 	// Frontend type
 	char fetype[10]="Unknown";
+#ifndef DISABLE_DVB_API
 	if (strengthparams->tune_p->fe_type==FE_OFDM)
 #ifdef DVBT2
 		if (strengthparams->tune_p->delivery_system==SYS_DVBT2)
@@ -776,9 +785,13 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 		snprintf(fetype,10,"DVB-S");
 #endif
 	}
+#else
+	snprintf(fetype, 10, "File");
+#endif
 	unicast_reply_write(reply, "\t<frontend_system><![CDATA[%s]]></frontend_system>\n",fetype);
 
 	// Frontend status
+#ifndef DISABLE_DVB_API
 	char SCVYL[6]="-----";
 	if (strengthparams->festatus & FE_HAS_SIGNAL)  SCVYL[0]=83; // S
 	if (strengthparams->festatus & FE_HAS_CARRIER) SCVYL[1]=67; // C
@@ -786,6 +799,9 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 	if (strengthparams->festatus & FE_HAS_SYNC)    SCVYL[3]=89; // Y
 	if (strengthparams->festatus & FE_HAS_LOCK)    SCVYL[4]=76; // L
 	SCVYL[5]=0;
+#else
+	char SCVYL[6] = "SCVYL";
+#endif
 	unicast_reply_write(reply, "\t<frontend_status><![CDATA[%s]]></frontend_status>\n",SCVYL);
 
 	// Frontend signal

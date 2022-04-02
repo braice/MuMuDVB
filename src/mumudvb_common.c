@@ -1,23 +1,23 @@
-/* 
+/*
  * MuMuDVB - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
- * 
+ *
  * (C) 2004-2014 Brice DUBOST
- * 
+ *
  * The latest version can be found at http://mumudvb.net
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -33,17 +33,51 @@
 #include "rtp.h"
 #include "unicast_http.h"
 
+#ifndef _WIN32
 #include <sys/poll.h>
+#endif
 #include <sys/time.h>
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#ifdef ENABLE_SCAM_SUPPORT
 #include "scam_common.h"
-
+#endif
 
 static char *log_module="Common: ";
 
+#ifndef HAVE_POLL
+static int poll(struct pollfd *pfd, int n, int milliseconds)
+{
+	struct timeval tv;
+	fd_set set;
+	int i, result, maxfd = 0;
+
+	tv.tv_sec = milliseconds / 1000;
+	tv.tv_usec = (milliseconds % 1000) * 1000;
+	FD_ZERO(&set);
+
+	for (i = 0; i < n; i++) {
+		FD_SET((SOCKET)pfd[i].fd, &set);
+		pfd[i].revents = 0;
+
+		if (pfd[i].fd > maxfd) {
+			maxfd = pfd[i].fd;
+		}
+	}
+
+	if ((result = select(maxfd + 1, &set, NULL, NULL, &tv)) > 0) {
+		for (i = 0; i < n; i++) {
+			if (FD_ISSET(pfd[i].fd, &set)) {
+				pfd[i].revents = POLLIN;
+			}
+		}
+	}
+
+	return result;
+}
+#endif
 
 /** @brief : poll the file descriptors fds with a limit in the number of errors and timeout
  */
@@ -63,6 +97,12 @@ int mumudvb_poll(struct pollfd *pfds, int pfdsnum,int timeout)
 		poll_ret=poll (pfds, pfdsnum, timeout);
 		if(poll_ret<0)
 		{
+#ifdef _WIN32
+			errno = WSAGetLastError();
+			printf("poll returns: %08x\n", errno);
+#undef EINTR
+#define EINTR WSAEINTR
+#endif
 			if(errno != EINTR) //EINTR means Interrupted System Call, it normally shouldn't matter so much so we don't count it for our Poll tries
 			{
 				poll_try++;

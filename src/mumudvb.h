@@ -1,23 +1,23 @@
-/* 
+/*
  * MuMuDVB - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
- * 
+ *
  * (C) 2004-2010 Brice DUBOST
- * 
+ *
  * The latest version can be found at http://mumudvb.net/
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -36,7 +36,9 @@
 #include "ts.h"
 #include "config.h"
 #include <pthread.h>
+#ifndef _WIN32
 #include <net/if.h>
+#endif
 
 #define MAX_FILENAME_LEN 256
 
@@ -90,8 +92,7 @@
 #define ALARM_TIME_TIMEOUT 60
 #define ALARM_TIME_TIMEOUT_NO_DIFF 600
 
-
-/** MTU 
+/** MTU
     1500 bytes - ip header (12bytes) - TCP header (biggest between TCP and udp) 24  : 7 mpeg2-ts packet per ethernet frame
 
 We cannot discover easily the MTU with unconnected UDP
@@ -235,7 +236,7 @@ typedef struct {
 	unsigned int to_send;
 	/** Read index of buffer for sending thread */
 	unsigned int read_send_idx;
-}ring_buffer_t;  
+}ring_buffer_t;
 #endif
 
 /**@brief Structure containing the card buffers*/
@@ -308,7 +309,7 @@ typedef enum chan_status {
  * All members are protected by the global lock in chan_p, with the
  * following exceptions:
  *
- *  - The EIT variables, since they are only ever accessed from the main thread. 
+ *  - The EIT variables, since they are only ever accessed from the main thread.
  *  - buf/nb_bytes, since they are only ever accessed from one thread: SCAM_SEND
  *    if we are using scam, or the main thread otherwise.
  *  - the odd/even keys, since they have their own locking.

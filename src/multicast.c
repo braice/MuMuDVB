@@ -13,24 +13,26 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  */
- 
+
 
 
 #include "mumudvb.h"
 #include "log.h"
 #include <string.h>
+#ifndef _WIN32
 #include <net/if.h>
+#endif
 static char *log_module="Multicast: ";
 
 
@@ -171,5 +173,5 @@ int read_multicast_configuration(multi_p_t *multi_p, mumudvb_channel_t *c_chan, 
     return 0; //Nothing concerning multicast, we return 0 to explore the other possibilities
 
   return 1;//We found something for multicast, we tell main to go for the next line
-  
+
 }

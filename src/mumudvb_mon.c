@@ -6,6 +6,7 @@
  */
 
 #define _GNU_SOURCE		//in order to use program_invocation_short_name and pthread_timedjoin_np
+#define _POSIX
 
 #include "config.h"
 
@@ -14,25 +15,29 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <sys/time.h>
+#ifndef _WIN32
 #include <sys/poll.h>
 #include <sys/stat.h>
-#include <stdint.h>
 #include <resolv.h>
+#include <syslog.h>
+#include <sys/mman.h>
+#endif
+#include <stdint.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
 #ifdef ANDROID
 #include <limits.h>
 #else
-#include <values.h>
+#include <float.h>
 #endif
 #include <string.h>
-#include <syslog.h>
 #include <getopt.h>
 #include <errno.h>
 #include <time.h>
+#ifndef DISABLE_DVB_API
 #include <linux/dvb/version.h>
-#include <sys/mman.h>
+#endif
 #include <pthread.h>
 
 #include "mumudvb.h"
@@ -57,7 +62,7 @@
 #include "rtp.h"
 #include "log.h"
 
-#if defined __UCLIBC__ || defined ANDROID
+#if defined __UCLIBC__ || defined ANDROID || defined(_WIN32)
 #define program_invocation_short_name "mumudvb"
 #else
 extern char *program_invocation_short_name;
@@ -216,13 +221,15 @@ int mumudvb_close(int no_daemon,
 		else
 			log_message( log_module,  MSG_INFO, "Closing cleanly. Error %d\n",Interrupted>>8);
 	}
+#if !defined __UCLIBC__ && !defined ANDROID && !defined(_WIN32)
 	struct timespec ts;
+#endif
 
 	if(*signalpowerthread)
 	{
 		log_message(log_module,MSG_DEBUG,"Signal/power Thread closing\n");
 		*strengththreadshutdown=1;
-#if !defined __UCLIBC__ && !defined ANDROID
+#if !defined __UCLIBC__ && !defined ANDROID && !defined(_WIN32)
 		clock_gettime(CLOCK_REALTIME, &ts);
 		ts.tv_sec += 5;
 		iRet=pthread_timedjoin_np(*signalpowerthread, NULL, &ts);
@@ -245,7 +252,7 @@ int mumudvb_close(int no_daemon,
 	{
 		log_message(log_module,MSG_DEBUG,"Monitor Thread closing\n");
 		monitor_thread_params->threadshutdown=1;
-#if !defined __UCLIBC__ && !defined ANDROID
+#if !defined __UCLIBC__ && !defined ANDROID && !defined(_WIN32)
 		clock_gettime(CLOCK_REALTIME, &ts);
 		ts.tv_sec += 5;
 		iRet=pthread_timedjoin_np(*monitorthread, NULL, &ts);
@@ -427,7 +434,7 @@ int mumudvb_close(int no_daemon,
 	}
 	if(log_params.log_header!=NULL)
 		free(log_params.log_header);
-#ifndef ANDROID
+#if !defined(ANDROID) && !defined(_WIN32)
 	munlockall();
 #endif
 	// End
@@ -475,6 +482,7 @@ void *monitor_func(void* arg)
 		/*******************************************/
 		/* We deal with the received signals       */
 		/*******************************************/
+#ifndef DISABLE_DVB_API
 		if (received_signal == SIGUSR1) //Display signal strength
 		{
 			params->tune_p->display_strenght = params->tune_p->display_strenght ? 0 : 1;
@@ -495,6 +503,7 @@ void *monitor_func(void* arg)
 			sync_logs();
 			received_signal = 0;
 		}
+#endif
 
 		pthread_mutex_lock(&params->chan_p->lock);
 

@@ -1,28 +1,28 @@
-/* 
+/*
  * MuMuDVB - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
- * 
+ *
  * (C) 2004-2013 Brice DUBOST
- * 
+ *
  * Code for dealing with libdvben50221 inspired from zap_ca
  * Copyright (C) 2004, 2005 Manu Abraham <abraham.manu@gmail.com>
  * Copyright (C) 2006 Andrew de Quincey (adq_dvb@lidskialf.net)
- * 
+ *
  *
  * The latest version can be found at http://mumudvb.net
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -54,7 +54,7 @@
  * Generation of SAP announces
 
  *@section files
- * mumudvb.h header containing global information 
+ * mumudvb.h header containing global information
  *
  * autoconf.c autoconf.h code related to autoconfiguration
  *
@@ -82,7 +82,10 @@
  */
 
 #define _GNU_SOURCE		//in order to use program_invocation_short_name and pthread_timedjoin_np
-
+#define _POSIX
+#ifdef _WIN32
+#define __USE_MINGW_ALARM
+#endif
 
 #include "config.h"
 
@@ -91,26 +94,32 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <sys/time.h>
+#ifndef _WIN32
 #include <sys/poll.h>
 #include <sys/epoll.h>
+#include <resolv.h>
+#include <syslog.h>
+#endif
 #include <sys/stat.h>
 #include <stdint.h>
-#include <resolv.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
 #ifdef ANDROID
 #include <limits.h>
 #else
-#include <values.h>
+#include <float.h>
 #endif
 #include <string.h>
-#include <syslog.h>
 #include <getopt.h>
 #include <errno.h>
 #include <time.h>
+#ifndef DISABLE_DVB_API
 #include <linux/dvb/version.h>
+#endif
+#ifndef _WIN32
 #include <sys/mman.h>
+#endif
 #include <pthread.h>
 
 #include "mumudvb.h"
@@ -144,7 +153,7 @@ extern char *program_invocation_short_name;
 
 static char *log_module="Main: ";
 
-/* Signal handling code shamelessly copied from VDR by Klaus Schmidinger 
+/* Signal handling code shamelessly copied from VDR by Klaus Schmidinger
    - see http://www.cadsoft.de/people/kls/vdr/index.htm */
 
 // global variables used by SignalHandler
@@ -169,7 +178,9 @@ int dont_send_scrambled=0;
 extern log_params_t log_params;
 
 // prototypes
-static void SignalHandler (int signum);//below
+#ifndef DISABLE_DVB_API
+static void SignalHandler (int signum); //below
+#endif
 int read_multicast_configuration(multi_p_t *, mumudvb_channel_t *, char *); //in multicast.c
 void init_multicast_v(multi_p_t *multi_p); //in multicast.c
 
@@ -183,6 +194,13 @@ main (int argc, char **argv)
 	// file descriptors
 	fds_t fds; /** File descriptors associated with the card */
 	memset(&fds,0,sizeof(fds_t));
+
+#ifdef _WIN32
+	WSADATA wsaData;
+
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+		return -1;
+#endif
 
 	//Thread information
 	pthread_t signalpowerthread=0;
@@ -311,6 +329,7 @@ main (int argc, char **argv)
 		exit(0);
 	}
 
+#ifndef _WIN32
 	// DO NOT REMOVE (make MuMuDVB a deamon)
 	if(!no_daemon)
 		if(daemon(42,0))
@@ -320,7 +339,7 @@ main (int argc, char **argv)
 			exit(666); //Right code for a bad daemon no ?
 		}
 
-	//If the user didn't defined a preferred logging way, and we daemonize, we set to syslog
+	//If the user didn't defined a preferred logging way, and we daemonize, we set to syslog (except windows, where we don't, and log to console)
 	if (!no_daemon)
 	{
 		if(log_params.log_type==LOGGING_UNDEFINED)
@@ -330,10 +349,14 @@ main (int argc, char **argv)
 			log_params.syslog_initialised=1;
 		}
 	}
+#else
+	no_daemon = 1;
+	log_params.log_type = LOGGING_CONSOLE;
+	log_params.syslog_initialised = 1;
+#endif
 
 	//Display general information
 	print_info ();
-
 
 	// configuration file parsing
 	int ichan = 0;
@@ -870,11 +893,9 @@ main (int argc, char **argv)
 	}
 #endif
 
+	log_message( log_module,  MSG_INFO, "Streaming. Freq %f\n", tune_p.freq);
 
-	log_message( log_module,  MSG_INFO, "Streaming. Freq %f\n",
-			tune_p.freq);
-
-
+#ifndef DISABLE_DVB_API
 	/******************************************************/
 	// Card tuning
 	/******************************************************/
@@ -891,16 +912,14 @@ main (int argc, char **argv)
 	{
 		alarm (tune_p.tuning_timeout);
 	}
-
+#endif
 
 	// We tune the card
 	iRet =-1;
 
-
 	if(strlen(tune_p.read_file_path))
 	{
-		log_message( log_module,  MSG_DEBUG,
-				"Opening source file %s", tune_p.read_file_path);
+		log_message( log_module,  MSG_DEBUG, "Opening source file %s", tune_p.read_file_path);
 
 		iRet = open_fe (&fds.fd_dvr, tune_p.read_file_path, tune_p.tuner,1,1);
 	}
@@ -979,7 +998,7 @@ main (int argc, char **argv)
 	/******************************************************/
 	//card tuned
 	/******************************************************/
-
+#ifndef DISABLE_DVB_API
 	// the card is tuned, we catch signals to close cleanly
 	if (signal (SIGHUP, SignalHandler) == SIG_IGN)
 		signal (SIGHUP, SIG_IGN);
@@ -993,7 +1012,7 @@ main (int argc, char **argv)
 	act.sa_flags = 0;
 	if(sigaction (SIGPIPE, &act, NULL)<0)
 		log_message( log_module,  MSG_ERROR,"ErrorSigaction\n");
-
+#endif
 
 	//We record the starting time
 	gettimeofday (&tv, (struct timezone *) NULL);
@@ -1254,7 +1273,7 @@ main (int argc, char **argv)
 		    }
 		    card_buffer.t2mi_buffer=malloc(t2mi_buf_size);
 		}
-		
+
 	}else
 	{
 		//We alloc the buffer
@@ -1284,7 +1303,7 @@ main (int argc, char **argv)
 			free(dump_filename);
 		}
 	}
-#ifndef ANDROID
+#if !defined(ANDROID) && !defined(_WIN32)
 	mlockall(MCL_CURRENT | MCL_FUTURE);
 #endif
 	/******************************************************/
@@ -1429,7 +1448,7 @@ main (int argc, char **argv)
 
 			card_buffer.bytes_read = processed + t2_partial_size;
 		    	t2_partial_size=0;
-		    
+
 			/* if buffer is damaged, reset demux */
 			if (!((card_buffer.t2mi_buffer[TS_PACKET_SIZE * 0] == TS_SYNC_BYTE) &&
 			      (card_buffer.t2mi_buffer[TS_PACKET_SIZE * 1] == TS_SYNC_BYTE) &&
@@ -1584,7 +1603,7 @@ main (int argc, char **argv)
 				if (pid == TS_PADDING_PID) {
 				    send_packet=0;
 				}
-				
+
 				/******************************************************/
 				//cam support
 				// If we send the packet, we look if it's a cam pmt pid
@@ -1689,7 +1708,7 @@ main (int argc, char **argv)
 		} else {
 		    t2_partial_size = 0;
 		}
-		
+
 	}
 	/******************************************************/
 	//End of main loop
@@ -1732,8 +1751,7 @@ main (int argc, char **argv)
 
 
 
-
-
+#ifndef DISABLE_DVB_API
 /******************************************************
  * Signal Handler Function
  *
@@ -1765,7 +1783,4 @@ static void SignalHandler (int signum)
 	}
 	signal (signum, SignalHandler);
 }
-
-
-
-
+#endif

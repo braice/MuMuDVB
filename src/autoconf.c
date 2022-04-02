@@ -1,4 +1,4 @@
-/* 
+/*
  * MuMuDVB - Stream a DVB transport stream.
  * File for Autoconfiguration
  *
@@ -29,11 +29,11 @@
 
 /** @file
  *  @brief This file contain the code related to the autoconfiguration of MuMudvb
- * 
+ *
  *  It contains the functions to extract the relevant informations from the PAT,PMT,SDT PIDs and from ATSC PSIP table
- * 
+ *
  *  The PAT contains the list of the channels in the actual stream, their service number and the PMT PID
- * 
+ *
  *  The SDT contains the name of the channels associated to a certain service number and the type of service
  *
  *  The PSIP (ATSC only) table contains the same kind of information as the SDT
@@ -53,8 +53,11 @@
  *  This allows to keep the IP if the channel comes back
  */
 
-
+#ifndef _WIN32
 #include <sys/ioctl.h>
+#include <sys/poll.h>
+#endif
+
 #include <errno.h>
 #include <stdint.h>
 
@@ -66,7 +69,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/poll.h>
 
 
 #include "errors.h"

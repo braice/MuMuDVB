@@ -1,23 +1,23 @@
-/* 
+/*
  * MuMuDVB - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
- * 
+ *
  * (C) 2014 Brice DUBOST
- * 
+ *
  * The latest version can be found at http://mumudvb.net
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -34,14 +34,20 @@
 #include "rtp.h"
 #include "unicast_http.h"
 
+#ifndef _WIN32
 #include <sys/poll.h>
+#endif
 #include <sys/time.h>
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "scam_common.h"
 
+#include "autoconf.h"
+
+#ifdef ENABLE_SCAM_SUPPORT
+#include "scam_common.h"
+#endif
 
 static char *log_module="Common chan: ";
 
@@ -197,7 +203,6 @@ void chan_new_pmt(unsigned char *ts_packet, mumu_chan_p_t *chan_p, int pid)
 	}
 }
 
-
 /** @brief Update the CAM information for the channels
  */
 void chan_update_CAM(mumu_chan_p_t *chan_p, auto_p_t *auto_p,  void *scam_vars_v)
@@ -243,7 +248,7 @@ void chan_update_CAM(mumu_chan_p_t *chan_p, auto_p_t *auto_p,  void *scam_vars_v
 				}
 				memset (chan_p->channels[ichan].scam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 				pthread_mutex_init(&chan_p->channels[ichan].scam_pmt_packet->packetmutex, NULL);
-			} 
+			}
 			// need to send the new PMT to Oscam
 			else if(chan_p->channels[ichan].need_scam_ask==CAM_ASKED)
 				chan_p->channels[ichan].need_scam_ask=CAM_NEED_ASK;
@@ -252,7 +257,6 @@ void chan_update_CAM(mumu_chan_p_t *chan_p, auto_p_t *auto_p,  void *scam_vars_v
 #endif
 	}
 }
-
 
 
 
@@ -298,7 +302,7 @@ void update_chan_net(mumu_chan_p_t *chan_p, auto_p_t *auto_p, multi_p_t *multi_p
 		}
 		// Set the number of unicast clients to zero
         chan_p->channels[ichan].num_clients = 0;
-		
+
 		if(multi_p->multicast)
 		{
 			char number[10];

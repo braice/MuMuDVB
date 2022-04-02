@@ -31,16 +31,20 @@
 //in order to use asprintf (extension gnu)
 #define _GNU_SOURCE
 
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#include <sys/types.h>
 #include <arpa/inet.h>
+#endif
+#include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
 #include <strings.h>
+#ifndef _WIN32
 #include <poll.h>
+#endif
 #include <fcntl.h>
 #include <stdio.h>
 #include <sys/time.h>
@@ -476,6 +480,7 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
 
 	//Now we set this socket to be non blocking because we poll it
 	int flags;
+#ifndef _WIN32
 	flags = fcntl(tempSocket, F_GETFL, 0);
 	flags |= O_NONBLOCK;
 	if (fcntl(tempSocket, F_SETFL, flags) < 0)
@@ -484,6 +489,15 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
 		close(tempSocket);
 		return NULL;
 	}
+#else
+	uint32_t iMode = 0;
+	flags = ioctlsocket(tempSocket, FIONBIO, &iMode);
+	if (flags != NO_ERROR) {
+		log_message(log_module, MSG_ERROR, "Set non blocking failed : %s\n", strerror(errno));
+		close(tempSocket);
+		return NULL;
+	}
+#endif
 
 	/* if the maximum number of clients is reached, raise a temporary error*/
 	if((unicast_vars->max_clients>0)&&(unicast_vars->client_number>=unicast_vars->max_clients))
@@ -734,7 +748,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars,
 
                 char *substring = client->buffer+pos;
                 char *end = strstr(substring, " HTTP"); // find end of channel name (this way channel name can contain spaces)
-                
+
                 if(*substring == 0) {
 					err404=1;
                 }
@@ -751,7 +765,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars,
                     strncpy(requested_channel_name, substring,MAX_NAME_LEN);
                     requested_channel_name[MAX_NAME_LEN-1] = '\0';
                     process_channel_name(requested_channel_name);
-                    
+
                     for(int current_channel=0; current_channel<number_of_channels;current_channel++)
                     {
                         strcpy(current_channel_name, channels[current_channel].name);
@@ -1341,7 +1355,7 @@ void process_channel_name(char *str) {
         begin++;
     while ((end >= begin) && isspace(str[end]))
         end--;
-    
+
     // shift all characters back to the start of the string array
     for (i = begin; i <= end; i++) {
         if (isspace(str[i]))
@@ -1349,6 +1363,6 @@ void process_channel_name(char *str) {
         else
             str[i - begin] = str[i];
     }
-    
+
     str[i - begin] = '\0';
 }
