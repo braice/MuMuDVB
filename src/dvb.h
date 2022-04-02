@@ -39,9 +39,9 @@
 #include <sys/ioctl.h>
 #include <sys/poll.h>
 #include <resolv.h>
+#include <unistd.h>
 #endif
 #include <sys/stat.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include "config.h"
 

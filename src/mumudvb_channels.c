@@ -36,8 +36,8 @@
 
 #ifndef _WIN32
 #include <sys/poll.h>
-#endif
 #include <sys/time.h>
+#endif
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
@@ -47,6 +47,10 @@
 
 #ifdef ENABLE_SCAM_SUPPORT
 #include "scam_common.h"
+#endif
+
+#ifdef _MSC_VER
+#define strtok_r strtok_s
 #endif
 
 static char *log_module="Common chan: ";
@@ -91,11 +95,10 @@ int mumu_init_chan(mumudvb_channel_t *chan)
 		}
 	}
 
-#ifdef ENABLE_SCAM_SUPPORT
 	pthread_mutex_init(&chan->stats_lock, NULL);
+#ifdef ENABLE_SCAM_SUPPORT
 	pthread_mutex_init(&chan->cw_lock, NULL);
 	chan->camd_socket = -1;
-
 #endif
 	return 0;
 }

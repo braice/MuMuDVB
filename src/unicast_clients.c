@@ -36,9 +36,9 @@
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
 #include <netinet/tcp.h>
+#include <unistd.h>
 #endif
 #include <sys/types.h>
-#include <unistd.h>
 #include <errno.h>
 #include <string.h>
 #include <fcntl.h>

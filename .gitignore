@@ -15,3 +15,4 @@ config.*
 *.sw[po]
 .vs/
 MuMuDVB.vcxproj.user
+Debug/

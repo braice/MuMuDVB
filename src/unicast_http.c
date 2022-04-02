@@ -38,16 +38,16 @@
 #include <arpa/inet.h>
 #endif
 #include <sys/types.h>
-#include <unistd.h>
 #include <errno.h>
 #include <string.h>
-#include <strings.h>
 #ifndef _WIN32
 #include <poll.h>
+#include <unistd.h>
+#include <strings.h>
+#include <sys/time.h>
 #endif
 #include <fcntl.h>
 #include <stdio.h>
-#include <sys/time.h>
 #include <string.h>
 #include <stdarg.h>
 #include <time.h>
@@ -71,6 +71,10 @@
 #include "scam_common.h"
 #include "scam_getcw.h"
 #include "scam_decsa.h"
+#endif
+
+#ifdef _MSC_VER
+#define strcasecmp _stricmp
 #endif
 
 static char *log_module="Unicast : ";

@@ -29,7 +29,9 @@
 
 #include "mumudvb.h"
 #include <time.h>
+#ifndef _WIN32
 #include <sys/time.h>
+#endif
 
 /**@brief : This function add the RTP header to a channel
  *

@@ -14,17 +14,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <sys/time.h>
 #ifndef _WIN32
+#include <sys/time.h>
 #include <sys/poll.h>
 #include <sys/stat.h>
 #include <resolv.h>
 #include <syslog.h>
 #include <sys/mman.h>
+#include <unistd.h>
 #endif
 #include <stdint.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <signal.h>
 #ifdef ANDROID
 #include <limits.h>
@@ -225,7 +225,7 @@ int mumudvb_close(int no_daemon,
 	struct timespec ts;
 #endif
 
-	if(*signalpowerthread)
+	if(!pthread_equal(*signalpowerthread, pthread_self()))
 	{
 		log_message(log_module,MSG_DEBUG,"Signal/power Thread closing\n");
 		*strengththreadshutdown=1;
@@ -248,7 +248,7 @@ int mumudvb_close(int no_daemon,
 		pthread_cond_destroy(&cardthreadparams->threadcond);
 	}
 	//We shutdown the monitoring thread
-	if(*monitorthread)
+	if(!pthread_equal(*monitorthread, pthread_self()))
 	{
 		log_message(log_module,MSG_DEBUG,"Monitor Thread closing\n");
 		monitor_thread_params->threadshutdown=1;

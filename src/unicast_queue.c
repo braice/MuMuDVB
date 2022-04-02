@@ -29,8 +29,10 @@
  */
 
 #include <errno.h>
+#ifndef _WIN32
 #include <sys/time.h>
 #include <unistd.h>
+#endif
 #include <string.h>
 #include <stdlib.h>
 #include "unicast_http.h"

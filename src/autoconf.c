@@ -56,6 +56,7 @@
 #ifndef _WIN32
 #include <sys/ioctl.h>
 #include <sys/poll.h>
+#include <unistd.h>
 #endif
 
 #include <errno.h>
@@ -65,7 +66,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <time.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>

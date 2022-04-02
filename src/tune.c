@@ -38,8 +38,8 @@
 #ifndef _WIN32
 #include <sys/ioctl.h>
 #include <sys/poll.h>
-#endif
 #include <unistd.h>
+#endif
 #include "config.h"
 #include <errno.h>
 #include <string.h>

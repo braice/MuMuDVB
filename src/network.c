@@ -37,8 +37,8 @@
 #include "log.h"
 #ifndef _WIN32
 #include <net/if.h>
-#endif
 #include <unistd.h>
+#endif
 
 
 static char *log_module="Network: ";

@@ -35,10 +35,14 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#ifndef _WIN32
 #include <dirent.h>
+#include <unistd.h>
+#else
+#include <io.h>
+#endif
 #include <sys/types.h>
 #include "log.h"
-#include <unistd.h>
 #include <sys/stat.h>
 
 static char *log_module="DVB: ";
@@ -574,8 +578,9 @@ void show_card_capabilities( int card, int tuner )
 /** @brief : List the DVB cards of the system and their capabilities
  *
  */
-void list_dvb_cards ()
+void list_dvb_cards(void)
 {
+#ifndef DISABLE_DVB_API
 	DIR *dvb_dir;
 	log_message( log_module, MSG_INFO,"==================================");
 	log_message( log_module, MSG_INFO,"        DVB CARDS LISTING\n");
@@ -652,5 +657,5 @@ void list_dvb_cards ()
 		}
 		closedir(adapter_dir);
 	}
+#endif
 }
-

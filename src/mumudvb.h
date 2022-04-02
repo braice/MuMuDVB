@@ -38,6 +38,8 @@
 #include <pthread.h>
 #ifndef _WIN32
 #include <net/if.h>
+#else
+#include "win32.h"
 #endif
 
 #define MAX_FILENAME_LEN 256
@@ -158,7 +160,7 @@ typedef enum option_status {
 } option_status_t;
 
 /** Enum to tell if a channel parameter is user set or autodetected, to avoid erasing of user set params*/
-typedef enum mumu_f {
+typedef enum mumu_f_t {
 	F_UNDEF,
 	F_USER,
 	F_DETECTED
@@ -314,8 +316,7 @@ typedef enum chan_status {
  *    if we are using scam, or the main thread otherwise.
  *  - the odd/even keys, since they have their own locking.
  */
-typedef struct mumu_chan_t{
-
+typedef struct mumudvb_channel_t{
 	/** Flag to say the channel is ready for streaming */
 	chan_status_t channel_ready;
 
@@ -341,7 +342,7 @@ typedef struct mumu_chan_t{
 	/**the channel name*/
 	char user_name[MAX_NAME_LEN];
 	char name[MAX_NAME_LEN];
-	MU_F_T(name);
+	mumu_f_t name_f; /* MU_F_T(name); */
 	char service_name[MAX_NAME_LEN];
 
 	/* The PID information for this channel*/
@@ -350,10 +351,12 @@ typedef struct mumu_chan_t{
 	/** The service Type from the SDT */
 	int service_type;
 	/**Transport stream ID*/
-	MU_F_V(int,service_id);
+	int service_id;
+	mumu_f_t service_id_f; /* MU_F_V(int,service_id); */
 
 	/**Say if we need to ask this channel to the cam*/
-	MU_F_V(int,need_cam_ask);
+	int need_cam_ask;
+	mumu_f_t need_cam_ask_f; /* MU_F_V(int,need_cam_ask); */
 	/** When did we asked the channel to the CAM */
 	long cam_asking_time;
 	/**The ca system ids*/
@@ -469,7 +472,7 @@ typedef struct mumu_chan_t{
 
 	/**The sap playlist group*/
 	char sap_group[SAP_GROUP_LENGTH];
-	MU_F_T(sap_group);
+	mumu_f_t sap_group_f; /* MU_F_T(sap_group); */
 	//do we need to update the SAP announce (typically a name change)
 	int sap_need_update;
 
@@ -615,13 +618,13 @@ int mumu_init_chan(mumudvb_channel_t *chan);
 void chan_update_CAM(mumu_chan_p_t *chan_p, struct auto_p_t *auto_p,  void *scam_vars_v);
 void update_chan_net(mumu_chan_p_t *chan_p, struct auto_p_t *auto_p, multi_p_t *multi_p, struct unicast_parameters_t *unicast_vars, int server_id, int card, int tuner);
 void update_chan_filters(mumu_chan_p_t *chan_p, char *card_base_path, int tuner, fds_t *fds);
-long int mumu_timing();
+long int mumu_timing(void);
 
 /** Sets the interrupted flag if value != 0 and it is not already set.
  * In any case, returns the given value back. Thread- and signal-safe. */
 int set_interrupted(int value);
 
 /** Gets the interrupted flag; 0 if we have not been interrupted. */
-int get_interrupted();
+int get_interrupted(void);
 
 #endif

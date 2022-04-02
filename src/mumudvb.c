@@ -93,17 +93,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <sys/time.h>
 #ifndef _WIN32
+#include <sys/time.h>
 #include <sys/poll.h>
 #include <sys/epoll.h>
 #include <resolv.h>
 #include <syslog.h>
+#include <unistd.h>
 #endif
 #include <sys/stat.h>
 #include <stdint.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <signal.h>
 #ifdef ANDROID
 #include <limits.h>
@@ -188,11 +188,10 @@ void chan_new_pmt(unsigned char *ts_packet, mumu_chan_p_t *chan_p, int pid);
 
 int processt2(unsigned char* input_buf, unsigned int input_buf_offset, unsigned char* output_buf, unsigned int output_buf_offset, unsigned int output_buf_size, uint8_t plpId);
 
-int
-main (int argc, char **argv)
+int main (int argc, char **argv)
 {
 	// file descriptors
-	fds_t fds; /** File descriptors associated with the card */
+	static fds_t fds; /** File descriptors associated with the card */
 	memset(&fds,0,sizeof(fds_t));
 
 #ifdef _WIN32
@@ -203,14 +202,14 @@ main (int argc, char **argv)
 #endif
 
 	//Thread information
-	pthread_t signalpowerthread=0;
+	pthread_t signalpowerthread = pthread_self();
 	pthread_t cardthread;
-	pthread_t monitorthread=0;
+	pthread_t monitorthread = pthread_self();
 	card_thread_parameters_t cardthreadparams;
 	memset(&cardthreadparams,0,sizeof(card_thread_parameters_t));
 
 	//Channel information
-	mumu_chan_p_t chan_p;
+	static mumu_chan_p_t chan_p;
 	memset(&chan_p,0,sizeof(chan_p));
 
 	pthread_mutex_init(&chan_p.lock,NULL);
@@ -1048,7 +1047,7 @@ main (int argc, char **argv)
 			.filename_channels_streamed=filename_channels_streamed,
 	};
 
-	pthread_create(&(monitorthread), NULL, monitor_func, &monitor_thread_params);
+	pthread_create(&monitorthread, NULL, monitor_func, &monitor_thread_params);
 
 	/*****************************************************/
 	//scam_support
@@ -1728,7 +1727,7 @@ main (int argc, char **argv)
 	mumudvb_close_goto:
 	//If the thread is not started, we don't send the nonexistent address of monitor_thread_params
 	return mumudvb_close(no_daemon,
-			monitorthread == 0 ? NULL:&monitor_thread_params,
+			pthread_equal(monitorthread, pthread_self()) ? NULL:&monitor_thread_params,
 					&rewrite_vars,
 					&auto_p,
 					&unic_p,

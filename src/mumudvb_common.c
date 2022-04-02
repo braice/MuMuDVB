@@ -35,8 +35,8 @@
 
 #ifndef _WIN32
 #include <sys/poll.h>
-#endif
 #include <sys/time.h>
+#endif
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
@@ -315,7 +315,7 @@ void mumu_free_string(mumu_string_t *string)
 
 /** @brief return the time (in usec) elapsed between the two last calls of this function.
  */
-long int mumu_timing()
+long int mumu_timing(void)
 {
 	static int started=0;
 	static struct timeval oldtime;
@@ -338,9 +338,21 @@ long int mumu_timing()
 /** @brief getting current system time (in usec).
  */
 uint64_t get_time(void) {
+#ifndef _WIN32
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	return (ts.tv_sec * 1000000ll + ts.tv_nsec / 1000);
+#else
+	FILETIME ft;
+	GetSystemTimeAsFileTime(&ft);
+	uint64_t tt = ft.dwHighDateTime;
+	tt <<= 32;
+	tt |= ft.dwLowDateTime;
+	tt /= 10;
+	tt -= 11644473600000000ULL;
+
+	return tt;
+#endif
 }
 /** @brief function for buffering demultiplexed data.
  */
@@ -478,7 +490,7 @@ int set_interrupted(int value)
 	return value;
 }
 
-int get_interrupted()
+int get_interrupted(void)
 {
 	int ret;
 	pthread_mutex_lock(&interrupted_mutex);

@@ -38,11 +38,11 @@
 #include <stddef.h>
 #ifndef _WIN32
 #include <syslog.h>
+#include <unistd.h>
 #endif
 #include <errno.h>
 #include <time.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <inttypes.h>
 
 #include "config.h"
@@ -318,7 +318,11 @@ void log_message( char* log_module, int type,
 	actual_time=time(NULL);
 	sprintf(timestring,"%jd", (intmax_t)actual_time);
 	log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%timeepoch",timestring);
+#ifndef _WIN32
 	asctime_r(localtime(&actual_time),timestring);
+#else
+	asctime_s(timestring, sizeof(timestring), localtime(&actual_time));
+#endif
 	timestring[strlen(timestring)-1]='\0'; //In order to remove the final '\n' but by asctime
 	log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%date",timestring);
 
