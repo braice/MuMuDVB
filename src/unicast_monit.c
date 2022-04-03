@@ -28,6 +28,7 @@
  * @date 2013
  */
 
+#define _CRT_SECURE_NO_WARNINGS
 
 #include "unicast_http.h"
 #include "unicast_queue.h"
@@ -46,6 +47,10 @@
 #include "scam_common.h"
 #include "scam_getcw.h"
 #include "scam_decsa.h"
+#endif
+
+#ifdef _WIN32
+#include <process.h> /* for getpid() */
 #endif
 
 static char *log_module="Unicast : ";

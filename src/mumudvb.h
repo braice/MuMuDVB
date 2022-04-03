@@ -205,17 +205,25 @@ enum
 };
 
 /**@brief file descriptors*/
-typedef struct {
+typedef struct fds_t {
 	/** the dvb dvr*/
+#ifdef _WIN32
+	HANDLE fd_dvr;
+#else
 	int fd_dvr;
+#endif
 	/** the dvb frontend*/
+#ifdef _WIN32
+	HANDLE fd_frontend;
+#else
 	int fd_frontend;
+#endif
 	/** demuxer file descriptors */
 	int fd_demuxer[8193];
 	/** poll file descriptors */
 	struct pollfd *pfds;	//  DVR device
 	int pfdsnum;
-}fds_t;
+} fds_t;
 
 #ifdef ENABLE_SCAM_SUPPORT
 /**@brief Structure containing ring buffer*/

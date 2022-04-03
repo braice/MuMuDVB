@@ -29,6 +29,8 @@
  * @brief Networking functions
  */
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "network.h"
 #include "errors.h"
 #include <string.h>

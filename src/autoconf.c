@@ -53,6 +53,8 @@
  *  This allows to keep the IP if the channel comes back
  */
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #ifndef _WIN32
 #include <sys/ioctl.h>
 #include <sys/poll.h>

@@ -77,10 +77,10 @@ typedef struct strength_parameters_t{
 	fe_status_t festatus;
 	int strength, ber, snr, ub;
 	int ts_discontinuities;
-}strength_parameters_t;
+} strength_parameters_t;
 
 /** The parameters for the thread for reading the data from the card */
-typedef struct card_thread_parameters_t{
+typedef struct card_thread_parameters_t {
 	//mutex for the data buffer
 	pthread_mutex_t carddatamutex;
 	//Condition variable for locking the main program in order to wait for new data
@@ -95,20 +95,25 @@ typedef struct card_thread_parameters_t{
 	int thread_running;
 	/** Is main waiting ?*/
 	int main_waiting;
-}card_thread_parameters_t;
+} card_thread_parameters_t;
 
 void *read_card_thread_func(void* arg);
 
-
-
+#ifndef _WIN32
 int open_fe (int *fd_frontend, char *base_path, int tuner, int rw, int full_path);
-void set_ts_filt (int fd,uint16_t pid);
+#else
+int open_fe(HANDLE *fd_frontend, char *base_path, int tuner, int rw, int full_path);
+#endif
+void set_ts_filt(int fd,uint16_t pid);
 int create_card_fd(char *base_path, int tuner, uint8_t *asked_pid, fds_t *fds);
 void set_filters(uint8_t *asked_pid, fds_t *fds);
 void close_card_fd(fds_t *fds);
-
 void *show_power_func(void* arg);
+#ifndef _WIN32
 int card_read(int fd_dvr, unsigned char *dest_buffer, card_buffer_t *card_buffer);
-
+#else
+int card_read(HANDLE fd_dvr, unsigned char *dest_buffer, card_buffer_t *card_buffer);
+int dvb_poll(HANDLE fd_dvr, int timeout);
+#endif
 void list_dvb_cards(void);
 #endif

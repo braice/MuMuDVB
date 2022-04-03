@@ -24,8 +24,7 @@
  *
  */
 
-
-
+#define _CRT_SECURE_NO_WARNINGS
 
 #include "mumudvb.h"
 #include "log.h"
@@ -52,7 +51,8 @@ static int poll(struct pollfd *pfd, int n, int milliseconds)
 {
 	struct timeval tv;
 	fd_set set;
-	int i, result, maxfd = 0;
+	int i, result;
+	SOCKET maxfd = 0;
 
 	tv.tv_sec = milliseconds / 1000;
 	tv.tv_usec = (milliseconds % 1000) * 1000;

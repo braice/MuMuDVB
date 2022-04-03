@@ -28,6 +28,7 @@
  * @date 2009
  */
 
+#define _CRT_SECURE_NO_WARNINGS
 
 #ifndef _WIN32
 #include <sys/socket.h>

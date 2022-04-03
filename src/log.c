@@ -31,6 +31,7 @@
  */
 
 #define _POSIX_C_SOURCE 200809L
+#define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>
 #include <string.h>
@@ -39,6 +40,8 @@
 #ifndef _WIN32
 #include <syslog.h>
 #include <unistd.h>
+#else
+#include <process.h> /* for getpid() */
 #endif
 #include <errno.h>
 #include <time.h>
@@ -186,7 +189,7 @@ int read_logging_configuration(stats_infos_t *stats_infos, char *substring)
 	else if (!strcmp (substring, "log_flush_interval"))
 	{
 		substring = strtok (NULL, delimiteurs);
-		log_params.log_flush_interval = atof (substring);
+		log_params.log_flush_interval = (float)atof(substring);
 	}
 	else
 		return 0;
@@ -1209,10 +1212,7 @@ exit_iconv:
 	if(debug) {log_message( log_module, MSG_FLOOD, "Converted text : \"%s\" (text encoding : %s)\n", string,encodings_en300468[encoding_control_char]);}
 
 	return encoding_control_char;
-
 }
-
-
 
 /** @brief : show the contents of the CA identifier descriptor
  *

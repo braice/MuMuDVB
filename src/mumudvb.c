@@ -85,6 +85,7 @@
 #define _POSIX
 #ifdef _WIN32
 #define __USE_MINGW_ALARM
+#define _CRT_SECURE_NO_WARNINGS
 #endif
 
 #include "config.h"
@@ -100,6 +101,8 @@
 #include <resolv.h>
 #include <syslog.h>
 #include <unistd.h>
+#else
+#include <process.h> /* for getpid() */
 #endif
 #include <sys/stat.h>
 #include <stdint.h>
@@ -954,11 +957,14 @@ int main (int argc, char **argv)
 			fclose (pidfile);
 		}
 
-		if(strlen(tune_p.read_file_path))
+#ifndef _WIN32
+		if (strlen(tune_p.read_file_path))
 			iRet = 1; //no tuning if file input
 		else
-			iRet =
-				tune_it (fds.fd_frontend, &tune_p);
+			iRet = tune_it(fds.fd_frontend, &tune_p);
+#else
+		iRet = 1;
+#endif
 	}
 	else
 		iRet =-1;
@@ -1197,6 +1203,7 @@ int main (int argc, char **argv)
 		goto mumudvb_close_goto;
 	}
 
+#ifndef _WIN32
 	//File descriptor for polling the DVB card
 	fds.pfds[0].fd = fds.fd_dvr;
 	//POLLIN : data available for read
@@ -1205,8 +1212,7 @@ int main (int argc, char **argv)
 	fds.pfds[1].fd = 0;
 	fds.pfds[1].events = POLLIN | POLLPRI;
 	fds.pfds[1].revents = 0;
-
-
+#endif
 
 	/*****************************************************/
 	// Init network, we open the sockets
@@ -1367,13 +1373,17 @@ int main (int argc, char **argv)
 		else
 		{
 			/* Poll the open file descriptors : we wait for data*/
+#ifndef _WIN32
 			poll_ret=mumudvb_poll(fds.pfds,fds.pfdsnum,DVB_POLL_TIMEOUT);
-			if(poll_ret<0)
-			{
-				log_message( log_module,  MSG_ERROR, "Poll error %d", poll_ret);
+#else
+			poll_ret = dvb_poll(fds.fd_dvr, DVB_POLL_TIMEOUT);
+#endif
+			if (poll_ret < 0) {
+				log_message(log_module, MSG_ERROR, "Poll error %d", poll_ret);
 				set_interrupted(poll_ret);
 				continue;
 			}
+
 			/**************************************************************/
 			/* UNICAST HTTP                                               */
 			/**************************************************************/

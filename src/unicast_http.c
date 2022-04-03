@@ -30,6 +30,7 @@
 
 //in order to use asprintf (extension gnu)
 #define _GNU_SOURCE
+#define _CRT_SECURE_NO_WARNINGS
 
 #ifndef _WIN32
 #include <sys/socket.h>

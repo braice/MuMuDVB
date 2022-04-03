@@ -28,10 +28,14 @@
  * @date 2009-2010
  */
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <errno.h>
 #ifndef _WIN32
 #include <sys/time.h>
 #include <unistd.h>
+#else
+#include <process.h> /* for getpid() */
 #endif
 #include <string.h>
 #include <stdlib.h>

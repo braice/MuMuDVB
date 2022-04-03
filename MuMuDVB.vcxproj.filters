@@ -132,6 +132,9 @@
     <ClCompile Include="src\win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\dvb_win32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\autoconf.h">

@@ -30,6 +30,8 @@
  */
 
 #define _GNU_SOURCE
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "dvb.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -424,9 +426,6 @@ void *read_card_thread_func(void* arg)
 	}
 	return NULL;
 }
-
-
-
 
 /** @brief : Read data from the card
  * This function have to be called after a poll to ensure there is data to read

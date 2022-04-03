@@ -7,6 +7,7 @@
 
 #define _GNU_SOURCE		//in order to use program_invocation_short_name and pthread_timedjoin_np
 #define _POSIX
+#define _CRT_SECURE_NO_WARNINGS
 
 #include "config.h"
 

@@ -25,7 +25,7 @@
  *
  */
 
-
+#define _CRT_SECURE_NO_WARNINGS
 
 #include "mumudvb.h"
 #include "log.h"
@@ -33,8 +33,8 @@
 #ifndef _WIN32
 #include <net/if.h>
 #endif
-static char *log_module="Multicast: ";
 
+static char *log_module="Multicast: ";
 
 /** Initialize multicast variables*/
 void init_multicast_v(multi_p_t *multi_p)

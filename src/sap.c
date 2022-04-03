@@ -28,6 +28,8 @@
  * @date 2008-2013
  */
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "sap.h"
 #include "network.h"
 #include <string.h>

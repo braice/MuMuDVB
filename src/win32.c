@@ -3,6 +3,8 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include "win32.h"
 
 #if _MSC_VER < 1800
