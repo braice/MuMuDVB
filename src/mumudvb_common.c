@@ -46,7 +46,7 @@
 
 static char *log_module="Common: ";
 
-#ifndef HAVE_POLL
+#ifdef _WIN32
 static int poll(struct pollfd *pfd, int n, int milliseconds)
 {
 	struct timeval tv;
