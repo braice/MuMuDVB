@@ -40,8 +40,9 @@
 #ifndef _WIN32
 #include <net/if.h>
 #include <unistd.h>
+#else
+#define close(sock) closesocket(sock)
 #endif
-
 
 static char *log_module="Network: ";
 
@@ -250,22 +251,22 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL, char *iface, struc
 #endif
 	struct sockaddr_in sin;
 	memset(&sin, 0, sizeof sin);
-	unsigned int tempaddr;
+	uint32_t tempaddr;
 	socket = makesocket (szAddr, port, TTL, iface, sSockAddr);
 	if(socket<0)
 		return 0;
 	sin.sin_family = AF_INET;
 	sin.sin_port = htons (port);
-	sin.sin_addr.s_addr = inet_addr (szAddr);
+	inet_pton(AF_INET, szAddr, &sin.sin_addr.s_addr);
 	if (bind (socket, (struct sockaddr *) &sin, sizeof (sin)))
 	{
 		log_message( log_module,  MSG_ERROR, "bind failed : %s\n", strerror(errno));
 		set_interrupted(ERROR_NETWORK<<8);
 	}
-	tempaddr = inet_addr (szAddr);
-	if ((ntohl (tempaddr) >> 28) == 0xe)
+	inet_pton(AF_INET, szAddr, &tempaddr);
+	if ((ntohl(tempaddr) >> 28) == 0xe)
 	{
-		blub.imr_multiaddr.s_addr = inet_addr (szAddr);
+		inet_pton(AF_INET, szAddr, &blub.imr_multiaddr.s_addr);
 #ifndef _WIN32
 		if(strlen(iface))
 			blub.imr_ifindex=if_nametoindex(iface);
@@ -280,7 +281,6 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL, char *iface, struc
 	}
 	return socket;
 }
-
 
 /** @brief create a receiver socket, i.e. join the multicast group.
  *@todo document
