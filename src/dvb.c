@@ -338,8 +338,7 @@ void set_filters(uint8_t *asked_pid, fds_t *fds)
  * @brief Close the file descriptors associated with the card
  * @param fds the structure with the file descriptors
  */
-void
-close_card_fd(fds_t *fds)
+void close_card_fd(fds_t *fds)
 {
 	int curr_pid = 0;
 
@@ -353,14 +352,21 @@ close_card_fd(fds_t *fds)
 	}
 
 	if(fds->fd_dvr)
+#ifndef _WIN32
 		close (fds->fd_dvr);
+#else
+		CloseHandle(fds->fd_dvr);
+#endif
 	fds->fd_dvr=0;
+
 	if(fds->fd_frontend)
+#ifndef _WIN32
 		close (fds->fd_frontend);
+#else
+		CloseHandle(fds->fd_frontend);
+#endif
 	fds->fd_frontend=0;
-
 }
-
 
 /**
  * @brief Function for the tread reading data from the card

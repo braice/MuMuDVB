@@ -919,14 +919,18 @@ int main (int argc, char **argv)
 	// We tune the card
 	iRet =-1;
 
-	if(strlen(tune_p.read_file_path))
-	{
+	if (strlen(tune_p.read_file_path)) {
 		log_message( log_module,  MSG_DEBUG, "Opening source file %s", tune_p.read_file_path);
 
 		iRet = open_fe (&fds.fd_dvr, tune_p.read_file_path, tune_p.tuner,1,1);
+	} else {
+#ifndef _WIN32
+		iRet = open_fe(&fds.fd_frontend, tune_p.card_dev_path, tune_p.tuner, 1, 0);
+#else
+		iRet = open_fe(&fds.fd_dvr, NULL, tune_p.tuner, 1, 1);  /* Under windows, we only support named pipes */
+#endif
 	}
-	else
-		iRet = open_fe (&fds.fd_frontend, tune_p.card_dev_path, tune_p.tuner,1,0);
+
 	if (iRet>0)
 	{
 
@@ -963,6 +967,7 @@ int main (int argc, char **argv)
 		else
 			iRet = tune_it(fds.fd_frontend, &tune_p);
 #else
+		/* No tuning on windows at all */
 		iRet = 1;
 #endif
 	}

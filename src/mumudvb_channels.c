@@ -500,9 +500,10 @@ void update_chan_filters(mumu_chan_p_t *chan_p, char *card_base_path, int tuner,
 		//Now we have the PIDs we look for those who disappeared
 		if(chan_p->asked_pid[ipid]==PID_ASKED && asked_pid[ipid]!=PID_ASKED && ipid != PSIP_PID)
 		{
-			log_message( log_module,  MSG_INFO, "Update : PID %d does not belong to any channel anymore, we close the filter",
-					ipid);
+			log_message( log_module,  MSG_INFO, "Update : PID %d does not belong to any channel anymore, we close the filter", ipid);
+#ifndef _WIN32
 			close(fds->fd_demuxer[ipid]);
+#endif
 			fds->fd_demuxer[ipid]=0;
 			chan_p->asked_pid[ipid]=PID_NOT_ASKED;
 		}
@@ -528,41 +529,3 @@ void update_chan_filters(mumu_chan_p_t *chan_p, char *card_base_path, int tuner,
 
 	pthread_mutex_unlock(&chan_p->lock);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

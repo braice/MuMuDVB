@@ -56,9 +56,21 @@ int open_fe(HANDLE *fd_frontend, char *base_path, int tuner, int rw, int full_pa
     HANDLE pipe = INVALID_HANDLE_VALUE;
     int retries = 5;
 
-    /* we only support named pipes */
+    /* we only support files or named pipes */
     if (!full_path)
         return -1;
+
+    /* if we have a local file to try and open */
+    if (base_path) {
+        pipe = CreateFile(base_path, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+        if (pipe == INVALID_HANDLE_VALUE) {
+            log_message(log_module, MSG_ERROR, "Cannot open file %s (%s)\n", base_path, strerror(GetLastError()));
+            return -1;
+        }
+
+        *fd_frontend = pipe;
+        return 1;
+    }
 
     /* generate named pipe based on tuner number */
     snprintf(device_path, sizeof(device_path), "\\\\.\\pipe\\ISDB_TUNER%d", tuner);
@@ -88,12 +100,22 @@ int open_fe(HANDLE *fd_frontend, char *base_path, int tuner, int rw, int full_pa
 int dvb_poll(HANDLE fd_dvr, int timeout)
 {
     DWORD avail = 0;
+    static DWORD type = 0;
 
-    if (PeekNamedPipe(fd_dvr, NULL, 0, NULL, &avail, NULL)) {
-        if (avail > TS_PACKET_SIZE * 20)
-            return 1;
+    /* do this once */
+    if (!type)
+        type = GetFileType(fd_dvr);
 
-        return 0;
+    if (type == FILE_TYPE_PIPE) {
+        if (PeekNamedPipe(fd_dvr, NULL, 0, NULL, &avail, NULL)) {
+            if (avail > TS_PACKET_SIZE * 20)
+                return 1;
+
+            return 0;
+        }
+    } else {
+        /* assume file will always have some data to read */
+        return 1;
     }
 
     return -1;
@@ -138,7 +160,9 @@ void set_filters(uint8_t *asked_pid, fds_t *fds)
 
 void close_card_fd(fds_t *fds)
 {
-    (void)fds;
+    if (fds->fd_dvr)
+        CloseHandle(fds->fd_dvr);
+    fds->fd_dvr = 0;
 }
 
 /* unused */

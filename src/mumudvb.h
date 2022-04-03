@@ -213,9 +213,7 @@ typedef struct fds_t {
 	int fd_dvr;
 #endif
 	/** the dvb frontend*/
-#ifdef _WIN32
-	HANDLE fd_frontend;
-#else
+#ifndef _WIN32
 	int fd_frontend;
 #endif
 	/** demuxer file descriptors */

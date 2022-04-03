@@ -81,8 +81,9 @@ extern int write_streamed_channels;
 extern int timeout_no_diff;
 extern int tuning_no_diff;
 
-
-
+#ifdef _WIN32
+#define close(x) closesocket(x)
+#endif
 
 void parse_cmd_line(int argc, char **argv,char *(*conf_filename),tune_p_t *tune_p,stats_infos_t *stats_infos,int *server_id, int *no_daemon,char **dump_filename, int *listingcards)
 {
@@ -523,7 +524,7 @@ void *monitor_func(void* arg)
 			params->stats_infos->compute_traffic_time=monitor_now;
 		if((monitor_now-params->stats_infos->compute_traffic_time)>=params->stats_infos->compute_traffic_interval)
 		{
-			time_interval=monitor_now-params->stats_infos->compute_traffic_time;
+			time_interval = (float)(monitor_now - params->stats_infos->compute_traffic_time);
 			params->stats_infos->compute_traffic_time=monitor_now;
 			for (curr_channel = 0; curr_channel < params->chan_p->number_of_channels; curr_channel++)
 			{
@@ -753,15 +754,15 @@ void *monitor_func(void* arg)
 		/* If we don't stream data for             */
 		/* a too long time, we start tuning        */
 		/*******************************************/
+#ifndef _WIN32
 		if((tuning_no_diff)&& (time_no_diff && ((monitor_now-time_no_diff)>tuning_no_diff)) && !strlen(params->tune_p->read_file_path))
 		{
-			log_message( log_module,  MSG_ERROR,
-					"No data from card %d in %ds, start tuning loop.\n",
-					params->tune_p->card, tuning_no_diff);
+			log_message( log_module,  MSG_ERROR, "No data from card %d in %ds, start tuning loop.\n", params->tune_p->card, tuning_no_diff);
 			// tune here
-                        tune_it(params->fds->fd_frontend, params->tune_p);
-                        time_no_diff=0;
+            tune_it(params->fds->fd_frontend, params->tune_p);
+            time_no_diff=0;
 		}
+#endif
 
 #ifdef ENABLE_SCAM_SUPPORT
 		if (scam_vars->scam_support) {
@@ -825,8 +826,4 @@ void *monitor_func(void* arg)
 
 	log_message(log_module,MSG_DEBUG, "Monitor thread stopping, it lasted %f seconds\n", monitor_now);
 	return 0;
-
 }
-
-
-

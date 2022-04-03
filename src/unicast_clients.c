@@ -38,6 +38,9 @@
 #include <sys/ioctl.h>
 #include <netinet/tcp.h>
 #include <unistd.h>
+#else
+#define write(sock, buf, size) send(sock, buf, size, 0)
+#define close(sock) closesocket(sock)
 #endif
 #include <sys/types.h>
 #include <errno.h>
