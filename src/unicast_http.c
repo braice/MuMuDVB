@@ -467,6 +467,8 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
 	int tempSocket,iRet;
 	unicast_client_t *tempClient;
 	struct sockaddr_in tempSocketAddrIn;
+	char addr_buf[64];
+	char addr_buf2[64];
 
 	l = sizeof(struct sockaddr);
 	tempSocket = accept(socketIn, (struct sockaddr *) &tempSocketAddrIn, &l);
@@ -484,7 +486,9 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
 		close(tempSocket);
 		return NULL;
 	}
-	log_message( log_module, MSG_FLOOD,"New connection from %s:%d to %s:%d \n",inet_ntoa(tempSocketAddrIn.sin_addr), tempSocketAddrIn.sin_port,inet_ntoa(tempSocketAddr.sin_addr), tempSocketAddr.sin_port);
+	inet_ntop(AF_INET, &tempSocketAddrIn.sin_addr, addr_buf, sizeof(addr_buf));
+	inet_ntop(AF_INET, &tempSocketAddr.sin_addr, addr_buf2, sizeof(addr_buf2));
+	log_message( log_module, MSG_FLOOD,"New connection from %s:%d to %s:%d \n", addr_buf, tempSocketAddrIn.sin_port, addr_buf2, tempSocketAddr.sin_port);
 
 	//Now we set this socket to be non blocking because we poll it
 	int flags;
@@ -511,10 +515,14 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
 	if((unicast_vars->max_clients>0)&&(unicast_vars->client_number>=unicast_vars->max_clients))
 	{
 		int iRet;
-		log_message( log_module, MSG_INFO,"Too many clients connected, we raise an error to  %s\n", inet_ntoa(tempSocketAddrIn.sin_addr));
-		iRet=write(tempSocket,HTTP_503_REPLY, strlen(HTTP_503_REPLY));
-		if(iRet<0)
-			log_message( log_module, MSG_INFO,"Error writing to %s\n", inet_ntoa(tempSocketAddrIn.sin_addr));
+
+		inet_ntop(AF_INET, &tempSocketAddrIn.sin_addr, addr_buf, sizeof(addr_buf));
+		log_message( log_module, MSG_INFO,"Too many clients connected, we raise an error to  %s\n", addr_buf);
+		iRet = write(tempSocket,HTTP_503_REPLY, strlen(HTTP_503_REPLY));
+		if (iRet < 0) {
+			inet_ntop(AF_INET, &tempSocketAddrIn.sin_addr, addr_buf, sizeof(addr_buf));
+			log_message(log_module, MSG_INFO, "Error writing to %s\n", addr_buf);
+		}
 		close(tempSocket);
 		return NULL;
 	}
@@ -1211,19 +1219,25 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
 		    && (channels[curr_channel].ratio_scrambled < unicast_vars->playlist_ignore_scrambled_ratio || unicast_vars->playlist_ignore_scrambled_ratio == 0)
 		)
 		{
+			char addr_buf[64];
+
 			if(!perport)
 			{
+				inet_ntop(AF_INET, &tempSocketAddr.sin_addr, addr_buf, sizeof(addr_buf));
+
 				unicast_reply_write(reply, "#EXTINF:0,%s\r\nhttp://%s:%d/bysid/%d\r\n",
 						channels[curr_channel].name,
-						inet_ntoa(tempSocketAddr.sin_addr) ,
+						addr_buf,
 						unicast_portOut ,
 						channels[curr_channel].service_id);
 			}
 			else if(channels[curr_channel].unicast_port)
 			{
+				inet_ntop(AF_INET, &tempSocketAddr.sin_addr, addr_buf, sizeof(addr_buf));
+
 				unicast_reply_write(reply, "#EXTINF:0,%s\r\nhttp://%s:%d/\r\n",
 						channels[curr_channel].name,
-						inet_ntoa(tempSocketAddr.sin_addr) ,
+						addr_buf,
 						channels[curr_channel].unicast_port);
 			}
 		}

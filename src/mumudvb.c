@@ -122,6 +122,9 @@
 #endif
 #ifndef _WIN32
 #include <sys/mman.h>
+#else
+#include <process.h> /* for getpid() */
+#define getpid() _getpid()
 #endif
 #include <pthread.h>
 
@@ -957,7 +960,7 @@ int main (int argc, char **argv)
 						filename_pid, strerror (errno));
 				exit(ERROR_CREATE_FILE);
 			}
-			fprintf (pidfile, "%d\n", getpid ());
+			fprintf (pidfile, "%d\n", getpid());
 			fclose (pidfile);
 		}
 

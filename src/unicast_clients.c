@@ -104,7 +104,7 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 	// Disable the Nagle (TCP No Delay) algorithm
 	int iRet;
 	int on = 1;
-	iRet=setsockopt(Socket, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on));
+	iRet = setsockopt(Socket, IPPROTO_TCP, TCP_NODELAY, (const char *)&on, sizeof(on));
 	if (iRet < 0)
 	{
 		log_message( log_module,  MSG_WARN,"setsockopt TCP_NODELAY failed : %s\n", strerror(errno));
@@ -112,8 +112,8 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 
 	int buffer_size;
 	socklen_t size;
-	size=sizeof(buffer_size);
-	iRet=getsockopt( Socket, SOL_SOCKET, SO_SNDBUF, &buffer_size, &size);
+	size = sizeof(buffer_size);
+	iRet = getsockopt(Socket, SOL_SOCKET, SO_SNDBUF, (char *)&buffer_size, &size);
 	if (iRet < 0)
 	{
 		log_message( log_module,  MSG_WARN,"get SO_SNDBUF failed : %s\n", strerror(errno));
@@ -123,15 +123,15 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 	if(unicast_vars->socket_sendbuf_size)
 	{
 		buffer_size = unicast_vars->socket_sendbuf_size;
-		iRet=setsockopt(Socket, SOL_SOCKET, SO_SNDBUF, &buffer_size, sizeof(buffer_size));
+		iRet = setsockopt(Socket, SOL_SOCKET, SO_SNDBUF, (const char *)&buffer_size, sizeof(buffer_size));
 		if (iRet < 0)
 		{
 			log_message( log_module,  MSG_WARN,"setsockopt SO_SNDBUF failed : %s\n", strerror(errno));
 		}
 		else
 		{
-			size=sizeof(buffer_size);
-			iRet=getsockopt( Socket, SOL_SOCKET, SO_SNDBUF, &buffer_size, &size);
+			size = sizeof(buffer_size);
+			iRet = getsockopt(Socket, SOL_SOCKET, SO_SNDBUF, (char *)&buffer_size, &size);
 			if (iRet < 0)
 				log_message( log_module,  MSG_WARN,"2nd get SO_SNDBUF failed : %s\n", strerror(errno));
 			else
@@ -176,8 +176,10 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *client)
 {
 	unicast_client_t *prev_client,*next_client;
+	char addr_buf[64];
 
-	log_message( log_module, MSG_FLOOD,"We delete the client %s:%d, socket %d\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port, client->Socket);
+	inet_ntop(AF_INET, &client->SocketAddr.sin_addr, addr_buf, sizeof(addr_buf));
+	log_message( log_module, MSG_FLOOD,"We delete the client %s:%d, socket %d\n", addr_buf, client->SocketAddr.sin_port, client->Socket);
 
 	if (client->Socket >= 0)
 	{
@@ -241,10 +243,12 @@ int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *chann
 {
 	unicast_client_t *last_client;
 	int iRet;
+	char addr_buf[64];
 
-	log_message( log_module, MSG_INFO,"We add the client %s:%d to the channel \"%s\"\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port,channel->name);
+	inet_ntop(AF_INET, &client->SocketAddr.sin_addr, addr_buf, sizeof(addr_buf));
+	log_message( log_module, MSG_INFO,"We add the client %s:%d to the channel \"%s\"\n", addr_buf, client->SocketAddr.sin_port,channel->name);
 
-	iRet=write(client->Socket,HTTP_OK_REPLY, strlen(HTTP_OK_REPLY));
+    iRet = write(client->Socket, HTTP_OK_REPLY, strlen(HTTP_OK_REPLY));
 	if(iRet!=strlen(HTTP_OK_REPLY))
 	{
 		log_message( log_module, MSG_INFO,"Error when sending the HTTP reply\n");

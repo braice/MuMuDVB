@@ -104,7 +104,7 @@ makesocket (char *szAddr, unsigned short port, int TTL, char *iface, struct sock
 		return -1;
 	}
 
-	iRet = setsockopt (iSocket, SOL_SOCKET, SO_REUSEADDR, &iReuse, sizeof (int));
+	iRet = setsockopt (iSocket, SOL_SOCKET, SO_REUSEADDR, (const char *)&iReuse, sizeof(int));
 	if (iRet < 0)
 	{
 		log_message( log_module,  MSG_ERROR,"setsockopt SO_REUSEADDR failed : %s\n",strerror(errno));
@@ -113,8 +113,7 @@ makesocket (char *szAddr, unsigned short port, int TTL, char *iface, struct sock
 		return -1;
 	}
 
-	iRet =
-			setsockopt (iSocket, IPPROTO_IP, IP_MULTICAST_TTL, &TTL, sizeof (int));
+    iRet = setsockopt(iSocket, IPPROTO_IP, IP_MULTICAST_TTL, (const char *)&TTL, sizeof(int));
 	if (iRet < 0)
 	{
 		log_message( log_module,  MSG_ERROR,"setsockopt IP_MULTICAST_TTL failed.  multicast in kernel? error : %s \n",strerror(errno));
@@ -123,8 +122,7 @@ makesocket (char *szAddr, unsigned short port, int TTL, char *iface, struct sock
 		return -1;
 	}
 
-	iRet = setsockopt (iSocket, IPPROTO_IP, IP_MULTICAST_LOOP,
-			&iLoop, sizeof (int));
+    iRet = setsockopt(iSocket, IPPROTO_IP, IP_MULTICAST_LOOP, (const char *)&iLoop, sizeof(int));
 	if (iRet < 0)
 	{
 		log_message( log_module,  MSG_ERROR,"setsockopt IP_MULTICAST_LOOP failed.  multicast in kernel? error : %s\n",strerror(errno));
@@ -149,7 +147,7 @@ makesocket (char *szAddr, unsigned short port, int TTL, char *iface, struct sock
 			iface_struct.imr_address.s_addr=INADDR_ANY;
 			iface_struct.imr_ifindex=iface_index;
 #endif
-			iRet = setsockopt (iSocket, IPPROTO_IP, IP_MULTICAST_IF, &iface_struct, sizeof (iface_struct));
+            iRet = setsockopt(iSocket, IPPROTO_IP, IP_MULTICAST_IF, (const char *)&iface_struct, sizeof(iface_struct));
 			if (iRet < 0)
 			{
 				log_message( log_module,  MSG_ERROR,"setsockopt IP_MULTICAST_IF failed.  multicast in kernel? error : %s \n",strerror(errno));
@@ -196,7 +194,7 @@ makesocket6 (char *szAddr, unsigned short port, int TTL, char *iface, struct soc
 		return -1;
 	}
 
-	iRet = setsockopt (iSocket, SOL_SOCKET, SO_REUSEADDR, &iReuse, sizeof (int));
+    iRet = setsockopt(iSocket, SOL_SOCKET, SO_REUSEADDR, (const char *)&iReuse, sizeof(int));
 	if (iRet < 0)
 	{
 		log_message( log_module,  MSG_ERROR,"setsockopt SO_REUSEADDR failed : %s\n",strerror(errno));
@@ -204,8 +202,7 @@ makesocket6 (char *szAddr, unsigned short port, int TTL, char *iface, struct soc
 		close(iSocket);
 		return -1;
 	}
-	iRet =
-			setsockopt (iSocket, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &TTL, sizeof (int));
+    iRet = setsockopt(iSocket, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, (const char *)&TTL, sizeof(int));
 	if (iRet < 0)
 	{
 		log_message( log_module,  MSG_ERROR,"setsockopt IPV6_MULTICAST_HOPS failed.  multicast in kernel? error : %s \n",strerror(errno));
@@ -220,7 +217,7 @@ makesocket6 (char *szAddr, unsigned short port, int TTL, char *iface, struct soc
 		if(iface_index)
 		{
 			log_message( log_module,  MSG_DEBUG, "Setting IPv6 multicast iface to %s, index %d",iface,iface_index);
-			iRet = setsockopt (iSocket, IPPROTO_IPV6, IPV6_MULTICAST_IF, &iface_index, sizeof (int));
+            iRet = setsockopt(iSocket, IPPROTO_IPV6, IPV6_MULTICAST_IF, (const char *)&iface_index, sizeof(int));
 			if (iRet < 0)
 			{
 				log_message( log_module,  MSG_ERROR,"setsockopt IPV6_MULTICAST_IF failed.  multicast in kernel? error : %s \n",strerror(errno));
@@ -273,7 +270,7 @@ makeclientsocket (char *szAddr, unsigned short port, int TTL, char *iface, struc
 		else
 			blub.imr_ifindex = 0;
 #endif
-		if (setsockopt (socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &blub, sizeof (blub)))
+        if (setsockopt(socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char *)&blub, sizeof(blub)))
 		{
 			log_message( log_module,  MSG_ERROR, "setsockopt IP_ADD_MEMBERSHIP ipv4 failed (multicast kernel?) : %s\n", strerror(errno));
 			set_interrupted(ERROR_NETWORK<<8);
@@ -316,7 +313,7 @@ makeclientsocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
 	}
 
 	//join the group
-	iRet=inet_pton (AF_INET6, szAddr,&blub.ipv6mr_multiaddr);
+    iRet = inet_pton(AF_INET6, szAddr, &blub.ipv6mr_multiaddr);
 	if (iRet != 1)
 	{
 		log_message( log_module,  MSG_ERROR,"inet_pton failed : %s\n", strerror(errno));
@@ -329,8 +326,7 @@ makeclientsocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
 		blub.ipv6mr_interface=if_nametoindex(iface);
 	else
 		blub.ipv6mr_interface = 0;
-	if (setsockopt
-			(socket, IPPROTO_IPV6, IPV6_JOIN_GROUP, &blub, sizeof (blub)))
+    if (setsockopt(socket, IPPROTO_IPV6, IPV6_JOIN_GROUP, (const char *)&blub, sizeof(blub)))
 	{
 		log_message( log_module,  MSG_ERROR, "setsockopt IPV6_JOIN_GROUP (ipv6) failed (multicast kernel?) : %s\n", strerror(errno));
 		set_interrupted(ERROR_NETWORK<<8);
@@ -367,7 +363,7 @@ makeTCPclientsocket (char *szAddr, unsigned short port,
 		return -1;
 	}
 
-	iRet = setsockopt (iSocket, SOL_SOCKET, SO_REUSEADDR, &iLoop, sizeof (int));
+    iRet = setsockopt(iSocket, SOL_SOCKET, SO_REUSEADDR, (const char *)&iLoop, sizeof(int));
 	if (iRet < 0)
 	{
 		log_message( log_module,  MSG_ERROR,"setsockopt SO_REUSEADDR failed : %s\n", strerror(errno));

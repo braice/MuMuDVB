@@ -42,6 +42,7 @@
 #include <unistd.h>
 #else
 #include <process.h> /* for getpid() */
+#define getpid() _getpid()
 #endif
 #include <errno.h>
 #include <time.h>
@@ -330,7 +331,7 @@ void log_message( char* log_module, int type,
 	log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%date",timestring);
 
 	char pidstring[10];
-	sprintf (pidstring, "%d", getpid ());
+	sprintf (pidstring, "%d", getpid());
 	log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%pid",pidstring);
 
 
@@ -1020,10 +1021,10 @@ void show_traffic( char *log_module, double now, int show_traffic_interval, mumu
 	static long show_traffic_time=0;
 
 	if(!show_traffic_time)
-		show_traffic_time=now;
+		show_traffic_time = (long)now;
 	if((now-show_traffic_time)>=show_traffic_interval)
 	{
-		show_traffic_time=now;
+		show_traffic_time = (long)now;
 		for (int curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++)
 		{
 			log_message( log_module,  MSG_INFO, "Traffic :  %.2f kb/s \t  for channel \"%s\"\n",
@@ -1067,7 +1068,9 @@ int convert_en300468_string(char *string, int max_len, int debug)
 
 	int encoding_control_char=8; //cf encodings_en300468
 	char *tempdest, *tempbuf;
+#ifdef HAVE_ICONV
 	char *dest;
+#endif
 	unsigned char *realstart;
 	unsigned char *src;
 	/* remove control characters and convert to UTF-8 the channel name */
@@ -1208,7 +1211,10 @@ int convert_en300468_string(char *string, int max_len, int debug)
 #else
 	if(debug) {log_message( log_module, MSG_DETAIL, "Iconv not present, no name encoding conversion \n");}
 #endif
+
+#ifdef HAVE_ICONV
 exit_iconv:
+#endif
 	if(debug) {log_message( log_module, MSG_FLOOD, "Converted text : \"%s\" (text encoding : %s)\n", string,encodings_en300468[encoding_control_char]);}
 
 	return encoding_control_char;

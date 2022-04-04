@@ -51,6 +51,7 @@
 
 #ifdef _WIN32
 #include <process.h> /* for getpid() */
+#define getpid() _getpid()
 #endif
 
 static char *log_module="Unicast : ";
@@ -61,12 +62,16 @@ static char *log_module="Unicast : ";
 int unicast_send_client_list_js (unicast_client_t *unicast_client, struct unicast_reply *reply)
 {
 	int client = 0;
+	char addr_buf[64] = { 0 };
+
 	while(unicast_client!=NULL)
 	{
+		inet_ntop(AF_INET, &unicast_client->SocketAddr.sin_addr, addr_buf, sizeof(addr_buf));
+
 		unicast_reply_write(reply, "{\t\t\"client_number\": %d, \"socket\": %d, \"remote_address\": \"%s\", \"remote_port\": %d, \"buffer_size\": %d, \"consecutive_errors\":%d, \"first_error_time\":%d, \"last_error_time\":%d },\n",
 							client,
 							unicast_client->Socket,
-							inet_ntoa(unicast_client->SocketAddr.sin_addr),
+							addr_buf,
 							unicast_client->SocketAddr.sin_port,
 							unicast_client->buffersize,
 							unicast_client->consecutive_errors,
@@ -366,7 +371,7 @@ unicast_send_json_state (int number_of_channels, mumudvb_channel_t *channels, in
 
 	// Mumudvb information
 	unicast_reply_write(reply, "\t\"version\" : \"%s\",\n",VERSION);
-	unicast_reply_write(reply, "\t\"pid\" : %d,\n",getpid ());
+	unicast_reply_write(reply, "\t\"pid\" : %d,\n", getpid());
 
 	// Uptime
 	extern long real_start_time;
@@ -593,11 +598,15 @@ unicast_send_prometheus (int number_of_channels, mumudvb_channel_t *channels, in
 int unicast_send_client_list_xml (unicast_client_t *unicast_client, struct unicast_reply *reply)
 {
 	int client = 0;
+	char addr_buf[64] = { 0 };
+
 	while(unicast_client!=NULL)
 	{
+		inet_ntop(AF_INET, &unicast_client->SocketAddr.sin_addr, addr_buf, sizeof(addr_buf));
+
 		unicast_reply_write(reply, "\t\t\t<client number=\"%d\">\n", client);
 		unicast_reply_write(reply, "\t\t\t\t<socket>%d</socket>", unicast_client->Socket);
-		unicast_reply_write(reply, "\t\t\t\t<remote_address><![CDATA[%s]]></remote_address>\n", inet_ntoa(unicast_client->SocketAddr.sin_addr));
+		unicast_reply_write(reply, "\t\t\t\t<remote_address><![CDATA[%s]]></remote_address>\n", addr_buf);
 		unicast_reply_write(reply, "\t\t\t\t<remote_port>%d</remote_port>", unicast_client->SocketAddr.sin_port);
 		unicast_reply_write(reply, "\t\t\t\t<buffersize>%u</buffersize>\n",unicast_client->buffersize);
 		unicast_reply_write(reply, "\t\t\t\t<consecutive_errors>%d</consecutive_errors>\n", unicast_client->consecutive_errors);
@@ -623,10 +632,10 @@ int unicast_send_channel_list_xml (int number_of_channels, mumudvb_channel_t *ch
 {
 
 #ifndef ENABLE_SCAM_SUPPORT
-        (void) scam_vars_v; //to make compiler happy
-		char *scam_vars;
+    (void) scam_vars_v; //to make compiler happy
 #else
-        scam_parameters_t *scam_vars=(scam_parameters_t *)scam_vars_v;
+    char *scam_vars;
+    scam_parameters_t *scam_vars=(scam_parameters_t *)scam_vars_v;
 #endif
 
 	// Channels list
@@ -737,7 +746,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 
 	// Mumudvb information
 	unicast_reply_write(reply, "\t<global_version><![CDATA[%s]]></global_version>\n",VERSION);
-	unicast_reply_write(reply, "\t<global_pid>%d</global_pid>\n",getpid ());
+	unicast_reply_write(reply, "\t<global_pid>%d</global_pid>\n", getpid());
 
 	// Uptime
 	extern long real_start_time;
