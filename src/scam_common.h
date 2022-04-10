@@ -68,8 +68,10 @@ typedef struct ca_pid {
 	unsigned int pid;
 	int index;      /* -1 == disable*/
 	} ca_pid_t;
-//We should not be able to get it so a number that is unlikely to happen
-#define CA_SET_PID 42424242
+// In older kernels < 4.14, CA_SET_PID was _IOW('o', 135, ca_pid_t) really.
+// Oscam defines it as a fixed integer value in module-dvbapi.h file
+// under DVBAPI_CA_SET_PID macro.
+#define CA_SET_PID 0x40086F87
 #endif
 
 
