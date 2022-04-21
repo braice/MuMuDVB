@@ -741,6 +741,8 @@ flag_descr_t service_type_descr[]={
 		{0x1c, "advanced codec frame compatible 3D HD digital television service"},
 		{0x1d, "advanced codec frame compatible 3D HD NVOD time-shifted service"},
 		{0x1e, "advanced codec frame compatible 3D HD NVOD reference service"},
+		{0x1f, "HEVC digital television service"},
+		{0x20, "HEVC UHD digital television service with HDR and/or a frame rate of 100 Hz, 120 000/1 001 Hz, or 120 Hz"},
 };
 /** @brief Convert the service type to str according to EN 300 468 v1.13.1 table 87
  *
