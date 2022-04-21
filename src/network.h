@@ -37,7 +37,6 @@
 #include <Ntddndis.h>
 #include <Iphlpapi.h>
 #include <Ws2def.h>
-#include <ws2ipdef.h>
 #include <netioapi.h>
 #else
 #include <sys/socket.h>

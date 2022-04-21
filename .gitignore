@@ -16,3 +16,4 @@ config.*
 .vs/
 MuMuDVB.vcxproj.user
 Debug/
+Release/
