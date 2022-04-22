@@ -1,0 +1,19 @@
+To build under windows (tested with VS2022)
+
+* copy src/config_win32.h to src/config.h
+* build pthread-win32 and place its release assets into pthread/lib folder.
+  inside should have, pthread_static_lib.lib (and pdb if you care)
+* only x86 build was tested and configured in the project file
+* Build as usual, either Debug or Release configuration
+
+Notes
+
+The only supported input method is file (tested) and named pipe (extensively
+tested). To send data, simply create a named pipe \\.\pipe\DVB_TUNERx where 
+x is a number 0...whatever to match 'adapter' index, and push TS data into it.
+
+CAM/SCAM is unsupported (completely skipped from build).
+
+Logging anywhere other than stdout is unsupported (no syslog/etc logging).
+
+iconv is not supported.

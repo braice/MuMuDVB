@@ -73,7 +73,7 @@ int open_fe(HANDLE *fd_frontend, char *base_path, int tuner, int rw, int full_pa
     }
 
     /* generate named pipe based on tuner number */
-    snprintf(device_path, sizeof(device_path), "\\\\.\\pipe\\ISDB_TUNER%d", tuner);
+    snprintf(device_path, sizeof(device_path), "\\\\.\\pipe\\DVB_TUNER%d", tuner);
     do {
         pipe = CreateFile(device_path, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
         if (pipe != INVALID_HANDLE_VALUE)
