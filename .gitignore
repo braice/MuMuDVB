@@ -13,3 +13,7 @@ config.*
 /src/stamp-h1
 *.o
 *.sw[po]
+.vs/
+MuMuDVB.vcxproj.user
+Debug/
+Release/

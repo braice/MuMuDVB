@@ -1,23 +1,23 @@
-/* 
+/*
  * mumudvb - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
- * 
+ *
  * (C) 2004-2013 Brice DUBOST
- * 
+ *
  * The latest version can be found at http://mumudvb.net
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -26,22 +26,34 @@
 
 /** @file
  * @brief Log functions for mumudvb
- * 
+ *
  * This file contains functions to log messages or write logging information to a file
  */
+
+#define _POSIX_C_SOURCE 200809L
+#define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stddef.h>
+#ifndef _WIN32
 #include <syslog.h>
+#include <unistd.h>
+#else
+#include <process.h> /* for getpid() */
+#define getpid() _getpid()
+#endif
 #include <errno.h>
-#include <linux/dvb/version.h>
 #include <time.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <inttypes.h>
 
+#include "config.h"
+
+#ifndef DISABLE_DVB_API
+#include <linux/dvb/version.h>
+#endif
 
 #include "mumudvb.h"
 #include "errors.h"
@@ -140,12 +152,14 @@ int read_logging_configuration(stats_infos_t *stats_infos, char *substring)
 		substring = strtok (NULL, delimiteurs);
 		if (!strcmp (substring, "console"))
 			log_params.log_type |= LOGGING_CONSOLE;
+#ifndef _WIN32
 		else if (!strcmp (substring, "syslog"))
 		{
 			openlog ("MUMUDVB", LOG_PID, 0);
 			log_params.log_type |= LOGGING_SYSLOG;
 			log_params.syslog_initialised=1;
 		}
+#endif
 		else
 			log_message(log_module,MSG_WARN,"Invalid value for log_type\n");
 	}
@@ -176,7 +190,7 @@ int read_logging_configuration(stats_infos_t *stats_infos, char *substring)
 	else if (!strcmp (substring, "log_flush_interval"))
 	{
 		substring = strtok (NULL, delimiteurs);
-		log_params.log_flush_interval = atof (substring);
+		log_params.log_flush_interval = (float)atof(substring);
 	}
 	else
 		return 0;
@@ -280,8 +294,10 @@ void log_message( char* log_module, int type,
 		{
 			if (log_params.log_type == LOGGING_FILE)
 				fprintf( log_params.log_file,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+#ifndef _WIN32
 			else if (log_params.log_type == LOGGING_SYSLOG)
 				syslog (MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+#endif
 			else
 				fprintf( stderr,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 			va_end( args );
@@ -306,12 +322,16 @@ void log_message( char* log_module, int type,
 	actual_time=time(NULL);
 	sprintf(timestring,"%jd", (intmax_t)actual_time);
 	log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%timeepoch",timestring);
+#ifndef _WIN32
 	asctime_r(localtime(&actual_time),timestring);
+#else
+	asctime_s(timestring, sizeof(timestring), localtime(&actual_time));
+#endif
 	timestring[strlen(timestring)-1]='\0'; //In order to remove the final '\n' but by asctime
 	log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%date",timestring);
 
 	char pidstring[10];
-	sprintf (pidstring, "%d", getpid ());
+	sprintf (pidstring, "%d", getpid());
 	log_string.string=mumu_string_replace(log_string.string,&log_string.length,1,"%pid",pidstring);
 
 
@@ -329,8 +349,10 @@ void log_message( char* log_module, int type,
 	{
 		if (log_params.log_type == LOGGING_FILE)
 			fprintf( log_params.log_file,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+#ifndef _WIN32
 		else if (log_params.log_type == LOGGING_SYSLOG)
 			syslog (MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+#endif
 		else
 			fprintf( stderr,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 		va_end( args );
@@ -355,6 +377,7 @@ void log_message( char* log_module, int type,
 	{
 		if ( log_params.log_type & LOGGING_FILE)
 			fprintf(log_params.log_file,"%s",log_string.string);
+#ifndef _WIN32
 		if((log_params.log_type & LOGGING_SYSLOG) && (log_params.syslog_initialised))
 		{
 			//what is the priority ?
@@ -382,13 +405,13 @@ void log_message( char* log_module, int type,
 			}
 			syslog (priority,"%s",log_string.string);
 		}
+#endif
 		if((log_params.log_type == LOGGING_UNDEFINED) ||
 				(log_params.log_type & LOGGING_CONSOLE) ||
 				((log_params.log_type & LOGGING_SYSLOG) && (log_params.syslog_initialised==0)))
 			fprintf(stderr,"%s",log_string.string);
 	}
 	mumu_free_string(&log_string);
-
 }
 
 /**
@@ -673,7 +696,7 @@ ca_sys_id_t casysids[]={
 int num_casysids=130;
 
 
-/** @brief Display the ca system id according to ETR 162 
+/** @brief Display the ca system id according to ETR 162
  *
  * @param id the id to display
  */
@@ -967,7 +990,7 @@ void print_info ()
 			"by Brice DUBOST (mumudvb@braice.net)\n\n"
 #if DVB_API_VERSION >= 5
 			,DVB_API_VERSION,DVB_API_VERSION_MINOR
-#endif			
+#endif
 			);
 
 }
@@ -1000,10 +1023,10 @@ void show_traffic( char *log_module, double now, int show_traffic_interval, mumu
 	static long show_traffic_time=0;
 
 	if(!show_traffic_time)
-		show_traffic_time=now;
+		show_traffic_time = (long)now;
 	if((now-show_traffic_time)>=show_traffic_interval)
 	{
-		show_traffic_time=now;
+		show_traffic_time = (long)now;
 		for (int curr_channel = 0; curr_channel < chan_p->number_of_channels; curr_channel++)
 		{
 			log_message( log_module,  MSG_INFO, "Traffic :  %.2f kb/s \t  for channel \"%s\"\n",
@@ -1047,7 +1070,9 @@ int convert_en300468_string(char *string, int max_len, int debug)
 
 	int encoding_control_char=8; //cf encodings_en300468
 	char *tempdest, *tempbuf;
+#ifdef HAVE_ICONV
 	char *dest;
+#endif
 	unsigned char *realstart;
 	unsigned char *src;
 	/* remove control characters and convert to UTF-8 the channel name */
@@ -1188,14 +1213,14 @@ int convert_en300468_string(char *string, int max_len, int debug)
 #else
 	if(debug) {log_message( log_module, MSG_DETAIL, "Iconv not present, no name encoding conversion \n");}
 #endif
+
+#ifdef HAVE_ICONV
 exit_iconv:
+#endif
 	if(debug) {log_message( log_module, MSG_FLOOD, "Converted text : \"%s\" (text encoding : %s)\n", string,encodings_en300468[encoding_control_char]);}
 
 	return encoding_control_char;
-
 }
-
-
 
 /** @brief : show the contents of the CA identifier descriptor
  *

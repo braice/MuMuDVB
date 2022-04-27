@@ -1,7 +1,7 @@
-/* 
+/*
  * MuMuDVB - Stream a DVB transport stream.
  * File for Conditionnal Access Modules support
- * 
+ *
  * (C) 2004-2011 Brice DUBOST <mumudvb@braice.net>
  *
  * The latest version can be found at http://mumudvb.net
@@ -9,19 +9,19 @@
  * Code inspired by libdvben50221 examples from dvb apps
  * Copyright (C) 2004, 2005 Manu Abraham <abraham.manu@gmail.com>
  * Copyright (C) 2006 Andrew de Quincey (adq_dvb@lidskialf.net)
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -47,7 +47,7 @@
 
 /**@file
  * @brief cam support
- * 
+ *
  * Code for talking with conditionnal access modules. This code uses the libdvben50221 from dvb-apps
  */
 
@@ -684,7 +684,7 @@ int mumudvb_cam_new_pmt(cam_p_t *cam_p, mumudvb_ts_packet_t *cam_pmt_ptr, int ne
 		if ((size = en50221_ca_format_pmt(pmt, capmt, sizeof(capmt), cam_p->moveca, list_managment, CA_PMT_CMD_ID_OK_DESCRAMBLING)) < 0) {
 
 			/*CA_PMT_CMD_ID_QUERY)) < 0) {
-	We don't do query, the query is never working very well. This is because the CAM cannot ask the card if 
+	We don't do query, the query is never working very well. This is because the CAM cannot ask the card if
 	you have the rights for the channel. So this answer is often not reliable.
 
 	Much thanks to Aston www.aston-france.com for the explanation

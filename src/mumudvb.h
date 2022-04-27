@@ -1,23 +1,23 @@
-/* 
+/*
  * MuMuDVB - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
- * 
+ *
  * (C) 2004-2010 Brice DUBOST
- * 
+ *
  * The latest version can be found at http://mumudvb.net/
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -36,7 +36,11 @@
 #include "ts.h"
 #include "config.h"
 #include <pthread.h>
+#ifndef _WIN32
 #include <net/if.h>
+#else
+#include "win32.h"
+#endif
 
 #define MAX_FILENAME_LEN 256
 
@@ -90,8 +94,7 @@
 #define ALARM_TIME_TIMEOUT 60
 #define ALARM_TIME_TIMEOUT_NO_DIFF 600
 
-
-/** MTU 
+/** MTU
     1500 bytes - ip header (12bytes) - TCP header (biggest between TCP and udp) 24  : 7 mpeg2-ts packet per ethernet frame
 
 We cannot discover easily the MTU with unconnected UDP
@@ -157,7 +160,7 @@ typedef enum option_status {
 } option_status_t;
 
 /** Enum to tell if a channel parameter is user set or autodetected, to avoid erasing of user set params*/
-typedef enum mumu_f {
+typedef enum mumu_f_t {
 	F_UNDEF,
 	F_USER,
 	F_DETECTED
@@ -202,17 +205,25 @@ enum
 };
 
 /**@brief file descriptors*/
-typedef struct {
+typedef struct fds_t {
 	/** the dvb dvr*/
+#ifdef _WIN32
+	HANDLE fd_dvr;
+#else
 	int fd_dvr;
+#endif
 	/** the dvb frontend*/
+#ifndef _WIN32
 	int fd_frontend;
+#endif
+	/** udp source socket */
+	int fd_source;
 	/** demuxer file descriptors */
 	int fd_demuxer[8193];
 	/** poll file descriptors */
 	struct pollfd *pfds;	//  DVR device
 	int pfdsnum;
-}fds_t;
+} fds_t;
 
 #ifdef ENABLE_SCAM_SUPPORT
 /**@brief Structure containing ring buffer*/
@@ -235,7 +246,7 @@ typedef struct {
 	unsigned int to_send;
 	/** Read index of buffer for sending thread */
 	unsigned int read_send_idx;
-}ring_buffer_t;  
+}ring_buffer_t;
 #endif
 
 /**@brief Structure containing the card buffers*/
@@ -308,13 +319,12 @@ typedef enum chan_status {
  * All members are protected by the global lock in chan_p, with the
  * following exceptions:
  *
- *  - The EIT variables, since they are only ever accessed from the main thread. 
+ *  - The EIT variables, since they are only ever accessed from the main thread.
  *  - buf/nb_bytes, since they are only ever accessed from one thread: SCAM_SEND
  *    if we are using scam, or the main thread otherwise.
  *  - the odd/even keys, since they have their own locking.
  */
-typedef struct mumu_chan_t{
-
+typedef struct mumudvb_channel_t{
 	/** Flag to say the channel is ready for streaming */
 	chan_status_t channel_ready;
 
@@ -340,7 +350,7 @@ typedef struct mumu_chan_t{
 	/**the channel name*/
 	char user_name[MAX_NAME_LEN];
 	char name[MAX_NAME_LEN];
-	MU_F_T(name);
+	mumu_f_t name_f; /* MU_F_T(name); */
 	char service_name[MAX_NAME_LEN];
 
 	/* The PID information for this channel*/
@@ -349,10 +359,12 @@ typedef struct mumu_chan_t{
 	/** The service Type from the SDT */
 	int service_type;
 	/**Transport stream ID*/
-	MU_F_V(int,service_id);
+	int service_id;
+	mumu_f_t service_id_f; /* MU_F_V(int,service_id); */
 
 	/**Say if we need to ask this channel to the cam*/
-	MU_F_V(int,need_cam_ask);
+	int need_cam_ask;
+	mumu_f_t need_cam_ask_f; /* MU_F_V(int,need_cam_ask); */
 	/** When did we asked the channel to the CAM */
 	long cam_asking_time;
 	/**The ca system ids*/
@@ -462,13 +474,11 @@ typedef struct mumu_chan_t{
 	/**Unicast port (listening socket per channel) */
 	MU_F_V(int,unicast_port)
 	/**Unicast listening socket*/
-	struct sockaddr_in sIn;
-	/**Unicast listening socket*/
 	int socketIn;
 
 	/**The sap playlist group*/
 	char sap_group[SAP_GROUP_LENGTH];
-	MU_F_T(sap_group);
+	mumu_f_t sap_group_f; /* MU_F_T(sap_group); */
 	//do we need to update the SAP announce (typically a name change)
 	int sap_need_update;
 
@@ -614,13 +624,13 @@ int mumu_init_chan(mumudvb_channel_t *chan);
 void chan_update_CAM(mumu_chan_p_t *chan_p, struct auto_p_t *auto_p,  void *scam_vars_v);
 void update_chan_net(mumu_chan_p_t *chan_p, struct auto_p_t *auto_p, multi_p_t *multi_p, struct unicast_parameters_t *unicast_vars, int server_id, int card, int tuner);
 void update_chan_filters(mumu_chan_p_t *chan_p, char *card_base_path, int tuner, fds_t *fds);
-long int mumu_timing();
+long int mumu_timing(void);
 
 /** Sets the interrupted flag if value != 0 and it is not already set.
  * In any case, returns the given value back. Thread- and signal-safe. */
 int set_interrupted(int value);
 
 /** Gets the interrupted flag; 0 if we have not been interrupted. */
-int get_interrupted();
+int get_interrupted(void);
 
 #endif

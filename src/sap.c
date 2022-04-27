@@ -28,6 +28,8 @@
  * @date 2008-2013
  */
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "sap.h"
 #include "network.h"
 #include <string.h>
@@ -218,7 +220,7 @@ int init_sap(sap_p_t *sap_p, multi_p_t multi_p)
 
 
 /** @brief Send the sap message
- * 
+ *
  * @param sap_p the sap variables
  * @param num_messages the number of sap messages
  */
@@ -257,7 +259,7 @@ int sap_update(mumudvb_channel_t *channel, sap_p_t *sap_p, int curr_channel, mul
 
 	struct in_addr ip_struct4;
 	struct sockaddr_in6 ip_struct6;
-	in_addr_t ip4;
+	uint32_t ip4;
 	struct in6_addr ip6;
 	mumudvb_sap_message_t *sap_message4=NULL;
 	mumudvb_sap_message_t *sap_message6=NULL;
@@ -291,7 +293,7 @@ int sap_update(mumudvb_channel_t *channel, sap_p_t *sap_p, int curr_channel, mul
 
 	if(channel->socketOut4)
 	{
-		if( inet_aton(sap_p->sap_sending_ip4, &ip_struct4))
+		if (inet_pton(AF_INET, sap_p->sap_sending_ip4, &ip_struct4))
 		{
 			ip4=ip_struct4.s_addr;
 			/* Bytes 4-7 (or 4-19) byte: Originating source */
@@ -501,9 +503,8 @@ int sap_add_program(mumudvb_channel_t *channel, sap_p_t *sap_p, mumudvb_sap_mess
 	if(channel->socketOut4)
 	{
 		struct in_addr ip_struct4;
-		if( inet_aton(sap_p->sap_sending_ip4, &ip_struct4) && ip_struct4.s_addr)
-			mumu_string_append(&payload4,
-					"a=source-filter: incl IN IP4 %s %s\r\n", channel->ip4Out, sap_p->sap_sending_ip4);
+		if (inet_pton(AF_INET, sap_p->sap_sending_ip4, &ip_struct4) && ip_struct4.s_addr)
+			mumu_string_append(&payload4, "a=source-filter: incl IN IP4 %s %s\r\n", channel->ip4Out, sap_p->sap_sending_ip4);
 	}
 	if(channel->socketOut6)
 	{
@@ -511,7 +512,7 @@ int sap_add_program(mumudvb_channel_t *channel, sap_p_t *sap_p, mumudvb_sap_mess
 		if( inet_pton(AF_INET6, sap_p->sap_sending_ip6, &ip_struct6))
 		{
 			//ugly way to test non zero ipv6 addr but I didn found a better one
-			u_int8_t  *s6;
+			uint8_t *s6;
 			s6=ip_struct6.sin6_addr.s6_addr;
 			if(s6[0]||s6[1]||s6[2]||s6[3]||s6[4]||s6[5]||s6[6]||s6[7]||s6[8]||s6[9]||s6[10]||s6[11]||s6[12]||s6[13]||s6[14]||s6[15])
 				mumu_string_append(&payload6,
@@ -546,11 +547,11 @@ int sap_add_program(mumudvb_channel_t *channel, sap_p_t *sap_p, mumudvb_sap_mess
 
      Without RTP
 
-     m=video channel_port udp 33     
+     m=video channel_port udp 33
 
-     With RTP 
+     With RTP
 
-     m=video channel_port rtp/avp 33     
+     m=video channel_port rtp/avp 33
 
 	 */
 	if(!multi_p.rtp_header)

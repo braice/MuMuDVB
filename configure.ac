@@ -12,14 +12,14 @@ dnl Check for linux dvb api headers
 dnl
 AC_CHECK_HEADER([linux/dvb/dmx.h])
 if test "$ac_cv_header_linux_dvb_dmx_h" = no; then
-        AC_MSG_ERROR([linux dvb api headers are required to build])
+        AC_MSG_WARN([linux dvb api headers not found, disabling dvb api functionality])
+        AC_DEFINE(DISABLE_DVB_API, 1, Define if you want to bulid without DVB API)
 fi
 
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
-AC_PROG_CC_C99
 
 dnl
 dnl Iconv stuff

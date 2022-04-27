@@ -135,9 +135,9 @@ void autoconf_get_pmt_pids(auto_p_t *auto_p, mumudvb_ts_packet_t *pmt, int *pids
 			// The pid might be already added (the EMM pid might be used by different CA systems)
 			// Check if it was already added
 			int pid_already_added = 0;
-			for(int i = 0; i < *num_pids; i++)
+			for(int j = 0; j < *num_pids; j++)
 			{
-				if(pids[i] == ca_system->emm_pid)
+				if(pids[j] == ca_system->emm_pid)
 				{
 					pid_already_added = 1;
 					break;
@@ -480,7 +480,8 @@ int autoconf_read_pmt(auto_p_t *auto_p, mumudvb_channel_t *channel, mumudvb_ts_p
 
 		//We display it just for information the filter update is done elsewhere
 		//We search for added PIDs
-		for(int i=0,found=0;i<temp_num_pids;i++)
+		found = 0;
+		for(int i=0;i<temp_num_pids;i++)
 		{
 			for(int j=0;j<channel->pid_i.num_pids;j++)
 				if(channel->pid_i.pids[j]==temp_pids[i])
@@ -492,7 +493,8 @@ int autoconf_read_pmt(auto_p_t *auto_p, mumudvb_channel_t *channel, mumudvb_ts_p
 						temp_pids_language[i]);
 		}
 		//We search for suppressed pids
-		for(int i=0,found=0;i<channel->pid_i.num_pids;i++)
+		found = 0;
+		for(int i=0;i<channel->pid_i.num_pids;i++)
 		{
 			for(int j=0;j<temp_num_pids;j++)
 				if(channel->pid_i.pids[i]==temp_pids[j] || channel->pid_i.pids[i] == channel->pid_i.pmt_pid )

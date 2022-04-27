@@ -1,31 +1,30 @@
-/* 
+/*
  * MuMuDVB - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
- * 
+ *
  * (C) 2004-2014 Brice DUBOST
- * 
+ *
  * The latest version can be found at http://mumudvb.net
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  */
 
-
-
+#define _CRT_SECURE_NO_WARNINGS
 
 #include "mumudvb.h"
 #include "log.h"
@@ -33,17 +32,52 @@
 #include "rtp.h"
 #include "unicast_http.h"
 
+#ifndef _WIN32
 #include <sys/poll.h>
 #include <sys/time.h>
+#endif
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#ifdef ENABLE_SCAM_SUPPORT
 #include "scam_common.h"
-
+#endif
 
 static char *log_module="Common: ";
 
+#ifdef _WIN32
+static int poll(struct pollfd *pfd, int n, int milliseconds)
+{
+	struct timeval tv;
+	fd_set set;
+	int i, result;
+	SOCKET maxfd = 0;
+
+	tv.tv_sec = milliseconds / 1000;
+	tv.tv_usec = (milliseconds % 1000) * 1000;
+	FD_ZERO(&set);
+
+	for (i = 0; i < n; i++) {
+		FD_SET((SOCKET)pfd[i].fd, &set);
+		pfd[i].revents = 0;
+
+		if (pfd[i].fd > maxfd) {
+			maxfd = pfd[i].fd;
+		}
+	}
+
+	if ((result = select(maxfd + 1, &set, NULL, NULL, &tv)) > 0) {
+		for (i = 0; i < n; i++) {
+			if (FD_ISSET(pfd[i].fd, &set)) {
+				pfd[i].revents = POLLIN;
+			}
+		}
+	}
+
+	return result;
+}
+#endif
 
 /** @brief : poll the file descriptors fds with a limit in the number of errors and timeout
  */
@@ -63,6 +97,12 @@ int mumudvb_poll(struct pollfd *pfds, int pfdsnum,int timeout)
 		poll_ret=poll (pfds, pfdsnum, timeout);
 		if(poll_ret<0)
 		{
+#ifdef _WIN32
+			errno = WSAGetLastError();
+			printf("poll returns: %08x\n", errno);
+#undef EINTR
+#define EINTR WSAEINTR
+#endif
 			if(errno != EINTR) //EINTR means Interrupted System Call, it normally shouldn't matter so much so we don't count it for our Poll tries
 			{
 				poll_try++;
@@ -275,7 +315,7 @@ void mumu_free_string(mumu_string_t *string)
 
 /** @brief return the time (in usec) elapsed between the two last calls of this function.
  */
-long int mumu_timing()
+long int mumu_timing(void)
 {
 	static int started=0;
 	static struct timeval oldtime;
@@ -298,129 +338,128 @@ long int mumu_timing()
 /** @brief getting current system time (in usec).
  */
 uint64_t get_time(void) {
+#ifndef _WIN32
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	return (ts.tv_sec * 1000000ll + ts.tv_nsec / 1000);
+#else
+	FILETIME ft;
+	GetSystemTimeAsFileTime(&ft);
+	uint64_t tt = ft.dwHighDateTime;
+	tt <<= 32;
+	tt |= ft.dwLowDateTime;
+	tt /= 10;
+	tt -= 11644473600000000ULL;
+
+	return tt;
+#endif
 }
 /** @brief function for buffering demultiplexed data.
  */
-void buffer_func (mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, void *scam_vars_v)
+void buffer_func(mumudvb_channel_t *channel, unsigned char *ts_packet, struct unicast_parameters_t *unicast_vars, void *scam_vars_v)
 {
-	int pid;			/** pid of the current mpeg2 packet */
-	int ScramblingControl;
-	int curr_pid = 0;
-	int send_packet = 0;
-	extern int dont_send_scrambled;
+    int pid;			/** pid of the current mpeg2 packet */
+    int ScramblingControl;
+    int curr_pid = 0;
+    int send_packet = 0;
+    extern int dont_send_scrambled;
 
 #ifndef ENABLE_SCAM_SUPPORT
-	(void) scam_vars_v; //to make compiler happy
+    (void) scam_vars_v; //to make compiler happy
 #else
-	scam_parameters_t *scam_vars=(scam_parameters_t *)scam_vars_v;
+    scam_parameters_t *scam_vars = (scam_parameters_t *)scam_vars_v;
 #endif
-	uint64_t now_time;
+    uint64_t now_time;
 #ifdef ENABLE_SCAM_SUPPORT
-	if (channel->scam_support && channel->scam_support_started && scam_vars->scam_support) {
-		pthread_mutex_lock(&channel->ring_buf->lock);
-		memcpy(channel->ring_buf->data+TS_PACKET_SIZE*channel->ring_buf->write_idx, ts_packet, TS_PACKET_SIZE);
-		now_time=get_time();
-		channel->ring_buf->time_send[channel->ring_buf->write_idx]=now_time + channel->send_delay;
-		channel->ring_buf->time_decsa[channel->ring_buf->write_idx]=now_time + channel->decsa_delay;
-		++channel->ring_buf->write_idx;
-		channel->ring_buf->write_idx&=(channel->ring_buffer_size -1);
+    if (channel->scam_support && channel->scam_support_started && scam_vars->scam_support) {
+        pthread_mutex_lock(&channel->ring_buf->lock);
+        memcpy(channel->ring_buf->data + TS_PACKET_SIZE * channel->ring_buf->write_idx, ts_packet, TS_PACKET_SIZE);
+        now_time = get_time();
+        channel->ring_buf->time_send[channel->ring_buf->write_idx] = now_time + channel->send_delay;
+        channel->ring_buf->time_decsa[channel->ring_buf->write_idx] = now_time + channel->decsa_delay;
+        ++channel->ring_buf->write_idx;
+        channel->ring_buf->write_idx &= (channel->ring_buffer_size - 1);
 
-		++channel->ring_buf->to_descramble;
+        ++channel->ring_buf->to_descramble;
 
-		pthread_mutex_unlock(&channel->ring_buf->lock);
-	} else
+        pthread_mutex_unlock(&channel->ring_buf->lock);
+    } else
 #endif
-	{
+    {
 
-		pid = ((ts_packet[1] & 0x1f) << 8) | (ts_packet[2]);
-		ScramblingControl = (ts_packet[3] & 0xc0) >> 6;
-		pthread_mutex_lock(&channel->stats_lock);
-		for (curr_pid = 0; (curr_pid < channel->pid_i.num_pids); curr_pid++)
-			if ((channel->pid_i.pids[curr_pid] == pid) || (channel->pid_i.pids[curr_pid] == 8192)) //We can stream whole transponder using 8192
-			{
-				if ((ScramblingControl>0) && (pid != channel->pid_i.pmt_pid) )
-					channel->num_scrambled_packets++;
+        pid = ((ts_packet[1] & 0x1f) << 8) | (ts_packet[2]);
+        ScramblingControl = (ts_packet[3] & 0xc0) >> 6;
+        pthread_mutex_lock(&channel->stats_lock);
+        for (curr_pid = 0; (curr_pid < channel->pid_i.num_pids); curr_pid++) {
+            if ((channel->pid_i.pids[curr_pid] == pid) || (channel->pid_i.pids[curr_pid] == 8192)) //We can stream whole transponder using 8192
+            {
+                if ((ScramblingControl > 0) && (pid != channel->pid_i.pmt_pid))
+                    channel->num_scrambled_packets++;
 
-				//check if the PID is scrambled for determining its state
-				if (ScramblingControl>0) channel->pid_i.pids_num_scrambled_packets[curr_pid]++;
+                //check if the PID is scrambled for determining its state
+                if (ScramblingControl > 0) channel->pid_i.pids_num_scrambled_packets[curr_pid]++;
 
-				//we don't count the PMT pid for up channels
-				if (pid != channel->pid_i.pmt_pid)
-					channel->num_packet++;
-				break;
-			}
-		pthread_mutex_unlock(&channel->stats_lock);
-		//avoid sending of scrambled channels if we asked to
-		send_packet=1;
-		if(dont_send_scrambled && (ScramblingControl>0)&& (channel->pid_i.pmt_pid) )
-			send_packet=0;
+                //we don't count the PMT pid for up channels
+                if (pid != channel->pid_i.pmt_pid)
+                    channel->num_packet++;
+                break;
+            }
+        }
+        pthread_mutex_unlock(&channel->stats_lock);
+        //avoid sending of scrambled channels if we asked to
+        send_packet = 1;
+        if (dont_send_scrambled && (ScramblingControl > 0) && (channel->pid_i.pmt_pid))
+            send_packet = 0;
 
-		if (send_packet) {
-			// we fill the channel buffer
-			memcpy(channel->buf + channel->nb_bytes, ts_packet, TS_PACKET_SIZE);
-			channel->nb_bytes += TS_PACKET_SIZE;
-		}
-		//The buffer is full, we send it
-		if ((!channel->rtp && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
-				||(channel->rtp && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE))) {
-			now_time=get_time();
-			send_func(channel, now_time, unicast_vars);
-		}
-
-	}
-
-
+        if (send_packet) {
+            // we fill the channel buffer
+            memcpy(channel->buf + channel->nb_bytes, ts_packet, TS_PACKET_SIZE);
+            channel->nb_bytes += TS_PACKET_SIZE;
+        }
+        //The buffer is full, we send it
+        if ((!channel->rtp && ((channel->nb_bytes + TS_PACKET_SIZE) > MAX_UDP_SIZE))
+            || (channel->rtp && ((channel->nb_bytes + RTP_HEADER_LEN + TS_PACKET_SIZE) > MAX_UDP_SIZE))) {
+            now_time = get_time();
+            send_func(channel, now_time, unicast_vars);
+        }
+    }
 }
 
 
 /** @brief function for sending demultiplexed data.
  */
-void send_func (mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars)
+void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_parameters_t *unicast_vars)
 {
-	//For bandwith measurement (traffic)
-	pthread_mutex_lock(&channel->stats_lock);
-	channel->sent_data+=channel->nb_bytes+20+8; // IP=20 bytes header and UDP=8 bytes header
-	if (channel->rtp) channel->sent_data+=RTP_HEADER_LEN;
-	pthread_mutex_unlock(&channel->stats_lock);
+    //For bandwith measurement (traffic)
+    pthread_mutex_lock(&channel->stats_lock);
+    channel->sent_data += channel->nb_bytes + 20 + 8; // IP=20 bytes header and UDP=8 bytes header
+    if (channel->rtp)
+        channel->sent_data += RTP_HEADER_LEN;
+    pthread_mutex_unlock(&channel->stats_lock);
 
-
-		/********** MULTICAST *************/
-		//if the multicast TTL is set to 0 we don't send the multicast packets
-		if((channel->socketOut4 >0 )|| (channel->socketOut6 >0 ))
-		{
-			unsigned char *data;
-			int data_len;
-			if(channel->rtp)
-			{
-				/****** RTP *******/
-				rtp_update_sequence_number(channel,now_time);
-				data=channel->buf_with_rtp_header;
-				data_len=channel->nb_bytes+RTP_HEADER_LEN;
-			}
-			else
-			{
-				data=channel->buf;
-				data_len=channel->nb_bytes;
-			}
-			if(channel->socketOut4)
-				sendudp (channel->socketOut4,
-						&channel->sOut4,
-						data,
-						data_len);
-			if(channel->socketOut6)
-				sendudp6 (channel->socketOut6,
-						&channel->sOut6,
-						data,
-						data_len);
-		}
-	/*********** UNICAST **************/
-	unicast_data_send(channel, unicast_vars);
-	/********* END of UNICAST **********/
-	channel->nb_bytes = 0;
-
+    /********** MULTICAST *************/
+    //if the multicast TTL is set to 0 we don't send the multicast packets
+    if ((channel->socketOut4 > 0) || (channel->socketOut6 > 0)) {
+        unsigned char *data;
+        int data_len;
+        if (channel->rtp) {
+            /****** RTP *******/
+            rtp_update_sequence_number(channel, now_time);
+            data = channel->buf_with_rtp_header;
+            data_len = channel->nb_bytes + RTP_HEADER_LEN;
+        } else {
+            data = channel->buf;
+            data_len = channel->nb_bytes;
+        }
+        if (channel->socketOut4)
+            sendudp(channel->socketOut4, &channel->sOut4, data, data_len);
+        if (channel->socketOut6)
+            sendudp6(channel->socketOut6, &channel->sOut6, data, data_len);
+    }
+    /*********** UNICAST **************/
+    unicast_data_send(channel, unicast_vars);
+    /********* END of UNICAST **********/
+    channel->nb_bytes = 0;
 }
 
 static int interrupted = 0;
@@ -438,7 +477,7 @@ int set_interrupted(int value)
 	return value;
 }
 
-int get_interrupted()
+int get_interrupted(void)
 {
 	int ret;
 	pthread_mutex_lock(&interrupted_mutex);

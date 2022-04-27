@@ -30,6 +30,8 @@
  * It avoids to have ghost channels which can disturb the clients
  */
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -40,10 +42,7 @@
 #include "log.h"
 #include <stdint.h>
 
-
-
 static char *log_module="EIT rewrite: ";
-
 
 /** @brief Display the contents of the EIT table
  *
