@@ -117,12 +117,14 @@ void init_tune_v(tune_p_t *tune_p)
 				.pls_code = 0,
 				.pls_type = PLS_ROOT,
 	#endif
-				.read_file_path = {'\0'}
+				.read_file_path = { '\0', },
+				.source_addr = { '\0', }
 		};
 #else
 	*tune_p = (tune_p_t){
 		.fe_type = FE_QPSK, //sat by default
-		.read_file_path = {'\0'}
+		.read_file_path = { '\0', },
+		.source_addr = { '\0', }
 	};
 #endif
 }
@@ -718,6 +720,20 @@ int read_tuning_configuration(tune_p_t *tuneparams, char *substring)
 		log_message( log_module,  MSG_DEBUG,
 				"Overriding file from which we read the data %s", tuneparams->read_file_path);
 
+	}
+	else if (!strcmp(substring, "source_addr"))
+	{
+		substring = strtok(NULL, CONFIG_FILE_SEPARATOR);
+		if (strlen(substring) > INET6_ADDRSTRLEN) {
+			log_message(log_module, MSG_ERROR, "The IP address %s is too long.\n", substring);
+			exit(ERROR_CONF);
+		}
+		sscanf(substring, "%s\n", tuneparams->source_addr);
+	}
+	else if (!strcmp(substring, "source_port"))
+	{
+		substring = strtok(NULL, CONFIG_FILE_SEPARATOR);
+		tuneparams->source_port = atoi(substring);
 	}
 	else if (!strcmp (substring, "isdbt_layer"))
 	{

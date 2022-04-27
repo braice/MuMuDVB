@@ -297,6 +297,10 @@ int mumudvb_close(int no_daemon,
 	// we close the file descriptors
 	close_card_fd(fds);
 
+	/* we close the udp input socket */
+	if (fds->fd_source > 0)
+		close(fds->fd_source);
+
 	//We close the unicast connections and free the clients
 	unicast_freeing(unicast_vars);
 

@@ -218,6 +218,9 @@ typedef struct tune_p_t{
 #endif
   /** If we read directly from a file */
   char read_file_path[256];
+  /* If we read from a UDP/multicast source */
+  char source_addr[64];
+  unsigned short source_port;
 #if ISDBT
   //ISDB T
   /** ISDBT */

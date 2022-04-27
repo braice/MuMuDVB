@@ -139,7 +139,7 @@ int autoconf_read_psip(auto_p_t *auto_p, mumu_chan_p_t *chan_p)
 	else
 	{
 		//New version, no section seen
-		for(int i=0;i<256;i++)
+		for(i=0;i<256;i++)
 			auto_p->psip_sections_seen[i]=0;
 		auto_p->psip_version=psip->version_number;
 		auto_p->psip_all_sections_seen=0;
@@ -167,7 +167,7 @@ int autoconf_read_psip(auto_p_t *auto_p, mumu_chan_p_t *chan_p)
 
 	int sections_missing=0;
 	//We check if we saw all sections
-	for(int i=0;i<=psip->last_section_number;i++)
+	for(i=0;i<=psip->last_section_number;i++)
 		if(auto_p->psip_sections_seen[i]==0)
 			sections_missing++;
 	if(sections_missing)

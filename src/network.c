@@ -46,13 +46,37 @@
 
 static char *log_module="Network: ";
 
+int is_multicast(struct sockaddr_storage *sa)
+{
+    int rv = -1;
+    struct sockaddr_in *addr4;
+    struct sockaddr_in6 *addr6;
+
+    switch (sa->ss_family) {
+        case AF_INET:
+            addr4 = (struct sockaddr_in *)sa;
+            rv = IN_MULTICAST(ntohl(addr4->sin_addr.s_addr));
+            break;
+
+        case AF_INET6:
+            addr6 = (struct sockaddr_in6 *)sa;
+            rv = IN6_IS_ADDR_MULTICAST(&addr6->sin6_addr);
+            break;
+
+        default:
+            break;
+    }
+
+    return rv;
+}
+
 /**@brief Send data
  * just send the data over the socket fd
  */
 void sendudp(int fd, struct sockaddr_in *sSockAddr, unsigned char *data, int len)
 {
     int ret;
-    ret = sendto(fd, data, len, 0, (const struct sockaddr *)sSockAddr, sizeof(struct sockaddr_in));
+    ret = sendto(fd, (const char *)data, len, 0, (const struct sockaddr *)sSockAddr, sizeof(struct sockaddr_in));
     if (ret < 0)
         log_message(log_module, MSG_WARN, "sendto failed : %s\n", strerror(errno));
 }
@@ -63,7 +87,7 @@ void sendudp(int fd, struct sockaddr_in *sSockAddr, unsigned char *data, int len
 void sendudp6(int fd, struct sockaddr_in6 *sSockAddr, unsigned char *data, int len)
 {
     int ret;
-    ret = sendto(fd, data, len, 0, (const struct sockaddr *)sSockAddr, sizeof(struct sockaddr_in6));
+    ret = sendto(fd, (const char *)data, len, 0, (const struct sockaddr *)sSockAddr, sizeof(struct sockaddr_in6));
     if (ret < 0)
         log_message(log_module, MSG_WARN, "sendto failed : %s\n", strerror(errno));
 }
@@ -310,6 +334,99 @@ makeclientsocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
 	return socket;
 }
 
+int makeUDPclientsocket(char *szAddr, unsigned short port)
+{
+    int rv, sock, opt;
+    struct addrinfo hints = { 0, };
+    struct addrinfo *result = NULL;
+    char cPort[6] = { 0, };
+
+    /* prepare hints for conversion */
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_protocol = IPPROTO_UDP; /* UDP socket */
+    hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV;
+    snprintf(cPort, sizeof(cPort), "%d", port);
+
+    rv = getaddrinfo(szAddr, cPort, &hints, &result);
+    if (rv != 0) {
+        log_message(log_module, MSG_ERROR, "getaddrinfo failed : %s\n", strerror(errno));
+        return -1;
+    }
+
+    /* use the first result from getaddrinfo as its numeric, should be the only one */
+    sock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+    if (sock < 0) {
+        log_message(log_module, MSG_ERROR, "socket() failed.\n");
+        rv = -1;
+        goto cleanup;
+    }
+
+    /* set socket options */
+    opt = 1;
+    rv = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char *)&opt, sizeof(int));
+    if (rv < 0) {
+        log_message(log_module, MSG_ERROR, "setsockopt SO_REUSEADDR failed : %s\n", strerror(errno));
+        rv = -1;
+        goto cleanup;
+    }
+
+    opt = 0x80000;
+    rv = setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (void *)&opt, sizeof(int));
+    if (rv < 0) {
+        log_message(log_module, MSG_ERROR, "setsockopt SO_RCVBUF failed : %s\n", strerror(errno));
+        rv = -1;
+        goto cleanup;
+    }
+
+    /* bind to the socket */
+    if (bind(sock, result->ai_addr, result->ai_addrlen)) {
+        log_message(log_module, MSG_ERROR, "bind failed : %s\n", strerror(errno));
+        rv = -1;
+        goto cleanup;
+    }
+
+    /* Try join multicast group */
+    if (is_multicast((struct sockaddr_storage *)result->ai_addr)) {
+        struct ip_mreq v4req;
+        struct ipv6_mreq v6req;
+        size_t mlen = 0;
+        const char *req = NULL;
+        bool v6 = false;
+
+        switch (result->ai_family) {
+            case AF_INET:
+                v4req.imr_multiaddr.s_addr = ((struct in_addr *)result->ai_addr)->s_addr;
+                v4req.imr_interface.s_addr = INADDR_ANY;
+                req = (const char *)&v4req;
+                mlen = sizeof(v4req);
+                break;
+            case AF_INET6:
+                memcpy(&v6req.ipv6mr_multiaddr, result->ai_addr, sizeof(v6req.ipv6mr_multiaddr));
+                v6req.ipv6mr_interface = 0;
+                req = (const char *)&v6req;
+                mlen = sizeof(v6req);
+                v6 = true;
+                break;
+            default:
+                break;
+        }
+        if (setsockopt(sock, v6 ? IPPROTO_IPV6 : IPPROTO_IP, v6 ? IPV6_JOIN_GROUP : IP_ADD_MEMBERSHIP, req, mlen))
+            log_message(log_module, MSG_ERROR, "setsockopt IP_ADD_MEMBERSHIP/IPV6_JOIN_GROUP failed : %s\n", strerror(errno));
+    }
+
+    rv = 0;
+
+cleanup:
+    freeaddrinfo(result);
+    if (rv < 0) {
+        if (sock > 0)
+            close(sock);
+        sock = -1;
+    }
+
+    return sock;
+}
 
 /** @brief create a TCP receiver socket.
  *
@@ -382,7 +499,7 @@ int makeTCPclientsocket(char *szAddr, unsigned short port)
 		return -1;
 	}
 #else
-	uint32_t iMode = 0;
+    u_long iMode = 0;
 	flags = ioctlsocket(iSocket, FIONBIO, &iMode);
 	if (flags != NO_ERROR) {
 		log_message(log_module, MSG_ERROR, "Set non blocking failed : %s\n", strerror(errno));

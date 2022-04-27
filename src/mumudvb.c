@@ -882,7 +882,6 @@ int main (int argc, char **argv)
 	else
 		fclose (channels_not_streamed);
 
-
 #ifdef ENABLE_CAM_SUPPORT
 	if(cam_p.cam_support)
 	{
@@ -923,10 +922,28 @@ int main (int argc, char **argv)
 	iRet =-1;
 
 	if (strlen(tune_p.read_file_path)) {
+		/* file source */
 		log_message( log_module,  MSG_DEBUG, "Opening source file %s", tune_p.read_file_path);
 
 		iRet = open_fe (&fds.fd_dvr, tune_p.read_file_path, tune_p.tuner,1,1);
+	} else if (strlen(tune_p.source_addr)) {
+		/* receive from UDP source */
+		log_message(log_module, MSG_DEBUG, "Opening UDP source %s:%d", tune_p.source_addr, tune_p.source_port);
+		/* error check */
+		if (tune_p.source_port == 0) {
+			log_message(log_module, MSG_ERROR, "Network input port not specified, please add source_port= to config");
+			exit(ERROR_TUNE);
+		}
+
+		fds.fd_source = makeUDPclientsocket(tune_p.source_addr, tune_p.source_port);
+		if (fds.fd_source < 0) {
+			log_message(log_module, MSG_ERROR, "Failed to bind to UDP source");
+			exit(ERROR_TUNE);
+		}
+		/* "Tune" successful */
+		iRet = 1;
 	} else {
+		/* normal DVR input (or pipe on win32) */
 #ifndef _WIN32
 		iRet = open_fe(&fds.fd_frontend, tune_p.card_dev_path, tune_p.tuner, 1, 0);
 #else
@@ -1381,11 +1398,17 @@ int main (int argc, char **argv)
 		else
 		{
 			/* Poll the open file descriptors : we wait for data*/
+			if (fds.fd_source != 0) {
 #ifndef _WIN32
-			poll_ret=mumudvb_poll(fds.pfds,fds.pfdsnum,DVB_POLL_TIMEOUT);
+				poll_ret = mumudvb_poll(fds.pfds, fds.pfdsnum, DVB_POLL_TIMEOUT);
 #else
-			poll_ret = dvb_poll(fds.fd_dvr, DVB_POLL_TIMEOUT);
+				poll_ret = dvb_poll(fds.fd_dvr, DVB_POLL_TIMEOUT);
 #endif
+			} else {
+				/* TODO poll this if needed */
+				poll_ret = 0;
+			}
+
 			if (poll_ret < 0) {
 				log_message(log_module, MSG_ERROR, "Poll error %d", poll_ret);
 				set_interrupted(poll_ret);
@@ -1411,8 +1434,15 @@ int main (int argc, char **argv)
 			/**************************************************************/
 			/* END OF UNICAST HTTP                                        */
 			/**************************************************************/
-			if((card_buffer.bytes_read=card_read(fds.fd_dvr,  card_buffer.reading_buffer, &card_buffer))==0)
-				continue;
+			if (fds.fd_source > 0) {
+				/* UDP receive */
+				int len = TS_PACKET_SIZE * card_buffer.dvr_buffer_size;
+
+				card_buffer.bytes_read = recvfrom(fds.fd_source, card_buffer.reading_buffer, len, 0, NULL, NULL);
+			} else {
+				if ((card_buffer.bytes_read = card_read(fds.fd_dvr, card_buffer.reading_buffer, &card_buffer)) == 0)
+					continue;
+			}
 		}
 
 		if(card_buffer.dvr_buffer_size!=1 && stats_infos.show_buffer_stats)

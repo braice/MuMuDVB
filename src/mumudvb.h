@@ -216,6 +216,8 @@ typedef struct fds_t {
 #ifndef _WIN32
 	int fd_frontend;
 #endif
+	/** udp source socket */
+	int fd_source;
 	/** demuxer file descriptors */
 	int fd_demuxer[8193];
 	/** poll file descriptors */

@@ -66,5 +66,7 @@ int makesocket6 (char *szAddr, unsigned short port, int TTL, char *iface, struct
 int socket_to_string(int sock, char *pDest, size_t len);
 int socket_to_string_port(int sock, char *pDestAddr, size_t destLen, char *pDestPort, size_t portLen);
 int sockaddr_to_string(struct sockaddr_storage *sa, char *pDest, size_t len);
+int is_multicast(struct sockaddr_storage *sa);
+int makeUDPclientsocket(char *szAddr, unsigned short port);
 
 #endif
