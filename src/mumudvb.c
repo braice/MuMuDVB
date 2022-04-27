@@ -1229,7 +1229,7 @@ int main (int argc, char **argv)
 	if(unic_p.unicast)
 	{
 		log_message("Unicast: ", MSG_INFO,"We open the Master http socket for address %s:%d\n",unic_p.ipOut, unic_p.portOut);
-		unicast_create_listening_socket(UNICAST_MASTER, -1, unic_p.ipOut, unic_p.portOut, &unic_p.sIn, &unic_p.socketIn, &unic_p);
+		unicast_create_listening_socket(UNICAST_MASTER, -1, unic_p.ipOut, unic_p.portOut, &unic_p.socketIn, &unic_p);
 	}
 	update_chan_net(&chan_p, &auto_p, &multi_p, &unic_p, server_id, tune_p.card, tune_p.tuner);
 

@@ -313,47 +313,54 @@ makeclientsocket6 (char *szAddr, unsigned short port, int TTL, char *iface,
 
 /** @brief create a TCP receiver socket.
  *
- * Create a socket for waiting the HTTP connection
+ * Create a socket for waiting the HTTP connection, on either IPv4 or IPv6 interface
  */
-int
-makeTCPclientsocket (char *szAddr, unsigned short port,
-		struct sockaddr_in *sSockAddr)
+int makeTCPclientsocket(char *szAddr, unsigned short port)
 {
 	int iRet, iLoop = 1;
+	struct addrinfo hints = { 0, };
+	struct addrinfo *result = NULL;
+	char cPort[6] = { 0, };
 
-	int iSocket = socket (AF_INET, SOCK_STREAM, 0); //TCP
+	/* prepare hints for conversion */
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP; /* TCP socket */
+	hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV;
+	snprintf(cPort, sizeof(cPort), "%d", port);
 
+	iRet = getaddrinfo(szAddr, cPort, &hints, &result);
+	if (iRet != 0) {
+		log_message(log_module, MSG_ERROR, "getaddrinfo failed : %s\n", strerror(errno));
+		return -1;
+	}
+
+	/* use the first result from getaddrinfo as its numeric, should be the only one */
+	int iSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 	if (iSocket < 0)
 	{
 		log_message( log_module,  MSG_ERROR, "socket() failed.\n");
+		freeaddrinfo(result);
 		return -1;
 	}
 
-	sSockAddr->sin_family = AF_INET;
-	sSockAddr->sin_port = htons (port);
-	iRet = inet_pton(AF_INET, szAddr, &sSockAddr->sin_addr);
-	if (iRet == 0)
-	{
-		log_message( log_module,  MSG_ERROR,"inet_pton failed : %s\n", strerror(errno));
+	iRet = setsockopt(iSocket, SOL_SOCKET, SO_REUSEADDR, (const char *)&iLoop, sizeof(int));
+	if (iRet < 0) {
+		log_message(log_module, MSG_ERROR, "setsockopt SO_REUSEADDR failed : %s\n", strerror(errno));
+		freeaddrinfo(result);
 		close(iSocket);
 		return -1;
 	}
 
-    iRet = setsockopt(iSocket, SOL_SOCKET, SO_REUSEADDR, (const char *)&iLoop, sizeof(int));
-	if (iRet < 0)
-	{
-		log_message( log_module,  MSG_ERROR,"setsockopt SO_REUSEADDR failed : %s\n", strerror(errno));
-		close(iSocket);
-		return -1;
-	}
-
-
-	if (bind (iSocket, (struct sockaddr *) sSockAddr, sizeof (*sSockAddr)))
-	{
+	if (bind(iSocket, result->ai_addr, result->ai_addrlen)) {
 		log_message( log_module,  MSG_ERROR, "bind failed : %s\n", strerror(errno));
+		freeaddrinfo(result);
 		close(iSocket);
 		return -1;
 	}
+
+	/* free the result here */
+	freeaddrinfo(result);
 
 	iRet = listen(iSocket,10);
 	if (iRet < 0)
@@ -387,3 +394,53 @@ makeTCPclientsocket (char *szAddr, unsigned short port,
 	return iSocket;
 }
 
+int socket_to_string(int sock, char *pDest, size_t len)
+{
+    struct sockaddr_storage addr = { 0, };
+    socklen_t l = sizeof(struct sockaddr_storage);
+    int rv;
+
+    if (!pDest)
+        return -1;
+
+    /* get sockaddr for socket */
+    rv = getsockname(sock, (struct sockaddr *)&addr, &l);
+    if (rv == 0)
+        return sockaddr_to_string(&addr, pDest, len);
+
+    log_message(log_module, MSG_ERROR, "getsockname failed : %s", strerror(errno));
+    return rv;
+}
+
+int sockaddr_to_string(struct sockaddr_storage *sa, char *pDest, size_t len)
+{
+    char cPort[6] = { 0, };
+    int rv;
+
+    if (!pDest)
+        return -1;
+
+    /* turn into text string IP */
+    rv = getnameinfo((struct sockaddr *)sa, sizeof(struct sockaddr_storage), pDest, len, cPort, sizeof(cPort), NI_NUMERICHOST | NI_NUMERICSERV);
+
+    /* append port. pDest has enough space beacuse it's IPV6_CHAR_LEN size */
+    if (rv == 0) {
+        strcat(pDest, ":");
+        strcat(pDest, cPort);
+    }
+
+    return rv;
+}
+
+int socket_to_string_port(int sock, char *pDestAddr, size_t destLen, char *pDestPort, size_t portLen)
+{
+    struct sockaddr_storage sa;
+    socklen_t l = sizeof(struct sockaddr_storage);
+    int rv;
+
+    rv = getsockname(sock, (struct sockaddr *)&sa, &l);
+    if (rv == 0)
+        rv = getnameinfo((struct sockaddr *)&sa, sizeof(struct sockaddr_storage), pDestAddr, destLen, pDestPort, portLen, NI_NUMERICHOST | NI_NUMERICSERV);
+
+    return rv;
+}

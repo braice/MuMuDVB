@@ -62,17 +62,18 @@ static char *log_module="Unicast : ";
 int unicast_send_client_list_js (unicast_client_t *unicast_client, struct unicast_reply *reply)
 {
 	int client = 0;
-	char addr_buf[64] = { 0 };
+	char addr_buf[IPV6_CHAR_LEN] = { 0, };
+	char port_buf[6] = { 0, };
 
 	while(unicast_client!=NULL)
 	{
-		inet_ntop(AF_INET, &unicast_client->SocketAddr.sin_addr, addr_buf, sizeof(addr_buf));
+		socket_to_string_port(unicast_client->Socket, addr_buf, sizeof(addr_buf), port_buf, sizeof(port_buf));
 
-		unicast_reply_write(reply, "{\t\t\"client_number\": %d, \"socket\": %d, \"remote_address\": \"%s\", \"remote_port\": %d, \"buffer_size\": %d, \"consecutive_errors\":%d, \"first_error_time\":%d, \"last_error_time\":%d },\n",
+		unicast_reply_write(reply, "{\t\t\"client_number\": %d, \"socket\": %d, \"remote_address\": \"%s\", \"remote_port\": %s, \"buffer_size\": %d, \"consecutive_errors\":%d, \"first_error_time\":%d, \"last_error_time\":%d },\n",
 							client,
 							unicast_client->Socket,
 							addr_buf,
-							unicast_client->SocketAddr.sin_port,
+							port_buf,
 							unicast_client->buffersize,
 							unicast_client->consecutive_errors,
 							unicast_client->first_error_time,
@@ -598,16 +599,17 @@ unicast_send_prometheus (int number_of_channels, mumudvb_channel_t *channels, in
 int unicast_send_client_list_xml (unicast_client_t *unicast_client, struct unicast_reply *reply)
 {
 	int client = 0;
-	char addr_buf[64] = { 0 };
+	char addr_buf[IPV6_CHAR_LEN] = { 0, };
+	char port_buf[6] = { 0, };
 
 	while(unicast_client!=NULL)
 	{
-		inet_ntop(AF_INET, &unicast_client->SocketAddr.sin_addr, addr_buf, sizeof(addr_buf));
+		socket_to_string_port(unicast_client->Socket, addr_buf, sizeof(addr_buf), port_buf, sizeof(port_buf));
 
 		unicast_reply_write(reply, "\t\t\t<client number=\"%d\">\n", client);
 		unicast_reply_write(reply, "\t\t\t\t<socket>%d</socket>", unicast_client->Socket);
 		unicast_reply_write(reply, "\t\t\t\t<remote_address><![CDATA[%s]]></remote_address>\n", addr_buf);
-		unicast_reply_write(reply, "\t\t\t\t<remote_port>%d</remote_port>", unicast_client->SocketAddr.sin_port);
+		unicast_reply_write(reply, "\t\t\t\t<remote_port>%s</remote_port>", port_buf);
 		unicast_reply_write(reply, "\t\t\t\t<buffersize>%u</buffersize>\n",unicast_client->buffersize);
 		unicast_reply_write(reply, "\t\t\t\t<consecutive_errors>%d</consecutive_errors>\n", unicast_client->consecutive_errors);
 		unicast_reply_write(reply, "\t\t\t\t<first_error_time>%d</first_error_time>\n", unicast_client->first_error_time);

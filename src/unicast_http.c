@@ -84,7 +84,7 @@
 static char *log_module="Unicast : ";
 
 //from unicast_client.c
-unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in SocketAddr, int Socket);
+unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, int Socket);
 int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *channel);
 
 unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, int socketIn);
@@ -181,10 +181,8 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
 	if (!strcmp (substring, "ip_http"))
 	{
 		substring = strtok (NULL, delimiteurs);
-		if(strlen(substring)>19)
-		{
-			log_message( log_module,  MSG_ERROR,
-					"The Ip address %s is too long.\n", substring);
+		if (strlen(substring) > INET6_ADDRSTRLEN) {
+			log_message( log_module,  MSG_ERROR, "The Ip address %s is too long.\n", substring);
 			exit(ERROR_CONF);
 		}
 		sscanf (substring, "%s\n", unicast_vars->ipOut);
@@ -296,9 +294,10 @@ int read_unicast_configuration(unicast_parameters_t *unicast_vars, mumudvb_chann
  *
  *
  */
-int unicast_create_listening_socket(int socket_type, int socket_channel, char *ipOut, int port, struct sockaddr_in *sIn, int *socketIn, unicast_parameters_t *unicast_vars)
+int unicast_create_listening_socket(int socket_type, int socket_channel, char *ipOut, int port, int *socketIn, unicast_parameters_t *unicast_vars)
 {
-	*socketIn= makeTCPclientsocket(ipOut, port, sIn);
+	*socketIn = makeTCPclientsocket(ipOut, port);
+
 	//We add them to the poll descriptors
 	if(*socketIn>0)
 	{
@@ -451,9 +450,6 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars,
 
 }
 
-
-
-
 /** @brief Accept an incoming connection
  *
  *
@@ -462,51 +458,55 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars,
  */
 unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, int socketIn)
 {
-
-	unsigned int l;
-	int tempSocket,iRet;
+	int fromSocket, iRet;
+	socklen_t l;
 	unicast_client_t *tempClient;
-	struct sockaddr_in tempSocketAddrIn;
-	char addr_buf[64];
-	char addr_buf2[64];
+	struct sockaddr_storage fromAddrIn = { 0, };
+	struct sockaddr_storage toAddrIn = { 0, };
 
-	l = sizeof(struct sockaddr);
-	tempSocket = accept(socketIn, (struct sockaddr *) &tempSocketAddrIn, &l);
-	if (tempSocket < 0 )
+	char fromBuf[INET6_ADDRSTRLEN];
+	char toBuf[INET6_ADDRSTRLEN];
+
+	l = sizeof(struct sockaddr_storage);
+	fromSocket = accept(socketIn, (struct sockaddr *)&fromAddrIn, &l);
+	if (fromSocket < 0)
 	{
 		log_message( log_module, MSG_WARN,"Error when accepting the incoming connection : %s\n", strerror(errno));
 		return NULL;
 	}
-	struct sockaddr_in tempSocketAddr;
-	l = sizeof(struct sockaddr);
-	iRet=getsockname(tempSocket, (struct sockaddr *) &tempSocketAddr, &l);
+
+	l = sizeof(struct sockaddr_storage);
+	iRet = getsockname(fromSocket, (struct sockaddr *)&toAddrIn, &l);
 	if (iRet < 0)
 	{
 		log_message( log_module,  MSG_ERROR,"getsockname failed : %s while accepting incoming connection", strerror(errno));
-		close(tempSocket);
+		close(fromSocket);
 		return NULL;
 	}
-	inet_ntop(AF_INET, &tempSocketAddrIn.sin_addr, addr_buf, sizeof(addr_buf));
-	inet_ntop(AF_INET, &tempSocketAddr.sin_addr, addr_buf2, sizeof(addr_buf2));
-	log_message( log_module, MSG_FLOOD,"New connection from %s:%d to %s:%d \n", addr_buf, tempSocketAddrIn.sin_port, addr_buf2, tempSocketAddr.sin_port);
+
+	/* turn both remote and local side into ip:addr strings for debug */
+	sockaddr_to_string(&fromAddrIn, fromBuf, sizeof(fromBuf));
+	sockaddr_to_string(&toAddrIn, toBuf, sizeof(toBuf));
+
+	log_message(log_module, MSG_FLOOD, "New connection from %s to %s\n", fromBuf, toBuf);
 
 	//Now we set this socket to be non blocking because we poll it
 	int flags;
 #ifndef _WIN32
-	flags = fcntl(tempSocket, F_GETFL, 0);
+	flags = fcntl(fromSocket, F_GETFL, 0);
 	flags |= O_NONBLOCK;
-	if (fcntl(tempSocket, F_SETFL, flags) < 0)
+	if (fcntl(fromSocket, F_SETFL, flags) < 0)
 	{
 		log_message( log_module, MSG_ERROR,"Set non blocking failed : %s\n",strerror(errno));
-		close(tempSocket);
+		close(fromSocket);
 		return NULL;
 	}
 #else
 	uint32_t iMode = 0;
-	flags = ioctlsocket(tempSocket, FIONBIO, &iMode);
+	flags = ioctlsocket(fromSocket, FIONBIO, &iMode);
 	if (flags != NO_ERROR) {
 		log_message(log_module, MSG_ERROR, "Set non blocking failed : %s\n", strerror(errno));
-		close(tempSocket);
+		close(fromSocket);
 		return NULL;
 	}
 #endif
@@ -516,18 +516,16 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
 	{
 		int iRet;
 
-		inet_ntop(AF_INET, &tempSocketAddrIn.sin_addr, addr_buf, sizeof(addr_buf));
-		log_message( log_module, MSG_INFO,"Too many clients connected, we raise an error to  %s\n", addr_buf);
-		iRet = write(tempSocket,HTTP_503_REPLY, strlen(HTTP_503_REPLY));
+		log_message( log_module, MSG_INFO,"Too many clients connected, we raise an error to  %s\n", fromBuf);
+		iRet = write(fromSocket,HTTP_503_REPLY, strlen(HTTP_503_REPLY));
 		if (iRet < 0) {
-			inet_ntop(AF_INET, &tempSocketAddrIn.sin_addr, addr_buf, sizeof(addr_buf));
-			log_message(log_module, MSG_INFO, "Error writing to %s\n", addr_buf);
+			log_message(log_module, MSG_INFO, "Error writing to %s\n", fromBuf);
 		}
-		close(tempSocket);
+		close(fromSocket);
 		return NULL;
 	}
 
-	tempClient=unicast_add_client(unicast_vars, tempSocketAddrIn, tempSocket);
+	tempClient = unicast_add_client(unicast_vars, fromSocket);
 
 	return tempClient;
 
@@ -1190,6 +1188,8 @@ int
 unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *channels, int Socket, int unicast_portOut, int perport, unicast_parameters_t *unicast_vars)
 {
 	int curr_channel,iRet;
+	struct sockaddr_storage tempSocketAddr;
+	socklen_t l = sizeof(struct sockaddr_storage);
 
 	struct unicast_reply* reply = unicast_reply_init();
 	if (NULL == reply) {
@@ -1197,11 +1197,8 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
 		return -1;
 	}
 
-	//We get the ip address on which the client is connected
-	struct sockaddr_in tempSocketAddr;
-	unsigned int l;
-	l = sizeof(struct sockaddr);
-	iRet=getsockname(Socket, (struct sockaddr *) &tempSocketAddr, &l);
+	/* We get the ip address on which the client is connected */
+	iRet = getsockname(Socket, (struct sockaddr *)&tempSocketAddr, &l);
 	if (iRet < 0)
 	{
 		log_message( log_module,  MSG_ERROR,"getsockname failed : %s while making HTTP reply", strerror(errno));
@@ -1219,25 +1216,26 @@ unicast_send_play_list_unicast (int number_of_channels, mumudvb_channel_t *chann
 		    && (channels[curr_channel].ratio_scrambled < unicast_vars->playlist_ignore_scrambled_ratio || unicast_vars->playlist_ignore_scrambled_ratio == 0)
 		)
 		{
-			char addr_buf[64];
+			char addr_buf[IPV6_CHAR_LEN] = { 0, };
+			char http_buf[IPV6_CHAR_LEN] = { 0, };
+
+			getnameinfo((struct sockaddr *)&tempSocketAddr, sizeof(struct sockaddr_storage), addr_buf, sizeof(addr_buf), NULL, 0, NI_NUMERICHOST | NI_NUMERICSERV);
+			/* IPv6 requires address in []'s */
+			snprintf(http_buf, IPV6_CHAR_LEN, (tempSocketAddr.ss_family == AF_INET6) ? "[%s]" : "%s", addr_buf);
 
 			if(!perport)
 			{
-				inet_ntop(AF_INET, &tempSocketAddr.sin_addr, addr_buf, sizeof(addr_buf));
-
 				unicast_reply_write(reply, "#EXTINF:0,%s\r\nhttp://%s:%d/bysid/%d\r\n",
 						channels[curr_channel].name,
-						addr_buf,
+						http_buf,
 						unicast_portOut ,
 						channels[curr_channel].service_id);
 			}
 			else if(channels[curr_channel].unicast_port)
 			{
-				inet_ntop(AF_INET, &tempSocketAddr.sin_addr, addr_buf, sizeof(addr_buf));
-
 				unicast_reply_write(reply, "#EXTINF:0,%s\r\nhttp://%s:%d/\r\n",
 						channels[curr_channel].name,
-						addr_buf,
+						http_buf,
 						channels[curr_channel].unicast_port);
 			}
 		}

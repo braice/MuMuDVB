@@ -472,8 +472,6 @@ typedef struct mumudvb_channel_t{
 	/**Unicast port (listening socket per channel) */
 	MU_F_V(int,unicast_port)
 	/**Unicast listening socket*/
-	struct sockaddr_in sIn;
-	/**Unicast listening socket*/
 	int socketIn;
 
 	/**The sap playlist group*/

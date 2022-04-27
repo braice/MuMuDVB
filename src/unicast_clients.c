@@ -70,7 +70,7 @@ static char *log_module="Unicast : ";
  * @param SocketAddr The socket address
  * @param Socket The socket number
  */
-unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in SocketAddr, int Socket)
+unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, int Socket)
 {
 
 	unicast_client_t *client;
@@ -140,7 +140,6 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 	}
 
 	//We fill the client data
-	client->SocketAddr=SocketAddr;
 	client->Socket=Socket;
 	client->buffer=NULL;
 	client->buffersize=0;
@@ -176,10 +175,10 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *client)
 {
 	unicast_client_t *prev_client,*next_client;
-	char addr_buf[64];
+	char addr_buf[IPV6_CHAR_LEN];
 
-	inet_ntop(AF_INET, &client->SocketAddr.sin_addr, addr_buf, sizeof(addr_buf));
-	log_message( log_module, MSG_FLOOD,"We delete the client %s:%d, socket %d\n", addr_buf, client->SocketAddr.sin_port, client->Socket);
+	socket_to_string(client->Socket, addr_buf, sizeof(addr_buf));
+	log_message(log_module, MSG_FLOOD, "We delete the client %s, socket %d\n", addr_buf, client->Socket);
 
 	if (client->Socket >= 0)
 	{
@@ -243,10 +242,10 @@ int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *chann
 {
 	unicast_client_t *last_client;
 	int iRet;
-	char addr_buf[64];
+	char addr_buf[IPV6_CHAR_LEN];
 
-	inet_ntop(AF_INET, &client->SocketAddr.sin_addr, addr_buf, sizeof(addr_buf));
-	log_message( log_module, MSG_INFO,"We add the client %s:%d to the channel \"%s\"\n", addr_buf, client->SocketAddr.sin_port,channel->name);
+	socket_to_string(client->Socket, addr_buf, sizeof(addr_buf));
+	log_message(log_module, MSG_INFO, "We add the client %s to the channel \"%s\"\n", addr_buf, channel->name);
 
     iRet = write(client->Socket, HTTP_OK_REPLY, strlen(HTTP_OK_REPLY));
 	if(iRet!=strlen(HTTP_OK_REPLY))

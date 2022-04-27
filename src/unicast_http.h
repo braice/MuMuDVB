@@ -1,22 +1,22 @@
-/* 
+/*
  * mumudvb - UDP-ize a DVB transport stream.
- * 
+ *
  * (C) 2009 Brice DUBOST
- * 
+ *
  * The latest version can be found at http://mumudvb.net/
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -112,8 +112,6 @@ enum
  */
 typedef struct unicast_client_t{
   /**HTTP socket*/
-  struct sockaddr_in SocketAddr;
-  /**HTTP socket*/
   int Socket;
   /**Reception buffer*/
   char *buffer;
@@ -168,7 +166,7 @@ typedef struct unicast_parameters_t{
   /** Do we activate unicast ?*/
   int unicast;
   /**The "HTTP" ip address*/
-  char ipOut[20];
+  char ipOut[INET6_ADDRSTRLEN];
   /** The "HTTP" port*/
   int portOut;
   /** The "HTTP" port string version before parsing*/
@@ -216,7 +214,7 @@ struct unicast_reply {
  int unicast_reply_write(struct unicast_reply *reply, const char* msg, ...);
  int unicast_reply_send(struct unicast_reply *reply, int socket, int code, const char* content_type);
 
-int unicast_create_listening_socket(int socket_type, int socket_channel, char *ipOut, int port, struct sockaddr_in *sIn, int *socketIn, unicast_parameters_t *unicast_vars);
+int unicast_create_listening_socket(int socket_type, int socket_channel, char *ipOut, int port, int *socketIn, unicast_parameters_t *unicast_vars);
 
 struct strength_parameters_t; //just to avoid including dvb.h for one structure
 struct eit_packet_t; //just to avoid including rewrite.h for one structure

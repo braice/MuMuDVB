@@ -391,7 +391,6 @@ void update_chan_net(mumu_chan_p_t *chan_p, auto_p_t *auto_p, multi_p_t *multi_p
 					ichan,
 					unicast_vars->ipOut,
 					chan_p->channels[ichan].unicast_port,
-					&chan_p->channels[ichan].sIn,
 					&chan_p->channels[ichan].socketIn,
 					unicast_vars);
 		}

@@ -59,11 +59,12 @@
 int makeclientsocket (char *szAddr, unsigned short port, int TTL, char *iface, struct sockaddr_in *sSockAddr);
 void sendudp (int fd, struct sockaddr_in *sSockAddr, unsigned char *data, int len);
 int makesocket (char *szAddr, unsigned short port, int TTL, char *iface, struct sockaddr_in *sSockAddr);
-int makeTCPclientsocket (char *szAddr, unsigned short port, struct sockaddr_in *sSockAddr);
+int makeTCPclientsocket(char *szAddr, unsigned short port);
 int makeclientsocket6 (char *szAddr, unsigned short port, int TTL, char *iface, struct sockaddr_in6 *sSockAddr);
 void sendudp6 (int fd, struct sockaddr_in6 *sSockAddr, unsigned char *data, int len);
 int makesocket6 (char *szAddr, unsigned short port, int TTL, char *iface, struct sockaddr_in6 *sSockAddr);
+int socket_to_string(int sock, char *pDest, size_t len);
+int socket_to_string_port(int sock, char *pDestAddr, size_t destLen, char *pDestPort, size_t portLen);
+int sockaddr_to_string(struct sockaddr_storage *sa, char *pDest, size_t len);
 
 #endif
-
-
