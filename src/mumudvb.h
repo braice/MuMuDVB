@@ -350,7 +350,7 @@ typedef struct mumudvb_channel_t{
 	/**the channel name*/
 	char user_name[MAX_NAME_LEN];
 	char name[MAX_NAME_LEN];
-	mumu_f_t name_f; /* MU_F_T(name); */
+	MU_F_T(name)
 	char service_name[MAX_NAME_LEN];
 
 	/* The PID information for this channel*/
@@ -359,12 +359,10 @@ typedef struct mumudvb_channel_t{
 	/** The service Type from the SDT */
 	int service_type;
 	/**Transport stream ID*/
-	int service_id;
-	mumu_f_t service_id_f; /* MU_F_V(int,service_id); */
+	MU_F_V(int,service_id)
 
 	/**Say if we need to ask this channel to the cam*/
-	int need_cam_ask;
-	mumu_f_t need_cam_ask_f; /* MU_F_V(int,need_cam_ask); */
+	MU_F_V(int,need_cam_ask)
 	/** When did we asked the channel to the CAM */
 	long cam_asking_time;
 	/**The ca system ids*/
@@ -453,7 +451,7 @@ typedef struct mumudvb_channel_t{
 	char ip4Out[20];
 	MU_F_T(ip4Out)
 	/**The multicast port*/
-	MU_F_V(int,portOut)
+	MU_F_V(int, portOut)
 	/**The multicast output socket*/
 	struct sockaddr_in sOut4;
 	/**The multicast output socket*/
@@ -478,7 +476,7 @@ typedef struct mumudvb_channel_t{
 
 	/**The sap playlist group*/
 	char sap_group[SAP_GROUP_LENGTH];
-	mumu_f_t sap_group_f; /* MU_F_T(sap_group); */
+	MU_F_T(sap_group)
 	//do we need to update the SAP announce (typically a name change)
 	int sap_need_update;
 
