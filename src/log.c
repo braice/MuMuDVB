@@ -166,11 +166,12 @@ int read_logging_configuration(stats_infos_t *stats_infos, char *substring)
 	else if (!strcmp (substring, "log_file"))
 	{
 		substring = strtok (NULL, delimiteurs);
-		log_params.log_file_path=malloc((strlen(substring)+1)*sizeof(char));
-		strncpy(log_params.log_file_path,substring,strlen(substring)+1);
+		if (log_params.log_file_path != NULL)
+			free(log_params.log_file_path);
+		log_params.log_file_path = strdup(substring);
 		if(log_params.log_file_path==NULL)
 		{
-			log_message(log_module,MSG_WARN,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+			log_message(log_module,MSG_WARN,"Problem with strdup : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 			return -1;
 		}
 	}
@@ -179,13 +180,12 @@ int read_logging_configuration(stats_infos_t *stats_infos, char *substring)
 		substring = strtok (NULL,"=" );
 		if(log_params.log_header!=NULL)
 			free(log_params.log_header);
-		log_params.log_header=malloc((strlen(substring)+1)*sizeof(char));
+		log_params.log_header = strdup(substring);
 		if(log_params.log_header==NULL)
 		{
-			log_message(log_module,MSG_WARN,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+			log_message(log_module,MSG_WARN,"Problem with strdup : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 			return -1;
 		}
-		sprintf(log_params.log_header,"%s",substring);
 	}
 	else if (!strcmp (substring, "log_flush_interval"))
 	{
@@ -457,7 +457,7 @@ void log_streamed_channels(char *log_module,int number_of_channels, mumudvb_chan
 				log_message( log_module,  MSG_INFO, "\tUnicast : Channel accessible directly via %s:%d\n",unicastipOut, channels[curr_channel].unicast_port);
 		}
 		mumu_string_t string=EMPTY_STRING;
-		char lang[5];
+		char lang[6];
 		if(set_interrupted(mumu_string_append(&string, "        pids : ")))return;
 		for (curr_pid = 0; curr_pid < channels[curr_channel].pid_i.num_pids; curr_pid++)
 		{

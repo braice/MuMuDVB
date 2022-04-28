@@ -1304,7 +1304,7 @@ int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_str
 				log_message( log_module,  MSG_INFO, "Event:  Frequency: %d\n",parameters.frequency);
 				break;
 			case FE_QPSK:
-				log_message( log_module,  MSG_INFO, "Event:  Frequency: %d (or %d)\n",(unsigned int)((parameters.frequency)+lo_frequency),(unsigned int) abs((parameters.frequency)-lo_frequency));
+				log_message( log_module,  MSG_INFO, "Event:  Frequency: %d (or %d)\n",(unsigned int)((parameters.frequency)+lo_frequency),(unsigned int) abs((int)parameters.frequency-(int)lo_frequency));
 				log_message( log_module,  MSG_INFO, "        SymbolRate: %d\n",parameters.u.qpsk.symbol_rate);
 				log_message( log_module,  MSG_INFO, "        FEC_inner:  %d\n",parameters.u.qpsk.fec_inner);
 				break;
@@ -1537,7 +1537,7 @@ default:
 				lo_frequency=tuneparams->lnb_lof_standard;
 			}
 
-			feparams.frequency=abs(tuneparams->freq-lo_frequency);
+			feparams.frequency=abs((int)tuneparams->freq-(int)lo_frequency);
 
 
 			log_message( log_module,  MSG_INFO, "Tuning DVB-S to Freq: %u kHz, Transp frequency: %f , LO frequency %u kHz  Pol:%c Srate=%d, LNB number: %d\n",

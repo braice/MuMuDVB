@@ -39,6 +39,9 @@
 #include "tune.h"
 #include "rewrite.h"
 #include "autoconf.h"
+#ifndef _WIN32
+#include <sys/time.h>
+#endif
 #ifdef ENABLE_CAM_SUPPORT
 #include "cam.h"
 #endif
