@@ -119,13 +119,12 @@ void parse_cmd_line(int argc, char **argv,char *(*conf_filename),tune_p_t *tune_
 		switch (c)
 		{
 		case 'c':
-		*conf_filename = (char *) malloc (strlen (optarg) + 1);
-		if (!*conf_filename)
-		{
-			log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
-			exit(ERROR_MEMORY);
-		}
-		strncpy (*conf_filename, optarg, strlen (optarg) + 1);
+			*conf_filename = strdup(optarg);
+			if (!*conf_filename)
+			{
+				log_message( log_module, MSG_ERROR,"Problem with strdup : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+				exit(ERROR_MEMORY);
+			}
 		break;
 		case 'a':
 			tune_p->card=atoi(optarg);
@@ -156,13 +155,12 @@ void parse_cmd_line(int argc, char **argv,char *(*conf_filename),tune_p_t *tune_
 			*listingcards=1;
 			break;
 		case 'z':
-			*dump_filename = (char *) malloc (strlen (optarg) + 1);
+			*dump_filename = strdup(optarg);
 			if (!*dump_filename)
 			{
-				log_message( log_module, MSG_ERROR,"Problem with malloc : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
+				log_message( log_module, MSG_ERROR,"Problem with strdup : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 				exit(ERROR_MEMORY);
 			}
-			strncpy (*dump_filename, optarg, strlen (optarg) + 1);
 			log_message( log_module, MSG_WARN,"You've decided to dump the received stream into %s. Be warned, it can grow quite fast", *dump_filename);
 			break;
 		default: /* -Wswitch-default */

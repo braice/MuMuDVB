@@ -864,9 +864,9 @@ void ts_display_satellite_delivery_system_descriptor(char* log_module, unsigned 
 		log_message( log_module, MSG_FLOOD, "Estern position");
 	else
 		log_message( log_module, MSG_FLOOD, "Western position");
+	log_message(log_module, MSG_FLOOD, "Polarization: (0x%02x)", descr->polarization);
 	switch(descr->polarization)
 	{
-	log_message( log_module, MSG_FLOOD, "Polarization: (0x%02x)", descr->polarization);
 	case 0:
 		log_message( log_module, MSG_FLOOD, "Polarization: linear - horizontal");
 		break;

@@ -205,11 +205,12 @@ int autoconf_parse_vct_channel(unsigned char *buf, auto_p_t *auto_p, mumu_chan_p
 #endif
 	char utf8_short_name[15];
 	char *channel_name=NULL;
-	char long_name[MAX_NAME_LEN];
+#ifdef HAVE_LIBUCSI
+	char long_name[MAX_NAME_LEN] = { 0, };
+#endif
 
 	int mpeg2_service_type=0;
 	vct_channel=(psip_vct_channel_t *)buf;
-	long_name[0]='\0';
 
 	// *********** We get the channel short name *******************
 	memcpy (unconverted_short_name, vct_channel->short_name, 14*sizeof(uint8_t));

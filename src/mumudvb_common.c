@@ -237,6 +237,8 @@ int string_comput(char *string)
 		len=pluspos-string;
 	}
 	tempchar=malloc(sizeof(char)*(len+1));
+	if (tempchar == NULL)
+		return 0;
 	strncpy(tempchar,string,len);
 	tempchar[len]='\0';
 	number1=string_mult(tempchar);
