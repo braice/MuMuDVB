@@ -1398,7 +1398,7 @@ int main (int argc, char **argv)
 		else
 		{
 			/* Poll the open file descriptors : we wait for data*/
-			if (fds.fd_source != 0) {
+			if (fds.fd_source == 0) {
 #ifndef _WIN32
 				poll_ret = mumudvb_poll(fds.pfds, fds.pfdsnum, DVB_POLL_TIMEOUT);
 #else
