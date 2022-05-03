@@ -1,19 +1,29 @@
-To build under windows (tested with VS2022)
+To build under Windows (tested with VS2022)
 
 * copy src/config_win32.h to src/config.h
-* build pthread-win32 and place its release assets into pthread/lib folder.
-  inside should have, pthread_static_lib.lib (and pdb if you care)
-* only x86 build was tested and configured in the project file
-* Build as usual, either Debug or Release configuration
+* pull trollcop/pthread-win32 and build Release configuration of either x86
+  or x64 platform for the 'pthread_static_lib' project. Note, the only change
+  in that version is building static library as Multithreaded (static) instead
+  of Multithreaded (DLL) for C runtime.
+* Place release assets for x86 and/or x64 version under pthread/lib and
+  pthread/lib64 folders. Both should contain pthread_static_lib.lib from
+  appropriate platform.
+* Both x86 and x64 platforms should build correctly now.
+* Build as usual, either Debug or Release configuration.
 
 Notes
 
-The only supported input method is file (tested) and named pipe (extensively
-tested). To send data, simply create a named pipe \\.\pipe\DVB_TUNERx where 
-x is a number 0...whatever to match 'adapter' index, and push TS data into it.
+Due to lack of DVB-API under Windows, the only supported input methods are
+unicast/multicast UDP, file, and (Windows-only) named pipe.
+
+To send data on Windows using the name pipe method, create a pipe in your
+application called `\\.\pipe\DVB_TUNERx` where x is a number 0...whatever to
+match 'adapter' index, and push TS data into it.
 
 CAM/SCAM is unsupported (completely skipped from build).
 
 Logging anywhere other than stdout is unsupported (no syslog/etc logging).
+
+Daemonizing is not supported (the app runs in foreground only).
 
 iconv is not supported.
