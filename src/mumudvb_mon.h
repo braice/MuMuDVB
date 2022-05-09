@@ -22,6 +22,7 @@
 #include "unicast_http.h"
 #include "rtp.h"
 #include "log.h"
+#include "hls.h"
 
 void *monitor_func(void* arg);
 int mumudvb_close(int no_daemon,
@@ -41,7 +42,9 @@ int mumudvb_close(int no_daemon,
 		pthread_t *monitorthread,
 		card_thread_parameters_t *cardthreadparams,
 		fds_t *fds,
-		card_buffer_t *card_buffer);
+		card_buffer_t *card_buffer,
+		hls_thread_parameters_t *hls_thread_params,
+		pthread_t *hlsthread);
 
 
 void parse_cmd_line(int argc, char **argv,

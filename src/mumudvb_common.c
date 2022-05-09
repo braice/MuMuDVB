@@ -43,6 +43,7 @@
 #ifdef ENABLE_SCAM_SUPPORT
 #include "scam_common.h"
 #endif
+#include "hls.h"
 
 static char *log_module="Common: ";
 
@@ -460,6 +461,7 @@ void send_func(mumudvb_channel_t *channel, uint64_t now_time, struct unicast_par
     }
     /*********** UNICAST **************/
     unicast_data_send(channel, unicast_vars);
+    if (unicast_vars->hls) hls_data_send(channel, unicast_vars, now_time);
     /********* END of UNICAST **********/
     channel->nb_bytes = 0;
 }
