@@ -192,7 +192,7 @@ typedef struct {
 
 typedef struct {
   u_char adaptation_field_length		:8;
-#if BYTE_ORDER == BIG_ENDIAN
+#ifdef __BIG_ENDIAN__
   u_char adaptation_field_extension_flag	:1;
   u_char transport_private_data_flag		:1;
   u_char splicing_point_flag			:1;
