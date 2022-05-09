@@ -1,22 +1,22 @@
-/* 
+/*
  * MuMuDVB - Stream a DVB transport stream.
- * 
+ *
  * (C) 2004-2011 Brice DUBOST
- * 
+ *
  * The latest version can be found at http://mumudvb.net/
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -33,7 +33,9 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <pthread.h>
+#ifndef _WIN32
 #include <endian.h>
+#endif
 
 #include "config.h"
 
@@ -76,48 +78,48 @@
 
 /** @brief Program Association Table (PAT):*/
 typedef struct {
-   u_char table_id                               :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char section_syntax_indicator               :1;
-   u_char dummy                                  :1;        // has to be 0
-   u_char                                        :2;
-   u_char section_length_hi                      :4;
+   uint8_t table_id                               :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t section_syntax_indicator               :1;
+   uint8_t dummy                                  :1;        // has to be 0
+   uint8_t                                        :2;
+   uint8_t section_length_hi                      :4;
 #else
-   u_char section_length_hi                      :4;
-   u_char                                        :2;
-   u_char dummy                                  :1;        // has to be 0
-   u_char section_syntax_indicator               :1;
+   uint8_t section_length_hi                      :4;
+   uint8_t                                        :2;
+   uint8_t dummy                                  :1;        // has to be 0
+   uint8_t section_syntax_indicator               :1;
 #endif
-   u_char section_length_lo                      :8;
-   u_char transport_stream_id_hi                 :8;
-   u_char transport_stream_id_lo                 :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :2;
-   u_char version_number                         :5;
-   u_char current_next_indicator                 :1;
+   uint8_t section_length_lo                      :8;
+   uint8_t transport_stream_id_hi                 :8;
+   uint8_t transport_stream_id_lo                 :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t                                        :2;
+   uint8_t version_number                         :5;
+   uint8_t current_next_indicator                 :1;
 #else
-   u_char current_next_indicator                 :1;
-   u_char version_number                         :5;
-   u_char                                        :2;
+   uint8_t current_next_indicator                 :1;
+   uint8_t version_number                         :5;
+   uint8_t                                        :2;
 #endif
-   u_char section_number                         :8;
-   u_char last_section_number                    :8;
+   uint8_t section_number                         :8;
+   uint8_t last_section_number                    :8;
 } pat_t;
 
 #define PAT_PROG_LEN 4
 
 /** @brief Program Association Table (PAT): program*/
 typedef struct {
-   u_char program_number_hi                      :8;
-   u_char program_number_lo                      :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :3;
-   u_char network_pid_hi                         :5;
+   uint8_t program_number_hi                      :8;
+   uint8_t program_number_lo                      :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t                                        :3;
+   uint8_t network_pid_hi                         :5;
 #else
-   u_char network_pid_hi                         :5;
-   u_char                                        :3;
+   uint8_t network_pid_hi                         :5;
+   uint8_t                                        :3;
 #endif
-   u_char network_pid_lo                         :8; 
+   uint8_t network_pid_lo                         :8;
    /* or program_map_pid (if prog_num=0)*/
 } pat_prog_t;
 
@@ -133,58 +135,58 @@ typedef struct {
 
 /** @brief Conditional Access Table (CAT):*/
 typedef struct {
-    u_char table_id                               :8;
-#if BYTE_ORDER == BIG_ENDIAN
-    u_char section_syntax_indicator               :1;
-   u_char dummy                                  :1;        // has to be 0
-   u_char                                        :2;
-   u_char section_length_hi                      :4;
+    uint8_t table_id                               :8;
+#ifdef __BIG_ENDIAN__
+    uint8_t section_syntax_indicator               :1;
+   uint8_t dummy                                  :1;        // has to be 0
+   uint8_t                                        :2;
+   uint8_t section_length_hi                      :4;
 #else
-    u_char section_length_hi                      :4;
-    u_char                                        :2;
-    u_char dummy                                  :1;        // has to be 0
-    u_char section_syntax_indicator               :1;
+    uint8_t section_length_hi                      :4;
+    uint8_t                                        :2;
+    uint8_t dummy                                  :1;        // has to be 0
+    uint8_t section_syntax_indicator               :1;
 #endif
-    u_char section_length_lo                      :8;
-    u_char transport_stream_id_hi                 :8;
-    u_char transport_stream_id_lo                 :8;
-#if BYTE_ORDER == BIG_ENDIAN
-    u_char                                        :2;
-    u_char version_number                         :5;
-    u_char current_next_indicator                 :1;
+    uint8_t section_length_lo                      :8;
+    uint8_t transport_stream_id_hi                 :8;
+    uint8_t transport_stream_id_lo                 :8;
+#ifdef __BIG_ENDIAN__
+    uint8_t                                        :2;
+    uint8_t version_number                         :5;
+    uint8_t current_next_indicator                 :1;
 #else
-    u_char current_next_indicator                 :1;
-    u_char version_number                         :5;
-    u_char                                        :2;
+    uint8_t current_next_indicator                 :1;
+    uint8_t version_number                         :5;
+    uint8_t                                        :2;
 #endif
-    u_char section_number                         :8;
-    u_char last_section_number                    :8;
+    uint8_t section_number                         :8;
+    uint8_t last_section_number                    :8;
 } cat_t;
 
 //Used to generate the CA_PMT message and for autoconfiguration
 /** @brief Mpeg2-TS header*/
 typedef struct {
-  u_char sync_byte                              :8;
-#if BYTE_ORDER == BIG_ENDIAN
-  u_char transport_error_indicator              :1;
-  u_char payload_unit_start_indicator           :1;
-  u_char transport_priority                     :1;
-  u_char pid_hi                                 :5;
+  uint8_t sync_byte                              :8;
+#ifdef __BIG_ENDIAN__
+  uint8_t transport_error_indicator              :1;
+  uint8_t payload_unit_start_indicator           :1;
+  uint8_t transport_priority                     :1;
+  uint8_t pid_hi                                 :5;
 #else
-  u_char pid_hi                                 :5;
-  u_char transport_priority                     :1;
-  u_char payload_unit_start_indicator           :1;
-  u_char transport_error_indicator              :1;
+  uint8_t pid_hi                                 :5;
+  uint8_t transport_priority                     :1;
+  uint8_t payload_unit_start_indicator           :1;
+  uint8_t transport_error_indicator              :1;
 #endif
-  u_char pid_lo                                 :8;
-#if BYTE_ORDER == BIG_ENDIAN
-  u_char transport_scrambling_control           :2;
-  u_char adaptation_field_control               :2;
-  u_char continuity_counter                     :4;
+  uint8_t pid_lo                                 :8;
+#ifdef __BIG_ENDIAN__
+  uint8_t transport_scrambling_control           :2;
+  uint8_t adaptation_field_control               :2;
+  uint8_t continuity_counter                     :4;
 #else
-  u_char continuity_counter                     :4;
-  u_char adaptation_field_control               :2;
-  u_char transport_scrambling_control           :2;
+  uint8_t continuity_counter                     :4;
+  uint8_t adaptation_field_control               :2;
+  uint8_t transport_scrambling_control           :2;
 #endif
 } ts_header_t;
 
@@ -229,48 +231,48 @@ typedef struct {
  */
 
 typedef struct {
-   u_char table_id                               :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char section_syntax_indicator               :1;
-   u_char dummy                                  :1; // has to be 0
-   u_char                                        :2;
-   u_char section_length_hi                      :4;
+   uint8_t table_id                               :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t section_syntax_indicator               :1;
+   uint8_t dummy                                  :1; // has to be 0
+   uint8_t                                        :2;
+   uint8_t section_length_hi                      :4;
 #else
-   u_char section_length_hi                      :4;
-   u_char                                        :2;
-   u_char dummy                                  :1; // has to be 0
-   u_char section_syntax_indicator               :1;
+   uint8_t section_length_hi                      :4;
+   uint8_t                                        :2;
+   uint8_t dummy                                  :1; // has to be 0
+   uint8_t section_syntax_indicator               :1;
 #endif
-   u_char section_length_lo                      :8;
-   u_char program_number_hi                      :8;
-   u_char program_number_lo                      :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :2;
-   u_char version_number                         :5;
-   u_char current_next_indicator                 :1;
+   uint8_t section_length_lo                      :8;
+   uint8_t program_number_hi                      :8;
+   uint8_t program_number_lo                      :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t                                        :2;
+   uint8_t version_number                         :5;
+   uint8_t current_next_indicator                 :1;
 #else
-   u_char current_next_indicator                 :1;
-   u_char version_number                         :5;
-   u_char                                        :2;
+   uint8_t current_next_indicator                 :1;
+   uint8_t version_number                         :5;
+   uint8_t                                        :2;
 #endif
-   u_char section_number                         :8;
-   u_char last_section_number                    :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :3;
-   u_char PCR_PID_hi                             :5;
+   uint8_t section_number                         :8;
+   uint8_t last_section_number                    :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t                                        :3;
+   uint8_t PCR_PID_hi                             :5;
 #else
-   u_char PCR_PID_hi                             :5;
-   u_char                                        :3;
+   uint8_t PCR_PID_hi                             :5;
+   uint8_t                                        :3;
 #endif
-   u_char PCR_PID_lo                             :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :4;
-   u_char program_info_length_hi                 :4;
+   uint8_t PCR_PID_lo                             :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t                                        :4;
+   uint8_t program_info_length_hi                 :4;
 #else
-   u_char program_info_length_hi                 :4;
-   u_char                                        :4;
+   uint8_t program_info_length_hi                 :4;
+   uint8_t                                        :4;
 #endif
-   u_char program_info_length_lo                 :8;
+   uint8_t program_info_length_lo                 :8;
    //descriptors
 } pmt_t;
 
@@ -278,23 +280,23 @@ typedef struct {
 #define PMT_INFO_LEN 5
 /** @brief  Program Map Table (PMT) : program information section*/
 typedef struct {
-   u_char stream_type                            :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :3;
-   u_char elementary_PID_hi                      :5;
+   uint8_t stream_type                            :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t                                        :3;
+   uint8_t elementary_PID_hi                      :5;
 #else
-   u_char elementary_PID_hi                      :5;
-   u_char                                        :3;
+   uint8_t elementary_PID_hi                      :5;
+   uint8_t                                        :3;
 #endif
-   u_char elementary_PID_lo                      :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :4;
-   u_char ES_info_length_hi                      :4;
+   uint8_t elementary_PID_lo                      :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t                                        :4;
+   uint8_t ES_info_length_hi                      :4;
 #else
-   u_char ES_info_length_hi                      :4;
-   u_char                                        :4;
+   uint8_t ES_info_length_hi                      :4;
+   uint8_t                                        :4;
 #endif
-   u_char ES_info_length_lo                      :8;
+   uint8_t ES_info_length_lo                      :8;
      // descriptors
 } pmt_info_t;
 
@@ -302,19 +304,19 @@ typedef struct {
 #define DESCR_CA_LEN 6
 /** @brief 0x09 ca_descriptor */
 typedef struct {
-  u_char descriptor_tag                         :8;
-  u_char descriptor_length                      :8;
-  u_char CA_type_hi                             :8;
-  u_char CA_type_lo                             :8;
-#if BYTE_ORDER == BIG_ENDIAN
-  u_char reserved                               :3;
-  u_char CA_PID_hi                              :5;
+  uint8_t descriptor_tag                         :8;
+  uint8_t descriptor_length                      :8;
+  uint8_t CA_type_hi                             :8;
+  uint8_t CA_type_lo                             :8;
+#ifdef __BIG_ENDIAN__
+  uint8_t reserved                               :3;
+  uint8_t CA_PID_hi                              :5;
 #else
-  u_char CA_PID_hi                              :5;
-  u_char reserved                               :3;
+  uint8_t CA_PID_hi                              :5;
+  uint8_t reserved                               :3;
 #endif
-  u_char CA_PID_lo                              :8;
-} descr_ca_t; 
+  uint8_t CA_PID_lo                              :8;
+} descr_ca_t;
 
 
 
@@ -329,33 +331,33 @@ typedef struct {
  *
  */
 typedef struct {
-   u_char table_id                               :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char section_syntax_indicator               :1;
-   u_char                                        :3;
-   u_char section_length_hi                      :4;
+   uint8_t table_id                               :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t section_syntax_indicator               :1;
+   uint8_t                                        :3;
+   uint8_t section_length_hi                      :4;
 #else
-   u_char section_length_hi                      :4;
-   u_char                                        :3;
-   u_char section_syntax_indicator               :1;
+   uint8_t section_length_hi                      :4;
+   uint8_t                                        :3;
+   uint8_t section_syntax_indicator               :1;
 #endif
-   u_char section_length_lo                      :8;
-   u_char transport_stream_id_hi                 :8;
-   u_char transport_stream_id_lo                 :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :2;
-   u_char version_number                         :5;
-   u_char current_next_indicator                 :1;
+   uint8_t section_length_lo                      :8;
+   uint8_t transport_stream_id_hi                 :8;
+   uint8_t transport_stream_id_lo                 :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t                                        :2;
+   uint8_t version_number                         :5;
+   uint8_t current_next_indicator                 :1;
 #else
-   u_char current_next_indicator                 :1;
-   u_char version_number                         :5;
-   u_char                                        :2;
+   uint8_t current_next_indicator                 :1;
+   uint8_t version_number                         :5;
+   uint8_t                                        :2;
 #endif
-   u_char section_number                         :8;
-   u_char last_section_number                    :8;
-   u_char original_network_id_hi                 :8;
-   u_char original_network_id_lo                 :8;
-   u_char                                        :8;
+   uint8_t section_number                         :8;
+   uint8_t last_section_number                    :8;
+   uint8_t original_network_id_hi                 :8;
+   uint8_t original_network_id_lo                 :8;
+   uint8_t                                        :8;
 } sdt_t;
 
 #define GetSDTTransportStreamId(x) (HILO(((sdt_t *) x)->transport_stream_id))
@@ -364,30 +366,30 @@ typedef struct {
 #define SDT_DESCR_LEN 5
 /**@brief  Service Description Table (SDT), descriptor */
 typedef struct {
-   u_char service_id_hi                          :8;
-   u_char service_id_lo                          :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :6;
-   u_char eit_schedule_flag                      :1;
-   u_char eit_present_following_flag             :1;
-   u_char running_status                         :3;
-   u_char free_ca_mode                           :1;
-   u_char descriptors_loop_length_hi             :4;
+   uint8_t service_id_hi                          :8;
+   uint8_t service_id_lo                          :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t                                        :6;
+   uint8_t eit_schedule_flag                      :1;
+   uint8_t eit_present_following_flag             :1;
+   uint8_t running_status                         :3;
+   uint8_t free_ca_mode                           :1;
+   uint8_t descriptors_loop_length_hi             :4;
 #else
-   u_char eit_present_following_flag             :1;
-   u_char eit_schedule_flag                      :1;
-   u_char                                        :6;
-   u_char descriptors_loop_length_hi             :4;
-   u_char free_ca_mode                           :1;
-   u_char running_status                         :3;
+   uint8_t eit_present_following_flag             :1;
+   uint8_t eit_schedule_flag                      :1;
+   uint8_t                                        :6;
+   uint8_t descriptors_loop_length_hi             :4;
+   uint8_t free_ca_mode                           :1;
+   uint8_t running_status                         :3;
 #endif
-   u_char descriptors_loop_length_lo             :8;
+   uint8_t descriptors_loop_length_lo             :8;
 } sdt_descr_t;
 
 /*
  *
  *    3) Event Information Table (EIT):
- * 
+ *
  *       - the EIT contains data concerning events or programmes such as event
  *         name, start time, duration, etc.; - the use of different descriptors
  *         allows the transmission of different kinds of event information e.g.
@@ -398,61 +400,61 @@ typedef struct {
 #define EIT_LEN 14
 
 typedef struct {
-  u_char table_id                               :8;
-#if BYTE_ORDER == BIG_ENDIAN
-  u_char section_syntax_indicator               :1;
-  u_char                                        :3;
-  u_char section_length_hi                      :4;
+  uint8_t table_id                               :8;
+#ifdef __BIG_ENDIAN__
+  uint8_t section_syntax_indicator               :1;
+  uint8_t                                        :3;
+  uint8_t section_length_hi                      :4;
 #else
-  u_char section_length_hi                      :4;
-  u_char                                        :3;
-  u_char section_syntax_indicator               :1;
+  uint8_t section_length_hi                      :4;
+  uint8_t                                        :3;
+  uint8_t section_syntax_indicator               :1;
 #endif
-  u_char section_length_lo                      :8;
-  u_char service_id_hi                          :8;
-  u_char service_id_lo                          :8;
-#if BYTE_ORDER == BIG_ENDIAN
-  u_char                                        :2;
-  u_char version_number                         :5;
-  u_char current_next_indicator                 :1;
+  uint8_t section_length_lo                      :8;
+  uint8_t service_id_hi                          :8;
+  uint8_t service_id_lo                          :8;
+#ifdef __BIG_ENDIAN__
+  uint8_t                                        :2;
+  uint8_t version_number                         :5;
+  uint8_t current_next_indicator                 :1;
 #else
-  u_char current_next_indicator                 :1;
-  u_char version_number                         :5;
-  u_char                                        :2;
+  uint8_t current_next_indicator                 :1;
+  uint8_t version_number                         :5;
+  uint8_t                                        :2;
 #endif
-  u_char section_number                         :8;
-  u_char last_section_number                    :8;
-  u_char transport_stream_id_hi                 :8;
-  u_char transport_stream_id_lo                 :8;
-  u_char original_network_id_hi                 :8;
-  u_char original_network_id_lo                 :8;
-  u_char segment_last_section_number            :8;
-  u_char segment_last_table_id                  :8;
+  uint8_t section_number                         :8;
+  uint8_t last_section_number                    :8;
+  uint8_t transport_stream_id_hi                 :8;
+  uint8_t transport_stream_id_lo                 :8;
+  uint8_t original_network_id_hi                 :8;
+  uint8_t original_network_id_lo                 :8;
+  uint8_t segment_last_section_number            :8;
+  uint8_t segment_last_table_id                  :8;
 } eit_t;
 
 #define EIT_EVENT_LEN 12
 /**@brief  Event Information Table (EIT), descriptor header*/
 typedef struct {
-   u_char event_id_hi                            :8;
-   u_char event_id_lo                            :8;
-   u_char start_time_0                           :8;
-   u_char start_time_1                           :8;
-   u_char start_time_2                           :8;
-   u_char start_time_3                           :8;
-   u_char start_time_4                           :8;
-   u_char duration_0                             :8;
-   u_char duration_1                             :8;
-   u_char duration_2                             :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char running_status                         :3;
-   u_char free_ca_mode                           :1;
-   u_char descriptors_loop_length_hi             :4;
+   uint8_t event_id_hi                            :8;
+   uint8_t event_id_lo                            :8;
+   uint8_t start_time_0                           :8;
+   uint8_t start_time_1                           :8;
+   uint8_t start_time_2                           :8;
+   uint8_t start_time_3                           :8;
+   uint8_t start_time_4                           :8;
+   uint8_t duration_0                             :8;
+   uint8_t duration_1                             :8;
+   uint8_t duration_2                             :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t running_status                         :3;
+   uint8_t free_ca_mode                           :1;
+   uint8_t descriptors_loop_length_hi             :4;
 #else
-   u_char descriptors_loop_length_hi             :4;
-   u_char free_ca_mode                           :1;
-   u_char running_status                         :3;
+   uint8_t descriptors_loop_length_hi             :4;
+   uint8_t free_ca_mode                           :1;
+   uint8_t running_status                         :3;
 #endif
-   u_char descriptors_loop_length_lo             :8;
+   uint8_t descriptors_loop_length_lo             :8;
 } eit_event_t;
 
 
@@ -470,87 +472,87 @@ typedef struct {
 #define NIT_LEN 10
 
 typedef struct {
-   u_char table_id                               :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char section_syntax_indicator               :1;
-   u_char                                        :3;
-   u_char section_length_hi                      :4;
+   uint8_t table_id                               :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t section_syntax_indicator               :1;
+   uint8_t                                        :3;
+   uint8_t section_length_hi                      :4;
 #else
-   u_char section_length_hi                      :4;
-   u_char                                        :3;
-   u_char section_syntax_indicator               :1;
+   uint8_t section_length_hi                      :4;
+   uint8_t                                        :3;
+   uint8_t section_syntax_indicator               :1;
 #endif
-   u_char section_length_lo                      :8;
-   u_char network_id_hi                          :8;
-   u_char network_id_lo                          :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :2;
-   u_char version_number                         :5;
-   u_char current_next_indicator                 :1;
+   uint8_t section_length_lo                      :8;
+   uint8_t network_id_hi                          :8;
+   uint8_t network_id_lo                          :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t                                        :2;
+   uint8_t version_number                         :5;
+   uint8_t current_next_indicator                 :1;
 #else
-   u_char current_next_indicator                 :1;
-   u_char version_number                         :5;
-   u_char                                        :2;
+   uint8_t current_next_indicator                 :1;
+   uint8_t version_number                         :5;
+   uint8_t                                        :2;
 #endif
-   u_char section_number                         :8;
-   u_char last_section_number                    :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :4;
-   u_char network_descriptor_length_hi           :4;
+   uint8_t section_number                         :8;
+   uint8_t last_section_number                    :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t                                        :4;
+   uint8_t network_descriptor_length_hi           :4;
 #else
-   u_char network_descriptor_length_hi           :4;
-   u_char                                        :4;
+   uint8_t network_descriptor_length_hi           :4;
+   uint8_t                                        :4;
 #endif
-   u_char network_descriptor_length_lo           :8;
+   uint8_t network_descriptor_length_lo           :8;
   /* descriptors */
 }nit_t;
 
 #define SIZE_NIT_MID 2
 
 typedef struct {                                 // after descriptors
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :4;
-   u_char transport_stream_loop_length_hi        :4;
+#ifdef __BIG_ENDIAN__
+    uint8_t                                        :4;
+    uint8_t transport_stream_loop_length_hi        :4;
 #else
-   u_char transport_stream_loop_length_hi        :4;
-   u_char                                        :4;
+    uint8_t transport_stream_loop_length_hi        :4;
+    uint8_t                                        :4;
 #endif
-   u_char transport_stream_loop_length_lo        :8;
+   uint8_t transport_stream_loop_length_lo        :8;
 }nit_mid_t;
 
 #define NIT_TS_LEN 6
 
 typedef struct {
-   u_char transport_stream_id_hi                 :8;
-   u_char transport_stream_id_lo                 :8;
-   u_char original_network_id_hi                 :8;
-   u_char original_network_id_lo                 :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :4;
-   u_char transport_descriptors_length_hi        :4;
+   uint8_t transport_stream_id_hi                 :8;
+   uint8_t transport_stream_id_lo                 :8;
+   uint8_t original_network_id_hi                 :8;
+   uint8_t original_network_id_lo                 :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t                                        :4;
+   uint8_t transport_descriptors_length_hi        :4;
 #else
-   u_char transport_descriptors_length_hi        :4;
-   u_char                                        :4;
+   uint8_t transport_descriptors_length_hi        :4;
+   uint8_t                                        :4;
 #endif
-   u_char transport_descriptors_length_lo        :8;
+   uint8_t transport_descriptors_length_lo        :8;
    /* descriptors  */
 }nit_ts_t;
 
 #define NIT_LCN_LEN 4
 
 typedef struct {
-   u_char service_id_hi                          :8;
-   u_char service_id_lo                          :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char visible_service_flag                   :1;
-   u_char reserved                               :5;
-   u_char logical_channel_number_hi              :2;
+   uint8_t service_id_hi                          :8;
+   uint8_t service_id_lo                          :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t visible_service_flag                   :1;
+   uint8_t reserved                               :5;
+   uint8_t logical_channel_number_hi              :2;
 #else
-   u_char logical_channel_number_hi              :2;
-   u_char reserved                               :5;
-   u_char visible_service_flag                   :1;
+   uint8_t logical_channel_number_hi              :2;
+   uint8_t reserved                               :5;
+   uint8_t visible_service_flag                   :1;
 #endif
-   u_char logical_channel_number_lo              :8;
+   uint8_t logical_channel_number_lo              :8;
 }nit_lcn_t;
 
 
@@ -563,110 +565,110 @@ typedef struct {
  * it's mainly used to get the section length
  */
 typedef struct {
-   u_char table_id                               :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char section_syntax_indicator               :1;
-   u_char                                        :3;
-   u_char section_length_hi                      :4;
+   uint8_t table_id                               :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t section_syntax_indicator               :1;
+   uint8_t                                        :3;
+   uint8_t section_length_hi                      :4;
 #else
-   u_char section_length_hi                      :4;
-   u_char                                        :3;
-   u_char section_syntax_indicator               :1;
+   uint8_t section_length_hi                      :4;
+   uint8_t                                        :3;
+   uint8_t section_syntax_indicator               :1;
 #endif
-   u_char section_length_lo                      :8;
-   u_char transport_stream_id_hi                 :8;
-   u_char transport_stream_id_lo                 :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :2;
-   u_char version_number                         :5;
-   u_char current_next_indicator                 :1;
+   uint8_t section_length_lo                      :8;
+   uint8_t transport_stream_id_hi                 :8;
+   uint8_t transport_stream_id_lo                 :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t                                        :2;
+   uint8_t version_number                         :5;
+   uint8_t current_next_indicator                 :1;
 #else
-   u_char current_next_indicator                 :1;
-   u_char version_number                         :5;
-   u_char                                        :2;
+   uint8_t current_next_indicator                 :1;
+   uint8_t version_number                         :5;
+   uint8_t                                        :2;
 #endif
-   u_char section_number                         :8;
-   u_char last_section_number                    :8;
+   uint8_t section_number                         :8;
+   uint8_t last_section_number                    :8;
 } tbl_h_t;
 
 
 
 /** @brief 0x5a terrestrial_delivery_system_descriptor */
 typedef struct {
-  u_char descriptor_tag                         :8;
-  u_char descriptor_length                      :8;
-  u_char frequency_4                            :8;
-  u_char frequency_3                            :8;
-  u_char frequency_2                            :8;
-  u_char frequency_1                            :8;
-#if BYTE_ORDER == BIG_ENDIAN
-  u_char bandwidth                              :3;
-  u_char priority                               :1;
-  u_char Time_Slicing_indicator                 :1;
-  u_char MPE_FEC_indicator                      :1;
-  u_char                                        :2;
+  uint8_t descriptor_tag                         :8;
+  uint8_t descriptor_length                      :8;
+  uint8_t frequency_4                            :8;
+  uint8_t frequency_3                            :8;
+  uint8_t frequency_2                            :8;
+  uint8_t frequency_1                            :8;
+#ifdef __BIG_ENDIAN__
+  uint8_t bandwidth                              :3;
+  uint8_t priority                               :1;
+  uint8_t Time_Slicing_indicator                 :1;
+  uint8_t MPE_FEC_indicator                      :1;
+  uint8_t                                        :2;
 #else
-  u_char                                        :2;
-  u_char MPE_FEC_indicator                      :1;
-  u_char Time_Slicing_indicator                 :1;
-  u_char priority                               :1;
-  u_char bandwidth                              :3;
+  uint8_t                                        :2;
+  uint8_t MPE_FEC_indicator                      :1;
+  uint8_t Time_Slicing_indicator                 :1;
+  uint8_t priority                               :1;
+  uint8_t bandwidth                              :3;
 #endif
-#if BYTE_ORDER == BIG_ENDIAN
-  u_char constellation                          :2;
-  u_char hierarchy_information                  :3;
-  u_char code_rate_HP_stream                    :3;
+#ifdef __BIG_ENDIAN__
+  uint8_t constellation                          :2;
+  uint8_t hierarchy_information                  :3;
+  uint8_t code_rate_HP_stream                    :3;
 #else
-  u_char code_rate_HP_stream                    :3;
-  u_char hierarchy_information                  :3;
-  u_char constellation                          :2;
+  uint8_t code_rate_HP_stream                    :3;
+  uint8_t hierarchy_information                  :3;
+  uint8_t constellation                          :2;
 #endif
-#if BYTE_ORDER == BIG_ENDIAN
-  u_char code_rate_LP_stream                    :3;
-  u_char guard_interval                         :2;
-  u_char transmission_mode                      :2;
-  u_char other_frequency_flag                   :1;
+#ifdef __BIG_ENDIAN__
+  uint8_t code_rate_LP_stream                    :3;
+  uint8_t guard_interval                         :2;
+  uint8_t transmission_mode                      :2;
+  uint8_t other_frequency_flag                   :1;
 #else
-  u_char other_frequency_flag                   :1;
-  u_char transmission_mode                      :2;
-  u_char guard_interval                         :2;
-  u_char code_rate_LP_stream                    :3;
+  uint8_t other_frequency_flag                   :1;
+  uint8_t transmission_mode                      :2;
+  uint8_t guard_interval                         :2;
+  uint8_t code_rate_LP_stream                    :3;
 #endif
 } descr_terr_delivery_t;
 
 
 /** @brief 0x43 satellite_delivery_system_descriptor */
 typedef struct {
-  u_char descriptor_tag                         :8;
-  u_char descriptor_length                      :8;
-  u_char frequency_4                            :8;
-  u_char frequency_3                            :8;
-  u_char frequency_2                            :8;
-  u_char frequency_1                            :8;
-  u_char orbital_position_hi                    :8;
-  u_char orbital_position_lo                    :8;
-#if BYTE_ORDER == BIG_ENDIAN
-  u_char west_east_flag                         :1;
-  u_char polarization	                        :2;
-  u_char roll_off		               			:2;
-  u_char modulation_system                      :1;
-  u_char modulation_type	               		:2;
+  uint8_t descriptor_tag                         :8;
+  uint8_t descriptor_length                      :8;
+  uint8_t frequency_4                            :8;
+  uint8_t frequency_3                            :8;
+  uint8_t frequency_2                            :8;
+  uint8_t frequency_1                            :8;
+  uint8_t orbital_position_hi                    :8;
+  uint8_t orbital_position_lo                    :8;
+#ifdef __BIG_ENDIAN__
+  uint8_t west_east_flag                         :1;
+  uint8_t polarization	                        :2;
+  uint8_t roll_off		               			:2;
+  uint8_t modulation_system                      :1;
+  uint8_t modulation_type	               		:2;
 #else
-  u_char modulation_type	               		:2;
-  u_char modulation_system                      :1;
-  u_char roll_off		               			:2;
-  u_char polarization	                        :2;
-  u_char west_east_flag                         :1;
+  uint8_t modulation_type	               		:2;
+  uint8_t modulation_system                      :1;
+  uint8_t roll_off		               			:2;
+  uint8_t polarization	                        :2;
+  uint8_t west_east_flag                         :1;
 #endif
-  u_char symbol_rate_12		               		:8;
-  u_char symbol_rate_34		               		:8;
-  u_char symbol_rate_56		               		:8;
-#if BYTE_ORDER == BIG_ENDIAN
-  u_char symbol_rate_7		               		:4;
-  u_char FEC_inner								:4;
+  uint8_t symbol_rate_12		               		:8;
+  uint8_t symbol_rate_34		               		:8;
+  uint8_t symbol_rate_56		               		:8;
+#ifdef __BIG_ENDIAN__
+  uint8_t symbol_rate_7		               		:4;
+  uint8_t FEC_inner								:4;
 #else
-  u_char FEC_inner								:4;
-  u_char symbol_rate_7		               		:4;
+  uint8_t FEC_inner								:4;
+  uint8_t symbol_rate_7		               		:4;
 #endif
 } descr_sat_delivery_t;
 
@@ -683,34 +685,34 @@ typedef struct {
 
 /**@brief Header of an ATSC PSIP (Program and System Information Protocol) table*/
 typedef struct {
-   u_char table_id                               :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char section_syntax_indicator               :1;
-   u_char private_indicator                      :1;
-   u_char                                        :2;
-   u_char section_length_hi                      :4;
+   uint8_t table_id                               :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t section_syntax_indicator               :1;
+   uint8_t private_indicator                      :1;
+   uint8_t                                        :2;
+   uint8_t section_length_hi                      :4;
 #else
-   u_char section_length_hi                      :4;
-   u_char                                        :2;
-   u_char private_indicator                      :1;
-   u_char section_syntax_indicator               :1;
+   uint8_t section_length_hi                      :4;
+   uint8_t                                        :2;
+   uint8_t private_indicator                      :1;
+   uint8_t section_syntax_indicator               :1;
 #endif
-   u_char section_length_lo                      :8;
-   u_char transport_stream_id_hi                 :8;
-   u_char transport_stream_id_lo                 :8;
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :2;
-   u_char version_number                         :5;
-   u_char current_next_indicator                 :1;
+   uint8_t section_length_lo                      :8;
+   uint8_t transport_stream_id_hi                 :8;
+   uint8_t transport_stream_id_lo                 :8;
+#ifdef __BIG_ENDIAN__
+   uint8_t                                        :2;
+   uint8_t version_number                         :5;
+   uint8_t current_next_indicator                 :1;
 #else
-   u_char current_next_indicator                 :1;
-   u_char version_number                         :5;
-   u_char                                        :2;
+   uint8_t current_next_indicator                 :1;
+   uint8_t version_number                         :5;
+   uint8_t                                        :2;
 #endif
-   u_char section_number                         :8;
-   u_char last_section_number                    :8;
-   u_char protocol_version                       :8;
-// u_char num_channels_in_section                :8; //For information, in case of TVCT or CVCT
+   uint8_t section_number                         :8;
+   uint8_t last_section_number                    :8;
+   uint8_t protocol_version                       :8;
+// uint8_t num_channels_in_section                :8; //For information, in case of TVCT or CVCT
 } psip_t;
 
 
@@ -718,76 +720,76 @@ typedef struct {
 
 /**@brief PSIP (TC)VCT (Terrestrial/Cable Virtual Channel Table) channels descriptors*/
 typedef struct {
-  uint8_t short_name[14];//The channel short name in UTF-16
+   uint8_t short_name[14];//The channel short name in UTF-16
 
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :4; //reserved
-   u_char major_channel_number_hi4               :4;
+#ifdef __BIG_ENDIAN__
+   uint8_t                                        :4; //reserved
+   uint8_t major_channel_number_hi4               :4;
 #else
-   u_char major_channel_number_hi4               :4;
-   u_char                                        :4; //reserved
-#endif  
+   uint8_t major_channel_number_hi4               :4;
+   uint8_t                                        :4; //reserved
+#endif
 
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char major_channel_number_lo6               :6;
-   u_char minor_channel_number_hi                :2;
+#ifdef __BIG_ENDIAN__
+   uint8_t major_channel_number_lo6               :6;
+   uint8_t minor_channel_number_hi                :2;
 #else
-   u_char minor_channel_number_hi                :2;
-   u_char major_channel_number_lo6               :6;
-#endif  
+   uint8_t minor_channel_number_hi                :2;
+   uint8_t major_channel_number_lo6               :6;
+#endif
 
-   u_char minor_channel_number_lo                :8;
+   uint8_t minor_channel_number_lo                :8;
 
-   u_char modulation_mode                        :8;
+   uint8_t modulation_mode                        :8;
 
-  u_int8_t carrier_frequency[4];
+   uint8_t carrier_frequency[4];
 
-   u_char channel_tsid_hi                        :8;
+   uint8_t channel_tsid_hi                        :8;
 
-   u_char channel_tsid_lo                        :8;
+   uint8_t channel_tsid_lo                        :8;
 
-   u_char program_number_hi                      :8;
+   uint8_t program_number_hi                      :8;
 
-   u_char program_number_lo                      :8;
+   uint8_t program_number_lo                      :8;
 
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char ETM_location                           :2;
-   u_char access_controlled                      :1;
-   u_char hidden                                 :1;
-   u_char path_select                            :1; //Only cable
-   u_char out_of_band                            :1; //Only cable
-   u_char hide_guide                             :1;
-   u_char                                        :1; //reserved
+#ifdef __BIG_ENDIAN__
+   uint8_t ETM_location                           :2;
+   uint8_t access_controlled                      :1;
+   uint8_t hidden                                 :1;
+   uint8_t path_select                            :1; //Only cable
+   uint8_t out_of_band                            :1; //Only cable
+   uint8_t hide_guide                             :1;
+   uint8_t                                        :1; //reserved
 #else
-   u_char                                        :1; //reserved
-   u_char hide_guide                             :1;
-   u_char out_of_band                            :1; //Only cable
-   u_char path_select                            :1; //Only cable
-   u_char hidden                                 :1;
-   u_char access_controlled                      :1;
-   u_char ETM_location                           :2;
-#endif  
+   uint8_t                                        :1; //reserved
+   uint8_t hide_guide                             :1;
+   uint8_t out_of_band                            :1; //Only cable
+   uint8_t path_select                            :1; //Only cable
+   uint8_t hidden                                 :1;
+   uint8_t access_controlled                      :1;
+   uint8_t ETM_location                           :2;
+#endif
 
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :2; //reserved
-   u_char service_type                           :6;
+#ifdef __BIG_ENDIAN__
+   uint8_t                                        :2; //reserved
+   uint8_t service_type                           :6;
 #else
-   u_char service_type                           :6;
-   u_char                                        :2; //reserved
-#endif  
+   uint8_t service_type                           :6;
+   uint8_t                                        :2; //reserved
+#endif
 
-   u_char source_id_hi                           :8;
+   uint8_t source_id_hi                           :8;
 
-   u_char source_id_lo                           :8;
+   uint8_t source_id_lo                           :8;
 
-#if BYTE_ORDER == BIG_ENDIAN
-   u_char                                        :6;
-   u_char descriptor_length_hi                   :2;
+#ifdef __BIG_ENDIAN__
+   uint8_t                                        :6;
+   uint8_t descriptor_length_hi                   :2;
 #else
-   u_char descriptor_length_hi                   :2;
-   u_char                                        :6;
-#endif  
-   u_char descriptor_length_lo                   :8;
+   uint8_t descriptor_length_hi                   :2;
+   uint8_t                                        :6;
+#endif
+   uint8_t descriptor_length_lo                   :8;
 } psip_vct_channel_t;
 
 //1 for number strings, 3 for language code,1 for number of segments

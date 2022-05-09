@@ -1,23 +1,23 @@
 /* dvb.c
  * MuMuDVB - Stream a DVB transport stream.
- * 
+ *
  * (C) 2004-2013 Brice DUBOST
  * (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
- * 
+ *
  * The latest version can be found at http://mumudvb.net
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -30,18 +30,28 @@
  */
 
 #define _GNU_SOURCE
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "dvb.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#ifndef _WIN32
 #include <dirent.h>
+#include <unistd.h>
+#else
+#include <io.h>
+#endif
 #include <sys/types.h>
 #include "log.h"
-#include <unistd.h>
 #include <sys/stat.h>
 
 static char *log_module="DVB: ";
+
+#ifndef O_NONBLOCK
+#define O_NONBLOCK 0
+#endif
 
 /**
  * @brief Check the file exists and is readable
@@ -49,16 +59,16 @@ static char *log_module="DVB: ";
  */
 static int file_exists(char *filename)
 {
-	struct stat   buffer;   
+	struct stat   buffer;
 	return (stat(filename, &buffer) == 0) ? 1 : 0;
 }
 
 /**
  * @brief Open the frontend associated with card
  * Return 1 in case of succes, -1 otherwise
- * 
- * @param fd_frontend the file descriptor for the frontend 
- * @param card the card number 
+ *
+ * @param fd_frontend the file descriptor for the frontend
+ * @param card the card number
  */
 int
 open_fe (int *fd_frontend, char *base_path, int tuner, int rw, int full_path)
@@ -97,6 +107,7 @@ open_fe (int *fd_frontend, char *base_path, int tuner, int rw, int full_path)
 void
 set_ts_filt (int fd, uint16_t pid)
 {
+#ifndef DISABLE_DVB_API
 	struct dmx_pes_filter_params pesFilterParams;
 
 	log_message( log_module,  MSG_DEBUG, "Setting filter for PID %d\n", pid);
@@ -113,6 +124,10 @@ set_ts_filt (int fd, uint16_t pid)
 		log_message( log_module,  MSG_ERROR, "FILTER %i: ", pid);
 		log_message( log_module,  MSG_ERROR, "DMX SET PES FILTER : %s\n", strerror(errno));
 	}
+#else
+	(void)fd;
+	(void)pid;
+#endif
 }
 
 /**
@@ -122,6 +137,7 @@ set_ts_filt (int fd, uint16_t pid)
  */
 void *show_power_func(void* arg)
 {
+#ifndef DISABLE_DVB_API
 	strength_parameters_t  *strengthparams;
 	strengthparams= (strength_parameters_t  *) arg;
 	fe_status_t festatus_old;
@@ -220,12 +236,15 @@ void *show_power_func(void* arg)
 		for(i=0;i<wait_time && !strengthparams->tune_p->strengththreadshutdown;i++)
 			usleep(100000);
 	}
+#else
+	(void)arg;
+#endif
 	return 0;
 }
 
 
 /**
- * @brief Open file descriptors for the card. open dvr and one demuxer fd per asked pid. This function can be called 
+ * @brief Open file descriptors for the card. open dvr and one demuxer fd per asked pid. This function can be called
  * more than one time if new pids are added (typical case autoconf)
  * return -1 in case of error
  * @param card the card number
@@ -255,15 +274,18 @@ create_card_fd(char *base_path, int tuner, uint8_t *asked_pid, fds_t *fds)
 	for(curr_pid=0;curr_pid<8193;curr_pid++)
 		//file descriptors for the demuxer (used to set the filters)
 		//we check if we need to open the file descriptor (some cards are limited)
-		if ((asked_pid[curr_pid] != 0)&& (fds->fd_demuxer[curr_pid]==0) )
-			if((fds->fd_demuxer[curr_pid] = open (demuxdev_name, O_RDWR)) < 0)
-			{
-				log_message( log_module,  MSG_ERROR, "FD PID %i: ", curr_pid);
-				log_message( log_module,  MSG_ERROR, "DEMUX DEVICE: %s : %s\n", demuxdev_name, strerror(errno));
+		if ((asked_pid[curr_pid] != 0) && (fds->fd_demuxer[curr_pid] == 0)) {
+#ifndef DISABLE_DVB_API
+			if ((fds->fd_demuxer[curr_pid] = open(demuxdev_name, O_RDWR)) < 0) {
+				log_message(log_module, MSG_ERROR, "FD PID %i: ", curr_pid);
+				log_message(log_module, MSG_ERROR, "DEMUX DEVICE: %s : %s\n", demuxdev_name, strerror(errno));
 				free(demuxdev_name);
 				return -1;
 			}
-
+#else
+			fds->fd_demuxer[curr_pid] = -1;
+#endif
+		}
 
 	asprintf_ret=asprintf(&dvrdev_name,"%s/%s%d",base_path,DVR_DEV_NAME,tuner);
 	if(asprintf_ret==-1)
@@ -293,7 +315,7 @@ create_card_fd(char *base_path, int tuner, uint8_t *asked_pid, fds_t *fds)
 
 
 /**
- * @brief Open filters for the pids in asked_pid. This function update the asked_pid array and 
+ * @brief Open filters for the pids in asked_pid. This function update the asked_pid array and
  * can be called more than one time if new pids are added (typical case autoconf)
  * Ie it asks the card for the pid list by calling set_ts_filt
  * @param asked_pid the array of asked pids
@@ -316,8 +338,7 @@ void set_filters(uint8_t *asked_pid, fds_t *fds)
  * @brief Close the file descriptors associated with the card
  * @param fds the structure with the file descriptors
  */
-void
-close_card_fd(fds_t *fds)
+void close_card_fd(fds_t *fds)
 {
 	int curr_pid = 0;
 
@@ -331,14 +352,21 @@ close_card_fd(fds_t *fds)
 	}
 
 	if(fds->fd_dvr)
+#ifndef _WIN32
 		close (fds->fd_dvr);
+#else
+		CloseHandle(fds->fd_dvr);
+#endif
 	fds->fd_dvr=0;
+
 	if(fds->fd_frontend)
+#ifndef _WIN32
 		close (fds->fd_frontend);
+#else
+		CloseHandle(fds->fd_frontend);
+#endif
 	fds->fd_frontend=0;
-
 }
-
 
 /**
  * @brief Function for the tread reading data from the card
@@ -405,12 +433,9 @@ void *read_card_thread_func(void* arg)
 	return NULL;
 }
 
-
-
-
 /** @brief : Read data from the card
  * This function have to be called after a poll to ensure there is data to read
- * 
+ *
  */
 int card_read(int fd_dvr, unsigned char *dest_buffer, card_buffer_t *card_buffer)
 {
@@ -448,11 +473,12 @@ typedef struct frontend_cap_t
 }frontend_cap_t;
 
 /** @brief : List the capabilities of one card
- * 
- * 
+ *
+ *
  */
 void show_card_capabilities( int card, int tuner )
 {
+#ifndef DISABLE_DVB_API
 	int frontend_fd;
 	int i_ret;
 	int display_sr;
@@ -548,14 +574,18 @@ void show_card_capabilities( int card, int tuner )
 	close (frontend_fd);
 
 	log_message( log_module,  MSG_INFO, "\n");
-
+#else
+	(void)card;
+	(void)tuner;
+#endif
 }
 
 /** @brief : List the DVB cards of the system and their capabilities
- * 
+ *
  */
-void list_dvb_cards ()
+void list_dvb_cards(void)
 {
+#ifndef DISABLE_DVB_API
 	DIR *dvb_dir;
 	log_message( log_module, MSG_INFO,"==================================");
 	log_message( log_module, MSG_INFO,"        DVB CARDS LISTING\n");
@@ -632,5 +662,5 @@ void list_dvb_cards ()
 		}
 		closedir(adapter_dir);
 	}
+#endif
 }
-

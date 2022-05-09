@@ -34,9 +34,20 @@
 #ifndef _TUNE_H
 #define _TUNE_H
 
+#ifndef DISABLE_DVB_API
 #include <linux/dvb/frontend.h>
 #include <linux/dvb/version.h>
-
+#else
+typedef enum fe_status_t
+{
+    FE_HAS_SIGNAL = 0,
+} fe_status_t;
+typedef enum fe_type_t
+{
+	FE_QPSK = 0,
+	FE_ATSC = 1,
+} fe_type_t;
+#endif
 
 /* DVB-S */
 /** lnb_slof: switch frequency of LNB */
@@ -158,13 +169,16 @@ typedef struct tune_p_t{
   int diseqc_time;
   /** The frequency for SCR/unicable */
   uint32_t uni_freq;
+#ifndef DISABLE_DVB_API
   /** The kind of modulation */
   fe_modulation_t modulation;
+#endif
   int modulation_set;
+#ifndef DISABLE_DVB_API
   /** high priority stream code rate ie error correction, FEC */
   fe_code_rate_t HP_CodeRate;
-  /** low priority stream code rate 
-   * In order to achieve hierarchy, two different code rates may be applied to two different levels of the modulation.*/ 
+  /** low priority stream code rate
+   * In order to achieve hierarchy, two different code rates may be applied to two different levels of the modulation.*/
   fe_code_rate_t LP_CodeRate;
   /** For DVB-T */
   fe_transmit_mode_t TransmissionMode;
@@ -172,10 +186,11 @@ typedef struct tune_p_t{
   fe_guard_interval_t guardInterval;
   /**For DVB-T : the bandwith (often 8MHz)*/
   fe_bandwidth_t bandwidth;
-  /**For DVB-T 
+  /**For DVB-T
    It seems that it's related to the capability to transmit information in parallel
   Not configurable for the moment, I have found no transponder to test it*/
   fe_hierarchy_t hier;
+#endif
   /** do we periodically display the strenght of the signal ?*/
   int display_strenght;
   /** do we periodically check the status of the card ?*/
@@ -203,6 +218,9 @@ typedef struct tune_p_t{
 #endif
   /** If we read directly from a file */
   char read_file_path[256];
+  /* If we read from a UDP/multicast source */
+  char source_addr[64];
+  unsigned short source_port;
 #if ISDBT
   //ISDB T
   /** ISDBT */
@@ -214,21 +232,16 @@ typedef struct tune_p_t{
   /** ISDBT */
   int isdbt_layer;
 #endif
+#ifndef DISABLE_DVB_API
   /** Spectral inversion */
   fe_spectral_inversion_t inversion;
+#endif
 
-}tune_p_t;
-
-
-
-
+} tune_p_t;
 
 void init_tune_v(tune_p_t *);
 int tune_it(int, tune_p_t *);
 int read_tuning_configuration(tune_p_t *, char *);
 void print_status(fe_status_t festatus);
-
-
-
 
 #endif

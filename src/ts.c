@@ -568,7 +568,7 @@ unsigned char *get_ts_begin(unsigned char *buf)
 /** @brief compare the SERVICE_ID contained in the channel and in the PMT
  *
  * Return 1 if match or no service_id info, 0 otherwise
- * 
+ *
  * @param pmt the pmt packet
  * @param channel the channel to be checked
  */
@@ -673,14 +673,14 @@ void ts_display_pat(char* log_module,unsigned char *buf)
 
 
 typedef struct {
-	u_char descriptor_tag                         :8;
-	u_char descriptor_length                      :8;
-#if BYTE_ORDER == BIG_ENDIAN
-	u_char country_availability_flag              :1;
-	u_char                                        :7;
+	uint8_t descriptor_tag                         :8;
+	uint8_t descriptor_length                      :8;
+#ifdef __BIG_ENDIAN__
+	uint8_t country_availability_flag              :1;
+	uint8_t                                        :7;
 #else
-	u_char                                        :7;
-	u_char country_availability_flag              :1;
+	uint8_t                                        :7;
+	uint8_t country_availability_flag              :1;
 #endif
 } country_avaibility_descr_t;
 
@@ -864,9 +864,9 @@ void ts_display_satellite_delivery_system_descriptor(char* log_module, unsigned 
 		log_message( log_module, MSG_FLOOD, "Estern position");
 	else
 		log_message( log_module, MSG_FLOOD, "Western position");
+	log_message(log_module, MSG_FLOOD, "Polarization: (0x%02x)", descr->polarization);
 	switch(descr->polarization)
 	{
-	log_message( log_module, MSG_FLOOD, "Polarization: (0x%02x)", descr->polarization);
 	case 0:
 		log_message( log_module, MSG_FLOOD, "Polarization: linear - horizontal");
 		break;

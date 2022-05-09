@@ -28,24 +28,29 @@
  * @date 2009
  */
 
+#define _CRT_SECURE_NO_WARNINGS
 
-
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#include <sys/types.h>
 #include <arpa/inet.h>
+#include <sys/ioctl.h>
+#include <netinet/tcp.h>
 #include <unistd.h>
+#else
+#define write(sock, buf, size) send(sock, buf, size, 0)
+#define close(sock) closesocket(sock)
+#endif
+#include <sys/types.h>
 #include <errno.h>
 #include <string.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include <sys/ioctl.h>
 #include <time.h>
 #include <stdlib.h>
-#include <netinet/tcp.h>
 
 
 #include "unicast_http.h"
@@ -65,7 +70,7 @@ static char *log_module="Unicast : ";
  * @param SocketAddr The socket address
  * @param Socket The socket number
  */
-unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct sockaddr_in SocketAddr, int Socket)
+unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, int Socket)
 {
 
 	unicast_client_t *client;
@@ -99,7 +104,7 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 	// Disable the Nagle (TCP No Delay) algorithm
 	int iRet;
 	int on = 1;
-	iRet=setsockopt(Socket, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on));
+	iRet = setsockopt(Socket, IPPROTO_TCP, TCP_NODELAY, (const char *)&on, sizeof(on));
 	if (iRet < 0)
 	{
 		log_message( log_module,  MSG_WARN,"setsockopt TCP_NODELAY failed : %s\n", strerror(errno));
@@ -107,8 +112,8 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 
 	int buffer_size;
 	socklen_t size;
-	size=sizeof(buffer_size);
-	iRet=getsockopt( Socket, SOL_SOCKET, SO_SNDBUF, &buffer_size, &size);
+	size = sizeof(buffer_size);
+	iRet = getsockopt(Socket, SOL_SOCKET, SO_SNDBUF, (char *)&buffer_size, &size);
 	if (iRet < 0)
 	{
 		log_message( log_module,  MSG_WARN,"get SO_SNDBUF failed : %s\n", strerror(errno));
@@ -118,15 +123,15 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 	if(unicast_vars->socket_sendbuf_size)
 	{
 		buffer_size = unicast_vars->socket_sendbuf_size;
-		iRet=setsockopt(Socket, SOL_SOCKET, SO_SNDBUF, &buffer_size, sizeof(buffer_size));
+		iRet = setsockopt(Socket, SOL_SOCKET, SO_SNDBUF, (const char *)&buffer_size, sizeof(buffer_size));
 		if (iRet < 0)
 		{
 			log_message( log_module,  MSG_WARN,"setsockopt SO_SNDBUF failed : %s\n", strerror(errno));
 		}
 		else
 		{
-			size=sizeof(buffer_size);
-			iRet=getsockopt( Socket, SOL_SOCKET, SO_SNDBUF, &buffer_size, &size);
+			size = sizeof(buffer_size);
+			iRet = getsockopt(Socket, SOL_SOCKET, SO_SNDBUF, (char *)&buffer_size, &size);
 			if (iRet < 0)
 				log_message( log_module,  MSG_WARN,"2nd get SO_SNDBUF failed : %s\n", strerror(errno));
 			else
@@ -135,7 +140,6 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 	}
 
 	//We fill the client data
-	client->SocketAddr=SocketAddr;
 	client->Socket=Socket;
 	client->buffer=NULL;
 	client->buffersize=0;
@@ -171,8 +175,10 @@ unicast_client_t *unicast_add_client(unicast_parameters_t *unicast_vars, struct 
 int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *client)
 {
 	unicast_client_t *prev_client,*next_client;
+	char addr_buf[IPV6_CHAR_LEN];
 
-	log_message( log_module, MSG_FLOOD,"We delete the client %s:%d, socket %d\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port, client->Socket);
+	socket_to_string(client->Socket, addr_buf, sizeof(addr_buf));
+	log_message(log_module, MSG_FLOOD, "We delete the client %s, socket %d\n", addr_buf, client->Socket);
 
 	if (client->Socket >= 0)
 	{
@@ -198,7 +204,7 @@ int unicast_del_client(unicast_parameters_t *unicast_vars, unicast_client_t *cli
 		log_message( log_module, MSG_DEBUG,"We remove the client from the channel \"%s\"\n",client->chan_ptr->name);
 		// decrement the number of client connections
         client->chan_ptr->num_clients--;
-		
+
 		if(client->chan_prev==NULL)
 		{
 			client->chan_ptr->clients=client->chan_next;
@@ -236,10 +242,12 @@ int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *chann
 {
 	unicast_client_t *last_client;
 	int iRet;
+	char addr_buf[IPV6_CHAR_LEN];
 
-	log_message( log_module, MSG_INFO,"We add the client %s:%d to the channel \"%s\"\n",inet_ntoa(client->SocketAddr.sin_addr), client->SocketAddr.sin_port,channel->name);
+	socket_to_string(client->Socket, addr_buf, sizeof(addr_buf));
+	log_message(log_module, MSG_INFO, "We add the client %s to the channel \"%s\"\n", addr_buf, channel->name);
 
-	iRet=write(client->Socket,HTTP_OK_REPLY, strlen(HTTP_OK_REPLY));
+    iRet = write(client->Socket, HTTP_OK_REPLY, strlen(HTTP_OK_REPLY));
 	if(iRet!=strlen(HTTP_OK_REPLY))
 	{
 		log_message( log_module, MSG_INFO,"Error when sending the HTTP reply\n");
@@ -249,7 +257,7 @@ int channel_add_unicast_client(unicast_client_t *client,mumudvb_channel_t *chann
 	client->chan_next=NULL;
 	// Increment the number of client connections
     channel->num_clients++;
-	
+
 	if(channel->clients==NULL)
 	{
 		channel->clients=client;

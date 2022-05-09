@@ -139,7 +139,7 @@ int autoconf_read_psip(auto_p_t *auto_p, mumu_chan_p_t *chan_p)
 	else
 	{
 		//New version, no section seen
-		for(int i=0;i<256;i++)
+		for(i=0;i<256;i++)
 			auto_p->psip_sections_seen[i]=0;
 		auto_p->psip_version=psip->version_number;
 		auto_p->psip_all_sections_seen=0;
@@ -167,7 +167,7 @@ int autoconf_read_psip(auto_p_t *auto_p, mumu_chan_p_t *chan_p)
 
 	int sections_missing=0;
 	//We check if we saw all sections
-	for(int i=0;i<=psip->last_section_number;i++)
+	for(i=0;i<=psip->last_section_number;i++)
 		if(auto_p->psip_sections_seen[i]==0)
 			sections_missing++;
 	if(sections_missing)
@@ -205,11 +205,12 @@ int autoconf_parse_vct_channel(unsigned char *buf, auto_p_t *auto_p, mumu_chan_p
 #endif
 	char utf8_short_name[15];
 	char *channel_name=NULL;
-	char long_name[MAX_NAME_LEN];
+#ifdef HAVE_LIBUCSI
+	char long_name[MAX_NAME_LEN] = { 0, };
+#endif
 
 	int mpeg2_service_type=0;
 	vct_channel=(psip_vct_channel_t *)buf;
-	long_name[0]='\0';
 
 	// *********** We get the channel short name *******************
 	memcpy (unconverted_short_name, vct_channel->short_name, 14*sizeof(uint8_t));

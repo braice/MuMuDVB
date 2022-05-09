@@ -25,9 +25,9 @@ The configuration file contains two parts
 Common part
 ~~~~~~~~~~~
 
-This is the first part of the configuration file, it contains the parameters needed for tuning the DVB card and the global parameters.
+This is the first part of the configuration file, it contains the parameters needed for tuning the DVB card or configuring input source and the global parameters.
 
-See the <<tuning,tuning>> section for the list of parameters used to tune the card. and <<other_global,other global parameters>> section for parameters like autoconfiguration, cam support etc ...
+See the <<tuning,tuning>> section for the list of parameters used to tune the card. and <<other_global,other global parameters>> section for configuring input source(s) and other parameters like autoconfiguration, cam support etc ...
 
 Channels part
 ~~~~~~~~~~~~~
@@ -169,12 +169,25 @@ Parameters specific to ATSC (Cable or Terrestrial)
 If needed, specify the modulation using the option `modulation`.
 
 [NOTE]
-VSB 8 is the default modulation for most of the terrestrial ATSC transmission
+8VSB is the default modulation for most of the terrestrial ATSC transmission
 
 
 [[other_global]]
 Other global parameters
 -----------------------
+
+Input sources
+~~~~~~~~~~~~~
+
+When DVB-API is not available, it's possible to use other MPEG-TS sources for MuMuDVB. The configuration options below explain how to do this.
+
+[width="80%",cols="5,10",options="header"]
+|==================================================================================================================
+|Parameter name |Description
+|read_file_path | path to the .ts file or a fifo (created with `mkfifo` or similar) which will provide MPEGTS data instead of using a DVB card. Note that in case of file input, it's not rate limited and will ingest the data as quick as possible. Use fifo and a separate application to ratelimit the transmission.
+|source_addr | address to listen on for the unicast or multicast providing ratelimited MPEGTS data. In case of unicast, listen on `0.0.0.0` for IPv4 or `::` for IPv6. In case of multicast, provide a valid multicast IP address (either IPv4 or IPv6).
+|source_port | The port for unicast/multicast source. Can be anything reasonable. Ports below 1024 will require root access.
+|==================================================================================================================
 
 Various parameters
 ~~~~~~~~~~~~~~~~~~
@@ -303,7 +316,7 @@ HTTP unicast parameters
 |==================================================================================================================
 |Parameter name |Description | Default value |Comments
 |unicast |Set this option to one to activate HTTP unicast | 0  |   see the README for more details
-|ip_http |the listening ip for http unicast, if you want to listen to all interfaces put 0.0.0.0 | 0.0.0.0  |  see the README for more details
+|ip_http |the listening ip for http unicast, if you want to listen to all interfaces put 0.0.0.0. This option supports IPv6 as well, put `::` to listen on all IPv6 interfaces. | 0.0.0.0  |  see the README for more details
 |port_http | The listening port for http unicast | 4242 |  You can use mathematical expressions containing integers, * and +. You can use the `%card`, `%tuner` and %server template. Ex `port_http=2000+%card*100`
 |unicast_consecutive_errors_timeout | The timeout for disconnecting a client which is not responding | 5 | A client will be disconnected if no data have been sucessfully sent during this interval. A value of 0 deactivate the timeout (unadvised).
 |unicast_max_clients | The limit on the number of connected clients | 0 | 0 : no limit.

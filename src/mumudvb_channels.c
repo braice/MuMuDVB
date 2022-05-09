@@ -1,31 +1,30 @@
-/* 
+/*
  * MuMuDVB - Stream a DVB transport stream.
  * Based on dvbstream by (C) Dave Chapman <dave@dchapman.com> 2001, 2002.
- * 
+ *
  * (C) 2014 Brice DUBOST
- * 
+ *
  * The latest version can be found at http://mumudvb.net
- * 
+ *
  * Copyright notice:
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  */
 
-
-
+#define _CRT_SECURE_NO_WARNINGS
 
 #include "mumudvb.h"
 #include "log.h"
@@ -34,14 +33,24 @@
 #include "rtp.h"
 #include "unicast_http.h"
 
+#ifndef _WIN32
 #include <sys/poll.h>
 #include <sys/time.h>
+#endif
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "scam_common.h"
 
+#include "autoconf.h"
+
+#ifdef ENABLE_SCAM_SUPPORT
+#include "scam_common.h"
+#endif
+
+#ifdef _MSC_VER
+#define strtok_r strtok_s
+#endif
 
 static char *log_module="Common chan: ";
 
@@ -85,11 +94,10 @@ int mumu_init_chan(mumudvb_channel_t *chan)
 		}
 	}
 
-#ifdef ENABLE_SCAM_SUPPORT
 	pthread_mutex_init(&chan->stats_lock, NULL);
+#ifdef ENABLE_SCAM_SUPPORT
 	pthread_mutex_init(&chan->cw_lock, NULL);
 	chan->camd_socket = -1;
-
 #endif
 	return 0;
 }
@@ -197,7 +205,6 @@ void chan_new_pmt(unsigned char *ts_packet, mumu_chan_p_t *chan_p, int pid)
 	}
 }
 
-
 /** @brief Update the CAM information for the channels
  */
 void chan_update_CAM(mumu_chan_p_t *chan_p, auto_p_t *auto_p,  void *scam_vars_v)
@@ -243,7 +250,7 @@ void chan_update_CAM(mumu_chan_p_t *chan_p, auto_p_t *auto_p,  void *scam_vars_v
 				}
 				memset (chan_p->channels[ichan].scam_pmt_packet, 0, sizeof( mumudvb_ts_packet_t));//we clear it
 				pthread_mutex_init(&chan_p->channels[ichan].scam_pmt_packet->packetmutex, NULL);
-			} 
+			}
 			// need to send the new PMT to Oscam
 			else if(chan_p->channels[ichan].need_scam_ask==CAM_ASKED)
 				chan_p->channels[ichan].need_scam_ask=CAM_NEED_ASK;
@@ -252,7 +259,6 @@ void chan_update_CAM(mumu_chan_p_t *chan_p, auto_p_t *auto_p,  void *scam_vars_v
 #endif
 	}
 }
-
 
 
 
@@ -298,7 +304,7 @@ void update_chan_net(mumu_chan_p_t *chan_p, auto_p_t *auto_p, multi_p_t *multi_p
 		}
 		// Set the number of unicast clients to zero
         chan_p->channels[ichan].num_clients = 0;
-		
+
 		if(multi_p->multicast)
 		{
 			char number[10];
@@ -385,7 +391,6 @@ void update_chan_net(mumu_chan_p_t *chan_p, auto_p_t *auto_p, multi_p_t *multi_p
 					ichan,
 					unicast_vars->ipOut,
 					chan_p->channels[ichan].unicast_port,
-					&chan_p->channels[ichan].sIn,
 					&chan_p->channels[ichan].socketIn,
 					unicast_vars);
 		}
@@ -494,9 +499,10 @@ void update_chan_filters(mumu_chan_p_t *chan_p, char *card_base_path, int tuner,
 		//Now we have the PIDs we look for those who disappeared
 		if(chan_p->asked_pid[ipid]==PID_ASKED && asked_pid[ipid]!=PID_ASKED && ipid != PSIP_PID)
 		{
-			log_message( log_module,  MSG_INFO, "Update : PID %d does not belong to any channel anymore, we close the filter",
-					ipid);
+			log_message( log_module,  MSG_INFO, "Update : PID %d does not belong to any channel anymore, we close the filter", ipid);
+#ifndef _WIN32
 			close(fds->fd_demuxer[ipid]);
+#endif
 			fds->fd_demuxer[ipid]=0;
 			chan_p->asked_pid[ipid]=PID_NOT_ASKED;
 		}
@@ -522,41 +528,3 @@ void update_chan_filters(mumu_chan_p_t *chan_p, char *card_base_path, int tuner,
 
 	pthread_mutex_unlock(&chan_p->lock);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
