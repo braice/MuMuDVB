@@ -9,3 +9,5 @@ struct timezone
 int gettimeofday(struct timeval *tv, struct timezone *tz);
 int asprintf(char **strp, const char *fmt, ...);
 void usleep(unsigned int usec);
+void sleep(unsigned int sec);
+int mkpath(char *file_path, unsigned int mode);

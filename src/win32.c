@@ -1,3 +1,4 @@
+#define _WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <time.h>
 #include <errno.h>
@@ -5,6 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <direct.h>
 #include "win32.h"
 
 #if _MSC_VER < 1800
@@ -111,4 +113,33 @@ void usleep(unsigned int usec)
         WaitForSingleObject(timer, INFINITE);
         CloseHandle(timer);
     }
+}
+
+void sleep(unsigned int sec)
+{
+    usleep(sec * 1000000);
+}
+
+int mkpath(char *file_path, unsigned int mode)
+{
+    char *p = file_path;
+    (void)mode;
+
+    while (*p != '\0') {
+        p++;
+
+        while (*p != '\0' && *p != '/')
+            p++;
+
+        char v = *p;
+        *p = '\0';
+
+        if (_mkdir(file_path) == -1 && errno != EEXIST) {
+            *p = v;
+            return -1;
+        }
+        *p = v;
+    }
+
+    return 0;
 }

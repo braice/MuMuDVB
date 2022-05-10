@@ -213,7 +213,7 @@ int main (int argc, char **argv)
 	pthread_t cardthread;
 
 	pthread_t monitorthread = pthread_self();
-  pthread_t hlsthread;
+	pthread_t hlsthread = pthread_self();
 	card_thread_parameters_t cardthreadparams;
 	memset(&cardthreadparams,0,sizeof(card_thread_parameters_t));
 

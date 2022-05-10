@@ -2,14 +2,23 @@
  * @brief HLS output support
  */
 
-#include <errno.h>
+#ifndef _WIN32
 #include <sys/time.h>
-#include <sys/stat.h>
-#include <libgen.h>
 #include <unistd.h>
+#include <linux/limits.h>
+#else
+#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_NONSTDC_NO_DEPRECATE
+/* MAX_PATH on Win32 */
+#define PATH_MAX (260)
+#include <io.h>
+#define ftruncate _chsize
+#include "win32.h"
+#endif
+#include <errno.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <stdlib.h>
-#include <linux/limits.h>
 #include "mumudvb.h"
 #include "errors.h"
 #include "log.h"
@@ -23,6 +32,7 @@ pthread_mutex_t hls_periodic_lock;
 hls_open_fds_t hls_fds[MAX_CHANNELS];
 extern int dont_send_scrambled;
 
+#ifndef _WIN32
 int mkpath(char* file_path, mode_t mode) {
     if (!file_path || !*file_path) return -1;
 
@@ -45,6 +55,7 @@ int mkpath(char* file_path, mode_t mode) {
     }
     return 0;
 }
+#endif
 
 int hls_sid_entry_compare(const void *pa, const void *pb) {
 	const int *a = pa;
@@ -201,7 +212,7 @@ int hls_entry_rotate(hls_open_fds_t *hls_entry, unicast_parameters_t *unicast_va
 	    }
 
 	    fwrite(outbuf, playlist_size, 1, playlist);
-	    
+
 	    ftruncate(fileno(playlist), playlist_size);
 	    fclose(playlist);
 	    free(outbuf);
@@ -212,7 +223,7 @@ int hls_entry_rotate(hls_open_fds_t *hls_entry, unicast_parameters_t *unicast_va
 	char path_stream[PATH_MAX];
 	snprintf(path_stream, sizeof(path_stream), "%s/%s", hls_entry->path, hls_entry->filenames[0].name);
 	hls_entry->stream = fopen(path_stream, "wb");
-	
+
 	if (hls_entry->stream == 0) {
 	    perror("Cannot open output file for write");
 	    return -1;
@@ -292,7 +303,7 @@ int hls_playlist_master(hls_open_fds_t *hls_fds, unicast_parameters_t *unicast_v
 	    }
 
 	    fwrite(outbuf, playlist_size, 1, playlist);
-	    
+
 	    ftruncate(fileno(playlist), playlist_size);
 	    fclose(playlist);
 	    free(outbuf);
@@ -356,7 +367,7 @@ void *hls_periodic_task(void* arg)
 	while(!params->threadshutdown) {
 	    log_message( log_module, MSG_FLOOD,"Run periodic task...\n");
 
-	    cur_time = get_time() / 1000000;
+	    cur_time = (unsigned int)(get_time() / 1000000ULL);
 
 	    // try to rotate all channels
 	    for (entry = 0; entry < MAX_CHANNELS; entry++){
@@ -386,7 +397,7 @@ void *hls_periodic_task(void* arg)
 
 		pthread_mutex_unlock(&hls_periodic_lock);
 	    }
-	    
+
 	    sleep(unicast_vars->hls_rotate_time);
 	}
 	log_message( log_module,  MSG_DEBUG,  "Periodic task stopped.\n");
@@ -410,7 +421,7 @@ int hls_worker_main(mumudvb_channel_t *actual_channel, unicast_parameters_t *uni
 	}
 
 	pthread_mutex_lock(&hls_periodic_lock);
-	
+
 	entry = hls_entry_find(service_id, &hls_fds[0]);
 	if (!hls_fds[entry].initialized) {
 	    hls_entry_initialize(actual_channel, &hls_fds[entry], unicast_vars, cur_time);

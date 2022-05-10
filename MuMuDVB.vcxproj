@@ -132,6 +132,7 @@
     </ClCompile>
     <ClCompile Include="src\dvb_win32.c" />
     <ClCompile Include="src\getopt.c" />
+    <ClCompile Include="src\hls.c" />
     <ClCompile Include="src\log.c" />
     <ClCompile Include="src\multicast.c" />
     <ClCompile Include="src\mumudvb.c" />

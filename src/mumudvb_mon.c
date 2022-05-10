@@ -8,6 +8,7 @@
 #define _GNU_SOURCE		//in order to use program_invocation_short_name and pthread_timedjoin_np
 #define _POSIX
 #define _CRT_SECURE_NO_WARNINGS
+#define _CRT_NONSTDC_NO_DEPRECATE
 
 #include "config.h"
 
@@ -266,7 +267,7 @@ int mumudvb_close(int no_daemon,
 			log_message(log_module,MSG_WARN,"Monitor Thread badly closed: %s\n", strerror(iRet));
 	}
 
-	if(*hlsthread)
+	if(!pthread_equal(*hlsthread, pthread_self()))
 	{
 		log_message(log_module,MSG_DEBUG,"HLS Thread closing\n");
 		hls_thread_params->threadshutdown=1;
