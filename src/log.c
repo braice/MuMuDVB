@@ -32,6 +32,7 @@
 
 #define _POSIX_C_SOURCE 200809L
 #define _CRT_SECURE_NO_WARNINGS
+#define _CRT_NONSTDC_NO_DEPRECATE
 
 #include <stdio.h>
 #include <string.h>
