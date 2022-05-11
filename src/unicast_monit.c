@@ -639,7 +639,6 @@ int unicast_send_channel_list_xml (int number_of_channels, mumudvb_channel_t *ch
 #ifndef ENABLE_SCAM_SUPPORT
     (void) scam_vars_v; //to make compiler happy
 #else
-    char *scam_vars;
     scam_parameters_t *scam_vars=(scam_parameters_t *)scam_vars_v;
 #endif
 
