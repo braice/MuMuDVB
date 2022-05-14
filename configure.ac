@@ -39,7 +39,7 @@ dnl
 dnl cam support
 dnl
 AC_ARG_ENABLE(cam_support,
-  [  --enable-cam-support          CAM support (default enabled)],,[enable_cam_support="yes"])
+  [  --enable-cam-support    CAM support (default enabled)],,[enable_cam_support="yes"])
 
 if test "${enable_cam_support}" = "yes"
 then
@@ -57,10 +57,34 @@ fi
 AM_CONDITIONAL(BUILD_CAMSUPPORT, [test "${enable_cam_support}" != "no"])
 
 dnl
+dnl arib support
+dnl
+AC_ARG_ENABLE(arib_support,
+  [  --enable-arib-support   ARIB charset support (default enabled)],,[enable_arib_support="yes"])
+
+if test "${enable_arib_support}" = "yes"
+then
+  AC_CHECK_HEADER([aribb24/aribb24.h], [], [enable_arib_support="no"])
+  if test "${enable_arib_support}" != "no"
+  then
+    AC_CHECK_LIB([aribb24], [arib_instance_new], [], [enable_arib_support="no"])
+  fi
+  if test "${enable_arib_support}" != "no"
+  then
+    AC_DEFINE(ENABLE_ARIB_SUPPORT, 1, Define if you want the ARIB charset support)
+  else
+    AC_MSG_WARN([libaribb24 is needed for ARIB charset support])
+  fi
+else
+  enable_arib_support="no"
+fi
+AM_CONDITIONAL(BUILD_ARIB_SUPPORT, [test "${enable_arib_support}" != "no"])
+
+dnl
 dnl scam support
 dnl
 AC_ARG_ENABLE(scam_support,
-  [  --enable-scam-support          SCAM support (default enabled)],,[enable_scam_support="yes"])
+  [  --enable-scam-support   SCAM support (default enabled)],,[enable_scam_support="yes"])
 
 if test "${enable_scam_support}" = "yes"
 then
@@ -92,7 +116,7 @@ dnl
 dnl duma support
 dnl
 AC_ARG_ENABLE(duma,
-  [  --enable-duma          Debbuging DUMA library (default disabled)],,
+  [  --enable-duma           Debbuging DUMA library (default disabled)],,
   [enable_duma="no"])
 
 if test "${enable_duma}" = "yes"
@@ -107,7 +131,7 @@ then
 fi
 
 AC_ARG_ENABLE(android,
-  [  --enable-android          Build for android (default disabled)],,[enable_android="no"])
+  [  --enable-android        Build for android (default disabled)],,[enable_android="no"])
 
 if test "${enable_android}" = "yes"
 then
@@ -115,7 +139,7 @@ then
 fi
 
 AC_ARG_ENABLE(tune_old,
-  [  --enable-tune_old          Use old code for tuning (default disabled)],,[enable_tune_old="no"])
+  [  --enable-tune_old       Use old code for tuning (default disabled)],,[enable_tune_old="no"])
 
 if test "${enable_tune_old}" = "yes"
 then
@@ -165,6 +189,12 @@ if test "${atsc_long_names}" = "yes" ; then
         echo "Build with ATSC long names support:                 yes"
 else
         echo "Build with ATSC long names support:                  no"
+fi
+
+if test "${enable_arib_support}" != "no" ; then
+        echo "Build with ARIB charset support:                    yes"
+else
+        echo "Build with ARIB charset support:                     no"
 fi
 
 if test "${enable_android}" = "yes" ; then
