@@ -606,6 +606,9 @@ typedef struct mumu_string_t{
 extern bool t2mi_active;
 extern bool t2mi_first;
 extern int t2_partial_size;
+#ifdef ENABLE_ARIB_SUPPORT
+extern bool japan_active;
+#endif
 
 int mumu_string_append(mumu_string_t *string, const char *psz_format, ...);
 void mumu_free_string(mumu_string_t *string);

@@ -7,15 +7,6 @@ AC_CONFIG_SRCDIR([src/mumudvb.c])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([src/config.h])
 
-dnl
-dnl Check for linux dvb api headers
-dnl
-AC_CHECK_HEADER([linux/dvb/dmx.h])
-if test "$ac_cv_header_linux_dvb_dmx_h" = no; then
-        AC_MSG_WARN([linux dvb api headers not found, disabling dvb api functionality])
-        AC_DEFINE(DISABLE_DVB_API, 1, Define if you want to bulid without DVB API)
-fi
-
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_CC_STDC
@@ -27,6 +18,22 @@ dnl Iconv stuff
 dnl
 AM_ICONV
 
+dnl
+dnl dvb-api support (disable on request or check existence of header)
+dnl
+AC_ARG_ENABLE(dvb_support,
+  [  --enable-dvb-support    linux dvb-api support (default enabled)],,[enable_dvb_support="yes"])
+if test "${enable_dvb_support}" = "yes"
+then
+  AC_CHECK_HEADER([linux/dvb/dmx.h])
+  if test "$ac_cv_header_linux_dvb_dmx_h" = no; then
+    AC_MSG_WARN([linux dvb api headers not found, disabling dvb api functionality])
+    AC_DEFINE(DISABLE_DVB_API, 1, Define if you want to bulid without DVB API)
+  fi
+else
+  enable_dvb_support="no"
+  AC_DEFINE(DISABLE_DVB_API, 1, Define if you want to bulid without DVB API)
+fi
 
 AC_CHECK_LIB([dvbapi], [dvbdemux_set_section_filter])
 AC_CHECK_LIB([ucsi], [atsc_text_segment_decode],[atsc_long_names="yes"], [atsc_long_names="no"])
@@ -172,6 +179,12 @@ echo "MuMuDVB configure results:"
 echo ""
 echo "Features"
 echo ""
+
+if test "${enable_dvb_support}" != "no" ; then
+        echo "Build with Linux DVB-API support:                   yes"
+else
+        echo "Build with Linux DVB-API support:                    no"
+fi
 
 if test "${enable_cam_support}" != "no" ; then
         echo "Build with CAM support:                             yes"

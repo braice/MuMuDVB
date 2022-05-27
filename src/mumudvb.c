@@ -177,9 +177,10 @@ int  write_streamed_channels=1;
 /** Do we send scrambled packets ? */
 int dont_send_scrambled=0;
 
-
-
-
+#ifdef ENABLE_ARIB_SUPPORT
+/* special flag for arib charset handling, unfortunately because japan, this has to be global and special-cased */
+bool japan_active = false;
+#endif
 
 //logging
 extern log_params_t log_params;

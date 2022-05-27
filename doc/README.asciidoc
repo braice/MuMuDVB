@@ -67,6 +67,7 @@ Features overview
 - Software descrambling through oscam dvbapi and libdvbcsa
 - Flexible configuration mechanism using templates
 - Support for embedded platforms based on UCLIBC and ANDROID
+- Support for UDP unicast/multicast input in the absense of a DVB card
 
 
 Installation
@@ -105,9 +106,11 @@ The `[configure options]` specific to MuMuDVB are:
 ---------------------------------------------------------------------
   --enable-cam-support    CAM support (default enabled)
   --enable-scam-support   SCAM support (default enabled) (see note below)
+  --enable-arib-support   Build support for ARIB STD-B24 character decoding (specific to ISDB-T in Japan)
   --enable-coverage       build for test coverage (default disabled)
   --enable-duma           Debbuging DUMA library (default disabled)
   --enable-android        Support for Android (default disabled)
+  --disable-dvb-support   Build without Linux DVB-API support, even on systems where the headers are present
 ---------------------------------------------------------------------
 
 [NOTE]
@@ -125,6 +128,9 @@ In the case of fedora, the dvb-apps package does not contains the headers, you h
 
 [NOTE]
 The SCAM support depends on libdvbcsa from videolan. The configure script will detect automatically the presence of these libraries and deactivate the SCAM support if one of them is not present. It needs also trunk version of oscam to get control words. Oscam configuration is described below in section concerning software descrambling v2 inside mumudvb. 
+
+[NOTE]
+The ARIB STD-B24 support depends on libaribb24. The configure script will automatically detect it's presence and enable `--japan` runtime option to enable character set translation.
 
 [NOTE]
 The decoding of long channel names for autoconfiguration in ATSC depends on libucsi (from linuxtv's dvb-apps). The configure script will detect automatically the presence of this library and deactivate the long channel name support if it is not present. The full autoconfiguration will still work with ATSC but the channel names will be the short channels names (7 characters maximum)
@@ -186,6 +192,9 @@ Possible options are:
 
 --server_id
 	The server id (for autoconfiguration, overrided by the configuration file)
+
+-j, --japan
+	Enable support for decoding ARIB STD-B24 character encoding in SI/EPG (only if built with libaribb24 support)
 
 -h, --help
 	Show help

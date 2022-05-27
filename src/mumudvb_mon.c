@@ -89,12 +89,15 @@ extern int tuning_no_diff;
 
 void parse_cmd_line(int argc, char **argv,char *(*conf_filename),tune_p_t *tune_p,stats_infos_t *stats_infos,int *server_id, int *no_daemon,char **dump_filename, int *listingcards)
 {
-	const char short_options[] = "c:sdthvql";
+	const char short_options[] = "c:sdthjvql";
 	const struct option long_options[] = {
 			{"config", required_argument, NULL, 'c'},
 			{"signal", no_argument, NULL, 's'},
 			{"traffic", no_argument, NULL, 't'},
 			{"server_id", required_argument, NULL, 'i'},
+#ifdef ENABLE_ARIB_SUPPORT
+			{"japan", no_argument, NULL, 'j'},
+#endif
 			{"debug", no_argument, NULL, 'd'},
 			{"help", no_argument, NULL, 'h'},
 			{"list-cards", no_argument, NULL, 'l'},
@@ -137,6 +140,11 @@ void parse_cmd_line(int argc, char **argv,char *(*conf_filename),tune_p_t *tune_
 		case 'i':
 			*server_id = atoi(optarg);
 			break;
+#ifdef ENABLE_ARIB_SUPPORT
+		case 'j':
+			japan_active = true;
+			break;
+#endif
 		case 't':
 			stats_infos->show_traffic = 1;
 			break;
@@ -302,6 +310,11 @@ int mumudvb_close(int no_daemon,
 
 
 	}
+
+#ifdef ENABLE_ARIB_SUPPORT
+	/* Close ARIB B24 decoder instance */
+	close_arib_instance();
+#endif
 
 	// we close the file descriptors
 	close_card_fd(fds);
