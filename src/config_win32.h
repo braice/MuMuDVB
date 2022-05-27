@@ -7,6 +7,9 @@
 /* Define if you want to bulid without DVB API */
 #define DISABLE_DVB_API 1
 
+/* Define if you want the ARIB charset support */
+/* #undef ENABLE_ARIB_SUPPORT */
+
 /* Define if you want the CAM support */
 /* #undef ENABLE_CAM_SUPPORT */
 
