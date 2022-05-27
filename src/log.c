@@ -1278,7 +1278,6 @@ static int convert_arib_string(char *string, int max_len)
 
 	p_out = decode_aribstring(p_instance, (const unsigned char *)string);
 	if (p_out) {
-		printf("converted shitty string %s to %s\n", string, p_out);
 		strncpy(string, p_out, max_len);
 		free(p_out);
 		return 0x16; /* Hack to index into encodings_en300468[] table */
