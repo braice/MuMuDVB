@@ -65,6 +65,13 @@
 #include <iconv.h>
 #endif
 
+#ifdef ENABLE_ARIB_SUPPORT
+#include <aribb24/aribb24.h>
+#include <aribb24/decoder.h>
+
+static int convert_arib_string(char *string, int max_len);
+#endif
+
 #ifdef ENABLE_CAM_SUPPORT
 #include <libdvben50221/en50221_errno.h>
 #endif
@@ -1014,6 +1021,9 @@ void usage (char *name)
 			"-v           : More verbose\n"
 			"-q           : Less verbose\n"
 			"--dumpfile   : Debug option : Dump the stream into the specified file\n"
+#ifdef ENABLE_ARIB_SUPPORT
+			"-j --japan   : Enable processing ARIB encoding in SI/EPG data\n"
+#endif
 			"-h, --help   : Help\n"
 			"\n", name);
 	print_info ();
@@ -1061,6 +1071,9 @@ char *encodings_en300468[] ={
 		"GB2312",    //control char 0x13
 		"BIG5",      //control char 0x14
 		"ISO-10646/UTF8",      //control char 0x15
+#ifdef ENABLE_ARIB_SUPPORT
+		"ARIB STB-B24", // 0x16 actually a HACK since Japan does not follow EN 300 468 encodings
+#endif
 };
 
 /**@brief Convert text according to EN 300 468 annex A
@@ -1068,6 +1081,10 @@ char *encodings_en300468[] ={
  */
 int convert_en300468_string(char *string, int max_len, int debug)
 {
+#if ENABLE_ARIB_SUPPORT
+	if (japan_active)
+		return convert_arib_string(string, max_len);
+#endif
 
 	int encoding_control_char=8; //cf encodings_en300468
 	char *tempdest, *tempbuf;
@@ -1222,6 +1239,59 @@ exit_iconv:
 
 	return encoding_control_char;
 }
+
+#ifdef ENABLE_ARIB_SUPPORT
+static arib_instance_t *p_instance = NULL;
+
+/* decode JIS 8-bit character to UTF-8 characters. */
+static char *decode_aribstring(arib_instance_t *p_instance, const unsigned char *psz_instring)
+{
+	if (!psz_instring)
+		return NULL;
+	size_t i_in = strlen((const char *)psz_instring);
+
+	arib_decoder_t *p_decoder = arib_get_decoder(p_instance);
+	if (!p_decoder)
+		return NULL;
+
+	size_t i_out = i_in * 4;
+	char *psz_outstring = (char *)calloc(i_out + 1, sizeof(char));
+
+	arib_initialize_decoder(p_decoder);
+	i_out = arib_decode_buffer(p_decoder, psz_instring, i_in, psz_outstring, i_out);
+	arib_finalize_decoder(p_decoder);
+
+	return psz_outstring;
+}
+
+static int convert_arib_string(char *string, int max_len)
+{
+	static bool init = false;
+	char *p_out = NULL;
+
+	if (!init) {
+		p_instance = arib_instance_new(NULL);
+		if (!p_instance)
+			return -1;
+		init = true;
+	}
+
+	p_out = decode_aribstring(p_instance, (const unsigned char *)string);
+	if (p_out) {
+		strncpy(string, p_out, max_len);
+		free(p_out);
+		return 0x16; /* Hack to index into encodings_en300468[] table */
+	}
+
+	return -1;
+}
+
+void close_arib_instance(void)
+{
+	if (p_instance)
+		arib_instance_destroy(p_instance);
+}
+#endif
 
 /** @brief : show the contents of the CA identifier descriptor
  *

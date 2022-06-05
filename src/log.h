@@ -127,6 +127,9 @@ int read_logging_configuration(stats_infos_t *stats_infos, char *substring);
 void sync_logs();
 char *running_status_to_str(int running_status);
 int convert_en300468_string(char *string, int max_len, int debug);
+#ifdef ENABLE_ARIB_SUPPORT
+void close_arib_instance(void);
+#endif
 void show_CA_identifier_descriptor(unsigned char *buf);
 char *ready_f_to_str(chan_status_t flag);
 #endif
