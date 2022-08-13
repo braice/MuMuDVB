@@ -374,13 +374,16 @@ int hls_write_metrics(strength_parameters_t *strengthparams, char *path)
 	    "# TYPE ts_discontinuities counter\n"
 	    "ts_discontinuities %u\n"
 	    "# TYPE lock_loss_events counter\n"
-	    "lock_loss_events %u\n",
+	    "lock_loss_events %u\n"
+	    "# TYPE lock_active gauge\n"
+	    "lock_active %u\n",
 	    strengthparams->ber,
 	    strengthparams->strength,
 	    strengthparams->snr,
 	    strengthparams->ub,
 	    strengthparams->ts_discontinuities,
-	    strengthparams->lock_loss_events
+	    strengthparams->lock_loss_events,
+	    (strengthparams->festatus & FE_HAS_LOCK) ? 1 : 0
 	);
 	fclose(file);
 	return 0;
