@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.61])
-AC_INIT([MuMuDVB], [2.1.0_20181020_mumudvb2], [mumudvb@braice.net])
+AC_INIT([MuMuDVB], [m4_join([_], [2.1.0], m4_chomp_all(m4_esyscmd([git rev-parse HEAD])))], [mumudvb@braice.net])
 AC_CONFIG_SRCDIR([src/mumudvb.c])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([src/config.h])
