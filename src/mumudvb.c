@@ -1089,6 +1089,7 @@ int main (int argc, char **argv)
     	hls_thread_parameters_t hls_thread_params ={
                 	.threadshutdown=0,
                         .unicast_vars=&unic_p,
+                        .strengthparams=&strengthparams,
     	};
 
 	if(unic_p.hls)
