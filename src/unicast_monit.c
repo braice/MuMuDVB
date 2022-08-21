@@ -460,7 +460,7 @@ unicast_send_json_state (int number_of_channels, mumudvb_channel_t *channels, in
 	unicast_reply_write(reply, "\t\"frontend_signal\" : %d,\n",strengthparams->strength);
 	unicast_reply_write(reply, "\t\"frontend_snr\" : %d,\n",strengthparams->snr);
 	unicast_reply_write(reply, "\t\"frontend_ub\" : %d,\n",strengthparams->ub);
-	unicast_reply_write(reply, "\t\"ts_discontinuities\" : %d\n",strengthparams->ts_discontinuities);
+	unicast_reply_write(reply, "\t\"ts_discontinuities\" : %u\n",strengthparams->ts_discontinuities);
 
 	unicast_reply_write(reply, "},\n");
 
@@ -827,7 +827,7 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 	unicast_reply_write(reply, "\t<frontend_signal>%d</frontend_signal>\n",strengthparams->strength);
 	unicast_reply_write(reply, "\t<frontend_snr>%d</frontend_snr>\n",strengthparams->snr);
 	unicast_reply_write(reply, "\t<frontend_ub>%d</frontend_ub>\n",strengthparams->ub);
-	unicast_reply_write(reply, "\t<ts_discontinuities>%d</ts_discontinuities>\n",strengthparams->ts_discontinuities);
+	unicast_reply_write(reply, "\t<ts_discontinuities>%u</ts_discontinuities>\n",strengthparams->ts_discontinuities);
 
 
 	// Autoconfiguration state

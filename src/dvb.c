@@ -153,6 +153,7 @@ void *show_power_func(void* arg)
 	strengthparams->snr = 0;
 	strengthparams->ub = 0;
 	strengthparams->ts_discontinuities = 0; //could be initialized somewhere else but sounds fine here
+	strengthparams->lock_loss_events = 0;
 	memset(&festatus_old,0,sizeof(fe_status_t));
 	lock_lost=0;
 	while(!strengthparams->tune_p->strengththreadshutdown)
@@ -208,7 +209,7 @@ void *show_power_func(void* arg)
 		if(strengthparams->tune_p->display_strenght && strengthparams->tune_p->card_tuned)
 		{
 			log_message( log_module,  MSG_INFO, "Bit error rate: %10d Signal strength: %10d SNR: %10d Uncorrected blocks: %10d\n", strengthparams->ber,strengthparams->strength,strengthparams->snr,strengthparams->ub);
-			log_message( log_module,  MSG_INFO, "ts_discontinuities %10d",strengthparams->ts_discontinuities);
+			log_message( log_module,  MSG_INFO, "ts_discontinuities %10u",strengthparams->ts_discontinuities);
 
 			log_message( log_module,  MSG_FLOOD, "Timing: ioctls took %ld micro seconds\n",mumu_timing());
 		}
@@ -218,9 +219,10 @@ void *show_power_func(void* arg)
 			{
 				if((!(strengthparams->festatus & FE_HAS_LOCK) ) && (festatus_old != strengthparams->festatus))
 				{
-					if(!lock_lost)
+					if(!lock_lost) {
 						log_message( log_module,  MSG_WARN, "The card has lost the lock (antenna unplugged ?). Detailed status");
-					else
+						strengthparams->lock_loss_events++;
+					} else
 						log_message( log_module,  MSG_INFO, "Card is still not locked but status changed. Detailed status");
 					print_status(strengthparams->festatus);
 					festatus_old = strengthparams->festatus;

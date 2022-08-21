@@ -355,6 +355,43 @@ void hls_array_cleanup(hls_open_fds_t *hls_fds, unsigned int hls_rotate_time, un
 	}
 }
 
+int hls_write_metrics(strength_parameters_t *strengthparams, unicast_parameters_t *unicast_vars)
+{
+	char path_metrics[PATH_MAX];
+	snprintf(path_metrics, sizeof(path_metrics), "%s/%s", unicast_vars->hls_storage_dir, "metrics"); // construct metrics filename
+
+	FILE *file = fopen(path_metrics, "wb");
+	if (file == 0) {
+	    return -1;
+	}
+
+	fprintf(file,
+	    "# TYPE bit_error_rate gauge\n"
+	    "bit_error_rate %d\n"
+	    "# TYPE signal_strength gauge\n"
+	    "signal_strength %d\n"
+	    "# TYPE signal_to_noise_ratio gauge\n"
+	    "signal_to_noise_ratio %d\n"
+	    "# TYPE blocks_uncorrected counter\n"
+	    "blocks_uncorrected %d\n"
+	    "# TYPE ts_discontinuities counter\n"
+	    "ts_discontinuities %u\n"
+	    "# TYPE lock_loss_events counter\n"
+	    "lock_loss_events %u\n"
+	    "# TYPE lock_active gauge\n"
+	    "lock_active %u\n",
+	    strengthparams->ber,
+	    strengthparams->strength,
+	    strengthparams->snr,
+	    strengthparams->ub,
+	    strengthparams->ts_discontinuities,
+	    strengthparams->lock_loss_events,
+	    (strengthparams->festatus & FE_HAS_LOCK) ? 1 : 0
+	);
+	fclose(file);
+	return 0;
+}
+
 void *hls_periodic_task(void* arg)
 {
 	unsigned int cur_time, entry;
@@ -363,6 +400,7 @@ void *hls_periodic_task(void* arg)
 
         hls_thread_parameters_t *params = (hls_thread_parameters_t *) arg;
 	unicast_parameters_t *unicast_vars = (unicast_parameters_t *) params->unicast_vars;
+	strength_parameters_t *strengthparams = (strength_parameters_t *) params->strengthparams;
 
 	while(!params->threadshutdown) {
 	    log_message( log_module, MSG_FLOOD,"Run periodic task...\n");
@@ -397,6 +435,9 @@ void *hls_periodic_task(void* arg)
 
 		pthread_mutex_unlock(&hls_periodic_lock);
 	    }
+
+	    // write metrics file
+	    hls_write_metrics(strengthparams, unicast_vars);
 
 	    sleep(unicast_vars->hls_rotate_time);
 	}
@@ -468,13 +509,17 @@ int hls_start(unicast_parameters_t *unicast_vars)
 void hls_stop(unicast_parameters_t *unicast_vars)
 {
 	char path_delete[PATH_MAX];
-
+	char path_metrics[PATH_MAX];
 	pthread_mutex_lock(&hls_periodic_lock);
 	hls_array_cleanup(&hls_fds[0], 0, ~0);		// pass maximum time value to ensure cleanup
 
 	snprintf(path_delete, sizeof(path_delete), "%s/%s", unicast_vars->hls_storage_dir, unicast_vars->hls_playlist_name);
 	log_message( log_module, MSG_FLOOD,"Removing file \"%s\"\n", path_delete);
 	remove(path_delete);
+
+	snprintf(path_metrics, sizeof(path_metrics), "%s/%s", unicast_vars->hls_storage_dir, "metrics");
+	log_message( log_module, MSG_FLOOD,"Removing file \"%s\"\n", path_metrics);
+	remove(path_metrics);
 
 	pthread_mutex_unlock(&hls_periodic_lock);
 	pthread_mutex_destroy(&hls_periodic_lock);
