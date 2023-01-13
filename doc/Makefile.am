@@ -6,6 +6,6 @@ html_DOC	= $(htmldocdir)/README.html $(htmldocdir)/README_CONF.html $(htmldocdir
 
 doc: $(html_DOC)
 
-$(htmldocdir)/%.html: %.txt
+$(htmldocdir)/%.html: %.asciidoc
 	install -d $(htmldocdir)
 	-asciidoc $(ASCIIDOCFLAGS) -o $@ $^
