@@ -553,7 +553,7 @@ int pmt_find_descriptor(uint8_t tag, unsigned char *buf, int descriptors_loop_le
 	while (descriptors_loop_len > 0)
 	{
 		unsigned char descriptor_tag = buf[0];
-		unsigned char descriptor_len = buf[1] + 2;
+		int descriptor_len = buf[1] + 2;
 
 		if (tag == descriptor_tag)
 			return descriptor_len;
