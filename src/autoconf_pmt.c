@@ -577,7 +577,7 @@ void pmt_print_descriptor_tags(unsigned char *buf, int descriptors_loop_len)
 	while (descriptors_loop_len > 0)
 	{
 		unsigned char descriptor_tag = buf[0];
-		unsigned char descriptor_len = buf[1] + 2;
+		int descriptor_len = buf[1] + 2;
 
 		log_message( log_module,  MSG_DEBUG,"0x%02x - \n", descriptor_tag);
 		buf += descriptor_len;
