@@ -86,7 +86,7 @@ void autoconf_get_pmt_pids(auto_p_t *auto_p, mumudvb_ts_packet_t *pmt, int *pids
 	//search in the main loop
 	if(program_info_length > 0)
 	{
-		while(len = pmt_find_descriptor(0x09,pmt->data_full+PMT_LEN,PMT_LEN+program_info_length,&pos),len)
+		while(len = pmt_find_descriptor(0x09,pmt->data_full+PMT_LEN,program_info_length,&pos),len)
 		{
 			log_message( log_module,  MSG_FLOOD,"  Found a CA descr in main loop at pos %d", pos);
 
