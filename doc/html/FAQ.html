@@ -1,0 +1,1132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="generator" content="AsciiDoc 9.0.0rc1" />
+<title>MuMuDVB - FAQ (Frequently asked questions)</title>
+<style type="text/css">
+/* Shared CSS for AsciiDoc xhtml11 and html5 backends */
+
+/* Default font. */
+body {
+  font-family: Georgia,serif;
+}
+
+/* Title font. */
+h1, h2, h3, h4, h5, h6,
+div.title, caption.title,
+thead, p.table.header,
+#toctitle,
+#author, #revnumber, #revdate, #revremark,
+#footer {
+  font-family: Arial,Helvetica,sans-serif;
+}
+
+body {
+  margin: 1em 5% 1em 5%;
+}
+
+a {
+  color: blue;
+  text-decoration: underline;
+}
+a:visited {
+  color: fuchsia;
+}
+
+em {
+  font-style: italic;
+  color: navy;
+}
+
+strong {
+  font-weight: bold;
+  color: #083194;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #527bbd;
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
+}
+
+h1, h2, h3 {
+  border-bottom: 2px solid silver;
+}
+h2 {
+  padding-top: 0.5em;
+}
+h3 {
+  float: left;
+}
+h3 + * {
+  clear: left;
+}
+h5 {
+  font-size: 1.0em;
+}
+
+div.sectionbody {
+  margin-left: 0;
+}
+
+hr {
+  border: 1px solid silver;
+}
+
+p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+ul, ol, li > p {
+  margin-top: 0;
+}
+ul > li     { color: #aaa; }
+ul > li > * { color: black; }
+
+.monospaced, code, pre {
+  font-family: "Courier New", Courier, monospace;
+  font-size: inherit;
+  color: navy;
+  padding: 0;
+  margin: 0;
+}
+pre {
+  white-space: pre-wrap;
+}
+
+#author {
+  color: #527bbd;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+#email {
+}
+#revnumber, #revdate, #revremark {
+}
+
+#footer {
+  font-size: small;
+  border-top: 2px solid silver;
+  padding-top: 0.5em;
+  margin-top: 4.0em;
+}
+#footer-text {
+  float: left;
+  padding-bottom: 0.5em;
+}
+#footer-badges {
+  float: right;
+  padding-bottom: 0.5em;
+}
+
+#preamble {
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+}
+div.imageblock, div.exampleblock, div.verseblock,
+div.quoteblock, div.literalblock, div.listingblock, div.sidebarblock,
+div.admonitionblock {
+  margin-top: 1.0em;
+  margin-bottom: 1.5em;
+}
+div.admonitionblock {
+  margin-top: 2.0em;
+  margin-bottom: 2.0em;
+  margin-right: 10%;
+  color: #606060;
+}
+
+div.content { /* Block element content. */
+  padding: 0;
+}
+
+/* Block element titles. */
+div.title, caption.title {
+  color: #527bbd;
+  font-weight: bold;
+  text-align: left;
+  margin-top: 1.0em;
+  margin-bottom: 0.5em;
+}
+div.title + * {
+  margin-top: 0;
+}
+
+td div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content + div.title {
+  margin-top: 0.0em;
+}
+
+div.sidebarblock > div.content {
+  background: #ffffee;
+  border: 1px solid #dddddd;
+  border-left: 4px solid #f0f0f0;
+  padding: 0.5em;
+}
+
+div.listingblock > div.content {
+  border: 1px solid #dddddd;
+  border-left: 5px solid #f0f0f0;
+  background: #f8f8f8;
+  padding: 0.5em;
+}
+
+div.quoteblock, div.verseblock {
+  padding-left: 1.0em;
+  margin-left: 1.0em;
+  margin-right: 10%;
+  border-left: 5px solid #f0f0f0;
+  color: #888;
+}
+
+div.quoteblock > div.attribution {
+  padding-top: 0.5em;
+  text-align: right;
+}
+
+div.verseblock > pre.content {
+  font-family: inherit;
+  font-size: inherit;
+}
+div.verseblock > div.attribution {
+  padding-top: 0.75em;
+  text-align: left;
+}
+/* DEPRECATED: Pre version 8.2.7 verse style literal block. */
+div.verseblock + div.attribution {
+  text-align: left;
+}
+
+div.admonitionblock .icon {
+  vertical-align: top;
+  font-size: 1.1em;
+  font-weight: bold;
+  text-decoration: underline;
+  color: #527bbd;
+  padding-right: 0.5em;
+}
+div.admonitionblock td.content {
+  padding-left: 0.5em;
+  border-left: 3px solid #dddddd;
+}
+
+div.exampleblock > div.content {
+  border-left: 3px solid #dddddd;
+  padding-left: 0.5em;
+}
+
+div.imageblock div.content { padding-left: 0; }
+span.image img { border-style: none; vertical-align: text-bottom; }
+a.image:visited { color: white; }
+
+dl {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+dt {
+  margin-top: 0.5em;
+  margin-bottom: 0;
+  font-style: normal;
+  color: navy;
+}
+dd > *:first-child {
+  margin-top: 0.1em;
+}
+
+ul, ol {
+    list-style-position: outside;
+}
+ol.arabic {
+  list-style-type: decimal;
+}
+ol.loweralpha {
+  list-style-type: lower-alpha;
+}
+ol.upperalpha {
+  list-style-type: upper-alpha;
+}
+ol.lowerroman {
+  list-style-type: lower-roman;
+}
+ol.upperroman {
+  list-style-type: upper-roman;
+}
+
+div.compact ul, div.compact ol,
+div.compact p, div.compact p,
+div.compact div, div.compact div {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
+
+tfoot {
+  font-weight: bold;
+}
+td > div.verse {
+  white-space: pre;
+}
+
+div.hdlist {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+div.hdlist tr {
+  padding-bottom: 15px;
+}
+dt.hdlist1.strong, td.hdlist1.strong {
+  font-weight: bold;
+}
+td.hdlist1 {
+  vertical-align: top;
+  font-style: normal;
+  padding-right: 0.8em;
+  color: navy;
+}
+td.hdlist2 {
+  vertical-align: top;
+}
+div.hdlist.compact tr {
+  margin: 0;
+  padding-bottom: 0;
+}
+
+.comment {
+  background: yellow;
+}
+
+.footnote, .footnoteref {
+  font-size: 0.8em;
+}
+
+span.footnote, span.footnoteref {
+  vertical-align: super;
+}
+
+#footnotes {
+  margin: 20px 0 20px 0;
+  padding: 7px 0 0 0;
+}
+
+#footnotes div.footnote {
+  margin: 0 0 5px 0;
+}
+
+#footnotes hr {
+  border: none;
+  border-top: 1px solid silver;
+  height: 1px;
+  text-align: left;
+  margin-left: 0;
+  width: 20%;
+  min-width: 100px;
+}
+
+div.colist td {
+  padding-right: 0.5em;
+  padding-bottom: 0.3em;
+  vertical-align: top;
+}
+div.colist td img {
+  margin-top: 0.3em;
+}
+
+@media print {
+  #footer-badges { display: none; }
+}
+
+#toc {
+  margin-bottom: 2.5em;
+}
+
+#toctitle {
+  color: #527bbd;
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-top: 1.0em;
+  margin-bottom: 0.1em;
+}
+
+div.toclevel0, div.toclevel1, div.toclevel2, div.toclevel3, div.toclevel4 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+div.toclevel2 {
+  margin-left: 2em;
+  font-size: 0.9em;
+}
+div.toclevel3 {
+  margin-left: 4em;
+  font-size: 0.9em;
+}
+div.toclevel4 {
+  margin-left: 6em;
+  font-size: 0.9em;
+}
+
+span.aqua { color: aqua; }
+span.black { color: black; }
+span.blue { color: blue; }
+span.fuchsia { color: fuchsia; }
+span.gray { color: gray; }
+span.green { color: green; }
+span.lime { color: lime; }
+span.maroon { color: maroon; }
+span.navy { color: navy; }
+span.olive { color: olive; }
+span.purple { color: purple; }
+span.red { color: red; }
+span.silver { color: silver; }
+span.teal { color: teal; }
+span.white { color: white; }
+span.yellow { color: yellow; }
+
+span.aqua-background { background: aqua; }
+span.black-background { background: black; }
+span.blue-background { background: blue; }
+span.fuchsia-background { background: fuchsia; }
+span.gray-background { background: gray; }
+span.green-background { background: green; }
+span.lime-background { background: lime; }
+span.maroon-background { background: maroon; }
+span.navy-background { background: navy; }
+span.olive-background { background: olive; }
+span.purple-background { background: purple; }
+span.red-background { background: red; }
+span.silver-background { background: silver; }
+span.teal-background { background: teal; }
+span.white-background { background: white; }
+span.yellow-background { background: yellow; }
+
+span.big { font-size: 2em; }
+span.small { font-size: 0.6em; }
+
+span.underline { text-decoration: underline; }
+span.overline { text-decoration: overline; }
+span.line-through { text-decoration: line-through; }
+
+div.unbreakable { page-break-inside: avoid; }
+
+
+/*
+ * xhtml11 specific
+ *
+ * */
+
+div.tableblock {
+  margin-top: 1.0em;
+  margin-bottom: 1.5em;
+}
+div.tableblock > table {
+  border: 3px solid #527bbd;
+}
+thead, p.table.header {
+  font-weight: bold;
+  color: #527bbd;
+}
+p.table {
+  margin-top: 0;
+}
+/* Because the table frame attribute is overridden by CSS in most browsers. */
+div.tableblock > table[frame="void"] {
+  border-style: none;
+}
+div.tableblock > table[frame="hsides"] {
+  border-left-style: none;
+  border-right-style: none;
+}
+div.tableblock > table[frame="vsides"] {
+  border-top-style: none;
+  border-bottom-style: none;
+}
+
+
+/*
+ * html5 specific
+ *
+ * */
+
+table.tableblock {
+  margin-top: 1.0em;
+  margin-bottom: 1.5em;
+}
+thead, p.tableblock.header {
+  font-weight: bold;
+  color: #527bbd;
+}
+p.tableblock {
+  margin-top: 0;
+}
+table.tableblock {
+  border-width: 3px;
+  border-spacing: 0px;
+  border-style: solid;
+  border-color: #527bbd;
+  border-collapse: collapse;
+}
+th.tableblock, td.tableblock {
+  border-width: 1px;
+  padding: 4px;
+  border-style: solid;
+  border-color: #527bbd;
+}
+
+table.tableblock.frame-topbot {
+  border-left-style: hidden;
+  border-right-style: hidden;
+}
+table.tableblock.frame-sides {
+  border-top-style: hidden;
+  border-bottom-style: hidden;
+}
+table.tableblock.frame-none {
+  border-style: hidden;
+}
+
+th.tableblock.halign-left, td.tableblock.halign-left {
+  text-align: left;
+}
+th.tableblock.halign-center, td.tableblock.halign-center {
+  text-align: center;
+}
+th.tableblock.halign-right, td.tableblock.halign-right {
+  text-align: right;
+}
+
+th.tableblock.valign-top, td.tableblock.valign-top {
+  vertical-align: top;
+}
+th.tableblock.valign-middle, td.tableblock.valign-middle {
+  vertical-align: middle;
+}
+th.tableblock.valign-bottom, td.tableblock.valign-bottom {
+  vertical-align: bottom;
+}
+
+
+/*
+ * manpage specific
+ *
+ * */
+
+body.manpage h1 {
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  border-top: 2px solid silver;
+  border-bottom: 2px solid silver;
+}
+body.manpage h2 {
+  border-style: none;
+}
+body.manpage div.sectionbody {
+  margin-left: 3em;
+}
+
+@media print {
+  body.manpage div#toc { display: none; }
+}
+
+
+</style>
+<script type="text/javascript">
+/*<![CDATA[*/
+var asciidoc = {  // Namespace.
+
+/////////////////////////////////////////////////////////////////////
+// Table Of Contents generator
+/////////////////////////////////////////////////////////////////////
+
+/* Author: Mihai Bazon, September 2002
+ * http://students.infoiasi.ro/~mishoo
+ *
+ * Table Of Content generator
+ * Version: 0.4
+ *
+ * Feel free to use this script under the terms of the GNU General Public
+ * License, as long as you do not remove or alter this notice.
+ */
+
+ /* modified by Troy D. Hanson, September 2006. License: GPL */
+ /* modified by Stuart Rackham, 2006, 2009. License: GPL */
+
+// toclevels = 1..4.
+toc: function (toclevels) {
+
+  function getText(el) {
+    var text = "";
+    for (var i = el.firstChild; i != null; i = i.nextSibling) {
+      if (i.nodeType == 3 /* Node.TEXT_NODE */) // IE doesn't speak constants.
+        text += i.data;
+      else if (i.firstChild != null)
+        text += getText(i);
+    }
+    return text;
+  }
+
+  function TocEntry(el, text, toclevel) {
+    this.element = el;
+    this.text = text;
+    this.toclevel = toclevel;
+  }
+
+  function tocEntries(el, toclevels) {
+    var result = new Array;
+    var re = new RegExp('[hH]([1-'+(toclevels+1)+'])');
+    // Function that scans the DOM tree for header elements (the DOM2
+    // nodeIterator API would be a better technique but not supported by all
+    // browsers).
+    var iterate = function (el) {
+      for (var i = el.firstChild; i != null; i = i.nextSibling) {
+        if (i.nodeType == 1 /* Node.ELEMENT_NODE */) {
+          var mo = re.exec(i.tagName);
+          if (mo && (i.getAttribute("class") || i.getAttribute("className")) != "float") {
+            result[result.length] = new TocEntry(i, getText(i), mo[1]-1);
+          }
+          iterate(i);
+        }
+      }
+    }
+    iterate(el);
+    return result;
+  }
+
+  var toc = document.getElementById("toc");
+  if (!toc) {
+    return;
+  }
+
+  // Delete existing TOC entries in case we're reloading the TOC.
+  var tocEntriesToRemove = [];
+  var i;
+  for (i = 0; i < toc.childNodes.length; i++) {
+    var entry = toc.childNodes[i];
+    if (entry.nodeName.toLowerCase() == 'div'
+     && entry.getAttribute("class")
+     && entry.getAttribute("class").match(/^toclevel/))
+      tocEntriesToRemove.push(entry);
+  }
+  for (i = 0; i < tocEntriesToRemove.length; i++) {
+    toc.removeChild(tocEntriesToRemove[i]);
+  }
+
+  // Rebuild TOC entries.
+  var entries = tocEntries(document.getElementById("content"), toclevels);
+  for (var i = 0; i < entries.length; ++i) {
+    var entry = entries[i];
+    if (entry.element.id == "")
+      entry.element.id = "_toc_" + i;
+    var a = document.createElement("a");
+    a.href = "#" + entry.element.id;
+    a.appendChild(document.createTextNode(entry.text));
+    var div = document.createElement("div");
+    div.appendChild(a);
+    div.className = "toclevel" + entry.toclevel;
+    toc.appendChild(div);
+  }
+  if (entries.length == 0)
+    toc.parentNode.removeChild(toc);
+},
+
+
+/////////////////////////////////////////////////////////////////////
+// Footnotes generator
+/////////////////////////////////////////////////////////////////////
+
+/* Based on footnote generation code from:
+ * http://www.brandspankingnew.net/archive/2005/07/format_footnote.html
+ */
+
+footnotes: function () {
+  // Delete existing footnote entries in case we're reloading the footnodes.
+  var i;
+  var noteholder = document.getElementById("footnotes");
+  if (!noteholder) {
+    return;
+  }
+  var entriesToRemove = [];
+  for (i = 0; i < noteholder.childNodes.length; i++) {
+    var entry = noteholder.childNodes[i];
+    if (entry.nodeName.toLowerCase() == 'div' && entry.getAttribute("class") == "footnote")
+      entriesToRemove.push(entry);
+  }
+  for (i = 0; i < entriesToRemove.length; i++) {
+    noteholder.removeChild(entriesToRemove[i]);
+  }
+
+  // Rebuild footnote entries.
+  var cont = document.getElementById("content");
+  var spans = cont.getElementsByTagName("span");
+  var refs = {};
+  var n = 0;
+  for (i=0; i<spans.length; i++) {
+    if (spans[i].className == "footnote") {
+      n++;
+      var note = spans[i].getAttribute("data-note");
+      if (!note) {
+        // Use [\s\S] in place of . so multi-line matches work.
+        // Because JavaScript has no s (dotall) regex flag.
+        note = spans[i].innerHTML.match(/\s*\[([\s\S]*)]\s*/)[1];
+        spans[i].innerHTML =
+          "[<a id='_footnoteref_" + n + "' href='#_footnote_" + n +
+          "' title='View footnote' class='footnote'>" + n + "</a>]";
+        spans[i].setAttribute("data-note", note);
+      }
+      noteholder.innerHTML +=
+        "<div class='footnote' id='_footnote_" + n + "'>" +
+        "<a href='#_footnoteref_" + n + "' title='Return to text'>" +
+        n + "</a>. " + note + "</div>";
+      var id =spans[i].getAttribute("id");
+      if (id != null) refs["#"+id] = n;
+    }
+  }
+  if (n == 0)
+    noteholder.parentNode.removeChild(noteholder);
+  else {
+    // Process footnoterefs.
+    for (i=0; i<spans.length; i++) {
+      if (spans[i].className == "footnoteref") {
+        var href = spans[i].getElementsByTagName("a")[0].getAttribute("href");
+        href = href.match(/#.*/)[0];  // Because IE return full URL.
+        n = refs[href];
+        spans[i].innerHTML =
+          "[<a href='#_footnote_" + n +
+          "' title='View footnote' class='footnote'>" + n + "</a>]";
+      }
+    }
+  }
+},
+
+install: function(toclevels) {
+  var timerId;
+
+  function reinstall() {
+    asciidoc.footnotes();
+    if (toclevels) {
+      asciidoc.toc(toclevels);
+    }
+  }
+
+  function reinstallAndRemoveTimer() {
+    clearInterval(timerId);
+    reinstall();
+  }
+
+  timerId = setInterval(reinstall, 500);
+  if (document.addEventListener)
+    document.addEventListener("DOMContentLoaded", reinstallAndRemoveTimer, false);
+  else
+    window.onload = reinstallAndRemoveTimer;
+}
+
+}
+asciidoc.install(2);
+/*]]>*/
+</script>
+</head>
+<body class="article">
+<div id="header">
+<h1>MuMuDVB - FAQ (Frequently asked questions)</h1>
+<span id="author">Brice Dubost</span><br />
+<span id="email"><code>&lt;<a href="mailto:mumudvb@braice.net">mumudvb@braice.net</a>&gt;</code></span><br />
+<span id="revdate">Version 2.1.0</span>
+<div id="toc">
+  <div id="toctitle">Table of Contents</div>
+  <noscript><p><b>JavaScript must be enabled in your browser to display the table of contents.</b></p></noscript>
+</div>
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="_what_limits_the_number_of_transponders_i_can_stream">1. What limits the number of transponders I can stream ?</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>MuMuDVB has a low CPU footprint, so except on embedded systems, the CPU will not be the limiting factor. You will usually be limited by your network or the capacity of the PCI/PCI-E bus.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_can_i_stream_to_a_large_number_of_unicast_clients">2. How can I stream to a large number of unicast clients ?</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If you need high unicast load, it is best to split the unicast distribution from the DVB demuxing. To do this you can use together with MuMuDVB, other software like <a href="http://git.sesse.net/?p=cubemap">cubemap</a>.</p></div>
+<div class="paragraph"><p>Such software can scale very well and use MuMuDVB stream as input with configuration like</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>stream /udp.ts src=udp://@239.100.100.100:1234 backlog_size=10048576</code></pre>
+</div></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cards_not_available">3. Cards not available</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>MuMuDVB is able to support as many cards as the operating system does. To know which cards MuMuDVB sees, use <code>mumudvb -lv</code>.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_special_satellite_bands">4. Special satellite Bands</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>MuMuDVB supports satellites in the Ku band, with universal or standard LNBs. Support for satellites in the S or C band is implemented via the use of the lo_frequency option. See <code>doc/README_CONF.asciidoc</code>.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_system_wide_freezes">5. System wide freezes</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Try to avoid ultra low cost motherboards. They can crash when dealing with large data streams.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_vlc_can_8217_t_read_the_stream_but_it_is_fine_with_xine_or_mplayer">6. VLC can&#8217;t read the stream, but it is fine with xine or mplayer</h2>
+<div class="sectionbody">
+<div class="ulist"><ul>
+<li>
+<p>
+For VLC, you must specify the PMT PID in addition to the audio and video PIDs. The best solution is to use autoconfiguration so MuMuDVB will discover the PIDs for you.
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>If you want to stick to manual mode, you can use the verbose mode of VLC (<code>vlc -v</code>) and you&#8217;ll see a line like: <code>[00000269] ts demuxer debug:   * number=1025 pid=110</code> You&#8217;ll have the PMT PID associated with your program number. You can also use dvbsnoop, or see how to find PIDs in <code>doc/README_CONF.asciidoc</code>.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_vlc_shows_the_video_but_no_audio">7. VLC shows the video but no audio</h2>
+<div class="sectionbody">
+<div class="ulist"><ul>
+<li>
+<p>
+This problem can happen if the PCR (i.e. clock) information is not carried with the video. In this case, you have to check if the PCR PID is in the list of PIDs. See above answer on how to get PIDs
+</p>
+</li>
+</ul></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_mumudvb_can_8217_t_daemonize">8. MuMuDVB can&#8217;t daemonize</h2>
+<div class="sectionbody">
+<div class="ulist"><ul>
+<li>
+<p>
+So that it can daemonize, MuMuDVB needs the directory <code>/var/run/mumudvb/</code> to be writable, in order to write its process identifier and the channel list.
+</p>
+</li>
+</ul></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_tuning_issues_with_dvb_t">9. Tuning issues with DVB-T</h2>
+<div class="sectionbody">
+<div class="ulist"><ul>
+<li>
+<p>
+You must check tuning settings. Keep in mind that auto bandwidth usually does not work.
+</p>
+</li>
+</ul></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_is_the_meaning_of_ber_snr_and_strength">10. What is the meaning of BER, SNR and Strength?</h2>
+<div class="sectionbody">
+<div class="ulist"><ul>
+<li>
+<p>
+BER: Bit Error Rate
+</p>
+</li>
+<li>
+<p>
+SNR: Signal to noise ratio
+</p>
+</li>
+<li>
+<p>
+Strength: Strength of the signal received by the card.
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>These values are reported to MuMuDVB by the card driver. The units will depend on the card, the driver and the options of the driver module.</p></div>
+<div class="sect2">
+<h3 id="_tbs_cards">10.1. TBS cards</h3>
+<div class="paragraph"><p>For TBS cards, you can have the signal to noise reported in Es/N0: ETSI (European Telecommunications Standards Institute) specification for  DVB-S/S2 states dB of the signal (measured in Es/N0 dB) that is the minimum needed for error-free reception, that&#8217;s called "Es/N0 Threshold"</p></div>
+<div class="paragraph"><p>To activate SNR in Es/N0, you have to specify in <code>/etc/modprobe.d/tbs.conf</code></p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>options tbsfe esno=1
+options isl6423 esno=1</code></pre>
+</div></div>
+<div class="paragraph"><p>The SNR will be in 0.1dB EsN0 (a value of 100 is 10dB Es/N0)</p></div>
+<div class="paragraph"><p>You can also activate the signal strength in dBm by specifying</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>options tbsfe dbm=1
+options isl6423 dbm=1</code></pre>
+</div></div>
+<div class="paragraph"><p>The signal strength will be in <em>-1dB</em>  (a value of 42 is -42dBm)</p></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_set_top_box_display_a_blank_screen">11. The set-top box display a blank screen</h2>
+<div class="sectionbody">
+<div class="ulist"><ul>
+<li>
+<p>
+If the stream is working well when reading it with a computer and not with your set-top box, this is probably because your set-top box needs the PAT PID to be rewritten. To do this add <code>rewrite_pat=1</code> to your config file.
+</p>
+</li>
+</ul></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_cam_is_complaining_about_locked_channels">12. The CAM is complaining about locked channels</h2>
+<div class="sectionbody">
+<div class="ulist"><ul>
+<li>
+<p>
+Some viaccess CAMs can have a lock for "mature" channels. To deactivate this lock go on the CAM menu using "gnutv -cammenu" for example (from linuxtv dvb-apps).
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>You have to set the maturity rating to maximum and unlock Maturity rating in Bolts submenu.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_vlc_doesn_8217_t_select_the_good_program_even_with_pat_rewriting">13. VLC doesn&#8217;t select the good program even with PAT rewriting</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>You also have to rewrite the SDT PID using the <code>rewrite_sdt</code> option</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="problems_hp">14. My multicast traffic is flooded (I have a "very old" HP procurve switch)</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>The best explanation is found in the HP multicast routing guide.</p></div>
+<div class="paragraph"><p>On switches that do not support Data-Driven IGMP, unregistered multicast
+groups are flooded to the VLAN rather than pruned. In this scenario, Fast-Leave IGMP can actually increase the problem of multicast flooding by removing the IGMP group filter before the Querier has recognized the IGMP leave. The Querier will continue to transmit the multicast group during this short time, and because the group is no longer registered the switch will then flood the multicast group to all ports.</p></div>
+<div class="paragraph"><p>On ProCurve switches that do support Data-Driven IGMP (“Smart” IGMP),
+when unregistered multicasts are received the switch automatically filters (drops) them. Thus, the sooner the IGMP Leave is processed, the sooner this multicast traffic stops flowing.</p></div>
+<div class="paragraph"><p>Switches without problems (supporting data driven igmp):</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Switch 6400cl
+</p>
+</li>
+<li>
+<p>
+Switch 6200yl
+</p>
+</li>
+<li>
+<p>
+Switch 5400zl
+</p>
+</li>
+<li>
+<p>
+Switch 5300xl
+</p>
+</li>
+<li>
+<p>
+Switch 4200vl
+</p>
+</li>
+<li>
+<p>
+Switch 3500yl
+</p>
+</li>
+<li>
+<p>
+Switch 3400cl
+</p>
+</li>
+<li>
+<p>
+Switch 2900
+</p>
+</li>
+<li>
+<p>
+Switch 2800
+</p>
+</li>
+<li>
+<p>
+Switch 2500
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>Switches WITH problems (NOT supporting data driven igmp):</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Switch 2600
+</p>
+</li>
+<li>
+<p>
+Switch 2600-PWR
+</p>
+</li>
+<li>
+<p>
+Switch 4100gl
+</p>
+</li>
+<li>
+<p>
+Switch 6108
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>So if you have one of the above switches this is "normal". The workaround is to make MuMuDVB join the multicast group. For this put <code>multicast_auto_join=1</code> in your configuration file.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_mumudvb_is_eating_a_lot_of_cpu_with_sasc_ng">15. MuMuDVB is eating a lot of CPU with sasc-ng !</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If you use sasc-ng + dvbloopback, MuMuDVB will eat more CPU than needed.</p></div>
+<div class="paragraph"><p>A part of this CPU time is used to descramble the channels, another part is due to the way dvbloopback is implemented and the way MuMuDVB ask the card.</p></div>
+<div class="paragraph"><p>To reduce the cpu usage, see <a href="#reduce_cpu">reduce MuMuDVB CPU usage</a> section. In the case of using MuMuDVB with sasc-ng this improvement can be quite large. Or you can use oscam.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_reception_is_working_but_all_the_channels_are_down">16. The reception is working but all the channels are down</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If the signal is good but MuMuDVB tells you that all the channels are down and you are sure about your PIDs it can be due to your CAM module if you have one. Try after unplugging your CAM module. To check deeper you can look to the traffic sent to each channel with the WEBSERVICES or the command line flag.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_i_want_to_stream_from_several_cards">17. I want to stream from several cards</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>You need to launch a MuMuDVB process for each card.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_i_want_to_stream_the_whole_transponder_on_one_channel">18. I want to stream the whole transponder on one "channel"</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>MuMuDVB can stream all the data received by the card to one "channel" (multicast or unicast). In order to do this you have to use the put the PID 8192 in the channel PID list.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_i_have_several_network_interfaces_and_i_want_to_choose_on_which_interface_the_multicast_traffic_will_go">19. I have several network interfaces and I want to choose on which interface the multicast traffic will go</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>In order to specify the interface, you can specify a route for the multicast traffic like :</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>route add -net 224.0.0.0 netmask 240.0.0.0 dev eth2</code></pre>
+</div></div>
+<div class="paragraph"><p>or use multicast_iface4 and multicast_iface6 options</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_does_the_mumudvb_error_code_means">20. What does the MuMuDVB error code means ?</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Here&#8217;s a short description of the error codes</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>    ERROR_ARGS=1,
+    ERROR_CONF_FILE,
+    ERROR_CONF,
+    ERROR_TOO_CHANNELS,
+    ERROR_CREATE_FILE,
+    ERROR_DEL_FILE,
+    ERROR_TUNE,
+    ERROR_NO_DIFF,
+    ERROR_MEMORY,
+    ERROR_NETWORK,
+    ERROR_CAM,
+    ERROR_GENERIC,
+    ERROR_NO_CAM_INIT,</code></pre>
+</div></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_i_get_the_message_dvr_read_error_value_too_large_for_defined_data_type_what_does_it_mean">21. I get the message "DVR Read Error: Value too large for defined data type" what does it mean ?</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>This message means that an overflow append in the card drivers buffer. I.e MuMuDVB was not able to get the packets sufficiently fast. This issue can have various causes, anything which an slow down (a lot) MuMuDVB an create this message.
+To avoid it you can try threaded_read see <a href="#threaded_read">thread reading</a> section.</p></div>
+<div class="sect2">
+<h3 id="_faulty_network_switch">21.1. Faulty network switch</h3>
+<div class="paragraph"><p>I experienced the "DVR Read Error&#8230;" message very often on my  Streaming Server (ia64 Madison 1.3Ghz) (with errors in the video).
+I could solve the problem by exchanging the network switch. The old  switch was limiting multicast traffic to 10Mb/s per port. This limit  is not documented.</p></div>
+<div class="paragraph"><p>I have tested the limit the programm dd and mnc (Multicast netcat,  <a href="http://code.google.com/p/mnc/">http://code.google.com/p/mnc/</a>)</p></div>
+<div class="paragraph"><p>dd if=/dev/zero bs=188 count=1000000 | ./mnc-bin 239.10.0.3</p></div>
+<div class="paragraph"><p>I looked with "iftop" at the current network statistics and with my  old switch i saw the limit at 10Mb/s with another switch I was able to  transmit 92Mb/s ~ 100% of the avaiable bandwith.</p></div>
+<div class="paragraph"><p>Thanks to Jan-Philipp Hülshoff for the report</p></div>
+</div>
+<div class="sect2">
+<h3 id="_flow_control_issues">21.2. Flow control issues</h3>
+<div class="paragraph"><p>Switch: Alcatel Omniswitch 6850E</p></div>
+<div class="paragraph"><p>The problem turned out to be the network: Even though the interface was
+at 1GB/s, the switch it is connected to uses <em>flow control</em>. This, is,
+for multicasts, generally a bad idea.
+In this case, one of the machines that received the multicast negotiated
+their port to 100MBit.
+Since the switch couldn&#8217;t deliver the multicast packets fast enough, it
+applied "back pressure" via ethernet flow control in order to throttle
+the data rate.
+This causes the <em>sendto</em> call in MuMuDVB to block, delaying reads from
+the DVB interface, causing buffer overflows inside the DVB driver.</p></div>
+<div class="paragraph"><p>The giveaway was, even though I configured all 8 input to multicast
+everything they have, data rate did not increase beyond 97MBit. It
+should have been around 400MBit.</p></div>
+<div class="paragraph"><p>Another giveaway, if you know where to look:
+ethtool -S p1p1
+    &#8230;
+    rx_flow_control_xon: 4028153
+    rx_flow_control_xoff: 4028155
+    &#8230;</p></div>
+<div class="paragraph"><p>tells you that there is <em>backpressure</em> from ethernet, at least the Intel
+e1000 driver does.</p></div>
+<div class="paragraph"><p>Lesson:
+ - Don&#8217;t trust the network
+ - Don&#8217;t use ethernet flow control with multicast</p></div>
+<div class="paragraph"><p>(Report from Mathias) This is interesting, we found flow control INCREASE the perceived quality of IPTV on access ports as this allows consumer grade STBs to cope with high bandwidth channels.
+This might be highly vendor dependent support of IEEE 802.3x, as most equipment only supplies a "flow control on/off"-switch, but it should provide "honor received pause-frames", "send pause-frames" switches in configuration (or at least clarify what kind of support is implemented).</p></div>
+<div class="paragraph"><p>Thanks to Johannes Deisenhofer</p></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_i_have_an_issue_which_is_not_reported_above">22. I have an issue which is not reported above</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Please report it to the</p></div>
+<div class="ulist"><div class="title">Mailing list:</div><ul>
+<li>
+<p>
+<a href="mailto:mumudvb-dev@REMOVEMElists.crans.org">MuMuDVB mailing list</a>
+</p>
+</li>
+<li>
+<p>
+<a href="https://lists.crans.org/listinfo/mumudvb-dev">MuMuDVB mailing list information and subscription</a>
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>With as much information as possible, like full verbose logs, hardware, description.</p></div>
+<div class="paragraph"><p>If it is a crash please report also a gdb backtrace, for this do</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>(in your shell) gdb mumudvb
+(in GDB) run [your usual command line options]
+(MuMuDVB Runs as usual an crash)
+(in GDB) bt</code></pre>
+</div></div>
+</div>
+</div>
+</div>
+<div id="footnotes"><hr /></div>
+<div id="footer">
+<div id="footer-text">
+Last updated
+ 2024-03-23 16:36:54 CET
+</div>
+</div>
+</body>
+</html>

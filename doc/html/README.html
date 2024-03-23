@@ -1,0 +1,1963 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="generator" content="AsciiDoc 9.0.0rc1" />
+<title>MuMuDVB - README</title>
+<style type="text/css">
+/* Shared CSS for AsciiDoc xhtml11 and html5 backends */
+
+/* Default font. */
+body {
+  font-family: Georgia,serif;
+}
+
+/* Title font. */
+h1, h2, h3, h4, h5, h6,
+div.title, caption.title,
+thead, p.table.header,
+#toctitle,
+#author, #revnumber, #revdate, #revremark,
+#footer {
+  font-family: Arial,Helvetica,sans-serif;
+}
+
+body {
+  margin: 1em 5% 1em 5%;
+}
+
+a {
+  color: blue;
+  text-decoration: underline;
+}
+a:visited {
+  color: fuchsia;
+}
+
+em {
+  font-style: italic;
+  color: navy;
+}
+
+strong {
+  font-weight: bold;
+  color: #083194;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #527bbd;
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
+}
+
+h1, h2, h3 {
+  border-bottom: 2px solid silver;
+}
+h2 {
+  padding-top: 0.5em;
+}
+h3 {
+  float: left;
+}
+h3 + * {
+  clear: left;
+}
+h5 {
+  font-size: 1.0em;
+}
+
+div.sectionbody {
+  margin-left: 0;
+}
+
+hr {
+  border: 1px solid silver;
+}
+
+p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+ul, ol, li > p {
+  margin-top: 0;
+}
+ul > li     { color: #aaa; }
+ul > li > * { color: black; }
+
+.monospaced, code, pre {
+  font-family: "Courier New", Courier, monospace;
+  font-size: inherit;
+  color: navy;
+  padding: 0;
+  margin: 0;
+}
+pre {
+  white-space: pre-wrap;
+}
+
+#author {
+  color: #527bbd;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+#email {
+}
+#revnumber, #revdate, #revremark {
+}
+
+#footer {
+  font-size: small;
+  border-top: 2px solid silver;
+  padding-top: 0.5em;
+  margin-top: 4.0em;
+}
+#footer-text {
+  float: left;
+  padding-bottom: 0.5em;
+}
+#footer-badges {
+  float: right;
+  padding-bottom: 0.5em;
+}
+
+#preamble {
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+}
+div.imageblock, div.exampleblock, div.verseblock,
+div.quoteblock, div.literalblock, div.listingblock, div.sidebarblock,
+div.admonitionblock {
+  margin-top: 1.0em;
+  margin-bottom: 1.5em;
+}
+div.admonitionblock {
+  margin-top: 2.0em;
+  margin-bottom: 2.0em;
+  margin-right: 10%;
+  color: #606060;
+}
+
+div.content { /* Block element content. */
+  padding: 0;
+}
+
+/* Block element titles. */
+div.title, caption.title {
+  color: #527bbd;
+  font-weight: bold;
+  text-align: left;
+  margin-top: 1.0em;
+  margin-bottom: 0.5em;
+}
+div.title + * {
+  margin-top: 0;
+}
+
+td div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content + div.title {
+  margin-top: 0.0em;
+}
+
+div.sidebarblock > div.content {
+  background: #ffffee;
+  border: 1px solid #dddddd;
+  border-left: 4px solid #f0f0f0;
+  padding: 0.5em;
+}
+
+div.listingblock > div.content {
+  border: 1px solid #dddddd;
+  border-left: 5px solid #f0f0f0;
+  background: #f8f8f8;
+  padding: 0.5em;
+}
+
+div.quoteblock, div.verseblock {
+  padding-left: 1.0em;
+  margin-left: 1.0em;
+  margin-right: 10%;
+  border-left: 5px solid #f0f0f0;
+  color: #888;
+}
+
+div.quoteblock > div.attribution {
+  padding-top: 0.5em;
+  text-align: right;
+}
+
+div.verseblock > pre.content {
+  font-family: inherit;
+  font-size: inherit;
+}
+div.verseblock > div.attribution {
+  padding-top: 0.75em;
+  text-align: left;
+}
+/* DEPRECATED: Pre version 8.2.7 verse style literal block. */
+div.verseblock + div.attribution {
+  text-align: left;
+}
+
+div.admonitionblock .icon {
+  vertical-align: top;
+  font-size: 1.1em;
+  font-weight: bold;
+  text-decoration: underline;
+  color: #527bbd;
+  padding-right: 0.5em;
+}
+div.admonitionblock td.content {
+  padding-left: 0.5em;
+  border-left: 3px solid #dddddd;
+}
+
+div.exampleblock > div.content {
+  border-left: 3px solid #dddddd;
+  padding-left: 0.5em;
+}
+
+div.imageblock div.content { padding-left: 0; }
+span.image img { border-style: none; vertical-align: text-bottom; }
+a.image:visited { color: white; }
+
+dl {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+dt {
+  margin-top: 0.5em;
+  margin-bottom: 0;
+  font-style: normal;
+  color: navy;
+}
+dd > *:first-child {
+  margin-top: 0.1em;
+}
+
+ul, ol {
+    list-style-position: outside;
+}
+ol.arabic {
+  list-style-type: decimal;
+}
+ol.loweralpha {
+  list-style-type: lower-alpha;
+}
+ol.upperalpha {
+  list-style-type: upper-alpha;
+}
+ol.lowerroman {
+  list-style-type: lower-roman;
+}
+ol.upperroman {
+  list-style-type: upper-roman;
+}
+
+div.compact ul, div.compact ol,
+div.compact p, div.compact p,
+div.compact div, div.compact div {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
+
+tfoot {
+  font-weight: bold;
+}
+td > div.verse {
+  white-space: pre;
+}
+
+div.hdlist {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+div.hdlist tr {
+  padding-bottom: 15px;
+}
+dt.hdlist1.strong, td.hdlist1.strong {
+  font-weight: bold;
+}
+td.hdlist1 {
+  vertical-align: top;
+  font-style: normal;
+  padding-right: 0.8em;
+  color: navy;
+}
+td.hdlist2 {
+  vertical-align: top;
+}
+div.hdlist.compact tr {
+  margin: 0;
+  padding-bottom: 0;
+}
+
+.comment {
+  background: yellow;
+}
+
+.footnote, .footnoteref {
+  font-size: 0.8em;
+}
+
+span.footnote, span.footnoteref {
+  vertical-align: super;
+}
+
+#footnotes {
+  margin: 20px 0 20px 0;
+  padding: 7px 0 0 0;
+}
+
+#footnotes div.footnote {
+  margin: 0 0 5px 0;
+}
+
+#footnotes hr {
+  border: none;
+  border-top: 1px solid silver;
+  height: 1px;
+  text-align: left;
+  margin-left: 0;
+  width: 20%;
+  min-width: 100px;
+}
+
+div.colist td {
+  padding-right: 0.5em;
+  padding-bottom: 0.3em;
+  vertical-align: top;
+}
+div.colist td img {
+  margin-top: 0.3em;
+}
+
+@media print {
+  #footer-badges { display: none; }
+}
+
+#toc {
+  margin-bottom: 2.5em;
+}
+
+#toctitle {
+  color: #527bbd;
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-top: 1.0em;
+  margin-bottom: 0.1em;
+}
+
+div.toclevel0, div.toclevel1, div.toclevel2, div.toclevel3, div.toclevel4 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+div.toclevel2 {
+  margin-left: 2em;
+  font-size: 0.9em;
+}
+div.toclevel3 {
+  margin-left: 4em;
+  font-size: 0.9em;
+}
+div.toclevel4 {
+  margin-left: 6em;
+  font-size: 0.9em;
+}
+
+span.aqua { color: aqua; }
+span.black { color: black; }
+span.blue { color: blue; }
+span.fuchsia { color: fuchsia; }
+span.gray { color: gray; }
+span.green { color: green; }
+span.lime { color: lime; }
+span.maroon { color: maroon; }
+span.navy { color: navy; }
+span.olive { color: olive; }
+span.purple { color: purple; }
+span.red { color: red; }
+span.silver { color: silver; }
+span.teal { color: teal; }
+span.white { color: white; }
+span.yellow { color: yellow; }
+
+span.aqua-background { background: aqua; }
+span.black-background { background: black; }
+span.blue-background { background: blue; }
+span.fuchsia-background { background: fuchsia; }
+span.gray-background { background: gray; }
+span.green-background { background: green; }
+span.lime-background { background: lime; }
+span.maroon-background { background: maroon; }
+span.navy-background { background: navy; }
+span.olive-background { background: olive; }
+span.purple-background { background: purple; }
+span.red-background { background: red; }
+span.silver-background { background: silver; }
+span.teal-background { background: teal; }
+span.white-background { background: white; }
+span.yellow-background { background: yellow; }
+
+span.big { font-size: 2em; }
+span.small { font-size: 0.6em; }
+
+span.underline { text-decoration: underline; }
+span.overline { text-decoration: overline; }
+span.line-through { text-decoration: line-through; }
+
+div.unbreakable { page-break-inside: avoid; }
+
+
+/*
+ * xhtml11 specific
+ *
+ * */
+
+div.tableblock {
+  margin-top: 1.0em;
+  margin-bottom: 1.5em;
+}
+div.tableblock > table {
+  border: 3px solid #527bbd;
+}
+thead, p.table.header {
+  font-weight: bold;
+  color: #527bbd;
+}
+p.table {
+  margin-top: 0;
+}
+/* Because the table frame attribute is overridden by CSS in most browsers. */
+div.tableblock > table[frame="void"] {
+  border-style: none;
+}
+div.tableblock > table[frame="hsides"] {
+  border-left-style: none;
+  border-right-style: none;
+}
+div.tableblock > table[frame="vsides"] {
+  border-top-style: none;
+  border-bottom-style: none;
+}
+
+
+/*
+ * html5 specific
+ *
+ * */
+
+table.tableblock {
+  margin-top: 1.0em;
+  margin-bottom: 1.5em;
+}
+thead, p.tableblock.header {
+  font-weight: bold;
+  color: #527bbd;
+}
+p.tableblock {
+  margin-top: 0;
+}
+table.tableblock {
+  border-width: 3px;
+  border-spacing: 0px;
+  border-style: solid;
+  border-color: #527bbd;
+  border-collapse: collapse;
+}
+th.tableblock, td.tableblock {
+  border-width: 1px;
+  padding: 4px;
+  border-style: solid;
+  border-color: #527bbd;
+}
+
+table.tableblock.frame-topbot {
+  border-left-style: hidden;
+  border-right-style: hidden;
+}
+table.tableblock.frame-sides {
+  border-top-style: hidden;
+  border-bottom-style: hidden;
+}
+table.tableblock.frame-none {
+  border-style: hidden;
+}
+
+th.tableblock.halign-left, td.tableblock.halign-left {
+  text-align: left;
+}
+th.tableblock.halign-center, td.tableblock.halign-center {
+  text-align: center;
+}
+th.tableblock.halign-right, td.tableblock.halign-right {
+  text-align: right;
+}
+
+th.tableblock.valign-top, td.tableblock.valign-top {
+  vertical-align: top;
+}
+th.tableblock.valign-middle, td.tableblock.valign-middle {
+  vertical-align: middle;
+}
+th.tableblock.valign-bottom, td.tableblock.valign-bottom {
+  vertical-align: bottom;
+}
+
+
+/*
+ * manpage specific
+ *
+ * */
+
+body.manpage h1 {
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  border-top: 2px solid silver;
+  border-bottom: 2px solid silver;
+}
+body.manpage h2 {
+  border-style: none;
+}
+body.manpage div.sectionbody {
+  margin-left: 3em;
+}
+
+@media print {
+  body.manpage div#toc { display: none; }
+}
+
+
+</style>
+<script type="text/javascript">
+/*<![CDATA[*/
+var asciidoc = {  // Namespace.
+
+/////////////////////////////////////////////////////////////////////
+// Table Of Contents generator
+/////////////////////////////////////////////////////////////////////
+
+/* Author: Mihai Bazon, September 2002
+ * http://students.infoiasi.ro/~mishoo
+ *
+ * Table Of Content generator
+ * Version: 0.4
+ *
+ * Feel free to use this script under the terms of the GNU General Public
+ * License, as long as you do not remove or alter this notice.
+ */
+
+ /* modified by Troy D. Hanson, September 2006. License: GPL */
+ /* modified by Stuart Rackham, 2006, 2009. License: GPL */
+
+// toclevels = 1..4.
+toc: function (toclevels) {
+
+  function getText(el) {
+    var text = "";
+    for (var i = el.firstChild; i != null; i = i.nextSibling) {
+      if (i.nodeType == 3 /* Node.TEXT_NODE */) // IE doesn't speak constants.
+        text += i.data;
+      else if (i.firstChild != null)
+        text += getText(i);
+    }
+    return text;
+  }
+
+  function TocEntry(el, text, toclevel) {
+    this.element = el;
+    this.text = text;
+    this.toclevel = toclevel;
+  }
+
+  function tocEntries(el, toclevels) {
+    var result = new Array;
+    var re = new RegExp('[hH]([1-'+(toclevels+1)+'])');
+    // Function that scans the DOM tree for header elements (the DOM2
+    // nodeIterator API would be a better technique but not supported by all
+    // browsers).
+    var iterate = function (el) {
+      for (var i = el.firstChild; i != null; i = i.nextSibling) {
+        if (i.nodeType == 1 /* Node.ELEMENT_NODE */) {
+          var mo = re.exec(i.tagName);
+          if (mo && (i.getAttribute("class") || i.getAttribute("className")) != "float") {
+            result[result.length] = new TocEntry(i, getText(i), mo[1]-1);
+          }
+          iterate(i);
+        }
+      }
+    }
+    iterate(el);
+    return result;
+  }
+
+  var toc = document.getElementById("toc");
+  if (!toc) {
+    return;
+  }
+
+  // Delete existing TOC entries in case we're reloading the TOC.
+  var tocEntriesToRemove = [];
+  var i;
+  for (i = 0; i < toc.childNodes.length; i++) {
+    var entry = toc.childNodes[i];
+    if (entry.nodeName.toLowerCase() == 'div'
+     && entry.getAttribute("class")
+     && entry.getAttribute("class").match(/^toclevel/))
+      tocEntriesToRemove.push(entry);
+  }
+  for (i = 0; i < tocEntriesToRemove.length; i++) {
+    toc.removeChild(tocEntriesToRemove[i]);
+  }
+
+  // Rebuild TOC entries.
+  var entries = tocEntries(document.getElementById("content"), toclevels);
+  for (var i = 0; i < entries.length; ++i) {
+    var entry = entries[i];
+    if (entry.element.id == "")
+      entry.element.id = "_toc_" + i;
+    var a = document.createElement("a");
+    a.href = "#" + entry.element.id;
+    a.appendChild(document.createTextNode(entry.text));
+    var div = document.createElement("div");
+    div.appendChild(a);
+    div.className = "toclevel" + entry.toclevel;
+    toc.appendChild(div);
+  }
+  if (entries.length == 0)
+    toc.parentNode.removeChild(toc);
+},
+
+
+/////////////////////////////////////////////////////////////////////
+// Footnotes generator
+/////////////////////////////////////////////////////////////////////
+
+/* Based on footnote generation code from:
+ * http://www.brandspankingnew.net/archive/2005/07/format_footnote.html
+ */
+
+footnotes: function () {
+  // Delete existing footnote entries in case we're reloading the footnodes.
+  var i;
+  var noteholder = document.getElementById("footnotes");
+  if (!noteholder) {
+    return;
+  }
+  var entriesToRemove = [];
+  for (i = 0; i < noteholder.childNodes.length; i++) {
+    var entry = noteholder.childNodes[i];
+    if (entry.nodeName.toLowerCase() == 'div' && entry.getAttribute("class") == "footnote")
+      entriesToRemove.push(entry);
+  }
+  for (i = 0; i < entriesToRemove.length; i++) {
+    noteholder.removeChild(entriesToRemove[i]);
+  }
+
+  // Rebuild footnote entries.
+  var cont = document.getElementById("content");
+  var spans = cont.getElementsByTagName("span");
+  var refs = {};
+  var n = 0;
+  for (i=0; i<spans.length; i++) {
+    if (spans[i].className == "footnote") {
+      n++;
+      var note = spans[i].getAttribute("data-note");
+      if (!note) {
+        // Use [\s\S] in place of . so multi-line matches work.
+        // Because JavaScript has no s (dotall) regex flag.
+        note = spans[i].innerHTML.match(/\s*\[([\s\S]*)]\s*/)[1];
+        spans[i].innerHTML =
+          "[<a id='_footnoteref_" + n + "' href='#_footnote_" + n +
+          "' title='View footnote' class='footnote'>" + n + "</a>]";
+        spans[i].setAttribute("data-note", note);
+      }
+      noteholder.innerHTML +=
+        "<div class='footnote' id='_footnote_" + n + "'>" +
+        "<a href='#_footnoteref_" + n + "' title='Return to text'>" +
+        n + "</a>. " + note + "</div>";
+      var id =spans[i].getAttribute("id");
+      if (id != null) refs["#"+id] = n;
+    }
+  }
+  if (n == 0)
+    noteholder.parentNode.removeChild(noteholder);
+  else {
+    // Process footnoterefs.
+    for (i=0; i<spans.length; i++) {
+      if (spans[i].className == "footnoteref") {
+        var href = spans[i].getElementsByTagName("a")[0].getAttribute("href");
+        href = href.match(/#.*/)[0];  // Because IE return full URL.
+        n = refs[href];
+        spans[i].innerHTML =
+          "[<a href='#_footnote_" + n +
+          "' title='View footnote' class='footnote'>" + n + "</a>]";
+      }
+    }
+  }
+},
+
+install: function(toclevels) {
+  var timerId;
+
+  function reinstall() {
+    asciidoc.footnotes();
+    if (toclevels) {
+      asciidoc.toc(toclevels);
+    }
+  }
+
+  function reinstallAndRemoveTimer() {
+    clearInterval(timerId);
+    reinstall();
+  }
+
+  timerId = setInterval(reinstall, 500);
+  if (document.addEventListener)
+    document.addEventListener("DOMContentLoaded", reinstallAndRemoveTimer, false);
+  else
+    window.onload = reinstallAndRemoveTimer;
+}
+
+}
+asciidoc.install(2);
+/*]]>*/
+</script>
+</head>
+<body class="article">
+<div id="header">
+<h1>MuMuDVB - README</h1>
+<span id="author">Brice Dubost</span><br />
+<span id="email"><code>&lt;<a href="mailto:mumudvb@braice.net">mumudvb@braice.net</a>&gt;</code></span><br />
+<span id="revdate">Version 2.1.0</span>
+<div id="toc">
+  <div id="toctitle">Table of Contents</div>
+  <noscript><p><b>JavaScript must be enabled in your browser to display the table of contents.</b></p></noscript>
+</div>
+</div>
+<div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<div class="imageblock">
+<div class="content">
+<img src="http://mumudvb.net/logo.png" alt="http://mumudvb.net/logo.png" />
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_presentation">1. Presentation</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_description">1.1. Description</h3>
+<div class="paragraph"><p>MuMuDVB (Multi Multicast DVB) is a program that redistributes streams from DVB or ATSC (Digital Television) on a network (also called IPTV) using
+multicasting or HTTP unicast.It supports satellite, terrestrial and cable TV, in clear or scrambled channels and run on PC as well as several embedded platforms.
+It is intended to multicast (the stream is sent once and the network equipments split the data for the different clients) a whole DVB transponder (set of channels sent on the same carrier frequency) by assigning
+each channel a different multicast group. It detects the different services present as well as their important parameters for streaming, rewrite the main DVB tables to show clients only the right stream in each group.</p></div>
+<div class="paragraph"><p>History : MuMuDVB is originally a modification of dvbstream that <a href="http://www.crans.org">cr@ns</a> made to stream TV in a few hundred rooms.</p></div>
+</div>
+<div class="sect2">
+<h3 id="_website">1.2. Website</h3>
+<div class="paragraph"><p><a href="http://mumudvb.net/">MuMuDVB main site</a></p></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authors_and_contacts">2. Authors and contacts</h2>
+<div class="sectionbody">
+<div class="ulist"><div class="title">Upstream author</div><ul>
+<li>
+<p>
+<a href="mailto:mumudvb@braice.net">Brice Dubost</a>
+</p>
+</li>
+</ul></div>
+<div class="ulist"><div class="title">Contributions</div><ul>
+<li>
+<p>
+<a href="mailto:manu@REMOVEMEcrans.ens-cachan.fr">Manuel Sabban</a> (getopt)
+</p>
+</li>
+<li>
+<p>
+<a href="mailto:glondu@REMOVEMEcrans.ens-cachan.fr">Stéphane Glondu</a> (man page, debian package)
+</p>
+</li>
+<li>
+<p>
+Special thanks to Dave Chapman (dvbstream author and contributor)
+</p>
+</li>
+<li>
+<p>
+Pierre Gronlier, Sébastien Raillard, Ludovic Boué, Romolo Manfredini, Matthias Šubik, Krzysztof Ostrowski, Frederik Kriewitz
+</p>
+</li>
+<li>
+<p>
+Others, please see git logs
+</p>
+</li>
+</ul></div>
+<div class="ulist"><div class="title">Mailing list:</div><ul>
+<li>
+<p>
+<a href="mailto:mumudvb-dev@REMOVEMElists.crans.org">MuMuDVB mailing list</a>
+</p>
+</li>
+<li>
+<p>
+<a href="https://lists.crans.org/listinfo/mumudvb-dev">MuMuDVB mailing list information and subscription</a>
+</p>
+</li>
+</ul></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">When contacting about an issue, please join the output of MuMuDVB in verbose mode ("-vvv" on the command line) and any other information that could be useful.</td>
+</tr></table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_contents_and_features">3. Contents and features</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_features_overview">3.1. Features overview</h3>
+<div class="ulist"><ul>
+<li>
+<p>
+Stream channels from a transponder on different multicast IPs
+</p>
+</li>
+<li>
+<p>
+Support for scrambled channels (if you don&#8217;t have a CAM you can use sasc-ng, but check if it&#8217;s allowed in you country/by your broadcaster)
+</p>
+</li>
+<li>
+<p>
+Support for automatic configuration i.e channels discovery and follow changes, see <a href="#autoconfiguration">Autoconfiguration</a> section
+</p>
+</li>
+<li>
+<p>
+Generation of SAP announces, see <a href="#sap">SAP</a> section
+</p>
+</li>
+<li>
+<p>
+Support of DVB-S2, DVB-S, DVB-C, DVB-T and ATSC
+</p>
+</li>
+<li>
+<p>
+Possibility to partially rewrite the stream for better compatibility with set-top boxes and some clients. See <a href="#pat_rewrite">PAT Rewrite</a>, <a href="#sdt_rewrite">SDT Rewrite</a> and <a href="#pmt_rewrite">PMT rewrite</a> sections.
+</p>
+</li>
+<li>
+<p>
+Support for HTTP unicast see <a href="#unicast">http unicast</a> section
+</p>
+</li>
+<li>
+<p>
+Support for RTP headers (only for multicast)
+</p>
+</li>
+<li>
+<p>
+Support for HLS file output
+</p>
+</li>
+<li>
+<p>
+CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.asciidoc and CAM_menu_interface.png for screenshot)
+</p>
+</li>
+<li>
+<p>
+Software descrambling through oscam dvbapi and libdvbcsa
+</p>
+</li>
+<li>
+<p>
+Flexible configuration mechanism using templates
+</p>
+</li>
+<li>
+<p>
+Support for embedded platforms based on UCLIBC and ANDROID
+</p>
+</li>
+<li>
+<p>
+Support for UDP unicast/multicast input in the absense of a DVB card
+</p>
+</li>
+</ul></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_installation">4. Installation</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_from_sources">4.1. From sources</h3>
+<div class="sect3">
+<h4 id="_from_a_snapshot">4.1.1. From a snapshot</h4>
+<div class="paragraph"><p>If you downloaded a snapshot, you will have to generate the auto(conf make etc &#8230;) files. In order to do this you will need the autotools, automake, gettext and libtool and, type in the folder of MuMuDVB</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>autoreconf -i -f</code></pre>
+</div></div>
+<div class="paragraph"><p>Then you have a source which can be installed as a release package.</p></div>
+</div>
+<div class="sect3">
+<h4 id="_from_a_release_package">4.1.2. From a release package</h4>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">If you want to compile for OpenWRT, please follow <a href="http://ocsovszki-dorian.blogspot.co.uk/2014/01/tl-wdr4900-openwrt-dvb-t-with-ite9135.html">OpenWRT tutorial</a></td>
+</tr></table>
+</div>
+<div class="paragraph"><p>In order to install MuMuDVB type:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>$ ./configure [configure options]
+$ make
+# make install</code></pre>
+</div></div>
+<div class="paragraph"><p>The <code>[configure options]</code> specific to MuMuDVB are:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>  --enable-cam-support    CAM support (default enabled)
+  --enable-scam-support   SCAM support (default enabled) (see note below)
+  --enable-arib-support   Build support for ARIB STD-B24 character decoding (specific to ISDB-T in Japan)
+  --enable-coverage       build for test coverage (default disabled)
+  --enable-duma           Debbuging DUMA library (default disabled)
+  --enable-android        Support for Android (default disabled)
+  --disable-dvb-support   Build without Linux DVB-API support, even on systems where the headers are present</code></pre>
+</div></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">If you want to compile MuMuDVB with clang/llvm, you have to install llvm-gcc and add  <code>CC=llvm-gcc LD=llvm-ld</code> or <code>CC=clang LD=llvm-ld</code> to your <code>[configure options]</code>.</td>
+</tr></table>
+</div>
+<div class="paragraph"><p>You can have a list of all the configure options by typing</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>$ ./configure --help</code></pre>
+</div></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">The CAM support depends on libdvben50221, libucsi (from linuxtv&#8217;s dvb-apps). The configure script will detect automatically the presence of these libraries and deactivate the CAM support if one of them is not present.
+In the case of fedora, the dvb-apps package does not contains the headers, you have to install it manually following the instructions here : <a href="http://www.linuxtv.org/wiki/index.php/LinuxTV_dvb-apps">LinuxTv DVB-apps page</a></td>
+</tr></table>
+</div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">The SCAM support depends on libdvbcsa from videolan. The configure script will detect automatically the presence of these libraries and deactivate the SCAM support if one of them is not present. It needs also trunk version of oscam to get control words. Oscam configuration is described below in section concerning software descrambling v2 inside mumudvb.</td>
+</tr></table>
+</div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">The ARIB STD-B24 support depends on libaribb24. The configure script will automatically detect it&#8217;s presence and enable <code>--japan</code> runtime option to enable character set translation.</td>
+</tr></table>
+</div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">The decoding of long channel names for autoconfiguration in ATSC depends on libucsi (from linuxtv&#8217;s dvb-apps). The configure script will detect automatically the presence of this library and deactivate the long channel name support if it is not present. The full autoconfiguration will still work with ATSC but the channel names will be the short channels names (7 characters maximum)</td>
+</tr></table>
+</div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">If you want to compile the doc i.e. generate HTML files using asciidoc, type <code>make doc</code>. The rendering for the tables will work with asciidoc 8.4.4 (can work with lower version but not tested).</td>
+</tr></table>
+</div>
+<div class="paragraph"><p>In order to install starting scripts (debian flavor) type:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code># cp scripts/debian/etc/default/mumudvb /etc/default/mumudvb
+# cp scripts/debian/etc/init.d/mumudvb /etc/init.d/mumudvb</code></pre>
+</div></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">It is advised to create a system user for MuMuDVB, e.g. : <code>_mumudvb</code>, you have to add this user to the video group and make the directory <code>/var/run/mumudvb</code> RW by this user. By doing this, you&#8217;ll be able to get all the features of MuMuDVB.</td>
+</tr></table>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_from_debian_package">4.2. From Debian package</h3>
+<div class="paragraph"><p>If you want to install a version which is not in your repositories, you can install it by hand by typing:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code># dpkg -i mumudvb*.deb</code></pre>
+</div></div>
+<div class="paragraph"><p>Otherwise you can use aptitude/synaptic as usual</p></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_usage">5. Usage</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>The documentation for configuration file syntax is in <code>doc/README_CONF.asciidoc</code>.</p></div>
+<div class="paragraph"><p>Usage:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>mumudvb [options] -c config_file
+mumudvb [options] --config config_file</code></pre>
+</div></div>
+<div class="paragraph"><p>Possible options are:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>-d, --debug
+        Don't daemonize and print messages on the standard output.
+
+-s, --signal
+        Print signal strength every 5 seconds
+
+-t, --traffic
+        Print the traffic of the channels every 10 seconds
+
+-l, --list-cards
+        List the DVB cards and exit
+
+--card
+        The DVB card to use (overrided by the configuration file)
+
+--server_id
+        The server id (for autoconfiguration, overrided by the configuration file)
+
+-j, --japan
+        Enable support for decoding ARIB STD-B24 character encoding in SI/EPG (only if built with libaribb24 support)
+
+-h, --help
+        Show help
+
+-v
+        More verbose (add for more)
+
+-q
+        More quiet (add for less)
+
+--dumpfile
+        Debug option : Dump the stream into the specified file</code></pre>
+</div></div>
+<div class="paragraph"><p>Signal: (see kill(1))</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>    SIGUSR1: switch the signal strength printing
+    SIGUSR2: switch the traffic printing
+    SIGHUP: flush the log files</code></pre>
+</div></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="autoconfiguration">6. Autoconfiguration</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>MuMuDVB is able to find the channels in the transponder, their PIDs (Program IDentifiers), names, and Logical channel numbers.</p></div>
+<div class="paragraph"><p>Without autoconfiguration, you have to set the transponder parameters, and for each channel, the multicast ip, the name and the PIDs (PMT, audio, video, teletext etc&#8230;)</p></div>
+<div class="paragraph"><p>If the channel list or the PIDs are changed, MuMuDVB will automatically update the channels.</p></div>
+<div class="paragraph"><p>In autoconfiguration MuMuDVB will try to detect everything and keep the user set parameters fixed. So you can tune manually only things which are relevant for your usage like the multicast IP.
+You can also use templates to generate multicast IP or other parameters.</p></div>
+<div class="paragraph"><p>We will review autoconfiguration starting without personalization then the cases when you want to change specific parameters for a (several) channel(s).</p></div>
+<div class="sect2">
+<h3 id="_pure_autoconfiguration">6.1. Pure autoconfiguration</h3>
+<div class="paragraph"><p>This is the easiest way to use MuMuDVB.</p></div>
+<div class="paragraph"><p>Use this when you want to stream a full transponder or a subset of a transponder (using autoconf_sid_list).</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">You don&#8217;t have to specify any channel in autoconfiguration except if you need to specify special parameters.</td>
+</tr></table>
+</div>
+<div class="paragraph"><p>In this mode, MuMuDVB will find for you the different channels, their name and their PIDs (PMT, PCR, Audio, Video, Subtitle, Teletext and AC3).</p></div>
+<div class="paragraph"><p>In order to use autoconfiguration you have to:
+- Set the tuning parameters to your config file
+- Add <code>autoconfiguration=full</code> to your config file
+- You don&#8217;t have to set any channels
+- For a first use don&#8217;t forget to put the <code>-d</code> parameter when you launch MuMuDVB:
+   e.g. <code>mumudvb -d -c your_config_file</code></p></div>
+<div class="listingblock">
+<div class="title">Example config file for satellite at frequency 11.296GHz with horizontal polarization</div>
+<div class="content">
+<pre><code>freq=11296
+pol=h
+srate=27500
+autoconfiguration=full</code></pre>
+</div></div>
+<div class="paragraph"><p>The channels will be streamed over the multicasts ip addresses 239.100.c.n where c is the card number (0 by default) and n is the channel number.</p></div>
+<div class="paragraph"><p>If you don&#8217;t use the common_port directive, MuMuDVB will use the port 1234.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">By default, SAP announces are activated if you use autoconfiguration. To disable them put <code>sap=0</code> in your config file.
+By default, SDT rewriting is activated if you use autoconfiguration. To disable it put <code>rewrite_sdt=0</code> in your config file.
+By default, PAT rewriting is activated if you use autoconfiguration. To disable it put <code>rewrite_pat=0</code> in your config file.</td>
+</tr></table>
+</div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">If you want to select the services to stream, you can use the <code>autoconf_sid_list</code> option which allows to specify the service identifier of the channels you want to be configured.</td>
+</tr></table>
+</div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">A detailed, documented example configuration file can be found in <code>doc/configuration_examples/autoconf_full.conf</code></td>
+</tr></table>
+</div>
+<div class="sect3">
+<h4 id="_templates_and_autoconfiguration">6.1.1. Templates and autoconfiguration</h4>
+<div class="sect4">
+<h5 id="_name">Name</h5>
+<div class="paragraph"><p>By default the name of the channel will be the name of the service defined by the provider. If you want more flexibility you can use a template.</p></div>
+<div class="paragraph"><p>For example, if you use <code>autoconf_name_template=%number-%name</code> The channels name will be in the form :</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+<code>1-CNN</code>
+</p>
+</li>
+<li>
+<p>
+<code>2-Euronews</code>
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>There is different keywords available:</p></div>
+<div class="tableblock">
+<table rules="all"
+width="80%"
+frame="border"
+cellspacing="0" cellpadding="4">
+<col width="20%" />
+<col width="80%" />
+<thead>
+<tr>
+<th align="left" valign="top">Keyword </th>
+<th align="left" valign="top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left" valign="top"><p class="table">%name</p></td>
+<td align="left" valign="top"><p class="table">The name given by the provider</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">%number</p></td>
+<td align="left" valign="top"><p class="table">The MuMuDVB channel number</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">%lang</p></td>
+<td align="left" valign="top"><p class="table">The channel primary language</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">%card</p></td>
+<td align="left" valign="top"><p class="table">The DVB card number</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">%tuner</p></td>
+<td align="left" valign="top"><p class="table">The tuner number</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">%server</p></td>
+<td align="left" valign="top"><p class="table">The server number specified by server_id or the command line</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">%lcn</p></td>
+<td align="left" valign="top"><p class="table">The logical channel number (channel number given by the provider). Your provider have to stream the LCN. The LCN will be displayed with three digits including 0. Ex "002". If the LCN is not detected, %lcn will be replaced by an empty string.</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">%2lcn</p></td>
+<td align="left" valign="top"><p class="table">Same as above but with a two digits format</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">%sid</p></td>
+<td align="left" valign="top"><p class="table">The channel service id (decimal for the port, hexadecimal for ipv6)</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">%sid_hi</p></td>
+<td align="left" valign="top"><p class="table">The channel service id. The two higher bits (between 0 and 255)</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">%sid_lo</p></td>
+<td align="left" valign="top"><p class="table">The channel service id. The two lower bits (between 0 and 255)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_other_options_ip_port">Other options: Ip, port</h5>
+<div class="paragraph"><p>You can also use templates for specifying the ip addresses or the port, for example if you want to use the service identifier (unique channel number in the transponder) in your ip address, you can use <code>autoconf_ip4=239.42.%sid_hi.%sid_lo</code>.
+Maybe you will notice different transponders having different channels with the same service identifier, you can then use other template to make your IP unique <code>autoconf_ip4=239.10*%server+%card.%sid_hi.%sid_lo</code>.</p></div>
+<div class="paragraph"><p>Please refer to <code>doc/README_CONF.asciidoc</code> in the section "Autoconfiguration parameters" to see which options accept which templates</p></div>
+<div class="paragraph"><p>Other keywords can be easily added if necessary, please contact if you have particular needs.</p></div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_advanced_autoconfiguration">6.2. Advanced autoconfiguration</h3>
+<div class="paragraph"><p>If the autodection mechanisms of Autoconfiguration are not suiting your needs, for example you need special IP for your channels or special names, you can force manually all channel parameters. The channel parameters specified by the user will not be overriden by autoconfiguration.</p></div>
+<div class="paragraph"><p>The channels are identified in DVB by their service identifier (SID), so you will need to specify this number to allow MuMuDVB know which channel you are refering too.</p></div>
+<div class="paragraph"><p>Some examples to show you the possibilities:</p></div>
+<div class="sect3">
+<h4 id="_specific_ip">6.2.1. Specific IP</h4>
+<div class="paragraph"><p>For example you need to specify a particular IP address for the channel with the service identifier 517, you can use the following configuration file</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>freq=506000
+autoconfiguration=full
+
+new_channel
+service_id=517
+ip=239.42.42.42</code></pre>
+</div></div>
+<div class="paragraph"><p>The IP address of all the other channels will be attributed using the default scheme, or the template you can define using autoconf_ip4,autoconf_ip6</p></div>
+</div>
+<div class="sect3">
+<h4 id="_extra_channels">6.2.2. Extra channels</h4>
+<div class="paragraph"><p>You can also use this personalization to add specific channels, with the following example you will obtain all detected channels plus one extra which is the one you specified.</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>freq=506000
+autoconfiguration=full
+
+new_channel
+name=my dump channel
+ip=239.42.42.42
+pids=8192</code></pre>
+</div></div>
+</div>
+<div class="sect3">
+<h4 id="_specific_channels_with_specific_ip">6.2.3. Specific channels with specific IP</h4>
+<div class="paragraph"><p>This mode can be combined with autoconf_sid_list if you want to restrict the channels autodetected, in the following example we want to stream two channels and specify their IPs</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>freq=506000
+autoconfiguration=full
+autoconf_sid_list=516 517
+
+new_channel
+service_id=516
+ip=239.42.42.1
+
+new_channel
+service_id=517
+ip=239.42.42.2</code></pre>
+</div></div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="sap">7. SAP announces</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>SAP (Session Announcement Protocol) announces are made for the client to know which channels are streamed and what is their name and address. It avoids to give to the client the list of the multicast ip addresses.</p></div>
+<div class="paragraph"><p>VLC and most of set-top boxes are known to support them.</p></div>
+<div class="paragraph"><p>MuMuDVB will automatically generate and send SAP announces if asked to in the config file or if you are in full autoconfiguration mode.</p></div>
+<div class="paragraph"><p>The SAP announces will be only sent for alive channels. When a channel goes down, MuMuDVB will stop sending announces for this channel, until it goes back.</p></div>
+<div class="sect2">
+<h3 id="_asking_mumudvb_to_generate_sap_announces">7.1. Asking MuMuDVB to generate SAP announces</h3>
+<div class="paragraph"><p>For sending SAP announces you have to add <code>sap=1</code> to your config file. The other parameters concerning the sap announces are documented in the <code>doc/README_CONF.asciidoc</code> file.</p></div>
+<div class="sect3">
+<h4 id="_sap_announces_and_full_autoconfiguration">7.1.1. SAP announces and full autoconfiguration</h4>
+<div class="paragraph"><p>If you use full autoconfiguration, you can use the keyword <em>%type</em> in the sap_default_group option. This keyword will be replaced by the type of the channel: Television or Radio.</p></div>
+<div class="paragraph"><div class="title">Example</div><p>If you put <code>sap_default_group=%type</code>, you will get two sap groups: Television and Radio, each containing the corresponding services.</p></div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_client_to_get_the_sap_announces">7.2. Configuring the client to get the SAP announces</h3>
+<div class="sect3">
+<h4 id="_vlc_gt_2_0_0">7.2.1. VLC &gt; 2.0.0</h4>
+<div class="paragraph"><p>SAP announces are enabled by default, you will find them in the local network left submenu of the playlist</p></div>
+</div>
+<div class="sect3">
+<h4 id="_vlc_lt_2_0_0">7.2.2. VLC &lt; 2.0.0</h4>
+<div class="paragraph"><p>Click on the "Settings" menu, then on "add interface" and choose SAP playlist. Then open you playlist, the SAP announces should appear automatically.</p></div>
+</div>
+<div class="sect3">
+<h4 id="_vlc_gt_0_8_2_amp_amp_vlc_lt_2_0_0">7.2.3. VLC &gt; 0.8.2 &amp;&amp; VLC &lt; 2.0.0</h4>
+<div class="paragraph"><p>You have to enter the settings, choose advanced settings. The SAP announces are in playlist&#8594;service discovery.</p></div>
+<div class="paragraph"><p>Don&#8217;t forget to save the settings.</p></div>
+<div class="paragraph"><p>You should have now a SAP section in your playlist.</p></div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="unicast">8. HTTP Unicast</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>In addition to multicast, MuMuDVB also supports HTTP unicast. This make you able to use MuMuDVB on networks wich doesn&#8217;t support multicast.</p></div>
+<div class="paragraph"><p>There is one listening connection, the channel is selected via the HTTP path, see further.</p></div>
+<div class="paragraph"><p>And you can have listening sockets per channel, in this case the client will always get the same channel independantly of the path.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">Be careful with unicast, it can eat a lot of bandwidth. Think about limitting the number of clients.</td>
+</tr></table>
+</div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">If you don&#8217;t want the (always here) multicast traffic to go on your network set <code>multicast=0</code></td>
+</tr></table>
+</div>
+<div class="sect2">
+<h3 id="_activate_http_unicast">8.1. Activate HTTP unicast</h3>
+<div class="paragraph"><p>To enable HTTP unicast you have to set the option <code>unicast</code>. By default MuMuDVB will listen on all your interfaces for incoming connections.</p></div>
+<div class="paragraph"><p>You can also define the listening port using <code>port_http</code>. If the port is not defined, the default port will be 4242.</p></div>
+</div>
+<div class="sect2">
+<h3 id="_activate_per_channel_listening_socket">8.2. Activate "per channel" listening socket</h3>
+<div class="paragraph"><p>You can create listening connections only for a channel. In this case, when a client connect to this socket he will alway get the same channel independantly of the HTTP path.</p></div>
+<div class="sect3">
+<h4 id="_if_you_use_full_autoconfiguration">8.2.1. If you use full autoconfiguration</h4>
+<div class="paragraph"><p>You need to set the option <code>autoconf_unicast_start_port</code> which define what is the output port for the first discovered channel (for the following channels the port will be incremented).</p></div>
+</div>
+<div class="sect3">
+<h4 id="_if_you_don_8217_t_use_full_autoconfiguration">8.2.2. If you don&#8217;t use full autoconfiguration</h4>
+<div class="paragraph"><p>For the channels for which you want to have a listening unicast socket you have to set the option <code>unicast_port</code> which define the listening port of the socket</p></div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_client_side_the_different_methods_to_get_channels">8.3. Client side, the different methods to get channels</h3>
+<div class="sect3">
+<h4 id="playlist">8.3.1. Using a playlist</h4>
+<div class="paragraph"><p>MuMuDVB generates m3u playlists.</p></div>
+<div class="paragraph"><p>If you server is listening on the ip 10.0.0.1 and the port 4242,</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>vlc http://10.0.0.1:4242/playlist.m3u</code></pre>
+</div></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">In this playlist the channels will be announced with URLs type <code>/bysid/</code> (see below), if you want a playlist for single channel sockets, use the URL <code>/playlist_port.m3u</code>.</td>
+</tr></table>
+</div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">Playlists for multicast are also generated, they are accessible using the following names: "playlist_multicast.m3u" and "playlist_multicast_vlc.m3u"</td>
+</tr></table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_single_channel_socket">8.3.2. Single channel socket</h4>
+<div class="paragraph"><p>If the client connect to a single client socket he will get the associated channel independantly of the path.</p></div>
+<div class="paragraph"><p>If you server is listening on the ip 10.0.0.1 and the port for the channel is 5000,</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>vlc http://10.0.0.1:5000/</code></pre>
+</div></div>
+</div>
+<div class="sect3">
+<h4 id="_get_the_channel_by_number">8.3.3. Get the channel by number</h4>
+<div class="paragraph"><p>You can ask the channel by the channel number (starting at 1).</p></div>
+<div class="paragraph"><p>If you server is listening on the ip 10.0.0.1 and the port 4242,</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>vlc http://10.0.0.1:4242/bynumber/3</code></pre>
+</div></div>
+<div class="paragraph"><p>will give you the channel number 3. This works also with xine and mplayer.</p></div>
+</div>
+<div class="sect3">
+<h4 id="_get_the_channel_by_service_id">8.3.4. Get the channel by service id</h4>
+<div class="paragraph"><p>You can ask the channel by the service id.</p></div>
+<div class="paragraph"><p>If you server is listening on the ip 10.0.0.1 and the port 4242,</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>vlc http://10.0.0.1:4242/bysid/100</code></pre>
+</div></div>
+<div class="paragraph"><p>will give you the channel with the service id 100, or a 404 error if there is no channel with this service id. This works also with xine and mplayer.</p></div>
+</div>
+<div class="sect3">
+<h4 id="_get_the_channel_by_name">8.3.5. Get the channel by name</h4>
+<div class="paragraph"><p>You can ask the channel by the channel name.
+The search is case insensitive. If your channel name contains spaces, replace them by <em>-</em> character.</p></div>
+<div class="paragraph"><p>If you server is listening on the ip 10.0.0.1 and the port 4242,</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>vlc http://10.0.0.1:4242/byname/your-tv-station-name</code></pre>
+</div></div>
+<div class="paragraph"><p>will give you the channel with name "Your TV station name". This works also with xine and mplayer.</p></div>
+</div>
+<div class="sect3">
+<h4 id="_get_the_channels_list">8.3.6. Get the channels list</h4>
+<div class="paragraph"><p>If you server is listening on the ip 10.0.1 and the port 4242,</p></div>
+<div class="paragraph"><p>To get the channel list (in basic html) just enter the address <code>http://10.0.0.1:4242/channels_list.html</code> in your web browser.</p></div>
+<div class="paragraph"><p>To get the channel list (in JSON) just enter the address <code>http://10.0.0.1:4242/channels_list.json</code> in your web browser.</p></div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_http_unicast_and_monitoring">8.4. HTTP unicast and monitoring</h3>
+<div class="paragraph"><p>This HTTP connection can be used to monitor MuMuDVB.</p></div>
+<div class="paragraph"><p>Monitoring information is avalaible in JSON format (<a href="http://en.wikipedia.org/wiki/JSON">http://en.wikipedia.org/wiki/JSON</a>) vis the following urls <code>/monitor/signal_power.json</code> and <code>/monitor/channels_traffic.json</code></p></div>
+<div class="paragraph"><p>It&#8217;s quite easy to add new informations to these files if needed.</p></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_monitoring">9. Monitoring</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>You can use <a href="http://mmonit.com/monit/">Monit</a> to monitor MuMuDVB an restart it when it experiences problems (MuMuDVB kill himself when big issues appear).</p></div>
+<div class="paragraph"><p>You have to install the init scripts (automatic if you used the Debian package) and add the following lines to your <code>/etc/monit/services</code> file:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>check process mumudvb with pidfile /var/run/mumudvb/mumudvb_adapter0_tuner0.pid
+    start program = "/etc/init.d/mumudvb start"
+    stop program = "/etc/init.d/mumudvb stop"</code></pre>
+</div></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">The 0 have to be replaced by the DVB card number if you have multiples cards.</td>
+</tr></table>
+</div>
+<div class="paragraph"><p>For more detailled information, refer to the <a href="http://mmonit.com/monit/">Monit Website</a>.</p></div>
+<div class="paragraph"><p>MuMuDVB usually run for many days without problems, but with monit you are safe. Monit is also able to send e-mails in case of problems.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_scrambled_channels_support">10. Scrambled channels support</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Important note : check the contract with your broadcaster to see if you are allowed to stream the scrambled channels you&#8217;re subscribed to.</p></div>
+<div class="sect2">
+<h3 id="_hardware_descrambling">10.1. Hardware descrambling</h3>
+<div class="paragraph"><p>MuMuDVB supports scrambled channels via hardware descrambling i.e. a CAM (Conditionnal Access Module). It can ask the CAM to descramble multiple channels if the CAM supports it (Aston Pro, or PowerCam Pro are known to work with multiple channels).</p></div>
+<div class="paragraph"><p>If you are limited by the number of PIDs the can can decrypt simultaneously, it is possible to ask the CAM to decrypt only the audio and video. This feature is not implemented, please ask if you need it.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">The hardware descramblig uses almost no CPU, all the descrambling is made by the CAM.</td>
+</tr></table>
+</div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">MuMuDVB doesn&#8217;t query the CAM before asking for descrambling. The query is not reliable. Most of CAMs answer a menu when the descrambling is not possible and MuMuDVB will display it on the standard error.</td>
+</tr></table>
+</div>
+<div class="paragraph"><p>The information concerning the CAM is stored in <em>'</em>/var/run/mumudvb/caminfo_adapter%d_tuner%d''' where %d is the DVB card number.</p></div>
+<div class="listingblock">
+<div class="title">Example contents of <em>'</em>/var/run/mumudvb/caminfo_carte%d'''</div>
+<div class="content">
+<pre><code>CAM_Application_Type=01
+CAM_Application_Manufacturer=02ca
+CAM_Manufacturer_Code=3000
+CAM_Menu_String=PowerCam_HD V2.0
+ID_CA_Supported=0100
+ID_CA_Supported=0500</code></pre>
+</div></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">In case of issues with some kinds of CAMs the libdvben50221 could have to be patched:
+<a href="http://article.gmane.org/gmane.linux.drivers.video-input-infrastructure/29866">Link to the patch</a></td>
+</tr></table>
+</div>
+<div class="sect3">
+<h4 id="_how_to_ask_mumudvb_for_descrambling">10.1.1. How to ask MuMuDVB for descrambling?</h4>
+<div class="paragraph"><div class="title">You are using autoconfiguration :</div><p>Just add <code>cam_support=1</code> to your config file</p></div>
+<div class="ulist"><div class="title">You are not using autoconfiguration</div><ul>
+<li>
+<p>
+Add <code>cam_support=1</code> to your config file (before the channels)
+</p>
+</li>
+<li>
+<p>
+For each scrambled channel add the <code>pmt_pid</code> option. This option is made for MuMuDVB to know which PID is the PMT PID which will be used to ask for descrambling
+</p>
+</li>
+</ul></div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hardware_cam_issues">10.2. Hardware CAM issues</h3>
+<div class="paragraph"><p>Some hardware CAM are not directly connected to the tuner, one can choose the stream sent to the CAM. This can make the work slightly more complicated to run the CAM since you have to ensure the right stream is sent to the CAM.</p></div>
+<div class="sect3">
+<h4 id="_digital_devices_cine_ct_v6">10.2.1. Digital Devices Cine CT V6</h4>
+<div class="paragraph"><p>We always use cards and hardware from Digital Devices(<a href="http://www.digitaldevices.de/">http://www.digitaldevices.de/</a>).
+        - Octopus CI
+        - Cine S2 V6.5</p></div>
+<div class="paragraph"><p>After a lot of problem with MuMuDVB and the CI card we found out, that the hardware wasn&#8217;t detected by MuMuDVB.
+The folder /dev/dvb looked like :</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>        - Adapter0
+        - Adapter1
+        - Adapter2
+        - Adapter3</code></pre>
+</div></div>
+<div class="paragraph"><p><code>/dev/dvb/Adapter0</code> and Adapter1 had the following content:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>demux0  dvr0  frontend0  net0</code></pre>
+</div></div>
+<div class="paragraph"><p><code>/dev/dvb/Adapter2</code> and Adapter3 had the following content:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>sec0    ca0</code></pre>
+</div></div>
+<div class="paragraph"><p>So there was no connection between the tuner and the CI.</p></div>
+<div class="paragraph"><p>So we tried to load the driver of the card with a different parameter to get everything into one single folder.</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>sudo modprobe ddbridge adapter_alloc = 3</code></pre>
+</div></div>
+<div class="paragraph"><p>Result:</p></div>
+<div class="paragraph"><p>/dev/dvb/ includes only adapter0</p></div>
+<div class="paragraph"><p>Content of adapter0:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>ca0  demux0  dvr0  frontend0  net0  sec0
+ca1  demux1  dvr1  frontend1  net1  sec1</code></pre>
+</div></div>
+<div class="paragraph"><p>After that we had to pipe the stream from the frontend truth the CI modul.
+This part is still very buggy and we don&#8217;t know exactly how that works.</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>sudo echo "02 02" &gt; /sys/class/ddbridge/ddbridge0/redirect
+sudo echo "03 03" &gt; /sys/class/ddbridge/ddbridge0/redirect</code></pre>
+</div></div>
+<div class="paragraph"><p>At the moment we have the problem that we can use only one tuner. :(</p></div>
+<div class="paragraph"><p>Here you can see some more information about this problem</p></div>
+<div class="paragraph"><p><a href="http://www.spinics.net/lists/linux-media/msg39494.html">http://www.spinics.net/lists/linux-media/msg39494.html</a></p></div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_software_descrambling_v1">10.3. Software descrambling v1</h3>
+<div class="paragraph"><p>Important note : this solution is not allowed by some provider contracts.</p></div>
+<div class="paragraph"><p>MuMuDVB has been reported to work with software descrambling solutions like sascng + newcs + dvbloopback.</p></div>
+<div class="paragraph"><p>In this case  you don&#8217;t need to set the <code>cam_support</code> option. Just ajust the <code>card</code> option to fit with your virtual dvbloopback card.</p></div>
+<div class="paragraph"><p>If you use these solutions, see <a href="#reduce_cpu">reduce MuMuDVB CPU usage</a> section.</p></div>
+<div class="sect3">
+<h4 id="_some_information_on_how_to_configure_sasc_ng">10.3.1. Some information on how to configure SASC-NG</h4>
+<div class="paragraph"><p>The following informations have been given by MuMuDVB users on the MuMuDVB-dev mailing list</p></div>
+<div class="paragraph"><p>When the channels are not sucessfully descrambled (channel down in MuMuDVB) the following options are reported to improve the situation</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>--sid-nocache --buffer 8M --sid-filt=200 -D</code></pre>
+</div></div>
+<div class="paragraph"><p>You can try also the option --sid-allpid
+It seems to happend with transponders with a lot of channels (TV or RADIO channels).</p></div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_scrambling_status">10.4. Scrambling status</h3>
+<div class="paragraph"><p>The scrambling status is stored together with the streamed channel list.</p></div>
+<div class="listingblock">
+<div class="title">Example</div>
+<div class="content">
+<pre><code>239.100.0.7:1234:ESCALES:PartiallyUnscrambled
+239.100.0.8:1234:Fit/Toute l'Histoire:PartiallyUnscrambled
+239.100.0.9:1234:NT1:PartiallyUnscrambled
+239.100.0.10:1234:ACTION:PartiallyUnscrambled
+239.100.0.11:1234:MANGAS:PartiallyUnscrambled
+239.100.0.12:1234:ENCYCLOPEDIA:PartiallyUnscrambled
+239.100.0.13:1234:XXL PL:PartiallyUnscrambled
+239.100.0.14:1234:France 5:HighlyScrambled
+239.100.0.16:1234:LCP:FullyUnscrambled
+239.100.0.17:1234:VIDEOCLICK:FullyUnscrambled</code></pre>
+</div></div>
+<div class="ulist"><ul>
+<li>
+<p>
+FullyUnscrambled : less than 5% of scrambled packets
+</p>
+</li>
+<li>
+<p>
+PartiallyUnscrambled : between 5% and 95% of scrambled packets
+</p>
+</li>
+<li>
+<p>
+HighlyScrambled : more than 95% of scrambled packets
+</p>
+</li>
+</ul></div>
+</div>
+<div class="sect2">
+<h3 id="_software_descrambling_v2">10.5. Software descrambling v2</h3>
+<div class="paragraph"><p>Important note : this solution is not allowed by some provider contracts.</p></div>
+<div class="paragraph"><p>MuMuDVB now has support for software descrambling on its own, to do that you&#8217;ll need to have trunk version of oscam and libdvbcsa installed.
+To enable you have to add to global options
+scam_support=1
+on program options add
+oscam=1
+Other setting are documented at <code>doc/README_CONF.asciidoc</code>, there is also a configuration example available at <code>configuration_examples/oscam.conf</code></p></div>
+<div class="paragraph"><p>If channel has a lot of bandwidth it may be needed to extend ring buffer size.</p></div>
+<div class="paragraph"><p>If cw&#8217;s don&#8217;t get in time defined as decsa delay(default 500000us=0.5s), you may try to extend it (decsa_delay max is 10000000, and send_delay should be lower than decsa_delay, because we can&#8217;t send descrambled packets befor they&#8217;re being descrambled) for example:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>        decsa_delay=3500000
+        send_delay=4500000</code></pre>
+</div></div>
+<div class="paragraph"><p>note that bigger delays in ring buffer may need also extending ring buffer size</p></div>
+<div class="paragraph"><p>In debug mode number of packets in the buffer is reported and buffer overflow is detected, you should use that to tweak your delays and ring buffer size. In http state.xml number of packets in the buffer is also reported.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">Use the latest version of oscam from trunk, older versions did not have support for pc dvbapi. Instructions how to compile are on <a href="http://streamboard.de.vu:8001/wiki/crosscompiling">http://streamboard.de.vu:8001/wiki/crosscompiling</a></td>
+</tr></table>
+</div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">When using oscam with more than 16 channels adjust macro definition <code>MAX_DEMUX</code> (line below) on oscam header <code>module-dvbapi.h</code> to number of your channels</td>
+</tr></table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre><code>#define MAX_DEMUX 16</code></pre>
+</div></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">When using multiple channels per card (more than (ecm_change_time)/(2*card_response_time)), you may get timeouts on oscam on mumudvb startup, it&#8217;s because on startup oscam asks card for two cw&#8217;s at the same time.
+It should get right after a while.
+Currently there is no solution for that bug.</td>
+</tr></table>
+</div>
+<div class="sect3">
+<h4 id="_some_information_on_how_to_configure_oscam">10.5.1. Some information on how to configure oscam</h4>
+<div class="paragraph"><p>In the <code>oscam.conf</code> file add the following options</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>        [dvbapi]
+        enabled = 1
+        au = 1
+        boxtype = pc
+        user = mumudvb
+        pmt_mode = 4
+        request_mode = 1</code></pre>
+</div></div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="pat_rewrite">11. PAT (Program Allocation Table) Rewriting</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>This feature is mainly intended for set-top boxes. This option will announce only the streamed channel in the Program Allocation Table instead of all transponder channels. Computer clients parse this table and decode the first working program. Set-top boxes usually try only the first one which give usually a blank screen in most of the channels.</p></div>
+<div class="paragraph"><p>To enable PAT rewriting, add <code>rewrite_pat=1</code> to your config file. This feature consumes few CPU, since the rewritten PAT is stored in memory and computed only once per channel.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">PAT rewrite can fail (i.e. doesn&#8217;t solve the previous symptoms) for some channels if their PMT pid is shared. In this case you have to add the <code>service_id</code> option to the channel to specify the service id.</td>
+</tr></table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="sdt_rewrite">12. SDT (Service Description Table) Rewriting</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>This option will announce only the streamed channel in the Service Description Table instead of all transponder channels. Some clients parse this table and can show/select ghost programs if it is not rewritten (even if the PAT is). This can rise to a random black screen.</p></div>
+<div class="paragraph"><p>To enable SDT rewriting, add <code>rewrite_sdt=1</code> to your config file. This feature consumes few CPU, since the rewritten SDT is stored in memory and computed only once per channel.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">If you don&#8217;t use full autoconfiguration, SDT rewrite needs the <code>service_id</code> option for each channel to specify the service id.</td>
+</tr></table>
+</div>
+<div class="paragraph" id="pmt_rewrite"><p>PMT (Program Map Table) Rewriting</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>This option must be used if you don't stream all PIDs for a channel. It's useful for separating one channel with multiple audio streams (multiple languages) into separate channels.
+
+Without PMT rewrite, players can get confused due to missing streams, especially if the first PID in the table is not streamed, and the playback may fail. However, teletext PID can usually be dropped safely without rewriting PMT, as it's the last PID in the table.
+
+To enable PMT rewriting, add `rewrite_pmt=1` to your config file.
+
+[NOTE]
+PMT rewrite will work only if PIDs are set manually. If they are autodetected, everything will be streamed so there's no need to rewrite the PMT.
+
+
+
+EIT PID (Event Information Table) Sorting</code></pre>
+</div></div>
+<div class="paragraph"><p>This option will make MuMuDVB stream only the EIT packets corresponding to the streamed channel instead of all transponder channels. Some clients parse this table and can show/select ghost programs (even if the PAT and the SDT are rewritten).</p></div>
+<div class="paragraph"><p>The EIT PID contains the description of the current program and the future programs. It is used to build the Electronic Program Guide.</p></div>
+<div class="paragraph"><p>To enable EIT sorting, add <code>sort_eit=1</code> to your config file.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">If you don&#8217;t use full autoconfiguration, EIT sorting needs the <code>service_id</code> option for each channel to specify the service id.</td>
+</tr></table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="reduce_cpu">13. Reduce MuMuDVB CPU usage</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Normally MuMuDVB reads the packets from the card one by one and ask the card if there is data avalaible between each packets (poll). But often the cards have an internal buffer. Because of this buffer, some pollings are useless. These pollings eat some CPU time.</p></div>
+<div class="paragraph"><p>To reduce CPU usage, one solution is to try to read several packets at the same time. To do this use the option <code>dvr_buffer_size</code>.</p></div>
+<div class="listingblock">
+<div class="title">Example</div>
+<div class="content">
+<pre><code>dvr_buffer_size=40</code></pre>
+</div></div>
+<div class="paragraph"><p>To see if the value you put is too big or to low, run MuMuDVB in verbose mode, the average number of packets received at the same time will be shown every 2 minutes. If this number if below your buffer size, it is useless to increase it.</p></div>
+<div class="paragraph"><p>The CPU usage reduction can be between 20% and 50%.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="threaded_read">14. Data reading using a thread</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>In order to make MuMuDVB more robust (at the cost of a slight CPU consumption increase), MuMuDVB can read the data from the card using a thread. This make the data reading "independant" of the rest of the program.</p></div>
+<div class="paragraph"><p>In order to enable this feature, use the option <code>dvr_thread</code>.</p></div>
+<div class="paragraph"><p>This reading uses two buffers: one for the data just received from the card, one for the data treated by the main program. You can adjust the size of this buffers using the option <code>dvr_thread_buffer_size</code>. The default value  (5000 packets of 188 bytes) should be sufficient for most of the cases.</p></div>
+<div class="paragraph"><p>The message "Thread trowing dvb packets" informs you that the thread buffer is full and some packets are dropped. Increase the buffer size will probably solve the problem.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="ipv6">15. IPv6</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>MuMuDVB supports IPv6 multicasting. It is not enabled by default you have to activate it using the multicast_ipv6 option</p></div>
+<div class="paragraph"><p>To "enjoy" multicasting you need a switch which supports the <a href="http://en.wikipedia.org/wiki/Multicast_Listener_Discovery">Multicast Listener Discovery</a> protocol.</p></div>
+<div class="paragraph"><p>IPv6 use extensively the concept of <a href="http://en.wikipedia.org/wiki/Multicast_address">scoping</a>. By default MuMuDVB uses the scope "site-local" (ie multicast addresses starting with FF05) the SAP announcements are also sent with this scope. If you need to have more flexibility on this side, please contact.</p></div>
+<div class="paragraph"><p>Here some documentation about IPv6 and multicasting</p></div>
+<div class="paragraph"><p><a href="http://www.cisco.com/en/US/technologies/tk648/tk872/technologies_white_paper0900aecd80260049.pdf">IPv6 Multicast at a Glance - Cisco</a></p></div>
+<div class="paragraph"><p><a href="http://www.cisco.com/en/US/technologies/tk648/tk872/technologies_white_paper0900aecd8026003d.pdf">IPv6 Addressing at a Glance - Cisco</a></p></div>
+<div class="paragraph"><p>RFCs concerning IPv6 scopes and addressing</p></div>
+<div class="paragraph"><p><a href="http://tools.ietf.org/html/rfc4007">RFC4007</a>
+<a href="http://tools.ietf.org/html/rfc4291">RFC4291</a></p></div>
+<div class="paragraph"><p>What is MLD snooping (equivalent of IGMP in IPv6) and how to configure it on HP switches
+<a href="http://cdn.procurve.com/training/Manuals/2900-3500-5400-6200-8200-IPv6-Jan08-7-MLD.pdf">MLD snooping on Procurve</a></p></div>
+<div class="paragraph"><p>Support of IPv6 on Cisco switches
+<a href="http://www.cisco.com/en/US/technologies/collateral/tk648/tk872/tk373/technologies_white_paper_09186a00802219bc_ps6553_Products_White_Paper.html">IPV6 on cisco</a></p></div>
+<div class="paragraph"><p>Extract of the previous page</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>Layer 2 Switches
+IPv6 traffic forwarding does not impact Layer 2 LAN switches, since these devices do not need to look at the Layer 3 header to forward an IPv6 frame; thus IPv6 hosts can be transparently attached to the following Cisco products. In addition, Layer 2 switches may integrate dedicated IPv6 features such as native IPv6 network management or MLD snooping (Cisco products marked with "*" in the list).
+• Cisco Catalyst Express 500 Series Switch
+• Cisco Catalyst 2900XL Series Switch
+• Cisco Catalyst 2960 Series (*)
+• Cisco Catalyst 3500XL Series Switch
+• Cisco Catalyst 3560, 3560-E, 3750 and 3750-E Series Switch (*)
+• Cisco Catalyst 4500 Series Switch
+• Cisco Catalyst 4500-E Series Switch (*)
+• Cisco Catalyst 5000 Series Switch
+• Cisco Catalyst 6500 Series Switch (*)</code></pre>
+</div></div>
+<div class="paragraph"><p>Also
+Cisco introduced IPv6 Multicast in Cisco IOS Software Releases 12.0(26)S, 12 .2(18)S, and12.3(2)T. It has been deployed in numerous business-critical IPv6 Multicast networks.</p></div>
+<div class="paragraph"><p><a href="http://www.cisco.com/cisco/web/solutions/small_business/products/routers_switches/300_series_switches/index.html">IPV6 small business switch</a></p></div>
+<div class="paragraph"><p>Some useful commands for ipv6 multicast debugging under linux</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>Show the open sockets
+netstat -6tulp
+
+See the traffic (on iface eth0)
+tcpdump -ni eth0 ip6
+
+See the traffic to a particular address (here the SAP IPv6 announces)
+tcpdump -ni eth0 ip6 host FF05::2:7FFE
+
+Read an IPv6 stream with VLC (under linux)
+vlc -vvv --ipv6 udp://@\[ff15::1\]:1234</code></pre>
+</div></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_mumudvb_logs">16. MuMuDVB Logs</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>MuMuDVB can send it&#8217;s logs to the console, to a file or via syslog. It can also be several of these channels. The formatting of the logs can also be adjusted.</p></div>
+<div class="paragraph"><p>By default, the logs are sent to the console if not daemonized and via syslog otherwise.</p></div>
+<div class="paragraph"><p>If the logs are sent to a file, you can ask MuMuDVB to flush the file using the SIGHUP signal.</p></div>
+<div class="paragraph"><p>For more detail about these features see <code>doc/README_CONF.asciidoc</code>.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_using_mumudvb_with_particular_clients">17. Using MuMuDVB with "particular" clients</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>People were able to use MuMuDVB with various clients, I will report here the tutorials I received for some of them</p></div>
+<div class="sect2">
+<h3 id="_xbmc_for_xbox_originally">17.1. XBMC (for XBOX originally)</h3>
+<div class="paragraph"><p><strong>Description:</strong> XBMC (XBMP really) started as a program for modified XBOX consoles. In the following years, XBMC has grown into a multi-platform, multi-architecture media center that runs on most standard hardware. The hardware and legal limitations of the XBOX were always a concern and the Team has instead focused on running on the hardware that most people already have.</p></div>
+<div class="paragraph"><p><strong>Website:</strong> <a href="http://xbmc.org/">http://xbmc.org/</a></p></div>
+<div class="paragraph"><p><strong>Tutorial:</strong>
+Here`s what You have to do, open Your favorite text editor and write an ip address with the protocol You are using of the particular program and port save it as something.strm. You have to create .strm files for every program You are streaming. Once you have done that fire up WinSCP and connect to the ip address of Your XBMC box if You are using the live version username and password is xbmc xbmc if You have installed the live version then You have provided the username and password during install process. Now copy theoes .strm files to the XBMC box in lets say home folder. Now in XBMC go to the video menu then click add source then click browse and navigate to the home folder and click ok then u have to give the name of that source use what ever You like and click ok and thats it. Go to the video menu You will see that You have a folder named as You named the source open it and You will see all of Yours .strm files click on it and it will start to play the stream from mumudvb. Works weather You are using multicast or unicast.</p></div>
+<div class="paragraph"><p>Thanks to Ivan Cabraja for the tutorial</p></div>
+</div>
+<div class="sect2">
+<h3 id="_mythtv">17.2. MythTV</h3>
+<div class="paragraph"><p><strong>Description:</strong> MythTV is a Free Open Source software digital video recorder (DVR) project distributed under the terms of the GNU GPL.</p></div>
+<div class="paragraph"><p><strong>Website:</strong> <a href="http://www.mythtv.org/">http://www.mythtv.org/</a></p></div>
+<div class="paragraph"><p><strong>Tutorial:</strong> Configuring Mythtv and mumudvb</p></div>
+<div class="sect3">
+<h4 id="_mumudvb_configuration">17.2.1. Mumudvb Configuration:</h4>
+<div class="paragraph"><p>You need to turn pat rewriting on  (i.e. rewrite_pat=1).</p></div>
+<div class="paragraph"><p>You can use either multicast or udp streaming to mythtv (udp streaming
+is achieved by using a non-multicast ip address in the  configuration
+file  i.e. ip=192.168.1.100). Http unicast streaming is not supported in
+mythtv, but RTSP should be when this is implemented in mumudvb.</p></div>
+<div class="paragraph"><p>The channel name needs to be in the following format "channel number" -
+"channel name" (e.g. name=1 - TV One )</p></div>
+</div>
+<div class="sect3">
+<h4 id="_mythtv_configuration">17.2.2. Mythtv configuration:</h4>
+<div class="paragraph"><p><strong>Single-transponder</strong></p></div>
+<div class="paragraph"><p>In mythtv-setup you need to add a new "network recorder" capture card.
+Enter the address of the playlist mumudvb provides in the  "M3U URL"
+field. This will be something like
+<a href="http://192.168.2.2:4242/playlist_multicast.m3u">http://192.168.2.2:4242/playlist_multicast.m3u</a></p></div>
+<div class="paragraph"><p>You then create a video source as normal, and associate this with the
+"Network recorder" capture card via the "input connections" option.</p></div>
+<div class="paragraph"><p>You then need to carry out a channel scan (while you are associating the
+video source or via the channel editor).</p></div>
+<div class="paragraph"><p>The channel scan appears to hang on 0%, but just select finish after a
+couple of seconds. This should have loaded the channels defined in the
+M3U file into mythtv.</p></div>
+<div class="paragraph"><p>Relying on the EIT information embedded in the stream does not appear to
+work, so you need to load this information from an external xmltv
+source. You do this by going into the channel editor and adding the
+correct xmltv ID for each channel. Once you have done this you exit out
+of mythtv-setup and run something like: mythfilldatabase --file 1
+freeview.xml  (where in this case the the xmltv file is called
+freeview.xml).</p></div>
+<div class="paragraph"><p>To allow recording and viewing of multiple channels from the one
+transponder, you need to add additional (identically configured)
+"network recorder" capture cards. For example if you want to be able to
+record two channels and watch a third at the same time you need to have
+set up a total of three network recorder cards.</p></div>
+<div class="paragraph"><p><strong>Multiple-Transponders</strong></p></div>
+<div class="paragraph"><p>if you are streaming channels from several transponders (by using
+several instances of mumudvb) you have two options:</p></div>
+<div class="paragraph"><p>1) The obvious thing to do is to define a different network recorder for
+each transponder (with the appropriate playlist defined), each
+transponder has to be associated with a different video source (assuming
+each transponder contains different channels). However, this does not
+seem to work well, with regular crashes when changing channels, and it
+also requires that you first switch between video sources to be able to
+change between channels on different transponders [this may be due to my
+lack of skill at configuring mythtv]</p></div>
+<div class="paragraph"><p>2) An easier way is to generate a custom m3u file, that contains the
+channels of all the transponders. This also allows you to define the
+xmltvid of each channel as well - removing the need to do this manually
+in the channel editor. In this case when you set up the network
+recorders, you can enter a file path for the location of the m3u file,
+as opposed to accessing it via a web-server (e.g.
+file///home/nick/channels.m3u ). Once again you simply make multiple
+copies of the (identical) network recorder capture card if you want to
+record/watch multiple channels.</p></div>
+<div class="paragraph"><p>An example of a m3u file is as follows (in this case the first four
+channels defined are from one mumudvb instance, and the last two from
+another - of course care has to be taken in configuring the various
+mumudvb instances to make sure none of the channels are assigned the
+same port etc):</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>#EXTM3U
+#EXTINF:0,1 - TV1
+#EXTMYTHTV:xmltvid=tv1.freeviewnz.tv
+udp://192.168.2.101:1233
+#EXTINF:0,2 - TV2
+#EXTMYTHTV:xmltvid=tv2.freeviewnz.tv
+udp://192.168.2.101:1235
+#EXTINF:0,6 - TVNZ 6
+#EXTMYTHTV:xmltvid=tvnz6.freeviewnz.tv
+udp://192.168.2.101:1236
+#EXTINF:0,7 - TVNZ 7
+#EXTMYTHTV:xmltvid=tvnz7.freeviewnz.tv
+udp://192.168.2.101:1237
+#EXTINF:0,3 - TV3
+#EXTMYTHTV:xmltvid=tv3.freeviewnz.tv
+udp://192.168.2.101:1238
+#EXTINF:0,4 - c4
+#EXTMYTHTV:xmltvid=c4.freeviewnz.tv
+udp://192.168.2.101:1239</code></pre>
+</div></div>
+<div class="paragraph"><p>Thanks to Nick Graham for the tutorial</p></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footnotes"><hr /></div>
+<div id="footer">
+<div id="footer-text">
+Last updated
+ 2024-03-23 16:36:54 CET
+</div>
+</div>
+</body>
+</html>
