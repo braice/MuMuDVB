@@ -514,7 +514,7 @@ void autoconf_update_chan_name(mumu_chan_p_t *chan_p, auto_p_t *auto_p)
 		sprintf(number,"%d",ichan+1);
 		mumu_string_replace(chan_p->channels[ichan].name,&len,0,"%number",number);
 
-		char lcn[4];
+		char lcn[32];
 		//We store if the lcn is in the template
 		if((strstr(chan_p->channels[ichan].name, "%lcn") != NULL) || (strstr(chan_p->channels[ichan].name, "%2lcn") != NULL))
 			has_lcn=1;
@@ -522,9 +522,9 @@ void autoconf_update_chan_name(mumu_chan_p_t *chan_p, auto_p_t *auto_p)
 			has_lcn=0;
 		if(chan_p->channels[ichan].logical_channel_number)
 		{
-			sprintf(lcn,"%03d",chan_p->channels[ichan].logical_channel_number);
+			snprintf(lcn,32,"%03d",chan_p->channels[ichan].logical_channel_number);
 			mumu_string_replace(chan_p->channels[ichan].name,&len,0,"%lcn",lcn);
-			sprintf(lcn,"%02d",chan_p->channels[ichan].logical_channel_number);
+			snprintf(lcn,32,"%02d",chan_p->channels[ichan].logical_channel_number);
 			mumu_string_replace(chan_p->channels[ichan].name,&len,0,"%2lcn",lcn);
 		}
 		else
