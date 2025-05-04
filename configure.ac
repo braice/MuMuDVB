@@ -4,6 +4,7 @@
 AC_PREREQ([2.61])
 AC_INIT([MuMuDVB], [m4_join([_], [2.1.0], m4_chomp_all(m4_esyscmd([git rev-parse HEAD])))], [mumudvb@braice.net])
 AC_CONFIG_SRCDIR([src/mumudvb.c])
+AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([src/config.h])
 
@@ -16,6 +17,7 @@ AC_PROG_MAKE_SET
 dnl
 dnl Iconv stuff
 dnl
+AM_GNU_GETTEXT_VERSION([0.15])
 AM_ICONV
 
 dnl
