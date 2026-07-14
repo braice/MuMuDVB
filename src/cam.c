@@ -37,7 +37,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <sys/poll.h>
+#include <poll.h>
 
 /* DVB Card Drivers */
 #include <linux/dvb/version.h>

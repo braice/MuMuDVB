@@ -18,7 +18,7 @@
 #include <ctype.h>
 #ifndef _WIN32
 #include <sys/time.h>
-#include <sys/poll.h>
+#include <poll.h>
 #include <sys/stat.h>
 #include <resolv.h>
 #include <syslog.h>
