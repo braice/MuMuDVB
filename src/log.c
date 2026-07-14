@@ -1012,6 +1012,7 @@ void usage (char *name)
 			"It's main feature is to take a whole transponder and put each channel on a different multicast IP.\n\n"
 			"Usage: %s [options] \n"
 			"-c, --config : Config file\n"
+			"-o           : Override config option from command line (-o name=value)\n"
 			"-s, --signal : Display signal power\n"
 			"-t, --traffic : Display channels traffic\n"
 			"-l, --list-cards : List the DVB cards and exit\n"

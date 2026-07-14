@@ -89,7 +89,7 @@ extern int tuning_no_diff;
 
 void parse_cmd_line(int argc, char **argv,char *(*conf_filename),tune_p_t *tune_p,stats_infos_t *stats_infos,int *server_id, int *no_daemon,char **dump_filename, int *listingcards)
 {
-	const char short_options[] = "c:sdthjvql";
+	const char short_options[] = "c:sdthjvqlo:";
 	const struct option long_options[] = {
 			{"config", required_argument, NULL, 'c'},
 			{"signal", no_argument, NULL, 's'},
@@ -164,6 +164,8 @@ void parse_cmd_line(int argc, char **argv,char *(*conf_filename),tune_p_t *tune_
 		case 'l':
 			*listingcards=1;
 			break;
+		case 'o':
+			break; // will be parsed by cmdline_get_override()
 		case 'z':
 			*dump_filename = strdup(optarg);
 			if (!*dump_filename)
