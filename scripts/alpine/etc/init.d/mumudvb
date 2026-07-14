@@ -1,0 +1,45 @@
+#!/sbin/openrc-run
+
+command="/usr/bin/mumudvb"
+command_background="true"
+daemonuser="mumudvb"
+
+instance_name=${RC_SVCNAME#*.}
+pidfile="/run/mumudvb/${instance_name}.pid"
+
+if [ "$instance_name" != "${RC_SVCNAME}" ]
+then
+    name="MuMuDVB ($instance_name)"
+else
+    name="MuMuDVB"
+fi
+
+: ${cfgdir:=${MUMUDVBDIR:-"/etc/mumudvb"}}
+: ${cfgfile:=${CONFIG_FILE:-"$cfgdir/$instance_name.conf"}}
+
+start_pre() {
+	if [ ! -f "$cfgfile" ] ; then
+		eerror "You need to setup $cfgfile first. Install $pkgname-doc for examples"
+		return 1
+	fi
+
+        checkpath --directory --owner ${daemonuser} --mode 0755 "/run/mumudvb"
+}
+
+depend() {
+        need net
+        after firewall
+}
+
+start() {
+        ebegin "Starting $name"
+		start-stop-daemon --start --name mumudvb_$ADAPTER \
+        	--user $daemonuser --exec $command -- -c $cfgfile $COMMAND_ARGS -o filename_pid=$pidfile
+        eend $?
+}
+
+stop() {
+        ebegin "Stopping $name"
+        start-stop-daemon --stop --pidfile $pidfile
+        eend $?
+}
