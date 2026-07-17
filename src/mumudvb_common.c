@@ -33,7 +33,7 @@
 #include "unicast_http.h"
 
 #ifndef _WIN32
-#include <sys/poll.h>
+#include <poll.h>
 #include <sys/time.h>
 #endif
 #include <errno.h>

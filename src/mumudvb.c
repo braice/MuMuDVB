@@ -96,7 +96,7 @@
 #include <ctype.h>
 #ifndef _WIN32
 #include <sys/time.h>
-#include <sys/poll.h>
+#include <poll.h>
 #include <sys/epoll.h>
 #include <resolv.h>
 #include <syslog.h>
@@ -195,6 +195,17 @@ void init_multicast_v(multi_p_t *multi_p); //in multicast.c
 void chan_new_pmt(unsigned char *ts_packet, mumu_chan_p_t *chan_p, int pid);
 
 int processt2(unsigned char* input_buf, unsigned int input_buf_offset, unsigned char* output_buf, unsigned int output_buf_offset, unsigned int output_buf_size, uint8_t plpId);
+
+char *cmdline_get_override(int *idx, char *current_line, int argc, char **argv) {
+    while (idx && *idx < argc - 1) {
+	(*idx)++;
+	if (strlen(argv[*idx - 1]) == 2 && !memcmp(argv[*idx - 1], "-o", 2)) {
+	    log_message(log_module, MSG_DEBUG, "Override from command line: %s\n", argv[*idx]);
+	    return strcpy(current_line, argv[*idx]);
+	}
+    }
+    return NULL;
+}
 
 int main (int argc, char **argv)
 {
@@ -421,8 +432,12 @@ int main (int argc, char **argv)
 	int curr_channel_old=-1;
 	// we scan config file
 	// see doc/README_CONF* for further information
+	int arg_pos=0;
+	uintptr_t cfg_parsing_flag = 2;
 	int line_len;
-	while (fgets (current_line, CONF_LINELEN, conf_file))
+	while (cfg_parsing_flag > 1 ?
+		(cfg_parsing_flag = (uintptr_t)fgets (current_line, CONF_LINELEN, conf_file) + 1) :
+		(uintptr_t)cmdline_get_override(&arg_pos, current_line, argc, argv))
 	{
 		//We suppress the end of line (this can disturb atoi if there is spaces at the end of the line)
 		//Thanks to Pierre Gronlier pierre.gronlier at gmail.com for finding that bug

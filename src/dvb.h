@@ -37,7 +37,7 @@
 #ifndef _WIN32
 #include <syslog.h>
 #include <sys/ioctl.h>
-#include <sys/poll.h>
+#include <poll.h>
 #include <resolv.h>
 #include <unistd.h>
 #endif
