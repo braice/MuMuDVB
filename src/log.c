@@ -989,6 +989,9 @@ void print_info ()
 #ifdef DVBT2
 			"Built with support for DVB-T2.\n"
 #endif
+#ifdef REWRITE_NIT_SUPPORT
+			"Built with rewrite nit support.\n"
+#endif
 #endif
 			"---------\n"
 			"Originally based on dvbstream 0.6 by (C) Dave Chapman 2001-2004\n"

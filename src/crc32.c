@@ -27,7 +27,10 @@
  * it contains the precomputed table
  */
 
+#include "crc32.h"
+
 #include <stdint.h>
+#include "ts.h"
 
 /**CRC table for PAT rebuilding, cam support and autoconfiguration*/
 uint32_t crc32_table[256] =
@@ -98,3 +101,34 @@ uint32_t crc32_table[256] =
 	0xbcb4666d, 0xb8757bda, 0xb5365d03, 0xb1f740b4
 };
 
+/**
+ * @brief CRC32 calculation inspired by the xine project
+ * @param data to be hashed
+ * @param len of data
+ * @return CRC32 value of data
+ */
+unsigned long calculateCRC32(const unsigned char *data, int len)
+{
+    // Now we must adjust the CRC32
+    unsigned long crc32 = 0xffffffff;
+    for (int i = 0; i < len; ++i) {
+        crc32 = (crc32 << 8) ^ crc32_table[((crc32 >> 24) ^ data[i]) & 0xff];
+    }
+    return crc32;
+}
+
+/**
+ * @brief Calculates and sets CRC32 for PAT, EIT, SDT, PMT, NIT
+ * @param data pointer to table
+ */
+void setCRC32(unsigned char *data)
+{
+    tbl_h_t *table = (tbl_h_t *)data;
+    int len = 3 + HILO(table->section_length) - 4; // CRC for complete section but CRC (4 Bytes)
+    unsigned long crc32 = calculateCRC32(data, len);
+    // We write the CRC32 to the buffer
+    data[len] = (crc32 >> 24) & 0xff;
+    data[len + 1] = (crc32 >> 16) & 0xff;
+    data[len + 2] = (crc32 >> 8) & 0xff;
+    data[len + 3] = crc32 & 0xff;
+}

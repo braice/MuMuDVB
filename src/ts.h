@@ -473,6 +473,9 @@ typedef struct {
  *
  */
 
+#define NIT_ACTUAL_NETWORK 0x40
+#define NIT_OTHER_NETWORK 0x41
+
 #define NIT_LEN 10
 
 typedef struct {
@@ -480,9 +483,11 @@ typedef struct {
 #ifdef __BIG_ENDIAN__
    uint8_t section_syntax_indicator               :1;
    uint8_t                                        :3;
-   uint8_t section_length_hi                      :4;
+   uint8_t section_length_zero                    :2;
+   uint8_t section_length_hi                      :2;
 #else
-   uint8_t section_length_hi                      :4;
+   uint8_t section_length_hi                      :2;
+   uint8_t section_length_zero                    :2;
    uint8_t                                        :3;
    uint8_t section_syntax_indicator               :1;
 #endif
@@ -676,6 +681,34 @@ typedef struct {
 #endif
 } descr_sat_delivery_t;
 
+/** @brief 0x44 cable_delivery_system_descriptor */
+typedef struct {
+  uint8_t descriptor_tag                         :8;
+  uint8_t descriptor_length                      :8;
+  uint8_t frequency_4                            :8;
+  uint8_t frequency_3                            :8;
+  uint8_t frequency_2                            :8;
+  uint8_t frequency_1                            :8;
+  uint8_t reserved_future_use_1                  :8;
+#ifdef __BIG_ENDIAN__
+  uint8_t reserved_future_use_2                  :4;
+  uint8_t FEC_outer                              :4;
+#else
+  uint8_t FEC_outer                              :4;
+  uint8_t reserved_future_use_2                  :4;
+#endif
+  uint8_t modulation_type                        :8;
+  uint8_t symbol_rate_12                         :8;
+  uint8_t symbol_rate_34                         :8;
+  uint8_t symbol_rate_56                         :8;
+#ifdef __BIG_ENDIAN__
+  uint8_t symbol_rate_7                          :4;
+  uint8_t FEC_inner                              :4;
+#else
+  uint8_t FEC_inner                              :4;
+  uint8_t symbol_rate_7                          :4;
+#endif
+} descr_cable_delivery_t;
 
 /***************************************************
  *                ATSC PSIP tables                 *
@@ -870,12 +903,15 @@ struct mumudvb_channel_t;
 void ts_display_pat(char* log_module,unsigned char *buf);
 void ts_display_country_avaibility_descriptor(char* log_module,unsigned char *buf);
 
+void ts_display_nit(char* mod_log_module,int type, unsigned char *buf);
 void ts_display_nit_network_descriptors(char *log_module, unsigned char *buf,int descriptors_loop_len);
 void ts_display_network_name_descriptor(char* log_module, unsigned char *buf);
 void ts_display_multilingual_network_name_descriptor(char* log_module, unsigned char *buf);
+void ts_display_nit_transport_stream_loop(char *mod_log_module, unsigned char *buf, int stream_loop_len);
 void ts_display_service_list_descriptor(char* log_module, unsigned char *buf);
 void ts_display_lcn_descriptor(char* log_module, unsigned char *buf);
 void ts_display_satellite_delivery_system_descriptor(char* log_module, unsigned char *buf);
+void ts_display_cable_delivery_system_descriptor(char *mod_log_module, unsigned char *buf);
 void ts_display_terrestrial_delivery_system_descriptor(char* log_module, unsigned char *buf);
 void ts_display_frequency_list_descriptor(char* log_module, unsigned char* buf);
 

@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
-<meta name="generator" content="AsciiDoc 9.0.0rc1" />
+<meta name="generator" content="AsciiDoc 10.1.2" />
 <title>MuMuDVB - README for the configuration file</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
@@ -1445,6 +1445,20 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">0 or 1</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
 </tr>
+<tr>
+<td align="left" valign="top"><p class="table">rewrite_nit</p></td>
+<td align="left" valign="top"><p class="table">Patch certain frequencies in the nit table</p></td>
+<td align="left" valign="top"><p class="table">0</p></td>
+<td align="left" valign="top"><p class="table">0 or 1</p></td>
+<td align="left" valign="top"><p class="table">see freq_patch and configure options</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">freq_patch</p></td>
+<td align="left" valign="top"><p class="table">Map the old frequency given as a hexadecimal value to a new frequency. For example <code>freq_patch=0x03300000-&gt;0x07700000</code> will rewrite the nit entry with the frequency 330MHz to 770MHz</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"><code>%x-&gt;%x</code></p></td>
+<td align="left" valign="top"><p class="table">rewrite_nit needs to be enabled</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -2129,7 +2143,7 @@ TV3                      (0x0321) 01: PCR == V   V 0x006f A 0x0070 (cat) 0x0072 
 <div id="footer">
 <div id="footer-text">
 Last updated
- 2024-03-23 16:36:54 CET
+ 2025-01-16 14:46:57 CET
 </div>
 </div>
 </body>

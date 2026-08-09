@@ -504,6 +504,12 @@ int main (int argc, char **argv)
 			if(iRet==-1)
 				exit(ERROR_CONF);
 		}
+#ifdef REWRITE_NIT_SUPPORT
+		else if((iRet=read_rewrite_nit_config(substring))) {
+			if (iRet==-1)
+				exit(ERROR_CONF);
+		}
+#endif // REWRITE_NIT_SUPPORT
 		else if((iRet=read_logging_configuration(&stats_infos, substring))) //Read the line concerning the logging parameters
 		{
 			if(iRet==-1)
@@ -1636,6 +1642,16 @@ int main (int argc, char **argv)
 			{
 				eit_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars);
 			}
+#ifdef REWRITE_NIT_SUPPORT
+			/******************************************************/
+			//NIT rewrite
+			/******************************************************/
+			if ((pid == 0x10) && //This is a NIT PID
+				rewrite_vars.rewrite_nit == OPTION_ON) //AND we asked for rewrite
+			{
+				nit_rewrite_new_global_packet(actual_ts_packet, &rewrite_vars);
+			}
+#endif // REWRITE_NIT_SUPPORT
 
 
 			/******************************************************/

@@ -73,11 +73,29 @@ typedef struct eit_packet_t{
 	struct eit_packet_t *next;
 }eit_packet_t;
 
+typedef struct {
+    bool section_ok;
+    size_t rewritten_section_len;
+    size_t original_section_len;
+    unsigned char rewritten_section[1024];
+} nit_section_t;
+
 
 /** @brief the parameters for the rewriting
  * This structure contain the parameters needed for rewriting
  */
 typedef struct rewrite_parameters_t{
+#ifdef REWRITE_NIT_SUPPORT
+	/** Do we rewrite the NIT pid */
+	option_status_t rewrite_nit;
+	/** The actual version of the NIT pid */
+	int nit_version;
+	bool nit_needs_update;
+	/** The Complete NIT PID which we are storing */
+	mumudvb_ts_packet_t *full_nit;
+	uint8_t nit_section_count;
+	nit_section_t *nit_section_array;
+#endif
 	/**Do we rewrite the PMT pid ?*/
 	option_status_t rewrite_pmt;
 
@@ -151,4 +169,9 @@ void eit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_
 void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel,
 		unicast_parameters_t *unicast_vars, void *scam_vars_v);
 
+int read_rewrite_nit_config(const char *substring);
+void nit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars);
+
+bool table_needs_update(char *mod_log_module, int stored_version, unsigned char *buf,
+	bool (*table_condition)(tbl_h_t *table));
 #endif

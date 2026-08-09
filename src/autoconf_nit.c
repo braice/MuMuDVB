@@ -143,7 +143,7 @@ int autoconf_read_nit(auto_p_t *auto_p, mumu_chan_p_t *chan_p)
 	buf += network_descriptors_length;
 	nit_mid_t *middle=(nit_mid_t *)buf;
 	int ts_loop_length=HILO(middle->transport_stream_loop_length);
-	buf +=SIZE_NIT_MID;
+	buf += SIZE_NIT_MID;
 	parse_nit_ts_descriptor(buf,ts_loop_length, chan_p->channels, chan_p->number_of_channels, auto_p->transport_stream_id);
 
 
@@ -199,23 +199,26 @@ void parse_nit_ts_descriptor(unsigned char* buf, int ts_descriptors_loop_len, mu
 				break;
 			}
 			//We parse only descriptors with the right transport_stream_id
-			if(pat_tsid==ts_id)
-			{
-				if(descriptor_tag==0x83)
-				{
+			if(pat_tsid==ts_id) {
+				if(descriptor_tag==0x83) {
 					ts_display_lcn_descriptor(log_module, buf);
 					parse_lcn_descriptor(buf, channels, number_of_channels);
-				}
-				else if(descriptor_tag==0x41)
-					ts_display_service_list_descriptor(log_module, buf);
-				else if(descriptor_tag==0x43)
-					ts_display_satellite_delivery_system_descriptor(log_module, buf);
-				else if(descriptor_tag==0x5A)
-					ts_display_terrestrial_delivery_system_descriptor(log_module, buf);
-				else if(descriptor_tag==0x62)
-					ts_display_frequency_list_descriptor(log_module, buf);
-				else
+				} else if(descriptor_tag==0x41) {
+                    ts_display_service_list_descriptor(log_module, buf);
+                } else if(descriptor_tag==0x43) {
+                    ts_display_satellite_delivery_system_descriptor(log_module, buf);
+                } else if(descriptor_tag==0x44) {
+                    log_message(log_module, MSG_FLOOD, " --- NIT TS descriptor --- cable delivery system descriptor "
+                                                       "len %d descriptors_loop_len %d ------------\n",
+                                                       descriptor_len, descriptors_loop_len);
+                    ts_display_cable_delivery_system_descriptor(log_module, buf);
+                } else if(descriptor_tag==0x5A) {
+                    ts_display_terrestrial_delivery_system_descriptor(log_module, buf);
+                } else if(descriptor_tag==0x62) {
+                    ts_display_frequency_list_descriptor(log_module, buf);
+                } else {
 					log_message( log_module, MSG_FLOOD, " --- NIT TS descriptor --- descriptor_tag == 0x%02x len %d descriptors_loop_len %d ------------\n", descriptor_tag, descriptor_len, descriptors_loop_len);
+                }
 			}
 			buf += descriptor_len;
 			descriptors_loop_len -= descriptor_len;

@@ -667,8 +667,51 @@ void ts_display_pat(char* log_module,unsigned char *buf)
 	}
 	log_message( log_module, MSG_DEBUG,"This PAT contains %d services\n",number_of_services);
 	log_message( log_module, MSG_FLOOD,"-------------- PAT Displayed ----------------\n");
+}
 
 
+/** @brief Display the NIT contents
+ *
+ * @param mod_log_module The log module of the calling function
+ * @param type: message type MSG_*
+ * @param buf The buffer containing the NIT
+ * @attention not the whole NIT is printed (network descriptors) because of the amount of some descriptors
+ */
+void ts_display_nit(char *mod_log_module, int type, unsigned char *buf)
+{
+    nit_t *nit = (nit_t*)(buf);
+    log_message( mod_log_module, type,"-------------- Display NIT ----------------");
+    log_message( mod_log_module, type,  "network id 0x%04x section_length %d version %i "
+                                             "section_number %d last_section_number %d current_next_indicator %d",
+                 HILO(nit->network_id),
+                 HILO(nit->section_length),
+                 nit->version_number,
+                 nit->section_number,
+                 nit->last_section_number,
+                 nit->current_next_indicator);
+
+    if(nit->current_next_indicator == 0) {
+        log_message( mod_log_module, type,"The current_next_indicator is set to 0, "
+                                               "this NIT is not valid for the current stream");
+    }
+
+
+    // network descriptors
+    log_message(mod_log_module, type, "network descriptor length: %d",
+                HILO(nit->network_descriptor_length));
+
+    nit_mid_t *nit_mid = (nit_mid_t *)((unsigned char *)nit + NIT_LEN + HILO(nit->network_descriptor_length));
+
+    // transport descriptors
+    log_message(mod_log_module, type, "transport stream loop length: %d",
+                HILO(nit_mid->transport_stream_loop_length));
+    char * tab_log_module = calloc(1, strlen(mod_log_module) + 2 + 1);
+    strcpy(tab_log_module, mod_log_module);
+    strcat(tab_log_module, "\t");
+    ts_display_nit_transport_stream_loop(tab_log_module, (unsigned char *)nit_mid + SIZE_NIT_MID,
+                                         HILO(nit_mid->transport_stream_loop_length));
+
+    log_message( mod_log_module, type,"-------------- NIT Displayed ----------------");
 }
 
 
@@ -709,11 +752,11 @@ void ts_display_country_avaibility_descriptor(char* log_module,unsigned char *bu
 
 /** @brief show the NIT Network descriptors
  * Loop over the NIT descriptors and call other parsing functions if necessary
+ * @param mod_log_module The log module of the calling function
  * @param buf the buffer containing the descriptors
  * @param descriptors_loop_len the len of buffer containing the descriptors
- * @param service the associated service
  */
-void ts_display_nit_network_descriptors(char* log_module,unsigned char *buf,int descriptors_loop_len)
+void ts_display_nit_network_descriptors(char *mod_log_module,unsigned char *buf,int descriptors_loop_len)
 {
 
 	while (descriptors_loop_len > 0)
@@ -723,17 +766,17 @@ void ts_display_nit_network_descriptors(char* log_module,unsigned char *buf,int 
 
 		if (!descriptor_len)
 		{
-			log_message( log_module, MSG_FLOOD, " --- NIT descriptor --- descriptor_tag == 0x%02x, len is 0\n", descriptor_tag);
+			log_message( mod_log_module, MSG_FLOOD, " --- NIT descriptor --- descriptor_tag == 0x%02x, len is 0\n", descriptor_tag);
 			break;
 		}
 
 		//The service descriptor provides the names of the service provider and the service in text form together with the service_type.
 		if(descriptor_tag==0x40)
-			ts_display_network_name_descriptor(log_module,buf);
+			ts_display_network_name_descriptor(mod_log_module,buf);
 		else if(descriptor_tag==0x5B)
-			ts_display_multilingual_network_name_descriptor(log_module,buf);
+			ts_display_multilingual_network_name_descriptor(mod_log_module,buf);
 		else
-			log_message( log_module, MSG_FLOOD, "NIT network descriptor_tag : 0x%2x\n", descriptor_tag);
+			log_message( mod_log_module, MSG_FLOOD, "NIT network descriptor_tag : 0x%2x\n", descriptor_tag);
 
 		buf += descriptor_len;
 		descriptors_loop_len -= descriptor_len;
@@ -819,6 +862,67 @@ void ts_display_multilingual_network_name_descriptor(char *log_module, unsigned 
 }
 
 
+/** @brief display the NIT transport stream loop
+ * @details Loops over the NIT transport stream loop and calls other parsing functions if necessary
+ * @param mod_log_module The log module of the calling function
+ * @param buf the buffer containing the streams
+ * @param stream_loop_len the len of buffer containing the streams
+ * @attention service list descriptors are commented out because of their amount
+ */
+void ts_display_nit_transport_stream_loop(char *mod_log_module, unsigned char *buf, int stream_loop_len) {
+    if (stream_loop_len == 0) {
+        log_message(mod_log_module, MSG_FLOOD, " --- NIT transport stream loop --- len is 0");
+        return;
+    }
+
+    char * tab_log_module = calloc(1, strlen(mod_log_module) + 2 + 1);
+    strcpy(tab_log_module, mod_log_module);
+    strcat(tab_log_module, "\t");
+
+    while (stream_loop_len > 0) {
+        nit_ts_t *stream = (nit_ts_t *) buf; // Pointer to current transport stream
+
+        log_message(mod_log_module, MSG_FLOOD, "--- NIT transport stream ---");
+        log_message(mod_log_module, MSG_FLOOD, "transport stream id: 0x%x", HILO(stream->transport_stream_id));
+        log_message(mod_log_module, MSG_FLOOD, "original network id: 0x%x", HILO(stream->original_network_id));
+        int descriptors_loop_length = HILO(stream->transport_descriptors_length);
+        log_message(mod_log_module, MSG_FLOOD, "transport stream length: %d", descriptors_loop_length);
+
+        buf += NIT_TS_LEN;
+
+        if (descriptors_loop_length == 0) break;
+        unsigned char *descr = buf;
+
+        while (descriptors_loop_length > 0) {
+            unsigned char descr_tag = descr[0];
+            unsigned char descr_len = descr[1];
+
+            switch (descr_tag) {
+//                case 0x41:
+//                    ts_display_service_list_descriptor(mod_log_module, descr);
+//                    break;
+                case 0x43:
+                    ts_display_satellite_delivery_system_descriptor(tab_log_module, descr);
+                    break;
+                case 0x44:
+                    ts_display_cable_delivery_system_descriptor(tab_log_module, descr);
+                    break;
+                case 0x5a:
+                    ts_display_terrestrial_delivery_system_descriptor(tab_log_module, descr);
+                    break;
+                default:
+                    log_message(tab_log_module, MSG_FLOOD, "--- NIT stream descriptor --- tag: 0x%x", descr_tag);
+            		break;
+            }
+            
+            descr += descr_len + 2; // descriptor length is data length + length(tag + len)
+            descriptors_loop_length -= (descr_len + 2);
+        }
+
+        buf += HILO(stream->transport_descriptors_length);
+        stream_loop_len -= (HILO(stream->transport_descriptors_length) + NIT_TS_LEN);
+    }
+}
 
 /**
  */
@@ -973,6 +1077,56 @@ void ts_display_satellite_delivery_system_descriptor(char* log_module, unsigned 
 		break;
 	}
 	log_message( log_module, MSG_FLOOD, "--- descriptor done ---\n");
+}
+
+
+/** @brief display the contents of cable_delivery_system_descriptor
+ * @cite EN 300 468 V1.16.1   6.2.13.1 Cable delivery system descriptor
+ * @param mod_log_module The log module of the calling function
+ * @param buf the buffer containing the descriptor
+ */
+void ts_display_cable_delivery_system_descriptor(char *mod_log_module, unsigned char *buf) {
+	descr_cable_delivery_t *descr = (descr_cable_delivery_t *) buf;
+
+    log_message( mod_log_module, MSG_FLOOD, "--- NIT stream descriptor --- cable delivery system descriptor\n");
+
+    log_message( mod_log_module, MSG_FLOOD, "Frequency: %x%02x.%02x%02x MHz", descr->frequency_4,
+                 descr->frequency_3, descr->frequency_2, descr->frequency_1);
+
+	log_message( mod_log_module, MSG_FLOOD, "Outer FEC scheme: %d", descr->FEC_outer);
+
+	switch(descr->modulation_type) {
+		case 0:
+			log_message( mod_log_module, MSG_FLOOD, "Not defined");
+			break;
+		case 1:
+			log_message( mod_log_module, MSG_FLOOD, "16-QAM");
+			break;
+		case 2:
+			log_message( mod_log_module, MSG_FLOOD, "32-QAM");
+			break;
+		case 3:
+			log_message( mod_log_module, MSG_FLOOD, "64-QAM");
+			break;
+		case 4:
+			log_message( mod_log_module, MSG_FLOOD, "128-QAM");
+			break;
+		case 5:
+			log_message( mod_log_module, MSG_FLOOD, "256-QAM");
+			break;
+		default:
+			log_message( mod_log_module, MSG_FLOOD, "Reserved");
+			break;
+	}
+
+    log_message( mod_log_module, MSG_FLOOD, "Symbol rate: %d%d%d,%d%d%d%d Msymbol/s",
+         BCDHI(descr->symbol_rate_12), BCDLO(descr->symbol_rate_12), BCDHI(descr->symbol_rate_34),
+         BCDLO(descr->symbol_rate_34), BCDHI(descr->symbol_rate_56), BCDLO(descr->symbol_rate_56),
+         BCDLO(descr->symbol_rate_7) );
+
+	log_message(mod_log_module, MSG_FLOOD, "Inner FEC scheme: %d", descr->FEC_inner);
+
+    log_message( mod_log_module, MSG_FLOOD, "--- descriptor done ---\n");
 }
 
 

@@ -38,3 +38,6 @@ SOURCES_scamsupport = \
 	scam_send.h \
         $(NULL)
 
+if BUILD_REWRITE_NIT
+mumudvb_SOURCES += rewrite_nit.c
+endif
