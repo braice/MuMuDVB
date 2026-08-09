@@ -348,7 +348,8 @@ int main (int argc, char **argv)
 			exit(666); //Right code for a bad daemon no ?
 		}
 
-	//If the user didn't defined a preferred logging way, and we daemonize, we set to syslog (except windows, where we don't, and log to console)
+	//If the user didn't define a preferred logging way, and we daemonize,
+	//we set to syslog (except windows, where we don't, and log to console)
 	if (!no_daemon)
 	{
 		if(log_params.log_type==LOGGING_UNDEFINED)

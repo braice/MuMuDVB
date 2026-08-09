@@ -55,12 +55,12 @@ void add_ts_packet_data(unsigned char *buf, mumudvb_ts_packet_t *pkt, int data_l
  *  * the continuity counter which is incremented for each packet
  *  * The payload_unit_start_indicator which says if it's the first packet
  *
- * When a packet is splitted in 188 bytes packets, there must be no other PID between two sub packets
+ * When a packet is split in 188 bytes packets, there must be no other PID between two sub packets
  *
  * Return 1 when there is one packet full and OK
  *
  * @param buf : the received buffer from the card
- * @param ts_packet : the packet to be completed
+ * @param pkt : the packet to be completed
  */
 int get_ts_packet(unsigned char *buf, mumudvb_ts_packet_t *pkt)
 {

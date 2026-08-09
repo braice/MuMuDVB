@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "crc32.h"
 #include "mumudvb.h"
 #include "ts.h"
 #include "rewrite.h"
@@ -57,40 +58,16 @@ int sdt_rewrite_all_sections_seen(rewrite_parameters_t *rewrite_vars)
 	return all_seen;
 }
 
-
-
-/** @brief, tell if the sdt have a newer version than the one recorded actually
- * In the SDT pid there is a field to say if the SDT was updated
- * This function check if it has changed (in order to rewrite the sdt only once)
- * General Note : in case it change during streaming it can be a problem ane we would have to deal with re-autoconfiguration
- * Note this function can give flase positive since it doesn't check the CRC32
- *
- *@param rewrite_vars the parameters for sdt rewriting 
- *@param buf : the received buffer
+/**
+ * @brief Check if sdt section describes actual transport stream
  */
-int sdt_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf)
+bool actual_subtable_id(tbl_h_t *section)
 {
-	sdt_t       *sdt=(sdt_t*)(get_ts_begin(buf));
-	if(sdt) //It's the beginning of a new packet
-		if((sdt->version_number!=rewrite_vars->sdt_version) && (sdt->table_id==0x42))
-		{
-			/*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
-        sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
-        and shall be the next table to become valid.*/
-			if(sdt->current_next_indicator == 0)
-			{
-				return 0;
-			}
-			log_message( log_module, MSG_DEBUG,"Need update. stored version : %d, new: %d\n",rewrite_vars->sdt_version,sdt->version_number);
-			if(rewrite_vars->sdt_version!=-1)
-				log_message( log_module, MSG_INFO,"The SDT version changed, so the channels names changed probably.\n");
-			return 1;
-		}
-	return 0;
-
+	const sdt_t *sdt_section = (sdt_t*)section;
+	return sdt_section->table_id == SDT_ACTUAL_TS;
 }
 
-/** @brief update the version using the dowloaded SDT*/
+/** @brief update the version using the downloaded SDT*/
 void update_sdt_version(rewrite_parameters_t *rewrite_vars)
 {
 	sdt_t       *sdt=(sdt_t*)(rewrite_vars->full_sdt->data_full);
@@ -154,7 +131,8 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
 
 	if(!channel->service_id)
 	{
-		log_message( log_module, MSG_WARN,"Cannot rewrite a program without the service_id set. We deactivate SDT rewrititng for this channel %d : \"%s\"\n", curr_channel, channel->name);
+		log_message( log_module, MSG_WARN,"Cannot rewrite a program without the service_id set. "
+            "We deactivate SDT rewrititng for this channel %d : \"%s\"\n", curr_channel, channel->name);
 		channel->sdt_rewrite_skip=1;
 		return 0;
 	}
@@ -234,7 +212,7 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
 			else
 			{
 				log_message( log_module, MSG_DETAIL,"NEW program for channel %d : \"%s\". service_id : %d\n", curr_channel, channel->name,channel->service_id);
-				//we found a announce for a program in our stream, we keep it
+				//we found an announcement for a program in our stream, we keep it
 				//We fill the descriptor loop length
 				t_buffer_ptr->descriptors_loop_length_lo = (loop_length & 0x00FF);
 				t_buffer_ptr->descriptors_loop_length_hi = (loop_length & 0xFF00)>>8;
@@ -274,27 +252,8 @@ int sdt_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
 	buf_dest[1+TS_HEADER_LEN]=(((new_section_length)&0x0f00)>>8)  | (0xf0 & buf_dest[1+TS_HEADER_LEN]);
 	buf_dest[2+TS_HEADER_LEN]=new_section_length & 0xff;
 
-
-	//CRC32 calculation inspired by the xine project
-	//Now we must adjust the CRC32
-	//we compute the CRC32
-	crc32=0xffffffff;
-	int i;
-	for(i = 0; i < new_section_length-1; i++) {
-		crc32 = (crc32 << 8) ^ crc32_table[((crc32 >> 24) ^ buf_dest[i+TS_HEADER_LEN])&0xff];
-	}
-
-
-	//We write the CRC32 to the buffer
-	buf_dest[buf_dest_pos]=(crc32>>24) & 0xff;
-	buf_dest_pos+=1;
-	buf_dest[buf_dest_pos]=(crc32>>16) & 0xff;
-	buf_dest_pos+=1;
-	buf_dest[buf_dest_pos]=(crc32>>8) & 0xff;
-	buf_dest_pos+=1;
-	buf_dest[buf_dest_pos]=crc32 & 0xff;
-	buf_dest_pos+=1;
-
+	setCRC32(buf_dest + TS_HEADER_LEN);
+	buf_dest_pos += 4;
 
 	//Padding with 0xFF
 	memset(buf_dest+buf_dest_pos,0xFF,TS_PACKET_SIZE-buf_dest_pos);
@@ -337,9 +296,12 @@ int sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
 	/*Check the version before getting the full packet*/
 	if(!rewrite_vars->sdt_needs_update)
 	{
-		rewrite_vars->sdt_needs_update=sdt_need_update(rewrite_vars,ts_packet);
-		if(rewrite_vars->sdt_needs_update) //It needs update we mark the packet as empty and we clear the sections seen
+		rewrite_vars->sdt_needs_update = table_needs_update(log_module, rewrite_vars->sdt_version,
+			ts_packet, actual_subtable_id);
+		if(rewrite_vars->sdt_needs_update) //It needs update we mark the packet as empty, and we clear the sections seen
 		{
+			if(rewrite_vars->sdt_version != -1)
+				log_message( log_module, MSG_INFO,"The SDT version changed, so the channels names changed probably.");
 			//We clear the section numbers seen
 			memset(&rewrite_vars->sdt_section_numbers_seen,0,sizeof(rewrite_vars->sdt_section_numbers_seen));
 		}
@@ -393,8 +355,9 @@ int sdt_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_t
 }
 
 
-/** @brief This function is called when a new SDT packet for a channel is there and we asked for rewrite
- * This function copy the rewritten SDT to the buffer. And checks if the SDT was changed so the rewritten version have to be updated
+/** @brief This function is called when a new SDT packet for a channel is there, and we asked for rewrite
+ * This function copies the rewritten SDT to the buffer and checks if the SDT was changed
+ * so the rewritten version has to be updated
  */
 int sdt_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel, int curr_channel)
 {
