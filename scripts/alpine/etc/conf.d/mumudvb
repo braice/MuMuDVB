@@ -1,0 +1,11 @@
+# override default config on /etc/mumudvb/mumudvb.conf (for single instance)
+# You can check config file examples in -doc package
+#CONFIG_FILE="/etc/mumudvb/mumudbv_card${ADAPTER}.conf"
+
+# additional config options can be specified from command line:
+#COMMAND_ARGS="-o tuner=3 -o hls=1"
+
+# for multiple instances:
+# "ln -s mumudvb mumudvb.name_here"
+# instance config file: ${MUMUDVB_DIR}/$instance_name
+#MUMUDVB_DIR="/etc/mumudvb"

@@ -57,7 +57,7 @@
 
 #ifndef _WIN32
 #include <sys/ioctl.h>
-#include <sys/poll.h>
+#include <poll.h>
 #include <unistd.h>
 #endif
 

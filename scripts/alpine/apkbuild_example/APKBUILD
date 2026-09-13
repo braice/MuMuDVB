@@ -1,0 +1,67 @@
+# Contributor: [anp/hsw] <sysop@880.ru>
+# Maintainer: Only You <you_and@you.again>
+pkgname=mumudvb
+_pkgname=MuMuDVB
+pkgver=20260714
+pkgrel=99
+pkgdesc="A DVB IPTV streaming software"
+url="https://github.com/braice/MuMuDVB"
+arch="all"
+license="GPL-2.0-or-later"
+makedepends="automake autoconf libtool linux-headers m4 libdvbcsa-dev asciidoc gettext-dev"
+
+## select desired source and get new commit hash from github here:
+#gitcommit="46056b21f790603dfb38ca5c39be84c92f32d99e"
+#source="$pkgname-$gitcommit.zip::https://github.com/braice/MuMuDVB/archive/$gitcommit.zip"
+#gitcommit="5a457a797db20ef00e4db5536b0a6872930cfd75"
+#source="$pkgname-$gitcommit.zip::https://github.com/anphsw/MuMuDVB/archive/$gitcommit.zip"
+
+subpackages="$pkgname-doc
+	$pkgname-openrc:openrc_stuff
+"
+install="$pkgname.pre-install"
+pkgusers="mumudvb"
+
+builddir="$srcdir/MuMuDVB-$gitcommit"
+
+prepare() {
+	libtoolize --force
+	aclocal && autoheader
+	automake --force-missing --add-missing
+	autoreconf -i -f
+}
+
+build() {
+	./configure --prefix=/usr
+	make
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+	mkdir -p "$pkgdir"/var/run/mumudvb
+	chown $pkgusers "$pkgdir"/var/run/mumudvb
+	mkdir -p "$pkgdir"/etc/$pkgname
+}
+
+doc() {
+	pkgdesc="$pkgname documentation"
+	_docdir="configuration_examples diagrams html transcode"
+	cd "$builddir"/doc
+	make doc
+	mkdir -p "$subpkgdir"/usr/share/doc/$pkgname
+	for doc in $_docdir; do
+		mv $doc "$subpkgdir"/usr/share/doc/$pkgname
+	done
+}
+
+openrc_stuff() {
+        pkgdesc="A DVB IPTV streaming software (OpenRC init scripts)"
+        depends=openrc
+        install_if="openrc $pkgname"
+
+	install -Dm755 "$builddir"/scripts/alpine/etc/init.d/$pkgname "$subpkgdir"/etc/init.d/$pkgname
+	install -Dm644 "$builddir"/scripts/alpine/etc/conf.d/$pkgname "$subpkgdir"/etc/conf.d/$pkgname
+}
+
+sha512sums="
+"
