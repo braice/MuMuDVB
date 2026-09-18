@@ -222,7 +222,9 @@ Packets sending parameters
 |rewrite_pmt | Do we rewrite the PMT PID | 0 | 0 or 1 | See README, important if you don't stream all PIDs
 |rewrite_eit sort_eit | Do we rewrite/sort the EIT PID | 0 | 0 or 1 | See README 
 |sdt_force_eit | Do we force the EIT_schedule_flag and EIT_present_following_flag in SDT | 0 | 0 or 1 | Set to 0 if you don't understand
-|rtp_header | Send the stream with the rtp headers (except for HTTP unicast) | 0 | 0 or 1 | 
+|rtp_header | Send the stream with the rtp headers (except for HTTP unicast) | 0 | 0 or 1 |
+|rewrite_nit | Patch certain frequencies in the nit table | 0 | 0 or 1 | see freq_patch and configure options
+|freq_patch | Map the old frequency given as a hexadecimal value to a new frequency. For example `freq_patch=0x03300000->0x07700000` will rewrite the nit entry with the frequency 330MHz to 770MHz| | `%x->%x` | rewrite_nit needs to be enabled
 |==================================================================================================================
 
 Logs parameters

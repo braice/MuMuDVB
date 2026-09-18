@@ -47,6 +47,14 @@ static char *log_module="Rewrite: ";
 void init_rewr_v(rewrite_parameters_t *rewr_p)
 {
 	*rewr_p=(rewrite_parameters_t){
+#ifdef REWRITE_NIT_SUPPORT
+				.rewrite_nit = OPTION_UNDEFINED,
+				.nit_version = -1,
+				.nit_needs_update = true,
+				.full_nit = NULL,
+				.nit_section_count = 0,
+				.nit_section_array = NULL,
+#endif
 				.rewrite_pmt = OPTION_UNDEFINED,
 				.rewrite_pat = OPTION_UNDEFINED,
 				.pat_version=-1,
@@ -129,7 +137,27 @@ int rewrite_init(rewrite_parameters_t *rewr_p)
 		pthread_mutex_init(&rewr_p->full_eit->packetmutex,NULL);
 	}
 
-return 0;
+#ifdef REWRITE_NIT_SUPPORT
+	/*****************************************************/
+	//NIT rewriting
+	//memory allocation for MPEG2-TS
+	//packet structures
+	/*****************************************************/
+
+	if (rewr_p->rewrite_nit == OPTION_ON) {
+		rewr_p->full_nit = malloc(sizeof(mumudvb_ts_packet_t));
+		if (rewr_p->full_nit == NULL) {
+			log_message(log_module, MSG_ERROR, "Problem with malloc : %s file : %s line %d\n",
+			            strerror(errno), __FILE__, __LINE__);
+			set_interrupted(ERROR_MEMORY << 8);
+			return 1;
+		}
+		memset(rewr_p->full_nit, 0, sizeof(mumudvb_ts_packet_t));   //we clear it
+		pthread_mutex_init(&rewr_p->full_nit->packetmutex, NULL);
+	}
+#endif
+
+	return 0;
 }
 
 
@@ -214,6 +242,20 @@ int read_rewrite_configuration(rewrite_parameters_t *rewrite_vars, char *substri
 		else
 			rewrite_vars->sdt_force_eit = OPTION_OFF;
 	}
+#ifdef REWRITE_NIT_SUPPORT
+	else if (!strcmp (substring, "rewrite_nit"))
+	{
+		substring = strtok (NULL, delimiteurs);
+		if(atoi (substring))
+		{
+			rewrite_vars->rewrite_nit = OPTION_ON;
+			log_message( log_module, MSG_INFO,
+					"You have enabled the NIT Rewriting\n");
+		}
+		else
+			rewrite_vars->rewrite_nit = OPTION_OFF;
+	}
+#endif
 	else
 		return 0; //Nothing concerning rewrite, we return 0 to explore the other possibilities
 
@@ -231,3 +273,38 @@ void set_continuity_counter(unsigned char *buf,int continuity_counter)
 	ts_header->continuity_counter=continuity_counter;
 }
 
+/** @brief Determines if the table has a newer version than the currently recorded one
+ *
+ * In the table there is a field to say if the table was updated
+ * This function checks if it has changed (in order to rewrite the table only once)
+ * @note Note in case it change during streaming, it can be a problem,
+ * and we would have to deal with re-autoconfiguration
+ * @note Note this function can give false positive since it doesn't check the CRC32
+ *
+ * @param mod_log_module The log module of the calling function
+ * @param stored_version The current version to be checked against
+ * @param buf the received packet that is to be checked
+ * @param table_condition pass either NULL or a function that checks the table for preconditions
+ * @returns true if the packet is the beginning of an applicable table and contains a new version, otherwise false
+ */
+bool table_needs_update(char *mod_log_module, const int stored_version, unsigned char *buf,
+	bool (*table_condition)(tbl_h_t *table)) {
+	tbl_h_t *table=(tbl_h_t *)(get_ts_begin(buf));
+
+	// Check if it's the beginning of a new table
+	if (!table) return false;
+	/* current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the table
+	sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+	and shall be the next table to become valid.  */
+	if (table->current_next_indicator == 0) {
+		return false;
+	}
+	if (table_condition != NULL && table_condition(table) == false) {
+		return false;
+	}
+	if (table->version_number!=stored_version) {
+		log_message(mod_log_module, MSG_DEBUG,"Need update. stored version : %d, new: %d\n",stored_version,table->version_number);
+		return true;
+	}
+	return false;
+}

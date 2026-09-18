@@ -111,6 +111,7 @@ The `[configure options]` specific to MuMuDVB are:
   --enable-duma           Debbuging DUMA library (default disabled)
   --enable-android        Support for Android (default disabled)
   --disable-dvb-support   Build without Linux DVB-API support, even on systems where the headers are present
+  --enable-rewrite_nit_support Build with rewrite nit support
 ---------------------------------------------------------------------
 
 [NOTE]
