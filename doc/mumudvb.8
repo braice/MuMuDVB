@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH MUMUDVB 8 "June 14 2015" "MuMuDVB v2.0"
+.TH MUMUDVB 8 "November 6 2026" "MuMuDVB v2.1.0"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -30,12 +30,12 @@ conf_file
 conf_file
 
 .SH DESCRIPTION
-\fBMuMuDVB\fP is a program who can redistribute stream from DVB on a network, in multicast or in HTTP unicast. It's main feature is to take a whole transponder and put each channel on a different multicast IP. 
+\fBMuMuDVB\fP is a program who can redistribute stream from DVB on a network, in multicast, HTTP unicast or HLS. It's main feature is to take a whole transponder and put each channel on a different multicast IP.
 
 Website : http://mumudvb.net/
 
 .SH OPTIONS
-The following options are provided by MuMuDVB : 
+The following options are provided by MuMuDVB :
 .TP
 .B \-c, \-\-config conf_file
 Path to the config file
@@ -49,14 +49,20 @@ Display channels traffic
 .B \-l, \-\-list\-cards
 List the DVB cards and exit
 .TP
-.B \-\-cards
-The DVB card to use (overrided by the configuration file)
+.B \-\-card
+The DVB card to use (overridden by the configuration file)
 .TP
 .B \-\-server_id
-The server id (for autoconfiguration, overrided by the configuration file)
+The server id (for autoconfiguration, overridden by the configuration file)
+.TP
+.B \-o name=value
+Override a configuration-file option from the command line. May be repeated.
 .TP
 .B \-d, \-\-debug
-Don't deamonize
+Don't daemonize
+.TP
+.B \-j, \-\-japan
+Enable ARIB STD-B24 character decoding in SI/EPG (when built with libaribb24)
 .TP
 .B \-h, \-\-help
 Display Help
@@ -70,8 +76,21 @@ More quiet
 .B \-\-dumpfile
 Debug option : Dump the stream into the specified file
 
+.SH FILES
+Configuration examples are in
+.I doc/configuration_examples/
+.PP
+The full configuration reference is
+.I doc/README_CONF.asciidoc
+(or the generated HTML under
+.IR doc/html/ ).
+
 .SH SEE ALSO
-The program is documented in README and for french speaking people in README-fr.
+.IR doc/README.asciidoc ,
+.IR doc/README_CONF.asciidoc ,
+.IR doc/QUICKSTART.asciidoc ,
+.IR doc/WEBSERVICES.asciidoc ,
+.IR Docker/README.md
 
 .SH AUTHOR
 Upstream author:

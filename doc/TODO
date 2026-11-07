@@ -1,9 +1,14 @@
- * HTTP unicast
-  * Master connection not mandatory, option unicast=1
+Documentation / project notes
+=============================
 
- * Autoconfiguration
-  * make the syntax autoconfiguration=1/2 obsolete and replace by full/partial
-  * In partial autoconfiguration, add a step for channels with a service ID and no PMT (this step will be skipped in full autoconf since we get both automatically)
+The historical TODO items below are obsolete and kept only for context:
 
+ * "Master connection not mandatory, option unicast=1" — implemented.
+ * "Replace autoconfiguration=1/2 by full/partial" — `full`/`none` are the
+   supported values; partial autoconfiguration was removed. Use
+   `autoconfiguration=full` with `autoconf_sid_list` to select services.
 
- 
+Current documentation follow-ups (optional):
+ * Refresh WEBSERVICES sample XML/JSON from a live 2.1.x instance
+ * Modernize Docker base image beyond Fedora 28
+ * Add a short HLS example under configuration_examples/

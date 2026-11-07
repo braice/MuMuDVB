@@ -18,34 +18,45 @@ one card refer to the full documentation.
 
 If you don't know your transponder frequencies, have a look to `doc/README_CONF.asciidoc`
 
-If your card supports multiple delivery systems, make sure to set it up with the opiton `delivery_system`.
+If your card supports multiple delivery systems, make sure to set it up with the option `delivery_system`. For DVB-S2 and DVB-T2 this option is mandatory.
 
-DVB-S
------
+DVB-S / DVB-S2
+--------------
 
 - First install mumudvb
- * Use the debian package, or 
+ * Use the debian package, Docker image (see `Docker/README.md`), or
  * type `./configure` then `make` in the mumudvb directory and, as root, `make install`
 
 - You have to find which transponder you want to stream.
  * For European users you can use http://www.kingofsat.net/[King Of Sat]
  * You need: the frequency, the polarisation and the symbol rate (srate)
+ * For DVB-S2 also set `delivery_system=DVBS2` (and usually `coderate` / `modulation`)
 
 - Now create a config file, which contains :
 
 ------------------------------------
 autoconfiguration=full
-freq=__tranponder frequency in MHz__
+freq=__transponder frequency in MHz__
 pol=__polarisation H, V, L or R__
 srate=__symbol rate__
 ------------------------------------
 
-.Example : 
+.Example (DVB-S):
 ------------------------------------
 autoconfiguration=full
 freq=11785
 pol=h
 srate=27500
+------------------------------------
+
+.Example (DVB-S2):
+------------------------------------
+autoconfiguration=full
+delivery_system=DVBS2
+freq=12674
+pol=h
+srate=16935
+coderate=2/3
 ------------------------------------
 
 - Now launch MuMuDVB with :
@@ -81,9 +92,9 @@ freq=__frequency in kHz__
 -------------------------------------
 
 [NOTE]
-If your bandwith is different from 8Mhz or if you experience tuning issues,
-look for the following parameters in README_CONF : bandwidth, qam, trans_mode,
-guardinterval, coderate
+If your bandwidth is different from 8MHz or if you experience tuning issues,
+look for the following parameters in README_CONF : bandwidth, modulation,
+trans_mode, guardinterval, coderate. For DVB-T2 set `delivery_system=DVBT2`.
 
 [NOTE]
 The SAP (session announcement protocol) announces will be sent automatically.

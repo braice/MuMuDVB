@@ -31,7 +31,7 @@ MuMuDVB is able to support as many cards as the operating system does. To know w
 Special satellite Bands
 -----------------------
 
-MuMuDVB supports satellites in the Ku band, with universal or standard LNBs. Support for satellites in the S or C band is implemented via the use of the lo_frequency option. See `doc/README_CONF.asciidoc`.
+MuMuDVB supports satellites in the Ku band, with universal or standard LNBs. Support for satellites in the S or C band is implemented via `lnb_type=standard` and `lnb_lof_standard` (local oscillator frequency in MHz). See `doc/README_CONF.asciidoc`.
 
 System wide freezes
 -------------------

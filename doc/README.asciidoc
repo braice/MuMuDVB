@@ -62,8 +62,8 @@ Features overview
 - Possibility to partially rewrite the stream for better compatibility with set-top boxes and some clients. See <<pat_rewrite,PAT Rewrite>>, <<sdt_rewrite,SDT Rewrite>> and <<pmt_rewrite,PMT rewrite>> sections.
 - Support for HTTP unicast see <<unicast,http unicast>> section
 - Support for RTP headers (only for multicast)
-- Support for HLS file output
-- CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.asciidoc and CAM_menu_interface.png for screenshot)
+- Support for HLS file output (see HLS section in `doc/README_CONF.asciidoc`)
+- CAM menu access while streaming (using a web/AJAX interface - see WEBSERVICES.asciidoc)
 - Software descrambling through oscam dvbapi and libdvbcsa
 - Flexible configuration mechanism using templates
 - Support for embedded platforms based on UCLIBC and ANDROID
@@ -188,10 +188,14 @@ Possible options are:
 	List the DVB cards and exit
 
 --card
-	The DVB card to use (overrided by the configuration file)
+	The DVB card to use (overridden by the configuration file)
 
 --server_id
-	The server id (for autoconfiguration, overrided by the configuration file)
+	The server id (for autoconfiguration, overridden by the configuration file)
+
+-o name=value
+	Override a configuration-file option from the command line.
+	Can be used multiple times. Example: `-o card=1 -o multicast_ipv4=0`
 
 -j, --japan
 	Enable support for decoding ARIB STD-B24 character encoding in SI/EPG (only if built with libaribb24 support)
@@ -449,7 +453,7 @@ And you can have listening sockets per channel, in this case the client will alw
 Be careful with unicast, it can eat a lot of bandwidth. Think about limitting the number of clients.
 
 [NOTE]
-If you don't want the (always here) multicast traffic to go on your network set `multicast=0`
+If you don't want multicast traffic to go on your network set `multicast_ipv4=0` (and `multicast_ipv6=0` if IPv6 multicast is enabled)
 
 Activate HTTP unicast
 ~~~~~~~~~~~~~~~~~~~~~
@@ -784,7 +788,7 @@ In debug mode number of packets in the buffer is reported and buffer overflow is
 
 
 [NOTE]
-Use the latest version of oscam from trunk, older versions did not have support for pc dvbapi. Instructions how to compile are on http://streamboard.de.vu:8001/wiki/crosscompiling
+Use a recent OSCam build with PC-DVBAPI support. See the https://github.com/oscam-svn/oscam[OSCam project] and your distribution packages for build/install instructions.
 
 [NOTE] 
 When using oscam with more than 16 channels adjust macro definition `MAX_DEMUX` (line below) on oscam header `module-dvbapi.h` to number of your channels

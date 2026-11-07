@@ -8,4 +8,10 @@ doc: $(html_DOC)
 
 $(htmldocdir)/%.html: %.asciidoc
 	install -d $(htmldocdir)
-	-asciidoc $(ASCIIDOCFLAGS) -o $@ $^
+	@if command -v asciidoc >/dev/null 2>&1; then \
+		asciidoc $(ASCIIDOCFLAGS) -o $@ $^; \
+	elif command -v asciidoctor >/dev/null 2>&1; then \
+		asciidoctor $(ASCIIDOCFLAGS) -o $@ $^; \
+	else \
+		echo "Neither asciidoc nor asciidoctor found; cannot build $@"; exit 1; \
+	fi

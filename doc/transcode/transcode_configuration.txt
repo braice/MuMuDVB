@@ -1,3 +1,5 @@
+*** OBSOLETE: built-in transcoding was removed from MuMuDVB. See doc/transcode/README.md and doc/TRANSCODE_EXTERNAL.asciidoc ***
+
 transcode_enable <int> - enables or disables transcoding
 
 0 - disable (default); 1 - enable.
