@@ -1,6 +1,8 @@
 # Host with DigitalDevices Adapter
 Install ddbridge-driver for Digital Devices [Cine S2 V6.5](https://digitaldevices.de/products/dvb_components/cine_s2) and [DuoFlex CI](https://digitaldevices.de/products/dvb_components/duoflex_ci) on redhat flavour.
 
+These notes were written against Fedora 28-era hosts; adapt package names and kernel module paths for your current distribution.
+
 ## install ddbridge driver to host
 ```
 dnf install -y kernel-headers-`uname -r` kernel-devel-`uname -r` elfutils-libelf-devel git gcc gcc-c++ make usbutils

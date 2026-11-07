@@ -27,7 +27,7 @@ Example of response with comments:
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <mumudvb card="5" frontend="0">                                          => adapter and frontend devices
 	<card_path>/dev/dvb/adapter5</card_path>                             => card device path
-	<global_version><![CDATA[1.6.1b_20101101]]></global_version>         => MuMuDVB version
+	<global_version><![CDATA[2.1.0]]></global_version>                   => MuMuDVB version (example; use your running build)
 	<global_pid>19574</global_pid>                                       => process PID
 	<global_uptime>45</global_uptime>                                    => process uptime in seconds
 	<frontend_name><![CDATA[ST STV0299 DVB-S]]></frontend_name>          => frontend name
@@ -106,6 +106,16 @@ You can get similar information in the JSON files
 * `http://ip_http:port_http/monitor/signal_power.json`
 * `http://ip_http:port_http/channels_traffic.json`
 * `http://ip_http:port_http/monitor/state.json`
+
+Playlists and stream URLs (unicast)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These are documented in more detail in the README. Common entry points:
+
+* `http://ip_http:port_http/` or `/channels_list.html` — channel list
+* `http://ip_http:port_http/playlist.m3u` — M3U playlist
+* `http://ip_http:port_http/bysid/<service_id>` — stream by service id
+* `http://ip_http:port_http/bynumber/<n>` — stream by channel number
 
 
 Access to the CAM menu:
@@ -222,11 +232,9 @@ To enable it, put `store_eit=1` in your configuration file and get the file:
 * `http://ip_http:port_http/monitor/EIT.json`
 
 
-The structure follow the structure of the data descriptors of the DVB
-stream, so please consult the norm `EN 300 468` if you want to get more
-info see http://www.mumudvb.net/node/39[documentation].
-
-An example result is available http://www.mumudvb.net/doc/EIT/EIT_TNT_PARIS_20141209.json[here].
+The structure follows the data descriptors of the DVB stream. Consult ETSI
+EN 300 468 for field definitions. Enable `store_eit=1` and query
+`/monitor/EIT.json` on your running instance to inspect the live payload.
 
 
 

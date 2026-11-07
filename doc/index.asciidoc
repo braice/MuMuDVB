@@ -2,6 +2,9 @@ MuMuDVB - Documentation
 =======================
 Brice Dubost <mumudvb@braice.net>
 
+Guides
+------
+
 link:QUICKSTART.html[QUICKSTART guide]
 
 link:FAQ.html[FAQ]
@@ -14,3 +17,11 @@ link:TRANSCODE_EXTERNAL.html[External transcoding tutorial]
 
 link:WEBSERVICES.html[Information concerning the WEB services]
 
+Related material
+----------------
+
+* Configuration examples: `doc/configuration_examples/`
+* Man page: `doc/mumudvb.8` (`man mumudvb` after install)
+* Docker: `Docker/README.md` and `Docker/README.ddbridge.md`
+* Obsolete built-in transcoder notes: `doc/transcode/README.md`
+* Change log: `ChangeLog`

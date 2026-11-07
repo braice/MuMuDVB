@@ -6,27 +6,32 @@ Advantages of running MuMuDVB as a container include:
 - Simplified building, all that is required to build MuMuDVB will be included into the build-container, you don't need to install gcc on your host Linux.
 
 Things to know when running MuMuDVB as a container include:
-- Slight longer startup and shutdown times as usual with containers.
-- Host Linux must support the DVB Hardware (e.g. have the driver), the container uses the hosts kernel dvb-api (--device).
-- When thinking about clustering and Kubernetes and such: you need a _/dev/dvb/_ to map into the container on the executing node.
+- Slightly longer startup and shutdown times as usual with containers.
+- Host Linux must support the DVB Hardware (e.g. have the driver), the container uses the host kernel DVB API (`--device`).
+- When thinking about clustering and Kubernetes and such: you need a `/dev/dvb/` to map into the container on the executing node.
 
 Disadvantages when running MuMuDVB inside a container include:
-- Docker might not support UDP well, please report your experiences with your multi- and broadcast scenarios. 
-- http playlist/m3u generation fails as the m3u-streams are addressed with the docker internal ip. However, accessing the streams _bysid/123_ url works fine.
+- Docker multicast/UDP networking often needs host networking or careful routing; see notes below.
+- HTTP playlist/m3u generation can advertise the container-internal IP. Accessing streams via `/bysid/<sid>` usually works fine.
 
 # About this proposal
-Looking at how to wrap-up MuMuDVB into an image, there's a number of parameters to be considered. MuMuDVB compiles with more features (such as [CAM](https://en.wikipedia.org/wiki/Conditional-access_module)-support) when the required libraries are found (libdvbcsa in this case), and personally I usually like to have some additional debugging tools inside the Image as well.
+Looking at how to wrap MuMuDVB into an image, there are a number of parameters to be considered. MuMuDVB compiles with more features when the required libraries are found:
+- **Hardware CAM** support needs libdvben50221 / libucsi (linuxtv dvb-apps)
+- **Software descrambling (SCAM)** needs libdvbcsa
 
-I ended up with tree variants: One simple just MuMuDVB without any further features, one with CAM/SCAM enabled, and one with 3rd tools like _w_scan_ or _dvblast_.
+Three variants are provided: one simple MuMuDVB without optional features, one with CAM/SCAM enabled, and one with extra tools like `w_scan` or `dvblast`.
 
-See the [Dockerfile](Dockerfile): there are sections commented-out with _`#pattern;`_. In order to build a variant with _cam_ or _tool_ enabled, we simply remove these patterns before build with `sed`. [This is not necessarily a nice way](https://stackoverflow.com/questions/52041227/how-to-deal-with-multiple-variants-of-application-using-same-dockerfile).
+See the [Dockerfile](Dockerfile): there are sections commented-out with `#pattern;`. In order to build a variant with `cam` or `tool` enabled, we simply remove these patterns before build with `sed`.
 
-# Build 
+[NOTE]
+The current Dockerfile still targets Fedora 28 as a historical base. Treat it as a starting point; prefer a current Fedora/Debian base when rebuilding for production.
+
+# Build
 ## build _simple_ (no features, no tools)
 ```bash
-docker build -t mumudvb:simple . 
+docker build -t mumudvb:simple .
 ```
-## build _cam_ (S/CAM support, no tools)
+## build _cam_ (CAM/SCAM support, no tools)
 ```bash
 sed -r 's_^#(cam|scam);__g' Dockerfile | docker build -t mumudvb:cam . -f -
 ```
@@ -51,21 +56,22 @@ docker run --rm -it mumudvb:sak dvblast -V
 ```bash
 docker run -it --rm   mumudvb:simple  /bin/bash
 docker run -it --rm   mumudvb:sak     /bin/bash
-``` 
+```
 
 ## run a scan
 ```bash
 docker run -it --rm --device /dev/dvb/    mumudvb:sak    w_scan -f t -a /dev/dvb/adapter0/
-``` 
+```
 >
 *NOTE*
-- host device-tree _/dev/dvb_ is passed into the container.
-- Mind Docker's stdOut and -Err behaviour when capturing the w_scan out.
+- host device-tree `/dev/dvb` is passed into the container.
+- Mind Docker's stdout/stderr behaviour when capturing the w_scan output.
 - Image to be run is the _sak_
-> 
+>
 
-## run mumudvb
-adjust the _sample.conf_ to your needs, and run mumudvb inside the container
+## run mumudvb (HTTP unicast)
+`sample.conf` sets `port_http=4242+%card*10+%tuner*1`, so adapter0/tuner0 listens on **TCP 4242**.
+
 ```bash
 docker run -it --rm  --name my_mumu_adapter0 \
      --device /dev/dvb/adapter0 \
@@ -74,13 +80,27 @@ docker run -it --rm  --name my_mumu_adapter0 \
      mumudvb:simple \
      mumudvb -d -c /mumudvb.conf
 ```
-Upon mumudvb startup, try to access [http://host-ip:4212](http://127.0.0.1:4212).
-> 
+Upon mumudvb startup, try to access [http://127.0.0.1:4242](http://127.0.0.1:4242).
+>
 *NOTE*
-- If you get a _permission denied_, the configfile could not be accessed from Docker-Daemon. Check your working-directroy for read-permission from group docker.
-- _--name_: give this container instance a specific name.
-- _--device_: map only one adapter into this container.
-- _--publish_: map external/host TCP/4212 into Containers TCP/4212.
-- _--volume_: map the _sample.conf_ in current directory to _/mumudvb.conf_ in the container.
+- If you get a _permission denied_, the config file could not be accessed from the Docker daemon. Check that the working directory is readable by the docker group.
+- `--name`: give this container instance a specific name.
+- `--device`: map only one adapter into this container.
+- `--publish`: map host TCP 4242 to container TCP 4242 (match `port_http` in your config).
+- `--volume`: map `sample.conf` in the current directory to `/mumudvb.conf` in the container.
 - Image to be run is the _simple_
 >
+
+## Multicast note
+For multicast output, prefer host networking so IGMP/multicast routing works as on a normal host:
+
+```bash
+docker run -it --rm --name my_mumu_adapter0 \
+     --network host \
+     --device /dev/dvb/adapter0 \
+     --volume ${PWD}/sample.sat.conf:/mumudvb.conf \
+     mumudvb:simple \
+     mumudvb -d -c /mumudvb.conf
+```
+
+With `--network host`, `--publish` is unnecessary; clients use the host IP and the ports from your config.

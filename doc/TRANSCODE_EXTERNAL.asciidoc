@@ -1,286 +1,123 @@
-MuMuDVB - MuMuDVB and FFmpeg transcoding Tutorial
-=================================================
+MuMuDVB - External transcoding with FFmpeg
+==========================================
+Originally by Meftah Tayeb; updated for current FFmpeg (ffserver removed)
 
-By Meftah Tayeb (Tayeb|DOT|Meftah:-)@G.M.A.I.L.C.O.M
-Reviewed by Brice Dubost (mumudvb@braice.net)
-
- 
 Introduction
 ------------
 
-In the context of TV over IP the necessary bandwidth of the IP network is an important issue. In particular with stream coming from terrestrial or satellite broadcasting which represent about 6MBit/s per service with standard definition. In this context it can be useful to transcode the stream to reduce itś bandwidth footprint.
+Broadcast streams from terrestrial or satellite are often around 6 Mbit/s for
+standard definition. When network bandwidth is limited, it can be useful to
+transcode MuMuDVB outputs with an external tool such as FFmpeg.
 
-MuMuDVB is a « air to ip » streaming software. In the following, a method to set-up MuMuDVB and Ffmpeg to perform transcoding is described.
+Built-in MuMuDVB transcoding was removed. Use MuMuDVB to receive and demux the
+transponder, then feed selected channels into FFmpeg (or another restreamer).
 
- 
+This tutorial assumes MuMuDVB is already streaming at least one channel over
+multicast UDP or HTTP unicast. See `README.asciidoc` and `README_CONF.asciidoc`
+for MuMuDVB setup.
 
-Please note that this way can probably be improved, feel free to provide feedback.
-
- 
-
- 
-
-Step 1: Configure MumuDVB
+Step 1: Configure MuMuDVB
 -------------------------
 
-You need at least one service/channel up and running to perform transcoding.
+Example (full autoconfiguration + HTTP unicast):
 
-you have multiple choices to configure MuMuDVB, please refer to the main documentation for more details.
-
- 
-
-An example configuration is provided here for "example channels" on SomeSat (26.0E):
-
- 
 -------------------------
 unicast=1
 port_http=8080
 freq=12476
 pol=v
 srate=27504
-autoconf_radios=1
 autoconfiguration=full
 multicast_ttl=16
 dvr_buffer_size=40
 -------------------------
 
- 
-
-Step 2: Start MuMuDVB
----------------------
-
-In order to start MuMuDVB with your configuration, use the following:
+Start MuMuDVB:
 
 --------------------------------------------------
-mumudvb -c /path-to-config/mumudvb.conf -d
+mumudvb -d -c /path-to-config/mumudvb.conf
 --------------------------------------------------
- 
 
-The -d flag allow to obtain the message on the command line instead of the standard log. Once everything is working you can run without the -d flag alowing MuMuDVB to run as a deamon.
+Confirm a channel is available, for example:
 
- 
-With several cards you can use “--card=X” or add “card=X” to your configuration file where X is the card number.
+* Multicast: `udp://@239.100.0.0:1234`
+* HTTP unicast by SID: `http://127.0.0.1:8080/bysid/123`
 
- 
+Step 2: Transcode with FFmpeg to HTTP (MPEG-TS)
+-----------------------------------------------
 
-Step 3: FFserver configuration
-------------------------------
-
-With MuMuDVB up and running, we need to configure FFMpeg Server to perform the transcoding task.
-
-Before transcoding, please check that your stream is properly up and running in MPEG2TS over UDP
-
- 
-
-Example FFserver configuration:
-
- 
-----------------------------------------------------------------------------------------------------
-#specify the HTTP /RTSP Unicast port:
-
-Port 80
-RTSPPort 554
-#bind FFserver to a specific interface, better to be same as MuMu Interface
-BindAddress 192.168.100.100
-#Max http connection limitation
-MaxHTTPConnections 1000
-#how much IPTV client you want at the same time ?
-MaxClients 200
-#max bandwith to process
-MaxBandwidth 1000000
-CustomLog -
-#tvfeed01 channel feed configuration
-<Feed tvfeed01.ffm>
-#specify the temporary file to use to dump the stream to FFserver
-File /tmp/tvfeed01.ffm
-FileMaxSize 1000K
-</Feed>
-#all others feed's is similar;
-<Feed tvfeed02.ffm>
-File /tmp/tvfeed02.ffm
-FileMaxSize 1000K
-</Feed>
-<Feed tvfeed03.ffm>
-File /tmp/tvfeed03.ffm
-FileMaxSize 1000K
-</Feed>
-#Tvfeed01 Stream Definition
-#note the .asf reference, we're encapsulating our stream in ASF format. please check FFmpeg documentation for other formats.
-<Stream tvfeed01.asf>
-#referencing the previously defined feed, Tvfeed01
-Feed tvfeed01.ffm
-#specify the streaming format
-Format asf
-#prevent looping on a live channel, this is a continuous stream and not a file.
-NoLoop
-#Video codec definition
-VideoCodec mpeg4
-VideoFrameRate 25
-VideoBufferSize 100000
-videoBitRate 512k
-VideoQMin 1
-VideoQMax 31
-VideoSize 352x240
-PreRoll 0
-#Audio codec definition
-AudioCodec libmp3lame
-AudioBitRate 64
-AudioChannels 2
-AudioSampleRate 24000
-</Stream>
-#all others stream is similar.
-<Stream tvfeed02.asf>
-Feed tvfeed02.ffm
-Format asf
-NoLoop
-VideoCodec mpeg4
-VideoFrameRate 25
-VideoBufferSize 100000
-videoBitRate 256k
-VideoQMin 1
-VideoQMax 31
-VideoSize 352x240
-PreRoll 0
-AudioCodec libmp3lame
-AudioBitRate 48
-AudioChannels 2
-AudioSampleRate 24000
-</Stream>
-<Stream tvfeed03.asf>
-Feed tvfeed03.ffm
-Format asf
-NoLoop
-VideoCodec mpeg4
-VideoFrameRate 25
-VideoBufferSize 100000
-VideoBitRate 256k
-VideoQMin 1
-VideoQMax 31
-VideoSize 352x240
-PreRoll 0
-AudioCodec libmp3lame
-AudioBitRate 48
-AudioChannels 2
-AudioSampleRate 24000
-</Stream>
-#definition of the status stream to be able to see our FFserver status using a web browser
-<Stream stat.html>
-   Format status
-</Stream>
-----------------------------------------------------------------------------------------------------
-
-
-For the moment we have defined the stream and the transcoding you need. From this configuration Ffserver will wait for clients on is socket to push the data on the ffm files. The transcoded channels will be availaible on the .asm files
-
- 
-
-Step 4: start FFserver
-----------------------
-
-to start FFserver do:
-
-------------------------------------------
-ffserver -f Path-To-Config-File.cfg
-------------------------------------------
-
- 
-
-Step 5: Push the streams to FFserver using FFmpeg
--------------------------------------------------
-
-For the moment, FFserver have no data to process, we need to push the data from MuMuDVB to FFserver, for this we can use ffmpeg.
-
-after starting the FFserver, run the following:
+FFmpeg can pull a MuMuDVB stream and publish a lower-bitrate TS over HTTP:
 
 ------------------------------------------------------------------------------------
-ffmpeg -i udp://@239.100.0.0:1234 http://192.168.100.100/tvfeed01.ffm
+ffmpeg -hide_banner -re \
+  -i 'udp://@239.100.0.0:1234?fifo_size=1000000&overrun_nonfatal=1' \
+  -map 0:v:0 -map 0:a:0 \
+  -c:v libx264 -preset veryfast -b:v 1500k -maxrate 1500k -bufsize 3000k \
+  -g 50 -keyint_min 50 -sc_threshold 0 \
+  -c:a aac -b:a 128k -ac 2 \
+  -f mpegts 'http://0.0.0.0:8090/channel01.ts?listen'
 ------------------------------------------------------------------------------------
 
- 
-This line have to be changed according to your configuration where the first part is the access path to the UDP channel (the @ after udp:// specifies that the channel have to be accessed in multicast), the second part corresponds to the path defined in your ffserver configuration.
+Clients then open `http://server:8090/channel01.ts`.
 
- 
+Using HTTP unicast from MuMuDVB as the input instead:
 
-You need multiple FFmpeg instances, one per channel.
-
-To start ffmpeg in background please use nohup ffmpeg -i ...
-Note that you can auto start FFMpeg per feed by adding the following inside your feed definition:
-launch `ffmpeg -i udp://@X.X.X.X:1234`
-where X.X.X.X is your Multicast group.
- 
-Now the channels can be accessed in unicast on URLs like `http://192.168.100.100/tvfeed01.asf`
-
-Example AAC/H.264 transcoded stream inside a FLV container:
 ------------------------------------------------------------------------------------
-Port 8888
-BindAddress 0.0.0.0
-MaxHTTPConnections 20000
-MaxClients 10000
-MaxBandwidth 1000000
-CustomLog -
-<Feed other-tvfeed.ffm>
-File /tmp/other-tvfeed.ffm
-FileMaxSize 100M
-ACL allow 127.0.0.1
-launch ffmpeg -i udp://@239.100.1.13:1234
-</Feed>
-
-<Stream other-tvfeed.flv>
-Feed other-tvfeed.ffm
-Format flv 
-AudioBitRate 64 
-AudioChannels 2
-AudioSampleRate 44100 
-AVOptionAudio flags +global_header
-VideoBitRate 256 
-VideoBufferSize 400 
-VideoFrameRate 25 
-VideoBitRateTolerance 100
-VideoSize 704x480
-VideoGopSize 12
-AudioCodec aac 
-VideoCodec libx264 
-AVOptionVideo coder 0
-AVOptionVideo bf 0
-AVOptionVideo flags +loop
-AVOptionVideo partitions +parti8x8+parti4x4+partp8x8+partb8x8
-AVOptionVideo me_method hex
-AVOptionVideo subq 7
-AVOptionVideo me_range 16
-AVOptionVideo g 250
-AVOptionVideo keyint_min 10
-AVOptionVideo sc_threshold 40
-AVOptionVideo i_qfactor 0.71
-AVOptionVideo b_strategy 1
-AVOptionVideo qcomp 0.6
-AVOptionVideo qmin 10
-AVOptionVideo qmax 51
-AVOptionVideo qdiff 4
-AVOptionVideo refs 3
-AVOptionVideo directpred 1
-AVOptionVideo trellis 1
-AVOptionVideo wpredp 0
-AVOptionVideo flags +global_header
-Title 'Some Great tv'
-comment 'Great tv channel'
-author 'Humanity'
-StartSendOnKey
-</Stream>
-<Stream stat.html>
-Format status
-
-ACL allow 192.168.0.0 192.168.255.255
-</Stream>
+ffmpeg -hide_banner -re \
+  -i 'http://127.0.0.1:8080/bysid/123' \
+  -c:v libx264 -preset veryfast -b:v 1200k \
+  -c:a aac -b:a 96k \
+  -f mpegts 'http://0.0.0.0:8090/channel01.ts?listen'
 ------------------------------------------------------------------------------------
+
+Step 3: Optional HLS output from FFmpeg
+---------------------------------------
+
+If you want FFmpeg-managed HLS (instead of MuMuDVB's built-in `hls=1` file mode):
+
+------------------------------------------------------------------------------------
+ffmpeg -hide_banner -re \
+  -i 'udp://@239.100.0.0:1234?fifo_size=1000000&overrun_nonfatal=1' \
+  -c:v libx264 -preset veryfast -b:v 1500k -g 48 -keyint_min 48 -sc_threshold 0 \
+  -c:a aac -b:a 128k \
+  -f hls -hls_time 6 -hls_list_size 5 -hls_flags delete_segments \
+  /var/www/hls/channel01.m3u8
+------------------------------------------------------------------------------------
+
+Serve `/var/www/hls` with nginx or Apache.
+
+MuMuDVB can also write HLS segments directly (`hls=1`); see the HLS section in
+`README_CONF.asciidoc`.
+
+Step 4: Optional SRT output
+---------------------------
+
+For contribution over unreliable links:
+
+------------------------------------------------------------------------------------
+ffmpeg -hide_banner -re \
+  -i 'http://127.0.0.1:8080/bysid/123' \
+  -c:v libx264 -preset veryfast -b:v 2000k \
+  -c:a aac -b:a 128k \
+  -f mpegts 'srt://0.0.0.0:9000?mode=listener'
+------------------------------------------------------------------------------------
+
+Run one FFmpeg process per channel you want to transcode. Use a process manager
+(`systemd`, `supervisord`, etc.) for production.
+
+Notes
+-----
+
+* Prefer pulling from MuMuDVB over localhost or a dedicated LAN segment so the
+  original high-bitrate stream does not flood the client network.
+* `-re` reads at native rate; omit it only if you know you need burst ingest.
+* Codec and bitrate choices depend on your players and CPU budget; the examples
+  above are starting points, not prescriptions.
+* Historical `ffserver` workflows are obsolete (removed from FFmpeg). The old
+  built-in MuMuDVB transcoder options under `doc/transcode/` are also obsolete.
 
 Acknowledgements
 ----------------
 
-thank you Brice and Matthias for helping me all the time it is very appreciated
-
-thank to everyone that helped me getting my home brew IPTV up and running, I can watch everywhere, anywhere.
-
-thank to Georgeus roger for helping me with Oscam setup so now I have my channels descrambled.
-
-if you need any help please don't hesitate to contact me on the mailing list!
-
+Thanks to Brice, Matthias, and the MuMuDVB community for the original tutorial
+and ongoing feedback.

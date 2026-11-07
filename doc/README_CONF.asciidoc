@@ -80,11 +80,11 @@ In the following list, only the parameter `freq` is mandatory
 |Parameter name |Description | Default value | Comments
 |freq | transponder's frequency (in MHz for satellite). For cable and terrestrial you can use Hz,kHz or MHz | | Mandatory unless other freq is specified
 |modulation | The kind of modulation used (can be : QPSK QAM16 QAM32 QAM64 QAM128 QAM256 QAMAUTO VSB8 VSB16 8PSK 16APSK 32APSK DQPSK)  | ATSC: VSB_8, cable/terrestrial: QAM_AUTO, satellite: QPSK | Optional most of the times
-|delivery_system | the delivery system used (can be DVBT DVBT2 DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC ISDBT) | Undefined | Set it if you want to use the new tuning API (DVB API 5/S2API). Mandatory for DVB-S2 and DVB-T2
+|delivery_system | the delivery system used (can be DVBT DVBT2 DVBS DVBS2 DVBC_ANNEX_AC DVBC_ANNEX_B ATSC ISDBT; depending on kernel headers also DSS, DVBH, ISDBS, ISDBC, ATSCMH, DMBTH, CMMB, DAB) | Undefined | Set it if you want to use the new tuning API (DVB API 5/S2API). Mandatory for DVB-S2 and DVB-T2
 |card | The DVB/ATSC card number | 0 | only limited by your OS
 |tuner | The tuner number | 0 | If you have a card with multiple tuners (ie there are several frontend* in /dev/dvb/adapter%card)
 |card_dev_path | The path of the DVB card devices. Use it if you have a personalised path like /dev/dvb/astra%card | /dev/dvb/adapter%card |  The template %card can be used
-|tuning_timeout |tuning timeout in seconds. | 300 | 0 = no timeout
+|tuning_timeout |tuning timeout in seconds. | 300 | 0 = no timeout. Legacy alias: `timeout_accord`
 |timeout_no_diff |If no channels are streamed, MuMuDVB will kill himself after this time (specified in seconds) | 600 |  0 = infinite timeout
 |tuning_no_diff |If no channels are streamed, MuMuDVB will start tuning loop after this time (specified in seconds) | 0 |  0 = do not start tuning
 |check_status | Do we check the card status and display a message if lock is lost | 1 |  0 = no check.
@@ -117,7 +117,7 @@ I you want to understand the DiSEqC bytes, please refer to https://www.eutelsat.
 |diseqc_repeat | Do we repeat the DiSEqC message (useful for some switches) | 0 | 0 or 1 | 
 |uni_freq | For SCR/unicable: the translated frequency in MHz  | | | Optional: needed if switch_type N or J
 |lnb_voltage_off |Force the LNB voltage to be 0V (instead of 13V or 18V). This is useful when your LNB have it's own power supply. | 0 | 0 or 1 | 
-|coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto |
+|coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 3/5, 4/5, 5/6, 6/7, 7/8, 8/9, 9/10, auto |
 |rolloff  |rolloff important only for DVB-S2 | 35 | 35, 20, 25, auto | The default value should work most of the times
 |stream_id | the id of the substream for DVB-S2 | 0 | >0  |
 |pls_code | the PLS code for DVB-S2 (will modify the stream_id) | 0 |  | 
@@ -130,6 +130,8 @@ Local oscillator frequencies :
 - C band (Hi) 5950 MHz
 - C band (Lo) 5150 MHz
 - Ku Band : this is the default band for MuMuDVB, you don't have to set the LO frequency. For information : Hi band : 10600, Low band : 9750, Single : 10750
+
+For S/C band, set `lnb_type=standard` and `lnb_lof_standard` to the local oscillator frequency above (there is no `lo_frequency` option).
 
 
 Parameters specific to terrestrial (DVB-T/T2 ISDBT)
@@ -144,7 +146,7 @@ Parameters specific to terrestrial (DVB-T/T2 ISDBT)
 |bandwidth |bandwidth | 8MHz | 8MHz, 7MHz, 6MHz, auto (DVB-T2: 5MHz, 10MHz, 1.712MHz) 
 |trans_mode |transmission mode | auto | 2k, 8k, auto (DVB-T2: 4k, 16k, 32k) 
 |guardinterval |guard interval | auto |  1/32, 1/16, 1/8, 1/4, auto (DVB-T2 : 1/128, 19/128, 19/256) 
-|coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto 
+|coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 3/5, 4/5, 5/6, 6/7, 7/8, 8/9, 9/10, auto 
 |stream_id | the id of the substream for DVB-T2 | 0 | 0 to 255 
 |isdbt_layer | the sublayer for ISDBT (can be called several times for several layers) | ALL | A,B,C or ALL
 |==================================================================================================================
@@ -156,7 +158,7 @@ Parameters specific to cable (DVB-C)
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
 |srate  |transponder's symbol rate | | | Mandatory
-|coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 4/5, 5/6, 6/7, 7/8, 8/9, auto  |
+|coderate  |coderate, also called FEC | auto | none, 1/2, 2/3, 3/4, 3/5, 4/5, 5/6, 6/7, 7/8, 8/9, 9/10, auto  |
 |==================================================================================================================
 
 [NOTE]
@@ -204,9 +206,11 @@ Various parameters
 |filename_pid | Specify where MuMuDVB will write it's PID (Processus IDentifier) | /var/run/mumudvb/mumudvb_adapter%card_tuner%tuner.pid | | the templates %card %tuner and %server are allowed
 |check_cc | Do MuMuDVB check the discontibuities in the stream ? | 0 | | Displayed via the XML status pages or the signal display
 |store_eit | Do MuMuDVB store EIT (Electronic Program Guide) for the webservices ? | 0 | | beta, please report your results
-|debug_updown | Do MuMuDVB show debugging messages concerning up/down channel detection | 0 | | The threshold can be adjusted with up_threshold and down_threshold
+|up_threshold | Packets/s above which a channel is considered "up" (has traffic) | 80 | | Used with traffic computation
+|down_threshold | Packets/s below which a channel is considered "down" (no traffic) | 30 | | Used with traffic computation
+|debug_updown | Do MuMuDVB show debugging messages concerning up/down channel detection | 0 | | Uses `up_threshold` and `down_threshold`
 |t2mi_pid | Use T2-MI demux for input traffic | 0 | 1-8192 | You can get pid by running dvbtraffic or dvbsnoop, but most networks use pid 4096. 0 = disable demux. T2-MI packet is larger than TS, so use large dvb input buffers (40 packets or more).
-|t2mi_plp | Select PLP in input stream | 0 | 0-255 | Any signle PLP supported for now.
+|t2mi_plp | Select PLP in input stream | 0 | 0-255 | Any single PLP supported for now.
 |==================================================================================================================
 
 Packets sending parameters
@@ -260,9 +264,11 @@ CAM support parameters
 |cam_support |Specify if we wants the support for scrambled channels | 0 | 0 or 1 |
 |cam_number |the number of the CAM we want to use | 0 | | In case you have multiple CAMs on one DVB card
 |cam_reset_interval |The time (in seconds) we wait for the CAM to be initialized before resetting it. | 30 | | If the reset is not successful, MuMuDVB will reset the CAM again after this interval. The maximum number of resets before exiting is 5
+|cam_reask_interval |If a channel stays highly scrambled, re-ask the CAM after this many seconds | 0 | | 0 disables re-asking. Useful for partially scrambled channels
 |cam_delay_pmt_send |The time (in seconds) we wait between the initialization of the CAM and the sending of the first PMT This behavior is made for some "crazy" CAMs like powercam v4 which doesn't accept the PMT just after the ca_info\
 _callback |  0 | | Normally this time doesn't have to be changed.
 |cam_interval_pmt_send |The time (in seconds) we wait between possible updates to the PMT sent to the CAM |  3 | | Normally this time doesn't have to be changed.
+|cam_pmt_follow |Follow PMT updates and send them to the CAM | 1 | 0 or 1 | Disable only if your CAM misbehaves on PMT updates
 |==================================================================================================================
 
 SCAM support parameters
@@ -282,7 +288,7 @@ Autoconfiguration parameters
 [width="80%",cols="3,5,1,2,5",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value | Possible values | Comments
-|autoconfiguration |autoconfiguration allows to detect channels and their parameters | none | none or full | see the README for more details
+|autoconfiguration |autoconfiguration allows to detect channels and their parameters | none | none or full | Legacy alias `1` means full. Partial autoconfiguration was removed; use `full` with `autoconf_sid_list` instead. See the README for more details
 |autoconf_ip4 |For autoconfiguration, the template for the ipv4 for streamed channel | 239.100.%card.%number  | |  You can use expressions with `+`, `*` , `%card`, `%tuner`, `%server`, `%sid_hi`, `%sid_lo` and `%number`. Ex:  `239.100.150+%server*10+%card.%number`
 |autoconf_ip6 |For autoconfiguration, the template for the ipv6 for streamed channel | FF15:4242::%server:%card:%number  | |  You can use the keywords `%card`, `%tuner`, `%server`, `%sid` (the SID will be in hexadecimal) and `%number`
 |autoconf_radios |Do we consider radios as valid channels during autoconfiguration ? | 0 | 0 or 1 | 
@@ -312,31 +318,61 @@ SAP announces parameters
 
 HTTP unicast parameters
 ~~~~~~~~~~~~~~~~~~~~~~~
-[width="80%",cols="2,8,1,5",options="header"]
+[width="80%",cols="2,6,1,5",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value |Comments
-|unicast |Set this option to one to activate HTTP unicast | 0  |   see the README for more details
-|ip_http |the listening ip for http unicast, if you want to listen to all interfaces put 0.0.0.0. This option supports IPv6 as well, put `::` to listen on all IPv6 interfaces. | 0.0.0.0  |  see the README for more details
-|port_http | The listening port for http unicast | 4242 |  You can use mathematical expressions containing integers, * and +. You can use the `%card`, `%tuner` and %server template. Ex `port_http=2000+%card*100`
+|unicast |Set this option to one to activate HTTP unicast | 0  | see the README for more details
+|ip_http |the listening ip for http unicast, if you want to listen to all interfaces put 0.0.0.0. This option supports IPv6 as well, put `::` to listen on all IPv6 interfaces. | 0.0.0.0  | see the README for more details
+|port_http | The listening port for http unicast | 4242 | You can use mathematical expressions containing integers, * and +. You can use the `%card`, `%tuner` and %server template. Ex `port_http=2000+%card*100`
 |unicast_consecutive_errors_timeout | The timeout for disconnecting a client which is not responding | 5 | A client will be disconnected if no data have been sucessfully sent during this interval. A value of 0 deactivate the timeout (unadvised).
 |unicast_max_clients | The limit on the number of connected clients | 0 | 0 : no limit.
 |unicast_queue_size | The maximum size of the buffering when writting to a client fails | 512kBytes | in Bytes.
-|playlist_ignore_dead | Do we exclude dead channels (no traffic) from playlist? | 0  | 0 or 1 | Exclude dead and include alive channels on each playlist request.
-|playlist_ignore_scrambled_ratio | Do we exclude overscrambled from playlist? | 0  | 0(off), 1-100 | Exclude channels with percent of scrambled packets more than specified.
+|socket_sendbuf_size | Size of the TCP send buffer for unicast clients (bytes) | 0 | 0 = system default. Increase if clients are slow and you see send buffer pressure
+|flush_on_eagain | Drop queued unicast data when a client socket returns EAGAIN | 0 | 0 or 1. Debug/recovery option; can cause glitches for slow clients
+|playlist_ignore_dead | Do we exclude dead channels (no traffic) from playlist? | 0 | 0 or 1. Exclude dead and include alive channels on each playlist request.
+|playlist_ignore_scrambled_ratio | Do we exclude overscrambled from playlist? | 0 | 0 (off) or 1-100. Exclude channels with percent of scrambled packets more than specified.
 |==================================================================================================================
 
+[[hls]]
 HLS parameters
-~~~~~~~~~~~~~~~~~~~~~~~
-[width="80%",cols="2,8,1,5",options="header"]
+~~~~~~~~~~~~~~
+[width="80%",cols="2,6,1,5",options="header"]
 |==================================================================================================================
 |Parameter name |Description | Default value |Comments
-|hls |Set this option to one to activate HLS in file mode | 0  |   If using manual channel configurations, service_id is required to work correctly
-|hls_storage_dir |Storage directory for HLS files and playlists | /tmp  |  Any HTTP server can point to that dir and produce HLS stream
-|hls_playlist_name |Name of master playlist | playlist.m3u8  |  Can be used to run multiple instances in one storage dir
-|hls_rotate_count |HLS chunk count in playlist| 2 |  First usable playlist will be generated when all chunks are ready
+|hls |Set this option to one to activate HLS in file mode | 0  | If using manual channel configurations, `service_id` is required
+|hls_storage_dir |Storage directory for HLS files and playlists | /tmp  | Point any HTTP server at this directory to serve HLS
+|hls_playlist_name |Name of master playlist | playlist.m3u8  | Can be used to run multiple instances in one storage dir
+|hls_rotate_count |HLS chunk count in playlist| 2 | First usable playlist will be generated when all chunks are ready
 |hls_rotate_time |HLS chunk duration in seconds| 10 |
-|hls_rotate_iframe |Try to place I-Frame at beginning of segment| 0 |  With this option set to one chunk rotate will be delayed until reception of I-Frame, but no more than 2*hls_rotate_time
+|hls_rotate_iframe |Try to place I-Frame at beginning of segment| 0 | With this option set to one, chunk rotate is delayed until an I-Frame, but no more than `2*hls_rotate_time`
 |==================================================================================================================
+
+HLS operation notes
+^^^^^^^^^^^^^^^^^^^
+
+When `hls=1`, MuMuDVB writes MPEG-TS segments and playlists under `hls_storage_dir`:
+
+* Master playlist: `hls_storage_dir`/`hls_playlist_name` (default `playlist.m3u8`)
+* Per-channel playlist: `<service_id>.m3u8`
+* Segment files: `<service_id>_<unix_time>.ts`
+* Metrics file: `metrics` (Prometheus-style gauges/counters for BER, SNR, strength, lock, discontinuities)
+
+Serve `hls_storage_dir` with nginx, Apache, or another static HTTP server. Clients open the master playlist or a per-SID playlist.
+
+`playlist_ignore_dead` also filters dead channels from the HLS master playlist. Inactive HLS entries are cleaned up after about `3*hls_rotate_time` without traffic.
+
+.Example
+---------------------------
+unicast=1
+port_http=4242
+hls=1
+hls_storage_dir=/var/www/hls
+hls_playlist_name=playlist.m3u8
+hls_rotate_time=6
+hls_rotate_count=5
+autoconfiguration=full
+freq=586000
+---------------------------
 
 
 [[channel_parameters]]
@@ -369,7 +405,8 @@ The column "Can be detected/autoset" specifies if this parameter can be ommitted
 |ring_buffer_size | number of ts packets in ring buffer (for software CAM) | 131072 |it gets rounded to the value that is power of 2 not lower than it|No |
 |decsa_delay | delay time in us between getting packet and descrambling (for software CAM) | 4500000 | max is 10000000 |No |
 |send_delay | delay time in us between getting packet and sending (for software CAM) | 7000000 |  mustn't be lower than decsa delay |No |
-| cam_ask | For CAM support, some providers announce scrambled channels as FTA, this parameter force asking the CAM to descramble | 0 | 0,1| No | 
+|cam_ask | For CAM support, some providers announce scrambled channels as FTA, this parameter force asking the CAM to descramble | 0 | 0,1| No | Channel option (after `new_channel`)
+|cam_no_ask | Never ask the CAM to descramble this channel | unset | flag (no value)| No | Channel option (after `new_channel`). Useful to exclude a channel from the CAM
 |==================================================================================================================
 
 
@@ -400,7 +437,7 @@ For each channel it is advised to specify at least :
 If you don't have access to the PIDs via a website like http://www.kingofsat.net[King Of Sat], the easiest way is to use linuxtv's dvb-apps or w_scan.
 
 
-You don't know on which frequency to tune and the channels you can receive. In this case, you can use <<w_scan,w_scan>> or using <<scan_inital_tuning,scan>> from dvb-apps if you have an initial tuning config file.
+You don't know on which frequency to tune and the channels you can receive. In this case, you can use <<w_scan,w_scan>> or using <<scan_initial_tuning,scan>> from dvb-apps if you have an initial tuning config file.
 
 [[w_scan]]
 Using w_scan to get an initial tuning file
@@ -408,7 +445,7 @@ Using w_scan to get an initial tuning file
 [NOTE]
 w_scan works for DVB-T, DVB-C, DVB-S/S2 and ATSC.
 
-You can find wscan in the http://wirbel.htpc-forum.de/w_scan/index2.html[w_scan website - German] or http://wirbel.htpc-forum.de/w_scan/index_en.html[w_scan website - English translation].
+You can find w_scan / w_scan2 via your distribution packages or upstream projects such as https://github.com/stefantalpalaru/w_scan2[w_scan2].
 
 w_scan have one disavantage over dvb-apps scan: it takes (usually) more time. But it have several advantages: no need for initial tuning file, card autodection and deeper channel search. 
 
@@ -438,6 +475,7 @@ Your will get lines channels with the file format described http://www.vdr-wiki.
 
 If you want to use autoconfiguration, this contains all the parameters you need. For example the second row is the frequency.
 
+[[scan_initial_tuning]]
 [[scan_inital_tuning]]
 Using scan with an initial tuning file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

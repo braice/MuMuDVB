@@ -162,7 +162,7 @@ USER    user
 VOLUME  /conf
  
 # assume exposed ports
-EXPOSE  4212:4212
+EXPOSE  4242
  
 # assume standard runtime executable to be bash
 CMD     ["/bin/bash"]
@@ -188,4 +188,4 @@ CMD     ["/bin/bash"]
 # $ docker run -it --rm --device /dev/dvb/ my_mumudvb_full w_scan -f s -s S13E0 -D1c
  
 # run a mumudvb instance. Note the mapped device, filesystem and tcp-port
-# $ docker run -it --rm --device /dev/dvb/ --volume ${PWD}/conf:/conf -p 4212:4212 my_mumudvb_cam mumudvb -d -c /conf/test.conf
+# $ docker run -it --rm --device /dev/dvb/ --volume ${PWD}/conf:/conf -p 4242:4242 my_mumudvb_cam mumudvb -d -c /conf/test.conf
