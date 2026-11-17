@@ -231,3 +231,38 @@ void set_continuity_counter(unsigned char *buf,int continuity_counter)
 	ts_header->continuity_counter=continuity_counter;
 }
 
+/** @brief Determines if the table has a newer version than the currently recorded one
+ *
+ * In the table there is a field to say if the table was updated
+ * This function checks if it has changed (in order to rewrite the table only once)
+ * @note Note in case it change during streaming, it can be a problem,
+ * and we would have to deal with re-autoconfiguration
+ * @note Note this function can give false positive since it doesn't check the CRC32
+ *
+ * @param mod_log_module The log module of the calling function
+ * @param stored_version The current version to be checked against
+ * @param buf the received packet that is to be checked
+ * @param table_condition pass either NULL or a function that checks the table for preconditions
+ * @returns true if the packet is the beginning of an applicable table and contains a new version, otherwise false
+ */
+bool table_needs_update(char *mod_log_module, const int stored_version, unsigned char *buf,
+	bool (*table_condition)(tbl_h_t *table)) {
+	tbl_h_t *table=(tbl_h_t *)(get_ts_begin(buf));
+
+	// Check if it's the beginning of a new table
+	if (!table) return false;
+	/* current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the table
+	sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
+	and shall be the next table to become valid.  */
+	if (table->current_next_indicator == 0) {
+		return false;
+	}
+	if (table_condition != NULL && table_condition(table) == false) {
+		return false;
+	}
+	if (table->version_number!=stored_version) {
+		log_message(mod_log_module, MSG_DEBUG,"Need update. stored version : %d, new: %d\n",stored_version,table->version_number);
+		return true;
+	}
+	return false;
+}

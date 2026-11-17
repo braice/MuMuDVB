@@ -39,6 +39,7 @@
 #include <string.h>
 #include <math.h>
 
+#include "crc32.h"
 #include "mumudvb.h"
 #include "ts.h"
 #include "rewrite.h"
@@ -179,23 +180,8 @@ int pmt_channel_rewrite(mumudvb_channel_t *channel) {
 	buf_dest[1 + TS_HEADER_LEN] = (((new_section_length) & 0x0f00) >> 8) | (0xf0 & buf_dest[1 + TS_HEADER_LEN]);
 	buf_dest[2 + TS_HEADER_LEN] = new_section_length & 0xff;
 
-	//CRC32 calculation inspired by the xine project
-	//Now we must adjust the CRC32
-	//we compute the CRC32
-	crc32 = 0xffffffff;
-	for (i = 0; i < new_section_length - 1; i++) {
-		crc32 = (crc32 << 8) ^ crc32_table[((crc32 >> 24) ^ buf_dest[i + TS_HEADER_LEN]) & 0xff];
-	}
-
-	//We write the CRC32 to the buffer
-	buf_dest[buf_dest_pos] = (crc32 >> 24) & 0xff;
-	buf_dest_pos += 1;
-	buf_dest[buf_dest_pos] = (crc32 >> 16) & 0xff;
-	buf_dest_pos += 1;
-	buf_dest[buf_dest_pos] = (crc32 >> 8) & 0xff;
-	buf_dest_pos += 1;
-	buf_dest[buf_dest_pos] = crc32 & 0xff;
-	buf_dest_pos += 1;
+	setCRC32(buf_dest);
+	buf_dest_pos += 4;
 
 	//Padding with 0xFF
 	memset(buf_dest + buf_dest_pos, 0xFF, TS_PACKET_SIZE - buf_dest_pos);

@@ -151,4 +151,6 @@ void eit_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_
 void eit_rewrite_new_channel_packet(unsigned char *ts_packet, rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *channel,
 		unicast_parameters_t *unicast_vars, void *scam_vars_v);
 
+bool table_needs_update(char *mod_log_module, int stored_version, unsigned char *buf,
+	bool (*table_condition)(tbl_h_t *table));
 #endif

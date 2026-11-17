@@ -334,6 +334,10 @@ typedef struct {
  *         names of services, the service provider, etc.
  *
  */
+
+#define SDT_ACTUAL_TS 0x42
+#define SDT_OTHER_TS 0x46
+
 typedef struct {
    uint8_t table_id                               :8;
 #ifdef __BIG_ENDIAN__
@@ -511,7 +515,7 @@ typedef struct {
   /* descriptors */
 }nit_t;
 
-#define SIZE_NIT_MID 2
+#define SIZE_NIT_MID 2 // transport stream loop length
 
 typedef struct {                                 // after descriptors
 #ifdef __BIG_ENDIAN__
@@ -824,10 +828,9 @@ typedef enum packet_status {
 #define FULL_BUFFER_SIZE 2*MAX_TS_SIZE
 
 
-/**@brief structure for the build of a ts packet
-  Since a packet can be finished and another one starts in the same
-  elementary TS packet, there is two packets in this structure
-
+/** @brief structure for the build of a ts packet
+ * Since a packet can be finished and another one starts in the same
+ * elementary TS packet, there is two packets in this structure
  */
 typedef struct {
   /** the buffer for the packet full (empty or contains a valid full packet)*/
@@ -835,7 +838,7 @@ typedef struct {
   /** the length of the data contained in data_full */
   int len_full;
 
-  //starting from here, these variables MUSN'T be accessed outside ts.c
+  //starting from here, these variables MUSTN'T be accessed outside ts.c
   /** The number of full packets */
   int full_number;
   /** The lengths of the full packets */

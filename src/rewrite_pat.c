@@ -33,47 +33,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "crc32.h"
 #include "mumudvb.h"
 #include "ts.h"
 #include "rewrite.h"
 #include "log.h"
 #include <stdint.h>
 
-extern uint32_t       crc32_table[256];
 static char *log_module="PAT Rewrite: ";
-
-/** @brief, tell if the pat have a newer version than the one recorded actually
- * In the PAT pid there is a field to say if the PAT was updated
- * This function check if it has changed (in order to rewrite the pat only once)
- * General Note : in case it change during streaming it can be a problem ane we would have to deal with re-autoconfiguration
- * Note this function can give flase positive since it doesn't check the CRC32
- *
- *@param rewrite_vars the parameters for pat rewriting 
- *@param buf : the received buffer
- */
-int pat_need_update(rewrite_parameters_t *rewrite_vars, unsigned char *buf)
-{
-	pat_t       *pat=(pat_t*)(get_ts_begin(buf));
-
-
-	if(pat) //It's the beginning of a new packet
-	{
-		/*current_next_indicator – A 1-bit indicator, which when set to '1' indicates that the Program Association Table
-    sent is currently applicable. When the bit is set to '0', it indicates that the table sent is not yet applicable
-    and shall be the next table to become valid.*/
-		if(pat->current_next_indicator == 0)
-		{
-			return 0;
-		}
-		if(pat->version_number!=rewrite_vars->pat_version)
-		{
-			log_message( log_module, MSG_DEBUG,"Need update. stored version : %d, new: %d\n",rewrite_vars->pat_version,pat->version_number);
-			return 1;
-		}
-	}
-	return 0;
-
-}
 
 /** @brief update the version using the dowloaded pat*/
 void update_pat_version(rewrite_parameters_t *rewrite_vars)
@@ -187,26 +154,8 @@ int pat_channel_rewrite(rewrite_parameters_t *rewrite_vars, mumudvb_channel_t *c
 	buf_dest[1+TS_HEADER_LEN]=(((new_section_length)&0x0f00)>>8)  | (0xf0 & buf_dest[1+TS_HEADER_LEN]);
 	buf_dest[2+TS_HEADER_LEN]=new_section_length & 0xff;
 
-
-	//CRC32 calculation inspired by the xine project
-	//Now we must adjust the CRC32
-	//we compute the CRC32
-	crc32=0xffffffff;
-	for(i = 0; i < new_section_length-1; i++) {
-		crc32 = (crc32 << 8) ^ crc32_table[((crc32 >> 24) ^ buf_dest[i+TS_HEADER_LEN])&0xff];
-	}
-
-
-	//We write the CRC32 to the buffer
-	buf_dest[buf_dest_pos]=(crc32>>24) & 0xff;
-	buf_dest_pos+=1;
-	buf_dest[buf_dest_pos]=(crc32>>16) & 0xff;
-	buf_dest_pos+=1;
-	buf_dest[buf_dest_pos]=(crc32>>8) & 0xff;
-	buf_dest_pos+=1;
-	buf_dest[buf_dest_pos]=crc32 & 0xff;
-	buf_dest_pos+=1;
-
+	setCRC32(buf_dest + TS_HEADER_LEN);
+	buf_dest_pos += 4;
 
 	//Padding with 0xFF
 	memset(buf_dest+buf_dest_pos,0xFF,TS_PACKET_SIZE-buf_dest_pos);
@@ -226,7 +175,7 @@ void pat_rewrite_new_global_packet(unsigned char *ts_packet, rewrite_parameters_
 	/*Check the version before getting the full packet*/
 	if(!rewrite_vars->pat_needs_update)
 	{
-		rewrite_vars->pat_needs_update=pat_need_update(rewrite_vars,ts_packet);
+		rewrite_vars->pat_needs_update=table_needs_update(log_module, rewrite_vars->pat_version, ts_packet, NULL);
 	}
 	/*We need to update the full packet, we download it*/
 	if(rewrite_vars->pat_needs_update)
