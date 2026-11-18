@@ -503,7 +503,10 @@ int unicast_handle_fd_event(unicast_parameters_t *unicast_vars,
 				//Event on a client connection i.e. the client asked something
 				log_message( log_module, MSG_FLOOD,"New message for socket %d\n", unicast_vars->pfds[actual_fd].fd);
 				iRet=unicast_handle_message(unicast_vars,unicast_vars->fd_info[actual_fd].client, channels, number_of_channels, strengthparams, auto_p, cam_p, scam_vars,eit_packets);
-				if (iRet==-2 ) //iRet==-2 --> 0 received data or error, we close the connection
+				/* -2: peer closed / fatal client error — close the connection.
+				 * Also treat legacy -1 the same so error paths cannot leave a
+				 * live socket stuck in pfds (FD leak / busy POLLIN). */
+				if (iRet==-2 || iRet==-1)
 				{
 					unicast_close_connection(unicast_vars,unicast_vars->pfds[actual_fd].fd);
 					//We check if we have to parse unicast_vars->pfds[actual_fd].revents (the last fd moved to the actual one)
@@ -574,7 +577,8 @@ unicast_client_t *unicast_accept_connection(unicast_parameters_t *unicast_vars, 
 		return NULL;
 	}
 #else
-	uint32_t iMode = 0;
+	/* FIONBIO: non-zero enables non-blocking (must match Linux O_NONBLOCK). */
+	u_long iMode = 1;
 	flags = ioctlsocket(fromSocket, FIONBIO, &iMode);
 	if (flags != NO_ERROR) {
 		log_message(log_module, MSG_ERROR, "Set non blocking failed : %s\n", strerror(errno));
@@ -696,7 +700,7 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars,
 			log_message( log_module, MSG_ERROR,"Problem with realloc for the client buffer : %s file : %s line %d\n",strerror(errno),__FILE__,__LINE__);
 			client->buffersize=0;
 			client->bufferpos=0;
-			return -1;
+			return -2; /* Close: buffer is unusable */
 		}
 		memset (client->buffer+client->buffersize, 0, RECV_BUFFER_MULTIPLE*sizeof(char)); //We fill the buffer with zeros to be sure
 		client->buffersize += RECV_BUFFER_MULTIPLE;
@@ -717,8 +721,20 @@ int unicast_handle_message(unicast_parameters_t *unicast_vars,
 
 	if(received_len==-1)
 	{
+		/* Client sockets are non-blocking; ignore transient errors. */
+#ifndef _WIN32
+		if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+			return 0;
 		log_message( log_module, MSG_ERROR,"Problem with recv : %s\n",strerror(errno));
-		return -1;
+#else
+		{
+			int wsa_err = WSAGetLastError();
+			if (wsa_err == WSAEINTR || wsa_err == WSAEWOULDBLOCK)
+				return 0;
+			log_message( log_module, MSG_ERROR,"Problem with recv : WSA error %d\n", wsa_err);
+		}
+#endif
+		return -2; /* Close on fatal recv errors */
 	}
 	if(received_len==0)
 		return -2; //To say to the main program to close the connection
@@ -1186,9 +1202,16 @@ int unicast_reply_send(struct unicast_reply *reply, int socket, int code, const 
 		if (temp_size != -1) {
 			size += temp_size;
 		} else {
-			if (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
+#ifndef _WIN32
+			if (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK)
 				return -1;
+#else
+			{
+				int wsa_err = WSAGetLastError();
+				if (wsa_err != WSAEINTR && wsa_err != WSAEWOULDBLOCK)
+					return -1;
 			}
+#endif
 		}
 	}
 	return size;
