@@ -1026,6 +1026,7 @@ int main (int argc, char **argv)
 
 	//Thread for showing the strength
 	strength_parameters_t strengthparams;
+	memset(&strengthparams, 0, sizeof(strengthparams));
 	strengthparams.fds = &fds;
 	strengthparams.tune_p = &tune_p;
 	pthread_create(&(signalpowerthread), NULL, show_power_func, &strengthparams);

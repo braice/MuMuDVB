@@ -132,6 +132,47 @@ set_ts_filt (int fd, uint16_t pid)
 }
 
 /**
+ * @brief Try to read DVBv5 frontend statistics (DTV_STAT_SIGNAL_STRENGTH / DTV_STAT_CNR).
+ * When the driver reports FE_SCALE_DECIBEL, store dBm / dB values like dvb-fe-tool --femon.
+ * Falls back silently when the property ioctl or scale is unavailable.
+ */
+static void read_dvbv5_frontend_stats(strength_parameters_t *strengthparams)
+{
+	strengthparams->has_signal_db = 0;
+	strengthparams->has_cnr_db = 0;
+	strengthparams->signal_dbm = 0;
+	strengthparams->cnr_db = 0;
+
+#if defined(DTV_STAT_SIGNAL_STRENGTH) && defined(DTV_STAT_CNR)
+	struct dtv_property props[2];
+	struct dtv_properties cmdseq;
+
+	memset(props, 0, sizeof(props));
+	props[0].cmd = DTV_STAT_SIGNAL_STRENGTH;
+	props[1].cmd = DTV_STAT_CNR;
+	cmdseq.num = 2;
+	cmdseq.props = props;
+
+	if (ioctl(strengthparams->fds->fd_frontend, FE_GET_PROPERTY, &cmdseq) < 0)
+		return;
+
+	/* Prefer global/layer-0 stats; values are millidecibels (0.001 dB). */
+	if (props[0].u.st.len > 0 && props[0].u.st.stat[0].scale == FE_SCALE_DECIBEL)
+	{
+		strengthparams->signal_dbm = (float)(props[0].u.st.stat[0].svalue / 1000.0);
+		strengthparams->has_signal_db = 1;
+	}
+	if (props[1].u.st.len > 0 && props[1].u.st.stat[0].scale == FE_SCALE_DECIBEL)
+	{
+		strengthparams->cnr_db = (float)(props[1].u.st.stat[0].svalue / 1000.0);
+		strengthparams->has_cnr_db = 1;
+	}
+#else
+	(void)strengthparams;
+#endif
+}
+
+/**
  * @brief Show the reception power.
  * This information is not alway reliable
  * @param fds the file descriptors of the card
@@ -153,6 +194,10 @@ void *show_power_func(void* arg)
 	strengthparams->ber = 0;
 	strengthparams->snr = 0;
 	strengthparams->ub = 0;
+	strengthparams->has_signal_db = 0;
+	strengthparams->has_cnr_db = 0;
+	strengthparams->signal_dbm = 0;
+	strengthparams->cnr_db = 0;
 	strengthparams->ts_discontinuities = 0; //could be initialized somewhere else but sounds fine here
 	strengthparams->lock_loss_events = 0;
 	memset(&festatus_old,0,sizeof(fe_status_t));
@@ -206,13 +251,8 @@ void *show_power_func(void* arg)
 			else
 				meas_ub_ok=1;
 
-		}
-		if(strengthparams->tune_p->display_strenght && strengthparams->tune_p->card_tuned)
-		{
-			log_message( log_module,  MSG_INFO, "Bit error rate: %10d Signal strength: %10d SNR: %10d Uncorrected blocks: %10d\n", strengthparams->ber,strengthparams->strength,strengthparams->snr,strengthparams->ub);
-			log_message( log_module,  MSG_INFO, "ts_discontinuities %10u",strengthparams->ts_discontinuities);
-
-			log_message( log_module,  MSG_FLOOD, "Timing: ioctls took %ld micro seconds\n",mumu_timing());
+			/* Prefer calibrated Signal/C/N from DVBv5 when the driver provides them */
+			read_dvbv5_frontend_stats(strengthparams);
 		}
 		if((strengthparams->tune_p->check_status ||strengthparams->tune_p->display_strenght) && strengthparams->tune_p->card_tuned)
 		{
@@ -235,6 +275,34 @@ void *show_power_func(void* arg)
 					lock_lost=0;
 				}
 			}
+		}
+		if(strengthparams->tune_p->display_strenght && strengthparams->tune_p->card_tuned)
+		{
+			if (strengthparams->has_signal_db || strengthparams->has_cnr_db)
+			{
+				char signal_buf[32];
+				char cnr_buf[32];
+				if (strengthparams->has_signal_db)
+					snprintf(signal_buf, sizeof(signal_buf), "%.2fdBm", strengthparams->signal_dbm);
+				else
+					snprintf(signal_buf, sizeof(signal_buf), "%d", strengthparams->strength);
+				if (strengthparams->has_cnr_db)
+					snprintf(cnr_buf, sizeof(cnr_buf), "%.2fdB", strengthparams->cnr_db);
+				else
+					snprintf(cnr_buf, sizeof(cnr_buf), "%d", strengthparams->snr);
+				log_message( log_module,  MSG_INFO, "%s (0x%x) Signal= %s C/N= %s BER= %d UCB= %d\n",
+						(strengthparams->festatus & FE_HAS_LOCK) ? "Lock" : "NoLock",
+						(unsigned int)strengthparams->festatus,
+						signal_buf, cnr_buf,
+						strengthparams->ber, strengthparams->ub);
+			}
+			else
+			{
+				log_message( log_module,  MSG_INFO, "Bit error rate: %10d Signal strength: %10d SNR: %10d Uncorrected blocks: %10d\n", strengthparams->ber,strengthparams->strength,strengthparams->snr,strengthparams->ub);
+			}
+			log_message( log_module,  MSG_INFO, "ts_discontinuities %10u",strengthparams->ts_discontinuities);
+
+			log_message( log_module,  MSG_FLOOD, "Timing: ioctls took %ld micro seconds\n",mumu_timing());
 		}
 		for(i=0;i<wait_time && !strengthparams->tune_p->strengththreadshutdown;i++)
 			usleep(100000);

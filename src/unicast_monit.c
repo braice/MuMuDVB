@@ -222,7 +222,16 @@ unicast_send_signal_power_js (int Socket, strength_parameters_t *strengthparams)
 		return -1;
 	}
 
-	unicast_reply_write(reply, "{\"ber\":%d, \"strength\":%d, \"snr\":%d, \"ub\":%d}\n", strengthparams->ber,strengthparams->strength,strengthparams->snr,strengthparams->ub);
+	unicast_reply_write(reply, "{\"ber\":%d, \"strength\":%d, \"snr\":%d, \"ub\":%d",
+			strengthparams->ber, strengthparams->strength, strengthparams->snr, strengthparams->ub);
+#ifndef DISABLE_DVB_API
+	unicast_reply_write(reply, ", \"status\":%u", (unsigned int)strengthparams->festatus);
+	if (strengthparams->has_signal_db)
+		unicast_reply_write(reply, ", \"signal_dbm\":%.2f", strengthparams->signal_dbm);
+	if (strengthparams->has_cnr_db)
+		unicast_reply_write(reply, ", \"cnr_db\":%.2f", strengthparams->cnr_db);
+#endif
+	unicast_reply_write(reply, "}\n");
 
 	unicast_reply_send(reply, Socket, 200, "application/json");
 
@@ -460,6 +469,10 @@ unicast_send_json_state (int number_of_channels, mumudvb_channel_t *channels, in
 	unicast_reply_write(reply, "\t\"frontend_signal\" : %d,\n",strengthparams->strength);
 	unicast_reply_write(reply, "\t\"frontend_snr\" : %d,\n",strengthparams->snr);
 	unicast_reply_write(reply, "\t\"frontend_ub\" : %d,\n",strengthparams->ub);
+	if (strengthparams->has_signal_db)
+		unicast_reply_write(reply, "\t\"frontend_signal_dbm\" : %.2f,\n",strengthparams->signal_dbm);
+	if (strengthparams->has_cnr_db)
+		unicast_reply_write(reply, "\t\"frontend_cnr_db\" : %.2f,\n",strengthparams->cnr_db);
 	unicast_reply_write(reply, "\t\"ts_discontinuities\" : %u\n",strengthparams->ts_discontinuities);
 
 	unicast_reply_write(reply, "},\n");
@@ -575,6 +588,16 @@ unicast_send_prometheus (int number_of_channels, mumudvb_channel_t *channels, in
     unicast_reply_write(reply, "signal_strength %d\n",strengthparams->strength);
     unicast_reply_write(reply, "# TYPE signal_to_noise_ratio gauge\n");
     unicast_reply_write(reply, "signal_to_noise_ratio %d\n",strengthparams->snr);
+    if (strengthparams->has_signal_db)
+    {
+        unicast_reply_write(reply, "# TYPE signal_strength_dbm gauge\n");
+        unicast_reply_write(reply, "signal_strength_dbm %.2f\n",strengthparams->signal_dbm);
+    }
+    if (strengthparams->has_cnr_db)
+    {
+        unicast_reply_write(reply, "# TYPE carrier_to_noise_ratio_db gauge\n");
+        unicast_reply_write(reply, "carrier_to_noise_ratio_db %.2f\n",strengthparams->cnr_db);
+    }
 
     // Channels list
     unicast_reply_write(reply, "# TYPE number_of_clients gauge\n");
@@ -827,6 +850,10 @@ unicast_send_xml_state (int number_of_channels, mumudvb_channel_t *channels, int
 	unicast_reply_write(reply, "\t<frontend_signal>%d</frontend_signal>\n",strengthparams->strength);
 	unicast_reply_write(reply, "\t<frontend_snr>%d</frontend_snr>\n",strengthparams->snr);
 	unicast_reply_write(reply, "\t<frontend_ub>%d</frontend_ub>\n",strengthparams->ub);
+	if (strengthparams->has_signal_db)
+		unicast_reply_write(reply, "\t<frontend_signal_dbm>%.2f</frontend_signal_dbm>\n",strengthparams->signal_dbm);
+	if (strengthparams->has_cnr_db)
+		unicast_reply_write(reply, "\t<frontend_cnr_db>%.2f</frontend_cnr_db>\n",strengthparams->cnr_db);
 	unicast_reply_write(reply, "\t<ts_discontinuities>%u</ts_discontinuities>\n",strengthparams->ts_discontinuities);
 
 
