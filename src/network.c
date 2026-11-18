@@ -499,7 +499,8 @@ int makeTCPclientsocket(char *szAddr, unsigned short port)
 		return -1;
 	}
 #else
-    u_long iMode = 0;
+	/* FIONBIO: non-zero enables non-blocking (must match Linux O_NONBLOCK). */
+	u_long iMode = 1;
 	flags = ioctlsocket(iSocket, FIONBIO, &iMode);
 	if (flags != NO_ERROR) {
 		log_message(log_module, MSG_ERROR, "Set non blocking failed : %s\n", strerror(errno));
