@@ -133,17 +133,19 @@ set_ts_filt (int fd, uint16_t pid)
 
 /**
  * @brief Try to read DVBv5 frontend statistics (DTV_STAT_SIGNAL_STRENGTH / DTV_STAT_CNR).
- * When the driver reports FE_SCALE_DECIBEL, store dBm / dB values like dvb-fe-tool --femon.
- * Falls back silently when the property ioctl or scale is unavailable.
+ * When the driver reports FE_SCALE_DECIBEL, fill dBm / dB values like dvb-fe-tool --femon.
+ * @return bitmask: 1 = signal_dbm valid, 2 = cnr_db valid; 0 if unavailable.
  */
-static void read_dvbv5_frontend_stats(strength_parameters_t *strengthparams)
+int read_dvbv5_signal_cnr(int fd_frontend, float *signal_dbm, float *cnr_db)
 {
-	strengthparams->has_signal_db = 0;
-	strengthparams->has_cnr_db = 0;
-	strengthparams->signal_dbm = 0;
-	strengthparams->cnr_db = 0;
+	int available = 0;
 
-#if defined(DTV_STAT_SIGNAL_STRENGTH) && defined(DTV_STAT_CNR)
+	if (signal_dbm)
+		*signal_dbm = 0;
+	if (cnr_db)
+		*cnr_db = 0;
+
+#if !defined(DISABLE_DVB_API) && defined(DTV_STAT_SIGNAL_STRENGTH) && defined(DTV_STAT_CNR)
 	struct dtv_property props[2];
 	struct dtv_properties cmdseq;
 
@@ -153,23 +155,42 @@ static void read_dvbv5_frontend_stats(strength_parameters_t *strengthparams)
 	cmdseq.num = 2;
 	cmdseq.props = props;
 
-	if (ioctl(strengthparams->fds->fd_frontend, FE_GET_PROPERTY, &cmdseq) < 0)
-		return;
+	if (ioctl(fd_frontend, FE_GET_PROPERTY, &cmdseq) < 0)
+		return 0;
 
 	/* Prefer global/layer-0 stats; values are millidecibels (0.001 dB). */
-	if (props[0].u.st.len > 0 && props[0].u.st.stat[0].scale == FE_SCALE_DECIBEL)
+	if (signal_dbm && props[0].u.st.len > 0 && props[0].u.st.stat[0].scale == FE_SCALE_DECIBEL)
 	{
-		strengthparams->signal_dbm = (float)(props[0].u.st.stat[0].svalue / 1000.0);
-		strengthparams->has_signal_db = 1;
+		*signal_dbm = (float)(props[0].u.st.stat[0].svalue / 1000.0);
+		available |= 1;
 	}
-	if (props[1].u.st.len > 0 && props[1].u.st.stat[0].scale == FE_SCALE_DECIBEL)
+	if (cnr_db && props[1].u.st.len > 0 && props[1].u.st.stat[0].scale == FE_SCALE_DECIBEL)
 	{
-		strengthparams->cnr_db = (float)(props[1].u.st.stat[0].svalue / 1000.0);
-		strengthparams->has_cnr_db = 1;
+		*cnr_db = (float)(props[1].u.st.stat[0].svalue / 1000.0);
+		available |= 2;
 	}
 #else
-	(void)strengthparams;
+	(void)fd_frontend;
 #endif
+	return available;
+}
+
+/**
+ * @brief Fill strength_parameters_t with DVBv5 Signal/C/N when available.
+ */
+static void read_dvbv5_frontend_stats(strength_parameters_t *strengthparams)
+{
+	int available;
+
+	strengthparams->has_signal_db = 0;
+	strengthparams->has_cnr_db = 0;
+	strengthparams->signal_dbm = 0;
+	strengthparams->cnr_db = 0;
+
+	available = read_dvbv5_signal_cnr(strengthparams->fds->fd_frontend,
+			&strengthparams->signal_dbm, &strengthparams->cnr_db);
+	strengthparams->has_signal_db = (available & 1) ? 1 : 0;
+	strengthparams->has_cnr_db = (available & 2) ? 1 : 0;
 }
 
 /**

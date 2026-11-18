@@ -117,6 +117,8 @@ int create_card_fd(char *base_path, int tuner, uint8_t *asked_pid, fds_t *fds);
 void set_filters(uint8_t *asked_pid, fds_t *fds);
 void close_card_fd(fds_t *fds);
 void *show_power_func(void* arg);
+/** Read DVBv5 Signal/C/N; returns bitmask 1=signal_dbm, 2=cnr_db when FE_SCALE_DECIBEL. */
+int read_dvbv5_signal_cnr(int fd_frontend, float *signal_dbm, float *cnr_db);
 #ifndef _WIN32
 int card_read(int fd_dvr, unsigned char *dest_buffer, card_buffer_t *card_buffer);
 #else
