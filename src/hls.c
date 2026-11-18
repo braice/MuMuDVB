@@ -388,6 +388,16 @@ int hls_write_metrics(strength_parameters_t *strengthparams, unicast_parameters_
 	    strengthparams->lock_loss_events,
 	    (strengthparams->festatus & FE_HAS_LOCK) ? 1 : 0
 	);
+	if (strengthparams->has_signal_db)
+		fprintf(file,
+		    "# TYPE signal_strength_dbm gauge\n"
+		    "signal_strength_dbm %.2f\n",
+		    strengthparams->signal_dbm);
+	if (strengthparams->has_cnr_db)
+		fprintf(file,
+		    "# TYPE carrier_to_noise_ratio_db gauge\n"
+		    "carrier_to_noise_ratio_db %.2f\n",
+		    strengthparams->cnr_db);
 	fclose(file);
 	return 0;
 }

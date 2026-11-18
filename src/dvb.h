@@ -76,6 +76,14 @@ typedef struct strength_parameters_t{
 	fds_t *fds;
 	fe_status_t festatus;
 	int strength, ber, snr, ub;
+	/** 1 when DVBv5 DTV_STAT_SIGNAL_STRENGTH reports FE_SCALE_DECIBEL */
+	int has_signal_db;
+	/** 1 when DVBv5 DTV_STAT_CNR reports FE_SCALE_DECIBEL */
+	int has_cnr_db;
+	/** Signal strength in dBm (svalue/1000) when has_signal_db */
+	float signal_dbm;
+	/** Carrier-to-noise ratio in dB (svalue/1000) when has_cnr_db */
+	float cnr_db;
 	unsigned int ts_discontinuities, lock_loss_events;
 } strength_parameters_t;
 
@@ -109,6 +117,8 @@ int create_card_fd(char *base_path, int tuner, uint8_t *asked_pid, fds_t *fds);
 void set_filters(uint8_t *asked_pid, fds_t *fds);
 void close_card_fd(fds_t *fds);
 void *show_power_func(void* arg);
+/** Read DVBv5 Signal/C/N; returns bitmask 1=signal_dbm, 2=cnr_db when FE_SCALE_DECIBEL. */
+int read_dvbv5_signal_cnr(int fd_frontend, float *signal_dbm, float *cnr_db);
 #ifndef _WIN32
 int card_read(int fd_dvr, unsigned char *dest_buffer, card_buffer_t *card_buffer);
 #else

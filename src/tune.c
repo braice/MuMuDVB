@@ -1278,12 +1278,25 @@ int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_str
 		print_status(festatus);
 		if(display_strength)
 		{
-			strength=0;
-			if(ioctl(fd_frontend,FE_READ_SIGNAL_STRENGTH,&strength) >= 0)
-				log_message( log_module,  MSG_INFO, "Strength: %10d\n",strength);
-			strength=0;
-			if(ioctl(fd_frontend,FE_READ_SNR,&strength) >= 0)
-				log_message( log_module,  MSG_INFO, "SNR: %10d\n",strength);
+			float signal_dbm = 0, cnr_db = 0;
+			int dvbv5 = read_dvbv5_signal_cnr(fd_frontend, &signal_dbm, &cnr_db);
+
+			if (dvbv5 & 1)
+				log_message( log_module,  MSG_INFO, "Strength: %10.2f dBm\n", signal_dbm);
+			else
+			{
+				strength=0;
+				if(ioctl(fd_frontend,FE_READ_SIGNAL_STRENGTH,&strength) >= 0)
+					log_message( log_module,  MSG_INFO, "Strength: %10d\n",strength);
+			}
+			if (dvbv5 & 2)
+				log_message( log_module,  MSG_INFO, "SNR: %10.2f dB\n", cnr_db);
+			else
+			{
+				strength=0;
+				if(ioctl(fd_frontend,FE_READ_SNR,&strength) >= 0)
+					log_message( log_module,  MSG_INFO, "SNR: %10d\n",strength);
+			}
 		}
 		sleep(1);
 	} while ((festatus & (FE_HAS_LOCK))==0);
@@ -1327,13 +1340,27 @@ int check_status(int fd_frontend,int type,uint32_t lo_frequency, int display_str
 		if(ioctl(fd_frontend,FE_READ_BER,&strength) >= 0)
 			log_message( log_module,  MSG_INFO, "Bit error rate: %d\n",strength);
 
-		strength=0;
-		if(ioctl(fd_frontend,FE_READ_SIGNAL_STRENGTH,&strength) >= 0)
-			log_message( log_module,  MSG_INFO, "Signal strength: %d\n",strength);
+		{
+			float signal_dbm = 0, cnr_db = 0;
+			int dvbv5 = read_dvbv5_signal_cnr(fd_frontend, &signal_dbm, &cnr_db);
 
-		strength=0;
-		if(ioctl(fd_frontend,FE_READ_SNR,&strength) >= 0)
-			log_message( log_module,  MSG_INFO, "SNR: %d\n",strength);
+			if (dvbv5 & 1)
+				log_message( log_module,  MSG_INFO, "Signal strength: %.2f dBm\n", signal_dbm);
+			else
+			{
+				strength=0;
+				if(ioctl(fd_frontend,FE_READ_SIGNAL_STRENGTH,&strength) >= 0)
+					log_message( log_module,  MSG_INFO, "Signal strength: %d\n",strength);
+			}
+			if (dvbv5 & 2)
+				log_message( log_module,  MSG_INFO, "SNR: %.2f dB\n", cnr_db);
+			else
+			{
+				strength=0;
+				if(ioctl(fd_frontend,FE_READ_SNR,&strength) >= 0)
+					log_message( log_module,  MSG_INFO, "SNR: %d\n",strength);
+			}
+		}
 	} else {
 		log_message( log_module,  MSG_ERROR, "Not able to lock to the signal on the given frequency\n");
 		return -1;
